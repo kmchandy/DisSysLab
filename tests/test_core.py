@@ -2,9 +2,9 @@
 import unittest
 from multiprocessing import SimpleQueue
 import os
-from core import Block, Agent, Network, SimpleAgent, StreamGenerator
-from core import StreamTransformer, StreamToList, StreamToFile
-from core import StreamCopy, StreamToFileCopy
+from dsl.core import Block, Agent, Network, SimpleAgent, StreamSource
+from dsl.core import StreamTransformer, StreamToList, StreamToFile
+from dsl.core import StreamCopy, StreamToFileCopy
 from typing import Optional, List, Callable, Dict, Tuple, Any
 
 
@@ -199,7 +199,7 @@ class TestNetwork(unittest.TestCase):
 
 
 class TestStreamAgents(unittest.TestCase):
-    def test_stream_generator_range(self):
+    def test_stream_source_range(self):
 
         def emit_range(agent):
             for i in range(5):
@@ -210,13 +210,13 @@ class TestStreamAgents(unittest.TestCase):
         net = Network(
             name="net",
             blocks={
-                'stream_generator_agent': StreamGenerator(
-                    stream_generator_fn=emit_range
+                'stream_source_agent': StreamSource(
+                    stream_source_fn=emit_range
                 ),
                 'receiver': StreamToList(),
             },
             connections=[
-                ('stream_generator_agent', 'out', 'receiver', 'in')
+                ('stream_source_agent', 'out', 'receiver', 'in')
             ]
         )
 
@@ -226,7 +226,7 @@ class TestStreamAgents(unittest.TestCase):
         # Check that network runs correctly
         self.assertEqual(
             net.blocks['receiver'].saved, [0, 1, 2, 3, 4])
-        print(f'passed test_stream_generator')
+        print(f'passed test_stream_source')
 
 
 class TestStreamAgentDouble(unittest.TestCase):
@@ -242,9 +242,9 @@ class TestStreamAgentDouble(unittest.TestCase):
             self.send(2*msg, outport='out')
 
         # Instantiate the agents
-        stream_generator_agent = StreamGenerator(
-            name="range_generator",
-            stream_generator_fn=emit_range
+        stream_source_agent = StreamSource(
+            name="range_source",
+            stream_source_fn=emit_range
         )
         checking_agent = SimpleAgent(
             inport='in',
@@ -259,11 +259,11 @@ class TestStreamAgentDouble(unittest.TestCase):
             inports=[],
             outports=[],
             blocks={
-                "stream_generator": stream_generator_agent,
+                "stream_source": stream_source_agent,
                 "checking_agent": checking_agent,
                 "receiver": receiver},
             connections=[
-                ("stream_generator", "out", "checking_agent", "in"),
+                ("stream_source", "out", "checking_agent", "in"),
                 ("checking_agent", "out", "receiver", "in")
             ]
         )
@@ -289,8 +289,8 @@ class TestStreamTransformer(unittest.TestCase):
         net = Network(
             name="double_net",
             blocks={
-                'stream_generator_agent': StreamGenerator(
-                    stream_generator_fn=emit_range
+                'stream_source_agent': StreamSource(
+                    stream_source_fn=emit_range
                 ),
                 'receiver': receiver,
                 'transformer': StreamTransformer(
@@ -298,13 +298,13 @@ class TestStreamTransformer(unittest.TestCase):
                 ),
             },
             connections=[
-                ('stream_generator_agent', 'out', 'transformer', 'in'),
+                ('stream_source_agent', 'out', 'transformer', 'in'),
                 ('transformer', 'out', 'receiver', 'in')
             ]
         )
         net.run()
         self.assertEqual(receiver.saved, [0, 2, 4, 6, 8])
-        print(f'passed test_stream_generator')
+        print(f'passed test_stream_source')
 
 
 class TestStreamCopy(unittest.TestCase):
@@ -321,9 +321,9 @@ class TestStreamCopy(unittest.TestCase):
         net = Network(
             name="copy_test_net",
             blocks={
-                "source": StreamGenerator(
+                "source": StreamSource(
                     name="emitter",
-                    stream_generator_fn=emit_range
+                    stream_source_fn=emit_range
                 ),
                 "copier": StreamCopy(name="stream_tee"),
                 "main_sink": collector_main,
@@ -358,8 +358,8 @@ class TestStreamToFileCopy(unittest.TestCase):
         net = Network(
             name="copy_file_net",
             blocks={
-                "source": StreamGenerator(
-                    name="source", stream_generator_fn=emit_range
+                "source": StreamSource(
+                    name="source", stream_source_fn=emit_range
                 ),
                 "logger": StreamToFileCopy(filepath=log_file),
                 "receiver": StreamToList(),

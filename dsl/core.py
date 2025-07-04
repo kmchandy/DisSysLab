@@ -504,7 +504,6 @@ class Network(Block):
         Waits for all threads to complete before returning.
         """
         self.check()
-        print(f"[{self.name}] Starting network...")
 
         threads = []
         try:
@@ -520,8 +519,6 @@ class Network(Block):
             raise RuntimeError(
                 f"Network '{self.name}' failed during execution: {e}"
             ) from e
-
-        print(f"[{self.name}] All blocks completed.")
 
 
 class Agent(Block):
@@ -643,19 +640,19 @@ class SimpleAgent(Agent):
             self.handle_msg(self, msg)
 
 
-class StreamGenerator(SimpleAgent):
+class StreamSource(SimpleAgent):
     def __init__(
         self,
         name: str = None,
         description: str = None,
-        stream_generator_fn: Optional[Callable[[Agent], None]] = None,
+        stream_source_fn: Optional[Callable[[Agent], None]] = None,
     ):
         super().__init__(
             name=name,
             description=description,
             inport=None,            # No input ports
             outports=["out"],       # Always has a single outport called 'out'
-            init_fn=stream_generator_fn,
+            init_fn=stream_source_fn,
             handle_msg=None         # No incoming message handling
         )
 
@@ -669,12 +666,10 @@ class StreamTransformer(SimpleAgent):
         transform_fn: Optional[Callable[[Any], Any]] = None,
     ):
         def handle_msg(agent, msg):
-            print(f'In StreamTransformer received message {msg}')
             if msg == "__STOP__":
                 agent.send("__STOP__", "out")
             else:
                 transformed = transform_fn(msg)
-                print(f'sending transformed message {transformed}')
                 agent.send(transformed, "out")  # FIXED LINE
 
         super().__init__(
