@@ -68,7 +68,7 @@ import time
 # description are not given in this example.
 
 
-def f(self):
+def send_msg_sequence(self):
     for i in range(3):
         # print(f'sending msg {i}')
         self.send(msg=i, outport='out')
@@ -79,29 +79,26 @@ def f(self):
 
 
 # Create the agent
-sender = Agent(outports=['out'], run_fn=f)
+sender = Agent(outports=['out'], run_fn=send_msg_sequence)
 
 # =================
 # EXAMPLE        |
 # =================
 # Example of an agent, receiver, that receives messages
-# on its input port called 'in' and appends the messages
-# to the list saved which is a local variable of the agent.
-# This agent has no output ports. The name and
-# description are not given in this example.
+# on its input port called 'in' and prints the messages.
+# The agent halts if it receives a message '__STOP__'.
+# This agent has no output ports.
 
 
-def g(self):
-    self.saved = []
+def print_msg(self):
     while True:
         msg = self.recv(inport='in')
-        # print(f'receiver received {msg}')
         if msg == "__STOP__":
             break
-        self.saved.append(msg)
+        print(f'Agent {self.name} received message {msg} \n')
 
 
-receiver = Agent(inports=['in'], run_fn=g)
+receiver = Agent(name='receiver', inports=['in'], run_fn=print_msg)
 
 # =================
 # EXAMPLE        |
@@ -113,7 +110,7 @@ receiver = Agent(inports=['in'], run_fn=g)
 # stops executing when it receives a message '__STOP__'
 
 
-def h(self):
+def double(self):
     while True:
         msg = self.recv(inport='in')
         # print(f'received {msg} in transformer')
@@ -123,7 +120,7 @@ def h(self):
         self.send(msg=2*msg, outport='out')
 
 
-transformer = Agent(inports=['in'], outports=['out'], run_fn=h)
+transformer = Agent(inports=['in'], outports=['out'], run_fn=double)
 
 # =================
 # EXAMPLE        |
@@ -137,7 +134,7 @@ transformer = Agent(inports=['in'], outports=['out'], run_fn=h)
 # sends the message on each of its output ports.
 
 
-def h(self):
+def sum_and_prod(self):
     while True:
         msg_0 = self.recv(inport='in_0')
         # print(f'received {msg_0} from msg_0')
@@ -159,4 +156,7 @@ def h(self):
                 self.send(msg=msg_0 * msg_1, outport='prod')
 
 
-sum_prod = Agent(inports=['in_0', 'in_1'], outports=['sum', 'prod'], run_fn=h)
+sum_prod = Agent(
+    inports=['in_0', 'in_1'],
+    outports=['sum', 'prod'],
+    run_fn=sum_and_prod)

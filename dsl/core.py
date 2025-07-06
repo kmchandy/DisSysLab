@@ -303,13 +303,8 @@ class Network(Block):
         except Exception as e:
             raise RuntimeError(
                 f"""Network '{self.name}' failed to connect.
-    Likely causes:
-    • A port is not declared or misspelled.
-    • A block name in a connection is incorrect.
-    • An inport/outport is missing or not a queue.
-    • A queue may not have been initialized properly.
-
-    Original error:
+    Check: misspelled or missing port or block name
+    Error:
         {type(e).__name__}: {e}
     """
             ) from e
