@@ -1,0 +1,40 @@
+site_name: DisSysLab
+site_url: https://kmchandy.github.io/DisSysLab/
+repo_url: https://github.com/kmchandy/DisSysLab
+repo_name: kmchandy/DisSysLab
+
+theme:
+  name: material
+  features:
+    - navigation.expand
+    - navigation.sections
+    - content.code.copy
+    - content.action.edit
+    - search.highlight
+    - toc.integrate
+
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.details
+
+edit_uri: edit/main/docs/
+
+nav:
+  - Home: index.md
+  - Getting Started: 01_getting_started.md
+  - Blocks and Agents: 02_blocks_and_agents.md
+  - Connect Blocks to form Networks: 03_connect_blocks_to_form_networks.md
+  - Networks of Networks: 04_networks_of_networks.md
+  - Dynamic Networks: 05_dynamic_networks.md
+  - LLM Tools: 04_llm_tools.md
+  - Examples:
+      - Blocks and Agents: examples/blocks_and_agents.md
+      - Connect Blocks to form Networks: examples/connect_blocks_to_form_networks.md
+      - Networks of Networks: examples/networks_of_networks.md
+      - Dynamic Networks: examples/dynamic_networks.md
+      - LLM Tools: examples/llm_tools.md
+  - About: about.md

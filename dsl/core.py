@@ -125,6 +125,7 @@ class Block:
         description: Optional[str],
         inports: Optional[List[str]] = None,
         outports: Optional[List[str]] = None,
+        run_fn: Optional[Callable[[Agent], None]] = None,
     ):
         # Set name and description for this block
         self.name = name or self.__class__.__name__
@@ -133,6 +134,11 @@ class Block:
         # Initialize input and output port lists
         self.inports = inports or []
         self.outports = outports or []
+
+        # Set run_fn the function that executes this block
+        # The run_fn is specified in Agent or Network subclasses
+        # of block
+        self.run_fn = run_fn
 
         # Check for duplicate port names
         if len(set(self.inports)) != len(self.inports):
@@ -230,12 +236,11 @@ class Network(Block):
                         )
                     if to_port not in self.blocks[to_block].in_q:
                         raise ValueError(
-                            f"Input port '{to_port}' not in block '{self.blocks[to_block]}'."
+                            f"Input port '{to_port}' not in block '{self.blocks[to_block].name}'."
                         )
                     if not is_queue(self.blocks[to_block].in_q[to_port]):
                         raise TypeError(
-                            "{self.blocks[to_block].in_q[to_port]} is not a queue. "
-                        )
+                            "Input port {to_port} to {self.blocks[to_block].name} unconnected to queue.")
                     self.in_q[from_port] = self.blocks[to_block].in_q[to_port]
                 elif to_block == "external":
                     # Connect component outport to network outport.
@@ -249,23 +254,22 @@ class Network(Block):
                         )
                     if from_port not in self.blocks[from_block].out_q:
                         raise ValueError(
-                            f"out_port {from_port} not in block {self.blocks[from_block]} "
+                            f"out_port {from_port} not in block {self.blocks[from_block].name} "
                         )
                     if not is_queue(self.out_q[to_port]):
-                        raise TypeError(
-                            "{self.out_q[to_port]} of block {self.name} is not a queue. "
-                        )
+                        raise TypeError("Output port {to_port} of block {self.name} is not connected to a queue."
+                                        )
                     self.blocks[from_block].out_q[from_port] = self.out_q[to_port]
                 else:
                     # Connect from_port of from_block to to_port of to_block
                     # [from_port of from_block ]   --->   [to_port of to_block]
                     if from_port not in self.blocks[from_block].out_q:
                         raise ValueError(
-                            f"out_port {from_port} not in block {self.blocks[from_block]} "
+                            f"out_port {from_port} not in block {self.blocks[from_block].name} "
                         )
                     if to_port not in self.blocks[to_block].in_q:
                         raise ValueError(
-                            f"Input port '{to_port}' not in block '{self.blocks[to_block]}'."
+                            f"Input port '{to_port}' not in block '{self.blocks[to_block].name}'."
                         )
                     if not is_queue(self.blocks[to_block].in_q[to_port]):
                         raise TypeError(

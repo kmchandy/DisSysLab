@@ -384,5 +384,152 @@ class TestStreamToFileCopy(unittest.TestCase):
         os.remove(log_file)
 
 
+class TestSimplestAgent(unittest.TestCase):
+    def test_simplest_agent(self):
+        def f(self):
+            self.n = 3
+            for i in range(self.n):
+                self.send(msg=i, outport='out')
+            self.send(msg='__STOP__', outport='out')
+
+        def g(self):
+            self.saved = []
+            while True:
+                msg = self.recv(inport='in')
+                if msg == "__STOP__":
+                    break
+                else:
+                    self.saved.append(msg)
+
+        net = Network(
+            blocks={
+                "sender": Agent(outports=['out'], run_fn=f),
+                "receiver": Agent(inports=['in'], run_fn=g),
+            },
+            connections=[
+                ("sender", "out", "receiver", "in")
+            ]
+        )
+        net.run()
+        self.assertEqual(net.blocks['receiver'].saved, [0, 1, 2])
+
+        net = Network(
+            blocks={
+                "sender": Agent(outports=['out'], run_fn=f),
+                "receiver": Agent(inports=['in'], run_fn=g),
+            },
+            connections=[
+                ("sender", "out", "receiver", "in")
+            ]
+        )
+        net.run()
+        self.assertEqual(net.blocks['receiver'].saved, [0, 1, 2])
+
+
+class TestSimpleTransformerAgent(unittest.TestCase):
+    def test_simple_transformer_agent(self):
+
+        def f(self):
+            self.n = 3
+            for i in range(self.n):
+                self.send(msg=i, outport='out')
+            self.send(msg='__STOP__', outport='out')
+
+        def g(self):
+            self.saved = []
+            while True:
+                msg = self.recv(inport='in')
+                if msg == "__STOP__":
+                    break
+                else:
+                    self.saved.append(msg)
+
+        def double(self):
+            while True:
+                msg = self.recv(inport='in')
+                if msg == "__STOP__":
+                    self.send(msg=msg, outport='out')
+                    break
+                else:
+                    self.send(msg=2*msg, outport='out')
+
+        net = Network(
+            blocks={
+                "sender": Agent(outports=['out'], run_fn=f),
+                "transformer": Agent(inports=['in'], outports=['out'], run_fn=double),
+                "receiver": Agent(inports=['in'], run_fn=g),
+            },
+            connections=[
+                ("sender", "out", "transformer", "in"),
+                ("transformer", "out", "receiver", "in"),
+            ]
+        )
+
+        net.run()
+        self.assertEqual(net.blocks['receiver'].saved, [0, 2, 4])
+
+
+class TestMultipleInputTransformerAgent(unittest.TestCase):
+    def test_simple_transformer_agent(self):
+
+        def f_0(self):
+            self.n = 3
+            for i in range(self.n):
+                self.send(msg=i, outport='out')
+            self.send(msg='__STOP__', outport='out')
+
+        def f_1(self):
+            self.n = 4
+            for i in range(self.n):
+                self.send(msg=i*i, outport='out')
+            self.send(msg='__STOP__', outport='out')
+
+        def g(self):
+            self.saved = []
+            while True:
+                msg = self.recv(inport='in')
+                if msg == "__STOP__":
+                    break
+                else:
+                    self.saved.append(msg)
+
+        def h(self):
+            while True:
+                msg_0 = self.recv(inport='in_0')
+                if msg_0 == "__STOP__":
+                    for outport in self.outports:
+                        self.send(msg='__STOP__', outport=outport)
+                    break
+                else:
+                    msg_1 = self.recv(inport='in_1')
+                    if msg_1 == "__STOP__":
+                        for outport in self.outports:
+                            self.send(msg='__STOP__', outport=outport)
+                        break
+                    else:
+                        self.send(msg=msg_0 + msg_1, outport='sum')
+                        self.send(msg=msg_0 * msg_1, outport='prod')
+
+        net = Network(
+            blocks={
+                "sender_0": Agent(outports=['out'], run_fn=f_0),
+                "sender_1": Agent(outports=['out'], run_fn=f_1),
+                "transformer": Agent(inports=['in_0', 'in_1'], outports=['sum', 'prod'], run_fn=h),
+                "receiver_0": Agent(inports=['in'], run_fn=g),
+                "receiver_1": Agent(inports=['in'], run_fn=g),
+            },
+            connections=[
+                ("sender_0", "out", "transformer", "in_0"),
+                ("sender_1", "out", "transformer", "in_1"),
+                ("transformer", "sum", "receiver_0", "in"),
+                ("transformer", "prod", "receiver_1", "in"),
+            ]
+        )
+
+        net.run()
+        self.assertEqual(net.blocks['receiver_0'].saved, [0, 2, 6])
+        self.assertEqual(net.blocks['receiver_1'].saved, [0, 1, 8])
+
+
 if __name__ == "__main__":
     unittest.main()
