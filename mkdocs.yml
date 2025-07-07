@@ -32,9 +32,26 @@ nav:
   - Dynamic Networks: 05_dynamic_networks.md
   - LLM Tools: 04_llm_tools.md
   - Examples:
-      - Blocks and Agents: examples/blocks_and_agents.md
-      - Connect Blocks to form Networks: examples/connect_blocks_to_form_networks.md
-      - Networks of Networks: examples/networks_of_networks.md
-      - Dynamic Networks: examples/dynamic_networks.md
+      - Blocks and Agents: 
+          examples/blocks_and_agents.md, 
+          examples/blocks_and_agents.py
+      - Connect Blocks to form Networks: 
+          examples/connect_blocks_to_form_networks.md,
+          examples/connect_blocks_to_form_networks.py,
+      - Stream Generators: 
+          examples/stream_generators.md,
+          examples/stream_generators.py,
+      - Stream Transformers: 
+          examples/stream_transformers.md,
+          examples/stream_transformers.py,
+      - Stream Recorders: 
+          examples/stream_recorders.md,
+          examples/stream_recorders.py,
+      - Networks of Networks: 
+          examples/networks_of_networks.md
+          examples/networks_of_networks.py
+      - Dynamic Networks: 
+          examples/dynamic_networks.md
+          examples/dynamic_networks.md
       - LLM Tools: examples/llm_tools.md
   - About: about.md

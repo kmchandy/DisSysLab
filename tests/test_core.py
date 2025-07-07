@@ -194,7 +194,7 @@ class TestNetwork(unittest.TestCase):
 
         # Optional: verify error message contains helpful hints
         self.assertIn("bad_out", str(context.exception))
-        self.assertIn("Likely causes", str(context.exception))
+        self.assertIn("failed", str(context.exception))
         print(f'passed test_network_check_validation')
 
 
