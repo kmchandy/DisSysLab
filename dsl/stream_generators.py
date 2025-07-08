@@ -7,10 +7,18 @@ GenerateFromList
 GenerateFromFile
 """
 
+import requests
+from dsl.stream_generators import StreamGenerator
+from typing import Optional, Union
+from bs4 import BeautifulSoup
 from dsl.core import Agent
 from typing import Optional, Union, Callable, Any
 import time
 import inspect
+
+# =================================================
+#          StreamGenerator                        |
+# =================================================
 
 
 class StreamGenerator(Agent):
@@ -102,6 +110,9 @@ tags: source, generator, stream, delay, time-series, data rows
         )
 
 
+# =================================================
+#        GenerateNumberSequence                   |
+# =================================================
 class GenerateNumberSequence(StreamGenerator):
     """
 Name: GenerateNumberSequence
@@ -173,6 +184,9 @@ tags: source, generator, stream, delay, range, time-series
         )
 
 
+# =================================================
+#      GenerateRandomIntegers                     |
+# =================================================
 class GenerateRandomIntegers(StreamGenerator):
     """
 Name: GenerateRandomIntegers
@@ -235,6 +249,9 @@ tags: source, generator, stream, random, testing, synthetic data
         )
 
 
+# =================================================
+#          GenerateFromList                        |
+# =================================================
 class GenerateFromList(StreamGenerator):
     """
 Name: GenerateFromList
@@ -295,6 +312,9 @@ tags: source, list, stream, prompts, scripted, test input
         )
 
 
+# =================================================
+#         GenerateFromFile                        |
+# =================================================
 class GenerateFromFile(StreamGenerator):
     """
 Name: GenerateFromFile
@@ -357,5 +377,91 @@ tags: source, file, text, replay, scripting, streaming
             description=description or "Streams lines from a file",
             generator_fn=self._lines_from_file,
             kwargs={"filename": filename},
+            delay=delay,
+        )
+
+# =================================================
+#          GenerateTextFromURL                    |
+# =================================================
+
+
+class GenerateTextFromURL(StreamGenerator):
+    """
+Name: GenerateTextFromURL
+
+Summary:
+A block that streams clean text content from a public URL, split by paragraph or sentence.
+
+Parameters:
+- url: The URL of a webpage with visible, public text.
+- split: Either "paragraph" or "sentence". Default: "paragraph".
+- delay: Optional delay (in seconds) between emissions.
+- name: Optional name of the block.
+- description: Optional description.
+
+Behavior:
+- Fetches content from a URL.
+- Parses visible text using BeautifulSoup.
+- Splits content into paragraphs or sentences.
+- Emits each chunk via the "out" port.
+- Sends "__STOP__" after streaming all content.
+
+Use Cases:
+- Drive sentiment or entity extraction pipelines from live content.
+- Analyze news, Wikipedia, or literature dynamically.
+- Create educational pipelines with plug-and-play input from real-world sources.
+
+Example:
+>>> net = Network(
+>>>     blocks={
+>>>         'source': GenerateTextFromURL(
+>>>             url="https://en.wikipedia.org/wiki/Artificial_intelligence",
+>>>             split="paragraph"
+>>>         ),
+>>>         'analyze': SentimentClassifierWithGPT(),
+>>>         'store': StreamToList(),
+>>>     },
+>>>     connections=[
+>>>         ('source', 'out', 'analyze', 'in'),
+>>>         ('analyze', 'out', 'store', 'in'),
+>>>     ]
+>>> )
+>>> net.run()
+>>> print(net.blocks['store'].saved)
+
+tags: url, web scraping, source, wikipedia, article, text stream
+    """
+
+    @staticmethod
+    def _fetch_text_from_url(url: str, split: str = "paragraph"):
+        try:
+            response = requests.get(url)
+            # fallback is 'html.parser'
+            soup = BeautifulSoup(response.text, 'lxml')
+            paragraphs = soup.find_all('p')
+            visible_text = "\n".join(p.get_text().strip()
+                                     for p in paragraphs if p.get_text().strip())
+
+            if split == "sentence":
+                import re
+                return (s.strip() for s in re.split(r'(?<=[.!?]) +', visible_text) if s.strip())
+            else:
+                return (p.strip() for p in visible_text.split('\n') if p.strip())
+        except Exception as e:
+            yield f"[ERROR fetching URL: {e}]"
+
+    def __init__(
+        self,
+        url: str,
+        split: str = "paragraph",
+        delay: Optional[Union[int, float]] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+    ):
+        super().__init__(
+            name=name or "GenerateTextFromURL",
+            description=description or f"Stream visible text from URL {url}",
+            generator_fn=self._fetch_text_from_url,
+            kwargs={"url": url, "split": split},
             delay=delay,
         )

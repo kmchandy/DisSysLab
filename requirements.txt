@@ -1,0 +1,19 @@
+# To download text from the Web.
+requests
+beautifulsoup4
+lxml
+
+# OpenAI API for GPT-based transformers
+openai
+
+# Environment variable support
+python-dotenv
+
+# Optional: Data manipulation and math utilities
+numpy
+
+# Optional: For plotting (future visualization blocks)
+matplotlib
+
+# Optional: If you want to run notebooks
+jupyter
