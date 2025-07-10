@@ -21,49 +21,53 @@ The classes in this module include:
 tags: transformer, stream, block, natural language, numeric, processing
 """
 
-from stream_generators import GenerateNumberSequence
 from typing import Optional
-from dsl.core import Network, StreamToList
 from dotenv import load_dotenv
 import os
 from openai import OpenAI
 from typing import Optional, Union, Callable, Any
 import inspect
 import time
-from dsl.core import Agent, Network, StreamToList
-from dsl.stream_generators import GenerateFromList
+from dsl.core import Network, Agent, SimpleAgent
+from dsl.stream_generators import GenerateNumberSequence, GenerateFromList
+from dsl.stream_recorders import StreamToList
 
 # =================================================
 #   StreamTransformer                            |
 # =================================================
 
 
-class StreamTransformer(Agent):
+class StreamTransformer(SimpleAgent):
     """
 Name: StreamTransformer
 
 Summary:
-A StreamTransformer applies a function to each incoming message and emits the result.
+A reusable block that applies a transformation function to each incoming message and
+emits the transformed result. Designed for stateless transformations.
 
 Parameters:
+- transform_fn: A callable to apply to each incoming message.
+- args: Optional positional arguments to pass to the callable.
+- kwargs: Optional keyword arguments to pass to the callable.
 - name: Optional name for the block.
-- description: Optional description.
-- transform_fn: A callable that takes one input value and returns one output.
-- args: Optional positional arguments passed to transform_fn.
-- kwargs: Optional keyword arguments passed to transform_fn.
-- delay: Optional delay (in seconds) between receiving and sending messages.
+- description: Optional description of the block.
 
 Behavior:
-- Receives input on "in", applies transform_fn to each message.
-- Emits the result on "out".
-- When "__STOP__" is received, it forwards "__STOP__" and halts.
+- Receives a message on "in".
+- Applies `transform_fn(msg, *args, **kwargs)`.
+- Sends the result to "out".
+- If an error occurs, sends "__STOP__" to "out".
 
 Use Cases:
-- Numeric or text transformations
-- Natural language interpretation
+- Stateless data transformation (e.g., text processing, numerical scaling).
+- Wrapping arbitrary Python functions into plug-and-play blocks.
 
+Example:
+>>> import numpy as np
+>>> tf = StreamTransformer(transform_fn=np.sqrt)
+>>> # transforms [1, 4, 9] into [1.0, 2.0, 3.0]
 
-tags: transformer, stream, processing, function, delay
+tags: transformer, stateless, function, stream
     """
 
     def __init__(
@@ -71,140 +75,177 @@ tags: transformer, stream, processing, function, delay
         transform_fn: Callable[..., Any],
         args: Optional[tuple] = (),
         kwargs: Optional[dict] = None,
-        delay: Optional[Union[int, float]] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
     ):
         if not callable(transform_fn):
-            raise TypeError("transform_fn must be callable")
+            raise TypeError(
+                f"transform_fn --- {transform_fn} --- must be callable")
         if kwargs is None:
             kwargs = {}
 
-        def run_fn(agent):
-            while True:
-                msg = agent.recv("in")
-                if msg == "__STOP__":
-                    agent.send("__STOP__", "out")
-                    break
-                try:
-                    result = transform_fn(msg, *args, **kwargs)
-                    agent.send(result, "out")
-                    if delay:
-                        time.sleep(delay)
-                except Exception as e:
-                    print(f"❌ StreamTransformer error: {e}")
-                    agent.send("__STOP__", "out")
-                    break
+        def handle_msg(agent, msg, _args=args, _kwargs=kwargs, _fn=transform_fn):
+            try:
+                result = _fn(msg, *_args, **_kwargs)
+                agent.send(result, "out")
+            except Exception as e:
+                print(f"❌ StreamTransformer error: {e}")
+                agent.send("__STOP__", "out")
 
         super().__init__(
             name=name or "StreamTransformer",
-            description=description or "Output message is function of input message",
-            inports=["in"],
+            description=description or "StreamTransformer: output message is function of input message",
+            inport="in",
             outports=["out"],
-            run_fn=run_fn,
+            handle_msg=handle_msg,
         )
 
 
 # =================================================
 #   WrapFunction                           |
 # =================================================
-class WrapFunction(Agent):
+class WrapFunction(SimpleAgent):
     """
-    Name: WrapFunction
+Name: WrapFunction
 
-    Summary:
-    WrapFunction encapsulates a function in a library, such as NumPy, into a block.
+Summary:
+A reusable block that wraps any callable Python function and turns it into
+an agent that applies the function to each incoming message.
 
-    Parameters:
-    - name: Optional name for the block.
-    - description: Optional description. If not provided, the function docstring is used.
-    - function: A callable function to be wrapped.
-    - args: Positional arguments to be passed to the function (after the stream input).
-    - kwargs: Keyword arguments to be passed to the function.
+Parameters:
+- func: A callable to be applied to each incoming message.
+- args: Optional positional arguments to pass to the function.
+- kwargs: Optional keyword arguments to pass to the function.
+- name: Optional name for the block.
+- description: Optional description.
 
-    Behavior:
-    - Receives one input on port "in".
-    - Applies the wrapped function to the input, optionally using args and kwargs.
-    - Emits the result on port "out".
-    - Forwards "__STOP__" if received.
+Behavior:
+- Receives a message on the "in" port.
+- Applies the function using: `func(msg, *args, **kwargs)`.
+- Sends the result to the "out" port.
+- Sends "__STOP__" if an error occurs.
 
-    Use Cases:
-    - Easily integrate existing numerical or AI functions into a streaming pipeline
-    - Convert any single-input Python function into a reusable block
-    - Rapidly prototype complex networks using external libraries
+Use Cases:
+- Plug-and-play transformation blocks for numerical, logical, or text data.
+- Quickly wrap NumPy, math, or user-defined functions into blocks.
 
-    Example:
-    >>> import numpy as np
-    >>> from dsl.core import Network, StreamToList, GenerateFromList
-    >>> net = Network(
-    >>>     blocks={
-    >>>         'input': GenerateFromList(items=[[1, 2], [3, 4]]),
-    >>>         'inverse': WrapFunction(np.linalg.inv),
-    >>>         'output': StreamToList(),
-    >>>     },
-    >>>     connections=[('input', 'out', 'inverse', 'in'),
-    >>>                  ('inverse', 'out', 'output', 'in')]
-    >>> )
-    >>> net.run()
-    >>> print(net.blocks['output'].saved)
+Example:
+>>> import numpy as np
+>>> sqrt_block = WrapFunction(np.sqrt)
+>>> # transforms [1, 4, 9] into [1.0, 2.0, 3.0]
 
-    tags: wrap, function, transform, library, numpy, plug-and-play, streaming
+Tags: function, wrapper, stream, transformer, numpy, reusable
     """
 
     def __init__(
         self,
-        function: Callable[..., Any],
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        func: Callable[[Any], Any],
         args: Optional[tuple] = (),
         kwargs: Optional[dict] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
     ):
-        if not callable(function):
-            raise TypeError("function must be callable")
+        if not callable(func):
+            raise TypeError(
+                f"WrapFunction expected a callable, got {type(func)}")
+        if kwargs is None:
+            kwargs = {}
 
-        self.function = function
-        self.args = args or ()
-        self.kwargs = kwargs or {}
-
-        # Check compatibility with inspect.signature
-        try:
-            sig = inspect.signature(function)
-            sig.bind_partial(None, *self.args, **self.kwargs)
-        except Exception as e:
-            raise ValueError(
-                f"Invalid args/kwargs for function {function.__name__}: {e}")
-
-        # Generate description from function docstring if not provided
-        doc_line = (function.__doc__ or '').strip().split('\n')[0]
-        full_description = description or f"Applies {function.__name__} — {doc_line}"
-
-        def transform_fn(value):
-            return self.function(value, *self.args, **self.kwargs)
-
-        def run_fn(agent):
-            while True:
-                msg = agent.recv("in")
-                if msg == "__STOP__":
-                    agent.send("__STOP__", "out")
-                    break
-                try:
-                    result = transform_fn(msg)
-                    agent.send(result, "out")
-                except Exception as e:
-                    print(f"❌ Error in {function.__name__}: {e}")
+        def handle_msg(agent, msg, _args=args, _kwargs=kwargs, _func=func):
+            try:
+                result = _func(msg, *_args, **_kwargs)
+                agent.send(result, "out")
+            except Exception as e:
+                print(f"❌ WrapFunction error: {e}")
+                agent.send("__STOP__", "out")
 
         super().__init__(
-            name=name or function.__name__,
-            description=full_description,
-            inports=["in"],
+            name=name or "WrapFunction",
+            description=description or f"Wraps callable: {func.__name__}",
+            inport="in",
             outports=["out"],
-            run_fn=run_fn,
+            handle_msg=handle_msg,
         )
 
+# =================================================
+#                 WrapPrompt                      |
+# =================================================
+
+
+class PromptToBlock(SimpleAgent):
+    """
+Name: PromptToBlock
+
+Summary:
+A block that wraps an LLM prompt. The block receives messages on the
+block's inport 'in' and sends the model's response to the messages
+on the block's outport 'out'.
+
+Parameters:
+- name: Optional name for the block.
+- description: Optional description.
+- prompt: A string prompt to be sent to the model.
+- model: The OpenAI model to use (e.g., "gpt-3.5-turbo").
+- temperature: Sampling temperature (default 0.7).
+
+Behavior:
+- Receives a message on "in" (can be used to trigger the prompt).
+- Sends the specified prompt to the LLM.
+- Emits the model's response on the "out" port.
+
+Use Cases:
+- LLM-based tasks like summarization, rephrasing, classification.
+- Easily configurable natural language blocks for various pipelines.
+
+Example:
+>>> prompt = "You are a helpful assistant. Summarize the user's message."
+>>> block = WrapPrompt(prompt=prompt, model="gpt-3.5-turbo")
+
+Tags: LLM, transformer, GPT, prompt, stream
+    """
+
+    def __init__(
+        self,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        prompt: Optional[str] = None,
+        model: str = "gpt-3.5-turbo",
+        temperature: float = 0.7,
+    ):
+        if prompt is None:
+            raise ValueError("WrapPrompt requires a prompt.")
+
+        self.prompt = prompt
+        self.model = model
+        self.temperature = temperature
+        self.client = get_openai_client()
+
+        def handle_msg(agent, msg):
+            try:
+                response = agent.client.chat.completions.create(
+                    model=agent.model,
+                    messages=[{"role": "user", "content": agent.prompt}],
+                    temperature=agent.temperature
+                )
+                reply = response.choices[0].message.content.strip()
+                agent.send(reply, "out")
+            except Exception as e:
+                print(f"❌ WrapPrompt error: {e}")
+                agent.send("__STOP__", "out")
+
+        super().__init__(
+            name=name or "WrapPrompt",
+            description=description or f"LLM prompt block: {prompt[:40]}...",
+            inport="in",
+            outports=["out"],
+            handle_msg=handle_msg,
+        )
 
 # =================================================
 #   TransformMultipleStreams                      |
 # =================================================
+
+
 class TransformMultipleStreams(Agent):
     """
     Name: TransformMultipleStreams

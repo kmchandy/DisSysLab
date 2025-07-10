@@ -7,14 +7,15 @@ GenerateFromList
 GenerateFromFile
 """
 
+from dsl.core import Network
+from dsl.stream_recorders import StreamToList
 import requests
-from dsl.stream_generators import StreamGenerator
 from typing import Optional, Union
 from bs4 import BeautifulSoup
-from dsl.core import Agent
 from typing import Optional, Union, Callable, Any
 import time
 import inspect
+from dsl.core import Agent
 
 # =================================================
 #          StreamGenerator                        |
@@ -465,3 +466,20 @@ tags: url, web scraping, source, wikipedia, article, text stream
             kwargs={"url": url, "split": split},
             delay=delay,
         )
+
+
+def count_up_to(n):
+    for i in range(n):
+        yield i
+
+
+net = Network(
+    blocks={
+        'gen': StreamGenerator(generator_fn=count_up_to, kwargs={'n': 3}),
+        'receiver': StreamToList(),
+    },
+    connections=[('gen', 'out', 'receiver', 'in')]
+)
+
+net.run()
+assert net.blocks['receiver'].saved == [0, 1, 2]

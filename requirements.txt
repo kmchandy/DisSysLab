@@ -1,19 +1,12 @@
-# To download text from the Web.
-requests
-beautifulsoup4
-lxml
+tqdm>=4.66.0                  # Progress bars
+
+# To download and parse text from the Web
+requests>=2.31.0
+beautifulsoup4>=4.12.2
+lxml                          # HTML/XML parsing backend for BeautifulSoup
 
 # OpenAI API for GPT-based transformers
-openai
+openai>=1.3.7
 
 # Environment variable support
-python-dotenv
-
-# Optional: Data manipulation and math utilities
-numpy
-
-# Optional: For plotting (future visualization blocks)
-matplotlib
-
-# Optional: If you want to run notebooks
-jupyter
+python-dotenv>=1.0.0
