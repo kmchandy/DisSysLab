@@ -1,0 +1,62 @@
+[
+  {
+    "class": "StreamGenerator",
+    "name": "StreamGenerator",
+    "summary": "A StreamGenerator is a block that emits values from a Python generator function.",
+    "parameters": "- name: Optional name for the block.\n- description: Optional description.\n- generator_fn (Callable[..., Generator]): \n        A generator function that yields values one at a time.\n- args: Positional arguments to pass to generator_fn.\n- kwargs: Keyword arguments to pass to generator_fn.\n- delay: Optional delay (in seconds) between each output.",
+    "behavior": "- A StreamGenerator is a block with no inports and one outport called \"out\".\n- The block emits the values produced by generator_fn.\n- If a delay is specified, the block waits for delay seconds between successive outputs.\n- When generator_fn is exhausted, the block sends the special message \"__STOP__\" on its outport and halts.\n\nUse Cases:\n- Emit a sequence of numbers, events, or data rows\n- Simulate time-series data or sensor output\n- Drive downstream agents in a message-passing network",
+    "use_cases": "- Emit a sequence of numbers, events, or data rows\n- Simulate time-series data or sensor output\n- Drive downstream agents in a message-passing network",
+    "example": ">>> def count_up_to(n):\n>>>     for i in range(n):\n>>>         yield i\n\n>>> net = Network(\n>>>     blocks={\n>>>         'gen': StreamGenerator(generator_fn=count_up_to, kwargs={'n': 3}),\n>>>         'receiver': StreamToList(),\n>>>     },\n>>>     connections=[('gen', 'out', 'receiver', 'in')]\n>>> )\n>>> net.run()\n>>> assert net.blocks['receiver'].saved == [0, 1, 2]",
+    "tags": "source, generator, stream, delay, time-series, data rows"
+  },
+  {
+    "class": "GenerateNumberSequence",
+    "name": "GenerateNumberSequence",
+    "summary": "GenerateNumberSequence emits values in a range from low to high with the specified step_size",
+    "parameters": "- name: Optional name for the block.\n- description: Optional description.\n- low: int or float. Low end of the range of values.\n- high: int or float. High end of the range of values.\n- step_size: int or float. Step size in generating the range of values.\n- delay: Optional delay (in seconds) between each output.",
+    "behavior": "- A GenerateNumberSequence is a block with no inports and one outport called \"out\".\n- The block sends values from low to high with the specifed step size on port \"out\"\n- If a delay is specified, the block waits for delay seconds between successive outputs.\n- After sending all values in the range the block the block sends the special message \n  \"__STOP__\" on its outport and halts.\n\nUse Cases:\n- Emit a sequence of numbers\n- Simulate time-series data or sensor output\n- Drive downstream agents in a message-passing network",
+    "use_cases": "- Emit a sequence of numbers\n- Simulate time-series data or sensor output\n- Drive downstream agents in a message-passing network",
+    "example": ">>> net = Network(\n>>>     blocks={\n>>>         'gen': GenerateNumberSequence(low=0, high=3, step_size=1),\n>>>         'receiver': StreamToList(),\n>>>     },\n>>>     connections=[('gen', 'out', 'receiver', 'in')]\n>>> )\n>>> net.run()\n>>> assert net.blocks['receiver'].saved == [0, 1, 2]",
+    "tags": "source, generator, stream, delay, range, time-series"
+  },
+  {
+    "class": "GenerateRandomIntegers",
+    "name": "GenerateRandomIntegers",
+    "summary": "A block that emits a sequence of random integers in the range [lo, hi].",
+    "parameters": "- name: Optional name for the block.\n- description: Optional description.\n- count: Number of random integers to generate.\n- lo: Lower bound (inclusive).\n- hi: Upper bound (inclusive).\n- delay: Optional delay (in seconds) between outputs.",
+    "behavior": "- Emits `count` random integers in the range [lo, hi].\n- Sends each value on its \"out\" port.\n- After emitting all values, sends \"__STOP__\" and halts.\n\nUse Cases:\n- Simulate random event streams\n- Generate synthetic input for downstream blocks\n- Demonstrate randomness in distributed systems",
+    "use_cases": "- Simulate random event streams\n- Generate synthetic input for downstream blocks\n- Demonstrate randomness in distributed systems",
+    "example": ">>> net = Network(\n>>>     blocks={\n>>>         'gen': GenerateRandomIntegers(count=5, lo=10, hi=20),\n>>>         'receiver': StreamToList(),\n>>>     },\n>>>     connections=[('gen', 'out', 'receiver', 'in')]\n>>> )\n>>> net.run()\n>>> assert len(net.blocks['receiver'].saved) == 5",
+    "tags": "source, generator, stream, random, testing, synthetic data"
+  },
+  {
+    "class": "GenerateFromList",
+    "name": "GenerateFromList",
+    "summary": "A block that emits values from a predefined list.",
+    "parameters": "- name: Optional name for the block.\n- description: Optional description.\n- items: List of values to emit.\n- delay: Optional delay (in seconds) between outputs.",
+    "behavior": "- Emits the items one at a time on its \"out\" port.\n- Sends \"__STOP__\" after emitting the last item.\n\nUse Cases:\n- Provide a fixed set of prompts or commands\n- Simulate user input or scripted sequences\n- Control test cases or training data in pipelines",
+    "use_cases": "- Provide a fixed set of prompts or commands\n- Simulate user input or scripted sequences\n- Control test cases or training data in pipelines",
+    "example": ">>> net = Network(\n>>>     blocks={\n>>>         'gen': GenerateFromList(items=[\n>>>             \"What is the capital of France?\",\n>>>             \"What did Joan of Arc do?\"\n>>>         ]),\n>>>         'receiver': StreamToList(),\n>>>     },\n>>>     connections=[('gen', 'out', 'receiver', 'in')]\n>>> )\n>>> net.run()\n>>> assert len(net.blocks['receiver'].saved) == 2",
+    "tags": "source, list, stream, prompts, scripted, test input"
+  },
+  {
+    "class": "GenerateFromFile",
+    "name": "GenerateFromFile",
+    "summary": "A block that emits lines from a text file, one per output message.",
+    "parameters": "- name: Optional name for the block.\n- description: Optional description.\n- filename: Path to the text file.\n- delay: Optional delay (in seconds) between outputs.",
+    "behavior": "- Emits one line at a time from the specified file.\n- Strips whitespace from each line.\n- Skips blank lines.\n- Sends \"__STOP__\" after the file is fully read.\n\nUse Cases:\n- Stream log files or CSV rows\n- Replay recorded sensor data or transcripts\n- Drive simulations from text-based input",
+    "use_cases": "- Stream log files or CSV rows\n- Replay recorded sensor data or transcripts\n- Drive simulations from text-based input",
+    "example": ">>> with tempfile.NamedTemporaryFile(mode='w+', delete=False) as tmp:\n>>>     tmp.write(\"apple\nbanana\ncarrot\n\")\n>>>     tmp_path = tmp.name\n\n>>> net = Network(\n>>>     blocks={\n>>>         'gen': GenerateFromFile(filename=tmp_path),\n>>>         'receiver': StreamToList(),\n>>>     },\n>>>     connections=[('gen', 'out', 'receiver', 'in')]\n>>> )\n>>> net.run()\n>>> assert net.blocks['receiver'].saved == ['apple', 'banana', 'carrot']",
+    "tags": "source, file, text, replay, scripting, streaming"
+  },
+  {
+    "class": "GenerateTextFromURL",
+    "name": "GenerateTextFromURL",
+    "summary": "A block that streams clean text content from a public URL, split by paragraph or sentence.",
+    "parameters": "- url: The URL of a webpage with visible, public text.\n- split: Either \"paragraph\" or \"sentence\". Default: \"paragraph\".\n- delay: Optional delay (in seconds) between emissions.\n- name: Optional name of the block.\n- description: Optional description.",
+    "behavior": "- Fetches content from a URL.\n- Parses visible text using BeautifulSoup.\n- Splits content into paragraphs or sentences.\n- Emits each chunk via the \"out\" port.\n- Sends \"__STOP__\" after streaming all content.\n\nUse Cases:\n- Drive sentiment or entity extraction pipelines from live content.\n- Analyze news, Wikipedia, or literature dynamically.\n- Create educational pipelines with plug-and-play input from real-world sources.",
+    "use_cases": "- Drive sentiment or entity extraction pipelines from live content.\n- Analyze news, Wikipedia, or literature dynamically.\n- Create educational pipelines with plug-and-play input from real-world sources.",
+    "example": ">>> net = Network(\n>>>     blocks={\n>>>         'source': GenerateTextFromURL(\n>>>             url=\"https://en.wikipedia.org/wiki/Artificial_intelligence\",\n>>>             split=\"paragraph\"\n>>>         ),\n>>>         'analyze': SentimentClassifierWithGPT(),\n>>>         'store': StreamToList(),\n>>>     },\n>>>     connections=[\n>>>         ('source', 'out', 'analyze', 'in'),\n>>>         ('analyze', 'out', 'store', 'in'),\n>>>     ]\n>>> )\n>>> net.run()\n>>> print(net.blocks['store'].saved)",
+    "tags": "url, web scraping, source, wikipedia, article, text stream"
+  }
+]

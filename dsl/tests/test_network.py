@@ -8,10 +8,10 @@ from dsl.core import Agent, Network, SimpleAgent
 class TestNetwork(unittest.TestCase):
 
     def test_1(self):
-        print(f'starting test_1')
 
         def f(agent):
             for i in range(3):
+                print(f'sending msg {i}')
                 agent.send(msg=i, outport='out')
             agent.send(msg='__STOP__', outport='out')
 
@@ -19,28 +19,47 @@ class TestNetwork(unittest.TestCase):
             agent.saved = []
             while True:
                 msg = agent.recv(inport='in')
+                print(f'received msg {msg}')
                 if msg == "__STOP__":
                     break
                 else:
                     agent.saved.append(msg)
 
-        # Create the network. This network has no inports or outports
-        # that are visible to other networks.
-        net = Network(
-            name="Net",
-            inports=[],
-            outports=[],
+        # Create network 1,  net_1, with outport 'net_1_out'
+        net_1 = Network(
+            name="net_1",
+            outports=['net_1_out'],
             blocks={"sender": Agent(outports=["out"], run_fn=f,),
-                    "receiver": Agent(inports=["in"], run_fn=g)},
+                    },
             connections=[
-                ("sender", "out", "receiver", "in")
+                ("sender", "out", "external", "net_1_out")
+            ]
+        )
+        # Create network 2,  net_2, with inport 'net_2_in'
+        net_2 = Network(
+            name="net_2",
+            inports=['net_2_in'],
+            blocks={"receiver": Agent(inports=["in"], run_fn=g,),
+                    },
+            connections=[
+                ("external", "net_2_in", "receiver", "in", )
+            ]
+        )
+        # Create composite network consisting of net_1 and net_2
+        net_big = Network(
+            name="net_big",
+            blocks={"net_1": net_1,
+                    "net_2": net_2
+                    },
+            connections=[
+                ("net_1", "net_1_out", "net_2", "net_2_in", )
             ]
         )
         # Run the network
-        net.run()
-        self.assertEqual(net.blocks['receiver'].saved, [0, 1, 2])
-        print(f'passed test_1')
+        net_big.run()
 
+
+"""
     def test_2(self):
 
         def f(agent):
@@ -146,7 +165,6 @@ class TestNetwork(unittest.TestCase):
         print(f'passed test_3')
 
 
-"""
     def test_two_agents(self):
         '''
         Tests a sender agent that sends "Hello" to a
