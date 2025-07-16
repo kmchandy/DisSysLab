@@ -27,7 +27,7 @@ class TestNetwork(unittest.TestCase):
         # Create the network. This network has no inports or outports
         # that are visible to other networks.
         net = Network(
-            name="Net",
+            name="net_1",
             inports=[],
             outports=[],
             blocks={"sender": Agent(outports=["out"], run_fn=f,),
@@ -42,6 +42,7 @@ class TestNetwork(unittest.TestCase):
         print(f'passed test_1')
 
     def test_2(self):
+        print(f'starting test_2')
 
         def f(agent):
             for i in range(3):
@@ -70,7 +71,7 @@ class TestNetwork(unittest.TestCase):
         # Create the network. This network has no inports or outports
         # that are visible to other networks.
         net = Network(
-            name="Net",
+            name="net_2",
             blocks={"sender": Agent(outports=["out"], run_fn=f,),
                     "receiver": Agent(inports=["in"], run_fn=g),
                     "transformer": Agent(inports=["in"], outports=["out"], run_fn=h),
@@ -86,6 +87,8 @@ class TestNetwork(unittest.TestCase):
         print(f'passed test_2')
 
     def test_3(self):
+        print(f'starting test_3')
+
         def f_0(agent):
             agent.n = 3
             for i in range(agent.n):
@@ -125,6 +128,7 @@ class TestNetwork(unittest.TestCase):
                         agent.send(msg=msg_0 * msg_1, outport='prod')
 
         net = Network(
+            name="net_3",
             blocks={
                 "sender_0": Agent(outports=['out'], run_fn=f_0),
                 "sender_1": Agent(outports=['out'], run_fn=f_1),
@@ -147,6 +151,7 @@ class TestNetwork(unittest.TestCase):
 
 
 """
+
     def test_two_agents(self):
         '''
         Tests a sender agent that sends "Hello" to a
