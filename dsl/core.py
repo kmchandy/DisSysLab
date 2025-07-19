@@ -308,12 +308,14 @@ Tags: agent, message-passing
         inports: Optional[List[str]] = None,
         outports: Optional[List[str]] = None,
         run: Optional[Callable] = None,
+        parameters: Optional[Dict[str, Any]] = None,
     ):
         inports = inports or []
         outports = outports or []
-        parameters = {}
         # Call RunnableBlock constructor
-        super().__init__(name, description, inports, outports, run, parameters)
+        super().__init__(name, description, inports, outports, run)
+
+        self.parameters = parameters or {}
 
         # Each inport 'p' is associated with its own queue in_q['p']
         in_q = {inport: SimpleQueue() for inport in inports}
@@ -336,7 +338,6 @@ Tags: agent, message-passing
             raise NotImplementedError(
                 f"Agent '{name}' must define a run(agent, **kwargs) method."
             )
-        self.parameters = parameters
         if self.parameters:
             if not isinstance(self.parameters, dict):
                 raise TypeError(f'parameters of agent {name} must be a dict.')
@@ -431,21 +432,21 @@ Tags: agent, single inport, handle one message at a time
         self.parameters = parameters
 
         # Define run method as a closure inside __init__
-        def run_method(self_):
+        def run_method(self_, **kwargs):
             if self_.init_fn:
-                self_.init_fn(self_, **self.parameters)
+                self_.init_fn(self_, **self_.parameters)
 
             if not self_.handle_msg:
-                self.stop()
+                self_.stop()
                 return
 
             while True:
                 msg = self_.recv(self_.inport)
                 if msg == "__STOP__":
-                    self.stop()
+                    self_.stop()
                     break
                 else:
-                    self_.handle_msg(self_, msg, **self.parameters)
+                    self_.handle_msg(self_, msg, **self_.parameters)
 
         # Call Agent constructor
         super().__init__(
@@ -759,7 +760,7 @@ plug-and-play, composition
         # Finished step 5.
 
     # -----------------------------------------------------------------------------
-    def compile(self, parameters):
+    def compile(self, parameters=None):
         """
         Compile the network into runnable blocks and executable connections.
         This block (self) is treated as the root of a block tree.
@@ -785,7 +786,7 @@ plug-and-play, composition
         self.runnable_blocks = {}
         self.graph_connections = []
         self.unresolved_connections = []
-        self.parameters = parameters
+        self.parameters = parameters or {}
 
         self.root_path_node = PathNode(self, self.name)
         self.frontier = deque([self.root_path_node])
