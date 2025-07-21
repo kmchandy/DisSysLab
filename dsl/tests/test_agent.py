@@ -3,12 +3,14 @@ import unittest
 from multiprocessing import SimpleQueue
 import os
 from dsl.core import Agent, Network, SimpleAgent
+from dsl.block_lib.stream_generators import StreamGenerator
+from dsl.block_lib.stream_recorders import StreamToList, StreamToFile, StreamCopy
+from dsl.block_lib.stream_transformers import StreamTransformer
 
 
 class TestNetwork(unittest.TestCase):
 
     def test_1(self):
-        print(f'starting test_1')
 
         def f(agent):
             for i in range(3):
@@ -30,19 +32,19 @@ class TestNetwork(unittest.TestCase):
             name="net_1",
             inports=[],
             outports=[],
-            blocks={"sender": Agent(outports=["out"], run_fn=f,),
-                    "receiver": Agent(inports=["in"], run_fn=g)},
+            blocks={"sender": Agent(outports=["out"], run=f,),
+                    "receiver": Agent(inports=["in"], run=g)},
             connections=[
                 ("sender", "out", "receiver", "in")
             ]
         )
+        net.compile()
         # Run the network
         net.run()
         self.assertEqual(net.blocks['receiver'].saved, [0, 1, 2])
-        print(f'passed test_1')
+        print(f'test_1 passed')
 
     def test_2(self):
-        print(f'starting test_2')
 
         def f(agent):
             for i in range(3):
@@ -72,9 +74,9 @@ class TestNetwork(unittest.TestCase):
         # that are visible to other networks.
         net = Network(
             name="net_2",
-            blocks={"sender": Agent(outports=["out"], run_fn=f,),
-                    "receiver": Agent(inports=["in"], run_fn=g),
-                    "transformer": Agent(inports=["in"], outports=["out"], run_fn=h),
+            blocks={"sender": Agent(outports=["out"], run=f,),
+                    "receiver": Agent(inports=["in"], run=g),
+                    "transformer": Agent(inports=["in"], outports=["out"], run=h),
                     },
             connections=[
                 ("sender", "out", "transformer", "in"),
@@ -82,12 +84,12 @@ class TestNetwork(unittest.TestCase):
             ]
         )
         # Run the network
+        net.compile()
         net.run()
         self.assertEqual(net.blocks['receiver'].saved, [0, 2, 4])
-        print(f'passed test_2')
+        print(f'test_2 passed')
 
     def test_3(self):
-        print(f'starting test_3')
 
         def f_0(agent):
             agent.n = 3
@@ -130,11 +132,11 @@ class TestNetwork(unittest.TestCase):
         net = Network(
             name="net_3",
             blocks={
-                "sender_0": Agent(outports=['out'], run_fn=f_0),
-                "sender_1": Agent(outports=['out'], run_fn=f_1),
-                "transformer": Agent(inports=['in_0', 'in_1'], outports=['sum', 'prod'], run_fn=h),
-                "receiver_0": Agent(inports=['in'], run_fn=g),
-                "receiver_1": Agent(inports=['in'], run_fn=g),
+                "sender_0": Agent(outports=['out'], run=f_0),
+                "sender_1": Agent(outports=['out'], run=f_1),
+                "transformer": Agent(inports=['in_0', 'in_1'], outports=['sum', 'prod'], run=h),
+                "receiver_0": Agent(inports=['in'], run=g),
+                "receiver_1": Agent(inports=['in'], run=g),
             },
             connections=[
                 ("sender_0", "out", "transformer", "in_0"),
@@ -144,15 +146,14 @@ class TestNetwork(unittest.TestCase):
             ]
         )
 
+        net.compile()
         net.run()
+
         self.assertEqual(net.blocks['receiver_0'].saved, [0, 2, 6])
         self.assertEqual(net.blocks['receiver_1'].saved, [0, 1, 8])
-        print(f'passed test_3')
+        print(f'test_3 passed')
 
-
-"""
-
-    def test_two_agents(self):
+    def test_4(self):
         '''
         Tests a sender agent that sends "Hello" to a
         receiver agent. Similar to test_two_simple_agents
@@ -176,9 +177,9 @@ class TestNetwork(unittest.TestCase):
 
         # Instantiate the agents
         sender = Agent(name="sends_hello_agent", outports=[
-                       "output"], run_fn=sender_run)
+                       "output"], run=sender_run)
         receiver = Agent(name='receiver', inports=[
-                         "input"], run_fn=receiver_run)
+                         "input"], run=receiver_run)
 
         # Create the network with two blocks, sender and receiver
         blocks = {"sender": sender, "receiver": receiver}
@@ -186,15 +187,15 @@ class TestNetwork(unittest.TestCase):
         net = Network(name="net", blocks=blocks, connections=connections)
 
         # Run the network
+        net.compile()
         net.run()
 
         # Check run
         self.assertEqual(received, ["Hello"])
-        print(f'passed test_two_agents')
+        print(f'test_4 passed')
 
-
-
-    def test_merge_agent(self):
+    def test_5(self):
+        print(f'test_5 starting')
         '''
         Tests an agent that receives messages from
         two inports.
@@ -233,34 +234,21 @@ class TestNetwork(unittest.TestCase):
         received = []
 
         def receiver_run(self):
-            # received_stop_from is the set of agents that
-            # sent '__STOP__' messages to this agent.
-            received_stop_from = set()
-            while True:
-                msg = self.recv(inport="input")
-                msg_contents = msg['message']
-                msg_sender = msg['sender']
-                if msg_contents != "__STOP__":
-                    received.append(msg_contents)
-                elif msg_sender not in received_stop_from:
-                    # Add msg_sender to the set of agents
-                    # that have sent __STOP__ messages.
-                    received_stop_from.add(msg_sender)
-                    if len(received_stop_from) == 2:
-                        break
-                else:
-                    # The same sender is sending multiple stops.
-                    pass
+            hello_msg = self.recv("hello_port")
+            received.append(hello_msg)
+            world_msg = self.recv("world_port")
+            received.append(world_msg)
+            print(f"received = {received}")
 
         # Instantiate the agents.
         sender_hello_agent = Agent(
-            name="sends_hello", outports=["out"], run_fn=sender_hello_run
+            name="sends_hello", outports=["out"], run=sender_hello_run
         )
         sender_world_agent = Agent(
-            name="sends_world", outports=["out"], run_fn=sender_world_run
+            name="sends_world", outports=["out"], run=sender_world_run
         )
         receiver = Agent(name='receiver', inports=[
-                         "input"], run_fn=receiver_run)
+                         "hello_port", "world_port"], run=receiver_run)
 
         # Create the network
         blocks = {
@@ -268,389 +256,421 @@ class TestNetwork(unittest.TestCase):
             "sender_hello_agent": sender_hello_agent,
             "receiver": receiver}
         connections = [
-            ["sender_world_agent", "out", "receiver", "input"],
-            ["sender_hello_agent", "out", "receiver", "input"],
+            ["sender_world_agent", "out", "receiver", "world_port"],
+            ["sender_hello_agent", "out", "receiver", "hello_port"],
         ]
         net = Network(name="net", blocks=blocks, connections=connections)
 
         # Run the network
+        net.compile()
         net.run()
 
         # Check that network runs correctly
-        self.assertEqual(set(received), {'hello', 'world'})
-        print(f'passed test_merge_agent')
+        self.assertEqual(received, {'helloworld'})
+        print(f'test_5 passed')
 
-    def test_network_check_validation(self):
-        sender = SimpleAgent(name="Sender", outports=["out"])
-        receiver = SimpleAgent(name="Receiver", inport="in")
+        #     def test_6(self):
+        #         print(f'test_6 starting')
+        #         receiver = SimpleAgent(name="Receiver", inport="in")
 
-        # The invalid port 'bad_out' will trigger an error during Network construction
-        with self.assertRaises(RuntimeError) as context:
-            net = Network(
-                name="BadNet",
-                inports=[],
-                outports=[],
-                blocks={
-                    "sender": SimpleAgent(name="Sender", outports=["out"]),
-                    "receiver": receiver},
-                connections=[
-                    ("sender", "bad_out", "receiver", "in")
-                ]
-            )
+        #         # The invalid port 'bad_out' will trigger an error during Network construction
+        #         with self.assertRaises(RuntimeError) as context:
+        #             net = Network(
+        #                 name="BadNet",
+        #                 inports=[],
+        #                 outports=[],
+        #                 blocks={
+        #                     "sender": SimpleAgent(name="Sender", outports=["out"]),
+        #                     "receiver": receiver},
+        #                 connections=[
+        #                     ("sender", "bad_out", "receiver", "in")
+        #                 ]
+        #             )
 
-        # Optional: verify error message contains helpful hints
-        self.assertIn("bad_out", str(context.exception))
-        self.assertIn("failed", str(context.exception))
-        print(f'passed test_network_check_validation')
+        #         # Optional: verify error message contains helpful hints
+        #         self.assertIn("bad_out", str(context.exception))
+        #         self.assertIn("failed", str(context.exception))
+        #         print(f'test_6 passed')
 
+        # class Test7(unittest.TestCase):
+        #     def test_stream_generator_range(self):
 
-class TestStreamAgents(unittest.TestCase):
-    def test_stream_generator_range(self):
+        #         def emit_range():
+        #             for i in range(5):
+        #                 yield i
 
-        def emit_range():
-            for i in range(5):
-                yield i
+        #         # Create the network
+        #         net = Network(
+        #             name="net",
+        #             blocks={
+        #                 'stream_generator_agent': StreamGenerator(
+        #                     generator_fn=emit_range
+        #                 ),
+        #                 'receiver': StreamToList(),
+        #             },
+        #             connections=[
+        #                 ('stream_generator_agent', 'out', 'receiver', 'in')
+        #             ]
+        #         )
 
-        # Create the network
-        net = Network(
-            name="net",
-            blocks={
-                'stream_generator_agent': StreamGenerator(
-                    generator_fn=emit_range
-                ),
-                'receiver': StreamToList(),
-            },
-            connections=[
-                ('stream_generator_agent', 'out', 'receiver', 'in')
-            ]
-        )
+        #         # Run the network
+        #         net.compile()
+        #         net.run()
 
-        # Run the network
-        net.run()
+        #         # Check that network runs correctly
+        #         self.assertEqual(
+        #             net.blocks['receiver'].saved, [0, 1, 2, 3, 4])
+        #         print(f'test_7 passed')
 
-        # Check that network runs correctly
-        self.assertEqual(
-            net.blocks['receiver'].saved, [0, 1, 2, 3, 4])
-        print(f'passed test_stream_generator')
+        # class TestStreamAgentDouble(unittest.TestCase):
+        #     def test_8(self):
 
+        #         def emit_range():
+        #             for i in range(7):
+        #                 yield i
 
-class TestStreamAgentDouble(unittest.TestCase):
-    def test_transform_stream_doubles_values_version_2(self):
-        print(f'starting test_transform_stream_doubles_values')
+        #         def handle_msg(self, msg):
+        #             self.send(2*msg, outport='out')
 
-        def emit_range():
-            for i in range(7):
-                yield i
+        #         # Instantiate the agents
+        #         stream_generator_agent = StreamGenerator(
+        #             name="range_generator",
+        #             generator_fn=emit_range
+        #         )
+        #         checking_agent = SimpleAgent(
+        #             inport='in',
+        #             outports=['out'],
+        #             init_fn=None,
+        #             handle_msg=handle_msg
+        #         )
+        #         receiver = StreamToList()
 
-        def handle_msg(self, msg):
-            self.send(2*msg, outport='out')
+        #         net = Network(
+        #             name="Net",
+        #             inports=[],
+        #             outports=[],
+        #             blocks={
+        #                 "stream_generator": stream_generator_agent,
+        #                 "checking_agent": checking_agent,
+        #                 "receiver": receiver},
+        #             connections=[
+        #                 ("stream_generator", "out", "checking_agent", "in"),
+        #                 ("checking_agent", "out", "receiver", "in")
+        #             ]
+        #         )
+        #         # Run the network
+        #         net.compile()
+        #         net.run()
+        #         # Check that network runs correctly
+        #         self.assertEqual(receiver.saved, [0, 2, 4, 6, 8, 10, 12])
+        #         print(f'test_8 passed')
 
-        # Instantiate the agents
-        stream_generator_agent = StreamGenerator(
-            name="range_generator",
-            generator_fn=emit_range
-        )
-        checking_agent = SimpleAgent(
-            inport='in',
-            outports=['out'],
-            init_fn=None,
-            handle_msg=handle_msg
-        )
-        receiver = StreamToList()
+        # class TestStreamTransformer(unittest.TestCase):
 
-        net = Network(
-            name="Net",
-            inports=[],
-            outports=[],
-            blocks={
-                "stream_generator": stream_generator_agent,
-                "checking_agent": checking_agent,
-                "receiver": receiver},
-            connections=[
-                ("stream_generator", "out", "checking_agent", "in"),
-                ("checking_agent", "out", "receiver", "in")
-            ]
-        )
-        # Run the network
-        net.run()
-        # Check that network runs correctly
-        self.assertEqual(receiver.saved, [0, 2, 4, 6, 8, 10, 12])
-        print(f'passed test_transform_stream_doubles_values_version_2')
+        #     def count_up_to(n):
+        #         for i in range(n):
+        #             yield i
 
+        #     net = Network(
+        #         name='net',
+        #         blocks={
+        #             'gen': StreamGenerator(generator_fn=count_up_to, kwargs={'n': 3}),
+        #             'receiver': StreamToList(),
+        #         },
+        #         connections=[('gen', 'out', 'receiver', 'in')]
+        #     )
+        #     net.compile()
+        #     net.run()
+        #     assert net.blocks['receiver'].saved == [0, 1, 2]
 
-class TestStreamTransformer(unittest.TestCase):
-    print(f'Starting TestStreamTransformer')
+        #     def test_9(self):
+        #         print(f'test_9 starting')
 
-    def count_up_to(n):
-        for i in range(n):
-            yield i
+        #         def emit_range():
+        #             for i in range(5):
+        #                 yield i
 
-    net = Network(
-        blocks={
-            'gen': StreamGenerator(generator_fn=count_up_to, kwargs={'n': 3}),
-            'receiver': StreamToList(),
-        },
-        connections=[('gen', 'out', 'receiver', 'in')]
-    )
+        #         receiver = StreamToList()
 
-    net.run()
-    assert net.blocks['receiver'].saved == [0, 1, 2]
-    print(f'---------------------------')
+        #         net = Network(
+        #             name="double_net",
+        #             blocks={
+        #                 'stream_generator_agent': StreamGenerator(
+        #                     generator_fn=emit_range
+        #                 ),
+        #                 'receiver': receiver,
+        #                 'transformer': StreamTransformer(
+        #                     transform_fn=lambda v: 2*v
+        #                 ),
+        #             },
+        #             connections=[
+        #                 ('stream_generator_agent', 'out', 'transformer', 'in'),
+        #                 ('transformer', 'out', 'receiver', 'in')
+        #             ]
+        #         )
+        #         net.compile()
+        #         net.run()
+        #         self.assertEqual(receiver.saved, [0, 2, 4, 6, 8])
+        #         print(f'test_9 passed')
 
-    def test_transform_stream_doubles_values(self):
-        def emit_range():
-            for i in range(5):
-                yield i
+        # class TestStreamCopy(unittest.TestCase):
+        #     def test_10(self):
+        #         def emit_range():
+        #             for i in range(3):
+        #                 yield i
 
-        receiver = StreamToList()
+        #         # Two collectors to verify both output streams receive data
+        #         collector_main = StreamToList(name="main_collector")
+        #         collector_watch = StreamToList(name="watch_collector")
 
-        net = Network(
-            name="double_net",
-            blocks={
-                'stream_generator_agent': StreamGenerator(
-                    generator_fn=emit_range
-                ),
-                'receiver': receiver,
-                'transformer': StreamTransformer(
-                    transform_fn=lambda v: 2*v
-                ),
-            },
-            connections=[
-                ('stream_generator_agent', 'out', 'transformer', 'in'),
-                ('transformer', 'out', 'receiver', 'in')
-            ]
-        )
-        net.run()
-        self.assertEqual(receiver.saved, [0, 2, 4, 6, 8])
-        print(f'passed test_stream_generator')
+        #         net = Network(
+        #             name="copy_test_net",
+        #             blocks={
+        #                 "generator": StreamGenerator(
+        #                     name="emitter",
+        #                     generator_fn=emit_range,
+        #                 ),
+        #                 "copier": StreamCopy(name="stream_tee"),
+        #                 "main_sink": collector_main,
+        #                 "watch_sink": collector_watch,
+        #             },
+        #             connections=[
+        #                 ("generator", "out", "copier", "in"),
+        #                 ("copier", "main", "main_sink", "in"),
+        #                 ("copier", "watch", "watch_sink", "in"),
+        #             ]
+        #         )
+        #         net.compile()
+        #         net.run()
+        #         self.assertEqual(collector_main.saved, [0, 1, 2])
+        #         self.assertEqual(collector_watch.saved, [0, 1, 2])
+        #         print(f'test_10 passed')
 
+        # class TestStreamToFileCopy(unittest.TestCase):
+        #     def test_11(self):
+        #         print(f'test_11 starting')
+        #         # Temporary log file
+        #         log_file = "test_stream_log.txt"
 
-class TestStreamCopy(unittest.TestCase):
-    def test_stream_copy_duplicates_messages(self):
-        def emit_range():
-            for i in range(3):
-                yield i
+        #         # Clean up file if exists
+        #         if os.path.exists(log_file):
+        #             os.remove(log_file)
 
-        # Two collectors to verify both output streams receive data
-        collector_main = StreamToList(name="main_collector")
-        collector_watch = StreamToList(name="watch_collector")
+        #         def emit_range():
+        #             for i in range(3):
+        #                 yield i
 
-        net = Network(
-            name="copy_test_net",
-            blocks={
-                "generator": StreamGenerator(
-                    name="emitter",
-                    generator_fn=emit_range,
-                ),
-                "copier": StreamCopy(name="stream_tee"),
-                "main_sink": collector_main,
-                "watch_sink": collector_watch,
-            },
-            connections=[
-                ("generator", "out", "copier", "in"),
-                ("copier", "main", "main_sink", "in"),
-                ("copier", "watch", "watch_sink", "in"),
-            ]
-        )
+        #         net = Network(
+        #             name="copy_file_net",
+        #             blocks={
+        #                 "generator": StreamGenerator(
+        #                     name="generator", generator_fn=emit_range
+        #                 ),
+        #                 "logger": StreamToFile(filename=log_file),
+        #                 "receiver": StreamToList(),
+        #             },
+        #             connections=[
+        #                 ("generator", "out", "logger", "in"),
+        #                 ("logger", "out", "receiver", "in"),
+        #             ],
+        #         )
 
-        net.run()
-        self.assertEqual(collector_main.saved, [0, 1, 2])
-        self.assertEqual(collector_watch.saved, [0, 1, 2])
+        #         net.compile()
+        #         net.run()
 
+        #         # Check list capture
+        #         self.assertEqual(net.blocks['receiver'].saved, [0, 1, 2])
 
-class TestStreamToFileCopy(unittest.TestCase):
-    def test_stream_to_file_copy(self):
-        # Temporary log file
-        log_file = "test_stream_log.txt"
+        #         # Check file contents
+        #         with open(log_file, "r") as f:
+        #             lines = f.read().splitlines()
+        #         self.assertEqual(lines, ["0", "1", "2"])
 
-        # Clean up file if exists
-        if os.path.exists(log_file):
-            os.remove(log_file)
+        #         # Clean up file
+        #         os.remove(log_file)
+        #         print(f'test_11 passed')
 
-        def emit_range():
-            for i in range(3):
-                yield i
+        # class TestSimplestAgent(unittest.TestCase):
+        #     def test_12(self):
+        #         print(f'test_12 starting')
 
-        net = Network(
-            name="copy_file_net",
-            blocks={
-                "generator": StreamGenerator(
-                    name="generator", generator_fn=emit_range
-                ),
-                "logger": StreamToFileCopy(filepath=log_file),
-                "receiver": StreamToList(),
-            },
-            connections=[
-                ("generator", "out", "logger", "in"),
-                ("logger", "out", "receiver", "in"),
-            ],
-        )
+        #         def f(self):
+        #             self.n = 3
+        #             for i in range(self.n):
+        #                 self.send(msg=i, outport='out')
+        #             self.send(msg='__STOP__', outport='out')
 
-        net.run()
+        #         def g(self):
+        #             self.saved = []
+        #             while True:
+        #                 msg = self.recv(inport='in')
+        #                 if msg == "__STOP__":
+        #                     break
+        #                 else:
+        #                     self.saved.append(msg)
 
-        # Check list capture
-        self.assertEqual(net.blocks['receiver'].saved, [0, 1, 2])
+        #         net = Network(
+        #             name='net',
+        #             blocks={
+        #                 "sender": Agent(outports=['out'], run=f),
+        #                 "receiver": Agent(inports=['in'], run=g),
+        #             },
+        #             connections=[
+        #                 ("sender", "out", "receiver", "in")
+        #             ]
+        #         )
+        #         net.compile()
+        #         net.run()
+        #         self.assertEqual(net.blocks['receiver'].saved, [0, 1, 2])
+        #         print(f'test_12 passed')
 
-        # Check file contents
-        with open(log_file, "r") as f:
-            lines = f.read().splitlines()
-        self.assertEqual(lines, ["0", "1", "2"])
+        #         net = Network(
+        #             name='net',
+        #             blocks={
+        #                 "sender": Agent(outports=['out'], run=f),
+        #                 "receiver": Agent(inports=['in'], run=g),
+        #             },
+        #             connections=[
+        #                 ("sender", "out", "receiver", "in")
+        #             ]
+        #         )
+        #         net.compile()
+        #         net.run()
+        #         self.assertEqual(net.blocks['receiver'].saved, [0, 1, 2])
+        #         print(f'test_13 passed')
 
-        # Clean up file
-        os.remove(log_file)
+        # class TestSimpleTransformerAgent(unittest.TestCase):
+        #     def test_14(self):
+        #         print(f'test_14 starting')
 
-        print(f'passed TestStreamToFileCopy')
+        #         def f(self):
+        #             self.n = 3
+        #             for i in range(self.n):
+        #                 self.send(msg=i, outport='out')
+        #             self.send(msg='__STOP__', outport='out')
 
+        #         def g(self):
+        #             self.saved = []
+        #             while True:
+        #                 msg = self.recv(inport='in')
+        #                 if msg == "__STOP__":
+        #                     break
+        #                 else:
+        #                     self.saved.append(msg)
 
-class TestSimplestAgent(unittest.TestCase):
-    def test_simplest_agent(self):
-        def f(self):
-            self.n = 3
-            for i in range(self.n):
-                self.send(msg=i, outport='out')
-            self.send(msg='__STOP__', outport='out')
+        #         def double(self):
+        #             while True:
+        #                 msg = self.recv(inport='in')
+        #                 if msg == "__STOP__":
+        #                     self.send(msg=msg, outport='out')
+        #                     break
+        #                 else:
+        #                     self.send(msg=2*msg, outport='out')
 
-        def g(self):
-            self.saved = []
-            while True:
-                msg = self.recv(inport='in')
-                if msg == "__STOP__":
-                    break
-                else:
-                    self.saved.append(msg)
+        #         net = Network(
+        #             name="net",
+        #             blocks={
+        #                 "sender": Agent(outports=['out'], run=f),
+        #                 "transformer": Agent(inports=['in'], outports=['out'], run=double),
+        #                 "receiver": Agent(inports=['in'], run=g),
+        #             },
+        #             connections=[
+        #                 ("sender", "out", "transformer", "in"),
+        #                 ("transformer", "out", "receiver", "in"),
+        #             ]
+        #         )
+        #         net.compile()
+        #         net.run()
+        #         self.assertEqual(net.blocks['receiver'].saved, [0, 2, 4])
+        #         print(f'test_14 passed')
 
-        net = Network(
-            blocks={
-                "sender": Agent(outports=['out'], run_fn=f),
-                "receiver": Agent(inports=['in'], run_fn=g),
-            },
-            connections=[
-                ("sender", "out", "receiver", "in")
-            ]
-        )
-        net.run()
-        self.assertEqual(net.blocks['receiver'].saved, [0, 1, 2])
+        # class TestMultipleInputTransformerAgent(unittest.TestCase):
+        #     def test_15(self):
+        #         print(f'test_15 starting')
 
-        net = Network(
-            blocks={
-                "sender": Agent(outports=['out'], run_fn=f),
-                "receiver": Agent(inports=['in'], run_fn=g),
-            },
-            connections=[
-                ("sender", "out", "receiver", "in")
-            ]
-        )
-        net.run()
-        self.assertEqual(net.blocks['receiver'].saved, [0, 1, 2])
-        print(f'passed TestSimplestAgent')
+        #         def f_0(self):
+        #             self.n = 3
+        #             for i in range(self.n):
+        #                 self.send(msg=i, outport='out')
+        #             self.send(msg='__STOP__', outport='out')
 
+        #         def f_1(self):
+        #             self.n = 4
+        #             for i in range(self.n):
+        #                 self.send(msg=i*i, outport='out')
+        #             self.send(msg='__STOP__', outport='out')
 
-class TestSimpleTransformerAgent(unittest.TestCase):
-    def test_simple_transformer_agent(self):
+        #         def g(self):
+        #             self.saved = []
+        #             while True:
+        #                 msg = self.recv(inport='in')
+        #                 if msg == "__STOP__":
+        #                     break
+        #                 else:
+        #                     self.saved.append(msg)
 
-        def f(self):
-            self.n = 3
-            for i in range(self.n):
-                self.send(msg=i, outport='out')
-            self.send(msg='__STOP__', outport='out')
+        #         def h(self):
+        #             while True:
+        #                 msg_0 = self.recv(inport='in_0')
+        #                 if msg_0 == "__STOP__":
+        #                     for outport in self.outports:
+        #                         self.send(msg='__STOP__', outport=outport)
+        #                     break
+        #                 else:
+        #                     msg_1 = self.recv(inport='in_1')
+        #                     if msg_1 == "__STOP__":
+        #                         for outport in self.outports:
+        #                             self.send(msg='__STOP__', outport=outport)
+        #                         break
+        #                     else:
+        #                         self.send(msg=msg_0 + msg_1, outport='sum')
+        #                         self.send(msg=msg_0 * msg_1, outport='prod')
 
-        def g(self):
-            self.saved = []
-            while True:
-                msg = self.recv(inport='in')
-                if msg == "__STOP__":
-                    break
-                else:
-                    self.saved.append(msg)
+        #         net = Network(
+        #             name="net",
+        #             blocks={
+        #                 "sender_0": Agent(outports=['out'], run=f_0),
+        #                 "sender_1": Agent(outports=['out'], run=f_1),
+        #                 "transformer": Agent(inports=['in_0', 'in_1'], outports=['sum', 'prod'], run=h),
+        #                 "receiver_0": Agent(inports=['in'], run=g),
+        #                 "receiver_1": Agent(inports=['in'], run=g),
+        #             },
+        #             connections=[
+        #                 ("sender_0", "out", "transformer", "in_0"),
+        #                 ("sender_1", "out", "transformer", "in_1"),
+        #                 ("transformer", "sum", "receiver_0", "in"),
+        #                 ("transformer", "prod", "receiver_1", "in"),
+        #             ]
+        #         )
+        #         net.compile()
+        #         net.run()
+        #         self.assertEqual(net.blocks['receiver_0'].saved, [0, 2, 6])
+        #         self.assertEqual(net.blocks['receiver_1'].saved, [0, 1, 8])
+        #         print(f'test_15 passed')
 
-        def double(self):
-            while True:
-                msg = self.recv(inport='in')
-                if msg == "__STOP__":
-                    self.send(msg=msg, outport='out')
-                    break
-                else:
-                    self.send(msg=2*msg, outport='out')
+        #     # Tests
 
-        net = Network(
-            blocks={
-                "sender": Agent(outports=['out'], run_fn=f),
-                "transformer": Agent(inports=['in'], outports=['out'], run_fn=double),
-                "receiver": Agent(inports=['in'], run_fn=g),
-            },
-            connections=[
-                ("sender", "out", "transformer", "in"),
-                ("transformer", "out", "receiver", "in"),
-            ]
-        )
+        #     def test_16(self):
+        #         print(f'test_16 starting')
 
-        net.run()
-        self.assertEqual(net.blocks['receiver'].saved, [0, 2, 4])
-        print(f'passed TestSimpleTransformerAgent')
+        #         def count_up_to(n):
+        #             for i in range(n):
+        #                 yield i
 
+        #         net = Network(
+        #             name="net",
+        #             blocks={
+        #                 'gen': StreamGenerator(generator_fn=count_up_to, kwargs={'n': 3}),
+        #                 'receiver': StreamToList(),
+        #             },
+        #             connections=[('gen', 'out', 'receiver', 'in')]
+        #         )
 
-class TestMultipleInputTransformerAgent(unittest.TestCase):
-    def test_simple_transformer_agent(self):
+        #         net.compile()
+        #         net.run()
 
-        def f_0(self):
-            self.n = 3
-            for i in range(self.n):
-                self.send(msg=i, outport='out')
-            self.send(msg='__STOP__', outport='out')
+        #         self.assertEqual(net.blocks['receiver'].saved, [0, 2, 6])
+        #         print(f'test_16 passed')
 
-        def f_1(self):
-            self.n = 4
-            for i in range(self.n):
-                self.send(msg=i*i, outport='out')
-            self.send(msg='__STOP__', outport='out')
-
-        def g(self):
-            self.saved = []
-            while True:
-                msg = self.recv(inport='in')
-                if msg == "__STOP__":
-                    break
-                else:
-                    self.saved.append(msg)
-
-        def h(self):
-            while True:
-                msg_0 = self.recv(inport='in_0')
-                if msg_0 == "__STOP__":
-                    for outport in self.outports:
-                        self.send(msg='__STOP__', outport=outport)
-                    break
-                else:
-                    msg_1 = self.recv(inport='in_1')
-                    if msg_1 == "__STOP__":
-                        for outport in self.outports:
-                            self.send(msg='__STOP__', outport=outport)
-                        break
-                    else:
-                        self.send(msg=msg_0 + msg_1, outport='sum')
-                        self.send(msg=msg_0 * msg_1, outport='prod')
-
-        net = Network(
-            blocks={
-                "sender_0": Agent(outports=['out'], run_fn=f_0),
-                "sender_1": Agent(outports=['out'], run_fn=f_1),
-                "transformer": Agent(inports=['in_0', 'in_1'], outports=['sum', 'prod'], run_fn=h),
-                "receiver_0": Agent(inports=['in'], run_fn=g),
-                "receiver_1": Agent(inports=['in'], run_fn=g),
-            },
-            connections=[
-                ("sender_0", "out", "transformer", "in_0"),
-                ("sender_1", "out", "transformer", "in_1"),
-                ("transformer", "sum", "receiver_0", "in"),
-                ("transformer", "prod", "receiver_1", "in"),
-            ]
-        )
-
-        net.run()
-        self.assertEqual(net.blocks['receiver_0'].saved, [0, 2, 6])
-        self.assertEqual(net.blocks['receiver_1'].saved, [0, 1, 8])
-        print(f'passed TestMultipleInputTransformerAgent')
-
-"""
-if __name__ == "__main__":
-    unittest.main()
+        if __name__ == "__main__":
+            unittest.main()
