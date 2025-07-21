@@ -315,7 +315,12 @@ Tags: agent, message-passing
         # Call RunnableBlock constructor
         super().__init__(name, description, inports, outports, run)
 
-        self.parameters = parameters or {}
+        # Allows parameters to be a list or a dict in which values are None.
+        if parameters is None:
+            parameters = {}
+        elif isinstance(parameters, list):
+            parameters = {k: None for k in parameters}
+        self.parameters = parameters
 
         # Each inport 'p' is associated with its own queue in_q['p']
         in_q = {inport: SimpleQueue() for inport in inports}
@@ -331,9 +336,12 @@ Tags: agent, message-passing
         self.outports = outports
         self.in_q = in_q
         self.out_q = out_q
-        # If a run function is provided, wrap it as a bound method
+        # If a run function is provided use it, otherwise wrap it as a bound method
         if run is not None:
-            self.run = lambda: run(self, **self.parameters)
+            if inspect.ismethod(run):
+                self.run = run
+            else:
+                self.run = lambda: run(self, **self.parameters)
         else:
             raise NotImplementedError(
                 f"Agent '{name}' must define a run(agent, **kwargs) method."
@@ -399,10 +407,13 @@ Behavior:
 - Automatically stops on receiving "__STOP__".
 - run(self) is dynamically defined in __init__, and 'self' is used
     instead of 'self' to avoid shadowing the outer self.
+- The single input port is called 'in'. 
+- If no outports is specified then the default is a single outport called 'out'.
 
 Use Cases:
 - Building a block with a single inport and where the block receives
 and processes one message at a time.
+
 
 Tags: agent, single inport, handle one message at a time
     """
@@ -418,20 +429,24 @@ Tags: agent, single inport, handle one message at a time
         handle_msg: Optional[Callable[[Any, Any], None]] = None,
         parameters: Optional[Dict[str, Any]] = None,
     ):
-        if parameters is not None and not isinstance(parameters, dict):
-            raise TypeError(
-                f"parameters must be a dict in SimpleAgent '{self.name}'")
+        # Allows parameters to be a list or a dict in which values are None.
+        if parameters is None:
+            parameters = {}
+        elif isinstance(parameters, list):
+            parameters = {k: None for k in parameters}
+        self.parameters = parameters
+
         # Set instance-specific attributes
         self.name = name or ""
         self.description = description or ""
         self.inport = inport
-        self.outports = outports or []
+        self.outports = outports if outports is not None else ["out"]
         self.handle_msg = handle_msg
         self.init_fn = init_fn
         self.inports = [self.inport]
-        self.parameters = parameters
 
         # Define run method as a closure inside __init__
+
         def run_method(self_, **kwargs):
             if self_.init_fn:
                 self_.init_fn(self_, **self_.parameters)
@@ -535,6 +550,11 @@ plug-and-play, composition
             block.name = block_name
         # Store internal parameters
         self.connections = connections or []
+        # Allows parameters to be a list or a dict in which values are None.
+        if parameters is None:
+            parameters = {}
+        elif isinstance(parameters, list):
+            parameters = {k: None for k in parameters}
         self.parameters = parameters
         self.parameter_map = parameter_map
         self.compiled_blocks = {}
@@ -787,8 +807,11 @@ plug-and-play, composition
         self.graph_connections = []
         self.unresolved_connections = []
         self.parameters = parameters or {}
-
+        if not self.name or self.name.strip() == '':
+            self.name = "root_block"
         self.root_path_node = PathNode(self, self.name)
+        logging.debug(
+            f"[compile] root_path_node for {self.name}")
         self.frontier = deque([self.root_path_node])
 
         # ----------------------------
@@ -807,6 +830,8 @@ plug-and-play, composition
 
             for child_name, child_block in path_node.block.blocks.items():
                 full_path = f"{path_node.full_path_name}.{child_name}" if path_node.full_path_name else child_name
+                logging.debug(
+                    f"[compile] full_path {full_path}: block_name {child_name}")
 
                 if child_block.parameters is None:
                     child_block.parameters = {}
@@ -859,7 +884,6 @@ plug-and-play, composition
                     self.unresolved_connections.remove(match)
                     self.unresolved_connections.append(new_conn)
                     changed = True
-                    break  # Restart loop
 
                 match = find_to_block_port(
                     self.unresolved_connections, from_b, from_p)
@@ -869,7 +893,6 @@ plug-and-play, composition
                     self.unresolved_connections.remove(match)
                     self.unresolved_connections.append(new_conn)
                     changed = True
-                    break  # Restart loop
 
         # Finalize graph_connections
         for conn in self.unresolved_connections[:]:
@@ -953,292 +976,3 @@ plug-and-play, composition
                 t.join()
         except Exception as e:
             raise RuntimeError(f"Failed to run blocks: {e}") from e
-
-    # def compile(self, parameters):
-    #     """
-    #     Compile the network into runnable blocks and executable connections.
-    #     This block (self) is treated as the root of a block tree.
-
-    #     Steps:
-    #     1. Return dict `runnable_blocks`: full-path-name → runnable block
-    #     2. Assign all runnable block parameter values
-    #     3. Return list `graph_connections`: (from_block, from_port, to_block, to_port)
-
-    #     This block (self) is treated as the root of a tree of block definitions.
-    #     Traverse this tree and:
-    #     (1) return a dict 'runnable_blocks',
-    #     (2) set parameter values for all runnable blocks and
-    #     (3) return a list 'graph_connections'.
-
-    #     runnable_blocks is a dict where the key is the full path name from the root
-    #     of the tree. A value in runnable_blocks is a runnable block.
-
-    #     An element of graph_connections is a connection which is a 4-tuple
-    #     (from_block, from_port, to_block, to_port) where from_block and to_block
-    #     are full path names.
-
-    #     As the tree is traversed assign values to parameters of runnable blocks.
-
-    #     """
-    #     def find_from_block_port_in_list(L, frm_b, frm_p):
-    #         # return connection in L where from_block, from_port = frm_b, frm_p
-    #         for v in L:
-    #             if v[0] == frm_b and v[1] == frm_p:
-    #                 return v
-    #         return None
-
-    #     def find_to_block_port_in_list(L, to_b, to_p):
-    #         # return connection in L where to_block, to_port = to_b, to_p
-    #         for v in L:
-    #             if v[2] == to_b and v[3] == to_p:
-    #                 return v
-    #         return None
-
-    #     class PathNode:
-    #         """
-    #         A node in the block hierarchy that contains (1) this block and (2) the
-    #         full path to this block from the top-most ancestor of this block.
-    #         """
-
-    #         def __init__(self, block: Union[RunnableBlock, Network], full_path_name: str,):
-    #             self.block = block
-    #             self.full_path_name = full_path_name  # Full path name to this block
-    #     # Finished specification of PathNode
-
-    #     # ------------------------------------------------------------
-    #     # STEP 0: START COMPILE FUNCTION: INITIALIZE
-    #     # ------------------------------------------------------------
-
-    #     assert isinstance(self, Network), "root must be an instance of Network"
-    #     # Initialize variables that are global to the block hierarcy traversal.
-    #     self.runnable_blocks = {}
-    #     self.graph_connections = []
-    #     self.unresolved_connections = []
-    #     # The parameters of root are passed in the call to compile()
-    #     self.parameters = parameters
-
-    #     # root_path_node is this node converted into PathNode format.
-    #     self.root_path_node = PathNode(
-    #         block=self,
-    #         full_path_name=self.name,
-    #     )
-
-    #     # Use a deque as a FIFO queue to traverse the block hierarchy.
-    #     # deque contains path nodes of blocks that have not been compiled.
-    #     self.frontier = deque([self.root_path_node])
-
-    #     # ------------------------------------------------------------
-    #     # STEP 1: GET RUNNABLE_BLOCKS
-    #     # ------------------------------------------------------------
-
-    #     # Compute dict 'runnable_blocks' where the key is the
-    #     # full path name of a block and the value is a block.
-    #     # All runnable blocks must be put into this dict.
-    #     # Assign parameter values.
-
-    #     # This is a breadth-first-search of the block hierarchy starting from root.
-    #     while self.frontier:
-    #         # path_node has not been traversed and will be traversed now.
-    #         path_node = self.frontier.popleft()
-
-    #         if isinstance(path_node.block, RunnableBlock):
-    #             # The current block is a RunnableBlock. Add it to runnable_blocks
-    #             self.runnable_blocks[path_node.full_path_name] = path_node.block
-    #             # parameter values for this block have already been assigned.
-    #             continue  # Found a runnable block, skip to next iteration
-
-    #         # ---------------------------------------
-    #         # path_node.block is a Network.
-    #         # ---------------------------------------
-    #         # Step 1: Assign parameters to child nodes of this node and assign
-    #         # full path names to child nodes. Put child nodes in PathNode format
-    #         # in queue for later processing.
-    #         mappings = path_node.block.parameter_map or []
-    #         logging.debug(f"[compile] parameter mappings for {path_node.full_path_name}: {mappings}")
-    #         # Each mapping in mappings is a 3-tuple
-    #         # (this node parameter value ) -> (child block name, child parameter value)
-
-    #         # Get parameters and full path names for each child of this block.
-    #         # Put PathName version of child node in queue for later processing.
-    #         for child_block_name, child_block in path_node.block.blocks.items():
-    #             # full path to a child is full path to this node extended by child name
-    #             full_path_name = (f"{path_node.full_path_name}.{child_block_name}"
-    #                               if path_node.full_path_name else child_block_name)
-    #             # Find parameter values in child block
-    #             for mapping in mappings:
-    #                 if mapping[1] == child_block_name:
-    #                     if mapping[2] not in child_block.parameters:
-    #                         raise ValueError(
-    #                             f"Parameter '{mapping[2]}' not found in parameters of block '{child_block_name}'. "
-    #                             f"Existing parameters: {list(child_block.parameters.keys())}"
-    #                         )
-    #                     if mapping[0] not in path_node.block.parameters:
-    #                         raise ValueError(
-    #                             f"Parameter '{mapping[0]}' not found in parameters of network '{path_node.block.name}'. "
-    #                             f"Existing parameters: {list(path_node.block.parameters.keys())}"
-    #                         )
-    #                     child_block.parameters[mapping[2]
-    #                                            ] = path_node.block.parameters[mapping[0]]
-    #             child_path_node = PathNode(
-    #                 block=child_block,
-    #                 full_path_name=full_path_name,
-    #             )
-    #             self.frontier.append(child_path_node)
-    #     # Finished Step 1. runnable_blocks has all runnable blocks with parameters assigned.
-
-    #     # --------------------------------------------------
-    #     # STEP 2: GET CONNECTIONS BETWEEN RUNNABLE BLOCKS WITH
-    #     # FULL PATH NAMES OF BLOCKS
-    #     # --------------------------------------------------
-
-    #     # New breadth-first-search of block hierarchy to find connections
-    #     # Reset frontier with the start node
-    #     self.frontier = deque([self.root_path_node])
-
-    #     while self.frontier:
-    #         path_node = self.frontier.popleft()
-    #         print(f'path_node  {path_node}')
-    #         print(f'path_node.block  {path_node.block}')
-    #         print(f'path_node = {path_node.block.name}')
-    #         # Connections within path_node and external connections
-    #         # have not been placed in graph_connections.
-    #         # path_node is either a RunnableBlock or a Network.
-
-    #         if isinstance(path_node.block, RunnableBlock):
-    #             # The current block is a RunnableBlock.
-    #             # No connections to process.
-    #             continue
-
-    #         # path_node.block is a Network.
-    #         # ----------------------------------------------------------------------
-    #         # Step 2.1: Enque children of path_node.block in deque for later processing
-    #         # ----------------------------------------------------------------------
-    #         for child_block in path_node.block.blocks.values():
-    #             child_path_node = PathNode(
-    #                 block=child_block,
-    #                 full_path_name=(f"{path_node.full_path_name}.{child_block.name}" if path_node.full_path_name
-    #                                 else child_block.name)
-    #             )
-    #             self.frontier.append(child_path_node)
-
-    #         # ----------------------------------------------------------------------
-    #         # Step 2.2: Put connections of path_node.block into unresolved_connections
-    #         # and create full path names for blocks in unresolved_connections.
-    #         # ----------------------------------------------------------------------
-    #         for connection in path_node.block.connections[:]:
-    #             from_block, from_port, to_block, to_port = connection
-    #             # from_block and to_block can be 'external' or a block name.
-    #             if from_block == 'external':
-    #                 # 'external' means the connection is to the parent network
-    #                 # so use the full path name of path_node for from_block.
-    #                 from_full_path = path_node.full_path_name
-    #             else:
-    #                 # from_block is an internal block. So, its full path name is the
-    #                 # full path name of its parent (i.e. path_node) extended by its own name.
-    #                 from_full_path = f"{path_node.full_path_name}.{from_block}"
-
-    #             # Handle to_block in the same way as from_block
-    #             to_full_path = (path_node.full_path_name if to_block == 'external'
-    #                             else f"{path_node.full_path_name}.{to_block}"
-    #                             )
-
-    #             self.unresolved_connections.append(
-    #                 (from_full_path, from_port, to_full_path, to_port)
-    #             )
-
-    #         # --------------------------------------------------------------------------
-    #         # Step 2.3: Merge connections in unresolved_connections if possible.
-    #         # If there are two connections
-    #         #      (B.P) -> (C.R) and  (C.R) -> (D.S),
-    #         # then merge the two connections into a single connection: (B.P) -> (D.S).
-    #         # --------------------------------------------------------------------------
-    #         for connection in self.unresolved_connections[:]:
-    #             from_block, from_port, to_block, to_port = connection
-    #             merged = True  # Keep merging connections until no more connections are found.
-    #             # Step 2.3.1 Check for merging connections between connection and a matching_connection
-    #             # where matching_connection[0, 1] = (to_block, to_port)
-    #             matching_connection = find_from_block_port_in_list(
-    #                 self.unresolved_connections, to_block, to_port)
-    #             if matching_connection:
-    #                 # matching_connection = (to_block, to_port) -> (matching_connection[2, 3])
-    #                 # connection = (from_block, from_port) -> (to_block, to_port)
-    #                 # Found a match between connection and matching connection. So replace
-    #                 # connection and matching connection by a single new connection:
-    #                 # (from_block, from_port) -> (matching_connection[2], matching_connection[3])
-    #                 new_connection = (
-    #                     from_block, from_port, matching_connection[2], matching_connection[3])
-    #                 self.unresolved_connections.remove(connection)
-    #                 self.unresolved_connections.remove(matching_connection)
-    #                 self.unresolved_connections.append(new_connection)
-
-    #             # Step 2.3.2 Check for merging connections between connection and a matching_connection
-    #             # where matching_connection[2, 3] = (from_block, from_port)
-    #             matching_connection = find_to_block_port_in_list(
-    #                 self.unresolved_connections, from_block, from_port)
-    #             if matching_connection:
-    #                 # matching_connection:
-    #                 # (matching_connection[0], matching_connection[1]) -> (from_block, from_port)
-    #                 # connection = (from_block, from_port, to_block, to_port)
-    #                 # new_connection = (matching_connection[0], matching_connection[1]) -> (to_block, to_port)
-    #                 new_connection = (
-    #                     matching_connection[0], matching_connection[1], to_block, to_port)
-    #                 self.unresolved_connections.remove(connection)
-    #                 self.unresolved_connections.remove(matching_connection)
-    #                 self.unresolved_connections.append(new_connection)
-
-    #         # ------------------------------------------------------------------------------
-    #         # Step 2.4: If both from_block and to_block are runnable blocks then move the
-    #         # connection from unresolved_connections to graph_connections.
-    #         # ------------------------------------------------------------------------------
-    #         for connection in self.unresolved_connections[:]:
-    #             from_block, from_port, to_block, to_port = connection
-    #             if from_block in self.runnable_blocks and to_block in self.runnable_blocks:
-    #                 self.unresolved_connections.remove(connection)
-    #                 self.graph_connections.append(connection)
-
-    #             logging.debug(
-    #                 f'runnable_blocks: {list(self.runnable_blocks.keys())}')
-    #             logging.debug(
-    #                 f'Final unresolved connections: {self.unresolved_connections}')
-    #             logging.debug(
-    #                 f'Final graph connections: {self.graph_connections}')
-
-    #     # ---------------------------------------------------------------
-    #     # STEP 3: CREATE QUEUES FOR CONNECTIONS IN GRAPH_CONNECTIONS
-    #     # ---------------------------------------------------------------
-    #     for connection in self.graph_connections[:]:
-    #         from_block, from_port, to_block, to_port= connection
-    #         if not isinstance(self.runnable_blocks[from_block], Agent):
-    #             raise TypeError(
-    #                f"from block {from_block} in  is not an Agent in the connection {connection}."
-    #             )
-    #         if not isinstance(self.runnable_blocks[to_block], Agent):
-    #             raise TypeError(
-    #                f"to block {to_block} is not an Agent in the connection {connection}."
-    #             )
-    #         # Create a channel for the connection
-    #         sender = self.runnable_blocks[from_block]
-    #         receiver = self.runnable_blocks[to_block]
-    #         queue = SimpleQueue()
-    #         sender.out_q[from_port] = queue
-    #         receiver.in_q[to_port] = queue
-
-    # def run(self):
-    #     """
-    #     Run all runnable blocks concurrently using threads.
-    #     Waits for all threads to complete before returning.
-    #     """
-    #     threads= []
-    #     try:
-    #         for block_name, block in self.runnable_blocks.items():
-    #             thread= Thread(target=block.run, name=f"{block_name}_thread")
-    #             threads.append(thread)
-
-    #         for thread in threads:
-    #             thread.start()
-
-    #         # Wait for all threads to complete
-    #         for thread in threads:
-    #             thread.join()
-    #     except Exception as e:
-    #         raise RuntimeError(f"Failed to run runnable blocks: {e}") from e
