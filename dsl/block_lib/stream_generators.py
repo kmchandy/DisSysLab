@@ -361,6 +361,7 @@ tags: url, web scraping, source, wikipedia, article, text stream
             else:
                 return (p.strip() for p in visible_text.split('\n') if p.strip())
         except Exception as e:
+            print(f"⚠️ Error fetching {url}: {e}")
             yield f"[ERROR fetching URL: {e}]"
 
     def __init__(
