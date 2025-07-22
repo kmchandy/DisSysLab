@@ -7,17 +7,17 @@ GenerateFromList
 GenerateFromFile
 """
 
-from dsl.core import Network
+from dsl.core import Agent
 from dsl.block_lib.stream_recorders import StreamToList
 
 import requests
-from typing import Optional, Union
-from bs4 import BeautifulSoup
-from typing import Optional, Union, Callable, Any
 import time
 import inspect
+import types
 import random
-from dsl.core import Agent
+from collections.abc import Generator
+from typing import Optional, Union, Callable, Any
+from bs4 import BeautifulSoup
 
 # =================================================
 #          StreamGenerator                        |
@@ -81,9 +81,9 @@ tags: source, generator, stream, delay, time-series, data rows
     ):
         if generator_fn is None:
             raise ValueError("StreamGenerator requires a generator_fn")
-        if not inspect.isgeneratorfunction(generator_fn):
+        if not callable(generator_fn):
             raise TypeError(
-                f"Expected a generator function, got {type(generator_fn).__name__}")
+                f"Expected a callable generator source, got {type(generator_fn).__name__}")
         if kwargs is None:
             kwargs = {}
 
@@ -112,6 +112,48 @@ tags: source, generator, stream, delay, time-series, data rows
             outports=["out"],
             run=stream_fn,
         )
+
+
+# =================================================
+#          generate                        |
+# =================================================
+
+def generate(source=None, delay=None, name=None):
+    """
+    Create a generator block from a list, generator function, or callable that returns a list or generator.
+
+    Parameters:
+    - source: A list, generator function, or callable returning a list or generator
+    - delay: Optional delay between messages
+    - name: Optional name for the block
+    """
+    if name is None:
+        kind = (
+            "list" if isinstance(source, list) else
+            "callable" if callable(source) else
+            "unknown"
+        )
+        name = f"generate_from_{kind}"
+
+    if isinstance(source, list):
+        return GenerateFromList(items=source, name=name, delay=delay)
+
+    if callable(source):
+        try:
+            result = source()
+            if isinstance(result, types.GeneratorType):
+                return StreamGenerator(name=name, generator_fn=source, delay=delay)
+            elif isinstance(result, list):
+                return GenerateFromList(items=result, name=name, delay=delay)
+            else:
+                raise TypeError(
+                    f"Callable must return a list or generator, got {type(result)}")
+        except Exception as e:
+            raise ValueError(
+                f"Could not evaluate callable source for '{name}': {e}")
+
+    raise TypeError(
+        f"Unsupported source type: {type(source)} for generate(...)")
 
 
 # =================================================
