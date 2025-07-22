@@ -6,7 +6,7 @@ from dsl.utils.visualize import print_block_hierarchy, print_graph_connections_o
 from dsl.block_lib.stream_generators import StreamGenerator, GenerateNumberSequence
 from dsl.block_lib.stream_recorders import StreamToList
 from dsl.block_lib.stream_generators import GenerateRandomIntegers, GenerateFromList
-from dsl.block_lib.stream_generators import GenerateFromFile
+from dsl.block_lib.stream_generators import GenerateFromFile, generate
 # =================================================
 #          StreamGenerator                        |
 # =================================================
@@ -154,6 +154,7 @@ net = Network(
 )
 net.compile()
 net.run()
+print(f"net.blocks['receiver'].saved = {net.blocks['receiver'].saved}")
 assert net.blocks['receiver'].saved == [
     'What is the capital of France?',
     'What did Joan of Arc do?'
@@ -179,6 +180,115 @@ try:
     )
     net.compile()
     net.run()
+    print(f"net.blocks['receiver'].saved == {net.blocks['receiver'].saved}")
     assert net.blocks['receiver'].saved == ['apple', 'banana', 'carrot']
 finally:
     os.remove(tmp_path)
+
+
+# ------------------------------------------------
+def test_generate_from_list():
+    block = generate([1, 2, 3])
+    assert isinstance(block, GenerateFromList)
+
+    net = Network(
+        name="net",
+        blocks={'sequence_of_numbers': generate(source=[1, 2, 3]),
+                'receiver': StreamToList(),
+                },
+        connections=[('sequence_of_numbers', 'out', 'receiver', 'in')]
+    )
+    net.compile()
+    print_block_hierarchy(net)
+    print_graph_connections_only(net)
+    net.run()
+    print(f"net.blocks['receiver'].saved = {net.blocks['receiver'].saved}")
+    assert net.blocks['receiver'].saved == [1, 2, 3]
+
+
+test_generate_from_list()
+# ------------------------------------------------
+
+
+def test_generate_from_generator_function():
+    def count():
+        yield from range(3)
+    block = generate(count)
+    assert isinstance(block, StreamGenerator)
+
+    net = Network(
+        name="net",
+        blocks={'numbers': generate(count),
+                'receiver': StreamToList(),
+                },
+        connections=[('numbers', 'out', 'receiver', 'in')]
+    )
+    net.compile()
+    net.run()
+    print(f"net.blocks['receiver'].saved = {net.blocks['receiver'].saved}")
+    assert net.blocks['receiver'].saved == [0, 1, 2]
+
+
+test_generate_from_generator_function()
+
+
+def test_generate_from_callable_returning_list():
+    block = generate(lambda: [4, 5, 6])
+    assert isinstance(block, GenerateFromList)
+
+    net = Network(
+        name="net",
+        blocks={'numbers': generate(lambda: [4, 5, 6]),
+                'receiver': StreamToList(),
+                },
+        connections=[('numbers', 'out', 'receiver', 'in')]
+    )
+    net.compile()
+    net.run()
+    print(f"net.blocks['receiver'].saved = {net.blocks['receiver'].saved}")
+    assert net.blocks['receiver'].saved == [4, 5, 6]
+
+
+test_generate_from_callable_returning_list()
+
+
+def test_generate_from_callable_returning_generator():
+    block = generate(lambda: (i for i in range(3)))
+    assert isinstance(block, StreamGenerator)
+
+    net = Network(
+        name="net",
+        blocks={'numbers': generate(lambda: (i for i in range(3))),
+                'receiver': StreamToList(),
+                },
+        connections=[('numbers', 'out', 'receiver', 'in')]
+    )
+    net.compile()
+    net.run()
+    print(f"net.blocks['receiver'].saved = {net.blocks['receiver'].saved}")
+    assert net.blocks['receiver'].saved == [0, 1, 2]
+
+
+test_generate_from_callable_returning_generator()
+
+
+def test_generate_invalid_type():
+    try:
+        generate(123)
+        assert False
+    except TypeError:
+        pass
+
+
+test_generate_invalid_type()
+
+
+def test_generate_invalid_callable_output():
+    try:
+        generate(lambda: 42)
+        assert False
+    except (TypeError, ValueError):
+        pass
+
+
+test_generate_invalid_callable_output()

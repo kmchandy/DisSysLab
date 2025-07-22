@@ -682,13 +682,14 @@ plug-and-play, composition
                 # connect[1] and connect[3] must be ports of these components
                 if connect[1] not in self.blocks[connect[0]].outports:
                     raise ValueError(
-                        f""" The {connect} of network {self.name} is incorrect. {connect[1]} is not an output
-                        port of block {self.blocks[connect[0]].name}."""
+                        f""" The {connect} of network '{self.name}' is incorrect. '{connect[1]}' is not an output
+                        port of block '{self.blocks[connect[0]].name}'."""
                     )
                 if connect[3] not in self.blocks[connect[2]].inports:
                     raise ValueError(
-                        f""" The {connect} of network {self.name} is incorrect.
-                    {connect[3]} is not an input port of block {self.blocks[connect[2]].name}."""
+                        f""" The {connect} of network '{self.name}' is incorrect.
+                    '{connect[3]}' is not an input port of block '{self.blocks[connect[2]].name}'
+                    The inports of '{self.blocks[connect[2]].name}' are '{self.blocks[connect[2]].inports}'."""
                     )
             # Finished step 2.3
             # checking (from_block, from_port, to_block, to_port) where blocks are internal.

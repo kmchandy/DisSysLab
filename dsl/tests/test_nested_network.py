@@ -66,7 +66,7 @@ class TestNestedNetwork(unittest.TestCase):
 
         # Inner network
         inner_net = Network(
-            name="InnerNet",
+            name="Inner",
             blocks={"B1": agent_b1, "B2": agent_b2},
             connections=[
                 ("external", "in", "B1", "in"),

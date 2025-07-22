@@ -8,7 +8,8 @@ The base class is StreamSaver, with subclasses for different destinations.
 """
 
 from dsl.core import SimpleAgent
-from typing import Optional
+from typing import Optional, Union
+import os
 
 # =================================================
 #                StreamSaver                      |
@@ -17,24 +18,24 @@ from typing import Optional
 
 class StreamSaver(SimpleAgent):
     """
-Name: StreamSaver
+    Name: StreamSaver
 
-Summary:
-Base class for blocks that record stream messages. Subclasses define how to save each message.
+    Summary:
+    Base class for blocks that record stream messages. Subclasses define how to save each message.
 
-Parameters:
-- name: Optional name for the block.
-- description: Optional description.
+    Parameters:
+    - name: Optional name for the block.
+    - description: Optional description.
 
-Behavior:
-- Receives messages on the "in" port.
-- Calls the _save_msg method for each incoming message.
-- Subclasses must implement _save_msg to define saving behavior.
+    Behavior:
+    - Receives messages on the "in" port.
+    - Calls the _save_msg method for each incoming message.
+    - Subclasses must implement _save_msg to define saving behavior.
 
-Use Cases:
-- Base class for logging, file writing, memory recording.
+    Use Cases:
+    - Base class for logging, file writing, memory recording.
 
-tags: recorder, base, save, stream
+    tags: recorder, base, save, stream
     """
 
     def __init__(
@@ -43,8 +44,8 @@ tags: recorder, base, save, stream
         description: str = None,
     ):
         super().__init__(
-            name=name,
-            description=description,
+            name=name or "StreamSaver",
+            description=description or "Records stream messages",
             inport="in",
             outports=[],
             init_fn=None,
@@ -61,35 +62,24 @@ tags: recorder, base, save, stream
 
 class StreamToList(StreamSaver):
     """
-Name: StreamToList
+    Name: StreamToList
 
-Summary:
-A block that saves all incoming stream messages to a Python list.
+    Summary:
+    A block that saves all incoming stream messages to a Python list.
 
-Parameters:
-- name: Optional name.
-- description: Optional description.
+    Parameters:
+    - name: Optional name.
+    - description: Optional description.
 
-Behavior:
-- Appends each non-"__STOP__" message to self.saved.
-- Discards "__STOP__" signal.
+    Behavior:
+    - Appends each non-"__STOP__" message to self.saved.
+    - Discards "__STOP__" signal.
 
-Use Cases:
-- For testing or storing intermediate results.
-- Easily inspect output in memory after network runs.
+    Use Cases:
+    - For testing or storing intermediate results.
+    - Easily inspect output in memory after network runs.
 
-Example:
->>> net = Network(
->>>     blocks={
->>>         'source': GenerateFromList(items=["a", "b", "c"]),
->>>         'sink': StreamToList(),
->>>     },
->>>     connections=[('source', 'out', 'sink', 'in')]
->>> )
->>> net.run()
->>> assert net.blocks['sink'].saved == ["a", "b", "c"]
-
-tags: recorder, memory, list, debug, test
+    tags: recorder, memory, list, debug, test
     """
 
     def __init__(self, name="to_list", description="Save stream to list"):
@@ -107,30 +97,25 @@ tags: recorder, memory, list, debug, test
 
 class StreamToFile(StreamSaver):
     """
-Name: StreamToFile
+    Name: StreamToFile
 
-Summary:
-A block that writes each stream message to a file, one per line.
+    Summary:
+    A block that writes each stream message to a file, one per line.
 
-Parameters:
-- filename: Path to the file where messages will be written.
-- name: Optional name.
-- description: Optional description.
+    Parameters:
+    - filename: Path to the file where messages will be written.
+    - name: Optional name.
+    - description: Optional description.
 
-Behavior:
-- Writes each non-"__STOP__" message to the file.
-- Closes the file on "__STOP__".
+    Behavior:
+    - Writes each non-"__STOP__" message to the file.
+    - Closes the file on "__STOP__".
 
-Use Cases:
-- Archive stream data
-- Write logs or audit trails
+    Use Cases:
+    - Archive stream data
+    - Write logs or audit trails
 
-Example:
->>> sink = StreamToFile("output.txt")
->>> # Connect to network and run
->>> # Later inspect the file contents
-
-tags: recorder, file, write, output, stream log
+    tags: recorder, file, write, output, stream log
     """
 
     def __init__(self, filename, name="to_file", description="Save stream to file"):
@@ -151,41 +136,25 @@ tags: recorder, file, write, output, stream log
 
 class StreamCopy(SimpleAgent):
     """
-Name: StreamCopy
+    Name: StreamCopy
 
-Summary:
-A block that duplicates each input message to two output ports: "main" and "watch".
+    Summary:
+    A block that duplicates each input message to two output ports: "main" and "watch".
 
-Parameters:
-- name: Optional name.
-- description: Optional description.
+    Parameters:
+    - name: Optional name.
+    - description: Optional description.
 
-Behavior:
-- On receiving a message:
-  - Sends the message to "main" and "watch".
-- Sends "__STOP__" to both outputs when stream ends.
+    Behavior:
+    - On receiving a message:
+      - Sends the message to "main" and "watch".
+    - Sends "__STOP__" to both outputs when stream ends.
 
-Use Cases:
-- Debugging a stream while allowing normal processing
-- Sending data to a logger and a downstream agent
+    Use Cases:
+    - Debugging a stream while allowing normal processing
+    - Sending data to a logger and a downstream agent
 
-Example:
->>> net = Network(
->>>     blocks={
->>>         'source': GenerateFromList(items=["a", "b"]),
->>>         'copy': StreamCopy(),
->>>         'primary': StreamToList(name="main"),
->>>         'log': StreamToFile("log.txt")
->>>     },
->>>     connections=[
->>>         ('source', 'out', 'copy', 'in'),
->>>         ('copy', 'main', 'primary', 'in'),
->>>         ('copy', 'watch', 'log', 'in')
->>>     ]
->>> )
->>> net.run()
-
-tags: stream, copy, duplicate, monitor, debug
+    tags: stream, copy, duplicate, monitor, debug
     """
 
     def __init__(self, name: str = None, description: str = None):
@@ -198,8 +167,8 @@ tags: stream, copy, duplicate, monitor, debug
                 agent.send(msg, "watch")
 
         super().__init__(
-            name=name,
-            description=description,
+            name=name or "StreamCopy",
+            description=description or "Duplicates stream to main and watch",
             inport="in",
             outports=["main", "watch"],
             init_fn=None,
@@ -213,39 +182,25 @@ tags: stream, copy, duplicate, monitor, debug
 
 class StreamToFileCopy(SimpleAgent):
     """
-Name: StreamToFileCopy
+    Name: StreamToFileCopy
 
-Summary:
-A block that forwards each message and writes a copy to a file.
+    Summary:
+    A block that forwards each message and writes a copy to a file.
 
-Parameters:
-- name: Optional name.
-- description: Optional description.
-- filepath: File path to write messages (one per line).
+    Parameters:
+    - name: Optional name.
+    - description: Optional description.
+    - filepath: File path to write messages (one per line).
 
-Behavior:
-- Appends each message to the specified file.
-- Forwards the message unchanged to the "out" port.
+    Behavior:
+    - Appends each message to the specified file.
+    - Forwards the message unchanged to the "out" port.
 
-Use Cases:
-- Tap into a live stream for monitoring
-- Preserve raw stream while allowing further processing
+    Use Cases:
+    - Tap into a live stream for monitoring
+    - Preserve raw stream while allowing further processing
 
-Example:
->>> net = Network(
->>>     blocks={
->>>         'source': GenerateNumberSequence(0, 3, 1),
->>>         'mirror': StreamToFileCopy(filepath="mirror.txt"),
->>>         'sink': StreamToList()
->>>     },
->>>     connections=[
->>>         ('source', 'out', 'mirror', 'in'),
->>>         ('mirror', 'out', 'sink', 'in')
->>>     ]
->>> )
->>> net.run()
-
-tags: monitor, log, stream, file, copy, duplicate
+    tags: monitor, log, stream, file, copy, duplicate
     """
 
     def __init__(
@@ -262,7 +217,7 @@ tags: monitor, log, stream, file, copy, duplicate
             agent.send(msg, "out")
 
         super().__init__(
-            name=name,
+            name=name or "StreamToFileCopy",
             description=description or f"Stream monitor that logs to {filepath}",
             inport="in",
             outports=["out"],

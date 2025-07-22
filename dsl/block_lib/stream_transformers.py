@@ -29,8 +29,8 @@ from typing import Optional, Union, Callable, Any
 import inspect
 import time
 from dsl.core import Network, Agent, SimpleAgent
-from dsl.stream_generators import GenerateNumberSequence, GenerateFromList
-from dsl.stream_recorders import StreamToList
+from dsl.block_lib.stream_generators import GenerateNumberSequence, GenerateFromList
+from dsl.block_lib.stream_recorders import StreamToList
 
 # =================================================
 #   StreamTransformer                            |
@@ -324,6 +324,7 @@ class TransformMultipleStreams(Agent):
     >>>         ('merge', 'out', 'result', 'in'),
     >>>     ]
     >>> )
+    >>> net.compile()
     >>> net.run()
     >>> assert net.blocks['result'].saved == [[0, 3], [1, 4], [2, 5]]
     Example:
@@ -341,7 +342,10 @@ class TransformMultipleStreams(Agent):
     - For structured output (e.g., dict), use a transformer_fn or subclass.
 
     tags: merge, transform, join, combine, multi-input, buffer, parallel
-    """
+    
+    #======================
+    #EXAMPLE
+    #======================
 
     def __init__(
         self,
@@ -356,12 +360,13 @@ class TransformMultipleStreams(Agent):
         super().__init__(
             name=name or "TransformMultipleStreams",
             inports=inports,
-            outports=["out"]
+            outports=["out"],
+            run=self.run,
         )
         self.transformer_fn = transformer_fn
         self.buffers = {port: [] for port in self.inports}
 
-    def run(self):
+    def run(self, **kwargs):
         while True:
             for inport in self.inports:
                 msg = self.recv(inport)
@@ -382,6 +387,7 @@ class TransformMultipleStreams(Agent):
 
 
 net = Network(
+    name="net",
     blocks={
         'seq_0': GenerateNumberSequence(low=0, high=3, step_size=1),
         'seq_1': GenerateNumberSequence(low=3, high=6, step_size=1),
@@ -394,8 +400,10 @@ net = Network(
         ('merge', 'out', 'result', 'in'),
     ]
 )
+net.compile()
 net.run()
 assert (net.blocks['result'].saved == [[0, 3], [1, 4], [2, 5]])
+"""
 
 
 # =================================================
@@ -420,7 +428,6 @@ Classifies the sentiment of each message using OpenAI's GPT model.
 
 Parameters:
 - model: Name of the OpenAI model to use (default "gpt-3.5-turbo").
-- delay: Optional delay between processing steps.
 
 Behavior:
 - Sends each message to OpenAI with a prompt asking for "positive", "negative", or "neutral" classification.
@@ -448,6 +455,7 @@ Example:
 >>>         ('classify sentence sentiment', 'out', 'record sentence sentiment', 'in'),
 >>>     ],
 >>> )
+>>> net.compile()
 >>> net.run()
 >>> print(f"Sentiments are {net.blocks['record sentence sentiment'].saved}")
 >>> Expected output: 'positive', 'negative', 'positive', 'neutral'
@@ -474,16 +482,16 @@ Sentiment:
         except Exception as e:
             return f"error: {e}"
 
-    def __init__(self, model: str = "gpt-3.5-turbo", delay: Optional[float] = None):
+    def __init__(self, model: str = "gpt-3.5-turbo"):
         super().__init__(
             transform_fn=self._classify_gpt,
             kwargs={"model": model},
-            delay=delay,
             name="SentimentClassifierWithGPT"
         )
 
 
 net = Network(
+    name="net",
     blocks={
         'generate sentences': GenerateFromList(items=[
             "I really love this course!",
@@ -499,6 +507,7 @@ net = Network(
         ('classify sentence sentiment', 'out', 'record sentence sentiment', 'in'),
     ],
 )
+net.compile()
 net.run()
 print(f'Sentiments are {net.blocks['record sentence sentiment'].saved}')
 
@@ -516,7 +525,6 @@ Uses OpenAI's GPT model to extract named entities from input text.
 Parameters:
 - name: Optional name for the block.
 - model: Optional model name (default is "gpt-3.5-turbo").
-- delay: Optional delay (in seconds) between API calls.
 
 Behavior:
 - Accepts a sentence on input port "in".
@@ -543,6 +551,7 @@ Example:
 >>>         ('entities', 'out', 'collector', 'in'),
 >>>     ]
 >>> )
+>>> net.compile()
 >>> net.run()
 >>> print(net.blocks['collector'].saved)
 
@@ -556,7 +565,6 @@ tags: gpt, entity extraction, named entities, NLP, OpenAI, language model
         self,
         name: Optional[str] = None,
         model: str = "gpt-3.5-turbo",
-        delay: Optional[Union[int, float]] = None
     ):
         super().__init__(
             name=name or "ExtractEntitiesWithGPT",
@@ -565,7 +573,6 @@ tags: gpt, entity extraction, named entities, NLP, OpenAI, language model
         )
         self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         self.model = model
-        self.delay = delay
 
     def run(self):
         while True:
@@ -591,9 +598,6 @@ Text: "{msg}"
                 entities = eval(
                     entities_text) if entities_text.startswith("[") else []
                 self.send(entities, "out")
-
-                if self.delay:
-                    time.sleep(self.delay)
             except Exception as e:
                 print(f"❌ ExtractEntitiesWithGPT error: {e}")
                 self.send([], "out")
@@ -640,6 +644,7 @@ class SummarizeWithGPT(StreamTransformer):
     >>>         ('summarize', 'out', 'collector', 'in'),
     >>>     ]
     >>> )
+    >>> net.compile()
     >>> net.run()
     >>> print(net.blocks['collector'].saved)
 

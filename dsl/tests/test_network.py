@@ -1,21 +1,100 @@
 import unittest
-from dsl.core import RunnableBlock, Network, Agent, SimpleAgent
-from dsl.core import traverse_block_hierarchy, make_channels_for_connections, run
+from dsl.core import RunnableBlock, Network, Agent, SimpleAgent, Distripy
 
 
-class TestFlattenNetwork(unittest.TestCase):
-    def test_flatten_nested_network(self):
+class TestNetwork_0(unittest.TestCase):
+
+    def test_1(self):
+
+        def f(agent):
+            for i in range(3):
+                agent.send(msg=i, outport='out')
+            agent.stop()
+
+        saved = []
+
+        def g(agent, msg):
+            saved.append(msg)
+
+        # Create the network. This network has no inports or outports
+        # that are visible to other networks.
+        net = Network(
+            name="Net",
+            blocks={"sender": Agent(outports=['out'], run=f),
+                    "receiver": SimpleAgent(handle_msg=g)
+                    },
+            connections=[
+                ("sender", "out", "receiver", "in")
+            ]
+        )
+        # Run the network
+        s = Distripy(net)
+        s.compile()
+        s.run()
+        self.assertEqual(saved, [0, 1, 2])
+
+    def test_2(self):
+
+        def f(agent):
+            for i in range(3):
+                agent.send(msg=i, outport='out')
+            agent.send(msg='__STOP__', outport='out')
+
+        g_saved = []
+
+        def g(agent):
+            while True:
+                msg = agent.recv(inport='in')
+                if msg == "__STOP__":
+                    break
+                else:
+                    g_saved.append(msg)
+
+        def h(agent):
+            while True:
+                msg = agent.recv(inport='in')
+                if msg == "__STOP__":
+                    for outport in agent.outports:
+                        agent.send(msg="__STOP__", outport=outport)
+                    break
+                else:
+                    agent.send(msg=2*msg, outport='out')
+
+        # Create the network. This network has no inports or outports
+        # that are visible to other networks.
+        net = Network(
+            name="Net",
+            blocks={"sender": Agent(outports=["out"], run=f,),
+                    "receiver": Agent(inports=["in"], run=g),
+                    "transformer": Agent(inports=["in"], outports=["out"], run=h),
+                    },
+            connections=[
+                ("sender", "out", "transformer", "in"),
+                ("transformer", "out", "receiver", "in")
+            ]
+        )
+        # Run the network
+        s = Distripy(net)
+        s.compile()
+        s.run()
+        self.assertEqual(g_saved, [0, 2, 4])
+
+
+class TestNetwork_1(unittest.TestCase):
+    def test_network_1(self):
+
         def init_fn_for_B(agent):
             for i in range(3):
-                agent.send("out", i)
+                agent.send(msg=i, outport='out')
 
-        def run_fn_for_C(agent):
-            msg = agent.recv('in')
-            print(f"C received: {msg}")
+        saved_for_C = []
+
+        def handle_msg_for_C(agent, msg):
+            saved_for_C.append(msg)
 
         # Create runnable blocks
         B = SimpleAgent('B', outports=["out"], init_fn=init_fn_for_B)
-        C = SimpleAgent('C', handle_msg=run_fn_for_C)
+        C = SimpleAgent('C', handle_msg=handle_msg_for_C)
 
         # Create subnetwork net_1 with B and output forwarding
         net_1 = Network(
@@ -49,29 +128,28 @@ class TestFlattenNetwork(unittest.TestCase):
                 ("net_1", "out", "net_2", "in")  # net_1.out → net_2.in
             ]
         )
-        atomic_blocks, graph_connections = traverse_block_hierarchy(net_0)
-        make_channels_for_connections(atomic_blocks, graph_connections)
-        run(atomic_blocks)
-
-        # print(f'atomic_blocks: {atomic_blocks}')
-        # print(f'\n \n')
-        # prefix, unresolved_connections, graph_connections, atomic_blocks = flatten(
-        #     net_0, prefix=[], unresolved_connections=[],
-        #     graph_connections=[], atomic_blocks=atomic_blocks)
-
-        # self.assertEqual(list(atomic_blocks.keys()),
-        #                  ['net_0.net_1.B', 'net_0.net_2.C'])
-        # self.assertEqual(graph_connections,
-        #                  [('net_0.net_1.B', 'out', 'net_0.net_2.C', 'in')])
-        # self.assertEqual(unresolved_connections, [])
+        s = Distripy(net_0)
+        s.compile()
+        s.run()
+        self.assertEqual(saved_for_C, [0, 1, 2])
 
 
 class TestFlattenNetwork_2(unittest.TestCase):
 
     def test_flatten_nested_network_2(self):
+
+        def init_fn_for_B(agent):
+            for i in range(3):
+                agent.send(msg=i, outport='out')
+
+        saved_for_C = []
+
+        def handle_msg_for_C(agent, msg):
+            saved_for_C.append(msg)
+
         # Create runnable blocks
-        B = RunnableBlock("B", inports=[], outports=["out"])
-        C = RunnableBlock("C", inports=["in"], outports=[])
+        B = SimpleAgent('B', outports=["out"], init_fn=init_fn_for_B)
+        C = SimpleAgent('C', handle_msg=handle_msg_for_C)
 
         # Create subnetwork net_1 with B and output forwarding
         net_1 = Network(
@@ -106,9 +184,18 @@ class TestFlattenNetwork_2(unittest.TestCase):
             ]
         )
 
-        # Create atomic blocks
-        X = RunnableBlock("X", inports=[], outports=["out"])
-        Y = RunnableBlock("Y", inports=["in"], outports=[])
+        def init_fn_for_X(agent):
+            for i in range(5):
+                agent.send(msg=i, outport='out')
+
+        saved_for_Y = []
+
+        def handle_msg_for_Y(agent, msg):
+            saved_for_Y.append(msg)
+
+        # Create runnable blocks
+        X = SimpleAgent('X', outports=["out"], init_fn=init_fn_for_X)
+        Y = SimpleAgent('Y', handle_msg=handle_msg_for_Y)
 
         # Create subnetwork net_ZX with X and output forwarding
         net_ZX = Network(
@@ -152,11 +239,11 @@ class TestFlattenNetwork_2(unittest.TestCase):
             connections=[]  # No connections in the top-level network
         )
 
-        traverse_block_hierarchy(net_TOP)
-#         print(f'\n \n')
-#         prefix, unresolved_connections, graph_connections, atomic_blocks = flatten(
-#             net_TOP, prefix=[], unresolved_connections=[],
-#             graph_connections=[], atomic_blocks=atomic_blocks)
+        s = Distripy(net_TOP)
+        s.compile()
+        s.run()
+        self.assertEqual(saved_for_C, [0, 1, 2])
+        self.assertEqual(saved_for_Y, [0, 1, 2, 3, 4])
 
 
 if __name__ == "__main__":
