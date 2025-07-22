@@ -8,14 +8,11 @@ GenerateFromFile
 """
 
 from dsl.core import Agent
-from dsl.block_lib.stream_recorders import StreamToList
 
 import requests
 import time
 import inspect
 import types
-import random
-from collections.abc import Generator
 from typing import Optional, Union, Callable, Any
 from bs4 import BeautifulSoup
 
@@ -83,7 +80,10 @@ tags: source, generator, stream, delay, time-series, data rows
             raise ValueError("StreamGenerator requires a generator_fn")
         if not callable(generator_fn):
             raise TypeError(
-                f"Expected a callable generator source, got {type(generator_fn).__name__}")
+                f"{generator_fn.__name__} did not return a generator. "
+                f"Expected a generator, but got {type(gen).__name__}. "
+                f"Did you forget to use 'yield' in your function?"
+            )
         if kwargs is None:
             kwargs = {}
 
@@ -153,153 +153,9 @@ def generate(source=None, delay=None, name=None):
                 f"Could not evaluate callable source for '{name}': {e}")
 
     raise TypeError(
-        f"Unsupported source type: {type(source)} for generate(...)")
-
-
-# =================================================
-#        GenerateNumberSequence                   |
-# =================================================
-class GenerateNumberSequence(StreamGenerator):
-    """
-Name: GenerateNumberSequence
-
-Summary:
-GenerateNumberSequence emits values in a range from low to high with the specified step_size
-
-Parameters:
-- name: Optional name for the block.
-- description: Optional description.
-- low: int or float. Low end of the range of values.
-- high: int or float. High end of the range of values.
-- step_size: int or float. Step size in generating the range of values.
-- delay: Optional delay (in seconds) between each output.
-
-Behavior:
-- A GenerateNumberSequence is a block with no inports and one outport called "out".
-- The block sends values from low to high with the specifed step size on port "out"
-- If a delay is specified, the block waits for delay seconds between successive outputs.
-- After sending all values in the range the block the block sends the special message 
-  "__STOP__" on its outport and halts.
-
-Use Cases:
-- Emit a sequence of numbers
-- Simulate time-series data or sensor output
-- Drive downstream agents in a message-passing network
-
-Example:
->>> net = Network(
->>>     blocks={
->>>         'gen': GenerateNumberSequence(low=0, high=3, step_size=1),
->>>         'receiver': StreamToList(),
->>>     },
->>>     connections=[('gen', 'out', 'receiver', 'in')]
->>> )
->>> net.run()
->>> assert net.blocks['receiver'].saved == [0, 1, 2]
-
-tags: source, generator, stream, delay, range, time-series
-    """
-    @staticmethod
-    def _count_by_step(low: int, high: int, step_size: int):
-        if step_size == 0:
-            raise ValueError("step_size must not be zero")
-
-        if (step_size > 0 and low >= high) or (step_size < 0 and low <= high):
-            return  # nothing to yield
-
-        current = low
-        while (step_size > 0 and current < high) or (step_size < 0 and current > high):
-            yield current
-            current += step_size
-
-    def __init__(
-        self,
-        low: Union[int, float],
-        high: Union[int, float],
-        step_size: Union[int, float],
-        delay: Optional[Union[int, float]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-    ):
-        super().__init__(
-            name=name or "GenerateNumberSequence",
-            description=description or "Generates numbers from low to high in step_size",
-            generator_fn=self._count_by_step,  # ✅ staticmethod is callable from instance
-            kwargs={"low": low, "high": high, "step_size": step_size},
-            delay=delay,
-        )
-
-
-# =================================================
-#      GenerateRandomIntegers                     |
-# =================================================
-class GenerateRandomIntegers(StreamGenerator):
-    """
-Name: GenerateRandomIntegers
-
-Summary:
-A block that emits a sequence of random integers in the range [lo, hi].
-
-Parameters:
-- name: Optional name for the block.
-- description: Optional description.
-- count: Number of random integers to generate.
-- lo: Lower bound (inclusive).
-- hi: Upper bound (inclusive).
-- delay: Optional delay (in seconds) between outputs.
-
-Behavior:
-- Emits `count` random integers in the range [lo, hi].
-- Sends each value on its "out" port.
-- After emitting all values, sends "__STOP__" and halts.
-
-Use Cases:
-- Simulate random event streams
-- Generate synthetic input for downstream blocks
-- Demonstrate randomness in distributed systems
-
-Example:
->>> net = Network(
->>>     blocks={
->>>         'gen': GenerateRandomIntegers(count=5, lo=10, hi=20),
->>>         'receiver': StreamToList(),
->>>     },
->>>     connections=[('gen', 'out', 'receiver', 'in')]
->>> )
->>> net.run()
->>> assert len(net.blocks['receiver'].saved) == 5
-
-tags: source, generator, stream, random, testing, synthetic data
-    """
-
-    @staticmethod
-    def _random_integers(count: int, lo: int, hi: int):
-        for _ in range(count):
-            yield random.randint(lo, hi)
-
-    def __init__(
-        self,
-        count: int,
-        lo: int,
-        hi: int,
-        delay: Optional[Union[int, float]] = None,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-    ):
-        if lo >= hi:
-            raise ValueError(
-                f"In generate random integers, low >= hi. lo = {lo}, hi = {hi}")
-        if count < 0:
-            raise ValueError(
-                f"In generate random integers, count is negative. count = {count}")
-
-        super().__init__(
-            name=name or "GenerateRandomIntegers",
-            description=description or "Generates random integers in a range",
-            generator_fn=self._random_integers,
-            kwargs={"count": count, "lo": lo, "hi": hi},
-            delay=delay,
-        )
+        f"Unsupported source type: {type(source).__name__}. "
+        f"'generate(...)' accepts a list, a generator function, or a callable returning one."
+    )
 
 
 # =================================================
