@@ -8,13 +8,15 @@ GenerateFromFile
 """
 
 from dsl.core import Network
-from dsl.stream_recorders import StreamToList
+from dsl.block_lib.stream_recorders import StreamToList
+
 import requests
 from typing import Optional, Union
 from bs4 import BeautifulSoup
 from typing import Optional, Union, Callable, Any
 import time
 import inspect
+import random
 from dsl.core import Agent
 
 # =================================================
@@ -61,6 +63,7 @@ Example:
 >>>     },
 >>>     connections=[('gen', 'out', 'receiver', 'in')]
 >>> )
+>>> net.compile()
 >>> net.run()
 >>> assert net.blocks['receiver'].saved == [0, 1, 2]
 
@@ -107,7 +110,7 @@ tags: source, generator, stream, delay, time-series, data rows
             description=description or "Emits values from a generator function",
             inports=[],
             outports=["out"],
-            run_fn=stream_fn,
+            run=stream_fn,
         )
 
 
@@ -241,6 +244,13 @@ tags: source, generator, stream, random, testing, synthetic data
         name: Optional[str] = None,
         description: Optional[str] = None,
     ):
+        if lo >= hi:
+            raise ValueError(
+                f"In generate random integers, low >= hi. lo = {lo}, hi = {hi}")
+        if count < 0:
+            raise ValueError(
+                f"In generate random integers, count is negative. count = {count}")
+
         super().__init__(
             name=name or "GenerateRandomIntegers",
             description=description or "Generates random integers in a range",
@@ -277,6 +287,7 @@ Use Cases:
 
 Example:
 >>> net = Network(
+        name="net",
 >>>     blocks={
 >>>         'gen': GenerateFromList(items=[
 >>>             "What is the capital of France?",
@@ -286,6 +297,7 @@ Example:
 >>>     },
 >>>     connections=[('gen', 'out', 'receiver', 'in')]
 >>> )
+>>> net.compile()
 >>> net.run()
 >>> assert len(net.blocks['receiver'].saved) == 2
 
@@ -352,6 +364,7 @@ Example:
 >>>     },
 >>>     connections=[('gen', 'out', 'receiver', 'in')]
 >>> )
+>>> net.compile()
 >>> net.run()
 >>> assert net.blocks['receiver'].saved == ['apple', 'banana', 'carrot']
 
@@ -414,6 +427,7 @@ Use Cases:
 
 Example:
 >>> net = Network(
+        name="net",
 >>>     blocks={
 >>>         'source': GenerateTextFromURL(
 >>>             url="https://en.wikipedia.org/wiki/Artificial_intelligence",
@@ -466,20 +480,3 @@ tags: url, web scraping, source, wikipedia, article, text stream
             kwargs={"url": url, "split": split},
             delay=delay,
         )
-
-
-def count_up_to(n):
-    for i in range(n):
-        yield i
-
-
-net = Network(
-    blocks={
-        'gen': StreamGenerator(generator_fn=count_up_to, kwargs={'n': 3}),
-        'receiver': StreamToList(),
-    },
-    connections=[('gen', 'out', 'receiver', 'in')]
-)
-
-net.run()
-assert net.blocks['receiver'].saved == [0, 1, 2]
