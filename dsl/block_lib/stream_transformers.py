@@ -26,6 +26,16 @@ from dsl.core import SimpleAgent, Agent
 
 
 class StreamTransformer(SimpleAgent):
+    """
+    An instance of a StreamTransformer is an agent with a single inport called "in" and
+    a single outport called "out". The agent receives a message along inport "in",
+    applies function transform_fn to the message and sends the result on outport "out".
+    transform_fn may have args and kwargs.
+
+    Args:
+        SimpleAgent (_type_): _description_
+    """
+
     def __init__(
         self,
         transform_fn: Callable[..., Any],
@@ -230,6 +240,17 @@ class SummarizeWithGPT(StreamTransformer):
 # =================================================
 
 class TransformMultipleStreams(Agent):
+    """
+    An instance of TransformMultipleStreams is an agent that has 
+    multiple inports and a single outport called "out". The
+    agent waits to receive a message on each of its inports and 
+    then applies the specified function, transformer_fn, to the 
+    list of messages and outputs the result.
+
+    Args:
+        Agent (_type_): _description_
+    """
+
     def __init__(
         self,
         inports: list[str],
@@ -245,6 +266,9 @@ class TransformMultipleStreams(Agent):
         self.buffers = {port: [] for port in self.inports}
 
     def run(self):
+        # If a "__STOP__" message is received on any inport the agent stops
+        # after sending "__STOP__" on its outport. This run() must be
+        # modified to fit other stopping conditions.
         while True:
             for port in self.inports:
                 msg = self.recv(port)
