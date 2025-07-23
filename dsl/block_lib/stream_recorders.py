@@ -1,5 +1,4 @@
 from dsl.core import SimpleAgent
-from typing import Optional, Union
 import os
 from pathlib import Path
 
@@ -59,12 +58,13 @@ def record(to="memory", name=None, filepath=None):
     Create a recorder block to save or monitor messages.
 
     Parameters:
-    - to: 
-        "memory" or "list" → saves messages to a Python list
-        str (filepath) → writes messages to a file
-        "file+stream" → logs and forwards messages
+    - to:
+        - "memory" or "list" → save messages in a list (default)
+        - <filepath:str> → save messages to a file
+        -    Note:  filepath: Required only if to="file+stream"
+        - "file+stream" → save to file and forward downstream
     - name: Optional block name
-    - filepath: Required if to="file+stream"
+
 
     Returns:
     - A recorder block
@@ -80,7 +80,7 @@ def record(to="memory", name=None, filepath=None):
     if to in ("memory", "list"):
         class StreamToList(StreamSaver):
             def __init__(self, name="to_list", description="Save stream to list"):
-                super().__init__(name=name, description=description)
+                super().__init__(name=name or "RecordToList", description=description)
                 self.saved = []
 
             def _save_msg(self, agent, msg):
@@ -101,9 +101,13 @@ def record(to="memory", name=None, filepath=None):
     if isinstance(to, str) and to not in {"memory", "file+stream"}:
         class StreamToFile(StreamSaver):
             def __init__(self, filename, name="to_file", description="Save stream to file"):
-                super().__init__(name=name, description=description)
+                super().__init__(name=name or "RecordToFile", description=description)
                 self.filename = filename
-                self.file = open(filename, "w", buffering=1)
+                try:
+                    self.file = open(filename, "w", buffering=1)
+                except Exception as e:
+                    raise IOError(
+                        f"Could not open file for writing: {filename}\nError: {e}")
 
             def _save_msg(self, agent, msg):
                 if msg == "__STOP__":
@@ -128,7 +132,7 @@ def record(to="memory", name=None, filepath=None):
                     agent.send(msg, "out")
 
                 super().__init__(
-                    name=name or "StreamToFileCopy",
+                    name=name or "RecordCopyToFile",
                     description=description or f"Stream monitor that logs to {filepath}",
                     inport="in",
                     outports=["out"],
