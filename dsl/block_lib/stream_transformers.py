@@ -17,6 +17,7 @@ from typing import Optional, Callable, Any, Union
 from dotenv import load_dotenv
 from openai import OpenAI
 import os
+import ast
 from dsl.core import SimpleAgent, Agent
 
 # =================================================
@@ -25,25 +26,6 @@ from dsl.core import SimpleAgent, Agent
 
 
 class StreamTransformer(SimpleAgent):
-    """
-    Name: StreamTransformer
-
-    Summary:
-    Applies a transformation function to each incoming message.
-
-    Parameters:
-    - transform_fn: Callable for transforming each message.
-    - args: Optional positional arguments.
-    - kwargs: Optional keyword arguments.
-    - name: Optional block name.
-    - description: Optional description.
-
-    Behavior:
-    - Applies transform_fn(msg, *args, **kwargs).
-    - Sends the result to "out".
-    - Prints error and sends "__STOP__" if exception occurs.
-    """
-
     def __init__(
         self,
         transform_fn: Callable[..., Any],
@@ -81,23 +63,6 @@ class StreamTransformer(SimpleAgent):
 # =================================================
 
 class WrapFunction(StreamTransformer):
-    """
-    Name: WrapFunction
-
-    Summary:
-    A subclass of StreamTransformer that wraps any Python function.
-
-    Parameters:
-    - func: Callable to wrap.
-    - args: Optional positional args.
-    - kwargs: Optional keyword args.
-    - name: Optional name.
-    - description: Optional description.
-
-    Behavior:
-    - Applies func to incoming messages.
-    """
-
     def __init__(
         self,
         func: Callable[[Any], Any],
@@ -123,23 +88,6 @@ class WrapFunction(StreamTransformer):
 # =================================================
 
 class PromptToBlock(SimpleAgent):
-    """
-    Name: PromptToBlock
-
-    Summary:
-    Sends a static or templated prompt to an OpenAI model and emits the response.
-
-    Parameters:
-    - prompt: Prompt template with optional {msg} placeholder.
-    - model: OpenAI model name.
-    - temperature: Sampling temperature.
-    - name: Optional name.
-    - description: Optional description.
-
-    Example:
-    >>> block = PromptToBlock(prompt="Summarize: {msg}", model="gpt-3.5-turbo")
-    """
-
     def __init__(
         self,
         prompt: str,
@@ -160,10 +108,10 @@ class PromptToBlock(SimpleAgent):
 
         def handle_msg(agent, msg):
             try:
+                rendered_prompt = prompt.replace("{msg}", str(msg))
                 response = client.chat.completions.create(
                     model=model,
-                    messages=[
-                        {"role": "user", "content": prompt.replace("{msg}", str(msg))}],
+                    messages=[{"role": "user", "content": rendered_prompt}],
                     temperature=temperature
                 )
                 reply = response.choices[0].message.content.strip()
@@ -179,3 +127,138 @@ class PromptToBlock(SimpleAgent):
             outports=["out"],
             handle_msg=handle_msg,
         )
+
+
+# =================================================
+#        SentimentClassifierWithGPT              |
+# =================================================
+
+class SentimentClassifierWithGPT(StreamTransformer):
+    def __init__(self, model: str = "gpt-3.5-turbo"):
+        load_dotenv()
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY is missing in environment.")
+        self.client = OpenAI(api_key=api_key)
+        self.model = model
+
+        def classify(msg: str) -> str:
+            prompt = f"""You are a helpful assistant. Classify the sentiment of the following text as Positive, Negative, or Neutral.\nText: \"{msg}\"\nSentiment:"""
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0
+                )
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                return f"error: {e}"
+
+        super().__init__(transform_fn=classify, name="SentimentClassifierWithGPT")
+
+
+# =================================================
+#        ExtractEntitiesWithGPT                   |
+# =================================================
+
+class ExtractEntitiesWithGPT(StreamTransformer):
+    def __init__(self, model: str = "gpt-3.5-turbo"):
+        load_dotenv()
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY is missing in environment.")
+        self.client = OpenAI(api_key=api_key)
+        self.model = model
+
+        def extract(msg: str) -> list[str]:
+            prompt = f"""Extract all named entities from the text and return them as a Python list of strings.\nText: \"{msg}\" """
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                text = response.choices[0].message.content.strip()
+                return ast.literal_eval(text) if text.startswith("[") else []
+            except Exception as e:
+                print(f"❌ ExtractEntitiesWithGPT error: {e}")
+                return []
+
+        super().__init__(transform_fn=extract, name="ExtractEntitiesWithGPT")
+
+
+# =================================================
+#           SummarizeWithGPT                      |
+# =================================================
+
+class SummarizeWithGPT(StreamTransformer):
+    def __init__(
+        self,
+        max_words: int = 50,
+        temperature: float = 0.3,
+        model: str = "gpt-3.5-turbo"
+    ):
+        load_dotenv()
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY is missing in environment.")
+        self.client = OpenAI(api_key=api_key)
+        self.model = model
+        self.max_words = max_words
+        self.temperature = temperature
+
+        def summarize(text: str) -> str:
+            prompt = f"Summarize the following in no more than {self.max_words} words:\n\n{text}"
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model,
+                    messages=[
+                        {"role": "system",
+                            "content": "You are a helpful assistant that summarizes text."},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=self.temperature
+                )
+                return response.choices[0].message.content.strip()
+            except Exception as e:
+                return f"error: {e}"
+
+        super().__init__(transform_fn=summarize, name="SummarizeWithGPT")
+
+
+# =================================================
+#        TransformMultipleStreams                 |
+# =================================================
+
+class TransformMultipleStreams(Agent):
+    def __init__(
+        self,
+        inports: list[str],
+        transformer_fn: Optional[Callable[[list[Any]], Any]] = None,
+        name: Optional[str] = None
+    ):
+        if not inports:
+            raise ValueError(
+                "TransformMultipleStreams requires at least one inport.")
+        super().__init__(name=name or "TransformMultipleStreams",
+                         inports=inports, outports=["out"], run=self.run)
+        self.transformer_fn = transformer_fn
+        self.buffers = {port: [] for port in self.inports}
+
+    def run(self):
+        while True:
+            for port in self.inports:
+                msg = self.recv(port)
+                if msg == "__STOP__":
+                    self.send("__STOP__", "out")
+                    return
+                self.buffers[port].append(msg)
+
+            if all(self.buffers[port] for port in self.inports):
+                inputs = [self.buffers[port].pop(0) for port in self.inports]
+                try:
+                    result = self.transformer_fn(
+                        inputs) if self.transformer_fn else inputs
+                    self.send(result, "out")
+                except Exception as e:
+                    print(f"❌ TransformMultipleStreams error: {e}")
+                    self.send("__STOP__", "out")
