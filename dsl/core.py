@@ -977,3 +977,7 @@ plug-and-play, composition
                 t.join()
         except Exception as e:
             raise RuntimeError(f"Failed to run blocks: {e}") from e
+
+    def compile_and_run(self):
+        self.compile()
+        self.run()

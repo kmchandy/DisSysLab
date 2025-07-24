@@ -286,3 +286,23 @@ class TransformMultipleStreams(Agent):
                 except Exception as e:
                     print(f"❌ TransformMultipleStreams error: {e}")
                     self.send("__STOP__", "out")
+
+
+def transform(fn, *args, **kwargs):
+    """
+    Create a stream transformer block from a function.
+
+    Parameters:
+    - fn: A callable that transforms a message.
+    - args, kwargs: Additional arguments passed to the callable.
+
+    Returns:
+    - A WrapFunction block that applies fn(msg, *args, **kwargs)
+
+    Examples:
+    >>> transform(str.upper)
+    >>> transform(lambda x, prefix=">> ": prefix + x, prefix=">> ")
+    """
+    if not callable(fn):
+        raise TypeError(f"transform(fn) must be callable, got {type(fn)}")
+    return WrapFunction(fn, args=args, kwargs=kwargs)

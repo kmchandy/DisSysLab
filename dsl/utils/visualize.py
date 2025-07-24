@@ -90,55 +90,6 @@ def _format_block_path(path: str) -> str:
     return path.replace(".", "⤏")
 
 
-# def print_connections_only(block: Union[Network, Block], name: str = "block_top", tree: Tree = None):
-#     """
-#     Visualizes connections in a compiled network using rich formatting.
-
-#     Parameters:
-#     - block: A compiled Network or Block instance.
-#     - name: Name to display for the current block (default: "block_top").
-#     - tree: Internal parameter used for recursion; leave as None when calling.
-#     """
-#     if not hasattr(block, "graph_connections"):
-#         console.print(
-#             f"[bold red]Error:[/bold red] The block '{name}' has not been compiled.")
-#         return
-
-
-#     # Create top-level tree if this is the initial call
-#     is_root = tree is None
-#     if is_root:
-#         tree = Tree(
-#             Text(f"Connections in [yellow]{name}[/yellow]", style="bold magenta"))
-
-#     for (from_block_name, from_port, to_block_name, to_port,) in block.graph_connections:
-#         from_block_short = _shorten_block_name(from_block_name)
-#         to_block_short = _shorten_block_name(to_block_name)
-#         edge_text = Text()
-#         edge_text.append(from_block_short, style="cyan")
-#         edge_text.append(from_port, style="white")
-#         edge_text.append(" ─▶ ", style="red")
-#         edge_text.append(to_block_short, style="cyan")
-#         edge_text.append(to_port, style="white")
-#         tree.add(edge_text)
-
-#     # Recurse into sub-blocks if any
-#     for subname, subblock in getattr(block, "_compiled_blocks", {}).items():
-#         subtree = tree.add(
-#             Text(f"Connections in [yellow]{subname}[/yellow]", style="brown"))
-#         print_connections_only(subblock, subname, subtree)
-
-#     # Print the entire tree if root
-#     if is_root:
-#         console.print(tree)
-
-
-# def _shorten_block_name(block_name: str) -> str:
-#     """
-#     Shortens a full path like 'block_top.block_0.out' to 'block_0.out'
-#     """
-#     if not "." in block_name:
-#         return block_name
-#     else:
-#         last_name = _shorten_block_name.split('.')[-1]
-#         return last_name
+def draw(block: Block):
+    print_block_hierarchy(block)
+    print_graph_connections_only(block)
