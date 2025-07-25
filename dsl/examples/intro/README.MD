@@ -1,40 +1,32 @@
 # 📘 Put Blocks Together: Build Your First Distributed Application
 
 These short examples introduce ideas underlying DisSysLab, a framework for building
-Python distributed applications. The central idea is that of a *block* an object 
+Python distributed applications. The central idea is that of a *block* — an object 
 with lists of input and output ports. A block sends messages on its output ports and
 receives messages on its input ports. A network is a set of blocks and connections.
-A connection is a 4-tuple (from_block, from_port, to_block, to_port) which specifies
-that messages sent by from_block on from_port are received by to_block on to_port.
+A connection is a 4-tuple `(from_block, from_port, to_block, to_port)` which specifies
+that messages sent by `from_block` on `from_port` are received by `to_block` on `to_port`.
 
 Some network structures, such as *pipelines*, can be specified without listing connections.
 A network is itself a block. You can build networks of networks. An atomic block is specified
-by a function that receives and sends messages. By convention,if a block has a single output 
-port then that port is called "out". Likewise if a block has a single input port then that 
-port is called "in".
+by a function that receives and sends messages. By convention, if a block has a single output 
+port then that port is called `"out"`. Likewise, if a block has a single input port then that 
+port is called `"in"`.
 
-A pipeline is a sequence of blocks where the first block in the sequence generates messages 
-that it sends on its only output port. The last block receives messages on its only input 
-port and records them. Intermediate blocks transform messages that it receives. A structure is
-     [ generate ] ---> [ transform ] ---> .... ---> [ transform ] --->  [ record ]
+A pipeline is a sequence of blocks:  
+`[ generate ] ---> [ transform ] ---> ... ---> [ transform ] ---> [ record ]`
 
-Each example in this file has two views:
-- ✅ **Block-and-Connection View** — explicitly shows each block and each connection.
-- 🚀 **Pipeline View** — Uses the `pipeline(...)` helper function to specify a pipeline.
-Examples in other files show other network structures and show networks with blocks that are
-themselves networks.
+Each example has two Specifications:
+- ✅ **Block and Connection Specification** — explicitly shows each block and connection
+- 🚀 **Pipeline Specification** — uses the `pipeline({...})` helper for simplicity
 
-In these examples, draw() is a function that shows a schematic of a network. It is optional.
-
-To run these examples, paste the code into a Python script or Jupyter notebook. Make sure 
-that you’ve installed required packages and activated your virtual environment.
+You may run these examples in a script or Jupyter notebook. Make sure your environment is active.
 
 ---
 
 ## 🟢 Example 1: Convert Text to Uppercase
 
-✅ Block-and-Connection View
-
+### Block and Connection Specification
 ```python
 from dsl.core import Network
 from dsl.block_lib.stream_generators import generate
@@ -57,8 +49,10 @@ net = Network(
 net.compile_and_run()
 draw(net)
 print("Output:", net.blocks["sink"].saved)
-🚀 Pipeline View
+```
+### 🚀 Pipeline Specification
 
+```python
 from dsl.block_lib.graph_structures import pipeline
 from dsl.block_lib.stream_generators import generate
 from dsl.block_lib.stream_transformers import transform
@@ -74,48 +68,133 @@ net = pipeline({
 net.compile_and_run()
 draw(net)
 print("Output:", net.blocks["sink"].saved)
-🧠 What You Learned
+```
 
-A generate(...) block emits messages.
+## 🟢 Example 2: Reverse Each Word in a List
+### Block and Connection Specification
 
-A transform(...) block modifies each message.
+```python
+from dsl.core import Network
+from dsl.block_lib.stream_generators import generate
+from dsl.block_lib.stream_transformers import transform
+from dsl.block_lib.stream_recorders import record
+from dsl.visualize import draw
 
-A record(...) block stores results.
+net = Network(
+    blocks={
+        "generate_words": generate(["AI", "is", "amazing"]),
+        "reverse": transform(lambda s: s[::-1]),
+        "sink": record()
+    },
+    connections=[
+        ("generate_words", "out", "reverse", "in"),
+        ("reverse", "out", "sink", "in")
+    ]
+)
 
-You can define networks either as a graph or as a pipeline.
+net.compile_and_run()
+draw(net)
+print("Output:", net.blocks["sink"].saved)
+```
 
 
-✨ Example 2: Reverse Each Word
+### 🚀 Pipeline Specification
+```python
+from dsl.block_lib.graph_structures import pipeline
+from dsl.block_lib.stream_generators import generate
+from dsl.block_lib.stream_transformers import transform
+from dsl.block_lib.stream_recorders import record
+from dsl.visualize import draw
 
 net = pipeline({
-    "source": generate(["distripy", "rocks"]),
+    "generate_words": generate(["AI", "is", "amazing"]),
     "reverse": transform(lambda s: s[::-1]),
     "sink": record()
 })
 
 net.compile_and_run()
+draw(net)
 print("Output:", net.blocks["sink"].saved)
+```
 
+## 🔢 Example 3: Square Numbers Using NumPy
 
-🔢 Example 3: Square Numbers with NumPy
+### Block and Connection Specification
+```python
 
 import numpy as np
+from dsl.core import Network
+from dsl.block_lib.stream_generators import generate
+from dsl.block_lib.stream_transformers import transform
+from dsl.block_lib.stream_recorders import record
+
+net = Network(
+    blocks={
+        "generate_numbers": generate([1, 2, 3]),
+        "square": transform(np.square),
+        "sink": record()
+    },
+    connections=[
+        ("generate_numbers", "out", "square", "in"),
+        ("square", "out", "sink", "in")
+    ]
+)
+
+net.compile_and_run()
+print("Output:", net.blocks["sink"].saved)
+```
+
+### 🚀 Pipeline Specification
+
+```python
+import numpy as np
+from dsl.block_lib.graph_structures import pipeline
+from dsl.block_lib.stream_generators import generate
+from dsl.block_lib.stream_transformers import transform
+from dsl.block_lib.stream_recorders import record
 
 net = pipeline({
-    "source": generate([1, 2, 3]),
+    "generate_numbers": generate([1, 2, 3]),
     "square": transform(np.square),
     "sink": record()
 })
 
 net.compile_and_run()
 print("Output:", net.blocks["sink"].saved)
+```
 
+## 🤖 Example 4: Sentiment Analysis with GPT
 
-🤖 Example 4: Sentiment Analysis with GPT
-python
-Copy
-Edit
+### Block and Connection Specification
+```python
+from dsl.core import Network
+from dsl.block_lib.stream_generators import generate
 from dsl.block_lib.stream_transformers import SentimentClassifierWithGPT
+from dsl.block_lib.stream_recorders import record
+
+net = Network(
+    blocks={
+        "source": generate(["I love this!", "I hate waiting."]),
+        "sentiment": SentimentClassifierWithGPT(),
+        "sink": record()
+    },
+    connections=[
+        ("source", "out", "sentiment", "in"),
+        ("sentiment", "out", "sink", "in")
+    ]
+)
+
+net.compile_and_run()
+print("Sentiment Labels:", net.blocks["sink"].saved)
+```
+
+### 🚀 Pipeline Specification
+
+```python
+from dsl.block_lib.graph_structures import pipeline
+from dsl.block_lib.stream_generators import generate
+from dsl.block_lib.stream_transformers import SentimentClassifierWithGPT
+from dsl.block_lib.stream_recorders import record
 
 net = pipeline({
     "source": generate(["I love this!", "I hate waiting."]),
@@ -125,12 +204,60 @@ net = pipeline({
 
 net.compile_and_run()
 print("Sentiment Labels:", net.blocks["sink"].saved)
+```
 
+## 💬 Example 5: Chat with GPT
 
-🎭 Example 5: Merge Two Streams (Fan-In)
+### Block and Connection Specification
+```python
+from dsl.core import Network
+from dsl.block_lib.stream_generators import generate
+from dsl.block_lib.stream_transformers import PromptToBlock
+from dsl.block_lib.stream_recorders import record
+
+net = Network(
+    blocks={
+        "source": generate(["What's the capital of France?"]),
+        "chat": PromptToBlock("Answer this: {msg}"),
+        "sink": record()
+    },
+    connections=[
+        ("source", "out", "chat", "in"),
+        ("chat", "out", "sink", "in")
+    ]
+)
+
+net.compile_and_run()
+print("GPT Says:", net.blocks["sink"].saved[0])
+```
+
+### 🚀 Pipeline Specification
+```python
+
+from dsl.block_lib.graph_structures import pipeline
+from dsl.block_lib.stream_generators import generate
+from dsl.block_lib.stream_transformers import PromptToBlock
+from dsl.block_lib.stream_recorders import record
+
+net = pipeline({
+    "input": generate(["What's the capital of France?"]),
+    "chat": PromptToBlock("Answer this: {msg}"),
+    "sink": record()
+})
+
+net.compile_and_run()
+print("GPT Says:", net.blocks["sink"].saved[0])
+```
+
+## 🎭 Example 6: Merge Two Streams (Fan-In)
+
+### Block and Connection Specification
+```python
 
 from dsl.core import Network
+from dsl.block_lib.stream_generators import generate
 from dsl.block_lib.stream_transformers import TransformMultipleStreams
+from dsl.block_lib.stream_recorders import record
 
 net = Network(
     blocks={
@@ -148,38 +275,32 @@ net = Network(
 
 net.compile_and_run()
 print("Output:", net.blocks["sink"].saved)
+```
 
+## 🧠 Summary
+generate(...) emits a stream of values
 
-💬 Example 6: Chat with GPT
+transform(...) modifies each value
 
-from dsl.block_lib.stream_transformers import PromptToBlock
+record(...) captures results
 
-net = pipeline({
-    "input": generate(["What's the capital of France?"]),
-    "chat": PromptToBlock("Answer this: {msg}"),
-    "sink": record()
-})
+You can define pipelines or general networks
 
-net.compile_and_run()
-print("GPT Says:", net.blocks["sink"].saved[0])
+Use GPT-based transformers for LLM-powered tasks
 
-🧠 Summary
-Connect blocks to build distributed systems.
+Wrap functions from NumPy, SciKit and other libraries into blocks.
 
-Leverage commonly used network structures such as pipelines.
+## 📚 What’s Next?
+Explore:
 
-📚 What’s Next?
-Explore more complex examples in:
+dsl/examples/fan_in/ — multiple sources into one block
 
-dsl/examples/fan_in/ — multiple sources into one transformer
+dsl/examples/fan_out/ — one source into multiple blocks
 
-dsl/examples/fan_out/ — one source into multiple transformers
+dsl/examples/star/ — central hub structure
 
-dsl/examples/star/ — central node connected to many others
+dsl/examples/gpt/ — integrating large language models
 
-dsl/examples/nested_networks - networks of networks
+dsl/examples/nested_networks/ — build networks of networks
 
-dsl/examples/gpt/ — language model integration
-
-👉 Want to search by tags or keywords? We’ll be adding a natural language search soon!
-
+👉 Coming Soon: Natural Language Search for Examples
