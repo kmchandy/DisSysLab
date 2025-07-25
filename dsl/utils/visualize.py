@@ -92,4 +92,6 @@ def _format_block_path(path: str) -> str:
 
 def draw(block: Block):
     print_block_hierarchy(block)
+    print("\n")
     print_graph_connections_only(block)
+    print("\n \n \n")

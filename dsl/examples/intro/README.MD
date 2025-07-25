@@ -32,7 +32,7 @@ from dsl.core import Network
 from dsl.block_lib.stream_generators import generate
 from dsl.block_lib.stream_transformers import transform
 from dsl.block_lib.stream_recorders import record
-from dsl.visualize import draw
+from dsl.utils.visualize import draw
 
 net = Network(
     blocks={
@@ -57,7 +57,7 @@ from dsl.block_lib.graph_structures import pipeline
 from dsl.block_lib.stream_generators import generate
 from dsl.block_lib.stream_transformers import transform
 from dsl.block_lib.stream_recorders import record
-from dsl.visualize import draw
+from dsl.utils.visualize import draw
 
 net = pipeline({
     "source": generate(["hello", "world"]),
@@ -78,11 +78,11 @@ from dsl.core import Network
 from dsl.block_lib.stream_generators import generate
 from dsl.block_lib.stream_transformers import transform
 from dsl.block_lib.stream_recorders import record
-from dsl.visualize import draw
+from dsl.utils.visualize import draw
 
 net = Network(
     blocks={
-        "generate_words": generate(["AI", "is", "amazing"]),
+        "generate_words": generate(["AI", "is", "now"]),
         "reverse": transform(lambda s: s[::-1]),
         "sink": record()
     },
@@ -104,7 +104,7 @@ from dsl.block_lib.graph_structures import pipeline
 from dsl.block_lib.stream_generators import generate
 from dsl.block_lib.stream_transformers import transform
 from dsl.block_lib.stream_recorders import record
-from dsl.visualize import draw
+from dsl.utils.visualize import draw
 
 net = pipeline({
     "generate_words": generate(["AI", "is", "amazing"]),
@@ -141,7 +141,8 @@ net = Network(
 )
 
 net.compile_and_run()
-print("Output:", net.blocks["sink"].saved)
+# Convert np.int to int
+print(f"Output:, {[int(v) for v in net.blocks['sink'].saved]}")
 ```
 
 ### 🚀 Pipeline Specification
@@ -160,7 +161,8 @@ net = pipeline({
 })
 
 net.compile_and_run()
-print("Output:", net.blocks["sink"].saved)
+# Convert np.int to int
+print(f"Output:, {[int(v) for v in net.blocks['sink'].saved]}")
 ```
 
 ## 🤖 Example 4: Sentiment Analysis with GPT
@@ -185,7 +187,7 @@ net = Network(
 )
 
 net.compile_and_run()
-print("Sentiment Labels:", net.blocks["sink"].saved)
+print("Sentiment Labels:", net.blocks['sink'].saved)
 ```
 
 ### 🚀 Pipeline Specification
@@ -203,7 +205,7 @@ net = pipeline({
 })
 
 net.compile_and_run()
-print("Sentiment Labels:", net.blocks["sink"].saved)
+print("Sentiment Labels:", net.blocks['sink'].saved)
 ```
 
 ## 💬 Example 5: Chat with GPT
