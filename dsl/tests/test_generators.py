@@ -24,6 +24,7 @@ def test_generate_from_list():
     )
 
     net.compile_and_run()
+    print(f"net.blocks['sink'].saved = {net.blocks['sink'].saved}")
     assert net.blocks["sink"].saved == ["a", "b", "c"]
 
 
@@ -91,3 +92,27 @@ def test_generate_single_item():
 
     net.compile_and_run()
     assert net.blocks["sink"].saved == ["one"]
+
+
+def f(n):
+    for i in range(n):
+        yield i
+
+
+def test_generate_from_python_generator():
+    net = Network(
+        blocks={
+            "source": generate(f, n=3),
+            "sink": record()
+        },
+        connections=[
+            ("source", "out", "sink", "in")
+        ]
+    )
+    net.compile_and_run()
+    print(f"net.blocks['sink']")
+
+
+if __name__ == "main":
+    print(f"--------")
+    test_generate_from_list()

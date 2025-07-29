@@ -1,11 +1,6 @@
-# 📘 Put Blocks Together: Build Your First Distributed Application
+# 📘 Build Distributed Applications by Connecting Blocks
 
-These short examples introduce ideas underlying DisSysLab, a framework for building
-Python distributed applications. The central idea is that of a *block* — an object 
-with lists of input and output ports. A block sends messages on its output ports and
-receives messages on its input ports. A network is a set of blocks and connections.
-A connection is a 4-tuple `(from_block, from_port, to_block, to_port)` which specifies
-that messages sent by `from_block` on `from_port` are received by `to_block` on `to_port`.
+The goal of this set of examples is to show you how to specify a network as a dictionary (`dict`) blocks and a list of connections. The keys and values in the block dictionary are names of blocks and their specifications, respectively. A connection is a 4-tuple `(from_block, from_port, to_block, to_port)` which specifies that messages sent by `from_block` on `from_port` are received by `to_block` on `to_port`.
 
 Some network structures, such as *pipelines*, can be specified without listing connections.
 A network is itself a block. You can build networks of networks. An atomic block is specified

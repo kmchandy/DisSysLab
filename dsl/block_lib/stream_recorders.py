@@ -27,7 +27,7 @@ class StreamSaver(SimpleAgent):
     Use Cases:
     - Base class for logging, file writing, memory recording.
 
-    tags: recorder, base, save, stream
+    tags: ["record", "memory", "file", "logging", "save"]
     """
 
     def __init__(
@@ -128,7 +128,7 @@ def record(to="memory", name=None, filepath=None):
 
                 def handle_msg(agent, msg):
                     with open(agent.filepath, "a") as f:
-                        f.write(repr(msg) + "\n")
+                        f.write(str(msg) + "\n")
                     agent.send(msg, "out")
 
                 super().__init__(
@@ -141,5 +141,11 @@ def record(to="memory", name=None, filepath=None):
                 )
 
         return StreamToFileCopy(filepath=filepath, name=name)
+
+    if to == "stdout":
+        class StreamToStdout(StreamSaver):
+            def _save_msg(self, agent, msg):
+                print(f"📤 {msg}")
+        return StreamToStdout(name=name or "StreamToStdout")
 
     raise ValueError(f"Invalid 'to' argument for record(): {to}")

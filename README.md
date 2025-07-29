@@ -35,7 +35,7 @@ You build a distributed application by:
 
 ## 📁 Explore Examples
 
-- `dsl/examples/intro/` — Build basic networks by connecting generators, transformers, and recorders
+- `dsl/examples/intro_basic/` — Build basic networks by connecting generators, transformers, and recorders
 - `dsl/examples/intro_to_agents/` — Create intelligent agents using OpenAI prompts or library functions (e.g. SciKit)
 - `dsl/examples/networks_of_networks/` — Compose blocks that are themselves networks
 - `dsl/examples/blocks_in_regular_Python/` — Use blocks as components inside regular Python code
