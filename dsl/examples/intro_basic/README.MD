@@ -2,20 +2,22 @@
 
 The goal of this set of examples is to show you how to specify a network as a dictionary (`dict`) blocks and a list of connections. The keys and values in the block dictionary are names of blocks and their specifications, respectively. A connection is a 4-tuple `(from_block, from_port, to_block, to_port)` which specifies that messages sent by `from_block` on `from_port` are received by `to_block` on `to_port`.
 
-Some network structures, such as *pipelines*, can be specified without listing connections.
-A network is itself a block. You can build networks of networks. An atomic block is specified
-by a function that receives and sends messages. By convention, if a block has a single output 
-port then that port is called `"out"`. Likewise, if a block has a single input port then that 
-port is called `"in"`.
+The first example also shows how to create a diagram showing connections by calling `draw`. The example uses the Agent class and types (sub-classes) of Agents called `generator`, `transform`, and `record`. A generate block has a single outport (short for "output port"), a transform block has a single inport and a single outport, and a record block has a single inport. By convention, a single outport is called "out" and a single inport is called "in". 
 
-A pipeline is a sequence of blocks:  
-`[ generate ] ---> [ transform ] ---> ... ---> [ transform ] ---> [ record ]`
+### generate
+A generate block is specified by a list or a Python generator; the generate block sends messages from the specified list or function on its outport. 
 
-Each example has two Specifications:
-- ✅ **Block and Connection Specification** — explicitly shows each block and connection
-- 🚀 **Pipeline Specification** — uses the `pipeline({...})` helper for simplicity
+Examples:
+- `generate(["hello", "world"])'
+- 
 
-You may run these examples in a script or Jupyter notebook. Make sure your environment is active.
+### transform
+A transform block is specified by a function; it applies the function to messages it receives on its inport and sends the results on its outports.
+
+### transform
+ and it sends messages on its output port. A transform block has a single input port and a single output port; it applies a function to messages it receives on its input port and sends results on its output port. 
+
+A generate block is specified by the list or Python generator function that it wraps. A
 
 ---
 

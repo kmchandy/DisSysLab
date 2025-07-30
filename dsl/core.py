@@ -223,12 +223,12 @@ Tags: block, base class, ports
                 f"Duplicate outport names in block '{self.name}'.")
 
         for inport in self.inports:
-            if not isinstance(inport, str):
+            if inport and not isinstance(inport, str):
                 raise TypeError(
                     f"Inport '{inport}' in block '{self.name}' must be a string.")
 
         for outport in self.outports:
-            if not isinstance(outport, str):
+            if outport and not isinstance(outport, str):
                 raise TypeError(
                     f"Outport '{outport}' in block '{self.name}' must be a string.")
 

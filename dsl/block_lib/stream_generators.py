@@ -20,9 +20,12 @@ import time
 import types
 import inspect
 import requests
+import traceback
+from rich import print as rprint
 from bs4 import BeautifulSoup
 from typing import Optional, Union, Callable, Any
-from dsl.core import Agent
+from dsl.core import Agent, SimpleAgent
+
 
 # =================================================
 #                StreamGenerator                   |
@@ -31,90 +34,74 @@ from dsl.core import Agent
 
 class StreamGenerator(Agent):
     """
-    A block that emits values from a generator function.
+    StreamGenerator
+
+    Emits messages from a Python generator function.
 
     Parameters:
-    - name: Optional block name.
-    - description: Optional description.
-    - generator_fn: A Python generator function.
-    - args: Optional positional arguments for generator_fn.
-    - kwargs: Optional keyword arguments for generator_fn.
-    - delay: Optional time delay (in seconds) between outputs.
+    - name: Optional name for the block
+    - generator_fn: A generator function that yields messages
+    - delay: Optional delay (in seconds) between messages
 
     Behavior:
-    - Emits values from the generator function on the 'out' port.
-    - Sends a '__STOP__' message after generator completion.
-    - Supports optional throttling via `delay`.
+    - Sends each yielded message to the "out" port
+    - Sends "__STOP__" after the generator is exhausted
+    - On failure, prints error using `rich` and logs to 'dsl_debug.log'
 
-    Example:
-    >>> def count_up_to(n): yield from range(n)
-    >>> block = StreamGenerator(generator_fn=count_up_to, kwargs={'n': 3})
+    tags: ["generator", "source", "stream", "error-handling"]
     """
 
-    def __init__(
-        self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        generator_fn: Optional[Callable[..., Any]] = None,
-        args: Optional[tuple] = (),
-        kwargs: Optional[dict] = None,
-        delay: Optional[Union[int, float]] = None
-    ):
+    def __init__(self, name=None, generator_fn=None, delay=None,  *args, **kwargs):
         if generator_fn is None:
             raise ValueError("StreamGenerator requires a generator_fn")
-        if not callable(generator_fn):
-            raise TypeError(f"{generator_fn} is not callable")
-        if kwargs is None:
-            kwargs = {}
 
-        def stream_fn(agent):
+        def run_fn(agent):
             try:
-                gen = generator_fn(*args, **kwargs)
-                if not inspect.isgenerator(gen):
-                    raise TypeError(
-                        f"{generator_fn.__name__} did not return a generator. "
-                        f"Expected a generator, but got {type(gen).__name__}. "
-                        f"Did you forget to use 'yield'?"
-                    )
-                for value in gen:
-                    agent.send(value, "out")
+                for msg in generator_fn(*args, **kwargs):
+                    agent.send(msg, "out")
                     if delay:
+                        import time
                         time.sleep(delay)
                 agent.send("__STOP__", "out")
+
             except Exception as e:
-                print(f"❌ StreamGenerator error: {e}")
-                agent.send("__STOP__", "out")
+                # Rich-formatted error
+                rprint(f"[bold red]❌ StreamGenerator error:[/bold red] {e}")
+
+                # Write full traceback to debug log
+                with open("dsl_debug.log", "a") as log:
+                    log.write("\n--- StreamGenerator Error ---\n")
+                    log.write(traceback.format_exc())
+
+                raise  # Re-raise to allow test or framework to detect failure
 
         super().__init__(
             name=name or "StreamGenerator",
-            description=description or "Emits values from a generator function",
+            description="Generate stream from Python generator",
             inports=[],
             outports=["out"],
-            run=stream_fn,
+            run=run_fn
         )
+
 
 # =================================================
 #                    generate                      |
 # =================================================
 
 
-def generate(source=None, delay=None, name=None):
+def generate(source=None, delay=None, name=None, *args, **kwargs):
     """
-    Create a StreamGenerator block from a list or generator function.
+    Create a StreamGenerator block from a list, generator, or a function returning one.
 
     Parameters:
-    - source: A list, generator function, or callable returning a list or generator.
-    - delay: Optional delay between outputs.
-    - name: Optional name for the block.
+    - source: list | generator function | callable returning list/generator
+    - delay: Optional delay between messages
+    - name: Optional block name
+    - *args, **kwargs: Passed to source if it’s a callable
 
     Returns:
-    - A StreamGenerator instance.
-
-    Example:
-    >>> generate([1, 2, 3])
-    >>> generate(lambda: (i for i in range(5)))
+    - StreamGenerator instance
     """
-
     if name is None:
         kind = (
             "list" if isinstance(source, list) else
@@ -133,25 +120,22 @@ def generate(source=None, delay=None, name=None):
         )
 
     if callable(source):
-        try:
-            result = source()
+        def wrapped_generator():
+            result = source(*args, **kwargs)
             if isinstance(result, types.GeneratorType):
-                return StreamGenerator(name=name, generator_fn=source, delay=delay)
+                yield from result
             elif isinstance(result, list):
-                def list_gen(): yield from result
-                return StreamGenerator(name=name, generator_fn=list_gen, delay=delay)
+                yield from result
             else:
                 raise TypeError(
                     f"Callable must return a list or generator, got {type(result)}"
                 )
-        except Exception as e:
-            raise ValueError(
-                f"Could not evaluate callable source for '{name}': {e}")
-
+        return StreamGenerator(name=name, generator_fn=wrapped_generator, delay=delay)
     raise TypeError(
         f"Unsupported source type: {type(source).__name__}. "
         f"'generate(...)' accepts a list, a generator function, or a callable returning one."
     )
+
 
 # =================================================
 #              GenerateTextFromURL                 |

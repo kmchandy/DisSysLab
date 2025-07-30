@@ -143,9 +143,9 @@ def record(to="memory", name=None, filepath=None):
         return StreamToFileCopy(filepath=filepath, name=name)
 
     if to == "stdout":
-        class StreamToStdout(StreamSaver):
+        class RecordToStdout(StreamSaver):
             def _save_msg(self, agent, msg):
                 print(f"📤 {msg}")
-        return StreamToStdout(name=name or "StreamToStdout")
+        return RecordToStdout(name=name or "StreamToStdout")
 
     raise ValueError(f"Invalid 'to' argument for record(): {to}")
