@@ -1,61 +1,85 @@
-# DisSysLab: Agents Collaborate by Exchanging Messages
+# 🕸️ DisSysLab: Agents Collaborate by Exchanging Messages
 
-**DisSysLab** is a simple framework for building applications in which multiple
-agents collaborate by exchanging messages.
+**DisSysLab** is a lightweight Python framework for building applications where **multiple agents collaborate by exchanging messages**.
 
-Its goals are:
-- 🧑‍🎓 **Accessibility**: Help non-programmers build distributed applications by assembling reusable blocks.
-- 🧑‍💻 **Extensibility**: Allow programmers to use the framework as a class in their Python code just as they would use any Python class.
+It is designed for both:
+- 🧑‍🎓 **Non-programmers** who want to explore distributed systems using pre-built components.
+- 🧑‍💻 **Programmers** who want to write agent-based distributed applications in Python.
 
 ---
 
-## 🔧 Build Applications by Connecting Blocks
+## 🎯 Goals
 
-A *network* is a collection of **blocks** and **connections**. Each block:
-- May have **input ports** and **output ports**
-- Defines a `run()` function that sends and receives **messages**
+- ✅ **Accessibility**: Build distributed apps by connecting reusable blocks — no advanced coding needed.
+- ✅ **Extensibility**: Use blocks like any other Python class in your code.
+- ✅ **Modularity**: Compose blocks into larger networks, or embed them in existing programs.
 
-A **connection** links the output port of one block to the input port of another:
-[ block_A.output_port ] --> [ block_B.input_port ]
+---
+
+## 🔧 Core Idea: Build Applications by Connecting Blocks
+
+A **block** is an agent with:
+- Input and/or output ports
+- A `run()` or `handle_msg()` function
+- A name and optional description
+
+A **network** consists of blocks and connections. For example, here is a network consisting of three blocks: generator, transformer, and recorder.
+
+[ generator ] → [ transformer ] → [ recorder ]
 
 
-You build a distributed application by:
-1. Selecting blocks from a library or defining blocks using Python
-2. Connecting blocks to form a network
-3. Running the network
+You build applications by:
+1. 📦 Choosing or defining blocks  
+2. 🔗 Connecting them into a network  
+3. ▶️ Running the system
 
 ---
 
 ## 🧩 Blocks Are Composable
 
-- A network itself can be used as a block inside a larger network
-- Blocks can be executed independently using `.run()`, or integrated into Python programs
+- **Parallel Composition**: A network can itself be used as a block in a larger network.
+- **Sequential Composition**: You can call blocks from regular Python code like functions.
 
 ---
 
 ## 📁 Explore Examples
 
-- `dsl/examples/intro_basic/` — Build basic networks by connecting generators, transformers, and recorders
-- `dsl/examples/intro_to_agents/` — Create intelligent agents using OpenAI prompts or library functions (e.g. SciKit)
-- `dsl/examples/networks_of_networks/` — Compose blocks that are themselves networks
-- `dsl/examples/blocks_in_regular_Python/` — Use blocks as components inside regular Python code
+| Folder | What You'll Learn |
+|--------|-------------------|
+| [`intro_basic/`](dsl/examples/intro_basic) | Create simple networks with generators, transformers, and recorders |
+| [`intro_to_agents/`](dsl/examples/intro_to_agents) | Build intelligent agents with GPT or SciKit functions |
+| [`networks_of_networks/`](dsl/examples/networks_of_networks) | Compose blocks that are themselves networks |
+| [`blocks_in_regular_Python/`](dsl/examples/blocks_in_regular_Python) | Use blocks in plain Python code for step-by-step tasks |
 
-👉 Each folder includes a `README.md` with example descriptions. These are designed to be run directly and modified easily — feel free to experiment!
+Each folder includes a `README.md` and runnable Python scripts.
 
 ---
 
 ## 🚀 Quick Start
 
-Install locally in editable mode:
-
 ```bash
 git clone https://github.com/kmchandy/DisSysLab.git
 cd DisSysLab
 pip install -e .
-🔎 Learn More
-📘 Browse the examples and README.md files in each folder
+```
 
-🔍 Use the upcoming natural language search to find blocks and examples by question
+---
 
-📬 DisSysLab is designed to help people learn distributed systems by building their own applications — collaboration and contributions are welcome!
+## 🔍 Coming 
+
+- 🔎 **Natural language search** to find blocks and examples 
+- 📚 A growing **library of reusable agents and block patterns**  
+- 🖼️ A **drag-and-drop UI** for visual network construction  
+
+---
+
+## 🤝 Contribute or Collaborate
+
+**DisSysLab** is an educational project. You are welcome to:
+
+- ✅ Try the examples  
+- 💡 Suggest improvements  
+- 🔧 Contribute your own agents or use cases  
+
+> 📬 We want to make distributed systems understandable, and enjoyable, for everyone.
 
