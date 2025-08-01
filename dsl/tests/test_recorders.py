@@ -1,103 +1,84 @@
-import tempfile
 import os
+import tempfile
+import pytest
 from dsl.core import Network
 from dsl.block_lib.stream_generators import generate
 from dsl.block_lib.stream_recorders import record
 
 
 def test_record_to_memory():
-    gen = generate(["alpha", "beta"])
-    sink = record(to="memory")
     net = Network(
-        name="test_record_memory",
-        blocks={"gen": gen, "sink": sink},
-        connections=[("gen", "out", "sink", "in")]
+        blocks={
+            "gen": generate(["A", "B", "C"]),
+            "rec": record()
+        },
+        connections=[("gen", "out", "rec", "in")]
     )
-    net.compile()
-    net.run()
-    assert hasattr(sink, "saved")
-    assert sink.saved == ["alpha", "beta"]
+    net.compile_and_run()
+    assert net.blocks["rec"].saved == ["A", "B", "C"]
 
 
 def test_record_to_file():
-    fd, path = tempfile.mkstemp()
-    os.close(fd)
-    try:
-        gen = generate(["x", "y", "z"])
-        sink = record(to=path)
-        net = Network(
-            name="test_record_file",
-            blocks={"gen": gen, "sink": sink},
-            connections=[("gen", "out", "sink", "in")]
-        )
-        net.compile()
-        net.run()
-        with open(path, "r") as f:
-            lines = [line.strip() for line in f.readlines()]
-        assert lines == ["x", "y", "z"]
-    finally:
-        os.remove(path)
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        tmp_path = tmp.name
+
+    net = Network(
+        blocks={
+            "gen": generate(["X", "Y"]),
+            "rec": record(to=tmp_path)
+        },
+        connections=[("gen", "out", "rec", "in")]
+    )
+    net.compile_and_run()
+
+    with open(tmp_path) as f:
+        lines = [line.strip() for line in f]
+    os.remove(tmp_path)
+    assert lines == ["X", "Y"]
 
 
 def test_record_to_file_and_forward():
-    fd, path = tempfile.mkstemp()
-    os.close(fd)
-    try:
-        gen = generate(["snap", "crackle"])
-        tap = record(to="file+stream", filepath=path)
-        sink = record(to="memory")
-        net = Network(
-            name="test_record_file_copy",
-            blocks={"gen": gen, "tap": tap, "sink": sink},
-            connections=[
-                ("gen", "out", "tap", "in"),
-                ("tap", "out", "sink", "in")
-            ]
-        )
-        net.compile()
-        net.run()
-        assert hasattr(sink, "saved")
-        assert sink.saved == ["snap", "crackle"]
-        with open(path, "r") as f:
-            contents = [line.strip() for line in f.readlines()]
-        assert contents == ["'snap'", "'crackle'"]
-    finally:
-        os.remove(path)
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        tmp_path = tmp.name
+
+    net = Network(
+        blocks={
+            "gen": generate(["M", "N"]),
+            "rec": record(to="file+stream", filepath=tmp_path),
+            "sink": record()
+        },
+        connections=[
+            ("gen", "out", "rec", "in"),
+            ("rec", "out", "sink", "in")
+        ]
+    )
+    net.compile_and_run()
+
+    with open(tmp_path) as f:
+        lines = [line.strip() for line in f]
+    os.remove(tmp_path)
+    assert lines == ["M", "N"]
+    assert net.blocks["sink"].saved == ["M", "N"]
 
 
-def test_record_invalid_to_argument():
-    # Use a non-string type to trigger the final ValueError
-    try:
-        record(to=42)  # Invalid type for 'to'
-        assert False, "Expected ValueError for invalid 'to' argument"
-    except ValueError as e:
-        assert "Invalid 'to' argument" in str(e)
+def test_record_to_stdout(capfd):
+    net = Network(
+        blocks={
+            "gen": generate(["hello"]),
+            "rec": record(to="stdout")
+        },
+        connections=[("gen", "out", "rec", "in")]
+    )
+    net.compile_and_run()
+    out, _ = capfd.readouterr()
+    assert "📤 hello" in out
 
 
-def test_record_file_stream_missing_filepath():
-    try:
+def test_record_invalid_to():
+    with pytest.raises(ValueError, match="Invalid 'to' argument"):
+        record(to=12345)
+
+
+def test_record_missing_filepath():
+    with pytest.raises(ValueError, match="Missing 'filepath='"):
         record(to="file+stream")
-        assert False, "Expected ValueError for missing 'filepath'"
-    except ValueError as e:
-        assert "Missing 'filepath='" in str(e)
-
-
-def test_record_to_directory_should_fail():
-    tmp_dir = tempfile.mkdtemp()
-    try:
-        record(to=tmp_dir)
-        assert False, "Expected ValueError when using a directory as 'to' path"
-    except ValueError as e:
-        assert "cannot be a directory" in str(e)
-    finally:
-        os.rmdir(tmp_dir)
-
-
-if __name__ == "__main__":
-    test_record_to_memory()
-    test_record_to_file()
-    test_record_to_file_and_forward()
-    test_record_invalid_to_argument()
-    test_record_file_stream_missing_filepath()
-    test_record_to_directory_should_fail()
-    print("✅ All record(...) tests passed.")

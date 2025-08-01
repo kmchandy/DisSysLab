@@ -1,11 +1,11 @@
-# DisSysLab: Multi-Agent Collaboration by Passing Messages
+# DisSysLab: Agents Collaborate by Exchanging Messages
 
 **DisSysLab** is a simple framework for building applications in which multiple
 agents collaborate by exchanging messages.
 
 Its goals are:
 - 🧑‍🎓 **Accessibility**: Help non-programmers build distributed applications by assembling reusable blocks.
-- 🧑‍💻 **Extensibility**: Allow programmers to use the framework in their Python code just as they would use any Python class.
+- 🧑‍💻 **Extensibility**: Allow programmers to use the framework as a class in their Python code just as they would use any Python class.
 
 ---
 
