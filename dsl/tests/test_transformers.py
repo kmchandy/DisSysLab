@@ -1,5 +1,5 @@
 import pytest
-from dsl.core import Network
+from dsl.core import Network, SimpleAgent
 from dsl.block_lib.stream_transformers import (
     StreamTransformer,
     WrapFunction,
@@ -266,3 +266,7 @@ def test_summarize_with_mock(monkeypatch):
     )
     net.compile_and_run()
     assert net.blocks["rec"].saved == ["This is a summary."]
+
+
+if __name__ == "__main__":
+    test_stream_transformer_basic_3()
