@@ -276,6 +276,7 @@ class MergeSynch(Agent):
         while True:
             for port in self.inports:
                 msg = self.recv(port)
+                print(f"in merge_synch, msg = {msg}")
                 if msg == "__STOP__":
                     self.send("__STOP__", "out")
                     return
@@ -356,6 +357,37 @@ class MergeAsynch(Agent):
                     f.write("\n--- TransformMultipleStreams Error ---\n")
                     f.write(traceback.format_exc())
                 self.send("__STOP__", "out")
+
+
+# =================================================
+#                     Broadcast                   |
+# =================================================
+
+class Broadcast(Agent):
+    """
+    Broadcasts any message received on inport "in" to all defined outports.
+    Useful for duplicating a stream to multiple downstream blocks.
+    """
+
+    def __init__(
+        self,
+        outports: list[str],
+        name: Optional[str] = None
+    ):
+        super().__init__(name=name or "Broadcast",
+                         inports=["in"],
+                         outports=outports,
+                         run=self.run)
+
+    def run(self):
+        while True:
+            msg = self.recv("in")
+            if msg == "__STOP__":
+                self.stop()
+                return
+            else:
+                for outport in self.outports:
+                    self.send(msg=msg, outport=outport)
 
 
 # =================================================

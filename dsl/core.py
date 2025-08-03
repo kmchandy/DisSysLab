@@ -865,7 +865,7 @@ plug-and-play, composition
         logging.debug(
             f"[compile] root_path_node for {self.name}")
         self.frontier = deque([self.root_path_node])
-
+        self.check()
         # ----------------------------
         # STEP 1: Get runnable blocks
         # ----------------------------
