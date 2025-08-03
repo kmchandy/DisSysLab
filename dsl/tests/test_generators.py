@@ -119,25 +119,3 @@ def test_generate_with_delay():
     )
     net.compile_and_run()
     assert net.blocks["sink"].saved == ["a", "b"]
-
-
-# def test_generate_runtime_error_logs():
-#     def gen_with_runtime_error():
-#         yield "start"
-#         raise RuntimeError("boom")
-
-#     net = Network(
-#         blocks={
-#             "source": generate(gen_with_runtime_error),
-#             "sink": record()
-#         },
-#         connections=[("source", "out", "sink", "in")]
-#     )
-
-#     try:
-#         net.compile_and_run()
-#     except RuntimeError:
-#         pass  # expected
-
-#     with open("debug.log") as f:
-#         assert "boom" in f.read()

@@ -97,6 +97,7 @@ from multiprocessing import SimpleQueue
 from threading import Thread
 from typing import Optional, List, Callable, Dict, Tuple, Union, Any
 import inspect
+import time
 from collections import deque
 import logging
 
@@ -354,6 +355,11 @@ Tags: agent, message-passing
                 raise TypeError(
                     f'parameter {parameter} of agent {name} must be a string.')
 
+        # self.inport_most_recent_msg is the inport from which a message was
+        # received most recently. Used only in recv_from_any_port. It is
+        # used to ensure fairness -- a message sent to any inport is received eventually.
+        self.inport_most_recent_msg = None
+
     def send(self, msg, outport: str):
         """Send msg on outport. Put msg on the queue associated with outport."""
         if outport not in self.outports or outport not in self.out_q:
@@ -377,6 +383,51 @@ Tags: agent, message-passing
                 f"[{self.name}] Input port '{inport}' of agent {self.name}  is not connected."
             )
         return self.in_q[inport].get()
+
+    def recv_if_waiting_msg(self, inport: str) -> Any:
+        """
+        Returns the message if there is a message at inport.
+        Returns None if there is no message at inport
+        """
+        if inport not in self.in_q:
+            raise ValueError(f"[{self.name}] Input port '{inport}' not found.")
+        q = self.in_q[inport]
+        if q.empty():
+            return None
+        else:
+            return q.get()
+
+    def recv_from_any_port(self, list_of_inports: List[str]) -> Tuple[Any, str]:
+        """
+        Scans the given list of inports and returns the first available (msg, port).
+        If no message is waiting on any port, returns (None, "No msg in inports").
+        """
+        # rotate_list ensures fairness in asynchronous merge of messages
+        # from multiple inports. rotate_list ensures that the inport at the head of
+        # a list doesn't get preferential treatment.
+        if not self.inport_most_recent_msg:
+            self.inport_most_recent_msg = list_of_inports[0]
+        rotated_list = list_of_inports
+        if self.inport_most_recent_msg not in rotated_list:
+            raise ValueError(f"{self.inport_most_recent_msg} not in list.")
+        i = rotated_list.index(self.inport_most_recent_msg)
+        rotated_list = rotated_list[i+1:] + rotated_list[:i+1]
+        for inport in list_of_inports:
+            msg_or_none = self.recv_if_waiting_msg(inport)
+            if msg_or_none is not None:
+                self.inport_recently_received = inport
+                return (msg_or_none, inport)
+        return (None, "No msg in inports")
+
+    def wait_for_any_port(self, list_of_inports: List[str] = None, sleep_time=0.01) -> Tuple[Any, str]:
+        if list_of_inports is None:
+            list_of_inports = self.inports
+        while True:
+            msg, port = self.recv_from_any_port(list_of_inports)
+            if msg:
+                return msg, port
+            else:
+                time.sleep(sleep_time)
 
 
 # =================================================

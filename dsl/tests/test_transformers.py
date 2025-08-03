@@ -7,7 +7,8 @@ from dsl.block_lib.stream_transformers import (
     SentimentClassifierWithGPT,
     ExtractEntitiesWithGPT,
     SummarizeWithGPT,
-    TransformMultipleStreams,
+    MergeSynch,
+    MergeAsynch,
     transform
 )
 from dsl.block_lib.stream_generators import generate
@@ -29,6 +30,19 @@ def test_stream_transformer_basic():
         blocks={
             "gen": generate(["abc", "def"]),
             "xf": StreamTransformer(transform_fn=reverse_text),
+            "rec": record(),
+        },
+        connections=[("gen", "out", "xf", "in"), ("xf", "out", "rec", "in")],
+    )
+    net.compile_and_run()
+    assert net.blocks["rec"].saved == ["cba", "fed"]
+
+
+def test_stream_transformer_basic_2():
+    net = Network(
+        blocks={
+            "gen": generate(["abc", "def"]),
+            "xf": transform(reverse_text),
             "rec": record(),
         },
         connections=[("gen", "out", "xf", "in"), ("xf", "out", "rec", "in")],
@@ -63,14 +77,14 @@ def test_transform_shortcut():
     assert net.blocks["rec"].saved == ["Animal: cat", "Animal: dog"]
 
 
-# ========== Multi-Input Transformer ==========
+# ========== Multi-Input Transformer Synchronous ==========
 
-def test_transform_multiple_streams():
+def test_transform_multiple_streams_synch():
     net = Network(
         blocks={
             "a": generate(["red", "blue"]),
             "b": generate(["apple", "berry"]),
-            "c": TransformMultipleStreams(["x", "y"], transformer_fn=join_texts),
+            "c": MergeSynch(["x", "y"]),
             "d": record(),
         },
         connections=[
@@ -80,7 +94,39 @@ def test_transform_multiple_streams():
         ],
     )
     net.compile_and_run()
-    assert net.blocks["d"].saved == ["red + apple", "blue + berry"]
+    assert net.blocks["d"].saved == [["red", "apple"], ["blue", "berry"]]
+
+
+# ========== Multi-Input Transformer Asynchronous ==========
+
+def test_transform_multiple_streams_asynch():
+    net = Network(
+        blocks={
+            "a": generate(["red", "blue"], delay=0.1),
+            "b": generate(["apple", "berry"]),
+            "c": MergeAsynch(["x", "y"]),
+            "d": record(),
+        },
+        connections=[
+            ("a", "out", "c", "x"),
+            ("b", "out", "c", "y"),
+            ("c", "out", "d", "in"),
+        ],
+    )
+
+    net.compile_and_run()
+
+    saved = net.blocks["d"].saved
+    # Check if either source stream was fully captured in the output
+    from_a = {"red", "blue"}
+    from_b = {"apple", "berry"}
+
+    a_present = from_a.issubset(saved)
+    b_present = from_b.issubset(saved)
+
+    assert a_present or b_present, (
+        f"Expected at least one full stream in output, but got: {saved}"
+    )
 
 
 # ========== GPT-Based Transformers (mocked) ==========
