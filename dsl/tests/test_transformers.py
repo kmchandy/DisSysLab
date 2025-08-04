@@ -7,12 +7,11 @@ from dsl.block_lib.stream_transformers import (
     SentimentClassifierWithGPT,
     ExtractEntitiesWithGPT,
     SummarizeWithGPT,
-    MergeSynch,
-    MergeAsynch,
     transform
 )
 from dsl.block_lib.stream_generators import generate
 from dsl.block_lib.stream_recorders import record
+from dsl.block_lib.fanin import MergeSynch, MergeAsynch
 
 
 # ========== Helper Functions ==========
@@ -124,8 +123,8 @@ def test_transform_multiple_streams_asynch():
     a_present = from_a.issubset(saved)
     b_present = from_b.issubset(saved)
 
-    assert a_present or b_present, (
-        f"Expected at least one full stream in output, but got: {saved}"
+    assert a_present and b_present, (
+        f"Expected both full streams in output, but got: {saved}"
     )
 
 
@@ -266,7 +265,3 @@ def test_summarize_with_mock(monkeypatch):
     )
     net.compile_and_run()
     assert net.blocks["rec"].saved == ["This is a summary."]
-
-
-if __name__ == "__main__":
-    test_stream_transformer_basic_3()
