@@ -3,6 +3,7 @@ from dsl.core import Network, SimpleAgent
 from dsl.block_lib.stream_transformers import (
     StreamTransformer,
     WrapFunction,
+    get_value_for_key,
     PromptToBlock,
     SentimentClassifierWithGPT,
     ExtractEntitiesWithGPT,
@@ -10,81 +11,98 @@ from dsl.block_lib.stream_transformers import (
     transform
 )
 from dsl.block_lib.stream_generators import generate
-from dsl.block_lib.stream_recorders import record
+from dsl.block_lib.stream_recorders import record, RecordToList
 from dsl.block_lib.fanin import MergeSynch, MergeAsynch
 
 
-# ========== Helper Functions ==========
-
 def reverse_text(text): return text[::-1]
-
-
 def join_texts(msgs): return " + ".join(msgs)
-
-# ========== Basic Transformers ==========
 
 
 def test_stream_transformer_basic():
+    results = []
+
     net = Network(
         blocks={
-            "gen": generate(["abc", "def"]),
-            "xf": StreamTransformer(transform_fn=reverse_text),
-            "rec": record(),
+            "gen": generate(["abc", "def"], key="data"),
+            "xf": StreamTransformer(transform_fn=reverse_text, input_key="data", output_key="reverse_str"),
+            "rec": RecordToList(results),
         },
-        connections=[("gen", "out", "xf", "in"), ("xf", "out", "rec", "in")],
+        connections=[
+            ("gen", "out", "xf", "in"),
+            ("xf", "out", "rec", "in")
+        ],
     )
+
     net.compile_and_run()
-    assert net.blocks["rec"].saved == ["cba", "fed"]
+    assert results == [
+        {'data': 'abc', 'reverse_str': 'cba'},
+        {'data': 'def', 'reverse_str': 'fed'}
+    ]
 
 
-def test_stream_transformer_basic_2():
+def test_stream_transformer_basic_short_record():
+    results = []
+
     net = Network(
         blocks={
-            "gen": generate(["abc", "def"]),
-            "xf": transform(reverse_text),
-            "rec": record(),
+            "gen": generate(["abc", "def"], key="data"),
+            "xf": StreamTransformer(transform_fn=reverse_text, input_key="data", output_key="reverse_str"),
+            "rec": record(to="list", target=results)
         },
-        connections=[("gen", "out", "xf", "in"), ("xf", "out", "rec", "in")],
+        connections=[
+            ("gen", "out", "xf", "in"),
+            ("xf", "out", "rec", "in")
+        ],
     )
+
     net.compile_and_run()
-    assert net.blocks["rec"].saved == ["cba", "fed"]
+    assert results == [
+        {'data': 'abc', 'reverse_str': 'cba'},
+        {'data': 'def', 'reverse_str': 'fed'}
+    ]
 
 
 def test_wrap_function_upper():
+    results = []
     net = Network(
         blocks={
-            "gen": generate(["one", "two"]),
-            "xf": WrapFunction(str.upper),
-            "rec": record(),
+            "gen": generate(["one", "two"], key="data"),
+            "xf": WrapFunction(func=str.upper, input_key="data"),
+            "rec": RecordToList(results),
         },
         connections=[("gen", "out", "xf", "in"), ("xf", "out", "rec", "in")],
     )
     net.compile_and_run()
-    assert net.blocks["rec"].saved == ["ONE", "TWO"]
+    assert results == [
+        {"data": "ONE"},
+        {"data": "TWO"}
+    ]
 
 
 def test_transform_shortcut():
+    results = []
+
     net = Network(
         blocks={
-            "gen": generate(["cat", "dog"]),
-            "xf": transform(lambda x: f"Animal: {x}"),
-            "rec": record(),
+            "gen": generate(["cat", "dog"], key="data"),
+            "xf": WrapFunction(get_value_for_key("data")),
+            "rec": RecordToList(results),
         },
         connections=[("gen", "out", "xf", "in"), ("xf", "out", "rec", "in")],
     )
     net.compile_and_run()
-    assert net.blocks["rec"].saved == ["Animal: cat", "Animal: dog"]
+    assert results == ["cat", "dog"]
 
-
-# ========== Multi-Input Transformer Synchronous ==========
 
 def test_transform_multiple_streams_synch():
+    results = []
     net = Network(
         blocks={
             "a": generate(["red", "blue"]),
             "b": generate(["apple", "berry"]),
             "c": MergeSynch(["x", "y"]),
-            "d": record(),
+            "d": RecordToList(results),
         },
         connections=[
             ("a", "out", "c", "x"),
@@ -93,18 +111,17 @@ def test_transform_multiple_streams_synch():
         ],
     )
     net.compile_and_run()
-    assert net.blocks["d"].saved == [["red", "apple"], ["blue", "berry"]]
+    assert results == [["red", "apple"], ["blue", "berry"]]
 
-
-# ========== Multi-Input Transformer Asynchronous ==========
 
 def test_transform_multiple_streams_asynch():
+    results = []
     net = Network(
         blocks={
             "a": generate(["red", "blue"], delay=0.1),
             "b": generate(["apple", "berry"]),
             "c": MergeAsynch(["x", "y"]),
-            "d": record(),
+            "d": RecordToList(results),
         },
         connections=[
             ("a", "out", "c", "x"),
@@ -112,42 +129,20 @@ def test_transform_multiple_streams_asynch():
             ("c", "out", "d", "in"),
         ],
     )
-
     net.compile_and_run()
 
-    saved = net.blocks["d"].saved
-    # Check if either source stream was fully captured in the output
     from_a = {"red", "blue"}
     from_b = {"apple", "berry"}
-
-    a_present = from_a.issubset(saved)
-    b_present = from_b.issubset(saved)
-
+    a_present = from_a.issubset(results)
+    b_present = from_b.issubset(results)
     assert a_present and b_present, (
         f"Expected both full streams in output, but got: {saved}"
     )
 
 
-# ========== GPT-Based Transformers (mocked) ==========
-
-@pytest.fixture
-def mock_openai(monkeypatch):
-    class DummyClient:
-        def __init__(self, *args, **kwargs): pass
-
-        class chat:
-            class completions:
-                @staticmethod
-                def create(**kwargs):
-                    class Msg:
-                        content = "['Barack Obama']"
-                    return type("Resp", (), {"choices": [type("C", (), {"message": Msg()})()]})()
-
-    monkeypatch.setattr(
-        "dsl.block_lib.stream_transformers.OpenAI", DummyClient)
-
-
 def test_prompt_to_block_with_mock(monkeypatch):
+    results = []
+
     class DummyClient:
         def __init__(self, *args, **kwargs): pass
 
@@ -158,26 +153,23 @@ def test_prompt_to_block_with_mock(monkeypatch):
                     class Msg:
                         content = "42"
                     return type("Resp", (), {"choices": [type("C", (), {"message": Msg()})()]})()
-
     monkeypatch.setattr(
         "dsl.block_lib.stream_transformers.OpenAI", DummyClient)
-
     net = Network(
         blocks={
             "gen": generate(["What is 6 x 7?"]),
             "gpt": PromptToBlock("Answer this: {msg}"),
-            "rec": record(),
+            "rec": RecordToList(results),
         },
-        connections=[
-            ("gen", "out", "gpt", "in"),
-            ("gpt", "out", "rec", "in"),
-        ],
+        connections=[("gen", "out", "gpt", "in"), ("gpt", "out", "rec", "in")],
     )
     net.compile_and_run()
-    assert net.blocks["rec"].saved == ["42"]
+    assert results == ["42"]
 
 
 def test_sentiment_classifier_with_mock(monkeypatch):
+    results = []
+
     class DummyClient:
         def __init__(self, *args, **kwargs): pass
 
@@ -188,26 +180,23 @@ def test_sentiment_classifier_with_mock(monkeypatch):
                     class Msg:
                         content = "Positive"
                     return type("Resp", (), {"choices": [type("C", (), {"message": Msg()})()]})()
-
     monkeypatch.setattr(
         "dsl.block_lib.stream_transformers.OpenAI", DummyClient)
-
     net = Network(
         blocks={
             "gen": generate(["I love pizza"]),
             "clf": SentimentClassifierWithGPT(),
-            "rec": record(),
+            "rec": RecordToList(results),
         },
-        connections=[
-            ("gen", "out", "clf", "in"),
-            ("clf", "out", "rec", "in"),
-        ],
+        connections=[("gen", "out", "clf", "in"), ("clf", "out", "rec", "in")],
     )
     net.compile_and_run()
-    assert net.blocks["rec"].saved == ["Positive"]
+    assert results == ["Positive"]
 
 
 def test_extract_entities_with_mock(monkeypatch):
+    results = []
+
     class DummyClient:
         def __init__(self, *args, **kwargs): pass
 
@@ -218,26 +207,23 @@ def test_extract_entities_with_mock(monkeypatch):
                     class Msg:
                         content = "['Barack Obama']"
                     return type("Resp", (), {"choices": [type("C", (), {"message": Msg()})()]})()
-
     monkeypatch.setattr(
         "dsl.block_lib.stream_transformers.OpenAI", DummyClient)
-
     net = Network(
         blocks={
             "gen": generate(["Barack Obama was the president"]),
             "xf": ExtractEntitiesWithGPT(),
-            "rec": record(),
+            "rec": RecordToList(results)
         },
-        connections=[
-            ("gen", "out", "xf", "in"),
-            ("xf", "out", "rec", "in"),
-        ],
+        connections=[("gen", "out", "xf", "in"), ("xf", "out", "rec", "in")],
     )
     net.compile_and_run()
-    assert net.blocks["rec"].saved == [["Barack Obama"]]
+    assert results == [["Barack Obama"]]
 
 
 def test_summarize_with_mock(monkeypatch):
+    results = []
+
     class DummyClient:
         def __init__(self, *args, **kwargs): pass
 
@@ -248,20 +234,15 @@ def test_summarize_with_mock(monkeypatch):
                     class Msg:
                         content = "This is a summary."
                     return type("Resp", (), {"choices": [type("C", (), {"message": Msg()})()]})()
-
     monkeypatch.setattr(
         "dsl.block_lib.stream_transformers.OpenAI", DummyClient)
-
     net = Network(
         blocks={
             "gen": generate(["This is a long paragraph..."]),
             "xf": SummarizeWithGPT(),
-            "rec": record(),
+            "rec": RecordToList(results)
         },
-        connections=[
-            ("gen", "out", "xf", "in"),
-            ("xf", "out", "rec", "in"),
-        ],
+        connections=[("gen", "out", "xf", "in"), ("xf", "out", "rec", "in")],
     )
     net.compile_and_run()
-    assert net.blocks["rec"].saved == ["This is a summary."]
+    assert results == ["This is a summary."]
