@@ -451,19 +451,21 @@ Parameters:
 - handle_msg: Optional function to apply to each incoming message.
 
 Behavior:
+- May have 0 or 1 inports and an arbitrary number of outports.
 - Executes `init_fn(self)` once at the start.
-- Repeatedly receives messages from its only inport.
+- If it has an inport then it repeatedly receives messages from its only inport.
 - Applies `handle_msg(self, msg)`.
 - Sends results using self.send().
 - Automatically stops on receiving "__STOP__".
-- run(self) is dynamically defined in __init__, and 'self' is used
-    instead of 'self' to avoid shadowing the outer self.
-- The single input port is called 'in'. 
-- If no outports is specified then the default is a single outport called 'out'.
+- run(self_) is defined dynamically in __init__. We use 'self_' inside the closure
+  to avoid confusion with the outer class-level 'self'.
+- We adopt the convention that the single input port is called 'in'. Name can be overridden,
 
 Use Cases:
-- Building a block with a single inport and where the block receives
-and processes one message at a time.
+- A block with no inports or outports. This is a Python object that is runnable.
+- A block with 1 inport and no outports. Used in recording messages that arrive at the inport.
+- A block with no inports and 1 or more outports. Used to generate messages.
+- A block with 1 inport and 1 or more outports. Used to transform messages.
 
 
 Tags: agent, single inport, handle one message at a time
@@ -473,13 +475,16 @@ Tags: agent, single inport, handle one message at a time
         self,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        # Simple agent has only one inport and it is called 'in'
-        inport: str = 'in',
+        # Simple agent has at most one inport
+        inport: Optional[str] = None,
         outports: Optional[List[str]] = None,
         init_fn: Optional[Callable] = None,
         handle_msg: Optional[Callable[[Any, Any], None]] = None,
         parameters: Optional[Dict[str, Any]] = None,
     ):
+        if handle_msg and not inport:
+            raise ValueError(
+                f"SimpleAgent '{name}' handles incoming messages but has no inport")
         # Allows parameters to be a list or a dict in which values are None.
         if parameters is None:
             parameters = {}
@@ -491,10 +496,10 @@ Tags: agent, single inport, handle one message at a time
         self.name = name or ""
         self.description = description or ""
         self.inport = inport
-        self.outports = outports if outports is not None else ["out"]
+        self.inports = [inport] if inport else []
+        self.outports = outports if outports else []
         self.handle_msg = handle_msg
         self.init_fn = init_fn
-        self.inports = [self.inport]
 
         # Define run method as a closure inside __init__
 

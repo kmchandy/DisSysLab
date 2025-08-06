@@ -5,7 +5,7 @@ import tempfile
 import pytest
 from dsl.core import Network
 from dsl.block_lib.stream_generators import generate
-from dsl.block_lib.stream_recorders import record
+from dsl.block_lib.stream_recorders import RecordToList
 
 
 def f(n):
@@ -14,18 +14,22 @@ def f(n):
 
 
 def test_generate_from_list():
+    results = []
+
     net = Network(
         blocks={
             "source": generate(["a", "b", "c"]),
-            "sink": record()
+            "sink": RecordToList(results),
         },
         connections=[("source", "out", "sink", "in")]
     )
     net.compile_and_run()
-    assert net.blocks["sink"].saved == ["a", "b", "c"]
+    assert results == ["a", "b", "c"]
 
 
 def test_generate_from_file():
+    results = []
+
     with tempfile.NamedTemporaryFile(mode="w+", delete=False) as f:
         f.write("apple\nbanana\ncarrot\n")
         f_path = f.name
@@ -38,7 +42,7 @@ def test_generate_from_file():
         net = Network(
             blocks={
                 "source": generate(read_file),
-                "sink": record()
+                "sink": RecordToList(results),
             },
             connections=[
                 ("source", "out", "sink", "in")
@@ -46,45 +50,51 @@ def test_generate_from_file():
         )
 
         net.compile_and_run()
-        assert net.blocks["sink"].saved == ["apple", "banana", "carrot"]
+        assert results == ["apple", "banana", "carrot"]
     finally:
         os.remove(f_path)
 
 
 def test_generate_from_python_generator():
+    results = []
+
     net = Network(
         blocks={
             "source": generate(f, n=3),
-            "sink": record()
+            "sink": RecordToList(results),
         },
         connections=[("source", "out", "sink", "in")]
     )
     net.compile_and_run()
-    assert net.blocks["sink"].saved == [0, 1, 2]
+    assert results == [0, 1, 2]
 
 
 def test_generate_empty_list():
+    results = []
+
     net = Network(
         blocks={
             "source": generate([]),
-            "sink": record()
+            "sink": RecordToList(results),
         },
         connections=[("source", "out", "sink", "in")]
     )
     net.compile_and_run()
-    assert net.blocks["sink"].saved == []
+    assert results == []
 
 
 def test_generate_single_item():
+    results = []
+
     net = Network(
         blocks={
             "source": generate(["only"]),
-            "sink": record()
+            "sink": RecordToList(results),
         },
         connections=[("source", "out", "sink", "in")]
     )
     net.compile_and_run()
-    assert net.blocks["sink"].saved == ["only"]
+    assert results == ["only"]
 
 
 def test_generate_invalid_source_type():
@@ -98,24 +108,28 @@ def repeat(text, times=2):
 
 
 def test_generate_with_args_and_kwargs():
+    results = []
+
     net = Network(
         blocks={
             "source": generate(repeat, text="hello", times=3),
-            "sink": record()
+            "sink": RecordToList(results),
         },
         connections=[("source", "out", "sink", "in")]
     )
     net.compile_and_run()
-    assert net.blocks["sink"].saved == ["hello", "hello", "hello"]
+    assert results == ["hello", "hello", "hello"]
 
 
 def test_generate_with_delay():
+    results = []
+
     net = Network(
         blocks={
             "source": generate(["a", "b"], delay=0.01),
-            "sink": record()
+            "sink": RecordToList(results),
         },
         connections=[("source", "out", "sink", "in")]
     )
     net.compile_and_run()
-    assert net.blocks["sink"].saved == ["a", "b"]
+    assert results == ["a", "b"]

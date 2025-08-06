@@ -27,46 +27,47 @@ DEBUG_LOG = "dsl_debug.log"
 
 
 class StreamTransformer(SimpleAgent):
-    """
-    StreamTransformer applies a transformation function to each input message.
-
-    - inport: "in"
-    - outport: "out"
-    - transform_fn(msg, *args, **kwargs) → result
-    """
-
     def __init__(
         self,
-        transform_fn: Callable[..., Any],
-        args: Optional[tuple] = (),
-        kwargs: Optional[dict] = None,
+        transform_fn: Callable,
+        args=(),
+        kwargs=None,
+        input_key: Optional[str] = None,
+        output_key: Optional[str] = None,
         name: Optional[str] = None,
-        description: Optional[str] = None,
     ):
-        if not callable(transform_fn):
-            raise TypeError(
-                f"transform_fn must be callable, got {type(transform_fn)}")
-        if kwargs is None:
-            kwargs = {}
+        if not name:
+            name = "StreamTransformer"
+
+        kwargs = kwargs or {}
 
         def handle_msg(agent, msg):
+            print(f"[StreamTransformer.handle_msg] Received: {msg}")
             try:
-                result = transform_fn(msg, *args, **kwargs)
-                agent.send(result, "out")
+                if input_key is not None and isinstance(msg, dict):
+                    input_value = msg.get(input_key)
+                    result = transform_fn(input_value, *args, **kwargs)
+                    out_msg = dict(msg)  # shallow copy
+                    if output_key:
+                        out_msg[output_key] = result
+                    else:
+                        out_msg[input_key] = result
+                    agent.send(msg=out_msg, outport="out")
+                else:
+                    # No input key, apply transform to whole msg
+                    result = transform_fn(msg, *args, **kwargs)
+                    agent.send(msg=result,  outport="out")
             except Exception as e:
-                rprint(f"[bold red]❌ StreamTransformer error:[/bold red] {e}")
-                with open(DEBUG_LOG, "a") as f:
-                    f.write("\n--- StreamTransformer Error ---\n")
-                    f.write(traceback.format_exc())
-                agent.send("__STOP__", "out")
+                print(f"[StreamTransformer] Error: {e}")
+                raise
 
         super().__init__(
-            name=name or "StreamTransformer",
-            description=description or "Applies a function to each stream message",
+            name=name,
             inport="in",
             outports=["out"],
             handle_msg=handle_msg,
         )
+
 
 # =================================================
 #              WrapFunction                       |
@@ -79,15 +80,17 @@ class WrapFunction(StreamTransformer):
         func: Callable[[Any], Any],
         args: Optional[tuple] = (),
         kwargs: Optional[dict] = None,
+        input_key: Optional[str] = None,
+        output_key: Optional[str] = None,
         name: Optional[str] = None,
-        description: Optional[str] = None,
     ):
         super().__init__(
             transform_fn=func,
             args=args,
             kwargs=kwargs,
+            input_key=input_key,
+            output_key=output_key,
             name=name or "WrapFunction",
-            description=description or f"Wraps function: {func.__name__}",
         )
 
 # =================================================
@@ -102,7 +105,6 @@ class PromptToBlock(SimpleAgent):
         model: str = "gpt-3.5-turbo",
         temperature: float = 0.7,
         name: Optional[str] = None,
-        description: Optional[str] = None,
     ):
         if not prompt:
             raise ValueError("PromptToBlock requires a prompt.")
@@ -133,7 +135,6 @@ class PromptToBlock(SimpleAgent):
 
         super().__init__(
             name=name or "PromptToBlock",
-            description=description or f"LLM prompt block: {prompt[:40]}...",
             inport="in",
             outports=["out"],
             handle_msg=handle_msg,
@@ -241,6 +242,31 @@ class SummarizeWithGPT(StreamTransformer):
                 return "error"
 
         super().__init__(transform_fn=summarize, name="SummarizeWithGPT")
+
+
+def get_value_for_key(key: str):
+    """
+    Returns a function that extracts the value corresponding to the given key from a message dictionary.
+
+    Parameters:
+        key (str): The key to extract from the input dictionary.
+
+    Returns:
+        Callable[[dict], Any]: A function that takes a dictionary and returns the value for the specified key.
+
+    Example:
+        >>> f = get_value_for_key("key_1")
+        >>> f({"key_0": 5, "key_1": "A", "key_2": 100})
+        'A'
+    """
+    def extractor(msg: dict):
+        if not isinstance(msg, dict):
+            raise ValueError(f"Expected msg to be a dict, got {type(msg)}")
+        if key not in msg:
+            raise KeyError(f"Key '{key}' not found in message: {msg}")
+        return msg[key]
+
+    return extractor
 
 # =================================================
 #        MergeSynch                |
@@ -395,7 +421,7 @@ class Broadcast(Agent):
 # =================================================
 
 
-def transform(fn, *args, **kwargs):
+def transform(func, *args, **kwargs):
     """
     Create a transformer block from a Python function.
 
@@ -403,6 +429,6 @@ def transform(fn, *args, **kwargs):
     >>> transform(str.upper)
     >>> transform(lambda x, prefix=">> ": prefix + x, prefix=">> ")
     """
-    if not callable(fn):
-        raise TypeError(f"transform(fn) must be callable, got {type(fn)}")
-    return WrapFunction(fn, args=args, kwargs=kwargs)
+    if not callable(func):
+        raise TypeError(f"transform(func) must be callable, got {type(func)}")
+    return WrapFunction(func, args=args, kwargs=kwargs)
