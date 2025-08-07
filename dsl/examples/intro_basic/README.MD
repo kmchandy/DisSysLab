@@ -1,53 +1,10 @@
 # 📘 Build Distributed Applications by Connecting Blocks
 
-The goal of this set of examples is to show you how to build a distributed application as a network consisting of connected blocks. The blocks in a network are specified as a dictionary (`dict`). A key of the dict is the name of a block and the value is the corresponding specification of the block. A connection is a 4-tuple `(from_block, from_port, to_block, to_port)` which specifies that messages sent by block `from_block` on port `from_port` are received by block `to_block` on port `to_port`.
+These examples show you how to build a distributed application as a network consisting of connected blocks.
 
-The examples show you how to build applications using the Agent class and types (sub-classes) of Agents called `generator`, `transform`, and `record`. The goal of these examples is to show how networks are specified as blocks and connections. Later we describe the Agent classes and its subclasses in detail. Here we introduce them before using them in examples.
-
- We use the short forms outport and inport for output port and input port, respectively. By convention, if an agent has a single outport then that port is called "out". Likewise, if an agent has a single inport then that port is called "in".
-
-### generate
-A generate block has a single outport. It is specified by a list or a Python generator; the generate block sends messages from the specified list or function on its outport. There are many kinds of generators. Here we give examples of just two.
-
-Example 1:
-```
-# Send message "hello" and then message "world" on the outport
-generate(["hello", "world"])
-```
-
-Example 2:
-```
-# Send message 0, then message 1, then message 2 on the outport.
-def f(n):
-    for i in range(n):
-        yield i
-
-generate(f, n=3)
-```
-
-### transform
-A transform block has a single inport and a single outport, and is specified by a function. A transform block waits for a message on its inport, applies the function to messages, and outputs the result on its outport. port; it applies a function to messages it receives on its input port and sends results on its output port. 
-
-Example 1:
-```
-def reverse_text(text): return text[::-1]
-
-# output reversals of messages received on inport
-transform(reverse_text)
-```
-
-Example 2:
-```
-# Use OpenAI or other AI agent to answer messages received on inport and
-# put result on outport. For example if msg is "What is 6 x 7?" then
-# transform outputs "42". If msg is "What is the capital of Canada?" then
-# transform outputs "Ottawa".
-PromptToBlock("Answer this: {msg}")
-```
-
-
-
-The first example also shows how to create a diagram showing connections by calling `draw`.
+ The blocks in a network are specified as a dictionary (`dict`). A key of the dict is the name of a block and the value is the corresponding specification of the block. 
+ 
+ A connection is a 4-tuple `(from_block, from_port, to_block, to_port)` which specifies that messages sent by block `from_block` on port `from_port` are received by block `to_block` on port `to_port`.
 
 ---
 
@@ -55,28 +12,29 @@ The first example also shows how to create a diagram showing connections by call
 
 ### Block and Connection Specification
 ```python
-from dsl.core import Network
-from dsl.block_lib.stream_generators import generate
-from dsl.block_lib.stream_transformers import transform
-from dsl.block_lib.stream_recorders import record
-from dsl.utils.visualize import draw
+def illustrate_blocks_and_connections_1():
+    results = []
 
-net = Network(
-    blocks={
-        "source": generate(["hello", "world"]),
-        "uppercase": transform(str.upper),
-        "sink": record()
-    },
-    connections=[
-        ("source", "out", "uppercase", "in"),
-        ("uppercase", "out", "sink", "in")
-    ]
-)
+    net = Network(
+        blocks={
+            "gen": generate(["abc", "def"]),
+            "tran": StreamTransformer(transform_fn=reverse_text),
+            "rec": RecordToList(results),
+        },
+        connections=[
+            ("gen", "out", "tran", "in"),
+            ("tran", "out", "rec", "in")
+        ],
+    )
 
-net.compile_and_run()
-draw(net)
-print("Output:", net.blocks["sink"].saved)
+    net.compile_and_run()
+    assert results == ["cba", "fed"]
 ```
+This example has three blocks called "gen", "tran" and "rec". The block called "gen" is specified by:
+```generate(["abc", "def"])```. We describe how blocks are specified later.
+
+
+
 ### 🚀 Pipeline Specification
 
 ```python
