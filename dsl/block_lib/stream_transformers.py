@@ -93,6 +93,52 @@ class WrapFunction(StreamTransformer):
             name=name or "WrapFunction",
         )
 
+
+# =================================================
+#      GPT_Prompt(StreamTransformer)          |
+# =================================================
+
+class GPT_Prompt(StreamTransformer):
+    def __init__(
+        self,
+        messages: Callable[[str], list[dict]],
+        postprocess_fn: Optional[Callable[[str], Any]] = None,
+        model: str = "gpt-3.5-turbo",
+        temperature: float = 0.7,
+        input_key: Optional[str] = None,
+        output_key: Optional[str] = None,
+        name: Optional[str] = "GPTTransformer"
+    ):
+        load_dotenv()
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ValueError("OPENAI_API_KEY is missing in environment.")
+        client = OpenAI(api_key=api_key)
+
+        def call_gpt(msg: str) -> Any:
+            try:
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=messages(msg),
+                    temperature=temperature
+                )
+                text = response.choices[0].message.content.strip()
+                return postprocess_fn(text) if postprocess_fn else text
+            except Exception as e:
+                rprint(f"[bold red]❌ GPTTransformer error:[/bold red] {e}")
+                with open(DEBUG_LOG, "a") as f:
+                    f.write("\n--- GPTTransformer Error ---\n")
+                    f.write(traceback.format_exc())
+                return "error"
+
+        super().__init__(
+            transform_fn=call_gpt,
+            input_key=input_key,
+            output_key=output_key,
+            name=name,
+        )
+
+
 # =================================================
 #         PromptToBlock (WrapPrompt)              |
 # =================================================
@@ -140,108 +186,51 @@ class PromptToBlock(SimpleAgent):
             handle_msg=handle_msg,
         )
 
-# =================================================
-#        SentimentClassifierWithGPT              |
-# =================================================
+# # =================================================
+# #        SentimentClassifierWithGPT              |
+# # =================================================
 
 
-class SentimentClassifierWithGPT(StreamTransformer):
-    def __init__(self, model: str = "gpt-3.5-turbo"):
-        load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY is missing in environment.")
-        client = OpenAI(api_key=api_key)
-
-        def classify(msg: str) -> str:
-            prompt = f"""Classify the sentiment of the following text as Positive, Negative, or Neutral.\nText: "{msg}"\nSentiment:"""
-            try:
-                response = client.chat.completions.create(
-                    model=model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0
-                )
-                return response.choices[0].message.content.strip()
-            except Exception as e:
-                rprint(
-                    f"[bold red]❌ SentimentClassifier error:[/bold red] {e}")
-                with open(DEBUG_LOG, "a") as f:
-                    f.write("\n--- SentimentClassifierWithGPT Error ---\n")
-                    f.write(traceback.format_exc())
-                return "error"
-
-        super().__init__(transform_fn=classify, name="SentimentClassifierWithGPT")
-
-# =================================================
-#        ExtractEntitiesWithGPT                   |
-# =================================================
+# SentimentClassifierWithGPT = lambda **kwargs: GPTTransformer(
+#     messages=lambda msg: [{
+#         "role": "user",
+#         "content": f"Classify the sentiment of the following text as Positive, Negative, or Neutral.\nText: \"{msg}\"\nSentiment:"
+#     }],
+#     name="SentimentClassifierWithGPT",
+#     temperature=0,
+#     **kwargs
+# )
 
 
-class ExtractEntitiesWithGPT(StreamTransformer):
-    def __init__(self, model: str = "gpt-3.5-turbo"):
-        load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY is missing in environment.")
-        client = OpenAI(api_key=api_key)
+# # =================================================
+# #        ExtractEntitiesWithGPT                   |
+# # =================================================
 
-        def extract(msg: str) -> list[str]:
-            prompt = f"""Extract named entities from the text as a Python list.\nText: "{msg}" """
-            try:
-                response = client.chat.completions.create(
-                    model=model,
-                    messages=[{"role": "user", "content": prompt}],
-                )
-                text = response.choices[0].message.content.strip()
-                return ast.literal_eval(text) if text.startswith("[") else []
-            except Exception as e:
-                rprint(f"[bold red]❌ ExtractEntities error:[/bold red] {e}")
-                with open(DEBUG_LOG, "a") as f:
-                    f.write("\n--- ExtractEntitiesWithGPT Error ---\n")
-                    f.write(traceback.format_exc())
-                return []
-
-        super().__init__(transform_fn=extract, name="ExtractEntitiesWithGPT")
-
-# =================================================
-#           SummarizeWithGPT                      |
-# =================================================
+# ExtractEntitiesWithGPT = lambda **kwargs: GPTTransformer(
+#     messages=lambda msg: [{
+#         "role": "user",
+#         "content": f"Extract named entities from the text as a Python list.\nText: \"{msg}\""
+#     }],
+#     postprocess_fn=lambda s: ast.literal_eval(
+#         s) if s.strip().startswith("[") else [],
+#     name="ExtractEntitiesWithGPT",
+#     **kwargs
+# )
 
 
-class SummarizeWithGPT(StreamTransformer):
-    def __init__(
-        self,
-        max_words: int = 50,
-        temperature: float = 0.3,
-        model: str = "gpt-3.5-turbo"
-    ):
-        load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY is missing in environment.")
-        client = OpenAI(api_key=api_key)
+# # =================================================
+# #           SummarizeWithGPT                      |
+# # =================================================
 
-        def summarize(text: str) -> str:
-            prompt = f"Summarize the following in no more than {max_words} words:\n\n{text}"
-            try:
-                response = client.chat.completions.create(
-                    model=model,
-                    messages=[
-                        {"role": "system",
-                            "content": "You are a helpful assistant that summarizes text."},
-                        {"role": "user", "content": prompt}
-                    ],
-                    temperature=temperature
-                )
-                return response.choices[0].message.content.strip()
-            except Exception as e:
-                rprint(f"[bold red]❌ SummarizeWithGPT error:[/bold red] {e}")
-                with open(DEBUG_LOG, "a") as f:
-                    f.write("\n--- SummarizeWithGPT Error ---\n")
-                    f.write(traceback.format_exc())
-                return "error"
-
-        super().__init__(transform_fn=summarize, name="SummarizeWithGPT")
+# SummarizeWithGPT = lambda max_words=50, **kwargs: GPTTransformer(
+#     messages=lambda msg: [
+#         {"role": "system", "content": "You are a helpful assistant that summarizes text."},
+#         {"role": "user", "content": f"Summarize the following in no more than {max_words} words:\n\n{msg}"}
+#     ],
+#     name="SummarizeWithGPT",
+#     temperature=0.3,
+#     **kwargs
+# )
 
 
 def get_value_for_key(key: str):
