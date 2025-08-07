@@ -41,6 +41,25 @@ def test_stream_transformer_basic():
     ]
 
 
+def test_stream_transformer_basic_no_keys():
+    results = []
+
+    net = Network(
+        blocks={
+            "gen": generate(["abc", "def"]),
+            "xf": StreamTransformer(transform_fn=reverse_text),
+            "rec": RecordToList(results),
+        },
+        connections=[
+            ("gen", "out", "xf", "in"),
+            ("xf", "out", "rec", "in")
+        ],
+    )
+
+    net.compile_and_run()
+    assert results == ["cba", "fed"]
+
+
 def test_stream_transformer_basic_short_record():
     results = []
 
