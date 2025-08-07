@@ -17,7 +17,6 @@ tags: source, stream, generator, data, text, time-series
 
 import time
 import types
-import inspect
 import requests
 import traceback
 from rich import print as rprint
