@@ -177,6 +177,10 @@ def main():
             continue
         elif user_input == "exit":
             break
+        elif user_input == "demo sentiment":
+            from dsl.examples.demo_sentiment import demo_sentiment
+            demo_sentiment(create_block, set_block_function,
+                           connect_blocks, summarize_network)
         elif user_input.startswith("create "):
             _, name, type_ = user_input.split()
             print(create_block(name, type_))
@@ -258,6 +262,7 @@ def main():
   load yaml <path>             - Load a network from a YAML file.
   validate                     - Validate the network structure.
   export python                - Export the network to equivalent Python code.
+  demo sentiment               - Run the sentiment pipeline demo.
   help                         - Show this help message.
   exit                         - Exit the program.
 
