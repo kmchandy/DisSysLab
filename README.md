@@ -19,7 +19,7 @@ A **network** consists of blocks and connections. For example, here is a network
 [ generator ] → [ transformer ] → [ recorder ]
 
 
-![Example Network Diagram](docs/images/simple_network.png)
+![Example Network Diagram](docs/images/simple_network.svg)
 
 Blocks may have multiple inputs and outputs.
 
@@ -37,6 +37,10 @@ You build a distributed application by:
 
 1. 📦 **Specifying blocks** by the functions they embody  
 2. 🔗 **Connecting blocks** into a network  
+
+**Visual:** a block with an inport and outport, a message entering/exiting, and the function inside:
+
+![Block Embodies a Function](docs/images/block_embodies_function.svg)
 
 ---
 
