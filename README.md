@@ -16,7 +16,6 @@ A **block** is an object with:
 
 A **network** consists of blocks and connections. For example, here is a network consisting of three blocks: generator, transformer, and recorder. The generator outputs messages that are received by the transformer. Messages output by the transformer are received by the recorder.
 
-[ generator ] → [ transformer ] → [ recorder ]
 
 
 ![Example Network Diagram](docs/images/simple_network.svg)
