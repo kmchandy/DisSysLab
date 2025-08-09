@@ -60,27 +60,23 @@ net = Network(
 
 net.compile_and_run()
 
+
 print("Final Results:")
 for item in results:
     print(item)
+```
 
-▶️ Run the Example
-bash
-Copy
-Edit
+## ▶️ Run the Example
+
 python step1_pipeline.py
 You should see each input string paired with its sentiment.
 
-🧠 Key Points
+## 🧠 Key Points
 Blocks do the work (generate, transform, record).
 
 Connections define how messages flow between blocks.
 
 This pattern — blocks + connections — is the foundation of every DisSysLab application.
-
-python
-Copy
-Edit
 
 ---
 
@@ -118,3 +114,4 @@ net.compile_and_run()
 print("Final Results:")
 for item in results:
     print(item)
+```
