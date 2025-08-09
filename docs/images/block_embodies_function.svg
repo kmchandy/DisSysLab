@@ -1,49 +1,44 @@
-```svg
 <svg width="900" height="260" viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="A block with inport/outport, messages, and an internal function">
+  <!-- Background -->
   <rect width="100%" height="100%" fill="none"/>
+
+  <!-- Arrowhead marker -->
   <defs>
-    <style>
-      .block { fill: #F6F8FA; stroke: #D0D7DE; stroke-width: 2; }
-      .label { font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif; font-size: 18px; fill: #24292F; }
-      .title { font-family: -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif; font-size: 20px; fill: #24292F; text-anchor: middle; }
-      .port { fill: #FFFFFF; stroke: #8C959F; stroke-width: 2; }
-      .arrow { stroke: #57606A; stroke-width: 2.5; fill: none; marker-end: url(#arrowHead); }
-      .envelope { fill: #FFFFFF; stroke: #8C959F; stroke-width: 2; }
-      .func { fill: #E9EEF2; stroke: #8C959F; stroke-width: 2; }
-    </style>
     <marker id="arrowHead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
       <polygon points="0 0, 10 3.5, 0 7" fill="#57606A"/>
     </marker>
   </defs>
 
+  <!-- Title -->
+  <text x="450" y="36" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif" font-size="20" fill="#24292F">Block</text>
+
   <!-- Block container -->
-  <rect class="block" x="270" y="60" width="360" height="140" rx="16" ry="16"/>
-  <text class="title" x="450" y="50">Block</text>
+  <rect x="270" y="60" width="360" height="140" rx="16" ry="16" fill="#F6F8FA" stroke="#D0D7DE" stroke-width="2"/>
 
   <!-- Ports -->
-  <circle class="port" cx="270" cy="130" r="10"/>
-  <text class="label" x="230" y="135">in</text>
+  <circle cx="270" cy="130" r="10" fill="#FFFFFF" stroke="#8C959F" stroke-width="2"/>
+  <text x="230" y="135" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif" font-size="18" fill="#24292F">in</text>
 
-  <circle class="port" cx="630" cy="130" r="10"/>
-  <text class="label" x="640" y="135">out</text>
+  <circle cx="630" cy="130" r="10" fill="#FFFFFF" stroke="#8C959F" stroke-width="2"/>
+  <text x="640" y="135" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif" font-size="18" fill="#24292F">out</text>
 
   <!-- Internal function -->
-  <circle class="func" cx="450" cy="130" r="42"/>
-  <text class="label" x="450" y="135" text-anchor="middle">function</text>
+  <circle cx="450" cy="130" r="42" fill="#E9EEF2" stroke="#8C959F" stroke-width="2"/>
+  <text x="450" y="136" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif" font-size="16" fill="#24292F">function</text>
 
   <!-- Inbound message (envelope) -->
-  <rect class="envelope" x="150" y="110" width="60" height="40" rx="4" ry="4"/>
-  <polyline class="envelope" points="150,110 180,130 210,110"/>
-  <line class="envelope" x1="150" y1="150" x2="210" y2="150"/>
-  <text class="label" x="180" y="165" text-anchor="middle">message</text>
+  <rect x="150" y="110" width="60" height="40" rx="4" ry="4" fill="#FFFFFF" stroke="#8C959F" stroke-width="2"/>
+  <polyline points="150,110 180,130 210,110" fill="none" stroke="#8C959F" stroke-width="2"/>
+  <line x1="150" y1="150" x2="210" y2="150" stroke="#8C959F" stroke-width="2"/>
+  <text x="180" y="165" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif" font-size="16" fill="#24292F">message</text>
 
   <!-- Outbound message (envelope) -->
-  <rect class="envelope" x="690" y="110" width="60" height="40" rx="4" ry="4"/>
-  <polyline class="envelope" points="690,110 720,130 750,110"/>
-  <line class="envelope" x1="690" y1="150" x2="750" y2="150"/>
-  <text class="label" x="720" y="165" text-anchor="middle">message</text>
+  <rect x="690" y="110" width="60" height="40" rx="4" ry="4" fill="#FFFFFF" stroke="#8C959F" stroke-width="2"/>
+  <polyline points="690,110 720,130 750,110" fill="none" stroke="#8C959F" stroke-width="2"/>
+  <line x1="690" y1="150" x2="750" y2="150" stroke="#8C959F" stroke-width="2"/>
+  <text x="720" y="165" text-anchor="middle" font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif" font-size="16" fill="#24292F">message</text>
 
   <!-- Arrows -->
-  <line class="arrow" x1="210" y1="130" x2="260" y2="130"/>
-  <line class="arrow" x1="640" y1="130" x2="690" y2="130"/>
+  <line x1="210" y1="130" x2="260" y2="130" stroke="#57606A" stroke-width="2.5" fill="none" marker-end="url(#arrowHead)"/>
+  <line x1="640" y1="130" x2="690" y2="130" stroke="#57606A" stroke-width="2.5" fill="none" marker-end="url(#arrowHead)"/>
 </svg>
