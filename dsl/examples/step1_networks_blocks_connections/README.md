@@ -67,9 +67,11 @@ for item in results:
 ```
 
 ## ▶️ Run the Example
-
+```
 python step1_pipeline.py
-You should see each input string paired with its sentiment.
+```
+
+You will see each input string paired with its sentiment.
 
 ## 🧠 Key Points
 Blocks do the work (generate, transform, record).
@@ -80,38 +82,5 @@ This pattern — blocks + connections — is the foundation of every DisSysLab a
 
 ---
 
-## **3. `step1_pipeline.py`**
 
-```python
-from dsl.core import Network
-from dsl.block_lib.stream_generators import generate
-from dsl.block_lib.stream_transformers import SentimentClassifierWithGPT
-from dsl.block_lib.stream_recorders import RecordToList
-
-results = []
-
-net = Network(
-    blocks={
-        "gen": generate(
-            [
-                "I love sunny days",
-                "I hate traffic jams",
-                "This pizza is amazing",
-            ],
-            key="text",
-        ),
-        "sentiment": SentimentClassifierWithGPT(input_key="text", output_key="sentiment"),
-        "rec": RecordToList(results),
-    },
-    connections=[
-        ("gen", "out", "sentiment", "in"),
-        ("sentiment", "out", "rec", "in"),
-    ],
-)
-
-net.compile_and_run()
-
-print("Final Results:")
-for item in results:
-    print(item)
 ```
