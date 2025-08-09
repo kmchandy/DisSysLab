@@ -33,14 +33,15 @@ A block is a shell that calls **functions** (or prompts) to generate, transform,
 - A **transformer** block may use an LLM agent to output the positive or negative sentiment of the messages it receives.  
 - A **recorder** block may use a Microsoft Copilot connector to put results into an Excel spreadsheet.
 
+ ![Block Embodies a Function](docs/images/block_embodies_function.svg)
+
 You build a distributed application by:
 
 1. 📦 **Specifying blocks** by the functions they embody  
 2. 🔗 **Connecting blocks** into a network  
 
-**Visual:** a block with an inport and outport, a message entering/exiting, and the function inside:
 
-![Block Embodies a Function](docs/images/block_embodies_function.svg)
+
 
 ---
 
