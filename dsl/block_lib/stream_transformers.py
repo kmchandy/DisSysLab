@@ -9,6 +9,8 @@ transformations, and GPT-based transformations using OpenAI's API.
 Tags: ["transformer", "stream", "block", "NLP", "OpenAI", "NumPy", "GPT"]
 """
 
+from dsl.core import SimpleAgent  # adjust import if needed
+from typing import Optional
 import os
 import ast
 import traceback
@@ -145,92 +147,86 @@ class GPT_Prompt(StreamTransformer):
 
 
 class PromptToBlock(SimpleAgent):
+    """
+    Minimal GPT wrapper:
+      - system_prompt is fixed per block.
+      - For each incoming message (msg), we extract text and send it as the user message.
+      - If input_key/output_key are provided and msg is a dict:
+          * read text from msg[input_key]
+          * write result to msg[output_key]
+        Otherwise, operate on plain strings.
+
+    Requires OPENAI_API_KEY in the environment.
+    """
+
     def __init__(
         self,
-        prompt: str,
-        model: str = "gpt-3.5-turbo",
+        system_prompt: str,
+        model: str = "gpt-4o-mini",
         temperature: float = 0.7,
+        input_key: Optional[str] = None,
+        output_key: Optional[str] = None,
         name: Optional[str] = None,
     ):
-        if not prompt:
-            raise ValueError("PromptToBlock requires a prompt.")
+        if not system_prompt:
+            raise ValueError("system_prompt must be a non-empty string.")
 
-        load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY")
+        api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
-            raise ValueError("OPENAI_API_KEY is missing in environment.")
+            raise ValueError("OPENAI_API_KEY not set in environment.")
 
         client = OpenAI(api_key=api_key)
 
+        def extract_text(incoming):
+            if input_key and isinstance(incoming, dict):
+                return incoming.get(input_key, "")
+            return incoming
+
+        def emit(agent, original_msg, reply_text: str):
+            if output_key and isinstance(original_msg, dict):
+                out = dict(original_msg)
+                out[output_key] = reply_text
+                agent.send(out, "out")
+            else:
+                agent.send(reply_text, "out")
+
+        # -------- lifecycle hooks --------
+        def init_fn(agent):
+            agent._oai_client = client
+            agent._oai_model = model
+            agent._oai_temp = temperature
+            agent._oai_system = system_prompt
+            agent._extract_text = extract_text
+            agent._emit = emit
+
         def handle_msg(agent, msg):
+            if msg == "__STOP__":
+                agent.send("__STOP__", "out")
+                return
             try:
-                rendered_prompt = prompt.replace("{msg}", str(msg))
-                response = client.chat.completions.create(
-                    model=model,
-                    messages=[{"role": "user", "content": rendered_prompt}],
-                    temperature=temperature
+                msg_text = agent._extract_text(msg)
+                resp = agent._oai_client.chat.completions.create(
+                    model=agent._oai_model,
+                    messages=[
+                        {"role": "system", "content": agent._oai_system},
+                        {"role": "user", "content": str(msg_text)},
+                    ],
+                    temperature=agent._oai_temp,
                 )
-                reply = response.choices[0].message.content.strip()
-                agent.send(reply, "out")
+                reply = (resp.choices[0].message.content or "").strip()
+                agent._emit(agent, msg, reply)
             except Exception as e:
-                rprint(f"[bold red]❌ PromptToBlock error:[/bold red] {e}")
-                with open(DEBUG_LOG, "a") as f:
-                    f.write("\n--- PromptToBlock Error ---\n")
-                    f.write(traceback.format_exc())
+                # Keep failure behavior simple and visible
+                print(f"[PromptToBlock] Error: {e}")
                 agent.send("__STOP__", "out")
 
         super().__init__(
             name=name or "PromptToBlock",
             inport="in",
             outports=["out"],
+            init_fn=init_fn,
             handle_msg=handle_msg,
         )
-
-# # =================================================
-# #        SentimentClassifierWithGPT              |
-# # =================================================
-
-
-# SentimentClassifierWithGPT = lambda **kwargs: GPTTransformer(
-#     messages=lambda msg: [{
-#         "role": "user",
-#         "content": f"Classify the sentiment of the following text as Positive, Negative, or Neutral.\nText: \"{msg}\"\nSentiment:"
-#     }],
-#     name="SentimentClassifierWithGPT",
-#     temperature=0,
-#     **kwargs
-# )
-
-
-# # =================================================
-# #        ExtractEntitiesWithGPT                   |
-# # =================================================
-
-# ExtractEntitiesWithGPT = lambda **kwargs: GPTTransformer(
-#     messages=lambda msg: [{
-#         "role": "user",
-#         "content": f"Extract named entities from the text as a Python list.\nText: \"{msg}\""
-#     }],
-#     postprocess_fn=lambda s: ast.literal_eval(
-#         s) if s.strip().startswith("[") else [],
-#     name="ExtractEntitiesWithGPT",
-#     **kwargs
-# )
-
-
-# # =================================================
-# #           SummarizeWithGPT                      |
-# # =================================================
-
-# SummarizeWithGPT = lambda max_words=50, **kwargs: GPTTransformer(
-#     messages=lambda msg: [
-#         {"role": "system", "content": "You are a helpful assistant that summarizes text."},
-#         {"role": "user", "content": f"Summarize the following in no more than {max_words} words:\n\n{msg}"}
-#     ],
-#     name="SummarizeWithGPT",
-#     temperature=0.3,
-#     **kwargs
-# )
 
 
 def get_value_for_key(key: str):
