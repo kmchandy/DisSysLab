@@ -52,3 +52,6 @@ def get_openai_key() -> str:
         raise ValueError(
             "Missing OpenAI API key. Please set it in your .env or environment variables.")
     return key
+
+
+OPENAI_API_KEY = get_openai_key()
