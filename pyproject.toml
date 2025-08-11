@@ -1,26 +1,34 @@
 [project]
 name = "dsl"
 version = "0.1.0"
-description = "Educational framework for distributed AI applications"
-authors = [{ name = "K. Mani Chandy", email = "kmchandy@gmail.com" }]
-license = "MIT"
+description = "Educational framework for distributed applications"
 readme = "README.md"
 requires-python = ">=3.8"
-dependencies = [
-    "rich>=13.0.0",
-    "pytest>=6.0.0"
-]
+license = "MIT"
+authors = [{ name = "K. Mani Chandy", email = "kmchandy@gmail.com" }]
+dependencies = ["rich>=13.0.0"]
 
-[tool.setuptools.packages.find]
-where = ["dsl"]
+[project.optional-dependencies]
+dev = ["pytest>=6.0.0", "build", "twine"]
+
+[project.urls]
+Homepage = "https://github.com/kmchandy/DisSysLab"
+Source = "https://github.com/kmchandy/DisSysLab"
 
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["dsl*"]
+exclude = ["dsl/tests*"]
+
+# Typing marker (ensure you have an empty file at: dsl/py.typed)
+[tool.setuptools.package-data]
+"dsl" = ["py.typed", "**/*.json", "**/*.yaml", "**/*.yml", "**/*.txt", "**/*.md"]
 
 [tool.pytest.ini_options]
 minversion = "6.0"
 addopts = "-ra -q"
-testpaths = [
-    "dsl/tests"
-]
+testpaths = ["dsl/tests"]
