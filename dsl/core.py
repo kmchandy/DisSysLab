@@ -727,23 +727,23 @@ plug-and-play, composition
                 # connect[0] and connect[2] must be names of components (i.e. internal blocks)
                 if connect[0] not in self.blocks:
                     raise ValueError(
-                        f""" The {connect} of network {self.name} is incorrect.
-                    {connect[0]} is not a block of the network."""
+                        f""" The connection '{connect}' of network '{self.name}' is incorrect.
+                    '{connect[0]}' is not a block of the network."""
                     )
                 if connect[2] not in self.blocks:
                     raise ValueError(
-                        f""" The {connect} of network {self.name} is incorrect.
-                    {connect[2]} is not a block of the network."""
+                        f""" The connection '{connect}' of network '{self.name}' is incorrect.
+                    '{connect[2]}' is not a block of the network."""
                     )
                 # connect[1] and connect[3] must be ports of these components
                 if connect[1] not in self.blocks[connect[0]].outports:
                     raise ValueError(
-                        f""" The {connect} of network '{self.name}' is incorrect. '{connect[1]}' is not an output
+                        f""" The connection '{connect}' of network '{self.name}' is incorrect. '{connect[1]}' is not an output
                         port of block '{self.blocks[connect[0]].name}'."""
                     )
                 if connect[3] not in self.blocks[connect[2]].inports:
                     raise ValueError(
-                        f""" The {connect} of network '{self.name}' is incorrect.
+                        f""" The connection '{connect}' of network '{self.name}' is incorrect.
                     '{connect[3]}' is not an input port of block '{self.blocks[connect[2]].name}'
                     The inports of '{self.blocks[connect[2]].name}' are '{self.blocks[connect[2]].inports}'."""
                     )
