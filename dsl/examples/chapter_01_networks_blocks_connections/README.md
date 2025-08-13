@@ -25,7 +25,7 @@ We will:
 **Diagram:**
 [ Generator ] → [ Sentiment Classifier ] → [ Recorder ]
 
-![Example Pipeline](/docs/images/simple_network.svg)
+![Example Pipeline](simple_network.svg)
 
 ---
 

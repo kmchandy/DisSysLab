@@ -1,5 +1,5 @@
 # --- demo_sentiment.py in examples/ ---
-
+# Used with wizard.
 def demo_sentiment(create_block, set_block_function, connect_blocks, summarize_network):
     """Run a guided sentiment analysis pipeline demo.
 
@@ -47,3 +47,6 @@ def demo_sentiment(create_block, set_block_function, connect_blocks, summarize_n
     print("\nTHIRD: RUN NETWORK")
     print("Step 6: Show network summary")
     print(summarize_network())
+
+
+if __name__ == "__main__":
