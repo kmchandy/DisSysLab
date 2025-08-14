@@ -5,7 +5,7 @@ Learn how to build a distributed application in **DisSysLab** by creating **bloc
 
 ---
 
-## 📍 1. What We’ll Build
+## 📍 What We’ll Build
 
 We’ll create a **three-block network**:
 
@@ -17,7 +17,7 @@ We’ll create a **three-block network**:
 
 ---
 
-## ⚙️ 2. How It Works
+## ⚙️ How It Works
 
 - **🔲 Blocks**  
   - Can have **zero or more input ports** and **zero or more output ports**.  
@@ -25,19 +25,26 @@ We’ll create a **three-block network**:
 
 - **🔗 Connections**  
   - Link one block’s **output port** to another block’s **input port**.  
-  - In this chapter, all messages are plain strings (e.g., `"abc"`, `"def"`).
+  - In this example messages are plain strings (e.g., `"abc"`, `"def"`).
 
 **Block types in this example:**
 - **Generator** – single outport, no inports.  
 - **Transformer** – single inport, single outport.  
 - **Recorder** – single inport, no outports.
 
-Block types with multiple inports and outports are introduced later.
+(Block types with multiple inports and outports are introduced later.)
+
+
 
 ---
 
-## 💻 3. Code Example
+## 💻 Code Example
 
+**📊 Diagram of blocks and connections:**
+
+![Simple Network](simple_network.svg) 
+
+ 
 ```python
 # dsl/examples/ch01_networks/simple_network.py
 
@@ -65,6 +72,7 @@ net = Network(
         ("reverse_msg", "out", "record_to_list", "in"),
     ]
 )
+```
 
 # Run the network
 net.compile_and_run()
@@ -72,12 +80,17 @@ net.compile_and_run()
 # Display the results
 print(results)  # ['cba', 'fed']
 
+### ▶️ Run It
+```bash
 python3 -m dsl.examples.ch01_networks.simple_network
 
 ['cba', 'fed']
 ```
 
-## 🧠 5. Key Takeaways
 
-- **A network = blocks + connections**  
-  Blocks define *functions* that process messages; connections define the *flow of messages*.
+
+## 🧠 Key Takeaways
+
+- **network = blocks + connections**  
+- **blocks** define functions that *process messages*
+- **connections** define the *flow of messages*.

@@ -17,16 +17,16 @@
   <rect class="box" x="690" y="40" width="170" height="100"/>
 
   <!-- Labels -->
-  <text class="label" x="50"  y="70">Generator</text>
-  <text class="port"  x="50"  y="95">{ "text": "I love..." }</text>
+  <text class="label" x="50"  y="70">generator</text>
+  <text class="port"  x="50"  y="95">{ "text": "abc" }</text>
 
-  <text class="label" x="360" y="70">Sentiment Classifier (GPT)</text>
+  <text class="label" x="360" y="70">reverser</text>
   <text class="port"  x="360" y="95">input_key = "text"</text>
-  <text class="port"  x="360" y="115">output_key = "sentiment"</text>
+  <text class="port"  x="360" y="115">output_key = "reversed"</text>
 
-  <text class="label" x="720" y="70">Recorder</text>
-  <text class="port"  x="720" y="95">results = [ { "text": "...",</text>
-  <text class="port"  x="720" y="115">               "sentiment": "..." } ]</text>
+  <text class="label" x="720" y="70">recorder</text>
+  <text class="port"  x="720" y="95">results = [ { "text": "abc",</text>
+  <text class="port"  x="720" y="115">               "reversed": "cba" } ]</text>
 
   <!-- Arrows -->
   <line class="arrow" x1="230" y1="90" x2="330" y2="90"/>

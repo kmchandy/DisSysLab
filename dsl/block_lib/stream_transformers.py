@@ -9,6 +9,10 @@ transformations, and GPT-based transformations using OpenAI's API.
 Tags: ["transformer", "stream", "block", "NLP", "OpenAI", "NumPy", "GPT"]
 """
 
+from typing import Optional, Any, Callable
+from dsl.core import SimpleAgent
+import warnings
+from typing import Any, Callable, Optional
 from dsl.core import SimpleAgent  # adjust import if needed
 from typing import Optional
 import os
@@ -22,59 +26,23 @@ from dsl.core import SimpleAgent, Agent
 
 DEBUG_LOG = "dsl_debug.log"
 
-# =================================================
-#          StreamTransformer                      |
-# =================================================
 
+class TransformerFunction(SimpleAgent):
+    """
+    Apply `func(msg)` to each incoming message and emit the result.
 
-class StreamTransformer(SimpleAgent):
-    def __init__(
-        self,
-        transform_fn: Callable,
-        args=(),
-        kwargs=None,
-        input_key: Optional[str] = None,
-        output_key: Optional[str] = None,
-        name: Optional[str] = None,
-    ):
-        if not name:
-            name = "StreamTransformer"
+    If `input_key` is provided and incoming messages are dicts:
+      - read value = msg[input_key]
+      - result = func(value)
+      - if `output_key` is provided: out = {**msg, output_key: result}
+        else:                         out = {**msg, input_key: result}
+      - emit `out`
 
-        kwargs = kwargs or {}
+    If `input_key` is None:
+      - result = func(msg)
+      - emit `result`
+    """
 
-        def handle_msg(agent, msg):
-            try:
-                if input_key is not None and isinstance(msg, dict):
-                    input_value = msg.get(input_key)
-                    result = transform_fn(input_value, *args, **kwargs)
-                    out_msg = dict(msg)  # shallow copy
-                    if output_key:
-                        out_msg[output_key] = result
-                    else:
-                        out_msg[input_key] = result
-                    agent.send(msg=out_msg, outport="out")
-                else:
-                    # No input key, apply transform to whole msg
-                    result = transform_fn(msg, *args, **kwargs)
-                    agent.send(msg=result,  outport="out")
-            except Exception as e:
-                print(f"[StreamTransformer] Error: {e}")
-                raise
-
-        super().__init__(
-            name=name,
-            inport="in",
-            outports=["out"],
-            handle_msg=handle_msg,
-        )
-
-
-# =================================================
-#              TransformerFunction                       |
-# =================================================
-
-
-class TransformerFunction(StreamTransformer):
     def __init__(
         self,
         func: Callable[[Any], Any],
@@ -84,81 +52,61 @@ class TransformerFunction(StreamTransformer):
         output_key: Optional[str] = None,
         name: Optional[str] = None,
     ):
-        super().__init__(
-            transform_fn=func,
-            args=args,
-            kwargs=kwargs,
-            input_key=input_key,
-            output_key=output_key,
-            name=name or "TransformerFunction",
-        )
+        kwargs = kwargs or {}
 
-
-# =================================================
-#      GPT_Prompt(StreamTransformer)          |
-# =================================================
-
-class GPT_Prompt(StreamTransformer):
-    def __init__(
-        self,
-        messages: Callable[[str], list[dict]],
-        postprocess_fn: Optional[Callable[[str], Any]] = None,
-        model: str = "gpt-3.5-turbo",
-        temperature: float = 0.7,
-        input_key: Optional[str] = None,
-        output_key: Optional[str] = None,
-        name: Optional[str] = "GPTTransformer"
-    ):
-        load_dotenv()
-        api_key = os.getenv("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY is missing in environment.")
-        client = OpenAI(api_key=api_key)
-
-        def call_gpt(msg: str) -> Any:
+        def handle_msg(agent, msg):
             try:
-                response = client.chat.completions.create(
-                    model=model,
-                    messages=messages(msg),
-                    temperature=temperature
-                )
-                text = response.choices[0].message.content.strip()
-                return postprocess_fn(text) if postprocess_fn else text
+                if input_key is not None and isinstance(msg, dict):
+                    value = msg.get(input_key)
+                    result = func(value, *args, **kwargs)
+                    out_msg = dict(msg)  # shallow copy
+                    out_msg[output_key or input_key] = result
+                    agent.send(out_msg, "out")
+                else:
+                    result = func(msg, *args, **kwargs)
+                    agent.send(result, "out")
             except Exception as e:
-                rprint(f"[bold red]❌ GPTTransformer error:[/bold red] {e}")
-                with open(DEBUG_LOG, "a") as f:
-                    f.write("\n--- GPTTransformer Error ---\n")
-                    f.write(traceback.format_exc())
-                return "error"
+                # Keep the network resilient; surface error and continue.
+                print(f"[TransformerFunction] Error: {e}")
+                # You can choose to emit a sentinel or drop; here we drop.
+                # agent.send("__STOP__", "out")
 
         super().__init__(
-            transform_fn=call_gpt,
-            input_key=input_key,
-            output_key=output_key,
-            name=name,
+            name=name or "TransformerFunction",
+            inport="in",
+            outports=["out"],
+            handle_msg=handle_msg,
         )
 
 
 # =================================================
-#         TransformerPrompt             |
+#        TransformerPrompt (GPT-backed)
+#        (subclass of TransformerFunction)
 # =================================================
 
+# assumes TransformerFunction is defined as in your latest version
+# from dsl.block_lib.stream_transformers import TransformerFunction
 
-class TransformerPrompt(SimpleAgent):
+
+class TransformerPrompt(TransformerFunction):
     """
-    Minimal GPT wrapper:
-      - system_prompt is fixed per block.
-      - For each incoming message (msg), we extract text and send it as the user message.
-      - If input_key/output_key are provided and msg is a dict:
-          * read text from msg[input_key]
-          * write result to msg[output_key]
-        Otherwise, operate on plain strings.
+    GPT-backed transformer with a fixed system prompt.
+
+    - system_prompt: fixed instruction for the model (unchanging per block)
+    - For each incoming message, the block sends:
+        [ {"role": "system", "content": system_prompt},
+          {"role": "user",   "content": <msg_text>} ]
+    - If input_key/output_key are provided and msg is a dict:
+        * read from msg[input_key]
+        * write result to msg[output_key]
+      Otherwise operate on plain strings.
 
     Requires OPENAI_API_KEY in the environment.
     """
 
     def __init__(
         self,
+        *,
         system_prompt: str,
         model: str = "gpt-4o-mini",
         temperature: float = 0.7,
@@ -172,58 +120,32 @@ class TransformerPrompt(SimpleAgent):
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
             raise ValueError("OPENAI_API_KEY not set in environment.")
-
         client = OpenAI(api_key=api_key)
 
-        def extract_text(incoming):
-            if input_key and isinstance(incoming, dict):
-                return incoming.get(input_key, "")
-            return incoming
-
-        def emit(agent, original_msg, reply_text: str):
-            if output_key and isinstance(original_msg, dict):
-                out = dict(original_msg)
-                out[output_key] = reply_text
-                agent.send(out, "out")
-            else:
-                agent.send(reply_text, "out")
-
-        # -------- lifecycle hooks --------
-        def init_fn(agent):
-            agent._oai_client = client
-            agent._oai_model = model
-            agent._oai_temp = temperature
-            agent._oai_system = system_prompt
-            agent._extract_text = extract_text
-            agent._emit = emit
-
-        def handle_msg(agent, msg):
-            if msg == "__STOP__":
-                agent.send("__STOP__", "out")
-                return
+        # Transform function that matches TransformerFunction’s interface
+        def _call_gpt(msg_text: Any) -> str:
             try:
-                msg_text = agent._extract_text(msg)
-                resp = agent._oai_client.chat.completions.create(
-                    model=agent._oai_model,
+                resp = client.chat.completions.create(
+                    model=model,
                     messages=[
-                        {"role": "system", "content": agent._oai_system},
-                        {"role": "user", "content": str(msg_text)},
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user",   "content": str(msg_text)},
                     ],
-                    temperature=agent._oai_temp,
+                    temperature=temperature,
                 )
-                reply = (resp.choices[0].message.content or "").strip()
-                agent._emit(agent, msg, reply)
+                return (resp.choices[0].message.content or "").strip()
             except Exception as e:
-                # Keep failure behavior simple and visible
                 print(f"[TransformerPrompt] Error: {e}")
-                agent.send("__STOP__", "out")
+                return "error"
 
+        # Delegate all message-shape/key handling to TransformerFunction
         super().__init__(
+            func=_call_gpt,
+            args=(),
+            kwargs=None,
+            input_key=input_key,
+            output_key=output_key,
             name=name or "TransformerPrompt",
-            inport="in",
-            outports=["out"],
-            init_fn=init_fn,
-            handle_msg=handle_msg,
         )
 
 
