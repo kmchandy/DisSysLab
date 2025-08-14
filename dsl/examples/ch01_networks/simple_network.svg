@@ -14,13 +14,13 @@
 
   <!-- Blocks -->
   <rect class="block" x="40" y="65" width="220" height="90" rx="16" ry="16"/>
-  <text class="label" x="150" y="110">Generator</text>
+  <text class="label" x="150" y="110">generate_from_list</text>
 
   <rect class="block" x="320" y="65" width="220" height="90" rx="16" ry="16"/>
-  <text class="label" x="430" y="110">Transformer</text>
+  <text class="label" x="430" y="110">reverse_msg</text>
 
   <rect class="block" x="600" y="65" width="220" height="90" rx="16" ry="16"/>
-  <text class="label" x="710" y="110">Recorder</text>
+  <text class="label" x="710" y="110">record_to_list</text>
 
   <!-- Arrows -->
   <line class="arrow" x1="260" y1="110" x2="320" y2="110"/>

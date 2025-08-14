@@ -233,7 +233,7 @@ __all__ = [
 
 def GenerateFromList(
     *,
-    list: Sequence[Any] | Iterable[Any],
+    items: Sequence[Any] | Iterable[Any],
     delay: Optional[float] = None,
     key: Optional[str] = None,
     label: Optional[str] = None,
@@ -247,7 +247,7 @@ def GenerateFromList(
     Parameters match `generate(...)` for student clarity.
     """
     return generate(
-        source=list,
+        source=items,
         delay=delay,
         key=key,
         label=label,
