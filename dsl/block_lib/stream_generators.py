@@ -15,6 +15,7 @@ Functions:
 tags: source, stream, generator, data, text, time-series
 """
 
+from __future__ import annotations
 import time
 import types
 import requests
@@ -22,8 +23,9 @@ import traceback
 from rich import print as rprint
 from bs4 import BeautifulSoup
 from datetime import datetime
-from typing import Optional, Union, Callable, Any
-from dsl.core import Agent, SimpleAgent
+from typing import Optional, Union, Callable, Any, Iterable, Sequence
+from dsl.core import SimpleAgent
+
 
 # =================================================
 #                StreamGenerator                   |
@@ -146,12 +148,13 @@ def generate(source=None, delay=None, key=None, label=None, include_time=False, 
         f"'generate(...)' accepts a list, a generator function, or a callable returning one."
     )
 
+
 # =================================================
-#              GenerateTextFromURL                 |
+#              GenerateFromURL                 |
 # =================================================
 
 
-class GenerateTextFromURL(StreamGenerator):
+class GenerateFromURL(StreamGenerator):
     """
     A block that streams text content from a webpage as dictionary messages.
 
@@ -219,3 +222,93 @@ class GenerateTextFromURL(StreamGenerator):
             kwargs={"url": url, "split": split},
             delay=delay,
         )
+
+
+__all__ = [
+    "GenerateFromList",
+    "GenerateFromFile",
+    "GenerateFromFunction",
+]
+
+
+def GenerateFromList(
+    *,
+    list: Sequence[Any] | Iterable[Any],
+    delay: Optional[float] = None,
+    key: Optional[str] = None,
+    label: Optional[str] = None,
+    include_time: bool = False,
+    name: Optional[str] = None,
+    **kwargs,
+):
+    """
+    Create a StreamGenerator from a Python list or iterable.
+
+    Parameters match `generate(...)` for student clarity.
+    """
+    return generate(
+        source=list,
+        delay=delay,
+        key=key,
+        label=label,
+        include_time=include_time,
+        name=name,
+        **kwargs,
+    )
+
+
+def GenerateFromFile(
+    *,
+    path: str,
+    delay: Optional[float] = None,
+    key: Optional[str] = None,
+    label: Optional[str] = None,
+    include_time: bool = False,
+    name: Optional[str] = None,
+    encoding: str = "utf-8",
+    line_by_line: bool = True,
+    **kwargs,
+):
+    """
+    Create a StreamGenerator from a file.
+    """
+    return generate(
+        source=path,
+        delay=delay,
+        key=key,
+        label=label,
+        include_time=include_time,
+        name=name,
+        encoding=encoding,
+        line_by_line=line_by_line,
+        **kwargs,
+    )
+
+
+def GenerateFromFunction(
+    *,
+    fn: Callable[..., Any],
+    delay: Optional[float] = None,
+    key: Optional[str] = None,
+    label: Optional[str] = None,
+    include_time: bool = False,
+    name: Optional[str] = None,
+    args: Sequence[Any] = (),
+    fn_kwargs: Optional[dict[str, Any]] = None,
+    **kwargs,
+):
+    """
+    Create a StreamGenerator from a Python function.
+    """
+    return generate(
+        source=fn,
+        delay=delay,
+        key=key,
+        label=label,
+        include_time=include_time,
+        name=name,
+        args=args,
+        kwargs=fn_kwargs or {},
+        *var_args,
+        **kwargs,
+    )

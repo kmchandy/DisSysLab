@@ -12,7 +12,6 @@ Tags: ["transformer", "stream", "block", "NLP", "OpenAI", "NumPy", "GPT"]
 from dsl.core import SimpleAgent  # adjust import if needed
 from typing import Optional
 import os
-import ast
 import traceback
 from typing import Optional, Callable, Any, Union
 from dotenv import load_dotenv
@@ -44,7 +43,6 @@ class StreamTransformer(SimpleAgent):
         kwargs = kwargs or {}
 
         def handle_msg(agent, msg):
-            print(f"[StreamTransformer.handle_msg] Received: {msg}")
             try:
                 if input_key is not None and isinstance(msg, dict):
                     input_value = msg.get(input_key)
@@ -72,11 +70,11 @@ class StreamTransformer(SimpleAgent):
 
 
 # =================================================
-#              WrapFunction                       |
+#              TransformerFunction                       |
 # =================================================
 
 
-class WrapFunction(StreamTransformer):
+class TransformerFunction(StreamTransformer):
     def __init__(
         self,
         func: Callable[[Any], Any],
@@ -92,7 +90,7 @@ class WrapFunction(StreamTransformer):
             kwargs=kwargs,
             input_key=input_key,
             output_key=output_key,
-            name=name or "WrapFunction",
+            name=name or "TransformerFunction",
         )
 
 
@@ -142,11 +140,11 @@ class GPT_Prompt(StreamTransformer):
 
 
 # =================================================
-#         PromptToBlock (WrapPrompt)              |
+#         TransformerPrompt             |
 # =================================================
 
 
-class PromptToBlock(SimpleAgent):
+class TransformerPrompt(SimpleAgent):
     """
     Minimal GPT wrapper:
       - system_prompt is fixed per block.
@@ -217,11 +215,11 @@ class PromptToBlock(SimpleAgent):
                 agent._emit(agent, msg, reply)
             except Exception as e:
                 # Keep failure behavior simple and visible
-                print(f"[PromptToBlock] Error: {e}")
+                print(f"[TransformerPrompt] Error: {e}")
                 agent.send("__STOP__", "out")
 
         super().__init__(
-            name=name or "PromptToBlock",
+            name=name or "TransformerPrompt",
             inport="in",
             outports=["out"],
             init_fn=init_fn,
@@ -416,4 +414,4 @@ def transform(func, *args, **kwargs):
     """
     if not callable(func):
         raise TypeError(f"transform(func) must be callable, got {type(func)}")
-    return WrapFunction(func, args=args, kwargs=kwargs)
+    return TransformerFunction(func, args=args, kwargs=kwargs)
