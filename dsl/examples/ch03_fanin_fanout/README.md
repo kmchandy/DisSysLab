@@ -138,3 +138,9 @@ python3 -m dsl.examples.ch03_fanin_fanout.review_split_merge
 
 - **You can build arbitrary networks** with generators, transformers, recorders, fanin and fanout blocks.
 
+### 🚀 Coming Up
+
+You’ve learned about arbitrary networks of blocks that process messages and connections that route messages between blocks.
+What if the blocks were AI agents? 
+
+👉 **Next up: Chapter 4 — GPT Blocks.**
