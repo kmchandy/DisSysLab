@@ -78,6 +78,20 @@ class TransformerFunction(SimpleAgent):
             handle_msg=handle_msg,
         )
 
+# =================================================
+#        Get the OpenAI key                       |
+# =================================================
+
+
+def _resolve_openai_key() -> Optional[str]:
+    # Try your helper first (loads .env too)
+    try:
+        from dsl.utils.get_credentials import get_openai_key
+        return get_openai_key()  # raises if missing
+    except Exception:
+        # Fall back to raw env var; don’t crash yet
+        return os.environ.get("OPENAI_API_KEY")
+
 
 # =================================================
 #        TransformerPrompt (GPT-backed)
@@ -104,45 +118,35 @@ class TransformerPrompt(TransformerFunction):
     Requires OPENAI_API_KEY in the environment.
     """
 
-    def __init__(
-        self,
-        *,
-        system_prompt: str,
-        model: str = "gpt-4o-mini",
-        temperature: float = 0.7,
-        input_key: Optional[str] = None,
-        output_key: Optional[str] = None,
-        name: Optional[str] = None,
-    ):
+    def __init__(self, *, system_prompt: str, model: str = "gpt-4o-mini",
+                 temperature: float = 0.7, input_key: Optional[str] = None,
+                 output_key: Optional[str] = None, name: Optional[str] = None):
+
         if not system_prompt:
             raise ValueError("system_prompt must be a non-empty string.")
 
-        api_key = os.environ.get("OPENAI_API_KEY")
-        if not api_key:
-            raise ValueError("OPENAI_API_KEY not set in environment.")
-        client = OpenAI(api_key=api_key)
+        key = _resolve_openai_key()
+        if not key:
+            raise ValueError(
+                "OpenAI API key not found. Set OPENAI_API_KEY in your environment "
+                "or configure dsl/utils/get_credentials.py (.env supported)."
+            )
 
-        # Transform function that matches TransformerFunction’s interface
-        def _call_gpt(msg_text: Any) -> str:
-            try:
-                resp = client.chat.completions.create(
-                    model=model,
-                    messages=[
-                        {"role": "system", "content": system_prompt},
-                        {"role": "user",   "content": str(msg_text)},
-                    ],
-                    temperature=temperature,
-                )
-                return (resp.choices[0].message.content or "").strip()
-            except Exception as e:
-                print(f"[TransformerPrompt] Error: {e}")
-                return "error"
+        client = OpenAI(api_key=key)
 
-        # Delegate all message-shape/key handling to TransformerFunction
+        def _call_gpt(msg_text: str) -> str:
+            resp = client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": str(msg_text)},
+                ],
+                temperature=temperature,
+            )
+            return (resp.choices[0].message.content or "").strip()
+
         super().__init__(
             func=_call_gpt,
-            args=(),
-            kwargs=None,
             input_key=input_key,
             output_key=output_key,
             name=name or "TransformerPrompt",
