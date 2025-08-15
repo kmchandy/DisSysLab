@@ -18,7 +18,34 @@ We’ll create a **sentiment-split network**:
 - **Recorder** → saves merged dicts.
 
 **Visual:**  
-`[ Generator ] → [ Split ] → (Positive branch / Negative branch) → [ Merge ] → [ Recorder ]`
+
+`
+
+                   ┌────────────┐
+                   │  Generator │
+                   │ {"review"} │
+                   └──────┬─────┘
+                          │
+                      ┌───▼───┐
+                      │ Split │  (routes "pos" or "neg")
+                      └─┬───┬─┘
+                 pos ──┘   └── neg
+                       │       │
+             ┌─────────▼─-┐   ┌─▼─────────-┐
+             │ pos_exclaim│   │  neg_upper │
+             │  + "!!!"   │   │  upper()   │
+             └──────┬─────┘   └────┬───────┘
+                    │              │
+                    └──────┬───────┘
+                       ┌--─▼─--┐
+                       │ Merge │
+                       └─-----─┘
+                           │
+                    ┌──────▼──────┐
+                    │   Recorder  │
+                    └─────────────┘
+`
+
 
 ---
 
@@ -109,8 +136,5 @@ python3 -m dsl.examples.ch03_fanin_fanout.review_split_merge
 
 ## 🧠 Key Takeaways
 
-- **Fan-out** (Split): one stream branches into multiple paths.  
-- **Fan-in** (Merge): multiple paths converge back into one stream.  
-- Each branch can **add its own fields** (like `"positive"` or `"negative"`) while preserving the original message.  
-- Networks can be **richer than simple pipelines** — you can fork, transform, and join streams flexibly.
+- **You can build arbitrary networks** with generators, transformers, recorders, fanin and fanout blocks.
 

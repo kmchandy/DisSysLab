@@ -94,3 +94,12 @@ python3 -m dsl.examples.ch01_networks.simple_network
 - **network = blocks + connections**  
 - **blocks** define functions that *process messages*
 - **connections** define the *flow of messages*.
+
+---
+
+### 🚀 Coming Up
+
+You’ve seen how messages flow from block to block.
+What if you want to make blocks that attach additional information to a message? For example, create a block that receives a movie review and appends a positivity score to the review.
+
+👉 **Next up: Chapter 2 — Messages as Dictionaries.**

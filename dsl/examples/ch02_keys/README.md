@@ -91,3 +91,10 @@ python3 -m dsl.examples.ch02_messages.message_network
 - output_key → the field of the message in which the result is stored.
 
 Blocks can add fields such as "source", "time", and "sentiment_value" to a message.
+
+### 🚀 Coming Up
+
+You created messages that have multiple fields. The examples in these chapters were pipelines: each block feeds one other block.  
+You will create applications in which blocks communicate with each other in more complex ways than pipelines.  
+
+👉 **Next up: Chapter 3 — Fan-In & Fan-Out Networks.**
