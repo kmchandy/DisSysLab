@@ -5,7 +5,7 @@ Learn how **messages as dictionaries** (key–value pairs) help to attach extra 
 
 ---
 
-## 📍 1. What We’ll Build
+## 📍 What We’ll Build
 
 We’ll create a **three-block network**, just as in Chapter 1, except that now messages are dictionaries.
 
@@ -19,13 +19,13 @@ We’ll create a **three-block network**, just as in Chapter 1, except that now 
 ---
 
 
-## 💻 2. Code Example
+## 💻 Code Example
 
 **📊 Diagram of blocks and connections:**  
 ![Message Network](diagram_1.svg)
 
 ```python
-# dsl/examples/ch02_messages/message_network.py
+# dsl/examples/ch02_keys/message_network.py
 
 from dsl.core import Network
 from dsl.block_lib.stream_generators import GenerateFromList
