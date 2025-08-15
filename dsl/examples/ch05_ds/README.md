@@ -5,6 +5,21 @@ Learn how to use **data science transformers** (like CountVectorizer, TF-IDF, KM
 
 ---
 
+### 📦 Requirements
+
+Before running these examples, make sure your Python virtual environment has the right packages installed:
+
+```bash
+# Activate your venv first
+source venv/bin/activate   # Mac/Linux
+.\venv\Scripts\activate    # Windows PowerShell
+
+# Then install dependencies
+pip install scikit-learn matplotlib
+```
+
+---
+
 ## 📍 What We’ll Build
 
 We’ll explore **two parts**:
@@ -28,15 +43,16 @@ We’ll use `CountVectorizer` to turn reviews into counts of words like `"good"`
 ```python
 # dsl/examples/ch05_ds/part1_counts_kmeans.py
 
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.cluster import KMeans
-import matplotlib.pyplot as plt
+import sklearn.feature_extraction.text as text      # text vectorizers live here
+import sklearn.cluster as cluster                   # clustering algorithms live here
+import matplotlib.pyplot as plt                     # plotting library
+
 from dsl.core import Network
 from dsl.block_lib.stream_generators import GenerateFromList
 from dsl.block_lib.stream_transformers import WrapFunction
 from dsl.block_lib.stream_recorders import RecordToList
 
-# Sample reviews
+# --- Sample movie reviews ---
 reviews = [
     "The movie was good and enjoyable",
     "Really bad acting and poor script",
@@ -45,24 +61,38 @@ reviews = [
     "An excellent and good film"
 ]
 
-# Store vectorized outputs and clusters
+# Store outputs (each element will be a dict with vector + cluster)
 results = []
 
-# Define transformation blocks
-vectorizer = CountVectorizer(vocabulary=["good", "bad"])
-kmeans = KMeans(n_clusters=2, random_state=42)
+# --- Define transformers ---
+# Count how many times words "good" and "bad" appear
+vectorizer = text.CountVectorizer(vocabulary=["good", "bad"])
 
-def vectorize(texts):
-    return vectorizer.transform(texts).toarray()
+# Group reviews into 2 clusters
+kmeans = cluster.KMeans(n_clusters=2, random_state=42)
 
-def cluster(vectors):
-    return kmeans.fit_predict(vectors)
+def vectorize(single_review: str):
+    """Turn one review into a count vector [count_good, count_bad]."""
+    return vectorizer.transform([single_review]).toarray()
 
+def cluster_one(vector):
+    """Cluster one vector into group 0 or 1."""
+    return kmeans.fit_predict(vector)
+
+# --- Build network ---
 net = Network(
     blocks={
         "generator": GenerateFromList(items=reviews, key="text"),
-        "vectorizer": WrapFunction(func=lambda x: vectorize([x]), input_key="text", output_key="vector"),
-        "cluster": WrapFunction(func=lambda v: int(cluster(v)[0]), input_key="vector", output_key="cluster"),
+        "vectorizer": WrapFunction(
+            func=lambda x: vectorize(x),
+            input_key="text",
+            output_key="vector"
+        ),
+        "cluster": WrapFunction(
+            func=lambda v: int(cluster_one(v)[0]),
+            input_key="vector",
+            output_key="cluster"
+        ),
         "recorder": RecordToList(results),
     },
     connections=[
@@ -73,11 +103,13 @@ net = Network(
 )
 
 net.compile_and_run()
-print(results)
+print("Results:", results)
 
-# Plot counts
+# --- Visualization ---
+# Each result dict has {"vector": [good_count, bad_count], "cluster": c}
 vectors = [r["vector"][0] for r in results]
 clusters = [r["cluster"] for r in results]
+
 xs = [v[0] for v in vectors]  # count of "good"
 ys = [v[1] for v in vectors]  # count of "bad"
 
@@ -167,10 +199,17 @@ plt.show()
 ***What you’ll see:***
 📊 A scatter plot in 2D (PCA projection), with points colored by cluster.
 
+⚠️ **Tip for running plots**  
+When `plt.show()` runs, a plot window will open.  
+The Python program pauses until you **close the window**.  
+- On most systems, click the ❌ close button.  
+- If you’re running in some terminals, you may need to press **Ctrl-C** to break out.  
+
+
 ## ✅ Key Takeaways
 - Transformers can use any Python/ML function.
 
 - Vectorizers (Count, TF-IDF) turn text into numeric vectors; KMeans groups messages into clusters; PCA lets us see high-dimensional vectors in 2D plots. More about this in related chapters
 
 ## ⏭️ Coming Up
-✨ In the next chapter, you will learn how distributed applications can be used in collaboration. Specifically we will show blocks can push to and pull from GitHub.
+✨ In the next chapter, you will learn how distributed applications can be used in collaboration. Specifically you will see how to put and get information from repositories such as GitHub.
