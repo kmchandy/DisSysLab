@@ -212,4 +212,4 @@ The Python program pauses until you **close the window**.
 - Vectorizers (Count, TF-IDF) turn text into numeric vectors; KMeans groups messages into clusters; PCA lets us see high-dimensional vectors in 2D plots. More about this in related chapters
 
 ## ⏭️ Coming Up
-✨ In the next chapter, you will learn how distributed applications can be used in collaboration. Specifically you will see how to put and get information from repositories such as GitHub.
+✨ In the next chapter, you will learn how distributed applications are used in collaboration. Specifically you will see how blocks put and get information from GitHub.
