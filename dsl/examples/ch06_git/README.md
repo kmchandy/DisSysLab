@@ -1,262 +1,254 @@
-# 🤝 Chapter 6 — Collaboration via GitHub (Pull inputs, Push results)
+# 🤝 Chapter 6 — Collaboration via GitHub (Part 1 + Homework)
 
-In this chapter we show how a distributed pipeline can **pull configs/data from GitHub** and **push results/artifacts back** to GitHub—so teams (or agents) can collaborate asynchronously.
-
----
-
-## 🎯 Goals
-- Pull **configs / prompts / datasets** from a GitHub repo at run time.
-- Run a DisSysLab network using those inputs.
-- Push **derived artifacts** (plots, JSON summaries, logs) back to GitHub.
-- Do this with minimal glue code and clear error handling.
+**Goal:** Show how a DisSysLab pipeline can **pull** small inputs from GitHub, run locally, and (as homework) **push** artifacts back. Keep the lecture minimal on tooling; emphasize the *collaboration concept*.
 
 ---
 
-## 🧩 What We’ll Build
+## 📦 Requirements
 
-**Workflow A — Pull → Run → Local**
-[ GitHub Config ] → [ Generator ] → [ Transformers ] → [ Recorder (local files) ]
+```bash
+pip install python-dotenv requests
+# (Homework adds: PyGithub OR use git CLI)
+```
 
-css
-Copy
-Edit
+Create a `.env` in your project root (where your `get_credentials.py` loads from):
 
-**Workflow B — Pull → Run → Push**
-[ GitHub Data ] → [ Network ] → [ Artifacts ] → [ GitHub (commit) ]
+```env
+# For reading raw files (public or private)
+GITHUB_REPO=your-user/your-repo
+GITHUB_BRANCH=main
+GITHUB_TOKEN=ghp_xxx_optional_if_private
+```
 
-markdown
-Copy
-Edit
-
-We’ll implement both using a small `github_io.py` helper that abstracts GitHub reads/writes.
+> If the repo is **public**, `GITHUB_TOKEN` is optional. If **private**, set a token with `repo` scope.
 
 ---
 
-## 📦 Prerequisites
+## 🗂 Folder Layout
 
-1. **GitHub token** with `repo` scope  
-   - Create a **fine-grained PAT** or classic PAT.
-2. `.env` at the project root (or wherever your `get_credentials.py` reads from):
-   ```env
-   GITHUB_TOKEN=ghp_xxx_your_token
-   GITHUB_REPO=yourusername/yourrepo
-   GITHUB_BRANCH=main
-Dependencies
-
-bash
-Copy
-Edit
-pip install PyGithub python-dotenv
-(You can also use requests + raw URLs; we’ll use PyGithub for clarity.)
-
-🗂️ Folder Layout
-bash
-Copy
-Edit
+```
 dsl/
   examples/
     ch06_github/
-      README.md                  # this file
-      github_io.py               # minimal helper for read/write
-      part1_pull_and_run.py      # Pull config/data from GH, run locally
-      part2_push_artifacts.py    # Push results back to GH
-      simple_github.py           # Runner that executes both parts
-🔧 github_io.py (Helper)
-python
-Copy
-Edit
-# dsl/examples/ch06_github/github_io.py
+      README.md                      # this file
+      github_io_min.py               # tiny helper for GET (pull)
+      part1_pull_and_run.py          # in-class demo: pull → run → save local
+      hw_push_artifacts.py           # (starter) homework: push JSON/MD
+      data/
+        ch06_reviews.json            # small text dataset (JSON list of strings)
+        ch06_vocab.json              # optional config (JSON list of words)
+```
+
+---
+
+## 🔧 Minimal Helper — `github_io_min.py`
+
+*Focus on the concept: one small function that reads text content from GitHub.*
+
+```python
+# dsl/examples/ch06_github/github_io_min.py
 import os
-from typing import Optional, Tuple
-from github import Github
-from dataclasses import dataclass
+import base64
+import json
+from typing import Optional
+import requests
 
-@dataclass
-class GHConfig:
-    repo_full_name: str
-    branch: str
+RAW_BASE = "https://raw.githubusercontent.com"
 
-def get_github() -> Tuple[Github, GHConfig]:
-    token = os.getenv("GITHUB_TOKEN")
+def gh_read_text(path: str) -> str:
+    """Read a text file from GitHub at (repo, branch, path) using optional token.
+    Works for public repos without a token; supports private via token.
+    """
     repo = os.getenv("GITHUB_REPO")
     branch = os.getenv("GITHUB_BRANCH", "main")
-    if not token:
-        raise ValueError("GITHUB_TOKEN not set (check your .env)")
+    token = os.getenv("GITHUB_TOKEN")  # optional for private repos
     if not repo:
-        raise ValueError("GITHUB_REPO not set (e.g., user/repo)")
-    return Github(token), GHConfig(repo_full_name=repo, branch=branch)
+        raise ValueError("GITHUB_REPO not set (e.g., your-user/your-repo)")
 
-def read_text(path: str, encoding="utf-8") -> str:
-    gh, cfg = get_github()
-    repo = gh.get_repo(cfg.repo_full_name)
-    file = repo.get_contents(path, ref=cfg.branch)
-    return file.decoded_content.decode(encoding)
+    url = f"{RAW_BASE}/{repo}/{branch}/{path}"
+    headers = {"Authorization": f"Bearer {token}"} if token else {}
+    r = requests.get(url, headers=headers, timeout=20)
+    if r.status_code != 200:
+        raise RuntimeError(f"GET {url} failed: {r.status_code} — {r.text[:200]}")
+    return r.text
 
-def upsert_text(path: str, content: str, message: str) -> None:
-    gh, cfg = get_github()
-    repo = gh.get_repo(cfg.repo_full_name)
-    try:
-        file = repo.get_contents(path, ref=cfg.branch)
-        repo.update_file(path, message, content, file.sha, branch=cfg.branch)
-    except Exception:
-        repo.create_file(path, message, content, branch=cfg.branch)
-💻 Part 1 — Pull Configs/Data, Then Run
-Example pulls a vectorizer vocabulary and a small dataset from GitHub, runs a pipeline, and saves results locally.
+def gh_read_json(path: str):
+    return json.loads(gh_read_text(path))
+```
 
-python
-Copy
-Edit
+---
+
+## 🎬 Part 1 (In-Class): Pull → Run → Save Local
+
+This example pulls a tiny review dataset from GitHub, runs a simple DisSysLab pipeline (vectorize → cluster), and saves a local JSON result. It uses the Chapter 5 Part 1 style for continuity.
+
+```python
 # dsl/examples/ch06_github/part1_pull_and_run.py
 import json
+import sklearn.feature_extraction.text as text
+import sklearn.cluster as cluster
+
 from dsl.core import Network
 from dsl.block_lib.stream_generators import GenerateFromList
-from dsl.block_lib.stream_transformers import WrapFunction
+from dsl.block_lib.stream_transformers import TransformerFunction
 from dsl.block_lib.stream_recorders import RecordToList
-from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.cluster import KMeans
 
-from .github_io import read_text
+from .github_io_min import gh_read_json
 
-# --- Pull inputs from GitHub ---
-vocab = json.loads(read_text("data/ch06/vocab.json"))        # e.g., ["good","bad","excellent","terrible"]
-reviews = json.loads(read_text("data/ch06/reviews.json"))    # list of strings
+# --- Pull inputs from GitHub (data managed by your repo) ---
+# Expect: data/ch06_reviews.json is a JSON list of short review strings
+reviews = gh_read_json("dsl/examples/ch06_github/data/ch06_reviews.json")
+# Optional: pull a fixed vocabulary so students can reason about features
+try:
+    vocab = gh_read_json("dsl/examples/ch06_github/data/ch06_vocab.json")
+except Exception:
+    vocab = ["good", "bad"]
+
+# --- Build simple CountVectorizer + KMeans (fit once) ---
+vec = text.CountVectorizer(vocabulary=vocab)
+X_all = vec.fit_transform(reviews).toarray()  # fit on full corpus
+km = cluster.KMeans(n_clusters=2, random_state=42, n_init=10)
+km.fit(X_all)
 
 results = []
 
-vec = CountVectorizer(vocabulary=vocab)
-kmeans = KMeans(n_clusters=2, random_state=42)
+def vectorize_one(review: str):
+    return vec.transform([review]).toarray()  # shape (1, D)
 
-def vectorize(text):
-    return vec.transform([text]).toarray()[0].tolist()
-
-def cluster(vec_row):
-    # kmeans must fit on a batch; for demo fit on single-row to keep it simple
-    # In real apps, fit on full corpus once, then predict per item.
-    kmeans.fit([vec_row])
-    return int(kmeans.labels_[0])
+def predict_one(x):
+    return int(km.predict(x)[0])
 
 net = Network(
     blocks={
         "gen": GenerateFromList(items=reviews, key="text"),
-        "vec": WrapFunction(func=vectorize, input_key="text", output_key="vector"),
-        "clu": WrapFunction(func=cluster, input_key="vector", output_key="cluster"),
+        "vec": TransformerFunction(func=vectorize_one, input_key="text", output_key="vector"),
+        "clu": TransformerFunction(func=predict_one, input_key="vector", output_key="cluster"),
         "rec": RecordToList(results),
     },
     connections=[
-        ("gen","out","vec","in"),
-        ("vec","out","clu","in"),
-        ("clu","out","rec","in"),
-    ]
+        ("gen", "out", "vec", "in"),
+        ("vec", "out", "clu", "in"),
+        ("clu", "out", "rec", "in"),
+    ],
 )
 
 net.compile_and_run()
-print("Results:", results)  # [{'cluster': 0, 'vector': [...]}, ...]
 
-# Save locally for inspection
+# Save local artifact for later use (e.g., by homework script)
 with open("part1_results.json", "w") as f:
     json.dump(results, f, indent=2)
-print("Saved part1_results.json")
-Note: For proper ML practice, fit KMeans once on the full corpus and then predict per message. Here we keep it minimal to foreground the GitHub I/O flow.
+print("Saved part1_results.json with", len(results), "rows")
+```
 
-💻 Part 2 — Push Artifacts Back to GitHub
-This example writes a summary JSON and a small Markdown report to the repo.
+> **Teaching note:** This keeps GitHub usage to a single idea — *pull inputs at runtime*. No auth complexity if the repo is public. If private, add `GITHUB_TOKEN` in `.env`.
 
-python
-Copy
-Edit
-# dsl/examples/ch06_github/part2_push_artifacts.py
-import json
+---
+
+## 🧭 Homework (Extension): Push Artifacts Back to GitHub
+
+**Task:** After running `part1_pull_and_run.py`, write a script that:
+
+1. Computes a **summary JSON** (e.g., cluster counts), and
+2. Creates a short **Markdown report**, and
+3. **Pushes** both files into your repo under `reports/ch06/`.
+
+Choose one of two push methods:
+
+### Option A — PyGithub (clean Python API)
+
+```bash
+pip install PyGithub
+```
+
+Starter (`dsl/examples/ch06_github/hw_push_artifacts.py`):
+
+```python
+import os, json
 from collections import Counter
-from .github_io import upsert_text
+from github import Github
 
-# Load the results produced by Part 1
+# Load local results produced by Part 1
 with open("part1_results.json", "r") as f:
     results = json.load(f)
 
+# Build summary
 clusters = [r["cluster"] for r in results]
-counts = Counter(clusters)
-summary = {
-    "total": len(results),
-    "by_cluster": dict(counts)
-}
+summary = {"total": len(results), "by_cluster": dict(Counter(clusters))}
 summary_json = json.dumps(summary, indent=2)
+report_md = f"""# Chapter 6 — Run Summary\n\n- Total items: {summary['total']}\n- Cluster counts: {summary['by_cluster']}\n"""
 
-report_md = f"""# Chapter 6 — Run Summary
+# Push via GitHub API
+repo_full = os.getenv("GITHUB_REPO")
+branch = os.getenv("GITHUB_BRANCH", "main")
+token = os.getenv("GITHUB_TOKEN")
+if not token:
+    raise ValueError("GITHUB_TOKEN required for pushing to private or protected repos")
 
-- Total items: {summary['total']}
-- Cluster counts: {summary['by_cluster']}
-"""
+gh = Github(token)
+repo = gh.get_repo(repo_full)
 
-# Commit paths (adjust to your repo layout)
-summary_path = "reports/ch06/summary.json"
-report_path  = "reports/ch06/README.md"
+paths = {
+    "reports/ch06/summary.json": summary_json,
+    "reports/ch06/README.md": report_md,
+}
 
-upsert_text(summary_path, summary_json, "ch06: add summary.json")
-upsert_text(report_path, report_md, "ch06: add report README.md")
+for path, content in paths.items():
+    try:
+        file = repo.get_contents(path, ref=branch)
+        repo.update_file(path, f"ch06: update {os.path.basename(path)}", content, file.sha, branch=branch)
+        print("Updated", path)
+    except Exception:
+        repo.create_file(path, f"ch06: add {os.path.basename(path)}", content, branch=branch)
+        print("Created", path)
+```
 
-print("Pushed artifacts to GitHub:", summary_path, "and", report_path)
-▶️ Runner
-python
-Copy
-Edit
-# dsl/examples/ch06_github/simple_github.py
-import os
-from dotenv import load_dotenv
+### Option B — Git CLI (good for learning Git)
 
-def main():
-    # Ensure .env is loaded so GITHUB_* vars are available
-    load_dotenv()
+You can also write the files locally and then run standard Git commands:
 
-    # Run Part 1
-    from .part1_pull_and_run import results  # side-effect: executes pipeline and writes part1_results.json
-    print("Part 1 complete. Example results:", results[:2])
+```bash
+# From repo root
+echo '{"hello": "world"}' > reports/ch06/summary.json
+printf "# Chapter 6 — Run Summary\n\nHello!" > reports/ch06/README.md
 
-    # Run Part 2
-    from .part2_push_artifacts import summary  # side-effect: pushes artifacts; exposes summary
+git add reports/ch06/
+git commit -m "ch06: add summary + report"
+git push origin main
+```
 
-    print("Part 2 complete. Summary:", summary)
+> **Tip:** If `main` is protected, push to a feature branch and open a PR.
 
-if __name__ == "__main__":
-    main()
-🏃 How to Run
-From the project root:
+---
 
-bash
-Copy
-Edit
-# 1) Ensure env
-cp .env.example .env   # if you have one
-# edit .env to include: GITHUB_TOKEN, GITHUB_REPO, GITHUB_BRANCH
-# (and your OPENAI_API_KEY if later chapters use GPT)
+## ✅ What to Submit (Homework)
 
-# 2) Install deps if needed
-pip install PyGithub python-dotenv scikit-learn
+- `reports/ch06/summary.json`  (cluster counts)
+- `reports/ch06/README.md`     (short write-up)
+- Your script (`hw_push_artifacts.py`) or the git commands you used
 
-# 3) Run
-cd dsl/examples/ch06_github
-python simple_github.py
-🧪 Troubleshooting
-Auth errors: Double-check GITHUB_TOKEN and that it has repo scope for the target repository.
+---
 
-File not found: Ensure the paths you read (data/ch06/...) exist on the specified GITHUB_BRANCH.
+## 🔍 Grading Guide (Suggested)
 
-Branch protection: If main is protected, push to a feature branch or open a PR with the artifacts.
+- **Correctness (40%)** — Artifacts exist and are pushed to the repo; summary reflects the data.
+- **Code Quality (30%)** — Clear, commented, robust error handling (token, paths, branch).
+- **Reproducibility (20%)** — Uses `.env` config; avoids hard-coded tokens.
+- **Reflection (10%)** — 2–3 sentences on why GitHub-as-shared-storage is useful for distributed pipelines.
 
-Large files: Prefer pushing summaries (JSON/CSV/Markdown) and storing large blobs elsewhere (or use Git LFS).
+---
 
-🔐 Security Notes
-Keep tokens in .env, not in code.
+## 🧪 Troubleshooting
 
-Use fine-grained PATs where possible.
+- **GET 404**: Verify `GITHUB_REPO`, `GITHUB_BRANCH`, and `path` match your repo. Try opening the constructed raw URL in a browser.
+- **Private repo**: Set `GITHUB_TOKEN` in `.env` and restart your shell so env vars are loaded.
+- **Push errors**: Branch protections may require a PR. Use a feature branch or the Git CLI path.
+- **Large artifacts**: Keep homework small (JSON/MD). For larger files consider Git LFS or external storage.
 
-Consider CI secrets to run pipelines in GitHub Actions for repeatability.
+---
 
-✅ Key Takeaways
-GitHub can act as a shared memory for distributed workflows.
+## 🧠 Teaching Notes
 
-Pulling inputs at runtime + pushing outputs enables asynchronous collaboration.
+- Part 1 focuses on the **single mental model**: *pipelines can read their inputs from a shared repo.*
+- Homework extends the model to **writing results**, reinforcing the collaboration loop.
+- Keep examples tiny so students can reason about them end-to-end.
 
-With a tiny helper (github_io.py), DisSysLab networks can read/write repo files cleanly.
-
-⏭️ Coming Up
-In Chapter 7, we’ll combine GPT transformers and data science transformers in a single, collaborative pipeline that reads prompts/configs from GitHub and publishes both LLM outputs and analytics back to the repo.
