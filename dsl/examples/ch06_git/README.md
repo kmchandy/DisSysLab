@@ -1,254 +1,349 @@
-# 🤝 Chapter 6 — Collaboration via GitHub (Part 1 + Homework)
+# 🤝 Chapter 6 — Connectors (InputConnector & OutputConnector)
 
-**Goal:** Show how a DisSysLab pipeline can **pull** small inputs from GitHub, run locally, and (as homework) **push** artifacts back. Keep the lecture minimal on tooling; emphasize the *collaboration concept*.
+**Goal:** Shows you how blocks connect to external applications using two simple blocks:
+
+- **InputConnector** — command‑driven *pull* from an external source → emits items on `out`.
+- **OutputConnector** — command‑driven *push* to an external sink → performs a single write on `flush`.
+
+**StreamGenerator** and  **StreamRecorder** generate and record **streams** of messages to lists, files, and other repositories. Connectors are used to call **external interfaces** using the APIs provided by the external applications.
+
+---
+
+## 🧭 Mental Model
+
+```
+[ Orchestrator ] --commands--> [ InputConnector ] --items--> [ Transformers ] --rows--> [ Orchestrator ] --flush cmd--> [ OutputConnector ]
+```
+
+- **Orchestrator** decides *when/what* to pull and when to flush (timer/manual).
+- **InputConnector** does a one‑off pull per command and emits 0..N items.
+- **OutputConnector** accepts a `{"cmd":"flush", "payload": [...], "meta": {...}}` command and performs one external write (e.g., one GitHub commit, one Markdown file write, one sheet update).
 
 ---
 
 ## 📦 Requirements
 
 ```bash
-pip install python-dotenv requests
-# (Homework adds: PyGithub OR use git CLI)
+pip install PyGithub scikit-learn matplotlib
 ```
 
-Create a `.env` in your project root (where your `get_credentials.py` loads from):
-
-```env
-# For reading raw files (public or private)
-GITHUB_REPO=your-user/your-repo
-GITHUB_BRANCH=main
-GITHUB_TOKEN=ghp_xxx_optional_if_private
-```
-
-> If the repo is **public**, `GITHUB_TOKEN` is optional. If **private**, set a token with `repo` scope.
+> PyGithub is used for a **single, real‑world demo** reading from a public repo (no token needed). Everything else uses local files so students can run it immediately.
 
 ---
 
-## 🗂 Folder Layout
+## 🧱 Core Blocks (minimal, readable)
 
-```
-dsl/
-  examples/
-    ch06_github/
-      README.md                      # this file
-      github_io_min.py               # tiny helper for GET (pull)
-      part1_pull_and_run.py          # in-class demo: pull → run → save local
-      hw_push_artifacts.py           # (starter) homework: push JSON/MD
-      data/
-        ch06_reviews.json            # small text dataset (JSON list of strings)
-        ch06_vocab.json              # optional config (JSON list of words)
-```
-
----
-
-## 🔧 Minimal Helper — `github_io_min.py`
-
-*Focus on the concept: one small function that reads text content from GitHub.*
+### `InputConnector` (base)
 
 ```python
-# dsl/examples/ch06_github/github_io_min.py
-import os
-import base64
-import json
-from typing import Optional
-import requests
+# dsl/block_lib/connectors/input_connector.py
+from typing import Dict, Any, Iterable
+from dsl.core import SimpleAgent
 
-RAW_BASE = "https://raw.githubusercontent.com"
-
-def gh_read_text(path: str) -> str:
-    """Read a text file from GitHub at (repo, branch, path) using optional token.
-    Works for public repos without a token; supports private via token.
+class InputConnector(SimpleAgent):
+    """Command‑driven pull from an external source.
+    in:  command dicts like {"cmd":"pull", "args":{...}}
+    out: item dicts  like {"data": ...}
     """
-    repo = os.getenv("GITHUB_REPO")
-    branch = os.getenv("GITHUB_BRANCH", "main")
-    token = os.getenv("GITHUB_TOKEN")  # optional for private repos
-    if not repo:
-        raise ValueError("GITHUB_REPO not set (e.g., your-user/your-repo)")
+    def __init__(self, name="InputConnector"):
+        super().__init__(name=name, inport="in", outports=["out", "status", "error"])
 
-    url = f"{RAW_BASE}/{repo}/{branch}/{path}"
-    headers = {"Authorization": f"Bearer {token}"} if token else {}
-    r = requests.get(url, headers=headers, timeout=20)
-    if r.status_code != 200:
-        raise RuntimeError(f"GET {url} failed: {r.status_code} — {r.text[:200]}")
-    return r.text
+    def process(self, msg: Dict[str, Any], inport=None):
+        cmd  = (msg or {}).get("cmd", "pull")
+        args = (msg or {}).get("args", {}) or {}
+        try:
+            count = 0
+            for item in self._pull(cmd, args):  # override in subclass
+                self.send({"data": item}, outport="out")
+                count += 1
+            self.send({"event":"done","cmd":cmd,"count":count}, outport="status")
+        except Exception as e:
+            self.send({"event":"error","cmd":cmd,"message":repr(e)}, outport="error")
 
-def gh_read_json(path: str):
-    return json.loads(gh_read_text(path))
+    def _pull(self, cmd: str, args: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
+        raise NotImplementedError
+```
+
+### `OutputConnector` (base)
+
+```python
+# dsl/block_lib/connectors/output_connector.py
+from typing import Dict, Any, List
+from dsl.core import SimpleAgent
+
+class OutputConnector(SimpleAgent):
+    """Command‑driven push to an external sink.
+    in: commands like {"cmd":"flush", "payload":[...], "meta":{...}}
+    """
+    def __init__(self, name="OutputConnector"):
+        super().__init__(name=name, inport="in", outports=["status", "error"])
+
+    def process(self, msg: Dict[str, Any], inport=None):
+        cmd   = (msg or {}).get("cmd")
+        meta  = (msg or {}).get("meta", {}) or {}
+        try:
+            if cmd == "flush":
+                payload = msg.get("payload", [])
+                self._flush(payload, meta)  # override in subclass
+                self.send({"event":"flushed","count":len(payload)}, outport="status")
+            elif cmd == "configure":
+                self._configure(meta)
+                self.send({"event":"configured"}, outport="status")
+            else:
+                self.send({"event":"error","message":f"unknown cmd {cmd}"}, outport="error")
+        except Exception as e:
+            self.send({"event":"error","cmd":cmd,"message":repr(e)}, outport="error")
+
+    def _flush(self, payload: List[Dict[str, Any]], meta: Dict[str, Any]):
+        raise NotImplementedError
+    def _configure(self, meta: Dict[str, Any]):
+        pass
+```
+
+### File‑based toy connectors (student‑owned)
+
+```python
+# dsl/block_lib/connectors/input_file.py
+import json, pathlib
+from typing import Dict, Any, Iterable
+from .input_connector import InputConnector
+
+class InputConnectorFile(InputConnector):
+    """Reads items from a local JSON file on command.
+    If the file holds a list, yields each element; if it's an object, yields that single object.
+    """
+    def __init__(self, path: str, name="InputConnectorFile"):
+        super().__init__(name=name)
+        self.path = pathlib.Path(path)
+
+    def _pull(self, cmd: str, args: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
+        obj = json.loads(self.path.read_text(encoding="utf-8"))
+        if isinstance(obj, list):
+            return obj
+        return [obj]
+```
+
+```python
+# dsl/block_lib/connectors/output_file.py
+import json, pathlib
+from typing import Dict, Any, List
+from .output_connector import OutputConnector
+
+class OutputConnectorFileJSON(OutputConnector):
+    """Writes a single JSON file on flush (payload is a list of dicts)."""
+    def __init__(self, path: str, name="OutputConnectorFileJSON"):
+        super().__init__(name=name)
+        self.path = pathlib.Path(path)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _flush(self, payload: List[Dict[str, Any]], meta: Dict[str, Any]):
+        self.path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+
+class OutputConnectorFileMarkdown(OutputConnector):
+    """Writes a Markdown file on flush; payload is a list of rows (strings or dicts with 'row')."""
+    def __init__(self, path: str, title: str = "Report", name="OutputConnectorFileMarkdown"):
+        super().__init__(name=name)
+        self.path = pathlib.Path(path)
+        self.title = title
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _flush(self, payload: List[Dict[str, Any]], meta: Dict[str, Any]):
+        lines = [f"# {meta.get('title', self.title)}", ""]
+        for p in payload:
+            if isinstance(p, str):
+                lines.append(p)
+            else:
+                lines.append(p.get("row", str(p)))
+        self.path.write_text("\n".join(lines), encoding="utf-8")
+```
+
+### Orchestrator (buffers and flushes)
+
+```python
+# dsl/block_lib/orchestrators/buffered_orchestrator.py
+from typing import Dict, Any, List
+from dsl.core import SimpleAgent
+
+class BufferedOrchestrator(SimpleAgent):
+    """Buffers rows arriving on data_in; on tick_in, sends one flush command with payload."""
+    def __init__(self, meta_builder=None, name="BufferedOrchestrator"):
+        super().__init__(name=name, inport=None, outports=["out"])
+        self.inports = ["data_in", "tick_in"]
+        self._buf: List[Dict[str, Any]] = []
+        self._meta_builder = meta_builder or (lambda buf: {})
+
+    def process(self, msg: Dict[str, Any], inport=None):
+        if inport == "data_in":
+            self._buf.append(msg)
+        elif inport == "tick_in":
+            meta = self._meta_builder(self._buf)
+            self.send({"cmd":"flush", "payload": self._buf, "meta": meta}, outport="out")
+            self._buf = []
 ```
 
 ---
 
-## 🎬 Part 1 (In-Class): Pull → Run → Save Local
+## 🎬 Demo A — Toy connectors (file → compute → file)
 
-This example pulls a tiny review dataset from GitHub, runs a simple DisSysLab pipeline (vectorize → cluster), and saves a local JSON result. It uses the Chapter 5 Part 1 style for continuity.
+**Goal:** Pull a JSON list of short issues, cluster them, format rows, flush once to a Markdown report.
+
+**Data file:** `dsl/examples/ch06_connectors/data/issues.json`
+
+```json
+[
+  {"title": "Crash on startup", "body": "App throws exception when launched"},
+  {"title": "Feature: dark mode", "body": "Please add a dark theme"},
+  {"title": "Docs: typo in README", "body": "Small spelling mistake"}
+]
+```
+
+**Script:** `dsl/examples/ch06_connectors/file_demo.py`
 
 ```python
-# dsl/examples/ch06_github/part1_pull_and_run.py
-import json
 import sklearn.feature_extraction.text as text
 import sklearn.cluster as cluster
 
 from dsl.core import Network
-from dsl.block_lib.stream_generators import GenerateFromList
+from dsl.block_lib.connectors.input_file import InputConnectorFile
+from dsl.block_lib.connectors.output_file import OutputConnectorFileMarkdown
+from dsl.block_lib.orchestrators.buffered_orchestrator import BufferedOrchestrator
 from dsl.block_lib.stream_transformers import TransformerFunction
-from dsl.block_lib.stream_recorders import RecordToList
 
-from .github_io_min import gh_read_json
+SRC = "dsl/examples/ch06_connectors/data/issues.json"
+OUT = "dsl/examples/ch06_connectors/reports/issue_summary.md"
 
-# --- Pull inputs from GitHub (data managed by your repo) ---
-# Expect: data/ch06_reviews.json is a JSON list of short review strings
-reviews = gh_read_json("dsl/examples/ch06_github/data/ch06_reviews.json")
-# Optional: pull a fixed vocabulary so students can reason about features
-try:
-    vocab = gh_read_json("dsl/examples/ch06_github/data/ch06_vocab.json")
-except Exception:
-    vocab = ["good", "bad"]
+# Fit once on full corpus
+import json, pathlib
+issues = json.loads(pathlib.Path(SRC).read_text())
+texts = [f"{i['title']} {i['body']}" for i in issues]
+vec = text.CountVectorizer(max_features=2000).fit(texts)
+km  = cluster.KMeans(n_clusters=2, random_state=42, n_init=10).fit(vec.transform(texts).toarray())
 
-# --- Build simple CountVectorizer + KMeans (fit once) ---
-vec = text.CountVectorizer(vocabulary=vocab)
-X_all = vec.fit_transform(reviews).toarray()  # fit on full corpus
-km = cluster.KMeans(n_clusters=2, random_state=42, n_init=10)
-km.fit(X_all)
+def vectorize(msg):
+    t = f"{msg['data']['title']} {msg['data']['body']}"
+    return vec.transform([t]).toarray()
 
-results = []
+def predict(v):
+    return int(km.predict(v)[0])
 
-def vectorize_one(review: str):
-    return vec.transform([review]).toarray()  # shape (1, D)
+def to_row(msg):
+    label = "bug" if any(k in (msg['data']['title']+msg['data']['body']).lower() for k in ["error","crash","exception"]) else "other"
+    return {"row": f"- **[{label}]** {msg['data']['title']}"}
 
-def predict_one(x):
-    return int(km.predict(x)[0])
+# Build network
+orch = BufferedOrchestrator(meta_builder=lambda buf: {"title": "Issue Triage Summary"})
 
 net = Network(
     blocks={
-        "gen": GenerateFromList(items=reviews, key="text"),
-        "vec": TransformerFunction(func=vectorize_one, input_key="text", output_key="vector"),
-        "clu": TransformerFunction(func=predict_one, input_key="vector", output_key="cluster"),
-        "rec": RecordToList(results),
+        "in": InputConnectorFile(SRC),
+        "vec": TransformerFunction(func=vectorize, input_key=None, output_key="vec"),
+        "clu": TransformerFunction(func=predict,   input_key="vec",  output_key="cluster"),
+        "row": TransformerFunction(func=to_row,    input_key=None,    output_key="row"),
+        "orch": orch,
+        "out": OutputConnectorFileMarkdown(OUT, title="Issue Triage Summary"),
     },
     connections=[
-        ("gen", "out", "vec", "in"),
-        ("vec", "out", "clu", "in"),
-        ("clu", "out", "rec", "in"),
+        ("in","out","vec","in"),
+        ("vec","out","clu","in"),
+        ("clu","out","row","in"),
+        ("row","out","orch","data_in"),
+        ("orch","out","out","in"),
     ],
 )
 
-net.compile_and_run()
-
-# Save local artifact for later use (e.g., by homework script)
-with open("part1_results.json", "w") as f:
-    json.dump(results, f, indent=2)
-print("Saved part1_results.json with", len(results), "rows")
+# Kick: send a single pull command and then a single flush command
+net.compile()
+net.blocks["in"].process({"cmd":"pull"})
+net.blocks["orch"].process({"tick": True}, inport="tick_in")
+print("Wrote:", OUT)
 ```
-
-> **Teaching note:** This keeps GitHub usage to a single idea — *pull inputs at runtime*. No auth complexity if the repo is public. If private, add `GITHUB_TOKEN` in `.env`.
 
 ---
 
-## 🧭 Homework (Extension): Push Artifacts Back to GitHub
+## 🌐 Demo B — Real‑world read (PyGitHub, public repo)
 
-**Task:** After running `part1_pull_and_run.py`, write a script that:
+**Goal:** small, authentic connector with **no auth** (public repo). Pull README text from a GitHub repo and write a local Markdown summary.
 
-1. Computes a **summary JSON** (e.g., cluster counts), and
-2. Creates a short **Markdown report**, and
-3. **Pushes** both files into your repo under `reports/ch06/`.
-
-Choose one of two push methods:
-
-### Option A — PyGithub (clean Python API)
-
-```bash
-pip install PyGithub
-```
-
-Starter (`dsl/examples/ch06_github/hw_push_artifacts.py`):
+**Connector:** `dsl/block_lib/connectors/input_github_readme.py`
 
 ```python
-import os, json
-from collections import Counter
 from github import Github
+from typing import Dict, Any, Iterable
+from .input_connector import InputConnector
 
-# Load local results produced by Part 1
-with open("part1_results.json", "r") as f:
-    results = json.load(f)
+class InputConnectorGitHubReadme(InputConnector):
+    """Pulls README from a public GitHub repo on command.
+    args: {"repo": "owner/name", "branch": "main"}
+    emits one item: {"text": "...README content..."}
+    """
+    def __init__(self, name="InputConnectorGitHubReadme"):
+        super().__init__(name=name)
+        self.gh = Github()  # no token → public only
 
-# Build summary
-clusters = [r["cluster"] for r in results]
-summary = {"total": len(results), "by_cluster": dict(Counter(clusters))}
-summary_json = json.dumps(summary, indent=2)
-report_md = f"""# Chapter 6 — Run Summary\n\n- Total items: {summary['total']}\n- Cluster counts: {summary['by_cluster']}\n"""
-
-# Push via GitHub API
-repo_full = os.getenv("GITHUB_REPO")
-branch = os.getenv("GITHUB_BRANCH", "main")
-token = os.getenv("GITHUB_TOKEN")
-if not token:
-    raise ValueError("GITHUB_TOKEN required for pushing to private or protected repos")
-
-gh = Github(token)
-repo = gh.get_repo(repo_full)
-
-paths = {
-    "reports/ch06/summary.json": summary_json,
-    "reports/ch06/README.md": report_md,
-}
-
-for path, content in paths.items():
-    try:
-        file = repo.get_contents(path, ref=branch)
-        repo.update_file(path, f"ch06: update {os.path.basename(path)}", content, file.sha, branch=branch)
-        print("Updated", path)
-    except Exception:
-        repo.create_file(path, f"ch06: add {os.path.basename(path)}", content, branch=branch)
-        print("Created", path)
+    def _pull(self, cmd: str, args: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
+        repo_full = args.get("repo")
+        if not repo_full:
+            raise ValueError("Missing 'repo' (e.g., 'pallets/flask')")
+        repo = self.gh.get_repo(repo_full)
+        readme = repo.get_readme()
+        text = readme.decoded_content.decode("utf-8", errors="replace")
+        return [{"text": text, "repo": repo_full}]
 ```
 
-### Option B — Git CLI (good for learning Git)
+**Script:** `dsl/examples/ch06_connectors/github_readme_demo.py`
 
-You can also write the files locally and then run standard Git commands:
+```python
+from dsl.core import Network
+from dsl.block_lib.connectors.input_github_readme import InputConnectorGitHubReadme
+from dsl.block_lib.connectors.output_file import OutputConnectorFileMarkdown
+from dsl.block_lib.orchestrators.buffered_orchestrator import BufferedOrchestrator
+from dsl.block_lib.stream_transformers import TransformerFunction
 
-```bash
-# From repo root
-echo '{"hello": "world"}' > reports/ch06/summary.json
-printf "# Chapter 6 — Run Summary\n\nHello!" > reports/ch06/README.md
+OUT = "dsl/examples/ch06_connectors/reports/readme_report.md"
 
-git add reports/ch06/
-git commit -m "ch06: add summary + report"
-git push origin main
+# Tiny transformers: count lines and words
+def summarize(msg):
+    text = msg["data"]["text"]
+    lines = text.splitlines()
+    words = text.split()
+    return {"row": f"- Repo README has {len(lines)} lines and {len(words)} words."}
+
+orch = BufferedOrchestrator(meta_builder=lambda buf: {"title": "README Summary"})
+
+net = Network(
+    blocks={
+        "in": InputConnectorGitHubReadme(),
+        "sum": TransformerFunction(func=summarize, input_key=None, output_key="row"),
+        "orch": orch,
+        "out": OutputConnectorFileMarkdown(OUT, title="README Summary"),
+    },
+    connections=[
+        ("in","out","sum","in"),
+        ("sum","out","orch","data_in"),
+        ("orch","out","out","in"),
+    ],
+)
+
+net.compile()
+# Pull from a public repo (no token). Try 'pallets/flask' or 'numpy/numpy'.
+net.blocks["in"].process({"cmd":"pull", "args": {"repo": "pallets/flask"}})
+# Single flush
+net.blocks["orch"].process({"tick": True}, inport="tick_in")
+print("Wrote:", OUT)
 ```
 
-> **Tip:** If `main` is protected, push to a feature branch and open a PR.
+> To use **private** repos later, pass a token to `Github(token)` via environment variable and expose a small `configure` command.
 
 ---
 
-## ✅ What to Submit (Homework)
+## 🧠 Take Away
 
-- `reports/ch06/summary.json`  (cluster counts)
-- `reports/ch06/README.md`     (short write-up)
-- Your script (`hw_push_artifacts.py`) or the git commands you used
-
----
-
-## 🔍 Grading Guide (Suggested)
-
-- **Correctness (40%)** — Artifacts exist and are pushed to the repo; summary reflects the data.
-- **Code Quality (30%)** — Clear, commented, robust error handling (token, paths, branch).
-- **Reproducibility (20%)** — Uses `.env` config; avoids hard-coded tokens.
-- **Reflection (10%)** — 2–3 sentences on why GitHub-as-shared-storage is useful for distributed pipelines.
+- **Why connectors?** They make *external world I/O* explicit and replaceable without changing the network shape.
+- **When to use StreamRecorder?** For per‑item appends (logging, row insert). Connectors are for *commanded, transactional writes* like a one‑shot Markdown report or commit.
+- **Real world path:** Today’s GitHub demo reads public content; a graded assignment could invite students to add a token and write a report back to their fork.
+- **Future (MCP):** An MCP client can implement the same `InputConnector`/`OutputConnector` contracts. Your networks stay the same; only the connector internals change.
 
 ---
 
-## 🧪 Troubleshooting
 
-- **GET 404**: Verify `GITHUB_REPO`, `GITHUB_BRANCH`, and `path` match your repo. Try opening the constructed raw URL in a browser.
-- **Private repo**: Set `GITHUB_TOKEN` in `.env` and restart your shell so env vars are loaded.
-- **Push errors**: Branch protections may require a PR. Use a feature branch or the Git CLI path.
-- **Large artifacts**: Keep homework small (JSON/MD). For larger files consider Git LFS or external storage.
-
----
-
-## 🧠 Teaching Notes
-
-- Part 1 focuses on the **single mental model**: *pipelines can read their inputs from a shared repo.*
-- Homework extends the model to **writing results**, reinforcing the collaboration loop.
-- Keep examples tiny so students can reason about them end-to-end.
 
