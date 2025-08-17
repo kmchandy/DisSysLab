@@ -34,13 +34,7 @@ A block is a shell that calls **functions** (or prompts) to generate, transform,
 
  ![Block Embodies a Function](docs/images/block_embodies_function.svg)
 
-You build a distributed application by:
-
-1. 📦 **Specifying blocks** by the functions they embody  
-2. 🔗 **Connecting blocks** into a network  
-
-
-
+**You build a distributed application by specifying and connecting blocks.**
 
 ---
 
@@ -51,52 +45,20 @@ You build a distributed application by:
 
 ---
 
-## 🚦 Choose Your Starting Path
+## 🚦 This Website
 
-DisSysLab supports three **onboarding tracks** depending on your goals and setup.
+A quick way to get an idea of this framework is to read the README.md file in each of the following chapters; run programs in the file, and modify the programs.
 
-| Track | Who It’s For | How You’ll Learn |
-|-------|--------------|------------------|
-| **Track A — Colab Wizard** | Non-programmers who want zero setup and instant results | An interactive wizard in Google Colab that runs in your browser |
-| **Track B — Local Install Wizard** | Non-programmers who want to run DisSysLab on their own computer and save apps | A conversational step-by-step wizard in your terminal; save and reuse apps locally |
-| **Track C — Programmers** | Python users who want full code control | A set of short lessons (`dsl/examples`) with runnable code and diagrams |
-
----
-
-### 🌐 Track A: Colab Wizard
-
-1. **[Open the Colab link](INSERT-COLAB-LINK-HERE)**  
-2. Follow the guided steps to build and run an app entirely in your browser.  
-3. Download your app definition if you want to reuse it later.
-
----
-
-### 🛠 Track B: Local Install Wizard
-
-1. Install DisSysLab locally:  
-   ```bash
-   git clone https://github.com/kmchandy/DisSysLab.git
-   cd DisSysLab
-   pip install -e .
-   ```
-Run the wizard:
-```
-python -m dsl.user_interaction.local_wizard
-```
-Follow the prompts to build your first app, save it, and re-run it any time.
-
-### 📚 Track C: For Programmers
-Install with examples:
-```
-pip install dissyslab[examples]
-```
-Explore the lessons inside dsl/examples/:
-
-Each lesson has a README.md focused on a single concept and includes a short explanation and runnable Python examples
+- **Build a network by specifying and connecting blocks.** [Chapter 1](dsl/examples/ch01_networks/README.md)
+- **Messages.** [Chapter 2](dsl/examples/ch02_keys/README.md)
+- **Network Structures.** [Chapter 3](dsl/examples/ch03_fanin_fanout/README.md)
+- **GPT blocks.** [Chapter 4](dsl/examples/ch04_GPT/README.md)
+- **Data Science Blocks** [Chapter 5](dsl/examples/ch05_ds/README.md)
+- **Connectors to External Applications** [Chapter 6](dsl/examples/ch06_git/README.md)
 
 ### 🔍 Coming Later
 🖼️ A drag-and-drop UI for visual network construction
 
 ### 🤝 Collaborate
 📬 We want to make distributed systems understandable — and enjoyable — for everyone.
-DisSysLab is an educational project. Collaboration is welcome.
+DisSysLab is an educational project. Collaboration is welcome. We plan to have a stable framework by mid-October.

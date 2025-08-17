@@ -1,4 +1,4 @@
-# 🧩 Step 1 — Networks = Blocks + Connections
+# 🧩 Chapter 1 — Networks = Blocks + Connections
 
 ### 🎯 Goal
 Learn how to build a distributed application in **DisSysLab** by creating **blocks** and connecting them to form a **network**.
