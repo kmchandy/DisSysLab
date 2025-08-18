@@ -1,14 +1,13 @@
 # 🔀 Chapter 3 — Fan-In and Fan-Out
 
 ### 🎯 Goal
-Learn how to build **non-pipeline networks** using **fan-out** (one input, multiple outputs) and **fan-in** (multiple inputs, one output).  
-This lets us branch and re-combine streams, enabling richer applications.
+Learn how to build arbitrary networks using **fan-out** (one input, multiple outputs) and **fan-in** (multiple inputs, one output).  
 
 ---
 
 ## 📍 What We’ll Build
 
-We’ll create a **sentiment-split network**:
+A very simple network that splits a stream of movie reviews based on whether the reviews were positive or negative, and then modifies the positive and negative reviews in different ways, and finally merges all reviews.
 
 - **Generator** → emits dicts with a `"review"` field.  
 - **Split** → routes each review to `"pos"` or `"neg"`.  
@@ -143,4 +142,4 @@ python3 -m dsl.examples.ch03_fanin_fanout.review_split_merge
 You’ve learned about arbitrary networks of blocks that process messages and connections that route messages between blocks.
 What if the blocks were AI agents? 
 
-👉 **Next up: Chapter 4 — GPT Blocks.**
+👉 **Next up: [Chapter 4 — GPT Blocks.**](../ch04_GPT/README.md)
