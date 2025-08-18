@@ -1,7 +1,7 @@
 # 🧩 Chapter 5 — Transformers for Data Science
 
 ### 🎯 Goal
-Learn how to use **data science transformers** (like CountVectorizer, TF-IDF, KMeans, and PCA) in networks — just like GPT transformers.
+Learn how to build **data science blocks** (like CountVectorizer, TF-IDF, KMeans, and PCA) in the same way that you build GPT blocks. The central idea is that you build different types of blocks by wrapping different types of functions. You build block libraries by wrapping function libraries.
 
 ---
 
@@ -212,4 +212,6 @@ The Python program pauses until you **close the window**.
 - Vectorizers (Count, TF-IDF) turn text into numeric vectors; KMeans groups messages into clusters; PCA lets us see high-dimensional vectors in 2D plots. More about this in related chapters
 
 ## ⏭️ Coming Up
-✨ In the next chapter, you will learn how distributed applications are used in collaboration. Specifically you will see how blocks put and get information from GitHub.
+✨ What if you wanted a distributed application that connected to external objects such as your calendar, email, shopping apps, or GitHub? The next chapter describe blocks that connect to external applications.
+
+👉 **Next up: [Chapter 6 — Connectors](../ch06_git/README.md)**

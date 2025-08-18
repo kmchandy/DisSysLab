@@ -1,7 +1,7 @@
 # 🧩 Chapter 4 — AI Transformers
 
 ### 🎯 Goal
-Learn how to create **AI blocks** easily.
+Learn that you create **AI blocks** in the same way that you create other types of blocks. AI blocks embody a prompt just as data-science blocks may embody functions from a data-science library such as Scikit-Learn. You create blocks of different types by embodying (or "wrapping") different types of functions.
 
 ---
 
@@ -75,14 +75,12 @@ python3 -m dsl.examples.ch04_GPT.gpt_network
 ```
 
 ## 🧠 Key Takeaways
-- GPT can be used as just another transformer in the network.
+- Different types of blocks are created by embodying (wrapping) different types of function
 
-- system_prompt defines what GPT should do.
-
-- input_key specifies what part of the message is sent to GPT.
-
-- output_key tells where the GPT result should be stored in the dictionary.
+- GPT blocks embody prompts.
 
 ## ⏭️ Coming Up
 
-✨ Next, we’ll go deeper into generators — learning how to build streams from numbers, files, and live data.
+✨ A key idea is that different types of blocks embody different types of functions. In this page you saw how GPT blocks embody prompts. Let's use the key idea to build data-science blocks.
+
+👉 **Next up: [Chapter 5 — Data Science Blocks.](../ch05_ds/README.md)**
