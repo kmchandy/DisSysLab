@@ -142,4 +142,4 @@ python3 -m dsl.examples.ch03_fanin_fanout.review_split_merge
 You’ve learned about arbitrary networks of blocks that process messages and connections that route messages between blocks.
 What if the blocks were AI agents? 
 
-👉 **Next up: [Chapter 4 — GPT Blocks.**](../ch04_GPT/README.md)
+👉 **Next up: [Chapter 4 — GPT Blocks.](../ch04_GPT/README.md)**
