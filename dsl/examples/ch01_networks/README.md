@@ -1,7 +1,7 @@
 # 🧩 Chapter 1 — Networks = Blocks + Connections
 
 ### 🎯 Goal
-Learn how to build a distributed application in **DisSysLab** by creating **blocks** and connecting them to form a **network**.
+Learn how to build a distributed application by creating **blocks** and connecting them to form a **network**.
 
 ---
 
@@ -20,12 +20,11 @@ We’ll create a **three-block network**:
 ## ⚙️ How It Works
 
 - **🔲 Blocks**  
-  - Can have **zero or more input ports** and **zero or more output ports**.  
-  - Run a **function** to generate, transform, or record messages.
+  - A block has some number of input and output ports called inports and outports, respectively
+  - A block executes a function that receives messages from its inports and sends messages through its outports.
 
 - **🔗 Connections**  
-  - Link one block’s **output port** to another block’s **input port**.  
-  - In this example messages are plain strings (e.g., `"abc"`, `"def"`).
+  - A connection connects a block’s **output port** to a block’s **input port**. 
 
 **Block types in this example:**
 - **Generator** – single outport, no inports.  
@@ -72,13 +71,9 @@ net = Network(
         ("reverse_msg", "out", "record_to_list", "in"),
     ]
 )
-```
-
 # Run the network
 net.compile_and_run()
-
-# Display the results
-print(results)  # ['cba', 'fed']
+```
 
 ### ▶️ Run It
 ```bash
@@ -99,7 +94,6 @@ python3 -m dsl.examples.ch01_networks.simple_network
 
 ### 🚀 Coming Up
 
-You’ve seen how messages flow from block to block.
-What if you want to make blocks that attach additional information to a message? For example, create a block that receives a movie review and appends a positivity score to the review.
+How would you create a block that receives movie reviews, gives each movie a score by analyzing its review, and outputs both the review and its score?
 
 👉 **Next up: Chapter 2 — Messages as Dictionaries.**
