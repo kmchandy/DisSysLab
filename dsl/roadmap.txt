@@ -42,3 +42,20 @@
 #   Add more options to main(). for example, "create" "make", "block" should all create a block.
 # B.
 #   Add functions for fan-out. Currently only has broadcast.
+
+Ideas for the remaining chapters. 
+Chapter 7: SimpleAgent. 
+Chapter 8: Agent, 
+Chapter 9: Parallel composition: A block can be a network of blocks. 
+Chapter 10: Sequential composition: A block can be an object in a sequential program. 
+Chapter 11: Common agentic network structures: loops to improve outcomes. 
+Chapter 12: Software engineering of an application: How to start; how to debug individual blocks; 
+how to check message flow along a connection. 
+Appendix 1: Library of examples of transformers -- simple transformers; 
+prompt transformers; NLP transformers; 
+Appendix 2: Library of examples of generators. 
+Appendix 3: Library of examples of recorders. 
+For later: Chapter 13: Detecting termination of network execution. 
+Chapter 14: Checkpoint, rollback and recovery of the application. 
+Chapter 15: File and resource management in an application. 
+Chapter 16: Failures and consensus.
