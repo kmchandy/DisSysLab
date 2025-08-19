@@ -1,8 +1,7 @@
 # 🧩 Chapter 7 — Simple Agents
 
 ### 🎯 Goal
-Learn how to use the SimpleAgent class to as the parent class of many classes including generators, transformers, and recorders. Also use the examples on this page to review concepts of similarities between documents.
-
+Learn how to use the SimpleAgent class to build generators, transformers, and recorders and more powerful objects.
 ---
 
 ## 📍 What We’ll Build
@@ -10,21 +9,22 @@ Learn how to use the SimpleAgent class to as the parent class of many classes in
 We’ll create a **three-block network**:
 
 1. **Generator** – produces a list of short text strings.  
-2. **SimpleAgent** – initialied with a reference string; then receives messages which are strings and compares the messages with the reference string and outputs a similarity score.
+2. **SimpleAgent** – initialized with a reference string; then receives messages which are strings and compares the messages with the reference string and outputs a similarity score.
 3. **Recorder** – saves the results in a Python list.
 
 **Visual:** `[ Generator ] → [ SimpleAgent ] → [ Recorder ]`
 
-We will build two versions of the SimpleAgent: the first uses a simple measure of similarity and the second illustrates different similarity measures.
+
+  - We will build two versions of the SimpleAgent: the first uses a simple measure of document similarity and the second illustrates a variety of similarity measures.
 ---
 
 ## ⚙️ How It Works
 
 - **🔲 SimpleAgent**  
-  - A SimpleAgent has a single inport -- called "in" by convention -- and has an arbitrary number of outports.
+  - A SimpleAgent has a single inport -- called "in" by convention -- and has an arbitrary number of outports. For example an agent that detects spam may have outports ["ham", "spam"].
   - A SimpleAgent is specified by two functions: **init_fn** and **handle_msg**
   - When a SimpleAgent object is instantiated its **init_fn** is executed. This function sets up initial values of the object's parameters and may also send messages.
-  - A SimpleAgent object waits to receive messages on its inport. It applies the **handle_msg** function to the message it receives. The handle_msg function may send messages. If **handle_msg** is not specified or is Null then the object terminates after executing init_fn.
+  - If **handle_msg** is not specified then the object terminates after executing init_fn. If handle_msg is specifed then the object waits to receive messages on its inport and applies the **handle_msg** function to the message.
 
 
 ---
@@ -44,7 +44,7 @@ def make_similarity_agent_simple(reference_sentence: str, name: str = "Similarit
     def init_fn(agent):
       # This function initializes parameters of the object, setting up its initial state.
       agent.state = {"ref": ref_words}
-      print(f"[{name}] ref='{reference_sentence}' (overlap count)")
+
 
     def handle_msg(agent, msg, inport=None):
       # This function is applied to each message that the agent receives.
@@ -72,7 +72,7 @@ if __name__ == "__main__":
     results = []
     net = Network(
         blocks={
-            "gen": generate(["hello Jack", "hello there Jack", "goodbye there"], key="text"),
+            "gen": generate(["hello Jack", "hello there Jack", "goodbye there", "there, there, there"]),
             "sim": make_similarity_agent_simple("hello there"),
             "rec": RecordToList(results),
         },
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     )
 
     net.compile_and_run()
-    print("Results (Tier 1):", results)
+    print("Results:", results)
 ```
 
 ### ▶️ Run It
@@ -92,15 +92,26 @@ python3 -m dsl.examples.ch01_networks.simple_network
 
 []
 ```
+### ▶️ Expected Output
+```
+Results: [{'input': 'hello Jack', 'overlap': 1}, {'input': 'hello there Jack', 'overlap': 2}, {'input': 'goodbye there', 'overlap': 1}, {'input': 'there, there, there', 'overlap': 1}]
+```
 
 ## 🧠 Key Takeaways
 
 - **SimpleAgent**  is specified by **init_fn** which initializes the agent and **handle_msg** which is the function applied to each message received by the agent.
 - It is the parent class for many classes including generators, transformers and recorders.
 
+### 🚀 Coming Up
+
+You may need to create a block that receives messages on multiple inports and sends messages along multiple outports. You can use fan-in and fan-out blocks to create arbitrary networks; however you may want to create blocks with multiple inports and outports.
+
+👉 [**Next up: Chapter 9. Agents.**](../ch08_agents/README.md)
+
+
 ## Sidebar: Using SimpleAgent to Learn More about Document Similarity
 
-The example shown above gives a simplistic view of document similarity; it merely counts the number of words in common between a reference document and a message. Data scientists use many sophisticated measures of similarity. Some of those are shown in the example below.
+The example shown above gives a simplistic view of document similarity; it merely counts the number of words in common between a reference document and a message. In computer science and natural language processing, researchers use many different ways to define similarity between documents. A few of them are illustrated below.
 
 ```
 import re
@@ -228,8 +239,4 @@ if __name__ == "__main__":
 
 ---
 
-### 🚀 Coming Up
 
-How would you create a block that receives movie reviews, gives each movie a score by analyzing its review, and outputs both the review and its score?
-
-👉 [**Next up: Chapter 2. Messages as Dictionaries.**](../ch02_keys/README.md)
