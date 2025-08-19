@@ -107,7 +107,7 @@ if __name__ == "__main__":
     results = []
     net = Network(
         blocks={
-            "gen": generate(["hello Jack", "hello there Jack", "goodbye there"], key="text"),
+            "gen": generate(["hello Jack", "hello there Jack", "goodbye there", "there hello", "there, there, there"]),
             "sim": make_similarity_agent("hello there", metric="cosine", stem=True),
             "rec": RecordToList(results),
         },

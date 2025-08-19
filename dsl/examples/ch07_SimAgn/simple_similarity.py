@@ -6,7 +6,6 @@ def make_similarity_agent_simple(reference_sentence: str, name: str = "Similarit
 
     def init_fn(agent):
         agent.state = {"ref": ref_words}
-        print(f"[{name}] ref='{reference_sentence}' (overlap count)")
 
     def handle_msg(agent, msg, inport=None):
         toks = set(str(msg).lower().split())
@@ -31,7 +30,7 @@ if __name__ == "__main__":
     results = []
     net = Network(
         blocks={
-            "gen": generate(["hello Jack", "hello there Jack", "goodbye there"], key="text"),
+            "gen": generate(["hello Jack", "hello there Jack", "goodbye there", "there, there, there"]),
             "sim": make_similarity_agent_simple("hello there"),
             "rec": RecordToList(results),
         },
@@ -42,4 +41,4 @@ if __name__ == "__main__":
     )
 
     net.compile_and_run()
-    print("Results (Tier 1):", results)
+    print("Results:", results)

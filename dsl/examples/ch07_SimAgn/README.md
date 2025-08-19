@@ -98,7 +98,9 @@ python3 -m dsl.examples.ch01_networks.simple_network
 - **SimpleAgent**  is specified by **init_fn** which initializes the agent and **handle_msg** which is the function applied to each message received by the agent.
 - It is the parent class for many classes including generators, transformers and recorders.
 
-## Sidebar: More about Document Similarity
+## Sidebar: Using SimpleAgent to Learn More about Document Similarity
+
+The example shown above gives a simplistic view of document similarity; it merely counts the number of words in common between a reference document and a message. Data scientists use many sophisticated measures of similarity. Some of those are shown in the example below.
 
 ```
 import re
