@@ -3,6 +3,11 @@
 ### 🎯 Goal
 Learn how to build a distributed application by creating **blocks** and connecting them to form a **network**.
 
+See the core ideas in an example:
+
+- A distributed system consists of connected blocks.
+- A block embodies a function.
+
 ---
 
 ## 📍 What We’ll Build
