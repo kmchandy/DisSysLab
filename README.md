@@ -3,7 +3,7 @@
 **DisSysLab** is a lightweight Python framework for building applications in which **multiple agents collaborate by exchanging messages**. It is designed for:
 
 - 🧑‍🎓 **Non-programmers**: Build distributed applications by connecting pre-built components from sources such as OpenAI, Microsoft Copilot, NumPy, and Scikit-learn.  
-- 🧑‍💻 **Programmers**: Build distributed applications in Python by connecting blocks. Use a block like any other Python class. Connect blocks to form larger blocks or embed blocks in programs.
+- 🧑‍💻 **Programmers**: Build distributed applications in Python by connecting blocks.
 
 ---
 
