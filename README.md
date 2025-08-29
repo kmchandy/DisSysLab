@@ -47,7 +47,7 @@ A block is a shell that calls **functions** (or prompts) to generate, transform,
 
 ## 🚦 This Website
 
-A quick way to get an idea of this framework is to read the README.md file in each of the following chapters; run programs in the file, and modify the programs.
+A quick way to get an idea of this framework is to run and modify the programs in the README.md file in each of the following chapters.
 
 - **Build a network by specifying and connecting blocks.** [Chapter 1](dsl/examples/ch01_networks/README.md)
 - **Messages.** [Chapter 2](dsl/examples/ch02_keys/README.md)
