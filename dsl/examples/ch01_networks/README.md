@@ -3,7 +3,7 @@
 ### 🎯 Goal
 Learn how to build a distributed application by creating **blocks** and connecting them to form a **network**.
 
-See the core ideas in an example:
+See an example of the two core ideas:
 
 - A distributed system consists of connected blocks.
 - A block embodies a function.
@@ -31,10 +31,14 @@ We’ll create a **three-block network**:
 - **🔗 Connections**  
   - A connection connects a block’s **output port** to a block’s **input port**. 
 
-**Block types in this example:**
-- **Generator** – single outport, no inports.  
-- **Transformer** – single inport, single outport.  
-- **Recorder** – single inport, no outports.
+**📊 Diagram of blocks and connections of this example:**
+
+![Simple Network](simple_network.svg)
+
+**Blocks in this example:**
+- **generate_from_list** – executes ```GenerateFromList(items=["abc", "def"])```. It is an example of a **Generator** block which has a single outport and no inports.  
+- **reverse_msg** – executes ```TransformerFunction(func=reverse_text)``. It is an example of a **Transformer** block which has a  single inport and a single outport.  
+- **record_to_list** – executes ```RecordToList(results)```. It is an example of a **Recorder** block which has a single inport and  no outports.
 
 (Block types with multiple inports and outports are introduced later.)
 
@@ -43,11 +47,6 @@ We’ll create a **three-block network**:
 ---
 
 ## 💻 Code Example
-
-**📊 Diagram of blocks and connections:**
-
-![Simple Network](simple_network.svg) 
-
  
 ```python
 # dsl/examples/ch01_networks/simple_network.py
@@ -92,8 +91,8 @@ python3 -m dsl.examples.ch01_networks.simple_network
 ## 🧠 Key Takeaways
 
 - **network = blocks + connections**  
-- **blocks** define functions that *process messages*
-- **connections** define the *flow of messages*.
+- **blocks**: each block executes a function that *processes messages*
+- **connections**:  specify how *messages flow* from block to block.
 
 ---
 
