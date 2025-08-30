@@ -9,17 +9,19 @@ You will use **messages as dictionaries** to attach information -- such as `data
 
 We’ll create a **three-block network**, just as in Chapter 1, except that now messages are dictionaries.
 
-- **Generator** – produces dicts with a `"text"` field.  
-- **Transformer** – reads `msg["text"]`, writes result into `msg["reversed"]`.  
-- **Recorder** – stores the full dictionary messages. 
+- **generator** – A **Generator** block that produces dicts with a `"text"` field.  
+- **reverser** – A **Transformer** block that reads `msg["text"]`, executes ```reverse_text``` on the message, and writes the result into `msg["reversed"]`.  
+- **recorder** – A **Recorder** block that stores the messages (which are of type ``dict``) in the variable ```results```.
+
+**📊 Diagram of blocks and connections:**  
+![Message Network](diagram_1.svg)
 
 ---
 
 
 ## 💻 Code Example
 
-**📊 Diagram of blocks and connections:**  
-![Message Network](diagram_1.svg)
+
 
 ```python
 # dsl/examples/ch02_keys/message_network.py
