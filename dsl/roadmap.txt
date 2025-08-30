@@ -59,3 +59,20 @@ For later: Chapter 13: Detecting termination of network execution.
 Chapter 14: Checkpoint, rollback and recovery of the application. 
 Chapter 15: File and resource management in an application. 
 Chapter 16: Failures and consensus.
+
+dsl/
+└─ connector_lib/
+   ├─ __init__.py
+   ├─ api.py                           # factories: input_from()/output_to()
+   ├─ inputs/
+   │  ├─ __init__.py
+   │  ├─ base.py                       # InputConnector base (pull)
+   │  └─ file.py                       # InputConnectorFile (JSON)
+   ├─ outputs/
+   │  ├─ __init__.py
+   │  ├─ base.py                       # OutputConnector base (flush + append_in)
+   │  ├─ file_json.py                  # OutputConnectorFileJSON
+   │  └─ file_md.py                    # OutputConnectorFileMarkdown
+   └─ orchestrators/
+      ├─ __init__.py
+      └─ buffered.py                   # BufferedOrchestrator (data_in/tick_in → flush)
