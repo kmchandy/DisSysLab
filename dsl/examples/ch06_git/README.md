@@ -1,11 +1,10 @@
 # 🤝 Chapter 6 — Connectors (InputConnector & OutputConnector)
 
-**Goal:** Shows you how blocks connect to external applications using two simple blocks:
+**Goal:** Shows you how you can connect a distributed system to external applications using two simple blocks:
 
-- **InputConnector** — command‑driven *pull* from an external source → emits items on `out`.
-- **OutputConnector** — command‑driven *push* to an external sink → performs a single write on `flush`.
+- **InputConnector** — *pulls* items from an external source  and outputs the items on an outport `out`.
+- **OutputConnector** — *pushes* items it receives in input port `in` to an external sink.
 
-**StreamGenerator** and  **StreamRecorder** generate and record **streams** of messages to lists, files, and other repositories. Connectors are used to call **external interfaces** using the APIs provided by the external applications.
 
 ---
 
