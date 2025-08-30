@@ -1,7 +1,7 @@
 # 🧩 Chapter 5 — Transformers for Data Science
 
 ### 🎯 Goal
-Learn how to build **data science blocks** (like CountVectorizer, TF-IDF, KMeans, and PCA) in the same way that you build GPT blocks. The central idea is that you build different types of blocks by wrapping different types of functions. You build block libraries by wrapping function libraries.
+Learn how to build **data science blocks** (like CountVectorizer, TF-IDF, KMeans, and PCA) in exactly the same way that you build GPT blocks or other types of blocks.
 
 ---
 
@@ -207,7 +207,7 @@ The Python program pauses until you **close the window**.
 
 
 ## ✅ Key Takeaways
-- Transformers can use any Python/ML function.
+- The two core ideas -- (1) blocks execute functions that process messages and (2) connections specify the flow of messages between blocks -- can be used for data science applications in exactly the same way as they are used for GPT and other applications.
 
 - Vectorizers (Count, TF-IDF) turn text into numeric vectors; KMeans groups messages into clusters; PCA lets us see high-dimensional vectors in 2D plots. More about this in related chapters
 
