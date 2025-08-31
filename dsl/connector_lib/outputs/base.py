@@ -5,61 +5,74 @@ from dsl.core import SimpleAgent
 
 class OutputConnector(SimpleAgent):
     """
-    Base class for flush-style outputs with optional streaming.
+    Base class for *flush-style* outputs.
+    Subclasses must implement `_flush(payload, meta)`.
+    Has a single inport "in" that accepts flush commands.
+    Has no outports.
 
-    Ports:
-      - in ('in'): commands
-      - append_in (optional): per-item values (Any) to buffer
-      - status, error
+    Messages on input port "in" must be dict of the following format:
+    -----
+    {"cmd": "flush", "payload": [...], "meta": {...}}
+         - payload : list[Any]   (items to write)
+         - meta    : dict        (destination/config info)
 
-    Commands:
-      - {"cmd":"flush","payload":[...], "meta":{...}}   # payload optional; uses buffer
-      - {"cmd":"configure","meta":{...}}                # optional
+    Behavior
+    --------
+    - Supports only the "flush" command. More commands may be added later.
+    - Validates types and raises TypeError/ValueError on bad input.
+    - Calls subclass `_flush(payload, meta)` to perform the write.
 
-    On success: {"event":"flushed","count":N}
+    How to extend
+    -------------
+    Subclass and implement:
+        _flush(self, payload: List[Any], meta: Dict[str, Any]) -> None
+
+    Example:
+        class OutputConnectorFileMarkdown(OutputConnector):
+            def _flush(self, payload, meta):
+                import pathlib
+                path = pathlib.Path(meta["path"])
+                title = meta.get("title", "Report")
+                lines = [f"# {title}", ""]
+                for item in payload:
+                    if isinstance(item, dict) and "row" in item:
+                        lines.append(item["row"])
+                    else:
+                        lines.append(f"- {item}")
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text("\\n".join(lines), encoding="utf-8")
     """
 
     def __init__(self, name: str = "OutputConnector") -> None:
-        super().__init__(name=name, inport="in", outports=["status", "error"])
-        self.inports = ["in", "append_in"]
-        self._buf: List[Any] = []
-        self._cfg: Dict[str, Any] = {}
+        # No data outports needed; this block performs a side-effect (writing).
+        super().__init__(name=name, inport="in", outports=[])
 
-    def process(self, msg, inport=None):
-        try:
-            if inport == "append_in":
-                self._buf.append(msg)
-                return
+    def handle_msg(self, msg: Dict[str, Any]) -> None:
+        """Validate the command and perform a single flush."""
+        if not isinstance(msg, dict):
+            raise TypeError(
+                f"{self.name}: expected dict message, got {type(msg).__name__}")
 
-            cmd = (msg or {}).get("cmd")
-            if cmd == "configure":
-                meta = (msg or {}).get("meta", {}) or {}
-                self._cfg.update(meta)
-                self.send({"event": "configured"}, outport="status")
-                return
+        cmd = msg.get("cmd")
+        if cmd != "flush":
+            raise ValueError(
+                f"{self.name}: unknown cmd {cmd!r}; only 'flush' is supported")
 
-            if cmd == "flush":
-                payload = (msg or {}).get("payload")
-                meta = {**self._cfg, **((msg or {}).get("meta", {}) or {})}
-                # normalize items to a list[Any]
-                if payload is None:
-                    items: List[Any] = list(self._buf)
-                elif isinstance(payload, list):
-                    items = payload
-                else:
-                    items = [payload]
+        payload = msg.get("payload")
+        meta = msg.get("meta", {})
 
-                self._flush(items, meta)
-                self._buf.clear()
-                self.send({"event": "flushed", "count": len(items)},
-                          outport="status")
-                return
+        if not isinstance(payload, list):
+            raise TypeError(
+                f"{self.name}: 'payload' must be a list, got {type(payload).__name__}")
+        if not isinstance(meta, dict):
+            raise TypeError(
+                f"{self.name}: 'meta' must be a dict, got {type(meta).__name__}")
 
-            self.send(
-                {"event": "error", "message": f"unknown cmd {cmd}"}, outport="error")
-        except Exception as e:
-            self.send({"event": "error", "cmd": (msg or {}).get(
-                "cmd", "?"), "message": repr(e)}, outport="error")
+        # Delegate: subclass performs the actual write by overloading _flush()
+        self._flush(payload, meta)
 
-    def _flush(self, payload: List[Any], meta: Dict[str, Any]):
+    # --- to be implemented by subclasses ------------------------------------
+
+    def _flush(self, payload: List[Any], meta: Dict[str, Any]) -> None:
+        """Subclasses must override: perform one write operation."""
         raise NotImplementedError
