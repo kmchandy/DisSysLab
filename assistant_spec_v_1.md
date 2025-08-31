@@ -139,3 +139,9 @@ AL supports these core actions:
 - Confirmed as v1 spec on August 7, 2025
 - User will work on this intermittently, unavailable August 22–28
 
+## Running Virtual Environment venv
+```
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -e .
+```
