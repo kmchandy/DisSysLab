@@ -67,6 +67,8 @@ class TestNestedNetwork(unittest.TestCase):
         # Inner network
         inner_net = Network(
             name="Inner",
+            inports=["in"],
+            outports=["out"],
             blocks={"B1": agent_b1, "B2": agent_b2},
             connections=[
                 ("external", "in", "B1", "in"),
@@ -144,6 +146,7 @@ class TestNestedNetwork_2(unittest.TestCase):
 
         agent_b0 = SimpleAgent(
             name="B0",
+            inport="in",
             outports=["out"],
             handle_msg=handle_msg_b,
             parameters=["q"]
@@ -151,6 +154,7 @@ class TestNestedNetwork_2(unittest.TestCase):
 
         agent_b1 = SimpleAgent(
             name="B1",
+            inport="in",
             outports=["out"],
             handle_msg=handle_msg_b,
             parameters={"q": None}
@@ -166,6 +170,7 @@ class TestNestedNetwork_2(unittest.TestCase):
 
         block_0 = Network(
             name="block_0",
+            outports=["out"],
             blocks={"A0": agent_a0, "B0": agent_b0},
             connections=[
                 ("A0", "out", "B0", "in"),
@@ -180,6 +185,7 @@ class TestNestedNetwork_2(unittest.TestCase):
 
         block_1 = Network(
             name="block_1",
+            outports=["out"],
             blocks={"A1": agent_a1, "B1": agent_b1},
             connections=[
                 ("A1", "out", "B1", "in"),
@@ -228,6 +234,7 @@ class TestNestedNetwork_2(unittest.TestCase):
         def make_simple_agent_type_2(name):
             return SimpleAgent(
                 name=name,
+                inport="in",
                 outports=["out"],
                 handle_msg=handle_msg_b,
                 parameters={"q": None}
