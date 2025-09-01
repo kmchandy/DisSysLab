@@ -175,3 +175,6 @@ print("DisSysLab imported from:", dsl.__file__)
 PY
 ```
 You should see a path pointing to your DisSysLab/dsl/ folder. 🎉
+
+## Using Makefile
+📖 *“See [Makefile Guide](README_Makefile.md) .”*
