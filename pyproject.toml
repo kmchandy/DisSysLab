@@ -6,9 +6,21 @@ readme = "README.md"
 requires-python = ">=3.8"
 license = "MIT"
 authors = [{ name = "K. Mani Chandy", email = "kmchandy@gmail.com" }]
-dependencies = ["rich>=13.0.0"]
+
+# Core deps — light, used by baseline modules
+dependencies = [
+  "rich>=13.0.0",
+  "requests>=2.0.0",
+  "beautifulsoup4>=4.0.0",
+]
 
 [project.optional-dependencies]
+# Install only when needed
+sheets = ["gspread>=6.0.0"]
+github = ["PyGithub>=2.0.0"]
+ml = ["scikit-learn>=1.4.0"]
+
+# Dev tooling
 dev = ["pytest>=6.0.0", "build", "twine"]
 
 [project.urls]
@@ -24,7 +36,6 @@ where = ["."]
 include = ["dsl*"]
 exclude = ["dsl/tests*"]
 
-# Typing marker (ensure you have an empty file at: dsl/py.typed)
 [tool.setuptools.package-data]
 "dsl" = ["py.typed", "**/*.json", "**/*.yaml", "**/*.yml", "**/*.txt", "**/*.md"]
 
