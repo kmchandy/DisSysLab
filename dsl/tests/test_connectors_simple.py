@@ -15,29 +15,26 @@ def to_row(msg):
     return {"row": f"- {item.get('title', 'Untitled')}"}
 
 
-orch = BufferedOrchestrator(meta_builder=lambda buf: {
-                            "path": OUT, "title": "Issue Triage"})
-
 net = Network(
     blocks={
-        # Generate commands to input connector (was pull)
-        "in_commands": GenerateFromList(items=[{"cmd": "pull", "args": {"path": SRC}}], delay=0.05),
-        # Input connector to read JSON file (was in)
-        "input_connector":   InputConnectorFile(),
-        # Transform input data to row format
-        "transform_to_row":  TransformerFunction(func=to_row),
-        "orch": orch,
-        # Output connector to write Markdown file
-        "output_connector":  OutputConnectorFileMarkdown(),
-        # Generate commands
-        "tick": GenerateFromList(items=[{"cmd": "flush"}], delay=0.1),
+        "in_commands": GenerateFromList(
+            items=[{"cmd": "pull", "args": {"path": SRC}}],
+            delay=0.05
+        ),
+        "input_connector": InputConnectorFile(),
+        "transform_to_row": TransformerFunction(func=to_row),
+        "buffer": BufferedOrchestrator(
+            meta_builder=lambda buf: {"path": OUT, "title": "Issue Triage"}
+        ),
+        "output_connector": OutputConnectorFileMarkdown(),
+        "out_commands": GenerateFromList(items=[{"cmd": "flush"}], delay=0.1),
     },
     connections=[
-        ("pull", "out", "in", "in"),
-        ("in", "out", "row", "in"),
-        ("row", "out", "orch", "data_in"),
-        ("tick", "out", "orch", "tick_in"),
-        ("orch", "out", "out", "in"),
+        ("in_commands", "out", "input_connector", "in"),
+        ("input_connector", "out", "transform_to_row", "in"),
+        ("transform_to_row", "out", "buffer", "data_in"),
+        ("out_commands", "out", "buffer", "command_in"),
+        ("buffer", "out", "output_connector", "in"),
     ],
 )
 
