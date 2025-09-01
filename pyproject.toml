@@ -19,6 +19,7 @@ dependencies = [
 sheets = ["gspread>=6.0.0"]
 github = ["PyGithub>=2.0.0"]
 ml = ["scikit-learn>=1.4.0"]
+gpt = ["openai>=1.0.0"]
 
 # Dev tooling
 dev = ["pytest>=6.0.0", "build", "twine"]

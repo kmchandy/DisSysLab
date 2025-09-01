@@ -10,16 +10,8 @@ Tags: ["transformer", "stream", "block", "NLP", "OpenAI", "NumPy", "GPT"]
 """
 
 from typing import Optional, Any, Callable
-from dsl.core import SimpleAgent
-import warnings
-from typing import Any, Callable, Optional
-from dsl.core import SimpleAgent  # adjust import if needed
-from typing import Optional
 import os
 import traceback
-from typing import Optional, Callable, Any, Union
-from dotenv import load_dotenv
-from openai import OpenAI
 from rich import print as rprint
 
 from dsl.core import SimpleAgent, Agent
@@ -125,6 +117,14 @@ class TransformerPrompt(TransformerFunction):
         if not system_prompt:
             raise ValueError("system_prompt must be a non-empty string.")
 
+        try:
+            from openai import OpenAI
+        except ImportError as e:
+            raise ImportError(
+                "OpenAI client not installed. Install with: pip install -e '.[gpt]'"
+            ) from e
+
+        # Resolve API key
         key = _resolve_openai_key()
         if not key:
             raise ValueError(
@@ -132,10 +132,12 @@ class TransformerPrompt(TransformerFunction):
                 "or configure dsl/utils/get_credentials.py (.env supported)."
             )
 
-        client = OpenAI(api_key=key)
+        # Store the client once on self
+        self._client = OpenAI(api_key=key)
 
+        # GPT call function
         def _call_gpt(msg_text: str) -> str:
-            resp = client.chat.completions.create(
+            resp = self._client.chat.completions.create(
                 model=model,
                 messages=[
                     {"role": "system", "content": system_prompt},
@@ -143,14 +145,13 @@ class TransformerPrompt(TransformerFunction):
                 ],
                 temperature=temperature,
             )
-            return (resp.choices[0].message.content or "").strip()
+            return resp.choices[0].message.content
 
-        super().__init__(
-            func=_call_gpt,
-            input_key=input_key,
-            output_key=output_key,
-            name=name or "TransformerPrompt",
-        )
+        # Pass function to parent class
+        super().__init__(func=_call_gpt,
+                         input_key=input_key,
+                         output_key=output_key,
+                         name=name or "TransformerPrompt")
 
 
 def get_value_for_key(key: str):
