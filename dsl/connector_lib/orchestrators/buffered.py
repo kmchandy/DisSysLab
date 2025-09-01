@@ -24,8 +24,11 @@ class BufferedOrchestrator(Agent):
         name: str = "BufferedOrchestrator",
     ) -> None:
         # Two input ports, one output port
-        super().__init__(name=name, inports=[
-            "data_in", "command_in"], outports=["out"])
+        super().__init__(
+            name=name,
+            inports=["data_in", "command_in"],
+            outports=["out"],
+            run=self.run,)
         self._buf: List[Any] = []
         # meta_builder takes the current buffer and returns a metadata dict
         self._meta_builder = meta_builder or (lambda buf: {})
