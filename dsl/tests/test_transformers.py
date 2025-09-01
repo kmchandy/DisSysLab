@@ -1,16 +1,11 @@
 import pytest
-from dsl.core import Network, SimpleAgent
+from dsl.core import Network
 from dsl.block_lib.stream_transformers import (
-    StreamTransformer,
-    WrapFunction,
+    TransformerFunction,
     get_value_for_key,
-    PromptToBlock,
-    SentimentClassifierWithGPT,
-    ExtractEntitiesWithGPT,
-    SummarizeWithGPT,
-    transform
+    TransformerPrompt,
 )
-from dsl.block_lib.stream_generators import generate
+from dsl.block_lib.stream_generators import GenerateFromList
 from dsl.block_lib.stream_recorders import record, RecordToList
 from dsl.block_lib.fanin import MergeSynch, MergeAsynch
 
@@ -24,8 +19,8 @@ def test_stream_transformer_basic():
 
     net = Network(
         blocks={
-            "gen": generate(["abc", "def"], key="data"),
-            "xf": StreamTransformer(transform_fn=reverse_text, input_key="data", output_key="reverse_str"),
+            "gen": GenerateFromList(items=["abc", "def"], key="data"),
+            "xf": TransformerFunction(transform_fn=reverse_text, input_key="data", output_key="reverse_str"),
             "rec": RecordToList(results),
         },
         connections=[
@@ -46,8 +41,8 @@ def test_stream_transformer_basic_no_keys():
 
     net = Network(
         blocks={
-            "gen": generate(["abc", "def"]),
-            "xf": StreamTransformer(transform_fn=reverse_text),
+            "gen": GenerateFromList(["abc", "def"]),
+            "xf": TransformerFunction(transform_fn=reverse_text),
             "rec": RecordToList(results),
         },
         connections=[
@@ -65,8 +60,8 @@ def test_stream_transformer_basic_short_record():
 
     net = Network(
         blocks={
-            "gen": generate(["abc", "def"], key="data"),
-            "xf": StreamTransformer(transform_fn=reverse_text, input_key="data", output_key="reverse_str"),
+            "gen": GenerateFromList(items=["abc", "def"], key="data"),
+            "xf": TransformerFunction(transform_fn=reverse_text, input_key="data", output_key="reverse_str"),
             "rec": record(to="list", target=results)
         },
         connections=[
@@ -82,12 +77,12 @@ def test_stream_transformer_basic_short_record():
     ]
 
 
-def test_wrap_function_upper():
+def test_transformer_function_upper():
     results = []
     net = Network(
         blocks={
-            "gen": generate(["one", "two"], key="data"),
-            "xf": WrapFunction(func=str.upper, input_key="data"),
+            "gen": GenerateFromList(items=["one", "two"], key="data"),
+            "xf": TransformerFunction(func=str.upper, input_key="data"),
             "rec": RecordToList(results),
         },
         connections=[("gen", "out", "xf", "in"), ("xf", "out", "rec", "in")],
@@ -104,8 +99,8 @@ def test_transform_shortcut():
 
     net = Network(
         blocks={
-            "gen": generate(["cat", "dog"], key="data"),
-            "xf": WrapFunction(get_value_for_key("data")),
+            "gen": GenerateFromList(items=["cat", "dog"], key="data"),
+            "xf": TransformerFunction(get_value_for_key("data")),
             "rec": RecordToList(results),
         },
         connections=[("gen", "out", "xf", "in"), ("xf", "out", "rec", "in")],
@@ -118,8 +113,8 @@ def test_transform_multiple_streams_synch():
     results = []
     net = Network(
         blocks={
-            "a": generate(["red", "blue"]),
-            "b": generate(["apple", "berry"]),
+            "a": GenerateFromList(["red", "blue"]),
+            "b": GenerateFromList(["apple", "berry"]),
             "c": MergeSynch(["x", "y"]),
             "d": RecordToList(results),
         },
@@ -137,8 +132,8 @@ def test_transform_multiple_streams_asynch():
     results = []
     net = Network(
         blocks={
-            "a": generate(["red", "blue"], delay=0.1),
-            "b": generate(["apple", "berry"]),
+            "a": GenerateFromList(["red", "blue"], delay=0.1),
+            "b": GenerateFromList(["apple", "berry"]),
             "c": MergeAsynch(["x", "y"]),
             "d": RecordToList(results),
         },
@@ -176,8 +171,8 @@ def test_prompt_to_block_with_mock(monkeypatch):
         "dsl.block_lib.stream_transformers.OpenAI", DummyClient)
     net = Network(
         blocks={
-            "gen": generate(["What is 6 x 7?"]),
-            "gpt": PromptToBlock("Answer this: {msg}"),
+            "gen": GenerateFromList(["What is 6 x 7?"]),
+            "gpt": TransformerPrompt("Answer this: {msg}"),
             "rec": RecordToList(results),
         },
         connections=[("gen", "out", "gpt", "in"), ("gpt", "out", "rec", "in")],
@@ -203,8 +198,10 @@ def test_sentiment_classifier_with_mock(monkeypatch):
         "dsl.block_lib.stream_transformers.OpenAI", DummyClient)
     net = Network(
         blocks={
-            "gen": generate(["I love pizza"]),
-            "clf": SentimentClassifierWithGPT(),
+            "gen": GenerateFromList(["I love pizza"]),
+            "clf": TransformerPrompt(
+                "Classify the sentiment of this review as Positive, Negative, or Neutral: {msg}"
+            ),
             "rec": RecordToList(results),
         },
         connections=[("gen", "out", "clf", "in"), ("clf", "out", "rec", "in")],
@@ -230,14 +227,16 @@ def test_extract_entities_with_mock(monkeypatch):
         "dsl.block_lib.stream_transformers.OpenAI", DummyClient)
     net = Network(
         blocks={
-            "gen": generate(["Barack Obama was the president"]),
-            "xf": ExtractEntitiesWithGPT(),
+            "gen": GenerateFromList(["Barack Obama was the president"]),
+            "xf": TransformerPrompt(
+                "Extract the named entities from this text as a Python list: {msg}"
+            ),
             "rec": RecordToList(results)
         },
         connections=[("gen", "out", "xf", "in"), ("xf", "out", "rec", "in")],
     )
     net.compile_and_run()
-    assert results == [["Barack Obama"]]
+    assert results == [["Biden"]]
 
 
 def test_summarize_with_mock(monkeypatch):
@@ -257,11 +256,16 @@ def test_summarize_with_mock(monkeypatch):
         "dsl.block_lib.stream_transformers.OpenAI", DummyClient)
     net = Network(
         blocks={
-            "gen": generate(["This is a long paragraph..."]),
-            "xf": SummarizeWithGPT(),
+            "gen": GenerateFromList([
+                "There is no single best trail in the San Gabriel Mountains, as the ideal hike depends  on your experience level and desired scenery."
+            ]),
+            "xf": TransformerPrompt(
+                "Summarize the following text: {msg}"
+            ),
             "rec": RecordToList(results)
         },
         connections=[("gen", "out", "xf", "in"), ("xf", "out", "rec", "in")],
     )
     net.compile_and_run()
+    print(f"results = {results}")
     assert results == ["This is a summary."]

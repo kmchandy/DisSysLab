@@ -30,8 +30,8 @@ class TestBasicNetwork(unittest.TestCase):
             parameters={},
             blocks={
                 "A": SimpleAgent(name="A", outports=["out"], init_fn=generator),
-                "B": SimpleAgent(name="B", outports=["out"], handle_msg=increment),
-                "C": SimpleAgent(name="C", handle_msg=collect)
+                "B": SimpleAgent(name="B", inport="in", outports=["out"], handle_msg=increment),
+                "C": SimpleAgent(name="C", inport="in", handle_msg=collect)
             },
             connections=[
                 ("A", "out", "B", "in"),
@@ -52,6 +52,7 @@ class TestBasicNetwork(unittest.TestCase):
 
         agent = SimpleAgent(
             name="scale_agent",
+            inport="in",
             outports=[],
             handle_msg=handler,
             parameters={"scale": 3}
