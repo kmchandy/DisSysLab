@@ -35,7 +35,8 @@ class InputConnector(SimpleAgent):
 
     def __init__(self, name: str = "InputConnector") -> None:
         # One data outport only.
-        super().__init__(name=name, inport="in", outports=["out"])
+        super().__init__(name=name, inport="in", outports=["out"],
+                         handle_msg=self.handle_msg)
 
     def handle_msg(self, msg: Dict[str, Any]) -> None:
         """Validate the command and forward each pulled item to out."""

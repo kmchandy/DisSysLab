@@ -1,22 +1,28 @@
-import json
-import pathlib
+from __future__ import annotations
+from pathlib import Path
 from typing import Any, Dict, List
+import json
 from .base import OutputConnector
 
 
 class OutputConnectorFileJSON(OutputConnector):
-    """Writes a JSON file on {"cmd":"flush"}; accepts payload of Any or list[Any].
-       If given dicts/strings/numbers, writes a JSON array.
-    meta: {"path": "..."}
+    """
+    Write a JSON file on 'flush'.
+
+    Usage (constructor-driven):
+        out = OutputConnectorFileJSON(".../data.json")
+
+    Expects a 'flush' command:
+        {"cmd": "flush", "payload": [...], "meta": {...}}
+
+    Writes the entire payload list to the path given at construction.
     """
 
-    def __init__(self, default_path: str | None = None,
-                 name: str = "OutputConnectorFileJSON") -> None:
+    def __init__(self, path: str, name: str = "OutputConnectorFileJSON") -> None:
         super().__init__(name=name)
-        if default_path:
-            self._cfg = {"path": default_path}
+        self.path = Path(path)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
 
-    def _flush(self, payload: List[Any], meta: Dict[str, Any]):
-        path = pathlib.Path(meta["path"])
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+    def _flush(self, payload: List[Any], meta: Dict[str, Any]) -> None:
+        with self.path.open("w", encoding="utf-8") as f:
+            json.dump(payload or [], f, indent=2, ensure_ascii=False)

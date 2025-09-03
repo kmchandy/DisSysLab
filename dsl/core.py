@@ -517,7 +517,7 @@ Tags: agent, single inport, handle one message at a time
                     self_.stop()
                     break
                 else:
-                    self_.handle_msg(self_, msg, **self_.parameters)
+                    self_.handle_msg(msg, **self_.parameters)
 
         # Call Agent constructor
         super().__init__(
