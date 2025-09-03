@@ -41,10 +41,9 @@ net = Network(
         "input_connector": InputConnectorFile(),
         "transform_to_row": TransformerFunction(func=to_row),
         "buffer": BufferedOrchestrator(
-            meta_builder=lambda buf: {
-                "path": str(OUT), "title": "Issue Triage"}
+            meta_builder=lambda buf: {"title": "Issue Triage"}
         ),
-        "output_connector": OutputConnectorFileMarkdown(),
+        "output_connector": OutputConnectorFileMarkdown(OUT, title="Issue Triage"),
         "out_commands": GenerateFromList(items=[{"cmd": "flush"}], delay=0.1),
     },
     connections=[

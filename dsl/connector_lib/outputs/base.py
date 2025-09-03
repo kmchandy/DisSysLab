@@ -45,7 +45,7 @@ class OutputConnector(SimpleAgent):
 
     def __init__(self, name: str = "OutputConnector") -> None:
         # No data outports needed; this block performs a side-effect (writing).
-        super().__init__(name=name, inport="in", outports=[])
+        super().__init__(name=name, inport="in", outports=[], handle_msg=self.handle_msg)
 
     def handle_msg(self, msg: Dict[str, Any]) -> None:
         """Validate the command and perform a single flush."""
