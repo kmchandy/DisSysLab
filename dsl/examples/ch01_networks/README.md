@@ -98,6 +98,6 @@ python3 -m dsl.examples.ch01_networks.simple_network
 
 ### 🚀 Coming Up
 
-How would you create a block that receives movie reviews, gives each movie a score by analyzing its review, and outputs both the review and its score?
+Would you like to create a network that receives movie reviews, gives each movie a score by analyzing its review, and outputs both the review and its score?
 
 👉 [**Next up: Chapter 2. Messages as Dictionaries.**](../ch02_keys/README.md)
