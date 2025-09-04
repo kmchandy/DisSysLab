@@ -63,7 +63,11 @@ def reverse_text(x):
 # Where we’ll store results
 results = []
 
-# Define the network
+# Define the network: blocks and connections
+# blocks is a dict where the key is the block name and the value
+#       is the function executed by the block.
+# connections is a list of 4-tuples 
+#        (from_block_name, outport, to_block_name, inport)
 net = Network(
     blocks={
         "generate_from_list": GenerateFromList(items=["abc", "def"]),
@@ -75,6 +79,7 @@ net = Network(
         ("reverse_msg", "out", "record_to_list", "in"),
     ]
 )
+
 # Run the network
 net.compile_and_run()
 ```
