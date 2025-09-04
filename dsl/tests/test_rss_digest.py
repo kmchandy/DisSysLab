@@ -24,17 +24,14 @@ def build_network(out_path: Path) -> Network:
     return Network(
         blocks={
             "pull": GenerateFromList(
-                items=[{"cmd": "pull", "args": {"url": RSS_URL}}],
-                delay=0.05,
+                items=[{"cmd": "pull", "args": {"url": RSS_URL, "limit": 10}}],
+                delay=0.01,
             ),
             "rss": InputConnectorRSS(),
             "row": TransformerFunction(func=to_row),
-            "buffer": BufferedOrchestrator(
-                meta_builder=lambda buf: {
-                    "path": str(out_path), "title": "HN Digest"}
-            ),
+            "buffer": BufferedOrchestrator(meta_builder=lambda buf: {"title": "HN Digest"}),
             "writer": OutputConnectorFileMarkdown(str(out_path), title="HN Digest"),
-            "flush": GenerateFromList(items=[{"cmd": "flush"}], delay=0.2),
+            "flush": GenerateFromList(items=[{"cmd": "flush"}], delay=1.0),
         },
         connections=[
             ("pull", "out", "rss", "in"),

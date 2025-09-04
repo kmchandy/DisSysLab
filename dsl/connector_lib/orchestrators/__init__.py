@@ -1,2 +1,2 @@
-from .buffered import BufferedOrchestrator
-__all__ = ["BufferedOrchestrator"]
+from .buffered import Orchestrator
+__all__ = ["Orchestrator"]
