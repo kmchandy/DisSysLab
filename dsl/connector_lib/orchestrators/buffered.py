@@ -1,65 +1,88 @@
 from __future__ import annotations
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
+import time
 from dsl.core import Agent
 
 
-class BufferedOrchestrator(Agent):
+class Orchestrator(Agent):
     """
-    Buffers items arriving on 'data_in'. When a control message arrives on
-    'command_in', it emits ONE flush command on outport 'out':
+    Buffer rows and emit a single FLUSH command when:
+      • buffer size reaches N, OR
+      • time since last flush >= T seconds (and buffer isn't empty), OR
+      • a message arrives on 'command_in' (manual/explicit flush trigger).
+    Also flushes on '__STOP__'.
 
-        {"cmd": "flush", "payload": [...], "meta": meta(buf)}
+    Ports
+    -----
+    in          : data rows (e.g., {"row": "..."} or any payload you buffer)
+    command_in  : any message triggers an immediate flush (if buffer non-empty)
+    out         : {"cmd":"flush", "payload":[...], "meta": meta(buf)}
 
-    Notes for students:
-    - This agent does NOT write to files/Google Sheets/etc. It only sends a
-      *flush command*. An OUTPUT CONNECTOR receives that command and performs
-      the actual external write.
-    - Special message '__STOP__' means: do a final flush (if there is anything
-      buffered), then forward '__STOP__' and stop.
+    Params
+    ------
+    N : int              flush when buffer reaches N items  (default 50)
+    T : float            also flush every T seconds if buffer non-empty (default 2.0)
+    meta_builder : fn(buf) -> dict   builds metadata for the flush (default {})
     """
 
     def __init__(
         self,
-        meta_builder: Callable[[List[Any]], Dict[str, Any]] | None = None,
-        name: str = "BufferedOrchestrator",
+        *,
+        N: int = 50,
+        T: float = 2.0,
+        meta_builder: Optional[Callable[[List[Any]], Dict[str, Any]]] = None,
+        name: str = "Orchestrator",
     ) -> None:
-        # Two input ports, one output port
         super().__init__(
-            name=name,
-            inports=["data_in", "command_in"],
-            outports=["out"],
-            run=self.run,)
+            name=name, inports=["in", "command_in"], outports=["out"], run=self.run
+        )
+        if N <= 0:
+            raise ValueError("N must be >= 1")
+        if T <= 0:
+            raise ValueError("T must be > 0")
+
+        self.N = N
+        self.T = T
         self._buf: List[Any] = []
-        # meta_builder takes the current buffer and returns a metadata dict
         self._meta_builder = meta_builder or (lambda buf: {})
+        self._last_flush_at = time.monotonic()
 
     def _emit_flush(self) -> None:
-        """Build meta, send a single flush command, then clear the buffer."""
         meta = self._meta_builder(self._buf)
-        payload = list(self._buf)  # copy for safety
+        payload = list(self._buf)
         self.send({"cmd": "flush", "payload": payload,
                   "meta": meta}, outport="out")
         self._buf.clear()
+        self._last_flush_at = time.monotonic()
 
     def run(self) -> None:
+        SLEEP = 0.01
         while True:
-            msg, inport = self.wait_for_any_port()
-
-            # Global stop handling: final flush (if any), then propagate and exit.
-            if msg == "__STOP__":
+            # Prefer command_in (explicit flush) when available
+            cmd = self.recv_if_waiting_msg("command_in")
+            if cmd is not None:
+                if cmd == "__STOP__":
+                    if self._buf:
+                        self._emit_flush()
+                    self.send("__STOP__", outport="out")
+                    return
                 if self._buf:
                     self._emit_flush()
-                self.send("__STOP__", outport="out")
-                return
+                time.sleep(SLEEP)
+                continue
 
-            if inport == "data_in":
-                # Buffer the raw message (often a dict like {"row": ...} or {"data": ...})
+            msg = self.recv_if_waiting_msg("in")
+            if msg is not None:
+                if msg == "__STOP__":
+                    if self._buf:
+                        self._emit_flush()
+                    self.send("__STOP__", outport="out")
+                    return
                 self._buf.append(msg)
-
-            elif inport == "command_in":
-                # Emit exactly one flush command (even if buffer is empty — that’s okay)
-                self._emit_flush()
-
+                if len(self._buf) >= self.N:
+                    self._emit_flush()
             else:
-                # Helpful error if ports are miswired
-                raise ValueError(f"{self.name}: unknown inport {inport!r}")
+                if self._buf and (time.monotonic() - self._last_flush_at) >= self.T:
+                    self._emit_flush()
+
+            time.sleep(SLEEP)

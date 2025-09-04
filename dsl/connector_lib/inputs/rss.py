@@ -1,38 +1,55 @@
 from __future__ import annotations
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable, List
+import requests
 import feedparser
+
 from dsl.connector_lib.inputs.base import InputConnector
+
+DEFAULT_UA = "DisSysLab/0.1 (+https://github.com/kmchandy/DisSysLab)"
 
 
 class InputConnectorRSS(InputConnector):
     """
-    Read items from an RSS feed.
+    Reads items from an RSS/Atom feed.
 
-    Usage
-    -----
-    Send this command to the "in" port:
-        {"cmd": "pull", "args": {"url": "<rss_url>"}}
+    Command:
+      {"cmd": "pull", "args": {"url": "<rss_url>", "limit": 20}}
 
-    For each entry in the feed, the connector outputs:
-        {"data": {"title": ..., "link": ..., "summary": ...}}
-
-    Notes
-    -----
-    - Requires `feedparser` library. Install with:
-          pip install feedparser
-    - Great for news feeds, weather updates, sports, etc.
+    Behavior:
+      - Fetches with requests (custom User-Agent), parses with feedparser.
+      - Emits one item per entry as:
+          {"data": {"title": str, "link": str, "summary": str}}
+      - If 'limit' provided, only the first N entries are emitted.
     """
 
     def _pull(self, cmd: str, args: Dict[str, Any]) -> Iterable[Dict[str, Any]]:
         url = args.get("url")
-        if not url:
-            raise ValueError("InputConnectorRSS requires 'url' in args")
+        if not url or not isinstance(url, str):
+            raise ValueError("InputConnectorRSS requires args['url'] (str)")
 
-        feed = feedparser.parse(url)
+        limit = args.get("limit")
+        if limit is not None:
+            try:
+                limit = int(limit)
+            except Exception:
+                raise ValueError(
+                    "args['limit'] must be an integer if provided")
+
+        # Fetch with a User-Agent to avoid being blocked
+        resp = requests.get(
+            url, headers={"User-Agent": DEFAULT_UA}, timeout=20)
+        resp.raise_for_status()
+
+        feed = feedparser.parse(resp.content)
         if feed.bozo:
+            # bozo_exception may contain more detail
             raise ValueError(f"Failed to parse RSS feed: {url}")
 
-        for entry in feed.entries:
+        entries = feed.entries or []
+        if limit is not None:
+            entries = entries[:limit]
+
+        for entry in entries:
             yield {
                 "title": entry.get("title", "(no title)"),
                 "link": entry.get("link", ""),
