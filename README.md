@@ -83,8 +83,9 @@ python dsl/examples/ch01_networks/simple_pipeline.py
 
 ## 🚦 This Website
 
-A quick way to get an idea of this framework is to run and modify the programs in the README.md file in each of the following chapters.
+A quick way to start is to run/modify the examples in the README.md files in the following chapters.
 
+- **Build your first distributed app immediately** [Chapter 0](dsl/examples/ch00_drafts/README.md)
 - **Build a network by specifying and connecting blocks.** [Chapter 1](dsl/examples/ch01_networks/README.md)
 - **Messages.** [Chapter 2](dsl/examples/ch02_keys/README.md)
 - **Network Structures.** [Chapter 3](dsl/examples/ch03_fanin_fanout/README.md)
