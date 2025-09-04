@@ -64,8 +64,8 @@ def reverse_text(x):
 results = []
 
 # Define the network: blocks and connections
-# blocks is a dict where the key is the block name and the value
-#       is the function executed by the block.
+# blocks is a dict where the key is the block name and 
+# the value is the function executed by the block.
 # connections is a list of 4-tuples 
 #        (from_block_name, outport, to_block_name, inport)
 net = Network(
