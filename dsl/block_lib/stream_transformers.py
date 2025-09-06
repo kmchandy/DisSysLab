@@ -9,9 +9,6 @@ transformations, and GPT-based transformations using OpenAI's API.
 Tags: ["transformer", "stream", "block", "NLP", "OpenAI", "NumPy", "GPT"]
 """
 
-from __future__ import annotations
-from dsl.core import SimpleAgent
-from typing import Any, Callable, Optional, Dict
 from typing import Optional, Any, Callable
 import os
 import traceback
@@ -21,10 +18,6 @@ from dsl.core import SimpleAgent, Agent
 
 DEBUG_LOG = "dsl_debug.log"
 
-
-# =================================================
-#    TransformerFunction(SimpleAgent)             |
-# =================================================
 
 class TransformerFunction(SimpleAgent):
     """
@@ -348,8 +341,10 @@ def transform(func, *args, **kwargs):
     """
     if not callable(func):
         raise TypeError(f"transform(func) must be callable, got {type(func)}")
-    # dsl/block_lib/stream_transformers.py
-    return TransformerFunction(func, args=args, kwargs=kwargs)
+    return TransformerFunction(func, args=args, kwargs=kwargs)# dsl/block_lib/stream_transformers.py
+from __future__ import annotations
+from typing import Any, Callable, Optional, Dict
+from dsl.core import SimpleAgent
 
 
 class TransformerFunction(SimpleAgent):
