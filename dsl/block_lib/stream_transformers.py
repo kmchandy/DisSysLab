@@ -9,6 +9,7 @@ transformations, and GPT-based transformations using OpenAI's API.
 Tags: ["transformer", "stream", "block", "NLP", "OpenAI", "NumPy", "GPT"]
 """
 
+import re as _re
 from typing import Optional, Any, Callable
 import os
 import traceback
@@ -220,7 +221,6 @@ class MergeSynch(Agent):
         while True:
             for port in self.inports:
                 msg = self.recv(port)
-                print(f"in merge_synch, msg = {msg}")
                 if msg == "__STOP__":
                     self.send("__STOP__", "out")
                     return
@@ -234,9 +234,9 @@ class MergeSynch(Agent):
                     self.send(result, "out")
                 except Exception as e:
                     rprint(
-                        f"[bold red]❌ TransformMultipleStreams error:[/bold red] {e}")
+                        f"[bold red]❌ TransformMergeSynch error:[/bold red] {e}")
                     with open(DEBUG_LOG, "a") as f:
-                        f.write("\n--- TransformMultipleStreams Error ---\n")
+                        f.write("\n--- TransformMergeSynch Error ---\n")
                         f.write(traceback.format_exc())
                     self.send("__STOP__", "out")
 
@@ -350,3 +350,106 @@ def transform(func, *args, **kwargs):
         raise TypeError(f"transform(func) must be callable, got {type(func)}")
     # dsl/block_lib/stream_transformers.py
     return TransformerFunction(func, args=args, kwargs=kwargs)
+
+
+# =================================================
+#    SentimentTransformer (rule-based, not GPT)   |
+# =================================================
+
+class SentimentTransformer(SimpleAgent):
+    """
+    Very simple sentiment classifier based on keyword spotting.
+    Expects a dict with 'text'; returns the dict plus 'sentiment'.
+    """
+
+    POSITIVE_WORDS = {
+        "win", "wins", "won", "surge", "record", "growth", "beat", "beats",
+        "soar", "soars", "rally", "strong", "boost", "rise", "rises", "up",
+        "improve", "improves", "improved", "lead", "leads", "leading",
+    }
+    NEGATIVE_WORDS = {
+        "loss", "losses", "fall", "falls", "fell", "drop", "drops", "down",
+        "injury", "injuries", "fear", "fears", "concern", "concerns",
+        "weak", "decline", "declines", "miss", "misses", "missed",
+        "slump", "slumps", "plunge", "plunges",
+    }
+
+    def __init__(self, name: Optional[str] = None):
+        super().__init__(name=name or "SentimentTransformer",
+                         inport="in", outports=["out"],
+                         handle_msg=self._handle)
+
+    @classmethod
+    def _label(cls, text: str) -> str:
+        t = text.lower()
+        pos = any(w in t for w in cls.POSITIVE_WORDS)
+        neg = any(w in t for w in cls.NEGATIVE_WORDS)
+        if pos and not neg:
+            return "Positive"
+        if neg and not pos:
+            return "Negative"
+        return "Neutral"
+
+    def _handle(self, agent, msg):
+        try:
+            if not isinstance(msg, dict):
+                # normalize to dict with 'text'
+                msg = {"text": str(msg)}
+            text = str(msg.get("text", ""))
+            out = dict(msg)
+            out["sentiment"] = self._label(text)
+            agent.send(out, "out")
+        except Exception as e:
+            print(f"[SentimentTransformer] Error: {e}")
+
+# =================================================
+#   EntityExtractor (regex. simple, not GPT)      |
+# =================================================
+
+
+class EntityExtractor(SimpleAgent):
+    """
+    Naive entity extractor:
+    - Finds sequences of Capitalized Words as proxies for names/places.
+    - Adds 'entities': {'people': [...], 'places': [...]} to the message.
+    """
+
+    PROPER_NOUN = _re.compile(r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\b")
+    PLACE_HINTS = {"City", "County", "Province", "State",
+                   "University", "Stadium", "Arena", "Park"}
+
+    def __init__(self, name: Optional[str] = None):
+        super().__init__(name=name or "EntityExtractor",
+                         inport="in", outports=["out"],
+                         handle_msg=self._handle)
+
+    def _handle(self, agent, msg):
+        try:
+            if not isinstance(msg, dict):
+                msg = {"text": str(msg)}
+            text = str(msg.get("text", ""))
+            cands = list({m.group(1) for m in self.PROPER_NOUN.finditer(text)})
+            places = [c for c in cands if any(
+                h in c.split() for h in self.PLACE_HINTS)]
+            people = [c for c in cands if c not in places]
+            out = dict(msg)
+            out["entities"] = {"people": people, "places": places}
+            agent.send(out, "out")
+        except Exception as e:
+            print(f"[EntityExtractor] Error: {e}")
+
+
+# =================================================
+#       Classes and Functions in this File        |
+# =================================================
+__all__ = [
+    "TransformerFunction",
+    "TransformerPrompt",
+    "SentimentTransformer",
+    "EntityExtractor",
+    "MergeSynch",
+    "MergeAsynch",
+    "Broadcast",
+    "get_value_for_key",
+    "transform",
+]
