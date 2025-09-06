@@ -85,7 +85,7 @@ net.compile_and_run()
 ```
 
 ### ▶️ Run It
-```bash
+```
 python3 -m dsl.examples.ch01_networks.simple_network
 
 ['cba', 'fed']
