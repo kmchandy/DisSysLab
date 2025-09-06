@@ -18,6 +18,10 @@ from dsl.core import SimpleAgent, Agent
 
 DEBUG_LOG = "dsl_debug.log"
 
+# =================================================
+#        TransformerFunction                      |
+# =================================================
+
 
 class TransformerFunction(SimpleAgent):
     """
@@ -70,10 +74,10 @@ class TransformerFunction(SimpleAgent):
             handle_msg=handle_msg,
         )
 
+
 # =================================================
 #        Get the OpenAI key                       |
 # =================================================
-
 
 def _resolve_openai_key() -> Optional[str]:
     # Try your helper first (loads .env too)
@@ -90,7 +94,7 @@ def _resolve_openai_key() -> Optional[str]:
 #        (subclass of TransformerFunction)
 # =================================================
 
-# assumes TransformerFunction is defined as in your latest version
+# Assumes TransformerFunction is defined as in your latest version
 # from dsl.block_lib.stream_transformers import TransformerFunction
 
 
@@ -154,6 +158,10 @@ class TransformerPrompt(TransformerFunction):
                          name=name or "TransformerPrompt")
 
 
+# =================================================
+#       helper function: get_value_for_key        |
+# =================================================
+
 def get_value_for_key(key: str):
     """
     Returns a function that extracts the value corresponding to the given key from a message dictionary.
@@ -178,10 +186,10 @@ def get_value_for_key(key: str):
 
     return extractor
 
-# =================================================
-#        MergeSynch                |
-# =================================================
 
+# =================================================
+#                    MergeSynch                   |
+# =================================================
 
 class MergeSynch(Agent):
     """
@@ -234,7 +242,7 @@ class MergeSynch(Agent):
 
 
 # =================================================
-#        MergeAsynch            |
+#                   MergeAsynch                   |
 # =================================================
 
 
@@ -330,7 +338,6 @@ class Broadcast(Agent):
 #                   transform                     |
 # =================================================
 
-
 def transform(func, *args, **kwargs):
     """
     Create a transformer block from a Python function.
@@ -341,61 +348,5 @@ def transform(func, *args, **kwargs):
     """
     if not callable(func):
         raise TypeError(f"transform(func) must be callable, got {type(func)}")
-    return TransformerFunction(func, args=args, kwargs=kwargs)# dsl/block_lib/stream_transformers.py
-from __future__ import annotations
-from typing import Any, Callable, Optional, Dict
-from dsl.core import SimpleAgent
-
-
-class TransformerFunction(SimpleAgent):
-    """
-    Wrap a Python function as a block that transforms messages.
-
-    - If input_key/output_key are given and msg is a dict:
-        * read input value from msg[input_key]
-        * write result to msg[output_key] (copy-on-write)
-      Otherwise, treat msg itself as the value and emit the raw result.
-
-    Example:
-        tf = TransformerFunction(func=str.upper)
-        tf will output "HELLO" for input "hello".
-    """
-
-    def __init__(
-        self,
-        *,
-        func: Callable[[Any], Any],
-        input_key: Optional[str] = None,
-        output_key: Optional[str] = None,
-        name: Optional[str] = "TransformerFunction",
-    ) -> None:
-        if not callable(func):
-            raise TypeError("func must be callable")
-        self._func = func
-        self._in_key = input_key
-        self._out_key = output_key
-
-        # NOTE: instance-assigned handler → no implicit self
-        def _handle(msg: Any, **_params: Dict[str, Any]) -> None:
-            # dict routing
-            if isinstance(msg, dict) and (self._in_key is not None or self._out_key is not None):
-                if self._in_key is None or self._out_key is None:
-                    raise ValueError(
-                        f"{name}: both input_key and output_key must be set when using dict routing"
-                    )
-                if self._in_key not in msg:
-                    raise KeyError(
-                        f"{name}: input_key '{self._in_key}' not in message dict")
-                value_in = msg[self._in_key]
-                value_out = self._func(value_in)
-                new_msg = dict(msg)
-                new_msg[self._out_key] = value_out
-                self.send(new_msg, outport="out")
-                return
-
-            # plain message routing
-            result = self._func(msg)
-            self.send(result, outport="out")
-
-        super().__init__(name=name, inport="in",
-                         outports=["out"], handle_msg=_handle)
+    # dsl/block_lib/stream_transformers.py
+    return TransformerFunction(func, args=args, kwargs=kwargs)
