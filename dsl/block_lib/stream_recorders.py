@@ -22,6 +22,10 @@ from rich import print as rprint
 
 from dsl.core import SimpleAgent
 
+# =================================================
+#              Record(SimpleAgent)                 |
+# =================================================
+
 
 class Record(SimpleAgent):
     """
@@ -85,6 +89,9 @@ class Record(SimpleAgent):
         )
 
 
+# =================================================
+#                   RecordToFile                  |
+# =================================================
 class RecordToFile(Record):
     """
     RecordToFile
@@ -109,6 +116,9 @@ class RecordToFile(Record):
         super().__init__(mode="file", target=filename, key=key, name=name)
 
 
+# =================================================
+#                   RecordToList                  |
+# =================================================
 class RecordToList(Record):
 
     """
@@ -135,6 +145,9 @@ class RecordToList(Record):
         super().__init__(mode="list", target=target_list, key=key, name=name)
 
 
+# =================================================
+#                RecordToConsole                  |
+# =================================================
 class RecordToConsole(Record):
     """
     RecordToConsole
@@ -172,6 +185,9 @@ class RecordToConsole(Record):
         self.process = print_msg
 
 
+# =================================================
+#                RecordToLogFile                  |
+# =================================================
 class RecordToLogFile(Record):
     """
     RecordToLogFile

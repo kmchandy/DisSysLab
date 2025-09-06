@@ -230,6 +230,10 @@ __all__ = [
     "GenerateFromFunction",
 ]
 
+# =================================================
+#              GenerateFromList                   |
+# =================================================
+
 
 def GenerateFromList(
     *,
@@ -257,6 +261,9 @@ def GenerateFromList(
     )
 
 
+# =================================================
+#              GenerateFromFile                   |
+# =================================================
 def GenerateFromFile(
     *,
     path: str,
@@ -285,6 +292,9 @@ def GenerateFromFile(
     )
 
 
+# =================================================
+#              GenerateFromFunction               |
+# =================================================
 def GenerateFromFunction(
     *,
     fn: Callable[..., Any],
@@ -312,3 +322,49 @@ def GenerateFromFunction(
         *var_args,
         **kwargs,
     )
+
+
+# =================================================
+#                GenerateFromRSS                  |
+# =================================================
+try:
+    import feedparser
+except Exception:
+    feedparser = None
+
+
+class GenerateFromRSS:
+    """
+    Stream headlines from an RSS feed as dicts with the standard 'text' key.
+    Yields: {"text": "<headline>", "source": "<domain or feed>", "time": <epoch>}
+    """
+
+    def __init__(self, url: str, interval: float = 5.0, limit: Optional[int] = None):
+        self.url = url
+        self.interval = interval
+        self.limit = limit
+
+    def __call__(self):
+        if feedparser is None:
+            raise RuntimeError(
+                "feedparser is not installed. Install optional extra: pip install 'feedparser>=6.0.0'"
+            )
+        count = 0
+        seen = set()
+        while True:
+            feed = feedparser.parse(self.url)
+            now = time.time()
+            for entry in getattr(feed, "entries", []):
+                title = getattr(entry, "title", None) or entry.get(
+                    "title") or ""
+                if not title:
+                    continue
+                # de-dup within session
+                if title in seen:
+                    continue
+                seen.add(title)
+                yield {"text": title, "source": getattr(feed, "href", self.url), "time": now}
+                count += 1
+                if self.limit is not None and count >= self.limit:
+                    return
+            time.sleep(self.interval)
