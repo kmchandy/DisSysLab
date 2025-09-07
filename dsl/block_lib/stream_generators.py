@@ -4,8 +4,7 @@ import time
 import traceback
 from typing import Any, Callable, Iterator, Optional, Dict
 
-from dsl.core import Agent
-from dsl.core import STOP
+from dsl.core import Agent, STOP
 
 
 class StreamGenerator(Agent):
@@ -22,16 +21,9 @@ class StreamGenerator(Agent):
 
     CONTRACT (generators only)
     --------------------------
-    - `generator_fn(**gen_kwargs)` **must return a Python generator** (or any
-      Iterator[Any]). No lists, tuples, or singletons are accepted here.
-      (See helper constructors below for those cases.)
-    - Each yielded item is sent as a message.
-    - After the generator is exhausted, the block emits STOP and returns.
-
-    WRAPPING (optional)
-    -------------------
-    - If `key` is not None, each item is wrapped as `{key: item}`.
-    - If `key` is None, each item is forwarded as-is.
+    - `generator_fn(**gen_kwargs)` must return a Python generator/iterator.
+    - Each item yielded by generator_fn is sent as a message on 'out'.
+    - After the generator is exhausted, the block sends STOP and returns.
 
     PARAMETERS
     ----------
@@ -42,13 +34,15 @@ class StreamGenerator(Agent):
         Friendly name (shown in logs/diagrams).
 
     delay : float | None
-        Seconds to sleep **after each send** (simple throttling).
-
-    key : str | None
-        If provided, wrap each yielded item as `{key: item}`; otherwise forward.
+        Seconds to sleep after each send.
 
     **gen_kwargs : dict
         Passed through to `generator_fn`.
+
+    ERROR HANDLING
+    --------------
+    - Any exception is printed and appended to 'dsl_debug.log'.
+    - On error, the block emits STOP and returns (fails closed).
     """
 
     def __init__(
@@ -57,7 +51,6 @@ class StreamGenerator(Agent):
         generator_fn: Callable[..., Iterator[Any]],
         name: Optional[str] = "StreamGenerator",
         delay: Optional[float] = None,
-        key: Optional[str] = None,
         **gen_kwargs: Any,
     ) -> None:
         if generator_fn is None:
@@ -74,27 +67,27 @@ class StreamGenerator(Agent):
         self._generator_fn = generator_fn
         self._gen_kwargs: Dict[str, Any] = dict(gen_kwargs)
         self._delay = float(delay) if delay else None
-        self._wrap_key = key
-
-    # ----- main loop -----
 
     def run(self) -> None:
         try:
             items = self._generator_fn(
                 **self._gen_kwargs)  # must be an iterator
-            # Optional defensive check
-            if not hasattr(it, "__iter__") or not hasattr(it, "__next__"):
+
+            # Defensive: ensure it's an iterator/generator
+            try:
+                items = iter(items)
+            except TypeError:
                 raise TypeError(
                     f"{self.__class__.__name__} expected generator_fn() to return a generator/iterator, "
-                    f"got {type(it).__name__}."
+                    f"got {type(items).__name__}."
                 )
 
             for item in items:
-                msg = {self._wrap_key: item} if self._wrap_key else item
-                self.send(msg, "out")
+                self.send(item, "out")
                 if self._delay:
                     time.sleep(self._delay)
-            # Finished sending all msgs in generator_fn. So STOP.
+
+            # Finished sending all messages
             self.send(STOP, "out")
 
         except Exception as e:
