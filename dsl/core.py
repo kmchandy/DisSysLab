@@ -101,6 +101,9 @@ import time
 from collections import deque
 import logging
 
+STOP = "__STOP__"   # end-of-stream sentinel.
+
+
 # Configure logging
 logging.basicConfig(
     filename='debug.log',           # Log file name
