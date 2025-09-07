@@ -6,7 +6,7 @@ import traceback
 from typing import Any, Callable, Iterator, Optional, List, Dict, Union
 
 # your strict, iterator-only class
-from dsl.block_lib.stream_generators import StreamGenerator
+from dsl.block_lib.sources import Source
 from dsl.core import Agent, STOP
 
 
@@ -14,17 +14,12 @@ from dsl.core import Agent, STOP
 #             StreamGenerator           |
 # ----------------------------------------
 
-class StreamGenerator(Agent):
+class Source(Agent):
     """
     PORTS
     -----
     Inports:   []
     Outports:  ["out"]
-
-    ROLE
-    ----
-    The agent calls a user-supplied *generator function*
-    and sends every yielded item on outport "out".
 
     PARAMETERS
     ----------
