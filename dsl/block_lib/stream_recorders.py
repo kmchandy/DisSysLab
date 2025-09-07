@@ -14,6 +14,9 @@ Base class: StreamSaver
 tags: record, memory, file, stdout, logging
 """
 
+from typing import Optional
+from dsl.core import SimpleAgent, STOP
+from typing import Optional, TextIO
 from datetime import datetime
 from pathlib import Path
 import json
@@ -119,30 +122,50 @@ class RecordToFile(Record):
 # =================================================
 #                   RecordToList                  |
 # =================================================
-class RecordToList(Record):
 
-    """
-    RecordToList
 
-    A simplified version of the Record block that stores messages in a Python list.
+class RecordToList(SimpleAgent):
+    def __init__(self, target: list, name: Optional[str] = None):
+        """
+        Appends every incoming message to `target`. Stops on receiving STOP.
+        """
+        def handle_msg(msg):
+            if msg == STOP:
+                return
+            target.append(msg)
 
-    Parameters:
-    - target_list (list): The list to store messages in.
-    - key (str, optional): If provided, records only msg[key] for dict messages.
-    - name (str): Optional block name.
+        super().__init__(
+            name=name or "RecordToList",
+            inport="in",
+            outports=[],
+            handle_msg=handle_msg,
+        )
 
-    Behavior:
-    - Appends one item per message to the list.
-    - For dicts, you can specify which field to record.
-    - Sends '__STOP__' when recording is complete.
 
-    Example:
-    >>> results = []
-    >>> block = RecordToList(results, key="sentiment")
-    """
+# class RecordToList(Record):
 
-    def __init__(self, target_list: list, key: Optional[str] = None, name: str = "RecordToList"):
-        super().__init__(mode="list", target=target_list, key=key, name=name)
+#     """
+#     RecordToList
+
+#     A simplified version of the Record block that stores messages in a Python list.
+
+#     Parameters:
+#     - target_list (list): The list to store messages in.
+#     - key (str, optional): If provided, records only msg[key] for dict messages.
+#     - name (str): Optional block name.
+
+#     Behavior:
+#     - Appends one item per message to the list.
+#     - For dicts, you can specify which field to record.
+#     - Sends '__STOP__' when recording is complete.
+
+#     Example:
+#     >>> results = []
+#     >>> block = RecordToList(results, key="sentiment")
+#     """
+
+#     def __init__(self, target_list: list, key: Optional[str] = None, name: str = "RecordToList"):
+#         super().__init__(mode="list", target=target_list, key=key, name=name)
 
 
 # =================================================
