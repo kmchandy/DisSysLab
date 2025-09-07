@@ -1,11 +1,18 @@
 from __future__ import annotations
 
 import time
+from datetime import datetime
 import traceback
-from typing import Any, Callable, Iterator, Optional, Dict
+from typing import Any, Callable, Iterator, Optional, List, Dict, Union
 
+# your strict, iterator-only class
+from dsl.block_lib.stream_generators import StreamGenerator
 from dsl.core import Agent, STOP
 
+
+# ----------------------------------------
+#             StreamGenerator           |
+# ----------------------------------------
 
 class StreamGenerator(Agent):
     """
@@ -16,14 +23,8 @@ class StreamGenerator(Agent):
 
     ROLE
     ----
-    A source block driven by `run()`. It calls a user-supplied *generator function*
-    and forwards every yielded item on outport "out".
-
-    CONTRACT (generators only)
-    --------------------------
-    - `generator_fn(**gen_kwargs)` must return a Python generator/iterator.
-    - Each item yielded by generator_fn is sent as a message on 'out'.
-    - After the generator is exhausted, the block sends STOP and returns.
+    The agent calls a user-supplied *generator function*
+    and sends every yielded item on outport "out".
 
     PARAMETERS
     ----------
@@ -31,7 +32,7 @@ class StreamGenerator(Agent):
         A function that returns a generator/iterator.
 
     name : str = "StreamGenerator"
-        Friendly name (shown in logs/diagrams).
+        Name (shown in logs/diagrams).
 
     delay : float | None
         Seconds to sleep after each send.
@@ -39,10 +40,31 @@ class StreamGenerator(Agent):
     **gen_kwargs : dict
         Passed through to `generator_fn`.
 
+    BEHAVIOR
+    --------
+    - `generator_fn(**gen_kwargs)` must return a Python generator/iterator.
+    - Each item yielded by generator_fn is sent as a message on 'out'.
+    - After the generator is exhausted, the block sends STOP and returns.
+
     ERROR HANDLING
     --------------
     - Any exception is printed and appended to 'dsl_debug.log'.
-    - On error, the block emits STOP and returns (fails closed).
+    - On error, the block sends STOP and returns (fails closed).
+
+    EXAMPLES
+    --------
+    # 1) Dict messages (text/NLP)
+    def lines():
+        yield {"text": "hello"}
+        yield {"text": "world"}
+    src = StreamGenerator(generator_fn=lines)
+
+    # 2) Numeric messages (NumPy/ML)
+    def rows():
+        for i in range(3):
+            yield i  # or a numpy row
+    src = StreamGenerator(generator_fn=rows, delay=0.01)
+
     """
 
     def __init__(
@@ -73,7 +95,7 @@ class StreamGenerator(Agent):
             items = self._generator_fn(
                 **self._gen_kwargs)  # must be an iterator
 
-            # Defensive: ensure it's an iterator/generator
+            # ensure that items is an iterator/generator
             try:
                 items = iter(items)
             except TypeError:
@@ -82,12 +104,13 @@ class StreamGenerator(Agent):
                     f"got {type(items).__name__}."
                 )
 
+            # Send each item yielded by the generator on outport "out".
             for item in items:
                 self.send(item, "out")
                 if self._delay:
                     time.sleep(self._delay)
 
-            # Finished sending all messages
+            # Finished sending all messages; so send STOP.
             self.send(STOP, "out")
 
         except Exception as e:
