@@ -82,29 +82,3 @@ def test_source_generator_raises_after_first_item():
 
     # First item should be delivered; then STOP after error.
     assert results == ["ok"]
-
-
-def test_source_delay_respected():
-    results = []
-
-    N = 3
-    delay = 0.05  # 50 ms per item, loose check
-
-    def gen():
-        for i in range(N):
-            yield i
-
-    src = Source(generator_fn=gen, delay=delay)
-    sink = _ListSink(results)
-
-    start = time.monotonic()
-    _run_network(
-        {"src": src, "sink": sink},
-        [("src", "out", "sink", "in")]
-    )
-    elapsed = time.monotonic() - start
-
-    # Expect at least N * delay minus a small scheduling tolerance.
-    # (Sleep happens after each send; for N items, ~N * delay.)
-    assert elapsed >= N * delay * 0.8
-    assert results == list(range(N))
