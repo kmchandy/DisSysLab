@@ -5,19 +5,25 @@ from datetime import datetime
 from typing import Any, Callable, Iterable, Iterator, Optional
 import time
 
-# 1) Raw list elements (no wrapping)
+# Generate elements from a list
+# Example items = ['apple', 'banana'],
+# yields 'apple', 'banana'
+# parameters
+# -----------
 
 
 def gen_list(items: Iterable[Any]) -> Callable[[], Iterator[Any]]:
-    """Yield each element from items as-is."""
+    """Yield each element from items."""
     def _gen():
         for x in items:
             yield x
     return _gen
 
-# 2) List → wrap with a key
 
-
+# Generate elements from a list, where each element is wrapped
+# in a dict with a specified key.
+# Example items = ['apple', 'banana'], key='fruit',
+# yields {'fruit': 'apple'}, {'fruit': 'banana'}
 def gen_list_as_key(items: Iterable[Any], key: str) -> Callable[[], Iterator[dict]]:
     """Yield {'<key>': item} for each element."""
     def _gen():
@@ -25,6 +31,8 @@ def gen_list_as_key(items: Iterable[Any], key: str) -> Callable[[], Iterator[dic
             yield {key: x}
     return _gen
 
+
+# Generate elements from a list, where each element is wrapped
 # 3) List → wrap with a key + current time
 
 
