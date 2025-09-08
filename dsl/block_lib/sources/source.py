@@ -19,7 +19,6 @@ class Source(Agent):
         *,
         generator_fn: Callable[..., Iterator[Any]],
         name: Optional[str] = "Source",
-        delay: Optional[float] = None,
         **gen_kwargs: Any,
     ) -> None:
         if generator_fn is None:
@@ -35,8 +34,6 @@ class Source(Agent):
             items = self._generator_fn(**self._gen_kwargs)
             for item in items:
                 self.send(item, "out")
-                if self._delay:
-                    time.sleep(self._delay)
             self.send(STOP, "out")
         except Exception as e:
             print(f"[{self.__class__.__name__}] Error: {e}")
