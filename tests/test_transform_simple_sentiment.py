@@ -1,9 +1,8 @@
 # tests/test_transform.py
 from __future__ import annotations
 from typing import Any
-from dsl.core import STOP
 from dsl.block_lib.transforms.transform import Transform
-from dsl.block_lib.transforms.transform_lib.simple_sentiment import add_sentiment, sentiment_score, label_from_score
+from dsl.block_lib.transforms.transform_lib.simple_sentiment import add_sentiment
 
 
 class _Probe:

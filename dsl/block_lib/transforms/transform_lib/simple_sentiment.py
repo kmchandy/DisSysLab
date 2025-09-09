@@ -1,4 +1,4 @@
-# dsl/block_lib/transformers/transform_lib.py
+# dsl/block_lib/transformers/transform_lib/simple_sentiment.py
 from __future__ import annotations
 import re
 from typing import Any, Optional, Iterable, Dict
@@ -92,13 +92,3 @@ def add_sentiment(
         out["pos_count"] = sum(1 for w in words if w in pos)
         out["neg_count"] = sum(1 for w in words if w in neg)
     return out
-
-
-def main():
-    for fn in [add_sentiment]:
-        fn()
-        print(f"{fn.__name__}: PASS")
-
-
-if __name__ == "__main__":
-    main()
