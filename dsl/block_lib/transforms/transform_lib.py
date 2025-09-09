@@ -3,6 +3,10 @@ from __future__ import annotations
 import re
 from typing import Any, Optional, Iterable, Dict
 
+
+# ---------------------------------------------------------------------
+# Simple sentiment analysis functions and keyword lists.
+# ---------------------------------------------------------------------
 __all__ = [
     "POSITIVE_WORDS",
     "NEGATIVE_WORDS",
