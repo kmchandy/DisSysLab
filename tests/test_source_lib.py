@@ -3,7 +3,7 @@
 # Keep them readable so students can tweak both code and tests.
 
 from typing import List, Any, Dict
-import dsl.block_lib.sources.source_lib as S
+import dsl.block_lib.sources.source_lib.common_sources as S
 
 
 # -------------------------
