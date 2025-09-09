@@ -82,3 +82,32 @@ def test_source_generator_raises_after_first_item():
 
     # First item should be delivered; then STOP after error.
     assert results == ["ok"]
+
+
+def test_source_generator_random():
+    import random
+
+    def my_generator(N, LOW, HIGH):
+        i = 0
+        while i < N:
+            yield random.randint(LOW, HIGH)
+            i += 1
+
+    src = Source(name="Rand_N", generator_fn=my_generator, N=5, LOW=1, HIGH=10)
+
+    results = []
+    sink = _ListSink(results)
+
+    _run_network(
+        {"src": src, "sink": sink},
+        [("src", "out", "sink", "in")]
+    )
+    assert len(results) == 5
+    assert all(1 <= x <= 10 for x in results)
+
+
+if __name__ == "__main__":
+    test_source_emits_items_and_stop()
+    test_source_empty_generator_sends_stop_only()
+    test_source_generator_raises_after_first_item()
+    test_source_generator_random()
