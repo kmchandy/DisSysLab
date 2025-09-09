@@ -6,7 +6,7 @@ import sys
 import io
 from pathlib import Path
 
-from dsl.block_lib.sinks.sink_lib import (
+from dsl.block_lib.sinks.sink_lib.common_sinks import (
     record_to_list,
     record_to_set,
     record_to_file,
