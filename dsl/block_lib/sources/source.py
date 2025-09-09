@@ -1,8 +1,6 @@
 from __future__ import annotations
-import time
 import traceback
 from typing import Any, Callable, Iterator, Optional, Dict
-
 from dsl.core import Agent, STOP
 
 
@@ -27,7 +25,6 @@ class Source(Agent):
         super().__init__(name=name or "Source", inports=[], outports=["out"], run=self.run)
         self._generator_fn = generator_fn
         self._gen_kwargs: Dict[str, Any] = dict(gen_kwargs)
-        self._delay = float(delay) if delay else None
 
     def run(self) -> None:
         try:
