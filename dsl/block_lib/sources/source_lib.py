@@ -1,6 +1,9 @@
 # dsl/block_lib/sources/gen_lib.py
 from __future__ import annotations
-
+import itertools
+import random
+import json
+import glob
 import csv
 import time
 from datetime import datetime
@@ -242,3 +245,82 @@ def gen_rss_headlines(
                     return
             sleep(interval)
     return _gen
+
+
+# ------------------------------------------------------------
+#    MORE EXAMPLES of generator_fn
+# ------------------------------------------------------------
+
+
+def gen_repeat(value, times: Optional[int] = None) -> Iterator:
+    it = itertools.repeat(
+        value) if times is None else itertools.repeat(value, times)
+    for x in it:
+        yield x
+
+
+def gen_range(start: int, stop: Optional[int] = None, step: int = 1) -> Iterator[int]:
+    # Mirrors built-in range semantics (range(stop)) if stop is None
+    if stop is None:
+        start, stop = 0, start
+    for x in range(start, stop, step):
+        yield x
+
+
+def gen_counter(start: int = 0, step: int = 1, times: Optional[int] = None) -> Iterator[int]:
+    n = start
+    i = 0
+    while times is None or i < times:
+        yield n
+        n += step
+        i += 1
+
+
+def gen_jsonl(path: str) -> Iterator[dict]:
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if line:
+                yield json.loads(line)
+
+
+def gen_csv_rows(path: str) -> Iterator[dict]:
+    with open(path, newline="", encoding="utf-8") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            yield dict(row)
+
+
+def gen_dir_files(pattern: str) -> Iterator[str]:
+    for p in glob.iglob(pattern, recursive=True):
+        yield p
+
+
+def _iso_now() -> str:
+    return datetime.now().isoformat(timespec="seconds")
+
+
+def gen_timer_interval(every_s: float, count: Optional[int] = None, payload=None) -> Iterator[dict]:
+    i = 0
+    while count is None or i < count:
+        # creation time; downstream blocks should not reuse this for arrival time
+        msg = {"time": _iso_now()} if payload is None else {
+            "time": _iso_now(), "data": payload}
+        yield msg
+        time.sleep(every_s)
+        i += 1
+
+
+def gen_random_ints(low: int, high: int, count: Optional[int] = None) -> Iterator[int]:
+    i = 0
+    while count is None or i < count:
+        yield random.randint(low, high)
+        i += 1
+
+
+def gen_poll(fn: Callable[[], object], every_s: float, count: Optional[int] = None) -> Iterator:
+    i = 0
+    while count is None or i < count:
+        yield fn()
+        time.sleep(every_s)
+        i += 1
