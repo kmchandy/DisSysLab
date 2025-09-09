@@ -10,12 +10,13 @@ Sources generate messages and send them to blocks in the network.
 dsl/block_lib/sources/
 │
 ├── source.py # Base class Source (inherits from SimpleAgent)
-├── source_lib.py # Pure-Python helpers for common generators
+├── source_lib/ # Library of pure-Python generators
+        ├── common_sources.py # Pure-Python helpers for common generators
 └── README.md # This file
 ```
 
 - **`source.py`** defines the  `Source` base class which uses simple functions in ***source_lib.py*** to create blocks.
-- **`source_lib.py`** contains simple helper functions (`gen_list`, `gen_list_as_key`, …) for ***source.py***.
+- **`common_sources.py`** contains simple helper functions (`gen_list`, `gen_list_as_key`, …) for ***source.py***.
 
 ---
 
@@ -24,7 +25,7 @@ dsl/block_lib/sources/
 ### 1. Generate messages from a list
 ```
 from dsl.block_lib.sources.source import Source
-from dsl.block_lib.sources.source_lib import gen_list
+from dsl.block_lib.sources.source_lib.common_sources import gen_list
 
 # Create a generator that yields 'apple', 'banana'
 gen = gen_list(['apple', 'banana'])
@@ -41,7 +42,7 @@ banana
 ### 2. Generate messages as key–value dicts from a list
 ```
 from dsl.block_lib.sources.source import Source
-from dsl.block_lib.sources.source_lib import gen_list_as_key
+from dsl.block_lib.sources.source_lib.common_sources import gen_list_as_key
 
 gen = gen_list_as_key(['apple', 'banana'], key='fruit')
 src = Source(name="FruitSource", generator_fn=gen)
@@ -57,7 +58,7 @@ This source sends:
 ### 3. Generate messages with timestamps from a list
 ```
 from dsl.block_lib.sources.source import Source
-from dsl.block_lib.sources.source_lib import gen_list_as_key_with_time
+from dsl.block_lib.sources.source_lib.common_sources import gen_list_as_key_with_time
 
 gen = gen_list_as_key_with_time(['a', 'b'], key='text')
 src = Source(name="TextSource", generator_fn=gen)
@@ -83,7 +84,7 @@ Messages as dicts let you attach fields like "data", "source", "time" to a messa
 
 ## Add your own functions to source_lib.
 
-You can modify the functions in ***source_lib*** to create your own functions, or you can write your own generator. For example, you may want a source that generates "N" random numbers between "LOW" and "HIGH":
+You can modify the functions in ***source_lib.common_sources*** to create your own functions, or you can write your own generator. For example, you may want a source that generates "N" random numbers between "LOW" and "HIGH":
 
 ```
 import random
@@ -105,7 +106,7 @@ Use ``Source(name=..., generator_fn=...)`` where generator_fn(*args, **kwargs) r
 
 ```
 from dsl.block_lib.sources.source import Source
-from dsl.block_lib.sources.source_lib import (
+from dsl.block_lib.sources.source_lib.common_sources import (
     gen_list, gen_list_as_key,
     gen_repeat, gen_range, gen_counter
 )
@@ -137,7 +138,7 @@ src = Source(name="Counter", generator_fn=gen_counter, start=100, step=5, times=
 ## B. Files & folders
 
 ```
-from dsl.block_lib.sources.source_lib import gen_file_lines, gen_jsonl, gen_csv_rows, gen_dir_files
+from dsl.block_lib.sources.source_lib.common_sources import gen_file_lines, gen_jsonl, gen_csv_rows, gen_dir_files
 
 # Lines from a text file (strips by default)
 src = Source(name="Lines", generator_fn=gen_file_lines, path="notes.txt", strip=True)
@@ -154,7 +155,7 @@ src = Source(name="Images", generator_fn=gen_dir_files, pattern="images/**/*.png
 
 ## C. Time & randomness
 ```
-from dsl.block_lib.sources.source_lib import gen_timer_interval, gen_random_ints, gen_poll
+from dsl.block_lib.sources.source_lib.common_sources import gen_timer_interval, gen_random_ints, gen_poll
 
 # Tick every 0.5s, N times; yields {"time": <iso8601>} (add your own payload if needed)
 src = Source(name="Ticker", generator_fn=gen_timer_interval, every_s=0.5, count=5)
