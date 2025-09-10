@@ -19,13 +19,6 @@ from dsl.block_lib.sinks.sink_lib.common_sinks import (
 )
 
 
-class DummyAgent:
-    """Minimal stub in case a sink uses agent.name etc."""
-
-    def __init__(self, name: str = "Dummy"):
-        self.name = name
-
-
 def test_sink_direct_values():
     results = []
     network = Network(

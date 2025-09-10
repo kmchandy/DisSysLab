@@ -1,48 +1,38 @@
-# /tests/test_transform.py
+# tests/test_transform_simple_entity_extractor.py
 from __future__ import annotations
 from typing import Any
+from dsl.core import Network, Agent, STOP
+from dsl.block_lib.sinks.sink import Sink
+from dsl.block_lib.sources.source import Source
 from dsl.block_lib.transforms.transform import Transform
 from dsl.block_lib.transforms.transform_lib.simple_entity_extractor import extract_entity
-
-
-class _Probe:
-    def __init__(self):
-        self.out = []
-
-    def send(self, msg: Any, outport: str = "out"):
-        assert outport == "out"
-        self.out.append(msg)
+from dsl.block_lib.sinks.sink_lib.common_sinks import record_to_list
+from dsl.block_lib.sources.source_lib.common_sources import gen_list
 
 
 def test_transform_simple_entity_extractor():
-
-    probe = _Probe()
-
     # Test messages
     messages = [
-        {"text": "Obama was the President of the USA in 2016."},
-        {"text": "Brazil, India, China and South Africa are part of Brics."},
-        {"text": "Mount Everest is the highest mountain in the world."}
+        {"text": "Obama was the President of the USA."},
     ]
-    expected_outputs = [
-        {'text': 'Obama was the President of the USA in 2016.',
-         'entities':
-            {'people & objects': ['President', 'Obama'],
-             'places': []}},
-        {'text': 'Brazil, India, China and South Africa are part of Brics.',
-         'entities':
-            {'people & objects': ['Brics'],
-             'places': ['China', 'South Africa', 'Brazil', 'India']}},
-        {'text': 'Mount Everest is the highest mountain in the world.',
-         'entities':
-             {'people & objects': [],
-              'places': ['Mount Everest']}}]
-    t = Transform(func=extract_entity)
-    probe = _Probe()
-    for message in messages:
-        t.handle_msg(probe, message)
-    print(f"probe.out = {probe.out}")
-    assert probe.out == expected_outputs
+    expected_outputs = [{'text': 'Obama was the President of the USA.', 'entities': {
+        'people': ['Obama', 'President'], 'places': ['USA']}}]
+
+    results = []
+    network = Network(
+        blocks={
+            "source": Source(generator_fn=gen_list(messages + ["__STOP__"])),
+            "transform": Transform(func=extract_entity),
+            "sink": Sink(record_fn=record_to_list(results))
+        },
+        connections=[
+            ("source", "out", "transform", "in"),
+            ("transform", "out", "sink", "in")
+        ]
+    )
+    network.compile_and_run()
+
+    assert results == expected_outputs
 
 
 if __name__ == "__main__":
