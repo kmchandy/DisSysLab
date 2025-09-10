@@ -39,7 +39,6 @@ class MergeSynch(Agent):
         while True:
             for port in self.inports:
                 msg = self.recv(port)
-                print(f"MergeSynch received on port {port}: {msg}")
                 if msg == "__STOP__":
                     self.send("__STOP__", "out")
                     return
