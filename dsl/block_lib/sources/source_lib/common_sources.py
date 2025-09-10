@@ -54,6 +54,26 @@ def gen_list(items: Iterable[Any]) -> Callable[[], Iterator[Any]]:
     return _gen
 
 
+def gen_list_with_delay(items: Iterable[Any], delay=None) -> Callable[[], Iterator[Any]]:
+    """
+    Yield each element from a list (or any iterable).
+
+    Example:
+      gen = gen_list(['apple', 'banana'])
+      for x in gen():  # yields 'apple', 'banana'
+          print(x)
+    """
+    # Snapshot items once so each run of gen() yields the same values.
+    snapshot = list(items)
+
+    def _gen() -> Iterator[Any]:
+        for x in snapshot:
+            yield x
+            if delay:
+                time.sleep(delay)
+    return _gen
+
+
 def gen_list_as_key(items: Iterable[Any], key: str) -> Callable[[], Iterator[dict]]:
     """
     Yield each item wrapped in a dict with the given key.
