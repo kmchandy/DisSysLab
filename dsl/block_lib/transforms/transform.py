@@ -24,12 +24,12 @@ class Transform(SimpleAgent):
         self.args = args or ()
         self.kwargs = kwargs or {}
 
-        def _handle_msg(agent, msg):
+        def _handle_msg(msg):
             if msg is STOP:
-                agent.send(STOP, "out")
+                self.send(STOP, "out")
                 return
             result = self.func(msg, *self.args, **self.kwargs)
-            agent.send(result, "out")
+            self.send(result, "out")
 
         super().__init__(
             name=name,          # SimpleAgent stores .name for you

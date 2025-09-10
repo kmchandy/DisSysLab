@@ -1,17 +1,30 @@
 # tests/test_transform.py
 from __future__ import annotations
 from typing import Any
+from dsl.core import Network, Agent, STOP
+from dsl.block_lib.sinks.sink import Sink
+from dsl.block_lib.sources.source import Source
 from dsl.block_lib.transforms.transform import Transform
 from dsl.block_lib.transforms.transform_lib.simple_sentiment import add_sentiment
+from dsl.block_lib.sinks.sink_lib.common_sinks import record_to_list
+from dsl.block_lib.sources.source_lib.common_sources import gen_list
 
 
-class _Probe:
-    def __init__(self):
-        self.out = []
-
-    def send(self, msg: Any, outport: str = "out"):
-        assert outport == "out"
-        self.out.append(msg)
+def test_transform_direct_values():
+    results = []
+    network = Network(
+        blocks={
+            "source": Source(generator_fn=gen_list(["A1", "A2", "__STOP__"])),
+            "transform": Transform(func=lambda x: x),  # Identity transform
+            "sink": Sink(record_fn=record_to_list(results))
+        },
+        connections=[
+            ("source", "out", "transform", "in"),
+            ("transform", "out", "sink", "in")
+        ]
+    )
+    network.compile_and_run()
+    assert results == ["A1", "A2"]
 
 
 def test_transform_maps_values():
@@ -25,32 +38,35 @@ def test_transform_maps_values():
 def test_transform_simple_sentiment():
 
     # Create a Transform that computes sentiment score and label
-    sentiment_transform = Transform(func=add_sentiment)
-
-    probe = _Probe()
 
     # Test messages
     messages = [
         {"text": "The team wins the championship!"},
         {"text": "There are concerns about the economy."},
-        {"text": "The weather is neutral today."}
+        {"text": "The weather is the same today."}
     ]
 
-    for msg in messages:
-        sentiment_transform.handle_msg(probe, msg)
+    results = []
+    network = Network(
+        blocks={
+            "source": Source(generator_fn=gen_list(messages + ["__STOP__"])),
+            "transform": Transform(func=add_sentiment),
+            "sink": Sink(record_fn=record_to_list(results))
+        },
+        connections=[
+            ("source", "out", "transform", "in"),
+            ("transform", "out", "sink", "in")
+        ]
+    )
+    network.compile_and_run()
 
-    expected_outputs = [
+    assert results == [
         {'text': 'The team wins the championship!', 'sentiment': 'Positive'},
         {'text': 'There are concerns about the economy.', 'sentiment': 'Negative'},
-        {'text': 'The weather is neutral today.', 'sentiment': 'Neutral'}
+        {'text': 'The weather is the same today.', 'sentiment': 'Neutral'}
     ]
-
-    t = Transform(func=add_sentiment)
-    probe = _Probe()
-    for message in messages:
-        t.handle_msg(probe, message)
-    assert probe.out == expected_outputs
 
 
 if __name__ == "__main__":
+    test_transform_direct_values()
     test_transform_simple_sentiment()
