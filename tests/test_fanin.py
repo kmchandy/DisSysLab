@@ -69,6 +69,39 @@ def test_merge_asynch():
     network.compile_and_run()
     assert results == {"A1", "A2", "B1", "B2"}
 
+
+# ---------------------------
+# MergeAsynch tests
+# ---------------------------
+def test_merge_asynch_v2():
+    """
+
+    """
+    def g(msg, port):
+        if port == "a":
+            return msg*2
+        else:
+            return msg + "!!"
+
+    results = []
+    network = Network(
+        blocks={
+            "source_a": Source(generator_fn=gen_list_with_delay(["x1", "x2", "__STOP__"], delay=0.15)),
+            "source_b": Source(generator_fn=gen_list_with_delay(["y1", "y2"], delay=0.09)),
+            "merge_asynch": MergeAsynch(inports=["a", "b"],
+                                        transformer_fn=g),
+            "sink": Sink(record_fn=record_to_list(results))
+        },
+        connections=[
+            ("source_a", "out", "merge_asynch", "a"),
+            ("source_b", "out", "merge_asynch", "b"),
+            ("merge_asynch", "out", "sink", "in")
+        ]
+    )
+    network.compile_and_run()
+    assert results == ['x1x1', 'y1!!', 'y2!!', 'x2x2']
+
+
 # ---------------------------
 # Plain-Python runner
 # ---------------------------
@@ -77,3 +110,5 @@ def test_merge_asynch():
 if __name__ == "__main__":
     test_merge_synch_basic_with_transformer()
     test_merge_asynch()
+    test_merge_asynch_v2()
+    print("All tests passed.")
