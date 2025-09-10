@@ -1,58 +1,37 @@
-"""
-Sink: a SimpleAgent that receives messages and records them
-via a user-provided function `record_fn` (required).
-- STOP messages are consumed and not recorded.
-"""
+# dsl/block_lib/sinks/sink.py
+from __future__ import annotations
 
-from typing import Callable, Any
+from typing import Callable, Any, Optional
 import traceback
 from dsl.core import SimpleAgent, STOP
 
-# =================================================
-#                    Sink(SimpleAgent)
-# =================================================
-
-RecordFn = Callable[[SimpleAgent, Any], None]
+# Style B: record functions accept ONLY the message
+RecordFn = Callable[[Any], None]
 
 
 class Sink(SimpleAgent):
     """
-    A terminal agent that consumes messages.
-
-    Parameters
-    ----------
-    name : str
-        Agent name.
-    record_fn : RecordFn
-        Callback invoked for each non-STOP message as (agent, msg).
+    Terminal agent that consumes messages.
+    Calls `record_fn(msg)` for every non-STOP message.
+    STOP messages are consumed and not recorded.
     """
 
-    def __init__(
-        self,
-        name: str = "Sink",
-        record_fn: RecordFn = None,  # type: ignore[assignment]
-    ):
+    def __init__(self, name: str = "Sink", record_fn: Optional[RecordFn] = None):
         if record_fn is None:
             raise ValueError("record_fn is required for Sink")
-
         self.record_fn: RecordFn = record_fn
 
-        def _handle_msg(agent: SimpleAgent, msg: Any) -> None:
+        # SimpleAgent will call this with ONE argument: the message.
+        def _handle_msg(msg: Any) -> None:
             # Consume STOP silently
-            if msg == STOP:
+            if msg is STOP:
                 return
-            # Record
             try:
-                self.record_fn(agent, msg)
+                self.record_fn(msg)
             except Exception:
-                # Avoid crashing the agent loop on user callback errors
+                # Don't crash the agent loop if user callback raises
                 with open("dsl_debug.log", "a") as log:
                     log.write(f"\n--- {self.__class__.__name__} Error ---\n")
                     log.write(traceback.format_exc())
 
-        super().__init__(
-            name=name,
-            inport="in",
-            outports=[],
-            handle_msg=_handle_msg,
-        )
+        super().__init__(name=name, inport="in", outports=[], handle_msg=_handle_msg)

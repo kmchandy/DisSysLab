@@ -22,20 +22,23 @@ def _maybe_extract(msg: Any, key: Optional[str]) -> Any:
         f"record_* with key='{key}' expects dict messages, got {type(msg).__name__}")
 
 
-def record_to_list(target_list: list, key: Optional[str] = None) -> Callable[[Any, Any], None]:
-    def _fn(agent, msg):
-        target_list.append(_maybe_extract(msg, key))
+def record_to_list(target: list, key: Optional[str] = None) -> Callable[[Any], None]:
+    """
+    Append each message to `target`. If key is provided, append msg[key].
+    """
+    def _fn(msg: Any) -> None:
+        target.append(msg if key is None else msg[key])
     return _fn
 
 
 def record_to_set(target_set: set, key: Optional[str] = None) -> Callable[[Any, Any], None]:
-    def _fn(agent, msg):
+    def _fn(msg):
         target_set.add(_maybe_extract(msg, key))
     return _fn
 
 
 def record_to_file(path: str, key: Optional[str] = None) -> Callable[[Any, Any], None]:
-    def _fn(agent, msg):
+    def _fn(msg):
         val = _maybe_extract(msg, key)
         with open(path, "a", encoding="utf-8") as f:
             f.write(f"{val}\n")
@@ -43,7 +46,7 @@ def record_to_file(path: str, key: Optional[str] = None) -> Callable[[Any, Any],
 
 
 def record_to_jsonl(path: str, key: Optional[str] = None) -> Callable[[Any, Any], None]:
-    def _fn(agent, msg):
+    def _fn(msg):
         val = _maybe_extract(msg, key)
         with open(path, "a", encoding="utf-8") as f:
             f.write(json.dumps(val, ensure_ascii=False) + "\n")
@@ -51,6 +54,6 @@ def record_to_jsonl(path: str, key: Optional[str] = None) -> Callable[[Any, Any]
 
 
 def record_to_console(prefix: str = "") -> Callable[[Any, Any], None]:
-    def _fn(agent, msg):
+    def _fn(msg):
         print(f"{prefix}{msg}")
     return _fn
