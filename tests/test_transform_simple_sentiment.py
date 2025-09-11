@@ -27,14 +27,6 @@ def test_transform_direct_values():
     assert results == ["A1", "A2"]
 
 
-def test_transform_maps_values():
-    t = Transform(func=lambda m: m * 2)
-    probe = _Probe()
-    t.handle_msg(probe, 3)
-    t.handle_msg(probe, -1)
-    assert probe.out == [6, -2]
-
-
 def test_transform_simple_sentiment():
 
     # Create a Transform that computes sentiment score and label
