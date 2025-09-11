@@ -27,10 +27,11 @@ from dsl.block_lib.sinks.sink_lib.common_classes import (
     ToFile,
     ToJSONL,
     ToConsole,
+    Print,
 )
 # Transforms
 from dsl.block_lib.transforms.transform_lib.common_classes import (
-    UpperCase
+    Uppercase
 )
 # Graph Structures: pipeline
 from dsl.block_lib.graph_structures import pipeline
@@ -44,6 +45,7 @@ __all__ = [
     "ToFile",
     "ToJSONL",
     "ToConsole",
+    "Print",
     # Sources
     "FromList",
     "FromListWithKey",
@@ -55,7 +57,7 @@ __all__ = [
     "FromNumpyRows",
     "FromRSS",
     # Transforms
-    "UpperCase",
+    "Uppercase",
     # core
     "Network",
     # Graph Structures: pipeline

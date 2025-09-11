@@ -9,8 +9,9 @@ from dsl.block_lib.sinks.sink_lib.common_sinks import (
 )
 from typing import Optional
 
+
 # extend the public API
-__all__ = ["ToList", "ToSet", "ToFile", "ToJSONL", "ToConsole"]
+__all__ = ["ToList", "ToSet", "ToFile", "ToJSONL", "ToConsole", "Print"]
 
 
 class ToList(Sink):
@@ -46,3 +47,6 @@ class ToConsole(Sink):
 
     def __init__(self, prefix: str = "", name: str = "ToConsole"):
         super().__init__(name=name, record_fn=record_to_console(prefix))
+
+
+Print = ToConsole   # alias

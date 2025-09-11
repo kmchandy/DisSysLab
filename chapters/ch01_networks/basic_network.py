@@ -1,4 +1,4 @@
-from dsl.kit import FromList, ToList, UpperCase, Network, pipeline
+from dsl.kit import FromList, ToList, Uppercase, Network, pipeline
 
 
 def basic_network():
@@ -7,7 +7,7 @@ def basic_network():
     net = Network(
         blocks={
             "source": FromList(['hello', 'world']),
-            "transform": UpperCase(),
+            "transform": Uppercase(),
             "sink": ToList(results),
         },
         connections=[
@@ -24,7 +24,7 @@ def simple_pipeline():
     results = []  # Holds results sent to sink
 
     net = pipeline([FromList(['hello', 'world']),
-                   UpperCase(), ToList(results)])
+                   Uppercase(), ToList(results)])
 
     net.compile_and_run()
     assert results == ['HELLO', 'WORLD']
