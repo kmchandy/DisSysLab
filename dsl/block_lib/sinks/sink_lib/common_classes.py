@@ -1,8 +1,16 @@
 # add near the top
 from dsl.block_lib.sinks.sink import Sink
+from dsl.block_lib.sinks.sink_lib.common_sinks import (
+    record_to_list,
+    record_to_set,
+    record_to_file,
+    record_to_jsonl,
+    record_to_console,
+)
+from typing import Optional
 
 # extend the public API
-__all__ += ["ToList", "ToSet", "ToFile", "ToJSONL", "ToConsole"]
+__all__ = ["ToList", "ToSet", "ToFile", "ToJSONL", "ToConsole"]
 
 
 class ToList(Sink):
