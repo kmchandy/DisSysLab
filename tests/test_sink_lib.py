@@ -9,7 +9,7 @@ from pathlib import Path
 from dsl.core import Network
 from dsl.block_lib.sinks.sink import Sink
 from dsl.block_lib.sources.source import Source
-from dsl.block_lib.sources.source_lib.common_classes import GEN_LIST
+from dsl.block_lib.sources.source_lib.common_classes import FromList
 from dsl.block_lib.sources.source_lib.common_sources import gen_list
 from dsl.block_lib.sinks.sink_lib.common_sinks import (
     record_to_list,
@@ -18,7 +18,7 @@ from dsl.block_lib.sinks.sink_lib.common_sinks import (
     record_to_jsonl,
     record_to_console,
 )
-from dsl.block_lib.sources.source_lib.common_classes import GEN_LIST
+from dsl.block_lib.sources.source_lib.common_classes import FromList
 
 
 def test_sink_direct_values():
@@ -39,7 +39,7 @@ def test_sink_direct_values_Classes():
     results = []
     network = Network(
         blocks={
-            "source": GEN_LIST(["A1", "A2", "__STOP__"]),
+            "source": FromList(["A1", "A2", "__STOP__"]),
             "sink": Sink(record_fn=record_to_list(results))
         },
         connections=[("source", "out", "sink", "in")
