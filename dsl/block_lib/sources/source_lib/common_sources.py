@@ -1,4 +1,4 @@
-# dsl/block_lib/sources/gen_lib.py
+# dsl/block_lib/sources/source_lib/gen_lib.py
 from __future__ import annotations
 import itertools
 import random

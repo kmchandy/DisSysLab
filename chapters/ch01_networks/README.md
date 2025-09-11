@@ -48,7 +48,7 @@ We’ll create a **three-block network**:
 
 ## 💻 Code Example
  
-```python
+```
 # dsl/examples/ch01_networks/simple_network.py
 
 from dsl.core import Network

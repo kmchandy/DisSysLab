@@ -9,6 +9,7 @@ from pathlib import Path
 from dsl.core import Network
 from dsl.block_lib.sinks.sink import Sink
 from dsl.block_lib.sources.source import Source
+from dsl.block_lib.sources.source_lib.common_classes import GEN_LIST
 from dsl.block_lib.sources.source_lib.common_sources import gen_list
 from dsl.block_lib.sinks.sink_lib.common_sinks import (
     record_to_list,
@@ -17,6 +18,7 @@ from dsl.block_lib.sinks.sink_lib.common_sinks import (
     record_to_jsonl,
     record_to_console,
 )
+from dsl.block_lib.sources.source_lib.common_classes import GEN_LIST
 
 
 def test_sink_direct_values():
@@ -24,6 +26,20 @@ def test_sink_direct_values():
     network = Network(
         blocks={
             "source": Source(generator_fn=gen_list(["A1", "A2", "__STOP__"])),
+            "sink": Sink(record_fn=record_to_list(results))
+        },
+        connections=[("source", "out", "sink", "in")
+                     ]
+    )
+    network.compile_and_run()
+    assert results == ["A1", "A2"]
+
+
+def test_sink_direct_values_Classes():
+    results = []
+    network = Network(
+        blocks={
+            "source": GEN_LIST(["A1", "A2", "__STOP__"]),
             "sink": Sink(record_fn=record_to_list(results))
         },
         connections=[("source", "out", "sink", "in")
@@ -229,6 +245,7 @@ def main():
     # Run all tests manually (basic harness)
     for fn in [
         test_sink_direct_values,
+        test_sink_direct_values_Classes,
         test_record_to_list_direct_values,
         test_record_to_list_extract_key_from_dicts,
         test_record_to_set_deduplicates_and_key_1,
