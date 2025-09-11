@@ -31,7 +31,8 @@ from dsl.block_lib.sinks.sink_lib.common_classes import (
 )
 # Transforms
 from dsl.block_lib.transforms.transform_lib.common_classes import (
-    Uppercase
+    Uppercase,
+    AddSentiment,
 )
 # Graph Structures: pipeline
 from dsl.block_lib.graph_structures import pipeline
@@ -58,6 +59,7 @@ __all__ = [
     "FromRSS",
     # Transforms
     "Uppercase",
+    "AddSentiment",
     # core
     "Network",
     # Graph Structures: pipeline
