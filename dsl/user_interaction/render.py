@@ -1,61 +1,44 @@
+# dsl/user_interaction/render.py
+"""
+Minimal rendering helpers for lesson outputs.
+- Pretty-print a NetworkSpec as ASCII.
+- Show the generated code.
+- Save the generated code to disk.
+"""
+
 from __future__ import annotations
-from typing import Dict, List, Tuple
-from .lessons import NetworkSpec, Lesson, CodeBundle
+import os
+from dataclasses import asdict
+from typing import List
+
+from .lessons import NetworkSpec, CodeBundle
 
 
-def ascii_diagram(topology: str) -> str:
-    if topology == "pipeline":
-        return "[ Generator ] → [ Transformer ] → [ Recorder ]"
-    if topology == "fanin":
-        return "[Gen A] →\n           [ Fan-in ] → [ Transformer ] → [ Recorder ]\n[Gen B] →"
-    if topology == "fanout":
-        return "[ Generator ] → [ Transformer ] → [ Fan-out ] → [ Rec A ]\n                                          ↘︎ [ Rec B ]"
-    return topology
-
-
-def render_preview(spec: NetworkSpec) -> str:
-    lines = []
-    lines.append("📦 Blocks:")
+def render_spec_ascii(spec: NetworkSpec) -> str:
+    """Return a compact ASCII view of blocks and connections."""
+    lines: List[str] = []
+    lines.append("Blocks:")
     for name, cls in spec.blocks.items():
-        lines.append(f"  - {name}: {cls}")
-    lines.append("🔗 Connections:")
-    for (s, sp, d, dp) in spec.connections:
-        lines.append(f"  - ({s}:{sp}) → ({d}:{dp})")
+        kw = spec.kwargs.get(name, {})
+        if kw:
+            lines.append(
+                f"  - {name}: {cls}({', '.join(f'{k}={repr(v)}' for k, v in kw.items())})")
+        else:
+            lines.append(f"  - {name}: {cls}()")
+    lines.append("Connections:")
+    for src, outp, dst, inp in spec.connections:
+        lines.append(f"  - {src}.{outp} -> {dst}.{inp}")
     return "\n".join(lines)
 
 
 def render_code(bundle: CodeBundle) -> str:
-    # Fenced code block for clarity
-    return f"```python\n{bundle.code}```\n"
+    """Return the code exactly as it will be written to disk."""
+    return bundle.code.rstrip() + "\n"
 
 
-def render_explanation_for(topology: str) -> str:
-    if topology == "pipeline":
-        return (
-            "- **Blocks** do the work (generate, transform, record).\n"
-            "- **Connections** move messages from outports to inports.\n"
-            "- Apps can stream continuously until you press Ctrl+C."
-        )
-    if topology == "fanin":
-        return (
-            "- **Fan-in** combines multiple streams; inputs are numbered (`in0`, `in1`).\n"
-            "- A transformer can then operate on the combined message."
-        )
-    if topology == "fanout":
-        return (
-            "- **Fan-out** splits a stream into multiple outputs; outputs are numbered (`out0`, `out1`).\n"
-            "- You can send results to different destinations (console, file, etc.)."
-        )
-    return ""
-
-
-def show_code_reveal(lesson: Lesson, spec: NetworkSpec, bundle: CodeBundle) -> str:
-    parts = []
-    parts.append(f"# 🧩 {lesson.title}\n")
-    parts.append(f"**Diagram:** `{ascii_diagram(lesson.topology)}`\n")
-    parts.append(render_preview(spec))
-    parts.append("\n**Code:**\n")
-    parts.append(render_code(bundle))
-    parts.append("**What to notice:**\n")
-    parts.append(render_explanation_for(lesson.topology))
-    return "\n".join(parts)
+def save_code_bundle(bundle: CodeBundle) -> None:
+    """Write the generated code to bundle.filename, creating parent dirs if needed."""
+    path = bundle.filename
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(bundle.code)
