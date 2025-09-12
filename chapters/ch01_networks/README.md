@@ -1,12 +1,20 @@
-# 🧩 Chapter 1 — Networks = Blocks + Connections
+# 🧩 Chapter 01—Networks
 
-### 🎯 Goal
+## Key Idea:  Network = Blocks + Connections
+
+Many distributed applications, such as those that control industrial processes, run forever.
+Some distributed applications are designed to terminate after processing limited amounts of data. Multiple concurrent threads of execution can result in faster execution than sequential programs. 
+
+We begin with simple examples that terminate. Later we develop applications that continue to acquire and process data.
+
+
+## 🎯 Goal
 Learn how to build a distributed application by creating **blocks** and connecting them to form a **network**.
 
 See an example of the two core ideas:
 
-- A distributed system consists of connected blocks.
-- A block embodies a function.
+- ***A distributed system consists of connected blocks.***
+- ***A block embodies a function that processes a stream of messages.***
 
 ---
 
@@ -14,11 +22,11 @@ See an example of the two core ideas:
 
 We’ll create a **three-block network**:
 
-1. **Generator** – produces a list of short text strings.  
-2. **Transformer** – applies a function to each string (in this case, reversing the text).  
-3. **Recorder** – saves the results in a Python list.
+1. **Source** – generate a stream of messages.
+2. **Transform** – receive a message stream and output a transformation of the stream.
+3. **Sink** – store or display a message stream. 
 
-**Visual:** `[ Generator ] → [ Transformer ] → [ Recorder ]`
+**Visual:** `[ Source ] → [ Transform ] → [ Sink ]`
 
 ---
 
@@ -36,9 +44,9 @@ We’ll create a **three-block network**:
 ![Simple Network](simple_network.svg)
 
 **Blocks in this example:**
-- **generate_from_list** – executes ```GenerateFromList(items=["abc", "def"])```. It is an example of a **Generator** block which has a single outport and no inports.  
-- **reverse_msg** – executes ```TransformerFunction(func=reverse_text)``. It is an example of a **Transformer** block which has a  single inport and a single outport.  
-- **record_to_list** – executes ```RecordToList(results)```. It is an example of a **Recorder** block which has a single inport and  no outports.
+- block name: ***"source"***, execution: ***FromList["hello", "world"]*** – Generate a stream consisting of message "abc" followed by message "def". The stream is sent on an outport "out".
+- block name: ***"transform"***, execution: ***Uppercase*** – Receives a stream of messages on inport "in" and sends the uppercase of the messages that it receives on outport "out".
+- block name: ***"sink"***, execution ***ToList*** – Receives a stream of messages on inport "in" and stores the stream that it receives in a list.
 
 (Block types with multiple inports and outports are introduced later.)
 
@@ -49,39 +57,23 @@ We’ll create a **three-block network**:
 ## 💻 Code Example
  
 ```
-# dsl/examples/ch01_networks/simple_network.py
+def basic_network():
+    results = []  # Holds results sent to sink
 
-from dsl.core import Network
-from dsl.block_lib.stream_generators import GenerateFromList
-from dsl.block_lib.stream_transformers import TransformerFunction
-from dsl.block_lib.stream_recorders import RecordToList
+    net = Network(
+        blocks={
+            "source": FromList(['hello', 'world']),
+            "transform": Uppercase(),
+            "sink": ToList(results),
+        },
+        connections=[
+            ("source", "out", "transform", "in"),
+            ("transform", "out", "sink", "in"),
+        ],
+    )
 
-# Transformation function: reverse a string
-def reverse_text(x):
-    return x[::-1]
-
-# Where we’ll store results
-results = []
-
-# Define the network: blocks and connections
-# blocks is a dict where the key is the block name and 
-# the value is the function executed by the block.
-# connections is a list of 4-tuples 
-#        (from_block_name, outport, to_block_name, inport)
-net = Network(
-    blocks={
-        "generate_from_list": GenerateFromList(items=["abc", "def"]),
-        "reverse_msg": TransformerFunction(func=reverse_text),
-        "record_to_list": RecordToList(results),
-    },
-    connections=[
-        ("generate_from_list", "out", "reverse_msg", "in"),
-        ("reverse_msg", "out", "record_to_list", "in"),
-    ]
-)
-
-# Run the network
-net.compile_and_run()
+    net.compile_and_run()
+    assert results == ['HELLO', 'WORLD']
 ```
 
 ### ▶️ Run It
