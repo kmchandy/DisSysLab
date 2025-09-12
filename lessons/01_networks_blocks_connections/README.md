@@ -77,8 +77,6 @@ if __name__ == "__main__":
 ### ▶️ Run It
 ```
 python -m lessons.01_networks_blocks_connections.basic_network
-
-['HELLO', 'WORLD']
 ```
 
 
