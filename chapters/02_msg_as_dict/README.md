@@ -24,7 +24,7 @@ We’ll create a three-block network, as in chapter 1, except that now messages 
 ## 💻 Code Example
 
 ```
-# dsl/examples/ch02_keys/example_dict.py
+# dsl/examples/02_msg_as_dict/example_dict.py
 from dsl.kit import Network, FromListWithKey, AddSentiment, ToConsole
 
 
@@ -58,14 +58,16 @@ if __name__ == "__main__":
 
 ## ▶️ Run It
 ```
-python3 -m dsl.examples.ch02_messages.example_dict
+python3 -m dsl.examples.02_msg_as_dict.example_dict
 ```
 
 ## ✅ Output
 ```
-[
-    {"text": "abc", "reversed": "cba"},
-    {"text": "def", "reversed": "fed"}
+[  
+    {'review': 'The movie was great. The music was superb!', 'sentiment': 'Positive'}
+    {'review': 'The concert was terrible. I hated the performance.', 'sentiment': 'Negative'}
+    {'review': 'The book was okay, not too bad but not great either.', 'sentiment': 'Neutral'}
+    {'review': "This is the best course on AI I've ever taken!", 'sentiment': 'Positive'}
 ]
 ```
 
