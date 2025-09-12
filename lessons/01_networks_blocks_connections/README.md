@@ -1,4 +1,4 @@
-# 🧩 Chapter 01—Networks
+# 🧩 Lesson 01_networks_blocks_connections
 
 
 ## 🎯 Goal
@@ -46,7 +46,7 @@ Block types with multiple inports and outports, and network structures that are 
 ## 💻 Code Example
  
 ```
-# dsl.examples.ch01_networks.basic_network.py
+# lessons.01_networks_blocks_connections.basic_network.py
 
 def basic_network():
     results = []  # Holds results sent to sink
@@ -69,7 +69,7 @@ def basic_network():
 
 ### ▶️ Run It
 ```
-python -m dsl.examples.ch01_networks.basic_network
+python -m lessons.01_networks_blocks_connections.basic_network
 
 ['HELLO', 'WORLD']
 ```
