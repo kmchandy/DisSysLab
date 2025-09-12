@@ -48,6 +48,9 @@ Block types with multiple inports and outports, and network structures that are 
 ```
 # lessons.01_networks_blocks_connections.basic_network.py
 
+from dsl.kit import Network, FromList, Uppercase, ToList
+
+
 def basic_network():
     results = []  # Holds results sent to sink
 
@@ -58,13 +61,17 @@ def basic_network():
             "sink": ToList(results),
         },
         connections=[
-            ("source", "out", "transform", "in"),
-            ("transform", "out", "sink", "in"),
+            ("source", "out", "upper_case", "in"),
+            ("upper_case", "out", "sink", "in"),
         ],
     )
 
     net.compile_and_run()
     assert results == ['HELLO', 'WORLD']
+
+
+if __name__ == "__main__":
+    basic_network()
 ```
 
 ### ▶️ Run It
