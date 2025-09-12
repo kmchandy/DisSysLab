@@ -1,16 +1,16 @@
 # dsl/examples/ch02_keys/message_network.py
 from dsl.kit import Network, FromListWithKey, AddSentiment, ToConsole
-from typing import Any, Optional, Iterable, Dict
+
+
+reviews = [
+    "The movie was great. The music was superb!",
+    "The concert was terrible. I hated the performance.",
+    "The book was okay, not too bad but not great either.",
+    "This is the best course on AI I've ever taken!",
+]
 
 
 def test_transform_simple_sentiment():
-
-    reviews = [
-        "The movie was great. The music was superb!",
-        "The concert was terrible. I hated the performance.",
-        "The book was okay, not too bad but not great either.",
-        "This is the best course on AI I've ever taken!",
-    ]
 
     network = Network(
         blocks={

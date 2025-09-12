@@ -46,6 +46,8 @@ Block types with multiple inports and outports, and network structures that are 
 ## 💻 Code Example
  
 ```
+# dsl.examples.ch01_networks.basic_network.py
+
 def basic_network():
     results = []  # Holds results sent to sink
 
@@ -67,7 +69,7 @@ def basic_network():
 
 ### ▶️ Run It
 ```
-python3 -m dsl.examples.ch01_networks.simple_network
+python -m dsl.examples.ch01_networks.basic_network
 
 ['HELLO', 'WORLD']
 ```
