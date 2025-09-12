@@ -1,20 +1,26 @@
 
-# How to Pick Blocks (Student How-To)
+# Tips: How to Pick Blocks
 
-**Mental model:** **From → (do something) → To**  
-You always: start **From** something, optionally **do** something to each message, and send it **To** somewhere.
+We start with a simple pipeline. 
+Later we will consider networks with arbitrary graph structures with multiple sources, actions, and sinks. 
 
+## Pipeline model 
+
+**From block → do something block .. → do something block → To block**  
+
+
+- Start generating messages **From** some source,  **do** something to the message stream in one or more steps, and send the results **To** some sink. 
 ---
 
-## 60-second win
+## Quick Example
 
-```python
+```
 from dsl.kit import FromList, Uppercase, Print, pipeline
 
 net = pipeline([
     FromList(["hello", "world"]),
-    Uppercase(),
-    Print()           # alias of ToConsole()
+    Uppercase(),  # receive message and send its uppercase version.
+    ToConsole()           
 ])
 net.compile_and_run()
 # HELLO
@@ -23,7 +29,7 @@ net.compile_and_run()
 
 ---
 
-## Quick picks — “If you want X, use Y”
+## Quick picks — “If you want to do X, use class Y”
 
 **Sources (start a stream):**
 - From a Python list → `FromList([...])`
@@ -44,7 +50,7 @@ net.compile_and_run()
 > - **Classify/Convert/Compute** = replace or transform the output value  
 > - **Select/Rename/Drop** = change the **schema** (which keys exist)
 
-**Sinks (where messages go):**
+**Sinks (where output messages go):**
 - Print to the screen → `ToConsole()` (alias: `Print()`)
 - Save as JSON Lines → `ToJSONL("results.jsonl")`
 - Save plain text (one line per message) → `ToFile("results.txt")`
@@ -52,43 +58,44 @@ net.compile_and_run()
 
 ---
 
-## Common tiny patterns
+## Common tiny pipeline patterns
 
-**Annotate (add fields)**
-```python
+**Annotate: add field sentiment to a message dict**
+```
 FromRSS(url=...) → AddSentiment() → ToJSONL("news.jsonl")
 ```
 
 **Transform value**
-```python
+```
 FromList(["hi","there"]) → Uppercase() → Print()
 ```
 
-**Trim schema**
-```python
+**Trim schema: remove keys and values from a message dict**
+```
 FromCSV("data.csv") → SelectKeys(["name","email"]) → ToJSONL("people.jsonl")
 ```
 
 **Extract info**
-```python
+```
 FromList(["Mount Everest is ..."]) → ExtractEntities() → Print()
 ```
 
 ---
 
-## Try these variations (2–3 minutes)
+## Try these variations in a couple of minutes
 
 1. Swap `Uppercase()` for `AddSentiment()` and observe how the message shape changes.
-2. Change the sink from `Print()` to `ToJSONL("out.jsonl")`, open the file, and inspect a few lines.
+2. Change the sink from `ToConsole()` to `ToJSONL("out.jsonl")`, open the file, and inspect a few lines.
 3. Replace `FromList([...])` with `FromCSV("sample.csv")` and add `SelectKeys([...])`.
 
 ---
 
-## Use the Wizard (zero friction)
+## Use the Wizard
 
 Prefer menus over typing? The Wizard builds and runs the same pipelines:
 
-```bash
+```
 python -m dsl.user_interaction.wizard --lesson step1
 ```
+
 
