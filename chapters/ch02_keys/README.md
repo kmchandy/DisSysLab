@@ -1,20 +1,22 @@
 # 🧩 Chapter 2 — Messages as Dictionaries
 
 ### 🎯 Goal
-You will use **messages as dictionaries** to attach information -- such as `data source`, `time created`, or `rating_score` -- to a message.
+Use **messages as dictionaries** to attach information -- such as `data source`, `time created`, or `rating_score` -- to a message.
 
 ---
 
-## 📍 What We’ll Build
+## 📍 Example
 
-We’ll create a **three-block network**, just as in Chapter 1, except that now messages are dictionaries.
+We’ll create a three-block network, as in chapter 1, except that now messages are dicts.
 
-- **generator** – A **Generator** block that produces dicts with a `"text"` field.  
-- **reverser** – A **Transformer** block that reads `msg["text"]`, executes ```reverse_text``` on the message, and writes the result into `msg["reversed"]`.  
-- **recorder** – A **Recorder** block that stores the messages (which are of type ``dict``) in the variable ```results```.
-
-**📊 Diagram of blocks and connections:**  
-![Message Network](diagram_1.svg)
+**Blocks in this example:**
+- block name: **"source"**, 
+  - execution: **FromListWithKey((reviews))** – Generate a stream consisting of messages where each message is a dict with a single key-value pair where the key is "review" and the value is text - a review of an article.
+- block name: **"add_sentiment"**, 
+  - execution: **AddSentiment** – Receives a stream of messages on inport "in"; computes the sentiment of each message and adds a key-value pair to the message where the key is "sentiment" and the value is the sentiment of the message. 
+  - (We use a simple function to compute sentiment in this example. Later, we give examples that compute sentiment using AI functions from OpenAI and other organizations.)
+- block name: **"sink"**, 
+  - execution **ToConsole** – Receives a stream of messages on inport "in" and prints the messages on the screen.
 
 ---
 
@@ -23,44 +25,35 @@ We’ll create a **three-block network**, just as in Chapter 1, except that now 
 
 
 
-```python
+```
 # dsl/examples/ch02_keys/message_network.py
+from dsl.kit import FromListWithKey, AddSentiment, ToConsole
 
-from dsl.core import Network
-from dsl.block_lib.stream_generators import GenerateFromList
-from dsl.block_lib.stream_transformers import TransformerFunction
-from dsl.block_lib.stream_recorders import RecordToList
+def test_transform_simple_sentiment():
 
-# Transformation function: reverse a string
-def reverse_text(x):
-    return x[::-1]
+    # Create a Transform that computes sentiment score and label
 
-results = []
 
-net = Network(
-    blocks={
-        # Generator emits dicts: {"text": "abc"}, {"text": "def"}
-        "generator": GenerateFromList(
-            items=["abc", "def"],
-            key="text"
-        ),
-        # Transformer reads msg["text"], writes msg["reversed"]
-        "reverser": TransformerFunction(
-            func=reverse_text,
-            input_key="text",
-            output_key="reversed",
-        ),
-        # Recorder saves the resulting dictionaries
-        "recorder": RecordToList(results),
-    },
-    connections=[
-        ("generator", "out", "reverser", "in"),
-        ("reverser", "out", "recorder", "in"),
+    reviews = [
+        {"The movie was great. The music was superb!"},
+        {"The concert was terrible. I hated the performance."},
+        {"The book was okay, not too bad but not great either."},
+        {"This is the best course on AI I've ever taken!"},
     ]
-)
 
-net.compile_and_run()
-print(results)
+    network = Network(
+        blocks={
+            "source": FromListWithKey(items=messages, key="review")
+            "add_sentiment": AddSentiment(out_key="sentiment")
+            "sink": ToConsole()
+        },
+        connections=[
+            ("source", "out", "add_sentiment", "in"),
+            ("add_sentiment", "out", "sink", "in")
+        ]
+    )
+    network.compile_and_run()
+
 ```
 
 ## ▶️ Run It
