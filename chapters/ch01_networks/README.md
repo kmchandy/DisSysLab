@@ -1,24 +1,13 @@
 # 🧩 Chapter 01—Networks
 
-## Key Idea:  Network = Blocks + Connections
-
-Many distributed applications, such as those that control industrial processes, run forever.
-Some distributed applications are designed to terminate after processing limited amounts of data. Multiple concurrent threads of execution can result in faster execution than sequential programs. 
-
-We begin with simple examples that terminate. Later we develop applications that continue to acquire and process data.
-
 
 ## 🎯 Goal
-Learn how to build a distributed application by creating **blocks** and connecting them to form a **network**.
 
-See an example of the two core ideas:
 
-- ***A distributed system consists of connected blocks.***
-- ***A block embodies a function that processes a stream of messages.***
-
+- Learn how to build a distributed application by creating **blocks** and connecting them to form a **network**.
 ---
 
-## 📍 What We’ll Build
+## 📍 Example
 
 We’ll create a **three-block network**:
 
@@ -33,22 +22,22 @@ We’ll create a **three-block network**:
 ## ⚙️ How It Works
 
 - **🔲 Blocks**  
-  - A block has some number of input and output ports called inports and outports, respectively
+  - A block has sets of input  and output ports called **inports** and **outports**, respectively
   - A block executes a function that receives messages from its inports and sends messages through its outports.
 
 - **🔗 Connections**  
   - A connection connects a block’s **output port** to a block’s **input port**. 
 
-**📊 Diagram of blocks and connections of this example:**
-
-![Simple Network](simple_network.svg)
 
 **Blocks in this example:**
-- block name: ***"source"***, execution: ***FromList["hello", "world"]*** – Generate a stream consisting of message "abc" followed by message "def". The stream is sent on an outport "out".
-- block name: ***"transform"***, execution: ***Uppercase*** – Receives a stream of messages on inport "in" and sends the uppercase of the messages that it receives on outport "out".
-- block name: ***"sink"***, execution ***ToList*** – Receives a stream of messages on inport "in" and stores the stream that it receives in a list.
+- block name: **"source"**, 
+  - execution: **FromList["hello", "world"]** – Generate a stream consisting of message "hello" followed by message "world". The stream is sent on an outport "out".
+- block name: **"transform"**, 
+  - execution: **Uppercase** – Receives a stream of messages on inport "in" and sends the uppercase of the messages that it receives on outport "out".
+- block name: **"sink"**, 
+  - execution **ToList** – Receives a stream of messages on inport "in" and stores the stream that it receives in a list.
 
-(Block types with multiple inports and outports are introduced later.)
+Block types with multiple inports and outports, and network structures that are not linear, are introduced later. 
 
 
 
@@ -80,7 +69,7 @@ def basic_network():
 ```
 python3 -m dsl.examples.ch01_networks.simple_network
 
-['cba', 'fed']
+['HELLO', 'WORLD']
 ```
 
 
@@ -91,10 +80,18 @@ python3 -m dsl.examples.ch01_networks.simple_network
 - **blocks**: each block executes a function that *processes messages*
 - **connections**:  specify how *messages flow* from block to block.
 
+### To do X, use function Y
+
+- **Source** Generate a stream from a: list, file,.. → `FromList([...])`, `FromFile(..)`
+- **Transform** Output a transformation of a stream → `Uppercase()`, `AddSentiment`, `ExtractEntities`
+- **Sink** Record a stream to: console, list, file → `ToConsole()`, `ToList()`, `ToFile`
+- 
+> See `dsl/kit/README_HowTo.md`.
+
 ---
 
 ### 🚀 Coming Up
 
-Would you like to create a network that receives movie reviews, gives each movie a score by analyzing its review, and outputs both the review and its score?
+Create a network that receives movie reviews, gives each movie a score by analyzing its review, and outputs both the review and its score.
 
 👉 [**Next up: Chapter 2. Messages as Dictionaries.**](../ch02_keys/README.md)
