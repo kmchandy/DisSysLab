@@ -32,7 +32,7 @@ We’ll create a **three-block network**:
 **Blocks in this example:**
 - block name: **"source"**, 
   - execution: **FromList["hello", "world"]** – Generate a stream consisting of message "hello" followed by message "world". The stream is sent on an outport "out".
-- block name: **"transform"**, 
+- block name: **"upper_case"**, 
   - execution: **Uppercase** – Receives a stream of messages on inport "in" and sends the uppercase of the messages that it receives on outport "out".
 - block name: **"sink"**, 
   - execution **ToList** – Receives a stream of messages on inport "in" and stores the stream that it receives in a list.
@@ -52,7 +52,7 @@ def basic_network():
     net = Network(
         blocks={
             "source": FromList(['hello', 'world']),
-            "transform": Uppercase(),
+            "upper_case": Uppercase(),
             "sink": ToList(results),
         },
         connections=[
@@ -82,10 +82,10 @@ python3 -m dsl.examples.ch01_networks.simple_network
 
 ### To do X, use function Y
 
-- **Source** Generate a stream from a: list, file,.. → `FromList([...])`, `FromFile(..)`
-- **Transform** Output a transformation of a stream → `Uppercase()`, `AddSentiment`, `ExtractEntities`
-- **Sink** Record a stream to: console, list, file → `ToConsole()`, `ToList()`, `ToFile`
-- 
+- **Source** To generate a stream from a list or a file,.. use functions beginning with "From" such as `FromList([...])`, `FromFile(..)`
+- **Transform** To receive a stream and output a computation of the stream use functions such as `Uppercase()`, `AddSentiment`, `ExtractEntities`
+- **Sink** To record a stream to the console, or a list, or file use functions beginning with "To" such as `ToConsole()`, `ToList()`, `ToFile`
+  
 > See `dsl/kit/README_HowTo.md`.
 
 ---

@@ -19,11 +19,15 @@ __all__ = [
 # Keyword lists kept simple for pedagogy.
 POSITIVE_WORDS = {
     "win", "wins", "won", "surge", "record", "growth", "beat", "beats",
+    "great", "excellent", "superb", "fantastic", "positive",
+    "best", "strongest", "high", "higher", "highest",
     "soar", "soars", "rally", "strong", "boost", "rise", "rises", "up",
     "improve", "improves", "improved", "lead", "leads", "leading",
 }
 NEGATIVE_WORDS = {
     "loss", "losses", "fall", "falls", "fell", "drop", "drops", "down",
+    "bad", "terrible", "horrible", "negative", "poor",
+    "worst", "weakest", "low", "lower", "lowest",
     "injury", "injuries", "fear", "fears", "concern", "concerns",
     "weak", "decline", "declines", "miss", "misses", "missed",
     "slump", "slumps", "plunge", "plunges",
@@ -59,36 +63,21 @@ def label_from_score(score: int) -> str:
     return "Neutral"
 
 
-def _coerce_to_dict(msg: Any, text_key: str) -> Dict[str, Any]:
-    if isinstance(msg, dict):
-        return dict(msg)  # return a COPY; don't mutate input
-    return {text_key: str(msg)}
-
-
 def add_sentiment(
     msg: Any,
     *,
-    text_key: str = "text",
-    out_key: str = "sentiment",
-    include_counts: bool = False,
+    input_key: str = "text",
+    add_key: str = "sentiment",
     positive_words: Optional[Iterable[str]] = None,
     negative_words: Optional[Iterable[str]] = None,
 ) -> dict:
-    """
-    Pure mapping: returns a NEW dict with {out_key: "Positive|Negative|Neutral"}.
-    - If msg is not a dict, it is coerced to {text_key: str(msg)}.
-    - If msg is a dict, it is shallow-copied and annotated.
-    """
-    out = _coerce_to_dict(msg, text_key=text_key)
-    text = str(out.get(text_key, ""))
+
+    if not isinstance(msg, dict):
+        raise ValueError("Input message to AddSentiment must be a dict")
+    print(f"msg: {msg}")
+    text = msg[input_key]
+    if not isinstance(text, str):
+        raise ValueError(
+            "The text field of an input message to AddSentiment must be a string")
     score = sentiment_score(text, positive_words, negative_words)
-    out[out_key] = label_from_score(score)
-    if include_counts:
-        # Optional extras for teaching/demos
-        words = tokenize_words(text)
-        pos = set(POSITIVE_WORDS if positive_words is None else positive_words)
-        neg = set(NEGATIVE_WORDS if negative_words is None else negative_words)
-        out["sentiment_score"] = score
-        out["pos_count"] = sum(1 for w in words if w in pos)
-        out["neg_count"] = sum(1 for w in words if w in neg)
-    return out
+    return {input_key: text, add_key: label_from_score(score)}
