@@ -1,5 +1,5 @@
-# lessons.02_msg_as_dict.example_dict.py
-from dsl.kit import Network, FromListWithKey, AddSentiment, ToConsole
+# lessons.02_msg_as_dict.example_with_time.py
+from dsl.kit import Network, FromListWithKeyWithTime, AddSentiment, ToConsole
 
 
 reviews = [
@@ -10,11 +10,11 @@ reviews = [
 ]
 
 
-def test_transform_simple_sentiment():
+def example_with_time():
 
     network = Network(
         blocks={
-            "source": FromListWithKey(items=reviews, key="review"),
+            "source": FromListWithKeyWithTime(items=reviews, key="review"),
             "add_sentiment": AddSentiment(input_key="review", add_key="sentiment"),
             "sink": ToConsole()
         },
@@ -27,4 +27,4 @@ def test_transform_simple_sentiment():
 
 
 if __name__ == "__main__":
-    test_transform_simple_sentiment()
+    example_with_time()
