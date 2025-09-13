@@ -2,6 +2,7 @@
 from __future__ import annotations
 import re
 from typing import Any, Optional, Iterable, Dict
+import copy
 
 
 # ---------------------------------------------------------------------
@@ -74,10 +75,11 @@ def add_sentiment(
 
     if not isinstance(msg, dict):
         raise ValueError("Input message to AddSentiment must be a dict")
-    print(f"msg: {msg}")
     text = msg[input_key]
     if not isinstance(text, str):
         raise ValueError(
             "The text field of an input message to AddSentiment must be a string")
     score = sentiment_score(text, positive_words, negative_words)
-    return {input_key: text, add_key: label_from_score(score)}
+    output_msg = copy.deepcopy(msg)
+    output_msg[add_key] = label_from_score(score)
+    return output_msg

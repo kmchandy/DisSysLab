@@ -1,4 +1,4 @@
-# 🧩 Lesson 01_networks_blocks_connections
+# 🧩 Lesson 1 Networks, blocks and connections
 
 
 ## 🎯 Goal
@@ -35,7 +35,7 @@ We’ll create a **three-block network**:
 - block name: **"upper_case"**, 
   - execution: **Uppercase** – Receives a stream of messages on inport "in" and sends the uppercase of the messages that it receives on outport "out".
 - block name: **"sink"**, 
-  - execution **ToList** – Receives a stream of messages on inport "in" and stores the stream that it receives in a list.
+  - execution: **ToList** – Receives a stream of messages on inport "in" and stores the stream that it receives in a list.
 
 Block types with multiple inports and outports, and network structures that are not linear, are introduced later. 
 
@@ -101,4 +101,4 @@ python -m lessons.01_networks_blocks_connections.basic_network
 
 Create a network that receives movie reviews, gives each movie a score by analyzing its review, and outputs both the review and its score.
 
-👉 [**Next up: Chapter 2. Messages as Dictionaries.**](../ch02_keys/README.md)
+👉 [**Next up: Chapter 2. Messages as Dictionaries.**](../02_msg_as_dict/README.md)

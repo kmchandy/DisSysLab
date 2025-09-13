@@ -1,4 +1,4 @@
-# 🧩 Chapter 2 — Messages as Dictionaries
+# 🧩 Lesson 2 — Messages as Dictionaries
 
 ### 🎯 Goal
 Use **messages as dictionaries** to attach information -- such as `data source`, `time created`, or `rating_score` -- to a message.
@@ -24,7 +24,7 @@ We’ll create a three-block network, as in chapter 1, except that now messages 
 ## 💻 Code Example
 
 ```
-# dsl/examples/02_msg_as_dict/example_dict.py
+# lessons.02_msg_as_dict.example_dict.py
 from dsl.kit import Network, FromListWithKey, AddSentiment, ToConsole
 
 
@@ -58,7 +58,7 @@ if __name__ == "__main__":
 
 ## ▶️ Run It
 ```
-python3 -m dsl.examples.02_msg_as_dict.example_dict
+python -m lessons.02_msg_as_dict.example_dict
 ```
 
 ## ✅ Output
@@ -71,19 +71,22 @@ python3 -m dsl.examples.02_msg_as_dict.example_dict
 ]
 ```
 
+## Useful keys in messages such as time
+A useful key in a dict message is the time at which the message was generated at the source or the time at which a block added a field to the message. You can attach a key-value pair -- `"time": time` - to a message by calling **FromListWithKeyWithTime**, see the program in 'lessons.02_msg_as_dict.example_time`. An example of a line of the output is:
+```
+{'review': 'The movie was great.',  
+'time': '2025-09-12 21:26:33', 
+'sentiment': 'Positive'}
+```
+
 ## 🧠 Key Takeaways
 
 - Messages can be dictionaries with multiple fields.
 
-- Transformers can specify:
-    - input_key → which field of a message to read.
-
-    - output_key → the field of the message in which the result is stored.
-
-Blocks can add fields such as "source", "time", and "sentiment_value" to a message.
+- Blocks can add fields such as "source", "time", and "sentiment_value" to a message.
 
 ### 🚀 Coming Up
 
-The examples in this page were pipelines. But what if your application required a different type of network? Next you will learn how to use fan-in and fan-out blocks to build arbitrary networks.
+The examples in this page were pipelines. But what if your application required a different type of network? Next you will use fan-in and fan-out blocks to build arbitrary networks. We begin with fan-out blocks.
 
 👉 [**Next up: Chapter 3 — Fan-In & Fan-Out Networks.**](../ch03_fanin_fanout/README.md)
