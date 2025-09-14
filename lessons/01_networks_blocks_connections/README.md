@@ -69,9 +69,6 @@ def basic_network():
     net.compile_and_run()
     assert results == ['HELLO', 'WORLD']
 
-
-if __name__ == "__main__":
-    basic_network()
 ```
 
 ### ▶️ Run It
