@@ -1,149 +1,116 @@
 # 🔀 Lesson 3 Fan-Out Blocks
 
-### 🎯 Goal
+## 🎯 Goal
 Build networks using **fan-out** (one input, multiple outputs) blocks  
 
 ---
 
 ## 📍 What We’ll Build
-
-### Example 1
-
-
-### Example 2
-A very simple network that splits a stream of movie reviews based on whether the reviews were positive or negative, and then modifies the positive and negative reviews in different ways, and finally merges all reviews.
-
-- **Generator** → emits dicts with a `"review"` field.  
-- **Split** → routes each review to `"pos"` or `"neg"`.  
-- **Positive branch** → adds `"!!!"` and writes into `"positive"`.  
-- **Negative branch** → uppercases text and writes into `"negative"`.  
-- **Merge** → joins both branches back into one stream.  
-- **Recorder** → saves merged dicts.
-
-**Visual:**  
-
-`
-
-                   ┌────────────┐
-                   │  Generator │
-                   │ {"review"} │
-                   └──────┬─────┘
-                          │
-                      ┌───▼───┐
-                      │ Split │  (routes "pos" or "neg")
-                      └─┬───┬─┘
-                 pos ──┘   └── neg
-                       │       │
-             ┌─────────▼─-┐   ┌─▼─────────-┐
-             │ pos_exclaim│   │  neg_upper │
-             │  + "!!!"   │   │  upper()   │
-             └──────┬─────┘   └────┬───────┘
-                    │              │
-                    └──────┬───────┘
-                       ┌--─▼─--┐
-                       │ Merge │
-                       └─-----─┘
-                           │
-                    ┌──────▼──────┐
-                    │   Recorder  │
-                    └─────────────┘
-`
+We will build networks with three examples of fanout blocks: **broadcast**, **split_two_way** and **split_multiway**.
 
 
----
+### Example 1: Broadcast
 
-## 💻 Code Example
+**Blocks in this example:**
+- block name: **"source"**
+  - execution: **FromList((['a', 'b', 'c']))** generates messages 'a', 'b', 'c'
+- block name: **"broadcast**
+  - outports: **"out_0"**, **"out_1"**, **"out_2"**,
+  - execution: **Broadcast(["out_0", "out_1", "out_2"])**, sends a copy of the stream of messages it receives from its single inport **"in"** on each of its outports.
+- block name: **"sink_0"**, **"sink_1"**, **"sink_2"**
+  - execution: **ToList(results_0)**, **ToList(results_1)**, **ToList(results_1)** stores the stream of messages that it receives in its inport on the specified list.
 
-**📊 Diagram of blocks and connections:**  
-![Fan-In Fan-Out Network](diagram_1.svg)
 
-```python
-# dsl/examples/ch03_fanin_fanout/review_split_merge.py
 
-from dsl.core import Network
-from dsl.block_lib.generators import GenerateFromList
-from dsl.block_lib.transformers import TransformerFunction
-from dsl.block_lib.recorders import RecordToList
-from dsl.block_lib.fanout import Split
-from dsl.block_lib.fanin import MergeAsynch
+```
+# lessons.03_fanout.broadcast.py
 
-# --- Split function: classify review sentiment ---
-def classify_sentiment(msg: dict) -> str:
-    text = msg["review"].lower()
-    if "good" in text or "great" in text:
-        return "pos"
-    else:
-        return "neg"
+from dsl.kit import Network, FromList, Broadcast, ToList
 
-# --- Transformer functions ---
-def add_exclamations(x: str) -> str:
-    return x + "!!!"
+def broadcast_example():
+    results_0 = []  # Holds results sent to sink_0
+    results_1 = []  # Holds results sent to sink_1
+    results_2 = []  # Holds results sent to sink_2
 
-def to_upper(x: str) -> str:
-    return x.upper()
+    net = Network(
+        blocks={
+            "source": FromList(['a', 'b', 'c', 'd']),
+            "broadcast": Broadcast(outports=["out_0", "out_1", "out_2"]),
+            "sink_0": ToList(results_0),
+            "sink_1": ToList(results_1),
+            "sink_2": ToList(results_2),
+        },
+        connections=[
+            ("source", "out", "broadcast", "in"),
+            ("broadcast", "out_0", "sink_0", "in"),
+            ("broadcast", "out_1", "sink_1", "in"),
+            ("broadcast", "out_2", "sink_2", "in"),
+        ],
+    )
 
-results = []
-
-net = Network(
-    blocks={
-        # Generator emits dicts: {"review": "..."}
-        "gen": GenerateFromList(
-            items=["Great movie", "Terrible acting", "Good plot", "Bad ending"],
-            key="review"
-        ),
-        "split": Split(split_function=classify_sentiment,
-                       outports=["pos", "neg"]),
-        "pos_exclaim": TransformerFunction(
-            func=add_exclamations,
-            input_key="review",
-            output_key="positive"
-        ),
-        "neg_upper": TransformerFunction(
-            func=to_upper,
-            input_key="review",
-            output_key="negative"
-        ),
-        "merge": MergeAsynch(inports=["pos", "neg"]),
-        "rec": RecordToList(results),
-    },
-    connections=[
-        ("gen", "out", "split", "in"),
-        ("split", "pos", "pos_exclaim", "in"),
-        ("split", "neg", "neg_upper", "in"),
-        ("pos_exclaim", "out", "merge", "pos"),
-        ("neg_upper", "out", "merge", "neg"),
-        ("merge", "out", "rec", "in"),
-    ]
-)
-
-net.compile_and_run()
-print(results)
+    net.compile_and_run()
+    assert results_0 == ['a', 'b', 'c', 'd']
+    assert results_1 == ['a', 'b', 'c', 'd']
+    assert results_2 == ['a', 'b', 'c', 'd']
 ```
 
 ## ▶️ Run It
 
 ```
-python3 -m dsl.examples.ch03_fanin_fanout.review_split_merge
+python -m lessons.03_fanout.broadcast.py
 ```
 
-## ✅ Output
+
+### Example 2
+Similar to example 1 except that **Broadcast()** is replaced by **SplitBinary(f)** where **f** is a boolean function that has an input message and outputs True if the message (a number) is odd. 
+
+**Blocks in this example:**
+- block name: **"split_binary**
+  - outports: **"out_0"**, **"out_1"**,
+  - execution: **SplitBinary(f)**, sends the messages it receives for which **f** returns True on **out_1** and other messages on **out_0**.
 
 ```
-[
-  {"review": "Great movie", "positive": "Great movie!!!"},
-  {"review": "Terrible acting", "negative": "TERRIBLE ACTING"},
-  {"review": "Good plot", "positive": "Good plot!!!"},
-  {"review": "Bad ending", "negative": "BAD ENDING"}
-]
+# lessons.03_fanout.spit_binary.py
+def split_binary():
+    """
+    Outport "out_0" receives values for which func returns False.
+    Outport "out_1" receives values for which func returns True.
+    Stops when any inport yields '__STOP__'.
+    """
+    def f(x):
+        return x % 2
+
+    results_0 = []
+    results_1 = []
+    network = Network(
+        blocks={
+            "source": FromList([0, 1, 2, 3, 4]),
+            "split_binary": SplitBinary(func=f),
+            "sink_0": ToList(results_0),
+            "sink_1": ToList(results_1)
+        },
+        connections=[
+            ("source", "out", "split_binary", "in"),
+            ("split_binary", "out_0", "sink_0", "in"),
+            ("split_binary", "out_1", "sink_1", "in")
+        ]
+    )
+    network.compile_and_run()
+    assert results_0 == [0, 2, 4]
+    assert results_1 == [1, 3]
+```
+## ▶️ Run It
+
+```
+python -m lessons.03_fanout.split_binary.py
 ```
 
 ## 🧠 Key Takeaways
 
-- **You can build arbitrary networks** with generators, transformers, recorders, fanin and fanout blocks.
+- **You can build arbitrary networks** with generators, transformers, recorders, fanout and (discussed next) fanin blocks.
 
 ### 🚀 Coming Up
 
-You’ve learned about arbitrary networks of blocks that process messages and connections that route messages between blocks.
-What if the blocks were AI agents? 
+Fanin blocks with multiple inputs and a single output
 
-👉 **Next up: [Chapter 4 — GPT Blocks.](../ch04_GPT/README.md)**
+👉 **Next up: [Lesson 4 — Fanin Blocks.](../04_fanin/README.md)**
