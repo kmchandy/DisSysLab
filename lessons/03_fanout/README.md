@@ -1,7 +1,7 @@
 # 🔀 Lesson 3 Fan-Out Blocks
 
 ## 🎯 Goal
-Build networks using **fan-out** (one input, multiple outputs) blocks  
+Build networks using **fanout** (one input, multiple outputs) blocks  
 
 ---
 
@@ -71,6 +71,7 @@ Similar to example 1 except that **Broadcast()** is replaced by **SplitBinary(f)
 
 ```
 # lessons.03_fanout.spit_binary.py
+from dsl.kit import Network, FromList, ToList, SplitBinary
 def split_binary():
     """
     Outport "out_0" receives values for which func returns False.

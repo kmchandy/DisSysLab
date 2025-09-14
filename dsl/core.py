@@ -93,7 +93,9 @@ Tags: core, block, agent, network, message-passing, framework
 """
 
 from __future__ import annotations
-from multiprocessing import SimpleQueue
+# Use multiprocessing for executing on different processes
+# from multiprocessing import SimpleQueue
+from queue import SimpleQueue
 from threading import Thread
 from typing import Optional, List, Callable, Dict, Tuple, Union, Any
 import inspect
@@ -982,7 +984,7 @@ plug-and-play, composition
 
             q = SimpleQueue()
             sender.out_q[from_p] = q
-            receiver.in_q[to_p] = q
+            receiver.in_q[to_p] = sender.out_q[from_p]
 
         # -------------------------------
         # STEP 3: CHECKS
