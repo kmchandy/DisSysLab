@@ -10,6 +10,7 @@ Merge and Split.
 # Sources
 from dsl.block_lib.sources.source_lib.common_classes import (
     FromList,
+    FromListDelay,
     FromListWithKey,
     FromListWithKeyWithTime,
     FromFile,
@@ -39,6 +40,10 @@ from dsl.block_lib.routers.fanout import (
     Broadcast,
     SplitBinary,
 )
+from dsl.block_lib.routers.fanin import (
+    MergeSynch,
+    MergeAsynch,
+)
 # Graph Structures: pipeline
 from dsl.block_lib.graph_structures import pipeline
 # Core
@@ -54,6 +59,7 @@ __all__ = [
     "Print",
     # sources
     "FromList",
+    "FromListDelay",
     "FromListWithKey",
     "FromListWithKeyWithTime",
     "FromFile",
@@ -66,6 +72,8 @@ __all__ = [
     "Uppercase",
     "AddSentiment",
     # routers
+    "MergeSynch",
+    "MergeAsynch",
     "Broadcast",
     "SplitBinary",
     # core

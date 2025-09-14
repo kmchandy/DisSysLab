@@ -14,13 +14,13 @@ class MergeSynch(Agent):
     """
     Block with multiple inports and one outport "out".
     Waits to receive one message from EACH inport synchronously in order,
-    then applies transformer_fn([msg1, msg2, ...]) and sends the result to "out".
+    then applies func([msg1, msg2, ...]) and sends the result to "out".
     """
 
     def __init__(
         self,
         inports: list[str],
-        transformer_fn: Optional[Callable[[list[Any]], Any]] = None,
+        func: Optional[Callable[[list[Any]], Any]] = None,
         name: Optional[str] = None
     ):
         if not inports:
@@ -32,7 +32,7 @@ class MergeSynch(Agent):
                          outports=["out"],
                          run=self.run)
 
-        self.transformer_fn = transformer_fn
+        self.func = func
         self.buffers = {port: [] for port in inports}
 
     def run(self):
@@ -47,8 +47,8 @@ class MergeSynch(Agent):
             if all(self.buffers[port] for port in self.inports):
                 inputs = [self.buffers[port].pop(0) for port in self.inports]
                 try:
-                    result = self.transformer_fn(
-                        inputs) if self.transformer_fn else inputs
+                    result = self.func(
+                        inputs) if self.func else inputs
                     self.send(result, "out")
                 except Exception as e:
                     rprint(
@@ -68,27 +68,27 @@ class MergeAsynch(Agent):
     """
     Block with multiple inports and one outport "out".
     Processes messages as they arrive from ANY inport (asynchronously).
-    Applies transformer_fn(msg, port) and sends result to "out".
+    Applies func(msg, port) and sends result to "out".
     """
 
     def __init__(
         self,
         inports: list[str],
-        transformer_fn: Optional[Callable[[Any, str], Any]] = None,
+        func: Optional[Callable[[Any, str], Any]] = None,
         name: Optional[str] = None
     ):
         if not inports:
             raise ValueError(
                 "MergeAsynch requires at least one inport.")
-        if transformer_fn is not None and not callable(transformer_fn):
-            raise TypeError("transformer_fn must be a callable or None.")
+        if func is not None and not callable(func):
+            raise TypeError("func must be a callable or None.")
 
         super().__init__(name=name or "MergeAsynch",
                          inports=inports,
                          outports=["out"],
                          run=self.run)
 
-        self.transformer_fn = transformer_fn
+        self.func = func
 
         self.terminated_inports = {inport: False for inport in self.inports}
 
@@ -109,8 +109,8 @@ class MergeAsynch(Agent):
                 continue
 
             try:
-                result = self.transformer_fn(
-                    msg, port) if self.transformer_fn else msg
+                result = self.func(
+                    msg, port) if self.func else msg
                 self.send(result, "out")
             except Exception as e:
                 rprint(

@@ -4,6 +4,7 @@ import time
 from dsl.block_lib.sources.source import Source
 from dsl.block_lib.sources.source_lib.common_sources import (
     gen_list,
+    gen_list_with_delay,
     gen_list_as_key,
     gen_list_as_key_with_time,
     gen_file_lines,
@@ -17,6 +18,7 @@ from dsl.block_lib.sources.source_lib.common_sources import (
 # Public API
 __all__ = [
     "FromList",
+    "FromListDelay",
     "FromListWithKey",
     "FromListWithKeyWithTime",
     "FromFile",
@@ -33,6 +35,13 @@ class FromList(Source):
 
     def __init__(self, items, name: str = "FromList"):
         super().__init__(generator_fn=gen_list(items), name=name)
+
+
+class FromListDelay(Source):
+    """Source wrapper for gen_list_with_delay(items, delay)."""
+
+    def __init__(self, items, delay, name: str = "FromListDelay"):
+        super().__init__(generator_fn=gen_list_with_delay(items, delay), name=name)
 
 
 class FromListWithKey(Source):
