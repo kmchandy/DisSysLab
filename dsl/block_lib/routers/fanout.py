@@ -1,5 +1,6 @@
 from dsl.core import Agent
 from typing import Optional, Any, Callable
+import copy
 
 
 # =================================================
@@ -10,6 +11,7 @@ class Broadcast(Agent):
     """
     Broadcasts any message received on inport "in" to all defined outports.
     Useful for duplicating a stream to multiple downstream blocks.
+    Makes deep copies of messages to avoid shared state issues.
     """
 
     def __init__(
@@ -30,7 +32,8 @@ class Broadcast(Agent):
                 return
             else:
                 for outport in self.outports:
-                    self.send(msg=msg, outport=outport)
+                    outport_msg = copy.deepcopy(msg)
+                    self.send(outport_msg, outport=outport)
 
 
 class TwoWaySplit(Agent):

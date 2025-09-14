@@ -34,20 +34,24 @@ from dsl.block_lib.transforms.transform_lib.common_classes import (
     Uppercase,
     AddSentiment,
 )
+# Routers
+from dsl.block_lib.routers.fanout import (
+    Broadcast,
+)
 # Graph Structures: pipeline
 from dsl.block_lib.graph_structures import pipeline
 # Core
 from dsl.core import Network
 
 __all__ = [
-    # Sinks
+    # sinks
     "ToList",
     "ToSet",
     "ToFile",
     "ToJSONL",
     "ToConsole",
     "Print",
-    # Sources
+    # sources
     "FromList",
     "FromListWithKey",
     "FromListWithKeyWithTime",
@@ -57,11 +61,13 @@ __all__ = [
     "FromCSV",
     "FromNumpyRows",
     "FromRSS",
-    # Transforms
+    # transforms
     "Uppercase",
     "AddSentiment",
+    # routers
+    "Broadcast",
     # core
     "Network",
-    # Graph Structures: pipeline
+    # graph Structures: pipeline
     "pipeline",
 ]
