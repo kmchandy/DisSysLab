@@ -87,6 +87,6 @@ A useful key in a dict message is the time at which the message was generated at
 
 ### 🚀 Coming Up
 
-The examples in this page were pipelines. But what if your application required a different type of network? Next you will use fan-in and fan-out blocks to build arbitrary networks. We begin with fan-out blocks.
+The examples in this page were pipelines. But what if your application required a different type of network? Next you will use fan-in and fan-out blocks to build arbitrary networks. We begin with fan-out blocks. A fan-ou
 
 👉 [**Next up: Chapter 3 — Fan-In & Fan-Out Networks.**](../ch03_fanin_fanout/README.md)
