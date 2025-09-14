@@ -9,7 +9,7 @@ Build networks using **fan-out** (one input, multiple outputs) blocks
 We will build networks with three examples of fanout blocks: **broadcast**, **split_two_way** and **split_multiway**.
 
 
-### Example 1: Broadcast
+## Example 1: Broadcast
 
 **Blocks in this example:**
 - block name: **"source"**
@@ -61,7 +61,7 @@ python -m lessons.03_fanout.broadcast.py
 ```
 
 
-### Example 2
+## Example 2 SplitBinary
 Similar to example 1 except that **Broadcast()** is replaced by **SplitBinary(f)** where **f** is a boolean function that has an input message and outputs True if the message (a number) is odd. 
 
 **Blocks in this example:**
