@@ -1,31 +1,5 @@
-
-from dsl.kit import Network, FromList, Broadcast, ToList, SplitBinary
-
-
-def test_broadcast():
-    """
-    Outports "a" and "b" both receive all values from the source.
-    Stops when any inport yields '__STOP__'.
-    """
-
-    results_a = []
-    results_b = []
-    network = Network(
-        blocks={
-            "source": FromList(["A1", "A2"]),
-            "broadcast": Broadcast(outports=["a", "b"]),
-            "sink_a": ToList(results_a),
-            "sink_b": ToList(results_b)
-        },
-        connections=[
-            ("source", "out", "broadcast", "in"),
-            ("broadcast", "a", "sink_a", "in"),
-            ("broadcast", "b", "sink_b", "in")
-        ]
-    )
-    network.compile_and_run()
-    assert results_a == ["A1", "A2"]
-    assert results_b == ["A1", "A2"]
+# lessons.03_fanout.spit_binary.py
+from dsl.kit import Network, FromList, ToList, SplitBinary
 
 
 def split_binary():
@@ -58,6 +32,4 @@ def split_binary():
 
 
 if __name__ == "__main__":
-    test_broadcast()
     split_binary()
-    print(f"All tests passed.")

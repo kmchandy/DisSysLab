@@ -37,6 +37,7 @@ from dsl.block_lib.transforms.transform_lib.common_classes import (
 # Routers
 from dsl.block_lib.routers.fanout import (
     Broadcast,
+    SplitBinary,
 )
 # Graph Structures: pipeline
 from dsl.block_lib.graph_structures import pipeline
@@ -66,6 +67,7 @@ __all__ = [
     "AddSentiment",
     # routers
     "Broadcast",
+    "SplitBinary",
     # core
     "Network",
     # graph Structures: pipeline

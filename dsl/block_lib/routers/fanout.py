@@ -36,7 +36,7 @@ class Broadcast(Agent):
                     self.send(outport_msg, outport=outport)
 
 
-class TwoWaySplit(Agent):
+class SplitBinary(Agent):
     """
     Single inport "in" and two outports "out_0" and "out_1"
     Splits incoming stream into two streams based on a predicate function.
