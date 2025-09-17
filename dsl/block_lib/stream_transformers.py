@@ -98,6 +98,52 @@ def _resolve_openai_key() -> Optional[str]:
 # Assumes TransformerFunction is defined as in your latest version
 # from dsl.block_lib.stream_transformers import TransformerFunction
 
+class OpenAI_Block(SimpleAgent):
+    def __init__(self,
+                 *,
+                 system_prompt: str,
+                 model: str = "gpt-4o-mini",
+                 temperature: float = 0.7,
+                 name: Optional[str] = "OpenAI_Block"):
+        super().__init__(
+            name=name or "OpenAI_Block",
+            inport="in",
+            outports=["out"],
+            init_fn=self.init_fn
+            handle_msg=self.handle_msg
+        )
+
+        def init_fn(self):
+            if not system_prompt:
+                raise ValueError("system_prompt must be a non-empty string.")
+            try:
+                from openai import OpenAI
+            except ImportError as e:
+                raise ImportError(
+                    "OpenAI client not installed. Install with: pip install -e '.[gpt]'"
+                ) from e
+
+            # Resolve API key
+            key = _resolve_openai_key()
+            if not key:
+                raise ValueError(
+                    "OpenAI API key not found. Set OPENAI_API_KEY in your environment "
+                    "or configure dsl/utils/get_credentials.py (.env supported)."
+                )
+            # Store the key once on self
+            self._client = OpenAI(api_key=key)
+
+        def handle_msg(self, msg):
+            resp = self._client.chat.completions.create(
+                model=model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": str(msg_text)},
+                ],
+                temperature=temperature,
+            )
+            return resp.choices[0].message.content
+
 
 class TransformerPrompt(TransformerFunction):
     """

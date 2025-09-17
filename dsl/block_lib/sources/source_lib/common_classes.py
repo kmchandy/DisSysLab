@@ -33,8 +33,8 @@ __all__ = [
 class FromList(Source):
     """Source wrapper for gen_list(items)."""
 
-    def __init__(self, items, name: str = "FromList"):
-        super().__init__(generator_fn=gen_list(items), name=name)
+    def __init__(self, items):
+        super().__init__(generator_fn=gen_list(items))
 
 
 class FromListDelay(Source):
