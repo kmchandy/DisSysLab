@@ -8,7 +8,7 @@ def basic_network():
 
     net = Network(
         blocks={
-            "source": FromList(['hello', 'world']),
+            "source": FromList(['hello', 'world', "__STOP__"]),
             "upper_case": Uppercase(),
             "sink": ToList(results),
         },
@@ -19,6 +19,7 @@ def basic_network():
     )
 
     net.compile_and_run()
+    print("Results:", results)
     assert results == ['HELLO', 'WORLD']
 
 

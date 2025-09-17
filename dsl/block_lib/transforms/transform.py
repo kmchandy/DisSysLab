@@ -13,10 +13,11 @@ class Transform(SimpleAgent):
 
     def __init__(
         self,
+        *,
         func: Callable[..., Any],
-        args: Optional[tuple] = (),
-        kwargs: Optional[dict] = None,
         name: str = "Transform",
+        args: Optional[tuple] = (),
+        kwargs: Optional[dict] = {},
     ):
         if func is None:
             raise ValueError("Transform requires a callable func(msg, ...)")
@@ -24,23 +25,22 @@ class Transform(SimpleAgent):
         self.args = args or ()
         self.kwargs = kwargs or {}
 
-        def _handle_msg(msg):
-            if msg is STOP:
-                self.send(STOP, "out")
-                return
-            result = self.func(msg, *self.args, **self.kwargs)
-            self.send(result, "out")
-
         super().__init__(
-            name=name,          # SimpleAgent stores .name for you
+            name=name or "Transform",
             inport="in",
             outports=["out"],
-            handle_msg=_handle_msg,
         )
 
     def __repr__(self) -> str:
         fn = getattr(self.func, "__name__", repr(self.func))
-        return f"Transform(name={self.name!r}, func={fn}, args={self.args}, kwargs={self.kwargs})"
+        return f"Transform(name={self.name!r}, func={fn})"
 
     def __str__(self) -> str:
         return f"{self.name} (Transform)"
+
+    def handle_msg(self, msg):
+        if msg is STOP:
+            self.send(STOP, "out")
+            return
+        result = self.func(msg, *self.args, **self.kwargs)
+        self.send(result, "out")

@@ -1,12 +1,9 @@
 # dsl/block_lib/sinks/sink.py
 from __future__ import annotations
 
-from typing import Callable, Any, Optional
+from typing import Callable, Any, Optional, Dict
 import traceback
-from dsl.core import SimpleAgent, STOP
-
-# Style B: record functions accept ONLY the message
-RecordFn = Callable[[Any], None]
+from dsl.core import SimpleAgent, STOP, filtered_kwargs
 
 
 class Sink(SimpleAgent):
@@ -16,22 +13,29 @@ class Sink(SimpleAgent):
     STOP messages are consumed and not recorded.
     """
 
-    def __init__(self, name: str = "Sink", record_fn: Optional[RecordFn] = None):
+    def __init__(
+        self,
+        *,
+        name: str = "Sink",
+        record_fn: Optional[Callable[..., None]] = None,
+        kwargs: Optional[Dict[str, Any]] = None,
+    ) -> None:
         if record_fn is None:
             raise ValueError("record_fn is required for Sink")
-        self.record_fn: RecordFn = record_fn
+        super().__init__(
+            name=name,
+            inport="in",
+            outports=[],
+        )
+        self.record_fn = record_fn
+        self.kwargs = kwargs or {}
 
-        # SimpleAgent will call this with ONE argument: the message.
-        def _handle_msg(msg: Any) -> None:
-            # Consume STOP silently
-            if msg is STOP:
-                return
-            try:
-                self.record_fn(msg)
-            except Exception:
-                # Don't crash the agent loop if user callback raises
-                with open("dsl_debug.log", "a") as log:
-                    log.write(f"\n--- {self.__class__.__name__} Error ---\n")
-                    log.write(traceback.format_exc())
-
-        super().__init__(name=name, inport="in", outports=[], handle_msg=_handle_msg)
+    def handle_msg(self, msg: Any) -> None:
+        if msg == STOP:
+            return
+        try:
+            self.record_fn(msg, **self.kwargs)
+        except Exception:
+            raise RuntimeError(
+                f"Sink {self.name} record_fn raised:\n{traceback.format_exc()}"
+            ) from None

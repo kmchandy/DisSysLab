@@ -16,13 +16,12 @@ class Source(Agent):
         self,
         *,
         generator_fn: Callable[..., Iterator[Any]],
-        name: Optional[str] = "Source",
         **gen_kwargs: Any,
     ) -> None:
         if generator_fn is None:
             raise ValueError(
                 "Source requires a generator_fn (iterator/generator)")
-        super().__init__(name=name or "Source", inports=[], outports=["out"], run=self.run)
+        super().__init__(inports=[], outports=["out"])
         self._generator_fn = generator_fn
         self._gen_kwargs: Dict[str, Any] = dict(gen_kwargs)
 
@@ -33,7 +32,6 @@ class Source(Agent):
                 self.send(item, "out")
             self.send(STOP, "out")
         except Exception as e:
-            print(f"[{self.__class__.__name__}] Error: {e}")
             try:
                 with open("dsl_debug.log", "a") as log:
                     log.write(f"\n--- {self.__class__.__name__} Error ---\n")

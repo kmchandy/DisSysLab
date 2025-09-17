@@ -40,8 +40,8 @@ DisSysLab/
 │        └─ README.md
 ├─ tests/
 │  ├─ ....
-├─ chapters/
-│  ├─ ch01_blocks_connections/
+├─ lessons/
+│  ├─ 01_networks_blocks_connections/
 │  ├─ .....
 ├─ examples/
 │  ├─ rss_to_console.py
@@ -54,7 +54,7 @@ DisSysLab/
 
 - **dsl/** – Core library of blocks, agents, and utilities.
 - **tests/** – Flat test suite, one file per concept/module.
-- **chapters/** – tutorials with narrative + runnable code.
+- **lessons/** – 5-minute tutorials with narrative + runnable code.
 - **examples/** – Standalone example applications (buffet for exploration).
 - **user_interaction/** – UX helpers (CLI, prompts, Colab/Notebook widgets, wizards).
 - **README.md** – Main project guide (quickstart, philosophy).
@@ -92,13 +92,13 @@ Block library, grouped by role in a network.
 - connect to external apis such as Google sheets
 ---
 
-## chapters/
-Step-by-step tutorials. Each chapter has a `README.md` and short Python examples.
+## lessons/
+Step-by-step, 5-minute,  `README.md` and short Python examples.
 
-- `ch01_blocks_connections/` — Basics: blocks + connections  
-- `ch02_messages_as_dicts/` — Messages with keys and values  
-- `ch03_fanin/` — Combining multiple streams  
-- `ch04_fanout/` — Splitting streams into branches  
+- `01_networks_blocks_connections/` — Basics: blocks + connections  
+- `02_msg_as_dict/` — Messages that are dicts with keys and values  
+- `03_fanout/` — Splitting streams into multiple streams
+- `04_fanin/` — Combining multiple streams into a single stream
 
 ---
 
