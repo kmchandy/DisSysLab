@@ -8,6 +8,8 @@ import csv
 import time
 from datetime import datetime
 from typing import Any, Callable, Iterable, Iterator, Optional
+from functools import wraps
+
 
 # Public API
 __all__ = [
@@ -20,6 +22,7 @@ __all__ = [
     "gen_csv_dicts",
     "gen_numpy_rows",
     "gen_rss_headlines",
+    "generate_random_integers",
 ]
 
 # ------------------------------------------------------------
@@ -33,10 +36,21 @@ def _now_str() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 
+def as_factory(f: Callable[..., Iterator[Any]]) -> Callable[..., Callable[[], Iterator[Any]]]:
+    @wraps(f)
+    def wrapper(*args, **kwargs) -> Callable[[], Iterator[Any]]:
+        def _gen() -> Iterator[Any]:
+            return f(*args, **kwargs)
+        return _gen
+    return wrapper
+
 # ------------------------------------------------------------
 # LIST-BASED GENERATORS
 # ------------------------------------------------------------
-def gen_list(items: Iterable[Any]) -> Callable[[], Iterator[Any]]:
+
+
+@as_factory
+def gen_list(items: Iterable[Any]) -> Iterator[Any]:
     """
     Yield each element from a list (or any iterable).
 
@@ -45,13 +59,8 @@ def gen_list(items: Iterable[Any]) -> Callable[[], Iterator[Any]]:
       for x in gen():  # yields 'apple', 'banana'
           print(x)
     """
-    # Snapshot items once so each run of gen() yields the same values.
-    snapshot = list(items)
-
-    def _gen() -> Iterator[Any]:
-        for x in snapshot:
-            yield x
-    return _gen
+    for item in items:
+        yield item
 
 
 def gen_list_with_delay(items: Iterable[Any], delay=None) -> Callable[[], Iterator[Any]]:
@@ -203,6 +212,17 @@ def gen_numpy_rows(array: Iterable[Any]) -> Callable[[], Iterator[Any]]:
         for row in array:
             yield row
     return _gen
+
+
+# ------------------------------------------------------------
+#           GENERATE_RANDOM_INTEGERS
+# ------------------------------------------------------------
+
+@as_factory
+def generate_random_integers(N: int, LOW: int, HIGH: int) -> Iterator[int]:
+    import random
+    for _ in range(N):
+        yield random.randint(LOW, HIGH)
 
 
 # ------------------------------------------------------------
