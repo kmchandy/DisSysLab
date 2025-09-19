@@ -13,16 +13,16 @@ from functools import wraps
 
 # Public API
 __all__ = [
-    "gen_list",
-    "gen_list_as_key",
-    "gen_list_as_key_with_time",
-    "gen_file_lines",
-    "gen_file_lines_as_key",
-    "gen_file_lines_as_key_with_time",
-    "gen_csv_dicts",
-    "gen_numpy_rows",
-    "gen_rss_headlines",
-    "generate_random_integers",
+    "from_list",
+    "from_list_as_key",
+    "from_list_as_key_with_time",
+    "from_file_lines",
+    "from_file_lines_as_key",
+    "from_file_lines_as_key_with_time",
+    "from_csv_dicts",
+    "from_numpy_rows",
+    "from_rss_headlines",
+    "from_random_integers",
 ]
 
 # ------------------------------------------------------------
@@ -50,12 +50,12 @@ def as_factory(f: Callable[..., Iterator[Any]]) -> Callable[..., Callable[[], It
 
 
 @as_factory
-def gen_list(items: Iterable[Any]) -> Iterator[Any]:
+def from_list(items: Iterable[Any]) -> Iterator[Any]:
     """
     Yield each element from a list (or any iterable).
 
     Example:
-      gen = gen_list(['apple', 'banana'])
+      gen = from_list(['apple', 'banana'])
       for x in gen():  # yields 'apple', 'banana'
           print(x)
     """
@@ -63,12 +63,12 @@ def gen_list(items: Iterable[Any]) -> Iterator[Any]:
         yield item
 
 
-def gen_list_with_delay(items: Iterable[Any], delay=None) -> Callable[[], Iterator[Any]]:
+def from_list_with_delay(items: Iterable[Any], delay=None) -> Callable[[], Iterator[Any]]:
     """
     Yield each element from a list (or any iterable).
 
     Example:
-      gen = gen_list(['apple', 'banana'])
+      gen = from_list(['apple', 'banana'])
       for x in gen():  # yields 'apple', 'banana'
           print(x)
     """
@@ -83,12 +83,13 @@ def gen_list_with_delay(items: Iterable[Any], delay=None) -> Callable[[], Iterat
     return _gen
 
 
-def gen_list_as_key(items: Iterable[Any], key: str) -> Callable[[], Iterator[dict]]:
+@as_factory
+def from_list_as_key(items: Iterable[Any], key: str) -> Callable[[], Iterator[dict]]:
     """
     Yield each item wrapped in a dict with the given key.
 
     Example:
-      gen = gen_list_as_key(['apple', 'banana'], key='fruit')
+      gen = from_list_as_key(['apple', 'banana'], key='fruit')
       # yields {'fruit': 'apple'}, {'fruit': 'banana'}
     """
     snapshot = list(items)
@@ -99,17 +100,17 @@ def gen_list_as_key(items: Iterable[Any], key: str) -> Callable[[], Iterator[dic
     return _gen
 
 
-def gen_list_as_key_with_time(
+def from_list_as_key_with_time(
     items: Iterable[Any],
     key: str,
     time_key: str = "time",
     now: Callable[[], str] = _now_str,
 ) -> Callable[[], Iterator[dict]]:
     """
-    Like gen_list_as_key, but also adds a timestamp string.
+    Like from_list_as_key, but also adds a timestamp string.
 
     Example:
-      gen = gen_list_as_key_with_time(['a'], key='text')
+      gen = from_list_as_key_with_time(['a'], key='text')
       # yields {'text': 'a', 'time': '2025-09-08 12:34:56'}
     """
     snapshot = list(items)
@@ -123,12 +124,12 @@ def gen_list_as_key_with_time(
 # ------------------------------------------------------------
 # FILE-LINE GENERATORS
 # ------------------------------------------------------------
-def gen_file_lines(path: str, encoding: str = "utf-8") -> Callable[[], Iterator[str]]:
+def from_file_lines(path: str, encoding: str = "utf-8") -> Callable[[], Iterator[str]]:
     """
     Yield each line from a text file, without the trailing newline.
 
     Example:
-      gen = gen_file_lines('notes.txt')
+      gen = from_file_lines('notes.txt')
       # yields 'first line', 'second line', ...
     """
     def _gen() -> Iterator[str]:
@@ -138,7 +139,7 @@ def gen_file_lines(path: str, encoding: str = "utf-8") -> Callable[[], Iterator[
     return _gen
 
 
-def gen_file_lines_as_key(
+def from_file_lines_as_key(
     path: str,
     key: str,
     encoding: str = "utf-8",
@@ -147,7 +148,7 @@ def gen_file_lines_as_key(
     Yield each file line wrapped in a dict {key: line}.
 
     Example:
-      gen = gen_file_lines_as_key('notes.txt', key='text')
+      gen = from_file_lines_as_key('notes.txt', key='text')
       # yields {'text': 'first line'}, {'text': 'second line'}, ...
     """
     def _gen() -> Iterator[dict]:
@@ -157,7 +158,7 @@ def gen_file_lines_as_key(
     return _gen
 
 
-def gen_file_lines_as_key_with_time(
+def from_file_lines_as_key_with_time(
     path: str,
     key: str,
     time_key: str = "time",
@@ -165,10 +166,10 @@ def gen_file_lines_as_key_with_time(
     now: Callable[[], str] = _now_str,
 ) -> Callable[[], Iterator[dict]]:
     """
-    Like gen_file_lines_as_key, but also adds a timestamp string.
+    Like from_file_lines_as_key, but also adds a timestamp string.
 
     Example:
-      gen = gen_file_lines_as_key_with_time('notes.txt', key='text')
+      gen = from_file_lines_as_key_with_time('notes.txt', key='text')
       # yields {'text': 'first line', 'time': '2025-09-08 12:34:56'}, ...
     """
     def _gen() -> Iterator[dict]:
@@ -181,12 +182,12 @@ def gen_file_lines_as_key_with_time(
 # ------------------------------------------------------------
 # CSV ROWS -> DICTS
 # ------------------------------------------------------------
-def gen_csv_dicts(path: str, encoding: str = "utf-8") -> Callable[[], Iterator[dict]]:
+def from_csv_dicts(path: str, encoding: str = "utf-8") -> Callable[[], Iterator[dict]]:
     """
     Yield one dict per CSV row using the header row as keys.
 
     Example:
-      gen = gen_csv_dicts('people.csv')
+      gen = from_csv_dicts('people.csv')
       # yields {'name': 'Ada', 'age': '42'}, ...
     """
     def _gen() -> Iterator[dict]:
@@ -198,13 +199,13 @@ def gen_csv_dicts(path: str, encoding: str = "utf-8") -> Callable[[], Iterator[d
 # ------------------------------------------------------------
 # NUMPY ROWS (optional; no import needed)
 # ------------------------------------------------------------
-def gen_numpy_rows(array: Iterable[Any]) -> Callable[[], Iterator[Any]]:
+def from_numpy_rows(array: Iterable[Any]) -> Callable[[], Iterator[Any]]:
     """
     Yield each row from a NumPy array (or any iterable of rows).
     No wrapping; you get the row object as-is.
 
     Example:
-      gen = gen_numpy_rows(my_array)
+      gen = from_numpy_rows(my_array)
       for row in gen():
           ...
     """
@@ -219,7 +220,7 @@ def gen_numpy_rows(array: Iterable[Any]) -> Callable[[], Iterator[Any]]:
 # ------------------------------------------------------------
 
 @as_factory
-def generate_random_integers(N: int, LOW: int, HIGH: int) -> Iterator[int]:
+def from_random_integers(N: int, LOW: int, HIGH: int) -> Iterator[int]:
     import random
     for _ in range(N):
         yield random.randint(LOW, HIGH)
@@ -234,7 +235,7 @@ except Exception:
     feedparser = None  # stays None if not installed
 
 
-def gen_rss_headlines(
+def from_rss_headlines(
     url: str,
     interval: float = 5.0,
     limit: Optional[int] = None,
@@ -253,7 +254,7 @@ def gen_rss_headlines(
     You can also pass your own `sleep` (for tests). By default it uses time.sleep.
 
     Example:
-      gen = gen_rss_headlines('https://example.com/feed', interval=10, limit=5)
+      gen = from_rss_headlines('https://example.com/feed', interval=10, limit=5)
       for msg in gen():
           print(msg['text'])
     """
@@ -292,14 +293,14 @@ def gen_rss_headlines(
 # ------------------------------------------------------------
 
 
-def gen_repeat(value, times: Optional[int] = None) -> Iterator:
+def from_repeat(value, times: Optional[int] = None) -> Iterator:
     it = itertools.repeat(
         value) if times is None else itertools.repeat(value, times)
     for x in it:
         yield x
 
 
-def gen_range(start: int, stop: Optional[int] = None, step: int = 1) -> Iterator[int]:
+def from_range(start: int, stop: Optional[int] = None, step: int = 1) -> Iterator[int]:
     # Mirrors built-in range semantics (range(stop)) if stop is None
     if stop is None:
         start, stop = 0, start
@@ -307,7 +308,7 @@ def gen_range(start: int, stop: Optional[int] = None, step: int = 1) -> Iterator
         yield x
 
 
-def gen_counter(start: int = 0, step: int = 1, times: Optional[int] = None) -> Iterator[int]:
+def from_counter(start: int = 0, step: int = 1, times: Optional[int] = None) -> Iterator[int]:
     n = start
     i = 0
     while times is None or i < times:
@@ -316,7 +317,7 @@ def gen_counter(start: int = 0, step: int = 1, times: Optional[int] = None) -> I
         i += 1
 
 
-def gen_jsonl(path: str) -> Iterator[dict]:
+def from_jsonl(path: str) -> Iterator[dict]:
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -324,41 +325,41 @@ def gen_jsonl(path: str) -> Iterator[dict]:
                 yield json.loads(line)
 
 
-def gen_csv_rows(path: str) -> Iterator[dict]:
+def from_csv_rows(path: str) -> Iterator[dict]:
     with open(path, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
             yield dict(row)
 
 
-def gen_dir_files(pattern: str) -> Iterator[str]:
+def from_dir_files(pattern: str) -> Iterator[str]:
     for p in glob.iglob(pattern, recursive=True):
         yield p
 
 
-def _iso_now() -> str:
-    return datetime.now().isoformat(timespec="seconds")
-
-
-def gen_timer_interval(every_s: float, count: Optional[int] = None, payload=None) -> Iterator[dict]:
+def from_timer_interval(every_s: float, count: Optional[int] = None, payload=None) -> Iterator[dict]:
     i = 0
     while count is None or i < count:
         # creation time; downstream blocks should not reuse this for arrival time
-        msg = {"time": _iso_now()} if payload is None else {
-            "time": _iso_now(), "data": payload}
+        msg = {"time": _now_str()} if payload is None else {
+            "time": _now_str(), "data": payload}
         yield msg
         time.sleep(every_s)
         i += 1
 
+# ------------------------------------------------------------
+#           GENERATE_RANDOM_INTEGERS
+# ------------------------------------------------------------
 
-def gen_random_ints(low: int, high: int, count: Optional[int] = None) -> Iterator[int]:
+
+def from_random_ints(low: int, high: int, count: Optional[int] = None) -> Iterator[int]:
     i = 0
     while count is None or i < count:
         yield random.randint(low, high)
         i += 1
 
 
-def gen_poll(fn: Callable[[], object], every_s: float, count: Optional[int] = None) -> Iterator:
+def from_poll(fn: Callable[[], object], every_s: float, count: Optional[int] = None) -> Iterator:
     i = 0
     while count is None or i < count:
         yield fn()
