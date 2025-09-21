@@ -63,6 +63,7 @@ def from_list(items: Iterable[Any]) -> Iterator[Any]:
         yield item
 
 
+@as_factory
 def from_list_with_delay(items: Iterable[Any], delay=None) -> Callable[[], Iterator[Any]]:
     """
     Yield each element from a list (or any iterable).
@@ -100,6 +101,7 @@ def from_list_as_key(items: Iterable[Any], key: str) -> Callable[[], Iterator[di
     return _gen
 
 
+@as_factory
 def from_list_as_key_with_time(
     items: Iterable[Any],
     key: str,

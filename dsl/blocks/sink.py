@@ -3,39 +3,47 @@ from __future__ import annotations
 
 from typing import Callable, Any, Optional, Dict
 import traceback
-from dsl.core import SimpleAgent, STOP, filtered_kwargs
+from dsl.core import Agent, STOP
 
 
-class Sink(SimpleAgent):
+class Sink(Agent):
     """
     Terminal agent that consumes messages.
-    Calls `record_fn(msg)` for every non-STOP message.
-    STOP messages are consumed and not recorded.
+    Calls `fn(msg, **params)` for every non-STOP, non-None message.
+    STOP is consumed (not recorded).
     """
 
-    def __init__(
-        self,
-        *,
-        name: str = "Sink",
-        record_fn: Optional[Callable[..., None]] = None,
-        kwargs: Optional[Dict[str, Any]] = None,
-    ) -> None:
-        if record_fn is None:
-            raise ValueError("record_fn is required for Sink")
-        super().__init__(
-            name=name,
-            inport="in",
-            outports=[],
-        )
-        self.record_fn = record_fn
-        self.kwargs = kwargs or {}
+    def __init__(self, *, fn: Optional[Callable[..., None]] = None, params: Optional[Dict[str, Any]] = None) -> None:
+        if not callable(fn):
+            raise TypeError(
+                "Sink(fn=...) must be callable (fn(msg, **params)).")
+        super().__init__(inports=["in"], outports=[])
+        self._fn = fn
+        self._params: Dict[str, Any] = params or {}
 
-    def handle_msg(self, msg: Any) -> None:
-        if msg == STOP:
-            return
+    def run(self) -> None:
         try:
-            self.record_fn(msg, **self.kwargs)
-        except Exception:
-            raise RuntimeError(
-                f"Sink {self.name} record_fn raised:\n{traceback.format_exc()}"
-            ) from None
+            while True:
+                msg = self.recv("in")
+
+                # STOP: swallow and close input
+                if msg == STOP:
+                    try:
+                        self.close("in")
+                    finally:
+                        return
+
+                # None=drop (do not record)
+                if msg is None:
+                    continue
+
+                try:
+                    self._fn(msg, **self._params)
+                except Exception as e:
+                    print(f"[Sink] Error in fn: {e}")
+                    print(traceback.format_exc())
+                    return
+        except Exception as e:
+            print(f"[Sink] Error: {e}")
+            print(traceback.format_exc())
+            return
