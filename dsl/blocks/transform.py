@@ -1,46 +1,56 @@
-# dsl/block_lib/transformers/transform.py
+# dsl/blocks/transform.py
 from __future__ import annotations
-from typing import Any, Callable, Optional
-from dsl.core import SimpleAgent, STOP
+from typing import Any, Callable, Optional, Dict
+import traceback
+
+from dsl.core import Agent, STOP
 
 
-class Transform(SimpleAgent):
+class Transform(Agent):
     """
-    Minimal transform:
-    - Passes STOP through unchanged.
-    - Applies self.func(msg, *self.args, **self.kwargs) and emits the result on 'out'.
+    Inports: ["in"], Outports: ["out"].
+
+    Contract (one way only):
+      - fn: callable of shape fn(msg, **kwargs) -> Any
+
+    Behavior:
+      - Forwards STOP and terminates.
+      - On exception: prints traceback and emits STOP.
     """
 
-    def __init__(
-        self,
-        *,
-        func: Callable[..., Any],
-        name: str = "Transform",
-        args: Optional[tuple] = (),
-        kwargs: Optional[dict] = {},
-    ):
-        if func is None:
-            raise ValueError("Transform requires a callable func(msg, ...)")
-        self.func = func
-        self.args = args or ()
-        self.kwargs = kwargs or {}
+    def __init__(self, *, fn: Callable[..., Any], kwargs: Optional[Dict[str, Any]] = None):
+        if not callable(fn):
+            raise TypeError(
+                "Transform(fn=...) must be callable (fn(msg, **kwargs)).")
+        self._fn = fn
+        self._kwargs: Dict[str, Any] = dict(kwargs) if kwargs else {}
 
-        super().__init__(
-            name=name or "Transform",
-            inport="in",
-            outports=["out"],
-        )
+        super().__init__(inports=["in"], outports=["out"])
+
+    def run(self) -> None:
+        try:
+            while True:
+                msg = self.recv("in")
+                print(f"[Transform] Received: {msg}")
+                if msg is STOP:
+                    self.send(STOP, "out")
+                    return
+                try:
+                    result = self._fn(msg, **self._kwargs)
+                except Exception as e:
+                    print(f"[Transform] Error in fn: {e}")
+                    print(traceback.format_exc())
+                    self.send(STOP, "out")
+                    return
+                self.send(result, "out")
+        except Exception as e:
+            print(f"[Transform] Error: {e}")
+            print(traceback.format_exc())
+            self.send(STOP, "out")
 
     def __repr__(self) -> str:
-        fn = getattr(self.func, "__name__", repr(self.func))
-        return f"Transform(name={self.name!r}, func={fn})"
+        fn_name = getattr(self._fn, "__name__", repr(self._fn))
+        return f"<Transform fn={fn_name}>"
 
     def __str__(self) -> str:
-        return f"{self.name} (Transform)"
-
-    def handle_msg(self, msg):
-        if msg is STOP:
-            self.send(STOP, "out")
-            return
-        result = self.func(msg, *self.args, **self.kwargs)
-        self.send(result, "out")
+        return "Transform"

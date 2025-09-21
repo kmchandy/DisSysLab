@@ -1,9 +1,9 @@
-from .source_lib.common_sources import (
-    gen_list, gen_list_as_key, gen_list_as_key_with_time,
-    gen_file_lines, gen_rss_headlines, gen_csv_dicts, gen_numpy_rows
+from .common_sources import (
+    from_list, from_list_as_key, from_list_as_key_with_time,
+    from_file_lines, from_rss_headlines, from_csv_dicts, from_numpy_rows
 )
 
 __all__ = [
-    "gen_list", "gen_list_as_key", "gen_list_as_key_with_time",
-    "gen_file_lines", "gen_rss_headlines", "gen_csv_dicts", "gen_numpy_rows",
+    "from_list", "from_list_as_key", "from_list_as_key_with_time",
+    "from_file_lines", "from_rss_headlines", "from_csv_dicts", "from_numpy_rows",
 ]
