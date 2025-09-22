@@ -14,9 +14,14 @@ from __future__ import annotations
 from . import catalog
 
 # 1) Import function modules so their @register decorators run (populate pending)
-import dsl.block_lib.sources.source_lib.common_sources        # noqa: F401
-import dsl.block_lib.transforms.transform_lib.common_transforms  # noqa: F401
-import dsl.block_lib.sinks.sink_lib.common_sinks              # noqa: F401
+import dsl.ops.sources.lists
+import dsl.ops.transforms.common_transforms
+import dsl.ops.sinks.lists
+from dsl.blocks.fanout import Broadcast, SplitBinary
+from dsl.blocks.fanin import MergeSynch, MergeAsynch
+from dsl.blocks.graph_structures import pipeline
+from dsl.core import Network
+from .catalog_bootstrap import REGISTRY, build_registry
 
 # 2) Adopt registrations into the catalog
 catalog.adopt_from_registry_core()
@@ -27,16 +32,12 @@ FN = catalog.view_funcs()
 # 4) Student API verbs
 from .api import generate, transform, record  # noqa: E402
 
-# 5) Re-export routers and core conveniences
-from dsl.block_lib.routers.fanout import Broadcast, SplitBinary  # noqa: E402
-from dsl.block_lib.routers.fanin import MergeSynch, MergeAsynch  # noqa: E402
-from dsl.block_lib.graph_structures import pipeline              # noqa: E402
-from dsl.core import Network                                     # noqa: E402
 
-# 6) Public surface
+# 5) Public surface
 __all__ = [
     "generate", "transform", "record",
     "FN",
     "Network", "pipeline",
     "MergeSynch", "MergeAsynch", "Broadcast", "SplitBinary",
+    "REGISTRY", "build_registry"
 ]

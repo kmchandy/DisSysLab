@@ -1,9 +1,10 @@
-# dsl/block_lib/sinks/sink.py
+# dsl/blocks/sink.py
 from __future__ import annotations
 
 from typing import Callable, Any, Optional, Dict
 import traceback
 from dsl.core import Agent, STOP
+from dsl.utils import filter_kwargs
 
 
 class Sink(Agent):
@@ -13,13 +14,14 @@ class Sink(Agent):
     STOP is consumed (not recorded).
     """
 
-    def __init__(self, *, fn: Optional[Callable[..., None]] = None, params: Optional[Dict[str, Any]] = None) -> None:
+    def __init__(self, *, fn: Optional[Callable[..., Any]] = None, params: Optional[Dict[str, Any]] = None) -> None:
         if not callable(fn):
             raise TypeError(
                 "Sink(fn=...) must be callable (fn(msg, **params)).")
         super().__init__(inports=["in"], outports=[])
         self._fn = fn
-        self._params: Dict[str, Any] = params or {}
+        # Ignore stray keys in params; only pass what fn accepts
+        self._params: Dict[str, Any] = filter_kwargs(fn, params or {})
 
     def run(self) -> None:
         try:

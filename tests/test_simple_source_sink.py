@@ -1,3 +1,6 @@
+# tests.test_simple_source_sink
+# Simplest test of a source -> sink
+
 from dsl.blocks.sink import Sink
 from dsl.blocks.source import Source
 from dsl.core import Network
@@ -9,15 +12,15 @@ def test_simple_source_sink():
     result = []
     net = Network(
         blocks={
-            "source": Source(fn=from_list(["hello", "world"])),
-            "sink": Sink(fn=to_list(result))
+            "source": Source(fn=from_list, params={"items": ["hello", None, "world"]}),
+            "sink": Sink(fn=to_list, params={"target": result})
         },
         connections=[
             ("source", "out", "sink", "in")
         ]
     )
     net.compile_and_run()
-    print(f"Result: {result}")
+
     assert result == ["hello", "world"]
 
 
