@@ -9,6 +9,7 @@ Single import surface for:
 """
 
 from __future__ import annotations
+from .api import generate, transform, record
 
 # Catalog (function-only registry)
 from . import catalog
@@ -30,7 +31,6 @@ catalog.adopt_from_registry_core()
 FN = catalog.view_funcs()
 
 # 4) Student API verbs
-from .api import generate, transform, record  # noqa: E402
 
 
 # 5) Public surface
