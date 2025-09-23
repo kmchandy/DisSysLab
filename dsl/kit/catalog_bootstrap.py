@@ -1,38 +1,55 @@
-# dsl/kit/__init__.py
-"""
-DisSysLab Student Kit (v2)
---------------------------
-Single import surface for:
-- function registry (REGISTRY) and a simple function view (FN)
-- student verbs: generate(), transform(), record()
-- core Network and common router blocks
-Registry is bootstrapped externally (no decorators required in ops libs).
-"""
-
+# dsl/kit/catalog_bootstrap.py
 from __future__ import annotations
-from typing import Callable, Dict
+from pathlib import Path
+from types import SimpleNamespace
 
-# Core
-from dsl.core import Network  # runtime network container
+from dsl.registry import RegistryMap
+from dsl.registry_utils import register_functions_in_file, register_functions_in_module
 
-# Common routers (keep only what exists in v2)
-from dsl.blocks.fanin import MergeAsynch  # noqa: F401
-from dsl.blocks.fanout import Broadcast   # noqa: F401
+# The one-and-only global registry
+REGISTRY: RegistryMap = {}
 
-# Student API verbs
-from .api import generate, transform, record  # noqa: F401
 
-# Registry bootstrap (pure-function catalog)
-from dsl.kit.utils import REGISTRY, build_registry  # noqa: F401
+def _bootstrap_registry() -> None:
+    # Resolve <repo>/dsl/ops/sources/lists.py
+    src_lists_path = Path(__file__).parents[1] / "ops" / "sources" / "lists.py"
+    register_functions_in_file(
+        registry=REGISTRY,
+        path=src_lists_path,
+        kind="source",
+        namespace="dsl.ops.sources.lists",
+    )
 
-# Convenience: function-only view {id -> callable}
-FN: Dict[str, Callable[..., object]] = {
-    rid: fn for rid, (_reg, fn) in REGISTRY.items()}
+    # Optionally register sinks (if you have dsl/ops/sinks/lists.py)
+    try:
+        sink_lists_path = Path(
+            __file__).parents[1] / "ops" / "sinks" / "lists.py"
+        register_functions_in_file(
+            registry=REGISTRY,
+            path=sink_lists_path,
+            kind="sink",
+            namespace="dsl.ops.sinks.lists",
+        )
+    except FileNotFoundError:
+        pass  # fine for now
 
-__all__ = [
-    "generate", "transform", "record",
-    "FN",
-    "REGISTRY", "build_registry",
-    "Network",
-    "MergeAsynch", "Broadcast",
-]
+    # Optional stdlib string transforms
+    str_funcs = SimpleNamespace(
+        upper=str.upper, lower=str.lower, strip=str.strip,
+        lstrip=str.lstrip, rstrip=str.rstrip, replace=str.replace,
+    )
+    register_functions_in_module(
+        registry=REGISTRY,
+        module=str_funcs,
+        kind="transform",
+        namespace="py.str",
+    )
+
+
+# Build on import
+_bootstrap_registry()
+
+
+def build_registry() -> RegistryMap:
+    """Return the populated registry (ids -> (Registration, callable))."""
+    return REGISTRY
