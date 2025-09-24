@@ -9,35 +9,25 @@ Single import surface for:
 """
 
 from __future__ import annotations
-from .api import generate, transform, record
 
-# Catalog (function-only registry)
-from . import catalog
 
 # 1) Import function modules so their @register decorators run (populate pending)
 import dsl.ops.sources.lists
 import dsl.ops.transforms.common_transforms
 import dsl.ops.sinks.lists
-from dsl.blocks.fanout import Broadcast, SplitBinary
-from dsl.blocks.fanin import MergeSynch, MergeAsynch
+from dsl.blocks.fanout import Broadcast
+from dsl.blocks.fanin import MergeAsynch
 from dsl.blocks.graph_structures import pipeline
 from dsl.core import Network
-from .catalog_bootstrap import REGISTRY, build_registry
+from .kit import generate, transform, record, pipeline
+from dsl.ops.sources.lists import from_list
+from dsl.ops.sinks.lists import to_list
 
-# 2) Adopt registrations into the catalog
-catalog.adopt_from_registry_core()
-
-# 3) Convenience view: name -> callable
-FN = catalog.view_funcs()
-
-# 4) Student API verbs
-
-
-# 5) Public surface
+# Public surface
 __all__ = [
     "generate", "transform", "record",
     "FN",
     "Network", "pipeline",
-    "MergeSynch", "MergeAsynch", "Broadcast", "SplitBinary",
-    "REGISTRY", "build_registry"
+    "MergeAsynch", "Broadcast",
+    "from_list", "to_list",
 ]
