@@ -1,0 +1,4 @@
+graph: [[src, snk]]
+bindings:
+  src: { id: ops:from_list, params: { items: ["hello", "world"] } }
+  snk: { id: ops:to_list }
