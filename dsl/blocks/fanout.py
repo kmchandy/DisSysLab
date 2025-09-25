@@ -14,15 +14,9 @@ class Broadcast(Agent):
     Makes deep copies of messages to avoid shared state issues.
     """
 
-    def __init__(
-        self,
-        outports: list[str],
-        name: Optional[str] = None
-    ):
-        super().__init__(name=name or "Broadcast",
-                         inports=["in"],
-                         outports=outports,
-                         run=self.run)
+    def __init__(self, num_outports: int):
+        super().__init__(inports=["in"],
+                         outports=[f"out_{i}" for i in range(num_outports)])
 
     def run(self):
         while True:
@@ -48,17 +42,13 @@ class SplitBinary(Agent):
         self,
         outports: list[str] = ["out_0", "out_1"],
         func: Optional[Callable[[Any], bool]] = None,
-        name: Optional[str] = None
     ):
         if func is None:
             raise ValueError(
                 "A predicate function must be provided for {name} in TwoWaySplit.")
         self.func = func
 
-        super().__init__(name=name or "TwoWaySplit",
-                         inports=["in"],
-                         outports=outports,
-                         run=self.run)
+        super().__init__(inports=["in"], outports=outports)
 
     def run(self):
         while True:
