@@ -112,7 +112,9 @@ class Network:
         Validate:
         - Blocks are Agent/Network; IDs are unique/strings; no '.'; 'external' reserved.
         - Every connection references existing blocks/ports (or 'external').
-        - Each declared port exists and is connected exactly once (1→1 edges).
+        - Each declared port exists.
+        - Each outport is connected exactly once.
+        - Each inport is connected exactly once.
         - External in/out ports, if used, are each connected exactly once.
         """
         # Block structure
@@ -151,17 +153,18 @@ class Network:
                 raise ValueError(
                     f"Connection references unknown to_block '{tb}'.")
             if fb != "external":
-                if fp not in self.blocks[fb].outports:  # type: ignore[index]
+                if fp not in self.blocks[fb].outports:
                     raise ValueError(
                         f"Unknown from_port '{fp}' on block '{fb}'.")
             if tb != "external":
-                if tp not in self.blocks[tb].inports:  # type: ignore[index]
+                if tp not in self.blocks[tb].inports:
                     raise ValueError(
                         f"Unknown to_port '{tp}' on block '{tb}'.")
 
-        # 1→1 edge rule on component blocks
+        # Each inport connected exactly once;
+        # each outport connected exactly once
         for block_name, block_object in self.blocks.items():
-            # Inports: exactly one incoming connection each
+            # Inports: exactly one incoming connection
             for inport in block_object.inports:
                 matches = [c for c in self.connections if c[2]
                            == block_name and c[3] == inport]
@@ -186,15 +189,21 @@ class Network:
         for p in self.inports:
             matches = [c for c in self.connections if c[0]
                        == "external" and c[1] == p]
-            if len(matches) != 1:
+            if len(matches) == 0:
                 raise ValueError(
-                    f"External inport '{p}' must be connected exactly once.")
+                    f"External inport '{p}' is not connected. It must be connected exactly once.")
+            if len(matches) > 1:
+                raise ValueError(
+                    f"External inport '{p}' connections {matches}. Must be connected exactly once.")
         for p in self.outports:
             matches = [c for c in self.connections if c[2]
                        == "external" and c[3] == p]
-            if len(matches) != 1:
+            if len(matches) == 0:
                 raise ValueError(
-                    f"External outport '{p}' must be connected exactly once.")
+                    f"External outport '{p}' is not connected. It must be connected exactly once.")
+            if len(matches) > 1:
+                raise ValueError(
+                    f"External outport '{p}' connections {matches}. It must be connected exactly once.")
 
     def compile(self) -> None:
         """

@@ -9,4 +9,6 @@ g = Graph(
     },
 )
 g.compile_and_run()
-print(results)
+
+if __name__ == "__main__":
+    assert results == ["hello", "world"]

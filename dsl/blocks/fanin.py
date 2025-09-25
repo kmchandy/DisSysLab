@@ -1,13 +1,14 @@
+# dsl/blocks/fanin.py
 # =================================================
 #                    MergeSynch                   |
 # =================================================
-from typing import Optional, Any, Callable
+from __future__ import annotations
+from typing import Any, Callable, Optional, Set
 import traceback
 from rich import print as rprint
+import threading
 
-from dsl.core import Agent
-
-DEBUG_LOG = "dsl_debug.log"
+from dsl.core import Agent, STOP
 
 
 class MergeSynch(Agent):
@@ -63,59 +64,52 @@ class MergeSynch(Agent):
 #                   MergeAsynch                   |
 # =================================================
 
-
 class MergeAsynch(Agent):
     """
-    Block with multiple inports and one outport "out".
-    Processes messages as they arrive from ANY inport (asynchronously).
-    Applies func(msg, port) and sends result to "out".
+    Asynchronous N→1 merge of message streams.
+    Emits a single STOP after receiving STOP from all inports.
     """
 
-    def __init__(
-        self,
-        inports: list[str],
-        func: Optional[Callable[[Any, str], Any]] = None,
-        name: Optional[str] = None
-    ):
-        if not inports:
-            raise ValueError(
-                "MergeAsynch requires at least one inport.")
-        if func is not None and not callable(func):
-            raise TypeError("func must be a callable or None.")
+    def __init__(self, num_inports: int):
+        if num_inports < 2:
+            raise ValueError("MergeAsynch requires at least two inports.")
+        inports = [f"in_{i}" for i in range(num_inports)]
+        super().__init__(inports=inports, outports=["out"])
 
-        super().__init__(name=name or "MergeAsynch",
-                         inports=inports,
-                         outports=["out"],
-                         run=self.run)
+        # Threading / shutdown coordination
+        self._stop_lock = threading.Lock()
+        self._stopped_ports: Set[str] = set()
+        self._all_stopped = threading.Event()
 
-        self.func = func
-
-        self.terminated_inports = {inport: False for inport in self.inports}
-
-    def run(self):
-        self.terminated_inports = {port: False for port in self.inports}
-
+    def _worker(self, port: str) -> None:
         while True:
-            msg, port = self.wait_for_any_port()
+            msg = self.recv(port)  # blocking read from inport queue
+            if msg == STOP:
+                with self._stop_lock:
+                    self._stopped_ports.add(port)
+                    if len(self._stopped_ports) == len(self.inports):
+                        self._all_stopped.set()
+                break
+            # forward message
+            self.send(msg, "out")
 
-            if msg == "__STOP__":
-                self.terminated_inports[port] = True
+    def run(self) -> None:
+        threads = []
+        for p in self.inports:
+            t = threading.Thread(
+                target=self._worker,
+                args=(p,),
+                name=f"merge_worker_{p}",
+            )
+            t.start()
+            threads.append(t)
 
-                if all(self.terminated_inports[p] for p in self.inports):
-                    self.send("__STOP__", "out")
-                    return
+        # Wait until all inports have delivered STOP
+        self._all_stopped.wait()
 
-                # Do not process a __STOP__ message
-                continue
+        # Clean shutdown of workers
+        for t in threads:
+            t.join()
 
-            try:
-                result = self.func(
-                    msg, port) if self.func else msg
-                self.send(result, "out")
-            except Exception as e:
-                rprint(
-                    f"[bold red]❌ MergeAsynch error:[/bold red] {e}")
-                with open(DEBUG_LOG, "a") as f:
-                    f.write("\n--- TransformMultipleStreams Error ---\n")
-                    f.write(traceback.format_exc())
-                self.send("__STOP__", "out")
+        # Emit a single STOP downstream
+        self.send(STOP, "out")

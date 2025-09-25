@@ -18,12 +18,12 @@ class Transform(Agent):
       - On exception: prints traceback and emits STOP.
     """
 
-    def __init__(self, *, fn: Callable[..., Any], kwargs: Optional[Dict[str, Any]] = None):
+    def __init__(self, *, fn: Callable[..., Any], params: Optional[Dict[str, Any]] = None):
         if not callable(fn):
             raise TypeError(
-                "Transform(fn=...) must be callable (fn(msg, **kwargs)).")
+                "Transform(fn=...) must be callable (fn(msg, **params)).")
         self._fn = fn
-        self._kwargs: Dict[str, Any] = dict(kwargs) if kwargs else {}
+        self._kwargs: Dict[str, Any] = dict(params) if params else {}
 
         super().__init__(inports=["in"], outports=["out"])
 
@@ -31,7 +31,7 @@ class Transform(Agent):
         try:
             while True:
                 msg = self.recv("in")
-                print(f"[Transform] Received: {msg}")
+
                 if msg is STOP:
                     self.send(STOP, "out")
                     return
