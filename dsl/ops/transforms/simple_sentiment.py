@@ -1,4 +1,4 @@
-# dsl/block_lib/transformers/transform_lib/simple_sentiment.py
+# dsl.ops.transforms.simple_sentiment.py
 from __future__ import annotations
 import re
 from typing import Any, Optional, Iterable, Dict
