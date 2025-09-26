@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Set, Tuple
 # Minimal demo lists (extend as needed)
 COUNTRIES: Set[str] = {
     "United States", "China", "Brazil", "India", "South Africa", "Nepal"
-    "United Kingdom", "Ireland"  # add more as you lik
+    "UK", "United Kingdom", "Ireland"  # add more
     "Mount Everest",  # treat as place for the example suite
 }
 
@@ -20,6 +20,7 @@ COUNTRY_ALIASES: Dict[str, str] = {
     "u.s.": "United States",
     "uk": "United Kingdom",
     "u.k.": "United Kingdom",
+    "England": "United Kingdom"
 }
 
 # Match multiword Title Case names (e.g., "South Africa", "Mount Everest")
@@ -65,6 +66,7 @@ def extract_entity(msg: Any, *, canonicalize: bool = False) -> dict:
     places: List[str] = []
     things: List[str] = []
 
+    print(f"candidates = {candidates}")
     for tok in candidates:
         orig, canon = _normalize_country(tok)
         if canon:

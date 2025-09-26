@@ -1,54 +1,48 @@
 # 📂 DisSysLab Directory Structure
 
 This document maps the planned layout of the DisSysLab repository.  
-Each directory has its own `README.md` (many with examples).
+Most directories have `README.md` and examples).
 
 ---
-## Diagrams — File Structure
-
-
-### Repository Overview
-
+## Repository Overview
 ```
 DisSysLab/
 ├─ README.md
-├─ README_Directory.md
-├─ dsl/
-│  ├─ core.py
-│  └─ block_lib/
-│     ├─ sources/
-│     │  ├─ source.py
-│     │  ├─ source_lib/
-│     │  │  ├─ lists.py
-│     │  │  ├─ ....
-│     │  └─ README.md
-│     ├─ transformers/
-│     │  ├─ transform.py
-│     │  ├─ transform_lib/
-│     │  │  ├─ sentiment.py
-│     │  │  └─ ....
-│     │  └─ README.md
-│     ├─ sinks/
-│     │  ├─ sink.py
-│     │  ├─ sink_lib/
-│     │  │  ├─ files.py
-│     │  │  ├─ .....
-│     │  └─ README.md
-│     └─ routers/
-│        ├─ fanin.py
-│        ├─ fanout.py
-│        └─ README.md
-├─ tests/
-│  ├─ ....
-├─ lessons/
+├─ README_Directory.md          # this file
+├─ dsl/                         # the library students import
+│  ├─ graph.py                  # Graph DSL (spec)
+│  ├─ core.py                   # runtime: Agent, Network, STOP, plumbing
+│  ├─ ops/                      # tiny, dependency-free callables (pure Python)
+│  │  ├─ sources/lists.py       # from_list(...)
+│  │  └─ sinks/lists.py         # to_list(...)
+│  ├─ blocks/                   # runtime blocks used by Network
+│  │  ├─ source.py              # Source
+│  │  ├─ transform.py           # Transform
+│  │  ├─ sink.py                # Sink
+│  │  ├─ fanout.py              # Broadcast / Split
+│  │  └─ fanin.py               # Merge (sync/async)
+│  ├─ connectors/               # data/app connectors (e.g., Google Sheets)
+│  │  └─ sheets.py
+│  └─ extensions/               # optional add-ons (heavy deps; install as extras)
+│     ├─ llm/
+│     │  └─ openai_agent.py     # OpenAIAgent.fn(...)
+│     └─ ml/
+│        └─ sklearn.py          # featurize(...), predict(...)
+├─ examples/                    # runnable scripts (buffet for exploration)
+│  ├─ graph_simple_source_sink.py
+│  ├─ graph_openai_agent.py     # requires [llm]
+│  └─ graph_sklearn_text_classify.py  # requires [ml]
+├─ lessons/                     # 5–10 minute guided mini-tutorials
 │  ├─ 01_networks_blocks_connections/
-│  ├─ .....
-├─ examples/
-│  ├─ rss_to_console.py
-│  ├─ ....
-└─ user_interaction/          # CLI/UI/wizard
+│  ├─ 02_msg_as_dict/
+│  ├─ 03_fanout/
+│  └─ 04_fanin/
+├─ tests/                       # small pytest suite
+│  ├─ test_graph_basics.py
+│  ├─ test_broadcast.py
+│  └─ test_validation.py
+└─ user_interaction/            # CLI/UX helpers (optional)
 ```
-
 
 ## Top Level
 
@@ -63,34 +57,13 @@ DisSysLab/
 ---
 
 ## dsl/
+- **graph.py** - How to develop distributed applications. `Graph' 'Edges', 'Node' specifications
+- **core.py** – Foundation: `Agent`, `Network`, `System`, `STOP`, and core message-passing logic. Used by **graph.py**.
+- **ops/** - Directory of simple functions used in **graph.py**
+- **blocks** the building blocks of the DisSysLab framework.
+- **connectors** interfaces to apps and databases
+- **extensions** Functions used in **graph.py** to call large language models and other services.
 
-- **core.py** – Foundation: `Agent`, `Network`, `System`, `STOP`, and core message-passing logic.
-
-### block_lib/
-Block library, grouped by role in a network.
-
-#### sources/ — Generators of messages
-- `source.py` — **Source** (inherits `SimpleAgent`; one outport `"out"`, no inports).
-- `source_lib/` — **Package** of pure-Python helpers used by `Source`.
-- `README.md` — Explains sources and shows basic usage.
-
-#### transforms/ — Transformers of messages
-- `transform.py` — **Transform** (tiny mapper; one inport `"in"`, one outport `"out"`).
-- `transform_lib/` — **Package** of pure-Python transforms used by `Transform`.
-  - `__init__.py` – Re-exports selected transforms (add more as you grow):
-- `README.md` — Explains transforms with examples.
-#### sinks/ — Recorders of messages (side effects)
-- `sink.py` — **Sink** (inherits `SimpleAgent`; one inport `"in"`, no outports).
-- `sink_lib/` — **Package** of pure-Python recorders used by `Sink`.
-- `README.md` — Explains sinks and usage.
-#### routers/ — Routing blocks (fan-in, fan-out)
-- `fanin.py` — `MergeSynch`, `MergeAsynch` (combine multiple streams → one).
-- `fanout.py` — `Broadcast`, `Split` (one stream → multiple outputs).
-- `README.md` — Explains routing patterns.
-
-#### connectors/
-- connect to external apis such as Google sheets
----
 
 ## lessons/
 Step-by-step, 5-minute,  `README.md` and short Python examples.
