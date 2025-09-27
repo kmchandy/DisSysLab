@@ -1,20 +1,26 @@
 # dsl.examples.simple_sentiment_analysis
 
 from dsl import Graph
-from dsl.ops.transforms.simple_sentiment import add_sentiment
+from dsl.ops.transforms.simple_sentiment import sentiment_score
 
 # -----------------------------------------------------------
 # Define Python functions independent of dsl.
 # -----------------------------------------------------------
 
 
-def from_list_with_key(items, key):
-    for x in items:
-        yield {key: x}
+def stream_reviews():
+    for x in reviews:
+        yield {"review": x}
 
 
-def to_list(v, target):
-    target.append(v)
+def add_sentiment(v):
+    score = sentiment_score(v["review"])
+    v["sentiment"] = score
+    return v
+
+
+def to_results(v):
+    results.append(v)
 
 
 reviews = [
@@ -30,12 +36,8 @@ reviews = [
 results = []
 
 g = Graph(
-    edges=[("src_0", "trn_0"), ("trn_0", "snk")],
-    nodes={
-        "src_0": (from_list_with_key, {"items": reviews, "key": "review"}),
-        "trn_0": (add_sentiment, {"input_key": "review"}),
-        "snk": (to_list, {"target": results}),
-    },
+    edges=[("src", "trn"), ("trn", "snk")],
+    nodes=[("src", stream_reviews), ("trn", add_sentiment), ("snk", to_results)]
 )
 # -----------------------------------------------------------
 

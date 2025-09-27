@@ -7,13 +7,17 @@ from dsl import Graph
 # -----------------------------------------------------------
 
 
-def from_list(items):
-    for item in items:
+def src():
+    for item in ["hello", "world"]:
         yield item
 
 
-def to_list(v, target):
-    target.append(v)
+results_0 = []
+def snk_0(v): results_0.append(v)
+
+
+results_1 = []
+def snk_1(v): results_1.append(v)
 
 
 # -----------------------------------------------------------
@@ -23,11 +27,7 @@ results_0 = []
 results_1 = []
 g = Graph(
     edges=[("src", "snk_0"), ("src", "snk_1")],
-    nodes={
-        "src": (from_list, {"items": ["hello", "world"]}),
-        "snk_0": (to_list,   {"target": results_0}),
-        "snk_1": (to_list,   {"target": results_1}),
-    },
+    nodes=[("src", src), ("snk_0", snk_0), ("snk_1", snk_1)]
 )
 # -----------------------------------------------------------
 

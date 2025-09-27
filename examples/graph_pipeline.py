@@ -3,35 +3,30 @@
 from dsl import Graph
 
 # -----------------------------------------------------------
-# Define Python functions independent of dsl.
+# Define Python functions.
 # -----------------------------------------------------------
 
 
-def from_list(items):
-    for item in items:
+def src():
+    for item in ["hello", "world"]:
         yield item
 
 
-def add_suffix(v, suffix):
-    return v + suffix
+def t_0(v): return v.upper()
+def t_1(v): return v + "!!"
 
 
-def to_list(v, target):
-    target.append(v)
+results = []
+def snk(v): results.append(v)
 
 
 # -----------------------------------------------------------
 # Define the graph
 # -----------------------------------------------------------
-results = []
+
 g = Graph(
-    edges=[("src", "t0"), ("t0", "t1"), ("t1", "snk")],
-    nodes={
-        "src": (from_list, {"items": ["hello", "world"]}),
-        "t0": (str.upper, {}),
-        "t1": (add_suffix, {"suffix": "!!"}),
-        "snk": (to_list,   {"target": results}),
-    },
+    edges=[("src", "t_0"), ("t_0", "t_1"), ("t_1", "snk")],
+    nodes=[("src", src), ("t_0", t_0), ("t_1", t_1), ("snk", snk)]
 )
 # -----------------------------------------------------------
 

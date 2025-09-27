@@ -1,8 +1,8 @@
 # dsl/graph.py
 from __future__ import annotations
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 import warnings
-import importlib
+import inspect
 
 from dsl.core import Network
 from dsl.blocks.source import Source
@@ -11,144 +11,157 @@ from dsl.blocks.transform import Transform
 from dsl.blocks.fanout import Broadcast
 from dsl.blocks.fanin import MergeAsynch
 
-NodeSpec = Union[
-    Tuple[Callable[..., Any], Dict[str, Any]],
-]
+# Node = ("name", function)
+NodePair = Tuple[str, Callable[..., Any]]
 
+# Reserved prefixes created by the rewriter
 _RESERVED_PREFIXES = ("broadcast_", "merge_")
-_RESERVED_NAMES = ("broadcast", "merge", "source", "sink", "transform")
+# Optional: exact names you don't want students to reuse
+_RESERVED_EXACT = {"broadcast", "merge", "source", "sink", "transform"}
 
 
 class Graph:
     """
-      - edges = [("src", "snk"), ...]
-      - nodes = {
-            "src": (from_list, {"items": [...]}) 
-            "snk": (to_list,   {"target": results})
-        }
+    V2 Graph spec (single style):
 
-    Roles are inferred by in/out-degree:
-      source  : indeg==0 & outdeg>=1
-      sink    : outdeg==0 & indeg>=1
-      transform: otherwise
-      add broadcast nodes if outdeg > 1
+      edges: list[tuple[str, str]]
+          Edges as (u, v) pairs.
 
-    Function shapes:
-      Source    fn(**params) -> Iterator
-      Transform fn(msg, **params) -> Any
-      Sink      fn(msg, **params) -> None
-      Broadcast no fn -> None
+      nodes: list[tuple[str, callable]]
+          Each node defined exactly once as ("name", fn).
+          - Source  fn: () -> Iterator[Any]
+          - Transform fn: (msg) -> Any
+          - Sink     fn: (msg) -> None
+
+    Roles are inferred by in/out-degree on the ORIGINAL edges:
+      source    : indeg == 0 & outdeg >= 1
+      sink      : outdeg == 0 & indeg >= 1
+      transform : otherwise
+
+    Rewriting:
+      - If a node has >1 outgoing edges, insert a Broadcast node "broadcast_k".
+      - If a node has >1 incoming edges, insert a Merge node "merge_j".
+      - The final graph sends multi-fanouts via Broadcast and multi-fanins via MergeAsynch.
+
+    Implementation notes:
+      - We accept only the single style nodes=[("src", src), ("trn", trn), ...].
+      - No params are passed via the graph; wrap config in closures.
     """
 
-    def __init__(self, *, edges: Iterable[Tuple[str, str]], nodes: Dict[str, NodeSpec]) -> None:
-        self.edges, self.nodes = self._validate_and_normalize(edges, nodes)
-        # self.network is the network created by compile()
+    def __init__(self, *, edges: Iterable[Tuple[str, str]], nodes: Iterable[NodePair]) -> None:
+
+        # check types of parameters ----
+        try:
+            edge_list = list(edges)
+        except TypeError:
+            raise TypeError("edges must be an iterable of (u, v) pairs")
+
+        try:
+            node_list = list(nodes)
+        except TypeError:
+            raise TypeError(
+                "nodes must be an iterable of ('name', function) pairs")
+
+        # edges: (str, str)
+        for i, e in enumerate(edge_list):
+            if not (isinstance(e, (tuple, list)) and len(e) == 2):
+                raise TypeError(f"edges[{i}] must be a (u, v) pair; got {e!r}")
+            u, v = e
+            if not (isinstance(u, str) and isinstance(v, str)):
+                raise TypeError(
+                    f"edges[{i}] must be (str, str); got ({type(u).__name__}, {type(v).__name__})"
+                )
+            if not u.strip() or not v.strip():
+                raise ValueError(
+                    f"edges[{i}] endpoints must be non-empty strings; got {e!r}")
+
+        # nodes: ("name", callable)
+        for i, item in enumerate(node_list):
+            if not (isinstance(item, (tuple, list)) and len(item) == 2):
+                raise TypeError(
+                    f"nodes[{i}] must be ('name', function); got {item!r}")
+            name, fn = item
+            if not (isinstance(name, str) and name.strip()):
+                raise TypeError(
+                    f"nodes[{i}]: name must be a non-empty str; got {name!r}")
+            if not callable(fn):
+                raise TypeError(
+                    f"nodes[{i}]: function must be callable; got {type(fn).__name__}")
+
+        self.edges, self._fns = self._validate_and_normalize(
+            edges, nodes)  # _fns: Dict[name, fn]
         self.network: Optional[Network] = None
-        # The in-degree and out-degree of nodes of the graph.
         self.indeg: Dict[str, int] = {}
         self.outdeg: Dict[str, int] = {}
+
+    # ---------- Validation / normalization ----------
 
     @staticmethod
     def _validate_and_normalize(
         edges_in: Iterable[Tuple[str, str]],
-        nodes_in: Dict[str, NodeSpec],
-    ) -> Tuple[List[Tuple[str, str]], Dict[str, NodeSpec]]:
-        # ---- nodes ----
-        if not isinstance(nodes_in, dict) or not nodes_in:
+        nodes_in: Iterable[NodePair],
+    ) -> Tuple[List[Tuple[str, str]], Dict[str, Callable[..., Any]]]:
+        # Nodes: iterable of ("name", fn)
+
+        try:
+            pairs = list(nodes_in)
+        except TypeError:
             raise TypeError(
-                "nodes must be a non-empty dict mapping 'name' -> (callable, params_dict).\n"
-                "Hint: nodes = {'src': (from_list, {'items': [...]})}"
-            )
+                "nodes must be an iterable of ('name', function) pairs")
 
-        norm_nodes: Dict[str, NodeSpec] = {}
-        for name, spec in nodes_in.items():
+        fns: Dict[str, Callable[..., Any]] = {}
+        for i, (name, fn) in enumerate(pairs):
             if not isinstance(name, str) or not name.strip():
-                raise ValueError(
-                    f"Node names must be non-empty strings; got {name!r}")
-
-            for prefix in _RESERVED_PREFIXES:
-                if name.startswith(prefix):
-                    raise ValueError(
-                        f"Node name {name!r} collides with reserved prefix {prefix!r} "
-                        "used internally (e.g., broadcast nodes). Hint: rename your node."
-                    )
-            for _name in _RESERVED_NAMES:
-                if name == _name:
-                    raise ValueError(
-                        f"Node name {name!r} is a reserved word"
-                    )
-
-            # Must be exactly (callable, dict)
-            if not isinstance(spec, tuple):
-                if callable(spec):
-                    raise TypeError(
-                        f"Node {name!r} must be given as (callable, params_dict).\n"
-                        f"Hint: nodes['{name}'] = ({getattr(spec, '__name__', '<fn>')}, {{}})"
-                    )
-                if isinstance(spec, dict) and ("fn" in spec or "params" in spec):
-                    raise TypeError(
-                        f"Node {name!r} looks like a dict spec, but v2 expects a tuple.\n"
-                        f"Use: nodes['{name}'] = (fn, {{...}})"
-                    )
-                raise TypeError(
-                    f"Node {name!r} must be (callable, params_dict); got {type(spec).__name__}"
-                )
-
-            if len(spec) != 2:
-                raise TypeError(
-                    f"Node {name!r} tuple must be (callable, params_dict); got length {len(spec)}")
-
-            fn, params = spec
+                raise ValueError(f"Node #{i} has invalid name: {name!r}")
+            if name in fns:
+                raise ValueError(f"Duplicate node name '{name}' in nodes list")
             if not callable(fn):
                 raise TypeError(
-                    f"Node {name!r}: first element must be callable; got {type(fn).__name__}")
-            if not isinstance(params, dict):
-                raise TypeError(
-                    f"Node {name!r}: second element must be a dict of params (use {{}} if none); got {type(params).__name__}"
-                )
+                    f"Node '{name}' must be a function/callable; got {type(fn).__name__}")
 
-            norm_nodes[name] = (fn, dict(params))
+            # Reserved names/prefixes
+            if any(name.startswith(pfx) for pfx in _RESERVED_PREFIXES):
+                raise ValueError(
+                    f"Node name '{name}' uses reserved prefix {_RESERVED_PREFIXES}")
+            if name in _RESERVED_EXACT:
+                raise ValueError(
+                    f"Node name '{name}' is a reserved exact name: {_RESERVED_EXACT}")
 
-        # ---- edges ----
+            fns[name] = fn
+
+        # Edges: list of (u, v)
         try:
             edge_list = list(edges_in)
         except TypeError:
             raise TypeError("edges must be an iterable of (u, v) pairs")
 
         norm_edges: List[Tuple[str, str]] = []
-        for i, e in enumerate(edge_list):
+        for idx, e in enumerate(edge_list):
             if not (isinstance(e, (tuple, list)) and len(e) == 2):
-                raise ValueError(f"Edge #{i} must be a pair (u, v); got {e!r}")
-            u, v = e
-            if not (isinstance(u, str) and isinstance(v, str) and u.strip() and v.strip()):
                 raise ValueError(
-                    f"Edge #{i} endpoints must be non-empty strings; got {e!r}")
-            for prefix in _RESERVED_PREFIXES:
-                if u.startswith(prefix) or v.startswith(prefix):
-                    raise ValueError(
-                        f"Edge {e!r} uses reserved prefix {prefix!r}. Hint: rename node(s) not to start with '{prefix}'."
-                    )
+                    f"Edge #{idx} must be a pair (u, v); got {e!r}")
+            u, v = e
+            if not (isinstance(u, str) and u.strip() and isinstance(v, str) and v.strip()):
+                raise ValueError(
+                    f"Edge #{idx} endpoints must be non-empty strings; got {e!r}")
             norm_edges.append((u, v))
 
-        # ---- cross-check membership ----
+        # Cross-check membership
         referenced = {u for u, v in norm_edges} | {v for u, v in norm_edges}
-        missing = sorted(n for n in referenced if n not in norm_nodes)
+        missing = sorted(n for n in referenced if n not in fns)
         if missing:
             hints = "\n".join(
-                f"  - Add nodes'{n}' = (fn, {{}})  or remove edges mentioning '{n}'"
+                f"  - Add node ('{n}', fn) or remove/rename edges mentioning '{n}'"
                 for n in missing
             )
             raise KeyError(
-                f"nodes {missing} referenced by edges are missing from the list of nodes."
-                f"Suggestions:"
-                f"{hints}"
+                f"Node(s) referenced by edges are missing: {missing}\nSuggestions:\n{hints}"
             )
 
-        # ---- duplicates & unused ----
-        # De-duplicate edges, preserving order; warn if any dropped
+        # De-dup edges (preserve first)
         seen = set()
-        dedup_edges = []
-        dropped = []
+        dedup_edges: List[Tuple[str, str]] = []
+        dropped: List[Tuple[str, str]] = []
         for e in norm_edges:
             if e in seen:
                 dropped.append(e)
@@ -159,8 +172,8 @@ class Graph:
             warnings.warn(
                 f"Removed {len(dropped)} duplicate edge(s): {dropped}", RuntimeWarning)
 
-        # Warn on nodes defined but not referenced by any edge
-        unused = sorted(n for n in norm_nodes.keys() if n not in referenced)
+        # Warn on nodes not referenced
+        unused = sorted(n for n in fns if n not in referenced)
         if unused:
             warnings.warn(
                 f"{len(unused)} node(s) defined but not used in edges: {unused}\n"
@@ -168,190 +181,202 @@ class Graph:
                 RuntimeWarning,
             )
 
-        return dedup_edges, norm_nodes
+        return dedup_edges, fns
+
+    @staticmethod
+    def _validate_function_signature(name: str, role: str, fn: Callable[..., Any]) -> None:
+        sig = inspect.signature(fn)
+        params = list(sig.parameters.values())
+
+        def required_positional_count() -> int:
+            cnt = 0
+            for p in params:
+                if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD) and p.default is p.empty:
+                    cnt += 1
+            return cnt
+
+        req_pos = required_positional_count()
+
+        if role == "source":
+            # Should require no positional args (zero-arg callable)
+            if req_pos > 0 and all(p.kind != p.VAR_POSITIONAL for p in params):
+                raise TypeError(
+                    f"Source node '{name}' should be a zero-argument function. "
+                    f"Got signature: {fn.__name__}{sig}. "
+                    "Hint: wrap configuration in a closure: "
+                    "def src(): return from_list(items=..., key=...)"
+                )
+        else:
+            # Transform/sink should accept at least one positional (the message), unless using *args
+            if req_pos == 0 and not any(p.kind == p.VAR_POSITIONAL for p in params):
+                raise TypeError(
+                    f"Node '{name}' (role {role}) must accept a message parameter. "
+                    f"Got signature: {fn.__name__}{sig}. Hint: def {name}(msg): ..."
+                )
 
     # ---------- Public API ----------
 
     def compile(self) -> Network:
-        roles = self._infer_roles()
+        roles = self._infer_roles()  # may rewrite self.edges and recompute indeg/outdeg
         blocks: Dict[str, Any] = {}
 
-        # ---------------------------------
-        # Make blocks
-        # ---------------------------------
+        # Build blocks for all role-bearing nodes, including injected broadcast/merge nodes
+        for name, role in roles.items():
+            if role in {"source", "transform", "sink"}:
+                if name not in self._fns:
+                    raise KeyError(
+                        f"Node '{name}' referenced by edges but not provided in nodes list.")
+                fn = self._fns[name]
+                self._validate_function_signature(name, role, fn)
+                if role == "source":
+                    blocks[name] = Source(fn=fn, params={})
+                elif role == "transform":
+                    blocks[name] = Transform(fn=fn, params={})
+                else:  # sink
+                    blocks[name] = Sink(fn=fn, params={})
 
-        for name, spec in self.nodes.items():
-            # name is a node in the graph
-            role = roles.get(name)
-            # Every role other than broadcast and merge must have a spec.
-            # broadcast and merge roles have no spec.
-            if spec:
-                fn, params = spec
-
-            if role == "source":
-                block = Source(fn=fn, params=params)
-            elif role == "transform":
-                block = Transform(fn=fn, params=params)
-            elif role == "sink":
-                block = Sink(fn=fn, params=params)
             elif role == "broadcast":
-                block = Broadcast(num_outports=self.outdeg[name])
+                blocks[name] = Broadcast(num_outports=self.outdeg[name])
+
             elif role == "merge":
-                block = MergeAsynch(num_inports=self.indeg[name])
+                blocks[name] = MergeAsynch(num_inports=self.indeg[name])
+
             else:
-                raise ValueError(f"could not infer role for node '{name}'")
+                raise ValueError(f"Unknown role '{role}' for node '{name}'")
 
-            blocks[name] = block
+        # Build connections, handling multi-port broadcast/merge
+        n_connected: Dict[str, int] = {n: 0 for n in roles.keys()}
+        connections: List[Tuple[str, str, str, str]] = []
 
-        # ---------------------------------
-        # Make connections
-        # ---------------------------------
-        n_connected = {name: 0 for name in self.nodes.keys()}
-        connections = []
+        for u, v in self.edges:
+            ru, rv = roles[u], roles[v]
 
-        for (u, v) in self.edges:
-            role_u, role_v = roles.get(u), roles.get(v)
-            if (role_u != "broadcast" and
-                    role_v != "merge"):
-                # u has single output, v has single input
+            if ru != "broadcast" and rv != "merge":
+                # single out → single in
                 connections.append((u, "out", v, "in"))
 
-            elif (role_u == "broadcast" and
-                  role_v != "merge"):
-                outport_number = n_connected[u]
-                outport = f"out_{outport_number}"
-                connections.append((u, outport, v, "in"))
+            elif ru == "broadcast" and rv != "merge":
+                # broadcast has numbered outports
+                out_i = n_connected[u]
+                connections.append((u, f"out_{out_i}", v, "in"))
                 n_connected[u] += 1
 
-            elif (role_u != "broadcast" and
-                  role_v == "merge"):
-                inport_number = n_connected[v]
-                inport = f"in_{inport_number}"
-                connections.append((u, "out", v, inport))
+            elif ru != "broadcast" and rv == "merge":
+                # merge has numbered inports
+                in_i = n_connected[v]
+                connections.append((u, "out", v, f"in_{in_i}"))
                 n_connected[v] += 1
 
             else:
-                # role_u == "broadcast" and role_v == "merge"
-                outport_number = n_connected[u]
-                outport = f"out_{outport_number}"
-                inport_number = n_connected[v]
-                inport = f"in_{inport_number}"
-                connections.append((u, outport, v, inport))
+                # broadcast → merge
+                out_i = n_connected[u]
+                in_i = n_connected[v]
+                connections.append((u, f"out_{out_i}", v, f"in_{in_i}"))
                 n_connected[u] += 1
                 n_connected[v] += 1
 
         self.network = Network(blocks=blocks, connections=connections)
+        return self.network
 
     def compile_and_run(self) -> None:
-        self.compile()  # create self.network
-        self.network.compile_and_run()
+        net = self.network or self.compile()
+        net.compile_and_run()
 
-    # ---------- Helpers ----------
+    # ---------- Role inference + rewrites ----------
+
     def _infer_roles(self) -> Dict[str, str]:
-        names = set(self.nodes.keys())
+        # Snapshot original edges for degree computation
+        original_edges = list(self.edges)
 
-        # Determine set (called names) of nodes.
-        for (u, v) in self.edges:
+        names = set(self._fns.keys())
+        for u, v in original_edges:
             names.add(u)
             names.add(v)
+        names = sorted(names)  # determinism
 
-        # Compute in-degree and out_degree of nodes of the graph.
-        self.indeg = {n: 0 for n in names}
-        self.outdeg = {n: 0 for n in names}
-        for (u, v) in self.edges:
+        # Degrees on original graph
+        indeg0 = {n: 0 for n in names}
+        outdeg0 = {n: 0 for n in names}
+        for u, v in original_edges:
+            outdeg0[u] += 1
+            indeg0[v] += 1
+
+        # Initial roles (on original)
+        roles: Dict[str, str] = {}
+        for n in names:
+            if indeg0[n] == 0 and outdeg0[n] == 0:
+                raise ValueError(f"node '{n}' has no incident edges.")
+            if indeg0[n] == 0:
+                roles[n] = "source"
+            elif outdeg0[n] == 0:
+                roles[n] = "sink"
+            else:
+                roles[n] = "transform"
+
+        # Rewire: fan-out via broadcast, fan-in via merge
+        # new_edges will be modified but original_edges stays unchanged.
+        new_edges = list(original_edges)
+        bcount = 0
+        mcount = 0
+
+        # Fan-out: for any node with >1 outgoing (in new_edges)
+        for n in names:
+            outs = [v for (u, v) in new_edges if u == n]
+            if len(outs) > 1:
+                bname = f"broadcast_{bcount}"
+                while bname in roles or bname in self._fns:
+                    bcount += 1
+                    bname = f"broadcast_{bcount}"
+                bcount += 1
+                roles[bname] = "broadcast"
+                # remove (n, outs) then add (n, bname) + (bname, v)
+                new_edges = [(u, v)
+                             for (u, v) in new_edges if not (u == n and v in outs)]
+                new_edges.append((n, bname))
+                new_edges.extend((bname, v) for v in outs)
+
+        # Fan-in: for any node with >1 incoming (in new_edges)
+        for n in names:
+            ins = [u for (u, v) in new_edges if v == n]
+            if len(ins) > 1:
+                mname = f"merge_{mcount}"
+                while mname in roles or mname in self._fns:
+                    mcount += 1
+                    mname = f"merge_{mcount}"
+                mcount += 1
+                roles[mname] = "merge"
+                # remove (ins, n) then add (mname, n) + (u, mname)
+                new_edges = [(u, v)
+                             for (u, v) in new_edges if not (u in ins and v == n)]
+                new_edges.append((mname, n))
+                new_edges.extend((u, mname) for u in ins)
+
+        # Commit rewritten edges
+        self.edges = new_edges
+
+        # Recompute degrees on the FINAL graph for port counts
+        final_names = set(self._fns.keys()) | {u for u, v in self.edges} | {
+            v for u, v in self.edges}
+        self.indeg = {n: 0 for n in final_names}
+        self.outdeg = {n: 0 for n in final_names}
+        for u, v in self.edges:
             self.outdeg[u] += 1
             self.indeg[v] += 1
 
-        # --------------------------------------------------
-        # Add merge nodes at fanin points
-        # If a node y has multiple input edges (x, y) then
-        # create a new merge node z, and create edges (x, z)
-        # (z, y), and remove edges (x, y).
-        # So, all fanin are to merge nodes.
+        # Check
+        for n in final_names:
+            if n not in roles:
+                # Single-degree nodes may appear only if injected; infer from final degrees
+                if self.indeg[n] > 1:
+                    assert (roles[n] == "merge") and (self.outdeg[n] == 1)
+                elif self.outdeg[n] > 1:
+                    assert (roles[n] == "broadcast") and (self.indeg[n] == 1)
+                elif self.indeg[n] == 0:
+                    assert (roles[n] == "source") and (self.outdeg[n] == 1)
+                elif self.outdeg[n] == 0:
+                    assert (roles[n] == "sink") and (self.indeg[n] == 1)
+                else:
+                    assert (roles[n] == "transform") and (
+                        self.indeg == 1) and (self.outdeg == 1)
 
-        # Add broadcast nodes at fanout points
-        # If a node y has multiple output edges (y, x) then
-        # create a new broadcast node z, and create edges (z, x)
-        # (y, z), and remove edges (y, x).
-        # So, all fanout are to broadcast nodes.
-
-        k = 0  # number of broadcast nodes added to graph
-        j = 0  # number of merge nodes added to graph
-        # Give unique names to broadcast and merge nodes.
-        # The k-th broadcast node is "broadcast_k" and
-        # the j-th merge node is "merge_j"
-        roles: Dict[str, str] = {}
-        for n in names:
-            if self.indeg[n] == 0 and self.outdeg[n] == 0:
-                raise ValueError(f"node '{n}' has no incident edges.")
-            if self.indeg[n] == 0:
-                roles[n] = "source"
-            elif self.outdeg[n] == 0:
-                roles[n] = "sink"
-            else:
-                # self.indeg[n] > 0 and self.outdeg[n] > 0
-                roles[n] = "transform"
-            # ---------------------
-            # ADD BROADCAST NODE
-            # ---------------------
-            if self.outdeg[n] > 1:
-                # Add a broadcast node which has outdeg[n] outports
-                # Node n connects only to this broadcast node.
-                # The outputs of this broadcast connect to outputs
-                # of node n in the initial graph.
-
-                # Remove edges from node n
-                outs = [v for (u, v) in self.edges if u == n]
-                self.edges = [(u, v) for (u, v) in self.edges if u != n]
-
-                # Add a broadcast node called f"broadcast_{k}"
-                # broadcast node has single inport and len(outs) outports.
-                # add broadcast node after node n
-                bname = f"broadcast_{k}"
-                roles[bname] = "broadcast"
-                k += 1
-                # add single edge from n to the broadcast.
-                self.edges.append((n, bname))
-                # Add edges from the broadcast to original nodes from node n.
-                self.edges.extend((bname, v) for v in outs)
-                self.indeg[bname] = 1
-                self.outdeg[bname] = len(outs)
-                # Add the broadcast node to the nodes of the graph
-                # A broadcast node has a None spec.
-                self.nodes[bname] = None
-
-            # ---------------------
-            # ADD MERGE NODE
-            # ---------------------
-            if self.indeg[n] > 1:
-                # Add a merge node which has indeg[n] outports
-                # The inputs of this merge are the inputs
-                # of node n in the initial graph.
-
-                # Remove edges to node n
-                ins = [u for (u, v) in self.edges if v == n]
-                self.edges = [(u, v) for (u, v) in self.edges if v != n]
-
-                # Add a merge node called f"merge_{j}"
-                # merge node has single outport and len(ins) inports.
-                # add the merge node with an edge from merge node to node n
-                bname = f"merge_{j}"
-                roles[bname] = "merge"
-                j += 1
-                # add single edge to n from the merge.
-                self.edges.append((bname, n))
-                # Add edges to the merge from original nodes to node n.
-                self.edges.extend((v, bname) for v in ins)
-                self.indeg[bname] = len(ins)
-                self.outdeg[bname] = 1
-                # Add the merge node to the nodes of the graph
-                # A merge node has a None spec.
-                self.nodes[bname] = None
-        # assert:
-        # for all nodes n of the graph:
-        #   if outdeg[n] == 0 and indeg[n] == 1 then roles[n] == "sink"
-        #   if outdeg[n] == 1 and indeg[n] == 0 then roles[n] == "source"
-        #   if outdeg[n] == 1 and indeg[n] ==1 then roles[n] == "transform"
-        #   if outdeg[n] > 1 then indeg[n] ==1 and roles[n] == "broadcast"
-        #   if indeg[n] > 1 then outdeg[n] == 1 and roles[n] == "merge"
         return roles

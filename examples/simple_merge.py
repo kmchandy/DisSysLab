@@ -14,12 +14,17 @@ def from_list(items, delay):
         time.sleep(delay)
 
 
-def add_suffix(v, suffix):
-    return v + suffix
+def src_0():
+    return from_list(items=["A", "B"], delay=0.5)
 
 
-def to_list(v, target):
-    target.append(v)
+def src_1():
+    return from_list(items=["X", "Y", "Z"], delay=0.4)
+
+
+def trn_0(v): return v.lower()
+def trn_1(v): return v + "!!"
+def snk(v): results.append(v)
 
 
 # -----------------------------------------------------------
@@ -31,13 +36,8 @@ g = Graph(
     edges=[("src_0", "trn_0"), ("src_1", "trn_0"),
            ('src_0', "trn_1"), ("src_1", "trn_1"),
            ("trn_0", "snk"), ("trn_1", "snk")],
-    nodes={
-        "src_0": (from_list, {"items": ["A", "B"], "delay": 0.5}),
-        "src_1": (from_list, {"items": ["X", "Y", "Z"], "delay": 0.4}),
-        "trn_0": (str.lower, {}),
-        "trn_1": (add_suffix, {"suffix": "!!"}),
-        "snk": (to_list, {"target": results}),
-    },
+    nodes=[("src_0", src_0), ("src_1", src_1), ("trn_0", trn_0),
+           ("trn_1", trn_1), ("snk", snk)]
 )
 # -----------------------------------------------------------
 

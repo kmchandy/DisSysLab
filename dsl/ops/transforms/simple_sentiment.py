@@ -42,7 +42,7 @@ def tokenize_words(text: str) -> list[str]:
     return [w.casefold() for w in _word_re.findall(text)]
 
 
-def sentiment_score(
+def score(
     text: str,
     positive_words: Optional[Iterable[str]] = None,
     negative_words: Optional[Iterable[str]] = None,
@@ -64,22 +64,10 @@ def label_from_score(score: int) -> str:
     return "Neutral"
 
 
-def add_sentiment(
+def sentiment_score(
     msg: Any,
     *,
-    input_key: str = "text",
-    add_key: str = "sentiment",
     positive_words: Optional[Iterable[str]] = None,
     negative_words: Optional[Iterable[str]] = None,
-) -> dict:
-
-    if not isinstance(msg, dict):
-        raise ValueError("Input message to AddSentiment must be a dict")
-    text = msg[input_key]
-    if not isinstance(text, str):
-        raise ValueError(
-            "The text field of an input message to AddSentiment must be a string")
-    score = sentiment_score(text, positive_words, negative_words)
-    output_msg = copy.deepcopy(msg)
-    output_msg[add_key] = label_from_score(score)
-    return output_msg
+) -> str:
+    return score(msg, positive_words, negative_words)
