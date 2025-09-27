@@ -5,8 +5,10 @@
 - 🧑‍🎓 **Non-programmers**: Build distributed applications by connecting pre-built components from sources such as OpenAI, Microsoft Copilot, NumPy, and Scikit-learn.  
 - 🧑‍💻 **Programmers**: Build distributed applications in Python by connecting blocks.
 
----
+## IMPORTANT NOTE
+This framework is being developed. It changes almost daily. I hope to have a solid version by the end of the year. In the meantime, feel free to use it provided you realize that it is changing rapidly.
 
+---
 
 
 ## 🔧 Core Idea 1: Build Applications by Connecting Blocks
@@ -74,10 +76,12 @@ python -m pip install -e .
 4. **Run an example:**
 
 ```
-python dsl/examples/ch01_networks/simple_pipeline.py
+python examples/graph_simple_source_sink.py
 ```
 
-👉 For more detailed install instructions (including extras for ML, Google Sheets, GitHub, and running tests), see the Install Instructions section at the end of this README.
+5. **Interfaces: Extensions and Connections**
+   - Extensions has functions provided by services such as OpenAI and Scikit that are called by **graph.py** to build apps.
+   - Connections are interfaces to databases and applications such as Google Sheets. Not implemented.
 
 ---
 
@@ -92,13 +96,6 @@ A quick way to start is to run/modify the examples in the README.md files in the
 - **GPT blocks.** [Chapter 4](dsl/examples/ch04_GPT/README.md)
 - **Data Science Blocks** [Chapter 5](dsl/examples/ch05_ds/README.md)
 - **Connectors to External Applications** [Chapter 6](dsl/examples/ch06_git/README.md)
-
-### 🔍 Coming Soon
-🖼️ Soon: A natural language interface, so you can build networks by describing them in English.
-
-### 🤝 Collaborate
-📬 We want to make distributed systems understandable — and enjoyable — for everyone.
-DisSysLab is a free educational project. Collaboration is welcome. We plan to have a stable framework by year end.
 
 ## 🚀 Install Instructions
 
@@ -140,13 +137,17 @@ python -m pip install -e .
 
 Some applications described in later chapters need extra libraries. Add them in square brackets with quotes:
 
+#### Chapter 4 (Large Language Model Interfaces)
+```
+pip install -e .[llm]
+```
+
 #### Chapter 5 (Data Science / ML)
 You may need to use python3 rather than python depending on your python installation.
-
-
 ```
-python -m pip install -e '.[ml]'
+pip install -e .[ml]
 ```
+
 
 #### Chapter 6 (Connectors to Google Sheets, etc.)
 ```

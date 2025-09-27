@@ -8,13 +8,13 @@ from dsl.ops.transforms.simple_entity_extractor import extract_entity
 # -----------------------------------------------------------
 
 
-def from_list(items):
-    for x in items:
+def src():
+    for x in messages:
         yield x
 
 
-def to_list(v, target):
-    target.append(v)
+def to_results(v):
+    results.append(v)
 
 
 messages = [
@@ -28,12 +28,8 @@ messages = [
 results = []
 
 g = Graph(
-    edges=[("src_0", "trn_0"), ("trn_0", "snk")],
-    nodes={
-        "src_0": (from_list, {"items": messages}),
-        "trn_0": (extract_entity, {}),
-        "snk": (to_list, {"target": results}),
-    },
+    edges=[("src", "trn"), ("trn", "snk")],
+    nodes=[("src", src), ("trn", extract_entity), ("snk", to_results)]
 )
 # -----------------------------------------------------------
 
