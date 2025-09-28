@@ -79,17 +79,18 @@ class Graph:
         for i, item in enumerate(node_list):
             if not (isinstance(item, (tuple, list)) and len(item) == 2):
                 raise TypeError(
-                    f"nodes[{i}] must be ('name', function); got {item!r}")
+                    f"nodes[{i}] must be ('name', function); got {item!r}, nodes ={node_list}")
             name, fn = item
             if not (isinstance(name, str) and name.strip()):
                 raise TypeError(
-                    f"nodes[{i}]: name must be a non-empty str; got {name!r}")
+                    f"nodes[{i}]: name must be a non-empty str; got {name!r}, nodes ={node_list}")
             if not callable(fn):
                 raise TypeError(
-                    f"nodes[{i}]: function must be callable; got {type(fn).__name__}")
+                    f"nodes[{i}]: function must be callable; got {type(fn).__name__}, nodes ={node_list}")
 
         self.edges, self._fns = self._validate_and_normalize(
             edges, nodes)  # _fns: Dict[name, fn]
+        self.nodes = self._fns.keys()
         self.network: Optional[Network] = None
         self.indeg: Dict[str, int] = {}
         self.outdeg: Dict[str, int] = {}
@@ -288,7 +289,7 @@ class Graph:
         # Snapshot original edges for degree computation
         original_edges = list(self.edges)
 
-        names = set(self._fns.keys())
+        names = set(self.nodes)
         for u, v in original_edges:
             names.add(u)
             names.add(v)

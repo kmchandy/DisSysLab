@@ -1,6 +1,5 @@
 # 📂 ToDo
 
-- build example using OpenAI
 - build example using NumPy or Scikit
 - add connectors
 - clean up directories from previous versions and delete files and functions that are not used. 
