@@ -1,0 +1,45 @@
+from dsl import Graph
+from dsl.extensions.agent_openai import AgentOpenAI
+
+
+list_of_text = [
+    "Obama was the first African American president of the USA.",
+    "The capital of India is New Delhi and its Prime Minister is Narendra Modi."
+    "BRICS is an organization of Brazil, Russia, India, China and South Africa. Putin, Xi, and Modi met in Beijing",
+]
+
+
+def from_list_of_text():
+    for data_item in list_of_text:
+        yield {"text": data_item}
+
+
+results = []
+def to_results(v): results.append(v)
+
+
+add_key = "entities"
+
+
+def agent_op(v):
+    v[add_key] = agent.fn(v["text"])
+    return v
+
+
+system_prompt = "Extract named entities. Return a JSON object with 'people', 'organizations', and 'locations'."
+agent = AgentOpenAI(system_prompt=system_prompt)
+
+g = Graph(
+    edges=[("src", "trn"), ("trn", "snk")],
+    nodes=[("src", from_list_of_text),
+           ("trn", agent_op), ("snk", to_results)]
+)
+
+g.compile_and_run()
+
+if __name__ == "__main__":
+    for result in results:
+        for key, value in result.items():
+            print(key)
+            print(value)
+        print("")
