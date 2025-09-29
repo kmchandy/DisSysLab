@@ -31,8 +31,7 @@ class Transform(Agent):
         try:
             while True:
                 msg = self.recv("in")
-
-                if msg is STOP:
+                if isinstance(msg, str) and msg == STOP:
                     self.send(STOP, "out")
                     return
                 try:

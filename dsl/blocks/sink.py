@@ -27,18 +27,15 @@ class Sink(Agent):
         try:
             while True:
                 msg = self.recv("in")
-
                 # STOP: swallow and close input
-                if msg == STOP:
+                if isinstance(msg, str) and msg == STOP:
                     try:
                         self.close("in")
                     finally:
                         return
-
                 # None=drop (do not record)
                 if msg is None:
                     continue
-
                 try:
                     self._fn(msg, **self._params)
                 except Exception as e:

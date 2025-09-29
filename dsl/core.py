@@ -6,7 +6,7 @@ from typing import Optional, List, Dict, Tuple, Union, Any
 from collections import deque
 from abc import ABC, abstractmethod
 
-STOP = "__STOP__"  # end-of-stream sentinel
+STOP = "__STOP__"  # The end-of-stream STOP sentinel
 # (from_block, from_port, to_block, to_port)
 Connection = Tuple[str, str, str, str]
 
