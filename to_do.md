@@ -1,7 +1,6 @@
 # 📂 ToDo
-
-- build example using NumPy or Scikit
 - add connectors
+- draw graph
 - clean up directories from previous versions and delete files and functions that are not used. 
 - add tutorials and examples with README.md files 
 - add a small test suite for added code 
