@@ -4,7 +4,6 @@
 # =================================================
 from __future__ import annotations
 from typing import Any, Callable, Optional, Set
-import traceback
 from rich import print as rprint
 import threading
 
@@ -40,8 +39,8 @@ class MergeSynch(Agent):
         while True:
             for port in self.inports:
                 msg = self.recv(port)
-                if msg == "__STOP__":
-                    self.send("__STOP__", "out")
+                if isinstance(msg, str) and msg == STOP:
+                    self.send(STOP, "out")
                     return
                 self.buffers[port].append(msg)
 
@@ -54,10 +53,7 @@ class MergeSynch(Agent):
                 except Exception as e:
                     rprint(
                         f"[bold red]❌ TransformMergeSynch error:[/bold red] {e}")
-                    with open(DEBUG_LOG, "a") as f:
-                        f.write("\n--- TransformMergeSynch Error ---\n")
-                        f.write(traceback.format_exc())
-                    self.send("__STOP__", "out")
+                    self.send(STOP, "out")
 
 
 # =================================================
@@ -84,7 +80,7 @@ class MergeAsynch(Agent):
     def _worker(self, port: str) -> None:
         while True:
             msg = self.recv(port)  # blocking read from inport queue
-            if msg == STOP:
+            if isinstance(msg, str) and msg == STOP:
                 with self._stop_lock:
                     self._stopped_ports.add(port)
                     if len(self._stopped_ports) == len(self.inports):

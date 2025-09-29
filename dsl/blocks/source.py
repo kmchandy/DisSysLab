@@ -84,7 +84,7 @@ class Source(Agent):
                 if item is None:
                     continue
                 # Forbid user-yielded STOP to avoid double-STOP at merges
-                if item == STOP:
+                if isinstance(item, str) and item == STOP:
                     print(
                         "[Source] Error: user function yielded STOP; terminating stream.")
                     break

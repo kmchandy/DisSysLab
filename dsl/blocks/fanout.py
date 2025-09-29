@@ -1,4 +1,4 @@
-from dsl.core import Agent
+from dsl.core import Agent, STOP
 from typing import Optional, Any, Callable
 import copy
 
@@ -21,7 +21,7 @@ class Broadcast(Agent):
     def run(self):
         while True:
             msg = self.recv("in")
-            if msg == "__STOP__":
+            if isinstance(msg, str) and msg == STOP:
                 self.stop()
                 return
             else:
@@ -53,7 +53,7 @@ class SplitBinary(Agent):
     def run(self):
         while True:
             msg = self.recv("in")
-            if msg == "__STOP__":
+            if isinstance(msg, str) and msg == STOP:
                 self.stop()
                 return
             else:
