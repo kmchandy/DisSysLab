@@ -1,10 +1,8 @@
-# dsl.examples.graph_pipeline
+# dsl.examples.simple_pipeline
 
-from dsl import Graph
+from dsl import network
 
-# -----------------------------------------------------------
 # Define Python functions.
-# -----------------------------------------------------------
 
 
 def src():
@@ -20,17 +18,9 @@ results = []
 def snk(v): results.append(v)
 
 
-# -----------------------------------------------------------
-# Define the graph
-# -----------------------------------------------------------
-
-g = Graph(
-    edges=[("src", "t_0"), ("t_0", "t_1"), ("t_1", "snk")],
-    nodes=[("src", src), ("t_0", t_0), ("t_1", t_1), ("snk", snk)]
-)
-# -----------------------------------------------------------
-
-g.compile_and_run()
+# Define and run the graph
+g = network([(src, t_0), (t_0, t_1), (t_1, snk)])
+g.run_network()
 
 if __name__ == "__main__":
     assert results == ["HELLO!!", "WORLD!!"]

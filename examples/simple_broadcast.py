@@ -1,13 +1,11 @@
 # dsl.examples.graph_pipeline
 
-from dsl import Graph
+from dsl import network
 
-# -----------------------------------------------------------
-# Define Python functions independent of dsl.
-# -----------------------------------------------------------
+# Define Python functions.
 
 
-def src():
+def from_list():
     for item in ["hello", "world"]:
         yield item
 
@@ -20,18 +18,9 @@ results_1 = []
 def snk_1(v): results_1.append(v)
 
 
-# -----------------------------------------------------------
 # Define the graph
-# -----------------------------------------------------------
-results_0 = []
-results_1 = []
-g = Graph(
-    edges=[("src", "snk_0"), ("src", "snk_1")],
-    nodes=[("src", src), ("snk_0", snk_0), ("snk_1", snk_1)]
-)
-# -----------------------------------------------------------
-
-g.compile_and_run()
+g = network([(from_list, snk_0), (from_list, snk_1)])
+g.run_network()
 
 if __name__ == "__main__":
     assert results_0 == ['hello', 'world']

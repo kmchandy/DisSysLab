@@ -1,6 +1,7 @@
-from dsl import Graph
+from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI
 
+# Define functions.
 
 list_of_text = [
     "Obama was the first African American president of the USA.",
@@ -29,13 +30,9 @@ def agent_op(v):
 system_prompt = "Extract named entities. Return a JSON object with 'people', 'organizations', and 'locations'."
 agent = AgentOpenAI(system_prompt=system_prompt)
 
-g = Graph(
-    edges=[("src", "trn"), ("trn", "snk")],
-    nodes=[("src", from_list_of_text),
-           ("trn", agent_op), ("snk", to_results)]
-)
-
-g.compile_and_run()
+# Define the graph
+g = network([(from_list_of_text, agent_op), (agent_op, to_results)])
+g.run_network()
 
 if __name__ == "__main__":
     for result in results:
