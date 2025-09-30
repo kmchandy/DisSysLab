@@ -1,29 +1,25 @@
-from dsl import Graph
+from dsl import network
+import time
+
+# Define functions.
 
 
-def from_list(items):
-    for item in items:
+def from_list():
+    for item in ["hello", "world"]:
         yield item
-
-
-def to_list(v, target):
-    target.append(v)
-
-
-def src():
-    return from_list(items=["hello", "world"])
-
-
-def snk(v):
-    return to_list(v, target=results)
+        time.sleep(0.1)
 
 
 results = []
-g = Graph(
-    edges=[("src", "snk")],
-    nodes=[("src", src), ("snk", snk)]
-)
-g.compile_and_run()
+
+
+def to_results(v):
+    results.append(v)
+
+
+# Define the network
+g = network([(from_list, to_results)])
+g.run_network()
 
 if __name__ == "__main__":
-    assert results == ["hello", "world"]
+    assert (results == ["hello", "world"])

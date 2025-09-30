@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 import warnings
 import inspect
+import re
 
 from dsl.core import Network
 from dsl.blocks.source import Source
@@ -18,6 +19,51 @@ NodePair = Tuple[str, Callable[..., Any]]
 _RESERVED_PREFIXES = ("broadcast_", "merge_")
 # Optional: exact names you don't want students to reuse
 _RESERVED_EXACT = {"broadcast", "merge", "source", "sink", "transform"}
+
+# Match pairs like: (from_data, upper_case)
+_PAIR_RE = re.compile(
+    r"\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*,\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)")
+
+# ---------------------------------------------------------
+#                  NETWORK                          |
+# ---------------------------------------------------------
+
+
+def strip_quotes(s: str) -> str:
+    s = s.strip()
+    if len(s) >= 2 and s[0] == s[-1] and s[0] in ("'", '"'):
+        return s[1:-1]
+    return s
+
+
+def network(x: Iterable[Tuple[Callable, Callable]]) -> Graph:
+    """
+    x example: [(from_list, upper_case), (upper_case, to_results)]
+    Returns:
+      Graph(
+        edges=[("from_list","upper_case"), ("upper_case","to_results")],
+        nodes=[("from_list", from_list), ("upper_case", upper_case), ("to_results", to_results)]
+      )
+    """
+    edges: List[Tuple[str, str]] = []
+    seen_names = set()
+    ordered_funcs: List[Callable] = []
+
+    for a, b in x:
+        edges.append((a.__name__, b.__name__))     # quote names for edges
+        for f in (a, b):                           # collect unique functions in first-seen order
+            name = f.__name__
+            if name not in seen_names:
+                seen_names.add(name)
+                ordered_funcs.append(f)
+
+    nodes = [(f.__name__, f) for f in ordered_funcs]  # ("name", function)
+    return Graph(edges=edges, nodes=nodes)
+
+
+# ---------------------------------------------------------
+#                  CLASS GRAPH                           |
+# ---------------------------------------------------------
 
 
 class Graph:
@@ -282,6 +328,10 @@ class Graph:
     def compile_and_run(self) -> None:
         net = self.network or self.compile()
         net.compile_and_run()
+
+    def run_network(self, *args, **kwargs):
+        """Run the network (alias for compile_and_run)."""
+        return self.compile_and_run(*args, **kwargs)
 
     # ---------- Role inference + rewrites ----------
 

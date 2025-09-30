@@ -1,7 +1,6 @@
 # dsl/__init__.py
-from .graph import Graph
-# Optional curated ops:
-from dsl.ops.sources.lists import from_list
-from dsl.ops.sinks.lists import to_list
+from __future__ import annotations
 
-__all__ = ["Graph", "from_list", "to_list"]
+from .graph import network, Graph   # re-export at top level
+
+__all__ = ["network", "Graph"]  # add "Graph" here too if you export it

@@ -1,47 +1,42 @@
 # dsl.examples.simple_merge
 
-from dsl import Graph
+from dsl import network
 import time
 
-# -----------------------------------------------------------
-# Define Python functions independent of dsl.
-# -----------------------------------------------------------
+# Define functions.
 
 
-def from_list(items, delay):
-    for item in items:
+def from_list_0():
+    for item in ["A", "B"]:
         yield item
-        time.sleep(delay)
+        time.sleep(0.12)
 
 
-def src_0():
-    return from_list(items=["A", "B"], delay=0.5)
+def from_list_1():
+    for item in ["X", "Y", "Z"]:
+        yield item
+        time.sleep(0.1)
 
 
-def src_1():
-    return from_list(items=["X", "Y", "Z"], delay=0.4)
+def lower(v):
+    return v.lower()
 
 
-def trn_0(v): return v.lower()
-def trn_1(v): return v + "!!"
-def snk(v): results.append(v)
+def add_bangs(v):
+    return v + "!!"
 
 
-# -----------------------------------------------------------
-# Define the graph
-# -----------------------------------------------------------
 results = []
+def to_results(v): results.append(v)
 
-g = Graph(
-    edges=[("src_0", "trn_0"), ("src_1", "trn_0"),
-           ('src_0', "trn_1"), ("src_1", "trn_1"),
-           ("trn_0", "snk"), ("trn_1", "snk")],
-    nodes=[("src_0", src_0), ("src_1", src_1), ("trn_0", trn_0),
-           ("trn_1", trn_1), ("snk", snk)]
-)
+
+# Define the graph
+g = network([(from_list_0, lower), (from_list_1, lower),
+            (from_list_0, add_bangs), (from_list_1, add_bangs),
+            (lower, to_results), (add_bangs, to_results)])
 # -----------------------------------------------------------
 
-g.compile_and_run()
+g.run_network()
 if __name__ == "__main__":
     assert set(results) == {"A!!", "B!!", "X!!", "Y!!", "Z!!",
                             "a", "b", "x", "y", "z"}

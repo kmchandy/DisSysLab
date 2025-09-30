@@ -336,3 +336,7 @@ class Network:
                 self.shutdown()
             except Exception:
                 pass
+
+    def run_network(self, *args, **kwargs):
+        """Run the network (alias for compile_and_run)."""
+        return self.compile_and_run(*args, **kwargs)

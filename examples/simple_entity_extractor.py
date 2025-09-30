@@ -1,11 +1,9 @@
 # dsl.examples.simple_entity_extractor
 
-from dsl import Graph
+from dsl import network
 from dsl.ops.transforms.simple_entity_extractor import extract_entity
 
-# -----------------------------------------------------------
-# Define Python functions independent of dsl.
-# -----------------------------------------------------------
+# Define functions.
 
 
 def src():
@@ -13,7 +11,10 @@ def src():
         yield x
 
 
-def to_results(v):
+results = []
+
+
+def snk(v):
     results.append(v)
 
 
@@ -22,18 +23,10 @@ messages = [
     {"text": "Charles is the King of the UK."},
 ]
 
-# -----------------------------------------------------------
-# Define the graph
-# -----------------------------------------------------------
-results = []
+# Define the network
+g = network([(src, extract_entity), (extract_entity, snk)])
+g.run_network()
 
-g = Graph(
-    edges=[("src", "trn"), ("trn", "snk")],
-    nodes=[("src", src), ("trn", extract_entity), ("snk", to_results)]
-)
-# -----------------------------------------------------------
-
-g.compile_and_run()
 if __name__ == "__main__":
     for result in results:
         print(result)
