@@ -5,8 +5,8 @@ from dsl import network
 # Define Python functions.
 
 
-def src():
-    for item in ["hello", "world"]:
+def src(items=["hello", "world"]):
+    for item in items:
         yield item
 
 

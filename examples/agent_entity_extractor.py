@@ -27,7 +27,7 @@ def agent_op(v):
     return v
 
 
-system_prompt = "Extract named entities. Return a JSON object with 'people', 'organizations', and 'locations'."
+system_prompt = "Extract entities."
 agent = AgentOpenAI(system_prompt=system_prompt)
 
 # Define the graph
