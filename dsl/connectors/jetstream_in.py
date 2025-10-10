@@ -29,6 +29,7 @@ class Jetstream_In:
     def __init__(
         self,
         *,
+        name: str | None = None,
         url: str = DEFAULT_URL,
         wanted_collections: Sequence[str] = ("app.bsky.feed.post",),
         wanted_dids: Sequence[str] | None = None,
@@ -40,6 +41,7 @@ class Jetstream_In:
         reconnect_backoff: Tuple[float, float, float] = (1.0, 2.0, 5.0),
         max_num_posts: int | None = None,    # stop after yielding N posts; None = forever
     ):
+        self._name = name or self.__class__.__name__
         self.url = url
         self.wanted_collections = list(wanted_collections or [])
         self.wanted_dids = list(wanted_dids or [])
@@ -58,7 +60,12 @@ class Jetstream_In:
         self.max_num_posts = None if max_num_posts is None else int(
             max(0, max_num_posts))
 
+    @property
+    def __name__(self) -> str:  # for frameworks that read fn.__name__
+        return self._name
+
     # ---- public iteration ----
+
     def __iter__(self) -> Iterator[Dict[str, Any]]:
         start = time.time()
         self._start_ws()

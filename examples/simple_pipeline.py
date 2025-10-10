@@ -23,4 +23,5 @@ g = network([(src, t_0), (t_0, t_1), (t_1, snk)])
 g.run_network()
 
 if __name__ == "__main__":
+    print(results)
     assert results == ["HELLO!!", "WORLD!!"]
