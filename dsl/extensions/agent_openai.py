@@ -40,6 +40,7 @@ class AgentOpenAI:
     def __init__(self,
                  *,
                  system_prompt: str,
+                 name: str = None,
                  default_model: str = "gpt-4.1-mini",
                  default_temperature: float = 0.7):
         key = _resolve_openai_key()
@@ -48,9 +49,14 @@ class AgentOpenAI:
                 "OPENAI_API_KEY not found. Export it or implement dsl/utils/get_credentials.py"
             )
         self.system_prompt = system_prompt
+        self._name = name or self.__class__.__name__
         self.client = OpenAI(api_key=key)
         self.default_model = default_model
         self.default_temperature = default_temperature
+
+    @property
+    def __name__(self):  # so graph builder can read a.__name__
+        return self._name
 
     def fn(
         self,

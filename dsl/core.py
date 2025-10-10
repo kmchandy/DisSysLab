@@ -56,7 +56,9 @@ class Agent(ABC):
         if q is None:
             raise ValueError(
                 f"Outport {outport} of agent {self.name} is not connected.")
-        q.put(msg)
+        # Do not send None as a message
+        if msg is not None:
+            q.put(msg)
 
     def recv(self, inport: str) -> Any:
         if inport not in self.inports or inport not in self.in_q:
