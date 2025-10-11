@@ -12,12 +12,13 @@ from .live_alert_console import live_alert_sink
 rss = RSS_In(url="https://api.weather.gov/alerts/active.atom",
              output_keys=["title", "link", "text"],
              emit_mode="item",
-             fetch_page=True, life_time=1)  # ~15s demo
+             fetch_page=True, life_time=2)  # ~2s demo
 
 
 def from_rss():
     news_items = rss.run()
     for news_item in news_items:
+        print(f"news_item = {news_item}")
         yield {k: news_item.get(k) for k in ("title", "page_text")}
 
 

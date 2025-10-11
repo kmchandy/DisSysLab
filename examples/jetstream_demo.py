@@ -93,7 +93,8 @@ def add_topics(msg):
 # ----------------------------------------------------------------------
 # 3. Add sentiment of posts using LLM. Add sentiment to msg['sentiment']
 # ------------------------------------------------------------------------
-agent_add_sentiment = AgentOpenAI(system_prompt=prompt_add_sentiment)
+agent_add_sentiment = AgentOpenAI(
+    system_prompt=prompt_add_sentiment, drop_msg=False)
 
 
 def add_sentiment(msg):

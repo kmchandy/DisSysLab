@@ -1,10 +1,10 @@
 # dsl.examples.rss_demo
 
 import time
-import json
 from dsl.connectors.rss_in import RSS_In
 from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI
+from dsl.extensions.add_fields import add_fields
 from .live_kv_console import kv_live_sink
 
 # Define functions.
@@ -47,36 +47,15 @@ Output rules:
 Example output:
 {"title":"Night Sky Notes","organizations":["NASA","JPL"],"science_terms":["exoplanet","spectroscopy"]}
 '''
-agent = AgentOpenAI(system_prompt=system_prompt)
+agent_extract_entitites = AgentOpenAI(system_prompt=system_prompt)
 
 
-def agent_op(v):
-    entities = agent.fn(v["page_text"])
-    entities_dict = json.loads(entities)
-    v['organizations'] = entities_dict['organizations']
-    v['science_terms'] = entities_dict["science_terms"]
-    return {k: v.get(k) for k in ("title", "organizations", "science_terms")}
+def add_entities(msg):
+    return add_fields(msg, key="page_text", fn=agent_extract_entitites.fn)
 
 
-result = []
-
-
-def to_result(v):
-    result.append(v)
-
-
-# Define the network
-# g = network([(from_rss, agent_op), (agent_op, count_terms),
-#             (count_terms, write_batch_per_org_csv)])
-# g = network([(from_rss, agent_op), (agent_op, write_batch_per_org_csv)])
-g = network([(from_rss, agent_op), (agent_op, to_result),
-            (agent_op, kv_live_sink)])
+g = network([(from_rss, add_entities), (add_entities, kv_live_sink)])
 g.run_network()
 
 if __name__ == "__main__":
-    print(f"result = {result}")
-    for output_dict in result:
-        for key, value in output_dict.items():
-            print(f"{key}")
-            print(f"{value}")
     print("finished")

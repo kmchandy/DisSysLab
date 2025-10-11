@@ -4,12 +4,54 @@
 ## 🎯 Goal
 
 
-- Learn how to build a distributed application by creating **blocks** and connecting them to form a **network**.
+- Learn how to build a distributed application by creating a **network** which is **directed graph** in which nodes are **agents** that process messages and edges are channels along which messages flow.
 ---
+
+## 💻 Example
+ 
+```
+# lessons.01_networks.basic_network.py
+
+from dsl import network
+
+def from_list():
+    for item in ["hello", "world"]:
+        yield item
+
+def uppercase(v):
+    return v.upper()
+
+results = []
+
+def to_results(x):
+    results.append(x)
+
+
+g = network([(from_list, uppercase), (uppercase, to_results)])
+
+g.run_network()
+print(results)  # Output: ['HELLO', 'WORLD']
+
+```
+## 📍 Network
+A network is specified by the list of edges of a directed graph. An edge is an ordered pair **(u, v)** which is an edge from node **u** to node **v**. Every node of the network has at least one incident edge. The nodes of the network are the nodes that appear in the list of edges.
+
+This example has two edges: ```(from_list, uppercase)``` and ```(uppercase, to_results)``` and  3 nodes: ```from_list```, ```upper_case```, and ```to_results```. The name of a node is the name of the function executed by the node. 
+
+The node ```from_list``` is a **source**. A source function has no parameters. A source function is an iterator which generates a sequence of values. Each execution of **yield** generates another value. In this example the iterator ```from_list``` yields two values: "hello" and "world".
+
+The node ```upper_case``` is a **transformer**. A transformer function has a single parameter and returns a single value.  In this example, the function ```upper_case``` has a single parameter ```v``` and returns a single value ```v.upper()```.
+
+The node ```to_results``` is a **sink**. A sink function has a single parameter. The function ```to_results``` has a single parameter ```x``` and execution of the function appends ```x``` to the list ```results```.
+
+A source has no input edges and has at least one output edge. A transformer node has at least one input edge and a least one output edge. A sink node has no output edges and at least one input edge.
+
+## Edges
+The graph has the two edges ```(from_list, upper_case)``` and from the node ```from_list``` to the node
 
 ## 📍 Example
 
-We’ll create a **three-block network**:
+We’ll create a :
 
 1. **Source** – generate a stream of messages.
 2. **Transform** – receive a message stream and output a transformation of the stream.
@@ -43,38 +85,7 @@ Block types with multiple inports and outports, and network structures that are 
 
 ---
 
-## 💻 Code Example
- 
-```
-# lessons.01_networks_blocks_connections.basic_network.py
 
-from dsl.kit import Network, FromList, Uppercase, ToList
-
-
-def basic_network():
-    results = []  # Holds results sent to sink
-
-    net = Network(
-        blocks={
-            "source": FromList(['hello', 'world']),
-            "upper_case": Uppercase(),
-            "sink": ToList(results),
-        },
-        connections=[
-            ("source", "out", "upper_case", "in"),
-            ("upper_case", "out", "sink", "in"),
-        ],
-    )
-
-    net.compile_and_run()
-    assert results == ['HELLO', 'WORLD']
-
-```
-
-### ▶️ Run It
-```
-python -m lessons.01_networks_blocks_connections.basic_network
-```
 
 
 

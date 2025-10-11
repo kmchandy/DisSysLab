@@ -53,7 +53,7 @@ def _format_block(rec: Dict[str, Any]) -> str:
     lines.append("-" * 40)   # ASCII bar; tweak length if you like
     lines.append("")          # extra blank line
     for k in _order_keys(rec):
-        lines.append(f"[bold]{escape(k)}[/]")      # key line
+        lines.append(f"[bold red]{escape(k)}[/]")  # key line
         lines.extend(_format_value(rec.get(k)))    # value lines
         lines.append("")                           # blank between key groups
     if lines and lines[-1] == "":
