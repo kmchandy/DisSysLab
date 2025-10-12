@@ -1,9 +1,7 @@
-# dsl.examples.simple_merge
+# lessons.01_networks.simple_merge
 
 from dsl import network
 import time
-
-# Define functions.
 
 
 def from_list_0():
@@ -22,10 +20,8 @@ results = []
 def to_results(v): results.append(v)
 
 
-# Define the graph
 g = network([(from_list_0, to_results), (from_list_1, to_results)])
-# -----------------------------------------------------------
-
 g.run_network()
-if __name__ == "__main__":
-    assert set(results) == {"A", "B", "X", "Y", "Z"}
+
+print(results)
+assert set(results) == {"A", "B", "X", "Y", "Z"}

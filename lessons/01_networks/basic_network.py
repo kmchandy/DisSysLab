@@ -19,6 +19,7 @@ def to_results(item):
     results.append(item)
 
 
+# Define the network as a list of directed edges of a graph
 g = network([(from_list, uppercase), (uppercase, to_results)])
 
 g.run_network()
