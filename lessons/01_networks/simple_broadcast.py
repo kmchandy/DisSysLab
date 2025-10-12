@@ -1,8 +1,6 @@
-# dsl.examples.graph_pipeline
+# lessons.01_networks.simple_broadcast
 
 from dsl import network
-
-# Define Python functions.
 
 
 def from_list():
@@ -22,10 +20,9 @@ def sink_1(item):
     results_1.append(item)
 
 
-# Define the graph
+# Define the network as a list of directed edges of a graph
 g = network([(from_list, sink_0), (from_list, sink_1)])
 g.run_network()
 
-if __name__ == "__main__":
-    assert results_0 == ['hello', 'world']
-    assert results_1 == ['hello', 'world']
+print(results_0)    # Output: ['hello', 'world']
+print(results_1)    # Output: ['hello', 'world']
