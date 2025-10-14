@@ -4,10 +4,10 @@
 ## 🎯 Goal
 
 
-- Understand the danger of modifying mutable objects by different agents. Later in the course we will describe methods for safe sharing of mutables.
+- Understand the danger of multiple agents concurrently modifying mutable objects. Later in the course we will describe methods for safe sharing of mutables.
 ---
 
-## 💻 Example: problems with concurrently modifying mutables
+## 💻 Example: Don't modify mutables concurrently
  
 ```python
 # lessons.01_networks.mutables
@@ -48,20 +48,32 @@ def src():
 
 
 def snk(msg):
-    print("msg.notes:", msg["notes"])
-    # msg.notes == ['A1', 'B1']
+    print("msg.notes:", msg["notes"], " id:", id(msg["notes"]))
+    print("A.my_list:", a.my_list,     " id:", id(a.my_list))
+    print("B.my_list:", b.my_list,     " id:", id(b.my_list))
+    # All three ids match → it's the SAME object
+    # 
+    # msg.notes: ['A1', 'B1']
+    # A.my_list: ['A1', 'B1']
+    # B.my_list: ['A1', 'B1']
 
 
 g = network([(src, run_A), (run_A, run_B), (run_B, snk)])
 g.run_network()
-
-print("A.my_list:", a.my_list)  # A.my_list == ['A1', 'B1']
-print("B.my_list:", b.my_list)  # B.my_list == ['A1', 'B1']
 ```
-## 📍 Filtering Streams
-Transform functions return a value. If the value is ```None`` then the value is not sent. This mechanism can be used to filter message streams.
+## 📍 Concurrent Modification of Mutables
+Some applications require mutable objects, such as files, to be shared by multiple agents. In such applications the operating system (or supervising program) ensures that (1) at most one agent accesses the object at a time and (2) all agents that require access to the object get access to it eventually. We discuss sharing mutable agents later. Now let's look at problems that arise when mutable objects are modified concurrently.
 
+In this example, agent ```a``` appends "A1" to ```msg['notes']``` and takes no other action. So you may think that ```a.my_list``` is either ```[]``` or ```['A1']```. But when the program terminates ```a.my_list = ['A1', 'B1']``` because when agent ```b``` modifies ```msg['notes']``` it also modifies ```a.my_list```.
+
+## 📍 Safe Use of Data by Multiple Agents
+- Send a **copy**: ```msg["notes"] = list(self.my_list)```. This makes ```msg["notes"]``` a copy of ```self.my_list```, and so modifying ```msg["notes"]``` does not modify ```self.my_list```.
+  
+- Read a **copy** of a message: ```self.my_list = list(msg["notes"])```.
+  
+- Note that as you saw in the previous lesson: You can enrich a message, by adding fields to the message without otherwise modifying the message.
 
 ## 🧠 Key Concepts
-- ```None``` is not sent as a message
-- Filtering streams
+- Beware of aliasing with mutables passed through messages.
+
+- If you need independent state, copy before mutate (or use immutables).
