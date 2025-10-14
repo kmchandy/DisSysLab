@@ -1,4 +1,4 @@
-# lessons.01_networks.simple_filter
+# modules.ch01_networks.simple_filter
 
 from dsl import network
 

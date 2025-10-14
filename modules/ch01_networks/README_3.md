@@ -10,7 +10,7 @@
 ## 💻 Example of dropping messages
  
 ```python
-# lessons.01_networks.simple_filter
+# modules.ch01_networks.simple_filter
 
 from dsl import network
 
@@ -46,3 +46,6 @@ Transform functions return a value. If the value is ```None`` then the value is 
 ## 🧠 Key Concepts
 - ```None``` is not sent as a message
 - Filtering streams
+
+## 👉 Next
+[Nodes add fields to messages](./README_4.md) and thus enrich messages as they flow through the network.
