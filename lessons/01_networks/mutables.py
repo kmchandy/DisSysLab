@@ -36,12 +36,15 @@ def src():
 
 
 def snk(msg):
-    print("msg.notes:", msg["notes"])
-    # msg.notes == ['A1', 'B1']
+    print("msg.notes:", msg["notes"], " id:", id(msg["notes"]))
+    print("A.my_list:", a.my_list,     " id:", id(a.my_list))
+    print("B.my_list:", b.my_list,     " id:", id(b.my_list))
+    # All three ids match → it's the SAME object
+    #
+    # msg.notes: ['A1', 'B1']
+    # A.my_list: ['A1', 'B1']
+    # B.my_list: ['A1', 'B1']
 
 
-g = network([(src, run_A), (run_A, run_B), (run_B, snk),])
+g = network([(src, run_A), (run_A, run_B), (run_B, snk)])
 g.run_network()
-
-print("A.my_list:", a.my_list)  # A.my_list == ['A1', 'B1']
-print("B.my_list:", b.my_list)  # B.my_list == ['A1', 'B1']
