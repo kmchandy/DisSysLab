@@ -1,0 +1,6 @@
+[
+    {"id": 1, "title": "Login page broken", "type": "bug"},
+    {"id": 2, "title": "Add dark mode feature", "type": "feature"},
+    {"id": 3, "title": "Fix typo in README", "type": "chore"}
+  ]
+  
