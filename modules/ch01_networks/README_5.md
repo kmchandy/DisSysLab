@@ -10,7 +10,7 @@
 ## 💻 Example: Don't modify mutables concurrently
  
 ```python
-# lessons.01_networks.mutables
+# modules.ch01_networks.mutables
 
 from dsl import network
 

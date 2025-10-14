@@ -1,4 +1,4 @@
-# lessons.01_networks.simple_dict
+# modules.ch01_networks.simple_dict
 
 from dsl import network
 
