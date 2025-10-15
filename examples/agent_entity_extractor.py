@@ -1,7 +1,5 @@
 from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI
-from dsl.connectors.live_kv_console import kv_live_sink
-# Define functions.
 
 list_of_text = [
     "Obama was the first African American president of the USA.",

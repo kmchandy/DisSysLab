@@ -200,7 +200,11 @@ class RSS_In:
                     if total >= self.fetch_max_bytes:
                         break
                 html = b"".join(chunks).decode("utf-8", errors="replace")
-            soup = BeautifulSoup(html, "html.parser")
+            try:
+                # best for RSS/Atom feeds
+                soup = BeautifulSoup(html, "lxml-xml")
+            except Exception:
+                soup = BeautifulSoup(html, "xml")       # builtin fallback
             for tag in soup(["script", "style", "noscript"]):
                 tag.decompose()
             text = " ".join(soup.get_text(" ").split())

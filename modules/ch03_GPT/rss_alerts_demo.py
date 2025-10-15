@@ -1,18 +1,20 @@
 # dsl.examples.rss_demo
+# dsl.examples.rss_demo
 
+import time
 from dsl.connectors.rss_in import RSS_In
 from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI
+from dsl.extensions.add_fields import add_fields
 from .live_alert_console import live_alert_sink
 
-
 # Define functions.
-
-
-rss = RSS_In(url="https://api.weather.gov/alerts/active.atom",
-             output_keys=["title", "link", "text"],
-             emit_mode="item",
-             fetch_page=True, life_time=2)  # ~2s demo
+rss = RSS_In(
+    url="https://api.weather.gov/alerts/active.atom/",
+    fetch_page=True,
+    poll_seconds=4,
+    life_time=20,
+)
 
 
 def from_rss():
@@ -86,16 +88,10 @@ Output rules:
 agent = AgentOpenAI(system_prompt=system_prompt)
 
 
-result = []
-def to_result(v): result.append(v)
+def print_sink(v):
+    print(v)
 
 
 # Define the network
-g = network([(from_rss, agent.fn), (agent.fn, to_result),
-            (agent.fn, live_alert_sink)])
-# g = network([(from_rss, to_result)])
+g = network([(from_rss, agent.fn), (agent.fn, live_alert_sink)])
 g.run_network()
-
-if __name__ == "__main__":
-    print(f"result = {result}")
-    print("finished")
