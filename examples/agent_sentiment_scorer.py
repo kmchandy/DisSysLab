@@ -15,8 +15,7 @@ def from_list_of_text():
         yield {"text": data_item}
 
 
-results = []
-def to_results(v): results.append(v)
+def print_sink(v): return v
 
 
 add_key = "sentiment"
@@ -31,12 +30,5 @@ system_prompt = "Determine sentiment score in -10..+10 with -10 most negative, +
 agent = AgentOpenAI(system_prompt=system_prompt)
 
 # Define the graph
-g = network([(from_list_of_text, agent_op), (agent_op, to_results)])
+g = network([(from_list_of_text, agent_op), (agent_op, print_sink)])
 g.run_network()
-
-if __name__ == "__main__":
-    for result in results:
-        for key, value in result.items():
-            print(key)
-            print(value)
-        print("")

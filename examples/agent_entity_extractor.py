@@ -1,6 +1,6 @@
 from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI
-
+from dsl.connectors.live_kv_console import kv_live_sink
 # Define functions.
 
 list_of_text = [
@@ -15,28 +15,23 @@ def from_list_of_text():
         yield {"text": data_item}
 
 
-results = []
-def to_results(v): results.append(v)
-
-
-add_key = "entities"
-
-
-def agent_op(v):
-    v[add_key] = agent.fn(v["text"])
-    return v
+def print_sink(v):
+    print('==============================')
+    for key, value in v.items():
+        print(key)
+        print(value)
+        print('______________________________')
+    print('')
 
 
 system_prompt = "Extract entities."
 agent = AgentOpenAI(system_prompt=system_prompt)
 
-# Define the graph
-g = network([(from_list_of_text, agent_op), (agent_op, to_results)])
-g.run_network()
 
-if __name__ == "__main__":
-    for result in results:
-        for key, value in result.items():
-            print(key)
-            print(value)
-        print("")
+def agent_op(v):
+    v['entities'] = agent.fn(v["text"])
+    return v
+
+
+g = network([(from_list_of_text, agent_op), (agent_op, print_sink)])
+g.run_network()
