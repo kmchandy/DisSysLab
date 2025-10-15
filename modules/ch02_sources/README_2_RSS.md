@@ -1,3 +1,25 @@
+# 2.2 • RSS feeds
+
+This page just shows you how to use a **connector** to an RSS feed.
+Connectors are described in module 7.
+
+---
+
+## What you’ll do
+
+Run a tiny script that reads NASA’s public RSS feed and prints items.
+
+---
+
+## Setup (once)
+
+```bash
+pip install feedparser requests beautifulsoup4 rich
+```
+
+## The RSS Feed Demo
+
+```python
 # modules/ch02_sources/rss_NASA_simple_demo.py
 
 import time
@@ -49,10 +71,49 @@ def print_sink(msg):
 
 
 g = network([(from_rss, print_sink)])
+
 g.run_network()
 
-# Experiment with the following:
-# • Change the feed URL to any RSS/Atom you like.
-# • Set fetch_page=False for speed and fewer deps.
-# • Edit output_keys and the yielded dict to show different fields.
-# • Change life_time (or None to run until Ctrl-C).
+
+
+```
+
+## Run the demo
+
+```bash
+python3 -m modules.ch02_sources.rss_NASA_simple_demo
+```
+
+You will see a growing list of items like:
+```bash
+----------------------------------------
+title
+NASA Updates on [recent story title]
+
+link
+https://www.nasa.gov/...
+
+summary
+A short blurb from the feed...
+
+page_text
+(First part of the article text, if enabled)
+```
+
+Newest items appear at the top.
+
+If nothing shows immediately, wait a few seconds for the site to be polled
+and return values.
+
+## Parameters you can modify
+
+- poll_seconds: how often to check the feed (e.g., 4 seconds).
+
+- life_time: how long to run before stopping (e.g., 20 seconds).
+
+- fetch_page: set to True to also fetch the linked article text.
+
+- output_keys: choose which fields to print (keep it small for readability).
+
+## 👉 Next
+[**Social Media** sources →](./README_3_posts.md)

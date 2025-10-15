@@ -1,11 +1,8 @@
-# lessons/02_sources/feed_numeric_price.py
+# modules/02_sources/feed_numeric_price.py
 #
 # Goal:
-# - Show a real numeric stream at a human pace (~1 msg/sec).
-# - Students can swap URL/extractor for any JSON numeric feed.
-#
-# How to run (from repo root):
-#   python -m lessons.02_sources.feed_numeric_price
+# - Shows a numeric stream at  ~1 msg/sec.
+# - You can swap URL/extractor for any JSON feed.
 
 from dsl import network
 from dsl.connectors.live_kv_console import kv_live_sink
@@ -31,12 +28,11 @@ def coinbase_extract_fn(j):
     }
 
 
-# Watchable pace with gentle dedupe so the console doesn't spam identical values.
 price_source = NumericREST_In(
     url=URL,
     extract_fn=coinbase_extract_fn,
-    poll_seconds=1.0,   # <- pace students can watch
-    # stop after 20s for the lesson (set None to run forever)
+    poll_seconds=1.0,   # <- pace you can watch
+    # stop after 20s for the demo (set None to run forever)
     life_time=20.0,
     dedupe=True,
     epsilon=1e-4,       # require >=$0.0001 change to emit a new reading

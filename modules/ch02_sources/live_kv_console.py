@@ -95,20 +95,16 @@ _ring: Deque[str] = deque(maxlen=200)
 
 def kv_live_sink(message: Dict[str, Any]) -> None:
     """
-    DSL-friendly sink: call once per dict message.
-    Keeps the console open and appends each record.
+    DSL-friendly sink: called once per dict message.
+    Prints a new formatted block for every message (no screen redraw),
+    so you see ALL items in order.
     """
-    global _live
-    if _live is None:
-        _live = Live(Align.left("Waiting for messages..."),
-                     console=console, refresh_per_second=8, transient=False)
-        _live.start()
-
     try:
         block = _format_block(message)
     except Exception as ex:
         console.print(f"[red]Format error:[/] {type(ex).__name__}: {ex}")
         return
 
-    _ring.appendleft(block)
-    _live.update(Align.left(_render_feed(_ring)))
+    # Print a blank line between records for readability
+    console.print(block)
+    console.print()

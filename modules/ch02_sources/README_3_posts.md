@@ -1,3 +1,25 @@
+# 2.3 • Social Media (e.g Bluesky) Feeds
+
+This page just shows you how to use a **connector** to a social media feed.
+Connectors are described in module 7.
+
+---
+## What you’ll do
+
+Run a tiny script that listens to the **Bluesky Jetstream** and prints posts.
+
+---
+
+## Setup (once)
+
+```bash
+pip install websockets rich
+```
+
+
+## The Bluesky Feed Demo
+
+```python
 # modules.ch02_sources.feed_from_posts
 
 from dsl import network
@@ -52,3 +74,43 @@ def print_sink(v):
 # ----------------------------------------------------
 g = network([(from_jetstream, print_sink)])
 g.run_network()
+```
+
+## Run the demo
+
+```bash
+python3 -m modules.ch02_sources.feed_from_posts
+```
+
+You will see a growing list of items like:
+```bash
+----------------------------------------
+author
+@alice.bsky.social
+
+text
+Just launched a new project! 🚀
+
+uri
+at://did:plc:.../app.bsky.feed.post/3k2...
+
+indexedAt
+2024-05-12T18:42:03.000Z
+
+```
+
+Newest items appear at the top.
+
+If nothing shows immediately, wait a few seconds for the site to be polled
+and return values.
+
+## Parameters you can modify
+
+- poll_seconds: how often to check the feed (e.g., 4 seconds).
+
+- life_time: how long to run before stopping (e.g., 20 seconds).
+
+- fetch_page: set to True to also fetch the linked article text.
+
+- output_keys: choose which fields to print (keep it small for readability).
+
