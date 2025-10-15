@@ -1,6 +1,6 @@
-# 3.2 • OpenAI Transformer — Entity Extraction
+# 3.2 • Transformer — Entity Extraction
 
-This page shows how to use an **OpenAI-powered transformer** to extract entities (people, places, organizations, etc.) from text items flowing through a DisSysLab pipeline.
+This page shows how to use transformers using OpenAI to **extract entities** -- people, places, organizations -- from text.
 
 ---
 

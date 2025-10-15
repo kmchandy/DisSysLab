@@ -77,3 +77,6 @@ In this example, agent ```a``` appends "A1" to ```msg['notes']``` and takes no o
 - Beware of aliasing with mutables passed through messages.
 
 - If you need independent state, copy before mutate (or use immutables).
+- 
+## 👉 Next
+[Example of a network with fanout and fanin](./README_6.md). 

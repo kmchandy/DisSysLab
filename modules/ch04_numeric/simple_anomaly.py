@@ -1,8 +1,10 @@
+# modules.ch04_numeric.simple_anomaly
+
 from pathlib import Path
 from dsl import network
 from dsl.connectors.replay_csv_in import ReplayCSV_In
-from modules.ch02_sources.rolling_stats_anom_forecast import rolling_stats_anom_forecast
-from modules.ch02_sources.temp_live_sink import temp_live_sink
+from .rolling_stats_anom_forecast import rolling_stats_anom_forecast
+from .temp_live_sink import temp_live_sink
 
 CSV_PATH = str(Path(__file__).resolve().parent / "open-meteo_clean.csv")
 
@@ -34,9 +36,5 @@ def temperature_source():
         yield xf(msg)
 
 
-def print_sink(v):
-    print(v)
-
-
-g = network([(replay.run, print_sink)])
+g = network([(temperature_source, temp_live_sink)])
 g.run_network()
