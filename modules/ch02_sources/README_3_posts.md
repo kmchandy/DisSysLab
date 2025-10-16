@@ -1,4 +1,4 @@
-# 2.3 • Social Media (e.g Bluesky) Feeds
+# 2.3 • Source: Social Media (e.g Bluesky) Feeds
 
 This page just shows you how to use a **connector** to a social media feed.
 Connectors are described in module 7.
@@ -113,4 +113,7 @@ and return values.
 - fetch_page: set to True to also fetch the linked article text.
 
 - output_keys: choose which fields to print (keep it small for readability).
+
+## 👉 Next
+[**Poll from REST sites** Poll numeric data from REST →](./README_4_REST.md)
 
