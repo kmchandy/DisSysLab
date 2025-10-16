@@ -39,7 +39,7 @@ def rolling_stats_anom_forecast(
     cover_total = 0
     cover_hits = 0
 
-    def transform(msg: Dict[str, Any]) -> Dict[str, Any]:
+    def _transform(msg: Dict[str, Any]) -> Dict[str, Any]:
         nonlocal s, ss, prev_pred_low, prev_pred_high, prev_pred_made_for
         nonlocal cover_total, cover_hits
 
@@ -121,4 +121,4 @@ def rolling_stats_anom_forecast(
                     f"cov={cover_hits}/{cover_total}")
         return out
 
-    return transform
+    return _transform

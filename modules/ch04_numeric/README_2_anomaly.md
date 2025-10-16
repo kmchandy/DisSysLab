@@ -1,12 +1,13 @@
 # 4.2 • Transform - Numerics detect Anomalies
 
-This page shows how to **replay rows from a CSV file as a live stream** at a chosen pace, optionally applying a transform and a rolling stats/anomaly/forecast function.  
-Connectors are described in module 7.
+This page gives you an example of a simple numeric transform using sliding windows.
+
 
 ---
-
 ## What you’ll do
-Run a tiny script that replays a cleaned Open-Meteo CSV, emits each row at ~4×/sec, computes **rolling stats + anomaly flags + prediction bands**, and displays the results in a live console.
+
+
+Run a tiny script that replays temperatures recorded for San Francisco, emits each row at ~4×/sec, computes statistics over sliding windows, and uses these statistics to predict future temperatures and identify anomalies in the temperature stream. The results are displayed on the console.
 
 ---
 
@@ -18,7 +19,7 @@ pip install rich
 
 ---
 
-## The CSV → Replay Demo
+## A numeric transformer
 
 ```python
 # modules.ch04_numeric.simple_anomaly
@@ -29,6 +30,8 @@ from dsl.connectors.replay_csv_in import ReplayCSV_In
 from .rolling_stats_anom_forecast import rolling_stats_anom_forecast
 from .temp_live_sink import temp_live_sink
 
+# -------------------------------------------------------------------------
+# Source: Generate historical daily max temperature from Open-Meteo
 CSV_PATH = str(Path(__file__).resolve().parent / "open-meteo_clean.csv")
 
 
@@ -42,6 +45,9 @@ def transform_row(row):
 
 replay = ReplayCSV_In(path=CSV_PATH, transform=transform_row, period_s=0.25)
 
+
+# -------------------------------------------------------------------------
+# Transform: Rolling statistics for anomaly detection and forecasting
 xf = rolling_stats_anom_forecast(
     window=20,
     k_anom=2.0,      # anomaly threshold
@@ -51,15 +57,13 @@ xf = rolling_stats_anom_forecast(
     prefix="w20"
 )
 
+# -------------------------------------------------------------------------
+# Sink: Use temp_live_sink to display results
 
-def temperature_source():
-    for msg in replay.run():
-        if msg is None:
-            continue
-        yield xf(msg)
+# -------------------------------------------------------------------------
+# Network: Connect functions
 
-
-g = network([(temperature_source, temp_live_sink)])
+g = network([(replay.run, xf), (xf, temp_live_sink)])
 g.run_network()
 ```
 
@@ -67,10 +71,10 @@ g.run_network()
 
 ## Run the demo
 ```bash
-python3 -m modules.ch02_sources.feed_replay
+python3 -m modules.ch04_numeric.simple_anomaly
 ```
 
-You’ll see a live stream of key–value output with rolling statistics, anomaly flags, and prediction band fields (names prefixed with `w20_…` by default).
+You’ll see a live stream of key–value output with rolling statistics, anomaly flags, and prediction band fields.
 
 ---
 
