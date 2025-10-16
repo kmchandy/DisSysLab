@@ -26,10 +26,11 @@ pip install rich
 from pathlib import Path
 from dsl import network
 from dsl.connectors.replay_csv_in import ReplayCSV_In
-from lessons.ch02_sources.rolling_stats_anom_forecast import rolling_stats_anom_forecast
-from lessons.ch02_sources.temp_live_sink import temp_live_sink
+from .rolling_stats_anom_forecast import rolling_stats_anom_forecast
+from .temp_live_sink import temp_live_sink
 
 CSV_PATH = str(Path(__file__).resolve().parent / "open-meteo_clean.csv")
+
 
 def transform_row(row):
     t = row.get("time")
@@ -37,6 +38,7 @@ def transform_row(row):
     if not t or not temp:
         return None
     return {"date": t, "tmax_f": float(temp)}
+
 
 replay = ReplayCSV_In(path=CSV_PATH, transform=transform_row, period_s=0.25)
 
@@ -49,11 +51,13 @@ xf = rolling_stats_anom_forecast(
     prefix="w20"
 )
 
+
 def temperature_source():
     for msg in replay.run():
         if msg is None:
             continue
         yield xf(msg)
+
 
 g = network([(temperature_source, temp_live_sink)])
 g.run_network()

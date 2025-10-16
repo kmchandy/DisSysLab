@@ -1,4 +1,4 @@
-# 5 • Weather Alerts — RSS + OpenAI Extraction
+# 5 • Transformers: Weather Alerts
 
 > **Important notes**
 > 1) **Do not use the weather alerts feed casually.** This is an operational feed intended for real, potentially life-threatening alerts. Use it respectfully and only for learning/testing as needed.  
@@ -39,13 +39,11 @@ $env:OPENAI_API_KEY="sk-…your key…"
 ## The Weather Alerts Demo
 
 ```python
-# examples.rss_alerts_demo
+# modules.ch03_GPT.rss_alerts_demo
 
-import time
 from dsl.connectors.rss_in import RSS_In
 from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI
-from dsl.extensions.add_fields import add_fields
 from .live_alert_console import live_alert_sink
 
 # Define functions.

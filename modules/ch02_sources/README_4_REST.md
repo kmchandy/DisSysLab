@@ -1,4 +1,4 @@
-# 2.4 • Polling JSON/REST for Numeric Streams
+# 2.4 • Source: Polling JSON/REST for Numeric Streams
 
 This page shows how to use a **connector** that polls a REST/JSON endpoint and turns it into a numeric stream you can process in DisSysLab.  Connectors are described in module 7.
 
@@ -118,7 +118,5 @@ Coinbase spot (REST)
 
 ---
 
-## Next steps
-- Swap the Coinbase URL for any public JSON (e.g., weather, FX, or sensor feeds).  
-- Add a transform node to compute moving averages or rolling returns.  
-- Record results to JSONL or CSV and plot them later (see Module 2.5).
+## 👉 Next
+[**Replay archived data**  →](./README_5_replay.md). See how you can replay saved data to simulate live message streams.
