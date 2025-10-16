@@ -1,4 +1,4 @@
-# 2.6 • Source - Replay Archived Data Streams
+# 2.5 • Source - Replay Archived Data Streams
 
 This page shows how to **replay rows from a CSV file as a live stream** at a specified pace. 
 Connectors are described in module 7.
@@ -68,4 +68,4 @@ You’ll see a stream of temperatures.
 ---
 
 ## 👉 Next
-[**Transformers using AI**  →](../ch03_GPT/README_1_replay.md). See how you can use OpenAI and other AI providers to create transformers.
+[**Synthetic data**  →](./README_6_synthetic.md). Generate sources from synthetic data for experiments.
