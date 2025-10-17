@@ -33,7 +33,7 @@ $env:OPENAI_API_KEY="sk-…your key…"
 ## The Summarization Demo
 
 ```python
-# modules.ch03_openai.summary_from_list
+# modules.ch03_GPT.summary_from_list
 
 from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI
