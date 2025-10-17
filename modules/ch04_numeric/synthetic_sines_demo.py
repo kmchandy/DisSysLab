@@ -1,6 +1,9 @@
 # modules.ch04_numeric.synthetic_sines_demo
 
+from __future__ import annotations
 import time
+from scipy.signal import butter, sosfilt, sosfilt_zi
+from typing import Union
 import math
 from collections import deque
 from typing import Iterable, Dict, Any, Tuple
@@ -43,26 +46,87 @@ def sine_mixture_source(
 # ─────────────────────────────────────────────────────────
 
 
-def butter_bandpass_transform(
-    *,
-    low_hz: float = 4.0,
-    high_hz: float = 14.0,
-    order: int = 4,
-    sample_rate: float = 200.0,
-    key_in: str = "x",
-    key_out: str = "x_bp",
-):
-    nyq = 0.5 * sample_rate
-    low = low_hz / nyq
-    high = high_hz / nyq
-    sos = butter(order, [low, high], btype="bandpass", output="sos")
+ArrayLike = Union[float, int, np.ndarray]
 
-    def _transform(msg: Dict[str, Any]) -> Dict[str, Any]:
-        x = float(msg[key_in])
-        y = float(sosfilt(sos, [x])[-1])  # one-sample step
-        msg[key_out] = y
-        return msg
-    return _transform
+
+class ButterBandpassFilter:
+    """
+    Streaming Butterworth band-pass that operates on *numeric* inputs only.
+
+    - If called with a scalar (float/int), returns a scalar and advances state by 1 sample.
+    - If called with a 1D numpy array, returns an array and advances state by len(array) samples.
+    - Maintains persistent IIR state (`zi`) across calls for correct streaming behavior.
+    """
+
+    def __init__(
+        self,
+        *,
+        low_hz: float = 4.0,
+        high_hz: float = 14.0,
+        order: int = 4,
+        sample_rate: float = 200.0,
+        name: str | None = None,
+        strict: bool = False,  # if True, raise on bad inputs; else pass-through for NaN/inf
+    ) -> None:
+        if sample_rate <= 0:
+            raise ValueError("sample_rate must be > 0")
+        nyq = 0.5 * sample_rate
+        if not (0 < low_hz < high_hz < nyq):
+            raise ValueError(
+                f"cutoffs must satisfy 0 < low < high < Nyquist={nyq:.6g}; got {low_hz}, {high_hz}")
+
+        self.fs = sample_rate
+        self.low = low_hz / nyq
+        self.high = high_hz / nyq
+        self.order = order
+        self.strict = strict
+
+        self.sos = butter(order, [self.low, self.high],
+                          btype="bandpass", output="sos")
+        # start from zero initial conditions
+        self.zi = sosfilt_zi(self.sos) * 0.0
+
+        self.name = name or f"butter_bandpass[{low_hz:.3g}-{high_hz:.3g}Hz]_ord{order}@{sample_rate:.3g}Hz"
+
+    def reset(self) -> None:
+        """Reset internal filter state."""
+        self.zi = sosfilt_zi(self.sos) * 0.0
+
+    def __repr__(self) -> str:
+        return f"<ButterBandpassFilter {self.name}>"
+
+    def run(self, x: ArrayLike) -> ArrayLike:
+        """
+        Apply the streaming band-pass.
+        - Scalar in  -> scalar out
+        - 1D array in -> 1D array out (and state advanced across the whole block)
+        """
+        # Scalar fast-path
+        if isinstance(x, (float, int)):
+            xf = float(x)
+            if not math.isfinite(xf):
+                if self.strict:
+                    raise ValueError(f"Non-finite scalar input: {xf}")
+                return x  # pass-through
+            y, self.zi = sosfilt(self.sos, [xf], zi=self.zi)
+            return float(y[-1])
+
+        # Array path
+        x = np.asarray(x)
+        if x.ndim != 1:
+            raise ValueError(
+                f"Only 1D arrays are supported; got shape {x.shape}")
+        if not np.all(np.isfinite(x)):
+            if self.strict:
+                bad = np.where(~np.isfinite(x))[0][:5]
+                raise ValueError(
+                    f"Array contains non-finite values at indices {bad.tolist()} (showing up to 5).")
+            # pass-through non-finite inputs unfiltered
+            return x
+
+        y, self.zi = sosfilt(self.sos, x, zi=self.zi)
+        return y
+
 
 # ─────────────────────────────────────────────────────────
 # 3) Transform B — Welch PSD + peak pick (SciPy)
@@ -168,8 +232,13 @@ def src():
     )
 
 
-bp = butter_bandpass_transform(
-    low_hz=4.0, high_hz=14.0, order=4, sample_rate=200.0, key_in="x", key_out="x_bp")
+bp_obj = ButterBandpassFilter()
+
+
+def bp(v):
+    bp_obj.run(v)
+
+
 det = welch_peak_detector(
     window_samples=1024, sample_rate=200.0, key_in="x_bp", min_prominence=0.02)
 
@@ -182,8 +251,9 @@ snap = snapshot_spectrum_sink("spectrum.png")
 #     (det, snap),         # PNG snapshot sink
 # ])
 g = network([
-    (src, live_console_sink),         # PNG snapshot sink
+    (src, bp), (bp, live_console_sink),         # PNG snapshot sink
 ])
+print(g.nodes)
 g.run_network()
 if hasattr(snap, "finalize"):
     snap.finalize()
