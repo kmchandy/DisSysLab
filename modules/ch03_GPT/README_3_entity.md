@@ -33,7 +33,7 @@ $env:OPENAI_API_KEY="sk-…your key…"
 ## The Entity Extraction Demo
 
 ```python
-# modules.ch03_openai.entities_from_list
+# modules.ch03_GPT.entities_from_list
 
 from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI
