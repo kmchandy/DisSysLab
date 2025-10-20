@@ -58,7 +58,7 @@ class AgentOpenAI:
     def __name__(self):  # so graph builder can read a.__name__
         return self._name
 
-    def fn(
+    def __call__(
         self,
         msg: str,
         *,
@@ -76,3 +76,5 @@ class AgentOpenAI:
             temperature=temp,
         )
         return r.output_text.strip()
+    fn = __call__
+    run = __call__
