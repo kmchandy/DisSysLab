@@ -45,19 +45,33 @@ def network(x: Iterable[Tuple[Callable, Callable]]) -> Graph:
         nodes=[("from_list", from_list), ("upper_case", upper_case), ("to_results", to_results)]
       )
     """
+
+    def _resolve_name(f: Callable) -> str:
+        # Prefer an explicit label if the callable provides one; then fallback.
+        return (
+            getattr(f, "name", None)
+            or getattr(f, "__name__", None)
+            or type(f).__name__
+        )
+
     edges: List[Tuple[str, str]] = []
-    seen_names = set()
+    seen_names: set[str] = set()
     ordered_funcs: List[Callable] = []
 
     for a, b in x:
-        edges.append((a.__name__, b.__name__))     # quote names for edges
-        for f in (a, b):                           # collect unique functions in first-seen order
-            name = f.__name__
+        # Resolve readable, unique names for endpoints
+        a_name = _resolve_name(a)
+        b_name = _resolve_name(b)
+        edges.append((a_name, b_name))
+
+        # Collect unique functions in first-seen order
+        for f, name in ((a, a_name), (b, b_name)):
             if name not in seen_names:
                 seen_names.add(name)
                 ordered_funcs.append(f)
 
-    nodes = [(f.__name__, f) for f in ordered_funcs]  # ("name", function)
+    nodes = [(_resolve_name(f), f)
+             for f in ordered_funcs]  # ("name", function)
     return Graph(edges=edges, nodes=nodes)
 
 
