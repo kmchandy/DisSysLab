@@ -1,4 +1,4 @@
-## 🧩 1.1 A Network is a Directed Graph
+## 🧩 1.1 A Directed Graph in which Nodes are Python functions
 
 
 ## 🎯 Goal

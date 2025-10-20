@@ -1,6 +1,10 @@
 # modules.ch04_numeric.generate_waves
 
 from __future__ import annotations
+from typing import List, Tuple
+import matplotlib.pyplot as plt
+import pathlib
+import time
 from scipy.signal import butter, sosfilt, sosfilt_zi
 from typing import Callable, Generator, Iterable, Optional, Sequence, Tuple,  Union
 import numpy as np
@@ -12,6 +16,9 @@ Tone = Tuple[float, float]  # (frequency_hz, amplitude)
 Theta = Union[float, Sequence[float]]  # radians
 
 
+# ----------------------------------------------------------------------------
+#                        GENERATE SINE WAVES                                |
+# ----------------------------------------------------------------------------
 class GenerateWaves:
     """
     Incremental synthetic audio source (sum of sines + optional Gaussian noise).
@@ -55,6 +62,7 @@ class GenerateWaves:
         max_chunks: Optional[int] = None,
         name: str = "src_waves",
         dtype: np.dtype = np.float32,
+        sleep_between_chunks: float = 0.0,
     ) -> None:
         self.fs = float(fs)
         self.F = int(frames_per_chunk)
@@ -64,6 +72,7 @@ class GenerateWaves:
         self.max_chunks = None if max_chunks is None else int(max_chunks)
         self.name = name
         self.dtype = dtype
+        self.sleep_between_chunks = float(sleep_between_chunks)
 
         if self.F <= 0:
             raise ValueError("frames_per_chunk must be > 0")
@@ -123,6 +132,7 @@ class GenerateWaves:
                 break
             yield self.block()
             chunks_emitted += 1
+            time.sleep(self.sleep_between_chunks)
 
     # Nice label for graph display if your core uses __name__
     @property
@@ -130,6 +140,9 @@ class GenerateWaves:
         return self.name
 
 
+# ----------------------------------------------------------------------------
+#                          BANDPASS FILTER                                  |
+# ----------------------------------------------------------------------------
 class Bandpass:
     """Streaming filter (stateful): preserves continuity across chunks."""
 
@@ -158,6 +171,9 @@ class Bandpass:
         return y
 
 
+# ----------------------------------------------------------------------------
+#                               FFT                                         |
+# ----------------------------------------------------------------------------
 class FFT:
     """
     Block FFT transformer (NumPy rFFT).
@@ -203,13 +219,94 @@ class FFT:
         return freqs, mag
 
 
+# Simple sink for (freqs, mag) tuples — prints top-K peaks rate-limited.
+
+
+# modules/ch04_numeric/sinks_fft_capture_min.py
+
+
+class StoreFFT:
+    """
+    Transformer-style sink: capture (freqs, mag) into a provided list and
+    pass the value through unchanged.
+    """
+
+    def __init__(self, store: List[Tuple[np.ndarray, np.ndarray]], name: str = "sink_fft_capture"):
+        self.store = store
+        self.name = name
+
+    @property
+    def __name__(self) -> str:  # nice label for your graph
+        return self.name
+
+    def __call__(self, fr_mag):
+        try:
+            f, m = fr_mag
+            f = np.asarray(f)
+            m = np.asarray(m)
+            if f.ndim == 1 and m.ndim == 1 and f.size == m.size and f.size > 0:
+                # copy to decouple from upstream buffers
+                self.store.append((f.copy(), m.copy()))
+        except Exception:
+            # comment-in for debugging:
+            print(f"[FFTCapture] failed to capture frame: {type(fr_mag)}")
+            pass
+
+
+def plot_dual_spectra(
+        array_0,
+        array_1,
+        *,
+        labels=("source_fft", "bandpass_fft"),
+        reduce="last", yscale="linear"):
+    """
+    Plot spectra captured in `raw_store` and `band_store`.
+    reduce: "last" | "mean" | "median"
+    """
+    def _reduce(store):
+        if not store:
+            return None, None
+        # Keep frames with the same frequency grid as the first one
+        f0, _ = store[0]
+        mags = [m for f, m in store if f.shape ==
+                f0.shape and np.allclose(f, f0)]
+        if not mags:
+            return None, None
+        M = np.stack(mags, axis=0)
+        if reduce == "mean":
+            mag = M.mean(axis=0)
+        elif reduce == "median":
+            mag = np.median(M, axis=0)
+        else:  # "last"
+            mag = M[-1]
+        return f0, mag
+
+    fr, mr = _reduce(array_0)
+    fb, mb = _reduce(array_1)
+
+    plt.figure(figsize=(9, 4.5))
+    if fr is not None:
+        plt.plot(fr, mr, label=labels[0])
+    if fb is not None:
+        plt.plot(fb, mb, "--", label=labels[1])
+    plt.title("FFT Comparison")
+    plt.xlabel("Frequency (Hz)")
+    plt.ylabel("|X(f)|")
+    plt.yscale(yscale)           # "linear" or "log"
+    plt.grid(True, alpha=0.3)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+
 waves = GenerateWaves(
     fs=200.0,
-    frames_per_chunk=1024,
-    tones=[(5.0, 1.0), (12.0, 0.6), (30.0, 0.3)],
+    frames_per_chunk=512,
+    tones=[(5.0, 1.0), (12.0, 1.0), (30.0, 1.0)],
     theta=[0.0, 0.0, np.pi/4],   # per-tone initial phases (radians)
     noise_std=0.15,
     duration_s=10.0,             # or max_chunks=50
+    sleep_between_chunks=0.5,  # simulate real-time source
     name="src_block"
 )
 
@@ -219,14 +316,19 @@ bandpass_filter = Bandpass(
 fft_source_signal = FFT(fs=200.0, name="fft_source_signal")
 fft_after_bandpass = FFT(fs=200.0, name="fft_after_bandpass")
 
-
-def print_sink(v):
-    print(v)
-
+source_fft_array, bandpass_fft_array = [], []
+store_source_fft = StoreFFT(store=source_fft_array, name="store_source_fft")
+store_bandpass_fft = StoreFFT(
+    store=bandpass_fft_array, name="store_bandpass_fft")
 
 g = network([(waves, fft_source_signal),
              (waves, bandpass_filter),
             (bandpass_filter, fft_after_bandpass),
-            (fft_after_bandpass, print_sink)])
+            (fft_source_signal, store_source_fft),
+            (fft_after_bandpass, store_bandpass_fft),])
 
 g.run_network()
+
+plot_dual_spectra(
+    array_0=source_fft_array,
+    array_1=bandpass_fft_array)
