@@ -1,0 +1,792 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.15">
+    
+    
+      
+        <title>🤝 Chapter 6 — Connectors (InputConnector & OutputConnector) - DisSysLab</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.342714a4.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#chapter-6-connectors-inputconnector-outputconnector" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="DisSysLab" class="md-header__button md-logo" aria-label="DisSysLab" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            DisSysLab
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              🤝 Chapter 6 — Connectors (InputConnector &amp; OutputConnector)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="DisSysLab" class="md-nav__button md-logo" aria-label="DisSysLab" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    DisSysLab
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ch01_networks/README_1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 1 — Intro
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ch02_sources/README_1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 2 — Sources
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ch03_GPT/README_1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 3 — OpenAI agents
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ch04_numeric/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 4 — Numerics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#mental-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      🧭 Mental Model
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      📦 Requirements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#core-blocks-minimal-readable" class="md-nav__link">
+    <span class="md-ellipsis">
+      🧱 Core Blocks (minimal, readable)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="🧱 Core Blocks (minimal, readable)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#inputconnector-base" class="md-nav__link">
+    <span class="md-ellipsis">
+      InputConnector (base)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#outputconnector-base" class="md-nav__link">
+    <span class="md-ellipsis">
+      OutputConnector (base)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#filebased-toy-connectors-studentowned" class="md-nav__link">
+    <span class="md-ellipsis">
+      File‑based toy connectors (student‑owned)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#orchestrator-buffers-and-flushes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Orchestrator (buffers and flushes)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#demo-a-toy-connectors-file-compute-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      🎬 Demo A — Toy connectors (file → compute → file)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#demo-b-realworld-read-pygithub-public-repo" class="md-nav__link">
+    <span class="md-ellipsis">
+      🌐 Demo B — Real‑world read (PyGitHub, public repo)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#take-away" class="md-nav__link">
+    <span class="md-ellipsis">
+      🧠 Take Away
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="chapter-6-connectors-inputconnector-outputconnector">🤝 Chapter 6 — Connectors (InputConnector &amp; OutputConnector)</h1>
+<p><strong>Goal:</strong> Shows you how you can connect a distributed system to external applications using two simple blocks:</p>
+<ul>
+<li><strong>InputConnector</strong> — <em>pulls</em> items from an external source  and outputs the items on an outport <code>out</code>.</li>
+<li><strong>OutputConnector</strong> — <em>pushes</em> items it receives in input port <code>in</code> to an external sink.</li>
+</ul>
+<hr />
+<h2 id="mental-model">🧭 Mental Model</h2>
+<pre><code>[ Orchestrator ] --commands--&gt; [ InputConnector ] --items--&gt; [ Transformers ] --rows--&gt; [ Orchestrator ] --flush cmd--&gt; [ OutputConnector ]
+</code></pre>
+<ul>
+<li><strong>Orchestrator</strong> decides <em>when/what</em> to pull and when to flush (timer/manual).</li>
+<li><strong>InputConnector</strong> does a one‑off pull per command and emits 0..N items.</li>
+<li><strong>OutputConnector</strong> accepts a <code>{"cmd":"flush", "payload": [...], "meta": {...}}</code> command and performs one external write (e.g., one GitHub commit, one Markdown file write, one sheet update).</li>
+</ul>
+<hr />
+<h2 id="requirements">📦 Requirements</h2>
+<pre><code class="language-bash">pip install PyGithub scikit-learn matplotlib
+</code></pre>
+<blockquote>
+<p>PyGithub is used for a <strong>single, real‑world demo</strong> reading from a public repo (no token needed). Everything else uses local files so students can run it immediately.</p>
+</blockquote>
+<hr />
+<h2 id="core-blocks-minimal-readable">🧱 Core Blocks (minimal, readable)</h2>
+<h3 id="inputconnector-base"><code>InputConnector</code> (base)</h3>
+<pre><code class="language-python"># dsl/block_lib/connectors/input_connector.py
+from typing import Dict, Any, Iterable
+from dsl.core import SimpleAgent
+
+class InputConnector(SimpleAgent):
+    &quot;&quot;&quot;Command‑driven pull from an external source.
+    in:  command dicts like {&quot;cmd&quot;:&quot;pull&quot;, &quot;args&quot;:{...}}
+    out: item dicts  like {&quot;data&quot;: ...}
+    &quot;&quot;&quot;
+    def __init__(self, name=&quot;InputConnector&quot;):
+        super().__init__(name=name, inport=&quot;in&quot;, outports=[&quot;out&quot;, &quot;status&quot;, &quot;error&quot;])
+
+    def process(self, msg: Dict[str, Any], inport=None):
+        cmd  = (msg or {}).get(&quot;cmd&quot;, &quot;pull&quot;)
+        args = (msg or {}).get(&quot;args&quot;, {}) or {}
+        try:
+            count = 0
+            for item in self._pull(cmd, args):  # override in subclass
+                self.send({&quot;data&quot;: item}, outport=&quot;out&quot;)
+                count += 1
+            self.send({&quot;event&quot;:&quot;done&quot;,&quot;cmd&quot;:cmd,&quot;count&quot;:count}, outport=&quot;status&quot;)
+        except Exception as e:
+            self.send({&quot;event&quot;:&quot;error&quot;,&quot;cmd&quot;:cmd,&quot;message&quot;:repr(e)}, outport=&quot;error&quot;)
+
+    def _pull(self, cmd: str, args: Dict[str, Any]) -&gt; Iterable[Dict[str, Any]]:
+        raise NotImplementedError
+</code></pre>
+<h3 id="outputconnector-base"><code>OutputConnector</code> (base)</h3>
+<pre><code class="language-python"># dsl/block_lib/connectors/output_connector.py
+from typing import Dict, Any, List
+from dsl.core import SimpleAgent
+
+class OutputConnector(SimpleAgent):
+    &quot;&quot;&quot;Command‑driven push to an external sink.
+    in: commands like {&quot;cmd&quot;:&quot;flush&quot;, &quot;payload&quot;:[...], &quot;meta&quot;:{...}}
+    &quot;&quot;&quot;
+    def __init__(self, name=&quot;OutputConnector&quot;):
+        super().__init__(name=name, inport=&quot;in&quot;, outports=[&quot;status&quot;, &quot;error&quot;])
+
+    def process(self, msg: Dict[str, Any], inport=None):
+        cmd   = (msg or {}).get(&quot;cmd&quot;)
+        meta  = (msg or {}).get(&quot;meta&quot;, {}) or {}
+        try:
+            if cmd == &quot;flush&quot;:
+                payload = msg.get(&quot;payload&quot;, [])
+                self._flush(payload, meta)  # override in subclass
+                self.send({&quot;event&quot;:&quot;flushed&quot;,&quot;count&quot;:len(payload)}, outport=&quot;status&quot;)
+            elif cmd == &quot;configure&quot;:
+                self._configure(meta)
+                self.send({&quot;event&quot;:&quot;configured&quot;}, outport=&quot;status&quot;)
+            else:
+                self.send({&quot;event&quot;:&quot;error&quot;,&quot;message&quot;:f&quot;unknown cmd {cmd}&quot;}, outport=&quot;error&quot;)
+        except Exception as e:
+            self.send({&quot;event&quot;:&quot;error&quot;,&quot;cmd&quot;:cmd,&quot;message&quot;:repr(e)}, outport=&quot;error&quot;)
+
+    def _flush(self, payload: List[Dict[str, Any]], meta: Dict[str, Any]):
+        raise NotImplementedError
+    def _configure(self, meta: Dict[str, Any]):
+        pass
+</code></pre>
+<h3 id="filebased-toy-connectors-studentowned">File‑based toy connectors (student‑owned)</h3>
+<pre><code class="language-python"># dsl/block_lib/connectors/input_file.py
+import json, pathlib
+from typing import Dict, Any, Iterable
+from .input_connector import InputConnector
+
+class InputConnectorFile(InputConnector):
+    &quot;&quot;&quot;Reads items from a local JSON file on command.
+    If the file holds a list, yields each element; if it's an object, yields that single object.
+    &quot;&quot;&quot;
+    def __init__(self, path: str, name=&quot;InputConnectorFile&quot;):
+        super().__init__(name=name)
+        self.path = pathlib.Path(path)
+
+    def _pull(self, cmd: str, args: Dict[str, Any]) -&gt; Iterable[Dict[str, Any]]:
+        obj = json.loads(self.path.read_text(encoding=&quot;utf-8&quot;))
+        if isinstance(obj, list):
+            return obj
+        return [obj]
+</code></pre>
+<pre><code class="language-python"># dsl/block_lib/connectors/output_file.py
+import json, pathlib
+from typing import Dict, Any, List
+from .output_connector import OutputConnector
+
+class OutputConnectorFileJSON(OutputConnector):
+    &quot;&quot;&quot;Writes a single JSON file on flush (payload is a list of dicts).&quot;&quot;&quot;
+    def __init__(self, path: str, name=&quot;OutputConnectorFileJSON&quot;):
+        super().__init__(name=name)
+        self.path = pathlib.Path(path)
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _flush(self, payload: List[Dict[str, Any]], meta: Dict[str, Any]):
+        self.path.write_text(json.dumps(payload, indent=2), encoding=&quot;utf-8&quot;)
+
+class OutputConnectorFileMarkdown(OutputConnector):
+    &quot;&quot;&quot;Writes a Markdown file on flush; payload is a list of rows (strings or dicts with 'row').&quot;&quot;&quot;
+    def __init__(self, path: str, title: str = &quot;Report&quot;, name=&quot;OutputConnectorFileMarkdown&quot;):
+        super().__init__(name=name)
+        self.path = pathlib.Path(path)
+        self.title = title
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+
+    def _flush(self, payload: List[Dict[str, Any]], meta: Dict[str, Any]):
+        lines = [f&quot;# {meta.get('title', self.title)}&quot;, &quot;&quot;]
+        for p in payload:
+            if isinstance(p, str):
+                lines.append(p)
+            else:
+                lines.append(p.get(&quot;row&quot;, str(p)))
+        self.path.write_text(&quot;\n&quot;.join(lines), encoding=&quot;utf-8&quot;)
+</code></pre>
+<h3 id="orchestrator-buffers-and-flushes">Orchestrator (buffers and flushes)</h3>
+<pre><code class="language-python"># dsl/block_lib/orchestrators/buffered_orchestrator.py
+from typing import Dict, Any, List
+from dsl.core import SimpleAgent
+
+class BufferedOrchestrator(SimpleAgent):
+    &quot;&quot;&quot;Buffers rows arriving on data_in; on tick_in, sends one flush command with payload.&quot;&quot;&quot;
+    def __init__(self, meta_builder=None, name=&quot;BufferedOrchestrator&quot;):
+        super().__init__(name=name, inport=None, outports=[&quot;out&quot;])
+        self.inports = [&quot;data_in&quot;, &quot;tick_in&quot;]
+        self._buf: List[Dict[str, Any]] = []
+        self._meta_builder = meta_builder or (lambda buf: {})
+
+    def process(self, msg: Dict[str, Any], inport=None):
+        if inport == &quot;data_in&quot;:
+            self._buf.append(msg)
+        elif inport == &quot;tick_in&quot;:
+            meta = self._meta_builder(self._buf)
+            self.send({&quot;cmd&quot;:&quot;flush&quot;, &quot;payload&quot;: self._buf, &quot;meta&quot;: meta}, outport=&quot;out&quot;)
+            self._buf = []
+</code></pre>
+<hr />
+<h2 id="demo-a-toy-connectors-file-compute-file">🎬 Demo A — Toy connectors (file → compute → file)</h2>
+<p><strong>Goal:</strong> Pull a JSON list of short issues, cluster them, format rows, flush once to a Markdown report.</p>
+<p><strong>Data file:</strong> <code>dsl/examples/ch06_connectors/data/issues.json</code></p>
+<pre><code class="language-json">[
+  {&quot;title&quot;: &quot;Crash on startup&quot;, &quot;body&quot;: &quot;App throws exception when launched&quot;},
+  {&quot;title&quot;: &quot;Feature: dark mode&quot;, &quot;body&quot;: &quot;Please add a dark theme&quot;},
+  {&quot;title&quot;: &quot;Docs: typo in README&quot;, &quot;body&quot;: &quot;Small spelling mistake&quot;}
+]
+</code></pre>
+<p><strong>Script:</strong> <code>dsl/examples/ch06_connectors/file_demo.py</code></p>
+<pre><code class="language-python">import sklearn.feature_extraction.text as text
+import sklearn.cluster as cluster
+
+from dsl.core import Network
+from dsl.block_lib.connectors.input_file import InputConnectorFile
+from dsl.block_lib.connectors.output_file import OutputConnectorFileMarkdown
+from dsl.block_lib.orchestrators.buffered_orchestrator import BufferedOrchestrator
+from dsl.block_lib.stream_transformers import TransformerFunction
+
+SRC = &quot;dsl/examples/ch06_connectors/data/issues.json&quot;
+OUT = &quot;dsl/examples/ch06_connectors/reports/issue_summary.md&quot;
+
+# Fit once on full corpus
+import json, pathlib
+issues = json.loads(pathlib.Path(SRC).read_text())
+texts = [f&quot;{i['title']} {i['body']}&quot; for i in issues]
+vec = text.CountVectorizer(max_features=2000).fit(texts)
+km  = cluster.KMeans(n_clusters=2, random_state=42, n_init=10).fit(vec.transform(texts).toarray())
+
+def vectorize(msg):
+    t = f&quot;{msg['data']['title']} {msg['data']['body']}&quot;
+    return vec.transform([t]).toarray()
+
+def predict(v):
+    return int(km.predict(v)[0])
+
+def to_row(msg):
+    label = &quot;bug&quot; if any(k in (msg['data']['title']+msg['data']['body']).lower() for k in [&quot;error&quot;,&quot;crash&quot;,&quot;exception&quot;]) else &quot;other&quot;
+    return {&quot;row&quot;: f&quot;- **[{label}]** {msg['data']['title']}&quot;}
+
+# Build network
+orch = BufferedOrchestrator(meta_builder=lambda buf: {&quot;title&quot;: &quot;Issue Triage Summary&quot;})
+
+net = Network(
+    blocks={
+        &quot;in&quot;: InputConnectorFile(SRC),
+        &quot;vec&quot;: TransformerFunction(func=vectorize, input_key=None, output_key=&quot;vec&quot;),
+        &quot;clu&quot;: TransformerFunction(func=predict,   input_key=&quot;vec&quot;,  output_key=&quot;cluster&quot;),
+        &quot;row&quot;: TransformerFunction(func=to_row,    input_key=None,    output_key=&quot;row&quot;),
+        &quot;orch&quot;: orch,
+        &quot;out&quot;: OutputConnectorFileMarkdown(OUT, title=&quot;Issue Triage Summary&quot;),
+    },
+    connections=[
+        (&quot;in&quot;,&quot;out&quot;,&quot;vec&quot;,&quot;in&quot;),
+        (&quot;vec&quot;,&quot;out&quot;,&quot;clu&quot;,&quot;in&quot;),
+        (&quot;clu&quot;,&quot;out&quot;,&quot;row&quot;,&quot;in&quot;),
+        (&quot;row&quot;,&quot;out&quot;,&quot;orch&quot;,&quot;data_in&quot;),
+        (&quot;orch&quot;,&quot;out&quot;,&quot;out&quot;,&quot;in&quot;),
+    ],
+)
+
+# Kick: send a single pull command and then a single flush command
+net.compile()
+net.blocks[&quot;in&quot;].process({&quot;cmd&quot;:&quot;pull&quot;})
+net.blocks[&quot;orch&quot;].process({&quot;tick&quot;: True}, inport=&quot;tick_in&quot;)
+print(&quot;Wrote:&quot;, OUT)
+</code></pre>
+<hr />
+<h2 id="demo-b-realworld-read-pygithub-public-repo">🌐 Demo B — Real‑world read (PyGitHub, public repo)</h2>
+<p><strong>Goal:</strong> small, authentic connector with <strong>no auth</strong> (public repo). Pull README text from a GitHub repo and write a local Markdown summary.</p>
+<p><strong>Connector:</strong> <code>dsl/block_lib/connectors/input_github_readme.py</code></p>
+<pre><code class="language-python">from github import Github
+from typing import Dict, Any, Iterable
+from .input_connector import InputConnector
+
+class InputConnectorGitHubReadme(InputConnector):
+    &quot;&quot;&quot;Pulls README from a public GitHub repo on command.
+    args: {&quot;repo&quot;: &quot;owner/name&quot;, &quot;branch&quot;: &quot;main&quot;}
+    emits one item: {&quot;text&quot;: &quot;...README content...&quot;}
+    &quot;&quot;&quot;
+    def __init__(self, name=&quot;InputConnectorGitHubReadme&quot;):
+        super().__init__(name=name)
+        self.gh = Github()  # no token → public only
+
+    def _pull(self, cmd: str, args: Dict[str, Any]) -&gt; Iterable[Dict[str, Any]]:
+        repo_full = args.get(&quot;repo&quot;)
+        if not repo_full:
+            raise ValueError(&quot;Missing 'repo' (e.g., 'pallets/flask')&quot;)
+        repo = self.gh.get_repo(repo_full)
+        readme = repo.get_readme()
+        text = readme.decoded_content.decode(&quot;utf-8&quot;, errors=&quot;replace&quot;)
+        return [{&quot;text&quot;: text, &quot;repo&quot;: repo_full}]
+</code></pre>
+<p><strong>Script:</strong> <code>dsl/examples/ch06_connectors/github_readme_demo.py</code></p>
+<pre><code class="language-python">from dsl.core import Network
+from dsl.block_lib.connectors.input_github_readme import InputConnectorGitHubReadme
+from dsl.block_lib.connectors.output_file import OutputConnectorFileMarkdown
+from dsl.block_lib.orchestrators.buffered_orchestrator import BufferedOrchestrator
+from dsl.block_lib.stream_transformers import TransformerFunction
+
+OUT = &quot;dsl/examples/ch06_connectors/reports/readme_report.md&quot;
+
+# Tiny transformers: count lines and words
+def summarize(msg):
+    text = msg[&quot;data&quot;][&quot;text&quot;]
+    lines = text.splitlines()
+    words = text.split()
+    return {&quot;row&quot;: f&quot;- Repo README has {len(lines)} lines and {len(words)} words.&quot;}
+
+orch = BufferedOrchestrator(meta_builder=lambda buf: {&quot;title&quot;: &quot;README Summary&quot;})
+
+net = Network(
+    blocks={
+        &quot;in&quot;: InputConnectorGitHubReadme(),
+        &quot;sum&quot;: TransformerFunction(func=summarize, input_key=None, output_key=&quot;row&quot;),
+        &quot;orch&quot;: orch,
+        &quot;out&quot;: OutputConnectorFileMarkdown(OUT, title=&quot;README Summary&quot;),
+    },
+    connections=[
+        (&quot;in&quot;,&quot;out&quot;,&quot;sum&quot;,&quot;in&quot;),
+        (&quot;sum&quot;,&quot;out&quot;,&quot;orch&quot;,&quot;data_in&quot;),
+        (&quot;orch&quot;,&quot;out&quot;,&quot;out&quot;,&quot;in&quot;),
+    ],
+)
+
+net.compile()
+# Pull from a public repo (no token). Try 'pallets/flask' or 'numpy/numpy'.
+net.blocks[&quot;in&quot;].process({&quot;cmd&quot;:&quot;pull&quot;, &quot;args&quot;: {&quot;repo&quot;: &quot;pallets/flask&quot;}})
+# Single flush
+net.blocks[&quot;orch&quot;].process({&quot;tick&quot;: True}, inport=&quot;tick_in&quot;)
+print(&quot;Wrote:&quot;, OUT)
+</code></pre>
+<blockquote>
+<p>To use <strong>private</strong> repos later, pass a token to <code>Github(token)</code> via environment variable and expose a small <code>configure</code> command.</p>
+</blockquote>
+<hr />
+<h2 id="take-away">🧠 Take Away</h2>
+<ul>
+<li><strong>Why connectors?</strong> They make <em>external world I/O</em> explicit and replaceable without changing the network shape.</li>
+<li><strong>When to use StreamRecorder?</strong> For per‑item appends (logging, row insert). Connectors are for <em>commanded, transactional writes</em> like a one‑shot Markdown report or commit.</li>
+<li><strong>Real world path:</strong> Today’s GitHub demo reads public content; a graded assignment could invite students to add a token and write a report back to their fork.</li>
+<li><strong>Future (MCP):</strong> An MCP client can implement the same <code>InputConnector</code>/<code>OutputConnector</code> contracts. Your networks stay the same; only the connector internals change.</li>
+</ul>
+<hr />
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.56ea9cef.min.js"></script>
+      
+    
+  </body>
+</html>

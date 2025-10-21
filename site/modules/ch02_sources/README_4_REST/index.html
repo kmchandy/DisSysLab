@@ -11,16 +11,16 @@
       
       
       
-      <link rel="icon" href="/assets/images/favicon.png">
+      <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.15">
     
     
       
-        <title>DisSysLab</title>
+        <title>2.4 • Source: Polling JSON/REST for Numeric Streams - DisSysLab</title>
       
     
     
-      <link rel="stylesheet" href="/assets/stylesheets/main.342714a4.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.342714a4.min.css">
       
       
 
@@ -39,7 +39,7 @@
       
     
     
-    <script>__md_scope=new URL("/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -57,6 +57,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#24-source-polling-jsonrest-for-numeric-streams" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -69,7 +74,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/." title="DisSysLab" class="md-header__button md-logo" aria-label="DisSysLab" data-md-component="logo">
+    <a href="../../.." title="DisSysLab" class="md-header__button md-logo" aria-label="DisSysLab" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -89,7 +94,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              2.4 • Source: Polling JSON/REST for Numeric Streams
             
           </span>
         </div>
@@ -167,7 +172,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/." title="DisSysLab" class="md-nav__button md-logo" aria-label="DisSysLab" data-md-component="logo">
+    <a href="../../.." title="DisSysLab" class="md-nav__button md-logo" aria-label="DisSysLab" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -185,7 +190,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -207,7 +212,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/modules/ch01_networks/README_1/" class="md-nav__link">
+      <a href="../../ch01_networks/README_1/" class="md-nav__link">
         
   
   
@@ -229,7 +234,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/modules/ch02_sources/README_1/" class="md-nav__link">
+      <a href="../README_1/" class="md-nav__link">
         
   
   
@@ -251,7 +256,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/modules/ch03_GPT/README_1/" class="md-nav__link">
+      <a href="../../ch03_GPT/README_1/" class="md-nav__link">
         
   
   
@@ -273,7 +278,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/modules/ch04_numeric/" class="md-nav__link">
+      <a href="../../ch04_numeric/" class="md-nav__link">
         
   
   
@@ -305,6 +310,79 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-youll-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      What you’ll do
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setup-once" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup (once)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-rest-numeric-feed-demo" class="md-nav__link">
+    <span class="md-ellipsis">
+      The REST → Numeric Feed Demo
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-the-demo" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run the demo
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameters-you-can-modify" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters you can modify
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Troubleshooting
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      👉 Next
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -316,8 +394,164 @@
             <div class="md-content" data-md-component="content">
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+
+<h1 id="24-source-polling-jsonrest-for-numeric-streams">2.4 • Source: Polling JSON/REST for Numeric Streams</h1>
+<p>This page shows how to use a <strong>connector</strong> that polls a REST/JSON endpoint and turns it into a numeric stream you can process in DisSysLab.  Connectors are described in module 7.</p>
+<hr />
+<h2 id="what-youll-do">What you’ll do</h2>
+<p>Run a tiny script that polls the <strong>Coinbase spot-price</strong> endpoint ~1×/sec and prints a record each time the price changes.</p>
+<hr />
+<h2 id="setup-once">Setup (once)</h2>
+<pre><code class="language-bash">pip install requests rich
+</code></pre>
+<blockquote>
+<p><em>Note:</em> We use a public Coinbase endpoint (no API key required) purely as an example.<br />
+You can swap the URL and extractor for any JSON feed.</p>
+</blockquote>
+<hr />
+<h2 id="the-rest-numeric-feed-demo">The REST → Numeric Feed Demo</h2>
+<pre><code class="language-python"># modules.ch02_sources.feed_numeric_price
+
+from dsl import network
+from dsl.connectors.live_kv_console import kv_live_sink
+from dsl.connectors.numeric_rest_in import NumericREST_In
+
+# Coinbase spot price (no API key). Returns JSON like:
+# {&quot;data&quot;:{&quot;base&quot;:&quot;BTC&quot;,&quot;currency&quot;:&quot;USD&quot;,&quot;amount&quot;:&quot;67890.12&quot;}}
+URL = &quot;https://api.coinbase.com/v2/prices/BTC-USD/spot&quot;
+
+
+def coinbase_extract_fn(j):
+    data = j.get(&quot;data&quot;, {})
+    # Convert &quot;amount&quot; string -&gt; float; include symbol for clarity.
+    try:
+        price = float(data.get(&quot;amount&quot;)) if data.get(&quot;amount&quot;) is not None else None
+    except ValueError:
+        price = None
+    return {
+        &quot;symbol&quot;: f&quot;{data.get('base', '?')}-{data.get('currency', '?')}&quot;,
+        &quot;price&quot;: price,
+        &quot;note&quot;: &quot;Coinbase spot (REST)&quot;,
+    }
+
+
+price_source = NumericREST_In(
+    url=URL,
+    extract_fn=coinbase_extract_fn,
+    poll_seconds=1.0,    # pace you can watch
+    life_time=20.0,      # stop after ~20 s for the demo (None = run forever)
+    dedupe=True,         # emit only on change
+    epsilon=1e-4,        # require ≥ $0.0001 change to emit a new reading
+)
+
+
+def from_price():
+    for msg in price_source.run():
+        # Optionally compute derived fields here (e.g., returns, z-scores)
+        yield msg
+
+
+# Wire up the source to a live console sink.
+g = network([(from_price, kv_live_sink)])
+
+g.run_network()
+
+if __name__ == &quot;__main__&quot;:
+    print(&quot;finished&quot;)
+</code></pre>
+<hr />
+<h2 id="run-the-demo">Run the demo</h2>
+<pre><code class="language-bash">python3 -m modules.ch02_sources.feed_numeric_price
+</code></pre>
+<p>You’ll see key–value output like this whenever the price changes:</p>
+<pre><code>----------------------------------------
+symbol
+BTC-USD
+
+price
+67890.12
+
+note
+Coinbase spot (REST)
+</code></pre>
+<hr />
+<h2 id="parameters-you-can-modify">Parameters you can modify</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>url</strong></td>
+<td>str</td>
+<td>Any JSON endpoint you’d like to poll.</td>
+</tr>
+<tr>
+<td><strong>extract_fn</strong></td>
+<td>callable</td>
+<td>Maps raw JSON to a dict with at least a numeric field.</td>
+</tr>
+<tr>
+<td><strong>poll_seconds</strong></td>
+<td>float</td>
+<td>How often to poll (e.g., <code>1.0</code>).</td>
+</tr>
+<tr>
+<td><strong>life_time</strong></td>
+<td>float | None</td>
+<td>Max wall-clock duration before auto-stop (<code>None</code> → run indefinitely).</td>
+</tr>
+<tr>
+<td><strong>dedupe</strong></td>
+<td>bool</td>
+<td>If <code>True</code>, emit only when the numeric value changes.</td>
+</tr>
+<tr>
+<td><strong>epsilon</strong></td>
+<td>float</td>
+<td>Minimum absolute change required to emit (suppresses noise).</td>
+</tr>
+<tr>
+<td><strong>headers</strong></td>
+<td>dict (optional)</td>
+<td>Add HTTP headers if your API requires them.</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><em>Tip:</em> Your <code>extract_fn</code> can compute and output multiple fields (e.g., <code>{price, pct_change, ts}</code>) for downstream transforms or recorders.</p>
+</blockquote>
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<ul>
+<li><strong>No output:</strong> With <code>dedupe=True</code>, no messages appear until the value changes by at least <code>epsilon</code>.<br />
+  Temporarily set <code>dedupe=False</code> to confirm polling works.</li>
+<li><strong>HTTP errors:</strong> Check the URL, connectivity, or rate-limit policies. Increase <code>poll_seconds</code> if needed.</li>
+<li><strong>Non-numeric values:</strong> Ensure <code>extract_fn</code> returns a float and handles exceptions defensively.</li>
+</ul>
+<hr />
+<h2 id="next">👉 Next</h2>
+<p><a href="../README_5_replay/"><strong>Replay archived data</strong>  →</a>. See how you can replay saved data to simulate live message streams.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -353,10 +587,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "/", "features": [], "search": "/assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="/assets/javascripts/bundle.56ea9cef.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.56ea9cef.min.js"></script>
       
     
   </body>
