@@ -1,0 +1,9 @@
+site_name: DisSysLab
+theme:
+  name: material
+nav:
+  - Home: index.md
+  - Module 1 — Intro: modules/ch01_networks/README_1.md
+  - Module 2 — Sources: modules/ch02_sources/README_1.md
+  - Module 3 — OpenAI agents: modules/ch03_GPT/README_1.md
+  - Module 4 — Numerics: modules/ch04_numeric/README.md
