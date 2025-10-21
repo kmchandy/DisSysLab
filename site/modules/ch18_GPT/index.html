@@ -11,16 +11,16 @@
       
       
       
-      <link rel="icon" href="/assets/images/favicon.png">
+      <link rel="icon" href="../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.15">
     
     
       
-        <title>DisSysLab</title>
+        <title>🧩 Chapter 4 — AI Transformers - DisSysLab</title>
       
     
     
-      <link rel="stylesheet" href="/assets/stylesheets/main.342714a4.min.css">
+      <link rel="stylesheet" href="../../assets/stylesheets/main.342714a4.min.css">
       
       
 
@@ -39,7 +39,7 @@
       
     
     
-    <script>__md_scope=new URL("/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -57,6 +57,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#chapter-4-ai-transformers" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -69,7 +74,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/." title="DisSysLab" class="md-header__button md-logo" aria-label="DisSysLab" data-md-component="logo">
+    <a href="../.." title="DisSysLab" class="md-header__button md-logo" aria-label="DisSysLab" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -89,7 +94,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              🧩 Chapter 4 — AI Transformers
             
           </span>
         </div>
@@ -167,7 +172,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/." title="DisSysLab" class="md-nav__button md-logo" aria-label="DisSysLab" data-md-component="logo">
+    <a href="../.." title="DisSysLab" class="md-nav__button md-logo" aria-label="DisSysLab" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -185,7 +190,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/." class="md-nav__link">
+      <a href="../.." class="md-nav__link">
         
   
   
@@ -207,7 +212,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/modules/ch01_networks/README_1/" class="md-nav__link">
+      <a href="../ch01_networks/README_1/" class="md-nav__link">
         
   
   
@@ -229,7 +234,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/modules/ch02_sources/README_1/" class="md-nav__link">
+      <a href="../ch02_sources/README_1/" class="md-nav__link">
         
   
   
@@ -251,7 +256,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/modules/ch03_GPT/README_1/" class="md-nav__link">
+      <a href="../ch03_GPT/README_1/" class="md-nav__link">
         
   
   
@@ -273,7 +278,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/modules/ch04_numeric/" class="md-nav__link">
+      <a href="../ch04_numeric/" class="md-nav__link">
         
   
   
@@ -305,6 +310,79 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#goal" class="md-nav__link">
+    <span class="md-ellipsis">
+      🎯 Goal
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-well-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      📍 What We’ll Build
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      💻 Code Example
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      ▶️ Run It
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      ✅ Example Output
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-takeaways" class="md-nav__link">
+    <span class="md-ellipsis">
+      🧠 Key Takeaways
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coming-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      ⏭️ Coming Up
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -316,8 +394,97 @@
             <div class="md-content" data-md-component="content">
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+
+<h1 id="chapter-4-ai-transformers">🧩 Chapter 4 — AI Transformers</h1>
+<h3 id="goal">🎯 Goal</h3>
+<p>Learn that you create <strong>AI blocks</strong> in the same way that you create other types of blocks. AI blocks embody a prompt just as data-science blocks may embody functions from a data-science library such as Scikit-Learn. You create blocks of different types by embodying (or "wrapping") different types of functions.</p>
+<hr />
+<h2 id="what-well-build">📍 What We’ll Build</h2>
+<p>We’ll extend our three-block network with a GPT transformer:</p>
+<ul>
+<li><strong>Generator</strong> – produces messages with a <code>"text"</code> field (short reviews).  </li>
+<li><strong>GPT Transformer</strong> – uses a system prompt to analyze the text.  </li>
+<li><strong>Recorder</strong> – saves the GPT-augmented messages.  </li>
+</ul>
+<p><strong>Visual:</strong><br />
+<code>[ Generator ] → [ GPT Transformer ] → [ Recorder ]</code></p>
+<hr />
+<h2 id="code-example">💻 Code Example</h2>
+<pre><code class="language-python"># dsl/examples/ch04_GPT/gpt_network.py
+
+from dsl.core import Network
+from dsl.block_lib.stream_generators import GenerateFromList
+from dsl.block_lib.stream_transformers import TransformerPrompt
+from dsl.block_lib.stream_recorders import RecordToList
+
+# Store results here
+results = []
+
+# Define the network
+net = Network(
+    blocks={
+        &quot;generator&quot;: GenerateFromList(
+            items=[
+                &quot;The movie was fantastic!&quot;,
+                &quot;I didn’t like the food.&quot;,
+                &quot;Service was slow but friendly.&quot;
+            ],
+            key=&quot;text&quot;
+        ),
+        &quot;sentiment_analyzer&quot;: TransformerPrompt(
+            system_prompt=&quot;You are a sentiment rater. Output a positivity score from 0 to 10.&quot;,
+            input_key=&quot;text&quot;,
+            output_key=&quot;sentiment&quot;,
+        ),
+        &quot;recorder&quot;: RecordToList(results),
+    },
+    connections=[
+        (&quot;generator&quot;, &quot;out&quot;, &quot;sentiment_analyzer&quot;, &quot;in&quot;),
+        (&quot;sentiment_analyzer&quot;, &quot;out&quot;, &quot;recorder&quot;, &quot;in&quot;),
+    ]
+)
+
+net.compile_and_run()
+print(results)
+</code></pre>
+<h2 id="run-it">▶️ Run It</h2>
+<pre><code class="language-bash">python3 -m dsl.examples.ch04_GPT.gpt_network
+</code></pre>
+<h2 id="example-output">✅ Example Output</h2>
+<pre><code>[
+    {&quot;text&quot;: &quot;The movie was fantastic!&quot;, &quot;sentiment&quot;: &quot;9&quot;},
+    {&quot;text&quot;: &quot;I didn’t like the food.&quot;, &quot;sentiment&quot;: &quot;2&quot;},
+    {&quot;text&quot;: &quot;Service was slow but friendly.&quot;, &quot;sentiment&quot;: &quot;6&quot;}
+]
+</code></pre>
+<h2 id="key-takeaways">🧠 Key Takeaways</h2>
+<ul>
+<li>
+<p>Different types of blocks are created by embodying (wrapping) different types of function</p>
+</li>
+<li>
+<p>GPT blocks embody prompts.</p>
+</li>
+</ul>
+<h2 id="coming-up">⏭️ Coming Up</h2>
+<p>✨ A key idea is that different types of blocks embody different types of functions. In this page you saw how GPT blocks embody prompts. Let's use the key idea to build data-science blocks.</p>
+<p>👉 <strong>Next up: <a href="../ch05_ds/">Chapter 5 — Data Science Blocks.</a></strong></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -353,10 +520,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "/", "features": [], "search": "/assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="/assets/javascripts/bundle.56ea9cef.min.js"></script>
+      <script src="../../assets/javascripts/bundle.56ea9cef.min.js"></script>
       
     
   </body>

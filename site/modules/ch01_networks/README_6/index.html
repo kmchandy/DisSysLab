@@ -11,16 +11,16 @@
       
       
       
-      <link rel="icon" href="/assets/images/favicon.png">
+      <link rel="icon" href="../../../assets/images/favicon.png">
       <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.15">
     
     
       
-        <title>DisSysLab</title>
+        <title>🕸 1.6 • Simple Network — Fan-Out & Fan-In - DisSysLab</title>
       
     
     
-      <link rel="stylesheet" href="/assets/stylesheets/main.342714a4.min.css">
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.342714a4.min.css">
       
       
 
@@ -39,7 +39,7 @@
       
     
     
-    <script>__md_scope=new URL("/",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
     
       
 
@@ -57,6 +57,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#16-simple-network-fan-out-fan-in" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -69,7 +74,7 @@
 
 <header class="md-header md-header--shadow" data-md-component="header">
   <nav class="md-header__inner md-grid" aria-label="Header">
-    <a href="/." title="DisSysLab" class="md-header__button md-logo" aria-label="DisSysLab" data-md-component="logo">
+    <a href="../../.." title="DisSysLab" class="md-header__button md-logo" aria-label="DisSysLab" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -89,7 +94,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              
+              🕸 1.6 • Simple Network — Fan-Out &amp; Fan-In
             
           </span>
         </div>
@@ -167,7 +172,7 @@
 
 <nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
   <label class="md-nav__title" for="__drawer">
-    <a href="/." title="DisSysLab" class="md-nav__button md-logo" aria-label="DisSysLab" data-md-component="logo">
+    <a href="../../.." title="DisSysLab" class="md-nav__button md-logo" aria-label="DisSysLab" data-md-component="logo">
       
   
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
@@ -185,7 +190,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/." class="md-nav__link">
+      <a href="../../.." class="md-nav__link">
         
   
   
@@ -207,7 +212,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/modules/ch01_networks/README_1/" class="md-nav__link">
+      <a href="../README_1/" class="md-nav__link">
         
   
   
@@ -229,7 +234,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/modules/ch02_sources/README_1/" class="md-nav__link">
+      <a href="../../ch02_sources/README_1/" class="md-nav__link">
         
   
   
@@ -251,7 +256,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/modules/ch03_GPT/README_1/" class="md-nav__link">
+      <a href="../../ch03_GPT/README_1/" class="md-nav__link">
         
   
   
@@ -273,7 +278,7 @@
   
   
     <li class="md-nav__item">
-      <a href="/modules/ch04_numeric/" class="md-nav__link">
+      <a href="../../ch04_numeric/" class="md-nav__link">
         
   
   
@@ -305,6 +310,70 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#goal" class="md-nav__link">
+    <span class="md-ellipsis">
+      🎯 Goal
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#example-arbitrary-graph-with-fan-out-fan-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      💻 Example: Arbitrary Graph with Fan-Out / Fan-In
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-the-demo" class="md-nav__link">
+    <span class="md-ellipsis">
+      ▶️ Run the demo
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#fan-out-and-fan-in" class="md-nav__link">
+    <span class="md-ellipsis">
+      🧩 Fan-Out and Fan-In
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      🧠 Key Concepts
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      👉 Next
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -316,8 +385,110 @@
             <div class="md-content" data-md-component="content">
               <article class="md-content__inner md-typeset">
                 
-  <h1>404 - Not found</h1>
+                  
 
+
+
+<h1 id="16-simple-network-fan-out-fan-in">🕸 1.6 • Simple Network — Fan-Out &amp; Fan-In</h1>
+<p>This page shows how to build an <strong>arbitrary graph</strong> (not just a linear pipeline) with <strong>fan-out</strong> (one node → many) and <strong>fan-in</strong> (many → one).</p>
+<hr />
+<h2 id="goal">🎯 Goal</h2>
+<ul>
+<li>Create a small network with two sources that <strong>fan-out</strong> to two transforms and then <strong>fan-in</strong> to a single sink.</li>
+<li>Observe interleaved outputs as items flow concurrently from multiple sources.</li>
+</ul>
+<hr />
+<h2 id="example-arbitrary-graph-with-fan-out-fan-in">💻 Example: Arbitrary Graph with Fan-Out / Fan-In</h2>
+<pre><code class="language-python"># modules.ch01_networks.simple_network
+
+from dsl import network
+import time
+
+# -----------------------------------------------------------
+# Sources
+# -----------------------------------------------------------
+
+def from_list_0():
+    for item in [&quot;A&quot;, &quot;B&quot;]:
+        yield item
+        time.sleep(0.12)
+
+def from_list_1():
+    for item in [&quot;X&quot;, &quot;Y&quot;, &quot;Z&quot;]:
+        yield item
+        time.sleep(0.1)
+
+# -----------------------------------------------------------
+# Transforms
+# -----------------------------------------------------------
+
+def lower(v):
+    return v.lower()
+
+def add_bangs(v):
+    return v + &quot;!!&quot;
+
+# -----------------------------------------------------------
+# Sink (fan-in target)
+# -----------------------------------------------------------
+
+results = []
+def to_results(v): 
+    results.append(v)
+
+# -----------------------------------------------------------
+# Graph wiring
+# - Fan OUT: each source feeds BOTH transforms
+# - Fan IN: both transforms feed the SAME sink
+# -----------------------------------------------------------
+
+g = network([
+    (from_list_0, lower), 
+    (from_list_1, lower),
+    (from_list_0, add_bangs), 
+    (from_list_1, add_bangs),
+    (lower, to_results), 
+    (add_bangs, to_results)
+])
+
+g.run_network()
+
+if __name__ == &quot;__main__&quot;:
+    print(set(results))
+    assert set(results) == {&quot;A!!&quot;, &quot;B!!&quot;, &quot;X!!&quot;, &quot;Y!!&quot;, &quot;Z!!&quot;, &quot;a&quot;, &quot;b&quot;, &quot;x&quot;, &quot;y&quot;, &quot;z&quot;}
+</code></pre>
+<hr />
+<h2 id="run-the-demo">▶️ Run the demo</h2>
+<pre><code class="language-bash">python3 -m modules.ch01_networks.simple_network
+</code></pre>
+<p>You’ll see outputs interleaved depending on source timing, with both lowercase variants and “!!” variants collected in <code>results</code>.</p>
+<hr />
+<h2 id="fan-out-and-fan-in">🧩 Fan-Out and Fan-In</h2>
+<ul>
+<li><strong>Fan-Out:</strong> Messages from a node can be broadcast to multiple nodes (e.g., <code>from_list_0 → lower</code> and <code>from_list_0 → add_bangs</code>).</li>
+<li><strong>Fan-In:</strong> A node can receives messages from multiple nodes (e.g., <code>lower → to_results</code> and <code>add_bangs → to_results</code>).</li>
+</ul>
+<hr />
+<h2 id="key-concepts">🧠 Key Concepts</h2>
+<ul>
+<li><strong>Arbitrary graphs:</strong> You can create networks with arbitrary topologies. (Note: Later we discuss termination detection of networks with cycles. )</li>
+</ul>
+<hr />
+<h2 id="next">👉 Next</h2>
+<p><a href="../../ch02_sources/README_1/">Explore different types of sources</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
               </article>
             </div>
           
@@ -353,10 +524,10 @@
     
     
       
-      <script id="__config" type="application/json">{"base": "/", "features": [], "search": "/assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
-      <script src="/assets/javascripts/bundle.56ea9cef.min.js"></script>
+      <script src="../../../assets/javascripts/bundle.56ea9cef.min.js"></script>
       
     
   </body>

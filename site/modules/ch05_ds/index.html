@@ -1,0 +1,656 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.15">
+    
+    
+      
+        <title>🧩 Chapter 5 — Transformers for Data Science - DisSysLab</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.342714a4.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#chapter-5-transformers-for-data-science" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="DisSysLab" class="md-header__button md-logo" aria-label="DisSysLab" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            DisSysLab
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              🧩 Chapter 5 — Transformers for Data Science
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="DisSysLab" class="md-nav__button md-logo" aria-label="DisSysLab" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    DisSysLab
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ch01_networks/README_1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 1 — Intro
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ch02_sources/README_1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 2 — Sources
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ch03_GPT/README_1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 3 — OpenAI agents
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ch04_numeric/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 4 — Numerics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#goal" class="md-nav__link">
+    <span class="md-ellipsis">
+      🎯 Goal
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#requirements" class="md-nav__link">
+    <span class="md-ellipsis">
+      📦 Requirements
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-well-build" class="md-nav__link">
+    <span class="md-ellipsis">
+      📍 What We’ll Build
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-1-simple-word-counts-kmeans" class="md-nav__link">
+    <span class="md-ellipsis">
+      💻 Part 1 — Simple Word Counts + KMeans
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-2-real-bag-of-words-tf-idf-pca-kmeans" class="md-nav__link">
+    <span class="md-ellipsis">
+      💻 Part 2 — Real Bag-of-Words (TF-IDF + PCA + KMeans)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-takeaways" class="md-nav__link">
+    <span class="md-ellipsis">
+      ✅ Key Takeaways
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#coming-up" class="md-nav__link">
+    <span class="md-ellipsis">
+      ⏭️ Coming Up
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="chapter-5-transformers-for-data-science">🧩 Chapter 5 — Transformers for Data Science</h1>
+<h3 id="goal">🎯 Goal</h3>
+<p>Learn how to build <strong>data science blocks</strong> (like CountVectorizer, TF-IDF, KMeans, and PCA) in exactly the same way that you build GPT blocks or other types of blocks.</p>
+<hr />
+<h3 id="requirements">📦 Requirements</h3>
+<p>Before running these examples, make sure your Python virtual environment has the right packages installed:</p>
+<pre><code class="language-bash"># Activate your venv first
+source venv/bin/activate   # Mac/Linux
+.\venv\Scripts\activate    # Windows PowerShell
+
+# Then install dependencies
+pip install scikit-learn matplotlib
+</code></pre>
+<hr />
+<h2 id="what-well-build">📍 What We’ll Build</h2>
+<p>We’ll explore <strong>two parts</strong>:</p>
+<ol>
+<li>
+<p><strong>Part 1 — Simple Word Counts + KMeans</strong><br />
+   Use a generator of short movie reviews → count words → cluster into groups.</p>
+</li>
+<li>
+<p><strong>Part 2 — TF-IDF + PCA + KMeans</strong><br />
+   Scale up with TF-IDF and dimensionality reduction for richer clusters and visualizations.</p>
+</li>
+</ol>
+<p><strong>Visual:</strong><br />
+<code>[ Generator ] → [ Vectorizer ] → [ Clusterer ] → [ Plot Recorder ]</code></p>
+<hr />
+<h2 id="part-1-simple-word-counts-kmeans">💻 Part 1 — Simple Word Counts + KMeans</h2>
+<p>We’ll use <code>CountVectorizer</code> to turn reviews into counts of words like <code>"good"</code> and <code>"bad"</code>, and then cluster into 2 groups using KMeans.  </p>
+<p><strong>Code:</strong>  </p>
+<pre><code class="language-python"># dsl/examples/ch05_ds/part1_counts_kmeans.py
+
+import sklearn.feature_extraction.text as text      # text vectorizers live here
+import sklearn.cluster as cluster                   # clustering algorithms live here
+import matplotlib.pyplot as plt                     # plotting library
+
+from dsl.core import Network
+from dsl.block_lib.stream_generators import GenerateFromList
+from dsl.block_lib.stream_transformers import WrapFunction
+from dsl.block_lib.stream_recorders import RecordToList
+
+# --- Sample movie reviews ---
+reviews = [
+    &quot;The movie was good and enjoyable&quot;,
+    &quot;Really bad acting and poor script&quot;,
+    &quot;Good fun with friends&quot;,
+    &quot;Terrible and bad experience&quot;,
+    &quot;An excellent and good film&quot;
+]
+
+# Store outputs (each element will be a dict with vector + cluster)
+results = []
+
+# --- Define transformers ---
+# Count how many times words &quot;good&quot; and &quot;bad&quot; appear
+vectorizer = text.CountVectorizer(vocabulary=[&quot;good&quot;, &quot;bad&quot;])
+
+# Group reviews into 2 clusters
+kmeans = cluster.KMeans(n_clusters=2, random_state=42)
+
+def vectorize(single_review: str):
+    &quot;&quot;&quot;Turn one review into a count vector [count_good, count_bad].&quot;&quot;&quot;
+    return vectorizer.transform([single_review]).toarray()
+
+def cluster_one(vector):
+    &quot;&quot;&quot;Cluster one vector into group 0 or 1.&quot;&quot;&quot;
+    return kmeans.fit_predict(vector)
+
+# --- Build network ---
+net = Network(
+    blocks={
+        &quot;generator&quot;: GenerateFromList(items=reviews, key=&quot;text&quot;),
+        &quot;vectorizer&quot;: WrapFunction(
+            func=lambda x: vectorize(x),
+            input_key=&quot;text&quot;,
+            output_key=&quot;vector&quot;
+        ),
+        &quot;cluster&quot;: WrapFunction(
+            func=lambda v: int(cluster_one(v)[0]),
+            input_key=&quot;vector&quot;,
+            output_key=&quot;cluster&quot;
+        ),
+        &quot;recorder&quot;: RecordToList(results),
+    },
+    connections=[
+        (&quot;generator&quot;, &quot;out&quot;, &quot;vectorizer&quot;, &quot;in&quot;),
+        (&quot;vectorizer&quot;, &quot;out&quot;, &quot;cluster&quot;, &quot;in&quot;),
+        (&quot;cluster&quot;, &quot;out&quot;, &quot;recorder&quot;, &quot;in&quot;),
+    ]
+)
+
+net.compile_and_run()
+print(&quot;Results:&quot;, results)
+
+# --- Visualization ---
+# Each result dict has {&quot;vector&quot;: [good_count, bad_count], &quot;cluster&quot;: c}
+vectors = [r[&quot;vector&quot;][0] for r in results]
+clusters = [r[&quot;cluster&quot;] for r in results]
+
+xs = [v[0] for v in vectors]  # count of &quot;good&quot;
+ys = [v[1] for v in vectors]  # count of &quot;bad&quot;
+
+plt.scatter(xs, ys, c=clusters, cmap=&quot;coolwarm&quot;, s=80)
+plt.xlabel(&quot;count('good')&quot;)
+plt.ylabel(&quot;count('bad')&quot;)
+plt.title(&quot;Clusters of Reviews (CountVectorizer + KMeans)&quot;)
+plt.savefig(&quot;part1_plot.svg&quot;)
+plt.show()
+</code></pre>
+<p><strong><em>What you’ll see:</em></strong>
+📊 A scatter plot where x = count('good'), y = count('bad'), colored by cluster.</p>
+<h2 id="part-2-real-bag-of-words-tf-idf-pca-kmeans">💻 Part 2 — Real Bag-of-Words (TF-IDF + PCA + KMeans)</h2>
+<p>We scale up to TF-IDF (lots of words), cluster with KMeans, and then project to 2D with PCA so we can see it.</p>
+<p><strong>Code:</strong></p>
+<pre><code># dsl/examples/ch05_ds/part2_tfidf_pca_kmeans.py
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+from dsl.core import Network
+from dsl.block_lib.stream_generators import GenerateFromList
+from dsl.block_lib.stream_transformers import WrapFunction
+from dsl.block_lib.stream_recorders import RecordToList
+
+# Reviews (same as Part 1)
+reviews = [
+    &quot;The movie was good and enjoyable&quot;,
+    &quot;Really bad acting and poor script&quot;,
+    &quot;Good fun with friends&quot;,
+    &quot;Terrible and bad experience&quot;,
+    &quot;An excellent and good film&quot;
+]
+
+results = []
+
+# Define transformers
+vectorizer = TfidfVectorizer()
+kmeans = KMeans(n_clusters=2, random_state=42)
+pca = PCA(n_components=2)
+
+def vectorize(texts):
+    return vectorizer.fit_transform(texts).toarray()
+
+def cluster(vectors):
+    return kmeans.fit_predict(vectors)
+
+def reduce(vectors):
+    return pca.fit_transform(vectors)
+
+net = Network(
+    blocks={
+        &quot;generator&quot;: GenerateFromList(items=reviews, key=&quot;text&quot;),
+        &quot;vectorizer&quot;: WrapFunction(func=lambda _: vectorizer.fit_transform(reviews).toarray(), input_key=&quot;text&quot;, output_key=&quot;vectors&quot;),
+        &quot;cluster&quot;: WrapFunction(func=lambda v: int(cluster([v])[0]), input_key=&quot;vectors&quot;, output_key=&quot;cluster&quot;),
+        &quot;recorder&quot;: RecordToList(results),
+    },
+    connections=[
+        (&quot;generator&quot;, &quot;out&quot;, &quot;vectorizer&quot;, &quot;in&quot;),
+        (&quot;vectorizer&quot;, &quot;out&quot;, &quot;cluster&quot;, &quot;in&quot;),
+        (&quot;cluster&quot;, &quot;out&quot;, &quot;recorder&quot;, &quot;in&quot;),
+    ]
+)
+
+net.compile_and_run()
+print(results)
+
+# Now do PCA on the full set
+X = vectorizer.fit_transform(reviews).toarray()
+X2d = pca.fit_transform(X)
+clusters = kmeans.fit_predict(X)
+
+plt.scatter(X2d[:, 0], X2d[:, 1], c=clusters, cmap=&quot;coolwarm&quot;, s=80)
+plt.xlabel(&quot;PCA 1&quot;)
+plt.ylabel(&quot;PCA 2&quot;)
+plt.title(&quot;Clusters of Reviews (TF-IDF + PCA + KMeans)&quot;)
+plt.savefig(&quot;part2_plot.svg&quot;)
+plt.show()
+</code></pre>
+<p><strong><em>What you’ll see:</em></strong>
+📊 A scatter plot in 2D (PCA projection), with points colored by cluster.</p>
+<p>⚠️ <strong>Tip for running plots</strong><br />
+When <code>plt.show()</code> runs, a plot window will open.<br />
+The Python program pauses until you <strong>close the window</strong>.<br />
+- On most systems, click the ❌ close button.<br />
+- If you’re running in some terminals, you may need to press <strong>Ctrl-C</strong> to break out.  </p>
+<h2 id="key-takeaways">✅ Key Takeaways</h2>
+<ul>
+<li>
+<p>The two core ideas -- (1) blocks execute functions that process messages and (2) connections specify the flow of messages between blocks -- can be used for data science applications in exactly the same way as they are used for GPT and other applications.</p>
+</li>
+<li>
+<p>Vectorizers (Count, TF-IDF) turn text into numeric vectors; KMeans groups messages into clusters; PCA lets us see high-dimensional vectors in 2D plots. More about this in related chapters</p>
+</li>
+</ul>
+<h2 id="coming-up">⏭️ Coming Up</h2>
+<p>✨ What if you wanted a distributed application that connected to external objects such as your calendar, email, shopping apps, or GitHub? The next chapter describe blocks that connect to external applications.</p>
+<p>👉 <strong>Next up: <a href="../ch06_git/README.md">Chapter 6 — Connectors</a></strong></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../..", "features": [], "search": "../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.56ea9cef.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -2,6 +2,16 @@
 
 **DisSysLab (aka `dsl`)** is a lightweight teaching framework where you build distributed programs as **graphs of plain Python callables**. Each node is just a function — often a call into a familiar library (NumPy/SciPy, requests, OpenAI, etc.). Edges carry messages. Agents run concurrently.
 
+# TL;DR – try it
+
+```bash
+git clone https://github.com/kmchandy/DisSysLab.git
+cd DisSysLab
+python -m venv .venv && source .venv/bin/activate   # Windows: .\.venv\Scripts\Activate.ps1
+python -m pip install -e .
+python -m modules.ch01_networks.simple_network
+```
+
 DSL is designed for first-year undergrads. This is an early release. It will evolve and feedback is welcome.
 
 ---
@@ -33,6 +43,10 @@ g = network([
 ])
 g.run_network()
 ```
+# 🕸️ DisSysLab — Build distributed apps by connecting functions
+One sentence about what dsl is and why it’s cool.
+
+#
 
 ## 👉 Next
 [Module 1. An introduction to dsl.](./modules/ch01_networks/README_1.md) 

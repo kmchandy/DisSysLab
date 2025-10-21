@@ -1,0 +1,611 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.15">
+    
+    
+      
+        <title>🧩 Chapter 5 — Homework: TF‑IDF + PCA + KMeans - DisSysLab</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.342714a4.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#chapter-5-homework-tfidf-pca-kmeans" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="DisSysLab" class="md-header__button md-logo" aria-label="DisSysLab" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            DisSysLab
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              🧩 Chapter 5 — Homework: TF‑IDF + PCA + KMeans
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="DisSysLab" class="md-nav__button md-logo" aria-label="DisSysLab" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    DisSysLab
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ch01_networks/README_1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 1 — Intro
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ch02_sources/README_1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 2 — Sources
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ch03_GPT/README_1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 3 — OpenAI agents
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ch04_numeric/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 4 — Numerics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#learning-objectives" class="md-nav__link">
+    <span class="md-ellipsis">
+      🎯 Learning Objectives
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#assignment-short" class="md-nav__link">
+    <span class="md-ellipsis">
+      📋 Assignment (Short)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-to-submit" class="md-nav__link">
+    <span class="md-ellipsis">
+      ✅ What to Submit
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#hints" class="md-nav__link">
+    <span class="md-ellipsis">
+      🧰 Hints
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reference-solution-python-script" class="md-nav__link">
+    <span class="md-ellipsis">
+      🧪 Reference Solution (Python Script)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#plotting-tip" class="md-nav__link">
+    <span class="md-ellipsis">
+      ⚠️ Plotting Tip
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="chapter-5-homework-tfidf-pca-kmeans">🧩 Chapter 5 — Homework: TF‑IDF + PCA + KMeans</h1>
+<h2 id="learning-objectives">🎯 Learning Objectives</h2>
+<ul>
+<li>Build an application. </li>
+<li>Use <strong>TF‑IDF</strong> instead of simple counts to represent text numerically.</li>
+<li>Apply <strong>PCA</strong> to reduce dimensionality for visualization and clustering.</li>
+<li>Compare results against the <strong>CountVectorizer + KMeans</strong> pipeline from Part 1.</li>
+</ul>
+<hr />
+<h2 id="assignment-short">📋 Assignment (Short)</h2>
+<p><strong>HW 5.1 — Replace Count with TF‑IDF</strong>\
+Use <code>TfidfVectorizer</code> (scikit‑learn) to transform the same list of short movie reviews you used in Part 1. Use blocks with <code>TransformerFunction</code>.</p>
+<p><strong>HW 5.2 — Add PCA (2 components)</strong>\
+Fit <code>PCA(n_components=2)</code> on the <strong>full corpus</strong> (all reviews) and transform each review to 2D.</p>
+<p><strong>HW 5.3 — Cluster &amp; Visualize</strong>\
+Run <code>KMeans(n_clusters=2, random_state=42)</code> on the <strong>2D PCA points</strong> and make a 2D scatter plot colored by cluster labels. Save the figure (e.g., <code>hw5_plot.svg</code>).</p>
+<p><strong>HW 5.4 — Reflection (3–5 sentences)</strong>\
+Briefly compare TF‑IDF + PCA + KMeans vs. CountVectorizer + KMeans from Part 1:</p>
+<ul>
+<li>Do the clusters look different?</li>
+<li>Which representation seems more informative on these reviews, and why?</li>
+</ul>
+<blockquote>
+<p><strong>Important:</strong> For TF‑IDF and PCA you must <strong>fit on the full dataset once</strong> (outside the per‑message transform), then use those fitted models inside your <code>TransformerFunction</code> blocks. This mirrors best practices and avoids refitting for every message.</p>
+</blockquote>
+<hr />
+<h2 id="what-to-submit">✅ What to Submit</h2>
+<ul>
+<li><strong>Code file</strong>: <code>dsl/examples/ch05_ds/hw_tfidf_pca_kmeans.py</code></li>
+<li><strong>Plot</strong>: <code>hw5_plot.svg</code> (or <code>.png</code>)</li>
+<li><strong>Short reflection</strong>: <code>hw5_reflection.md</code> (3–5 sentences)</li>
+</ul>
+<hr />
+<h2 id="hints">🧰 Hints</h2>
+<ul>
+<li>Install requirements in your venv:
+  <code>bash
+  pip install scikit-learn matplotlib</code></li>
+<li>Idiomatic imports for this homework:
+  <code>python
+  from sklearn.feature_extraction.text import TfidfVectorizer
+  from sklearn.decomposition import PCA
+  from sklearn.cluster import KMeans
+  import matplotlib.pyplot as plt</code></li>
+<li>Keep using your <strong>Part 1 review list</strong> (with varied counts of "good"/"bad" etc.).</li>
+<li>Use <code>TransformerFunction</code> throughout, consistent with Chapter 5.</li>
+</ul>
+<hr />
+<h2 id="reference-solution-python-script">🧪 Reference Solution (Python Script)</h2>
+<blockquote>
+<p>Save as: <code>dsl/examples/ch05_ds/hw_tfidf_pca_kmeans_solution.py</code></p>
+</blockquote>
+<pre><code class="language-python">&quot;&quot;&quot;
+Chapter 5 Homework Solution — TF-IDF + PCA + KMeans
+Path: dsl/examples/ch05_ds/hw_tfidf_pca_kmeans_solution.py
+
+This solution:
+- Fits TF-IDF and PCA on the full corpus ONCE (good practice)
+- Uses TransformerFunction blocks for per-item transform steps
+- Clusters in 2D PCA space and plots the result
+Requirements: scikit-learn, matplotlib
+&quot;&quot;&quot;
+
+from typing import List
+
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+import matplotlib.pyplot as plt
+
+from dsl.core import Network
+from dsl.block_lib.stream_generators import GenerateFromList
+from dsl.block_lib.stream_transformers import TransformerFunction
+from dsl.block_lib.stream_recorders import RecordToList
+
+# --- Sample movie reviews (corrected counts and variety) ---
+reviews: List[str] = [
+    &quot;good fun with friends and a good ending&quot;,              # many 'good'
+    &quot;bad movie, bad soundtrack, bad acting, but good date!&quot;,# mix
+    &quot;really bad, bad acting and a poor script&quot;,             # more 'bad'
+    &quot;good soundtrack and good jokes but some bad scenes&quot;,   # mixed
+    &quot;bad pacing but a good finale&quot;,                         # balanced
+    &quot;all-around good experience, good vibes, not bad&quot;,      # mixed
+    &quot;bad story, bad acting, bad music, bad cinematography.&quot;,# heavy 'bad'
+]
+
+# --- Fit models ONCE on the full corpus ---
+# TF-IDF is fitted on all reviews so that IDF weights reflect the corpus.
+vectorizer = TfidfVectorizer()
+X_all = vectorizer.fit_transform(reviews).toarray()   # shape (N, D)
+
+# Reduce to 2D with PCA for visualization and clustering
+pca = PCA(n_components=2, random_state=42)
+X2d_all = pca.fit_transform(X_all)                    # shape (N, 2)
+
+# Cluster in 2D to align with the visualization space
+kmeans = KMeans(n_clusters=2, random_state=42, n_init=10)
+kmeans.fit(X2d_all)
+
+# Storage for per-item outputs
+results = []
+
+# --- Per-item transform functions (use fitted models) ---
+def tfidf_single(text: str):
+    &quot;&quot;&quot;Transform one review using the fitted TF-IDF; returns shape (1, D).&quot;&quot;&quot;
+    return vectorizer.transform([text]).toarray()
+
+def pca_single(vec):
+    &quot;&quot;&quot;Project a single TF-IDF row vector to 2D using fitted PCA; shape (1, 2).&quot;&quot;&quot;
+    return pca.transform(vec)
+
+def cluster_single(vec2d):
+    &quot;&quot;&quot;Predict KMeans label (0 or 1) for a single 1x2 vector.&quot;&quot;&quot;
+    return int(kmeans.predict(vec2d)[0])
+
+# --- Build DisSysLab network ---
+net = Network(
+    blocks={
+        &quot;gen&quot;: GenerateFromList(items=reviews, key=&quot;text&quot;),
+        &quot;tfidf&quot;: TransformerFunction(
+            func=tfidf_single, input_key=&quot;text&quot;, output_key=&quot;tfidf&quot;
+        ),
+        &quot;pca2d&quot;: TransformerFunction(
+            func=pca_single, input_key=&quot;tfidf&quot;, output_key=&quot;pca2d&quot;
+        ),
+        &quot;cluster&quot;: TransformerFunction(
+            func=cluster_single, input_key=&quot;pca2d&quot;, output_key=&quot;cluster&quot;
+        ),
+        &quot;rec&quot;: RecordToList(results),
+    },
+    connections=[
+        (&quot;gen&quot;, &quot;out&quot;, &quot;tfidf&quot;, &quot;in&quot;),
+        (&quot;tfidf&quot;, &quot;out&quot;, &quot;pca2d&quot;, &quot;in&quot;),
+        (&quot;pca2d&quot;, &quot;out&quot;, &quot;cluster&quot;, &quot;in&quot;),
+        (&quot;cluster&quot;, &quot;out&quot;, &quot;rec&quot;, &quot;in&quot;),
+    ],
+)
+
+net.compile_and_run()
+
+# Inspect a couple of results
+print(&quot;Example result:&quot;, results[0])
+
+# --- Build arrays for plotting from recorded results ---
+# Each result row contains keys: tfidf (1xD), pca2d (1x2), cluster (int)
+X2d_points = [r[&quot;pca2d&quot;][0] for r in results]  # list of [x, y]
+labels = [r[&quot;cluster&quot;] for r in results]
+
+xs = [p[0] for p in X2d_points]
+ys = [p[1] for p in X2d_points]
+
+plt.scatter(xs, ys, c=labels, s=80)
+plt.xlabel(&quot;PCA 1&quot;)
+plt.ylabel(&quot;PCA 2&quot;)
+plt.title(&quot;TF-IDF → PCA (2D) → KMeans Clusters&quot;)
+plt.savefig(&quot;hw5_plot.svg&quot;)
+plt.show()  # Close the window to end the program
+</code></pre>
+<hr />
+<h2 id="plotting-tip">⚠️ Plotting Tip</h2>
+<p><code>plt.show()</code> opens a window and <strong>pauses</strong> the program until you close it. If running in a terminal without a UI, prefer saving and closing:</p>
+<pre><code class="language-python">plt.savefig(&quot;hw5_plot.svg&quot;)
+plt.close()
+</code></pre>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.56ea9cef.min.js"></script>
+      
+    
+  </body>
+</html>
