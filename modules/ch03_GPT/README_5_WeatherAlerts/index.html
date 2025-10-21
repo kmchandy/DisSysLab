@@ -1,0 +1,643 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+      
+      
+      
+      <link rel="icon" href="../../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.6.15">
+    
+    
+      
+        <title>5 • Transformers: Weather Alerts - DisSysLab</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../../assets/stylesheets/main.342714a4.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#5-transformers-weather-alerts" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../../.." title="DisSysLab" class="md-header__button md-logo" aria-label="DisSysLab" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            DisSysLab
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              5 • Transformers: Weather Alerts
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../../.." title="DisSysLab" class="md-nav__button md-logo" aria-label="DisSysLab" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    DisSysLab
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Home
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ch01_networks/README_1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 1 — Intro
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ch02_sources/README_1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 2 — Sources
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../README_1/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 3 — OpenAI agents
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ch04_numeric/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    Module 4 — Numerics
+    
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-youll-do" class="md-nav__link">
+    <span class="md-ellipsis">
+      What you’ll do
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#setup-once" class="md-nav__link">
+    <span class="md-ellipsis">
+      Setup (once)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-weather-alerts-demo" class="md-nav__link">
+    <span class="md-ellipsis">
+      The Weather Alerts Demo
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#run-the-demo" class="md-nav__link">
+    <span class="md-ellipsis">
+      Run the demo
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameters-you-can-modify" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters you can modify
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#troubleshooting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Troubleshooting
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next-steps" class="md-nav__link">
+    <span class="md-ellipsis">
+      Next steps
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="5-transformers-weather-alerts">5 • Transformers: Weather Alerts</h1>
+<blockquote>
+<p><strong>Important notes</strong>
+1) <strong>Do not use the weather alerts feed casually.</strong> This is an operational feed intended for real, potentially life-threatening alerts. Use it respectfully and only for learning/testing as needed.<br />
+2) <strong>The weather alerts feed can be slow to respond.</strong> You may need to wait several minutes before seeing output.</p>
+</blockquote>
+<p>This page shows how to connect to the <strong>NWS Weather Alerts (Atom/RSS) feed</strong> and run an <strong>OpenAI transformer</strong> to extract a compact, safety-focused summary from each alert.</p>
+<hr />
+<h2 id="what-youll-do">What you’ll do</h2>
+<p>Run a script that polls the official NWS active alerts feed, extracts a small dict per alert (<code>title</code>, <code>page_text</code>), and sends it to an OpenAI agent that returns a minimal JSON summary (<code>alert_type</code>, <code>location</code>, <code>issued_time</code>, <code>headline</code>, <code>short_advice</code>). The output is streamed to a live console sink.</p>
+<hr />
+<h2 id="setup-once">Setup (once)</h2>
+<pre><code class="language-bash">pip install requests beautifulsoup4 lxml openai rich
+</code></pre>
+<p>Set your OpenAI API key (choose one):</p>
+<p><strong>macOS / Linux</strong></p>
+<pre><code class="language-bash">export OPENAI_API_KEY=&quot;sk-…your key…&quot;
+</code></pre>
+<p><strong>Windows (PowerShell)</strong></p>
+<pre><code class="language-powershell">$env:OPENAI_API_KEY=&quot;sk-…your key…&quot;
+</code></pre>
+<blockquote>
+<p><em>Notes:</em><br />
+• <code>lxml</code> enables reliable XML parsing for Atom/RSS feeds.<br />
+• The example uses <code>dsl.extensions.agent_openai.AgentOpenAI</code>, which expects your key in <code>OPENAI_API_KEY</code>.</p>
+</blockquote>
+<hr />
+<h2 id="the-weather-alerts-demo">The Weather Alerts Demo</h2>
+<pre><code class="language-python"># modules.ch03_GPT.rss_alerts_demo
+
+from dsl.connectors.rss_in import RSS_In
+from dsl import network
+from dsl.extensions.agent_openai import AgentOpenAI
+from .live_alert_console import live_alert_sink
+
+# Define functions.
+rss = RSS_In(
+    url=&quot;https://api.weather.gov/alerts/active.atom/&quot;,
+    fetch_page=True,
+    poll_seconds=4,
+    life_time=20,
+)
+
+def from_rss():
+    news_items = rss.run()
+    for news_item in news_items:
+        print(f&quot;news_item = {news_item}&quot;)
+        yield {k: news_item.get(k) for k in (&quot;title&quot;, &quot;page_text&quot;)}
+
+system_prompt = '''You are a weather-alert extraction agent. 
+Your job is to analyze an alert which is a dict {'title': title, 'page_text': 'page_text} where title is a short
+string and page_text is a long string.
+Your job is to extract information from the alert and return a JSON object 
+with exactly the following keys:
+
+&quot;alert_type&quot; — the official alert name (e.g., Small Craft Advisory, Flood Watch).
+
+&quot;location&quot; — the human-readable city and state/territory code (e.g., Anchorage AK, Melbourne FL). 
+Prefer the phrase after “by NWS …” in the title (e.g., “by NWS Anchorage AK” → Anchorage AK). If that isn’t present, use the clearest city+state mentioned in the alert text. If truly unknown, use null.
+
+&quot;issued_time&quot; — the alert issuance time in UTC ISO-8601 (YYYY-MM-DDThh:mm:ssZ).
+
+If not explicitly provided, use the most plausible end/expiration time implied by the alert; if truly unknown, use null.
+
+&quot;headline&quot; — a short, natural-language headline summarizing the alert and timeframe (e.g., Small Craft Advisory until Saturday evening). Keep it under ~80 characters.
+
+&quot;short_advice&quot; — one concise, practical safety tip tailored to the alert (less than 40 words, imperative mood, no exclamation marks).
+
+Output requirements:
+
+Return exactly one JSON object with only these five keys, in this order.
+
+All values must be strings, except you may use null for unknown times or location.
+
+Normalize all times to UTC with a Z suffix. Convert from offsets in the input (e.g., …-08:00 → add 8 hours).
+
+Do not include explanations, reasoning, markdown, or extra fields.
+
+Extraction guidance (apply in this priority):
+
+alert_type: take the segment before “issued …” in the title; if absent, use the named event in the text (e.g., NWSheadline, event).
+
+location: prefer the substring after by NWS at the end of the title (e.g., by NWS Anchorage AK → Anchorage AK). If multiple places are listed, pick the primary office/city associated with the NWS office. If only county/zone codes are present, choose the principal city referenced; otherwise null.
+
+Times:
+
+Parse all RFC 822/ISO-8601 timestamps in the title/text.
+
+Issued: the timestamp closest to the word “issued” in the title; if not present, the earliest timestamp in the text.
+
+headline: &lt;Alert Type&gt; … + concise timeframe (e.g., “until Saturday evening”, “through Sunday morning”).
+
+short_advice: write one or two actionable sentences appropriate to the hazard (e.g., marine → “Delay small-vessel trips and check latest marine forecast.”; flood → “Avoid flooded roads; monitor updates and be ready to seek higher ground.”).
+
+Return format example (illustrative only):
+{
+&quot;alert_type&quot;: &quot;Small Craft Advisory&quot;,
+&quot;location&quot;: &quot;Anchorage AK&quot;,
+&quot;issued_time&quot;: &quot;2025-10-03T11:31:00Z&quot;,
+&quot;headline&quot;: &quot;Small Craft Advisory until Saturday evening&quot;,
+&quot;short_advice&quot;: &quot;Delay small-vessel trips and check the latest marine forecast before departing.&quot;
+}
+Output rules:
+- Return ONLY valid RFC8259 JSON. No markdown, no code fences, no comments, no extra text.
+- Use double quotes for all keys and strings.
+- No trailing commas.
+- If none found, use [] (empty array).
+- Begin the response with &quot;{&quot; and end with &quot;}&quot;.
+'''
+agent = AgentOpenAI(system_prompt=system_prompt)
+
+def print_sink(v):
+    print(v)
+
+# Define the network
+g = network([(from_rss, agent.fn), (agent.fn, live_alert_sink)])
+g.run_network()
+</code></pre>
+<hr />
+<h2 id="run-the-demo">Run the demo</h2>
+<pre><code class="language-bash">python3 -m examples.rss_alerts_demo
+</code></pre>
+<p>You should see alert summaries printed in the live console (after a possible delay).  </p>
+<p><img alt="Sample weather alert output" src="../WeatherAlerts.jpeg" /></p>
+<hr />
+<h2 id="parameters-you-can-modify">Parameters you can modify</h2>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>url</strong></td>
+<td>str</td>
+<td>The Atom/RSS feed URL (defaults to active NWS alerts).</td>
+</tr>
+<tr>
+<td><strong>fetch_page</strong></td>
+<td>bool</td>
+<td>If <code>True</code>, fetch and parse the linked alert page for richer <code>page_text</code>.</td>
+</tr>
+<tr>
+<td><strong>poll_seconds</strong></td>
+<td>float</td>
+<td>How often to repoll for new alerts. Increase to be kinder to servers.</td>
+</tr>
+<tr>
+<td><strong>life_time</strong></td>
+<td>float | None</td>
+<td>Max wall-clock duration before auto-stop (<code>None</code> → run indefinitely).</td>
+</tr>
+<tr>
+<td><strong>system_prompt</strong></td>
+<td>str</td>
+<td>Controls the exact extraction schema and normalization rules.</td>
+</tr>
+<tr>
+<td><strong>live_alert_sink</strong></td>
+<td>sink</td>
+<td>Console sink for live, readable output (replace with a file/JSONL sink if desired).</td>
+</tr>
+</tbody>
+</table>
+<blockquote>
+<p><em>Tip:</em> If your <code>rss_in</code> supports XML parsing options, prefer an <strong>XML parser</strong> (e.g., <code>lxml-xml</code>) for Atom/RSS feeds to avoid HTML-as-XML warnings.</p>
+</blockquote>
+<hr />
+<h2 id="troubleshooting">Troubleshooting</h2>
+<ul>
+<li><strong>Long delay / no output:</strong> The active alerts feed can be slow and may have lulls; wait several minutes. You can also extend <code>life_time</code>.  </li>
+<li><strong>XMLParsedAsHTMLWarning:</strong> Install <code>lxml</code> and parse feeds as XML (<code>"lxml-xml"</code>); keep <code>"html.parser"</code> for fetched article pages only.  </li>
+<li><strong>Rate limiting / HTTP errors:</strong> Increase <code>poll_seconds</code>, check connectivity, and avoid aggressive polling.  </li>
+<li><strong>Unexpected model output:</strong> Tighten the <code>system_prompt</code> to require <strong>strict JSON</strong> with exactly the five keys, no extra text.  </li>
+<li><strong>Time normalization:</strong> If UTC conversion seems off, explicitly instruct the model to normalize to <code>Z</code> and double-check the source timestamps.</li>
+</ul>
+<hr />
+<h2 id="next-steps">Next steps</h2>
+<ul>
+<li>Swap the sink for a <strong>JSONL/CSV recorder</strong> (Module 5) to log alerts for later analysis.  </li>
+<li>Add a transform to <strong>filter by alert type or location</strong> (e.g., marine only, a specific state).  </li>
+<li>Combine with other sources (Module 2) to build a <strong>situational awareness dashboard</strong>.  </li>
+<li>Extend the prompt to extract <strong>severity</strong>, <strong>areas</strong>, or <strong>expiration</strong> when present.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      <script id="__config" type="application/json">{"base": "../../..", "features": [], "search": "../../../assets/javascripts/workers/search.d50fe291.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../../assets/javascripts/bundle.56ea9cef.min.js"></script>
+      
+    
+  </body>
+</html>
