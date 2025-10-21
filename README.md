@@ -1,8 +1,10 @@
 # 🕸️ DisSysLab — Build distributed apps by connecting functions
 
-**DisSysLab (aka `dsl`)** is a lightweight teaching framework where you build distributed programs as **graphs of plain Python callables**. Each node is just a function — often a call into a familiar library (NumPy/SciPy, requests, OpenAI, etc.). Edges carry messages. Agents run concurrently.
+**DisSysLab (aka `dsl`)** is a lightweight teaching framework where you build distributed programs as **graphs of plain Python callables**. Each node is just a function — often a call into familiar libraries (NumPy/SciPy, requests, OpenAI). Edges carry messages. Agents run concurrently.
 
-# TL;DR – try_it
+DisSysLab is designed for first-year undergrads. This is an early release; it will evolve, and feedback is welcome.
+
+## TL;DR – try it
 
 ```bash
 git clone https://github.com/kmchandy/DisSysLab.git
@@ -11,8 +13,6 @@ python -m venv .venv && source .venv/bin/activate   # Windows: .\.venv\Scripts\A
 python -m pip install -e .
 python -m modules.ch01_networks.simple_network
 ```
-
-DSL is designed for first-year undergrads. This is an early release. It will evolve and feedback is welcome.
 
 ---
 
@@ -25,7 +25,7 @@ DSL is designed for first-year undergrads. This is an early release. It will evo
   - a thin wrapper around a **standard library** function (NumPy, SciPy, requests),
   - or a service call (e.g., OpenAI) behind a simple adapter.
   
-- You don’t use concurrency primitives such as ***send***, ***receive***, and ***threads***.
+- You don’t use concurrency primitives such as ***send***, ***receive***, and ***threads***. Instead you connect functions.
 
 ```python
 from dsl import network
@@ -43,16 +43,12 @@ g = network([
 ])
 g.run_network()
 ```
-# 🕸️ DisSysLab — Build distributed apps by connecting functions
-One sentence about what dsl is and why it’s cool.
 
-#
-
-## 👉 Next
+## 👉 Start Here
 [Module 1. An introduction to dsl.](./modules/ch01_networks/README_1.md) 
 
-### Modules in Sequence
-##Start here
+
+## Modules
 
 1) **Module 1 — Intro** → [modules/ch01_networks/README_1.md](modules/ch01_networks/README_1.md)  
 2) **Module 2 — Sources** → [modules/ch02_sources/README_1.md](modules/ch02_sources/README_1.md)  
