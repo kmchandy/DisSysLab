@@ -2,7 +2,7 @@
 
 **DisSysLab (aka `dsl`)** is a lightweight teaching framework where you build distributed programs as **graphs of plain Python callables**. Each node is just a function — often a call into a familiar library (NumPy/SciPy, requests, OpenAI, etc.). Edges carry messages. Agents run concurrently.
 
-# TL;DR – try it
+# TL;DR – try_it
 
 ```bash
 git clone https://github.com/kmchandy/DisSysLab.git
