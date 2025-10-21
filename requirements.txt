@@ -1,12 +1,6 @@
-tqdm>=4.66.0                  # Progress bars
-
-# To download and parse text from the Web
+rich>=13.7.0
 requests>=2.31.0
 beautifulsoup4>=4.12.2
-lxml                          # HTML/XML parsing backend for BeautifulSoup
-
-# OpenAI API for GPT-based transformers
-openai>=1.3.7
-
-# Environment variable support
-python-dotenv>=1.0.0
+lxml>=4.9.3
+websockets>=12.0
+tqdm>=4.66.0
