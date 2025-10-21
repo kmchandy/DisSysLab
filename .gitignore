@@ -19,6 +19,7 @@ ENV/
 .eggs/
 build/
 dist/
+site/
 *.egg
 
 # PyInstaller
@@ -42,6 +43,8 @@ dist/
 # OS files
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
 
 # Environment variables / secrets
 .env
