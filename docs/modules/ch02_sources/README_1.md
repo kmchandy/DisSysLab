@@ -19,10 +19,8 @@ For now, examples focus on **source → display**.
 
 ## 🧠 Examples
 - [**RSS** sources](./README_2_RSS.md)
-- [**Social media post** sources](./README_3_posts.md)
-- [**Coinbase data** sources](./README_4_REST.md)
-- [**Temperature sensor** sources](./README_5_replay.md)
-- [**Synthetic data: Sine waves** sources](./README_6_synthetic.md)
+- [**Social media post** sources](./README_3_Bluesky.md)
+- [**Temperature sensor** sources](./README_4_Temperature.md)
 
 ## 👉 Next
 [**RSS** sources →](./README_2_RSS.md)
