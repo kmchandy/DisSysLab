@@ -31,10 +31,10 @@ site/
 *.tmp
 *.bak
 
-# Jupyter Notebooks
-.ipynb_checkpoints
+# Notebooks
+.ipynb_checkpoints/
 
-# VS Code / PyCharm / other IDEs
+# Editors / IDEs
 .vscode/
 .idea/
 *.sublime-project
@@ -43,30 +43,31 @@ site/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Swap/backup files
 *.swp
 *.swo
 
-# Environment variables / secrets
+# Env / secrets
 .env
 .env.*
+.envrc
 
-# Test results
+# Test results & caches
 htmlcov/
 .tox/
 coverage.*
-.cache/
-nosetests.xml
+.coverage
+.coverage.*
 pytest_cache/
+.cache/
 
-# MyPy and Ruff
+# Type checking / linters
 .mypy_cache/
-ruff_cache/
+.ruff_cache/
 
 # Linting artifacts
-.pytest_cache/
 *.cover
-*.coverage
-.cache/
 
 # Local test/experiment folders
 test_outputs/
