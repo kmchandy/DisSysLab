@@ -8,7 +8,12 @@ Most directories have `README.md` and examples).
 ```
 DisSysLab/
 ├─ README.md
-├─ README_Directory.md          # this file
+├─ README_Directory.md 
+├─ modules/                     # Start here: 5 minute tutorials.
+│  ├─ ch01_networks/            # graph of functions
+│  ├─ ch02_sources/             # sources of message streams
+│  ├─ ch03_GPT/                 # LLM operations using OpenAI
+│  └─ ch04_numeric/             # NumPy, SciPy, numerical libs         # this file
 ├─ dsl/                         # the library most users import
 │  ├─ graph.py                  # Graph DSL (spec)
 │  ├─ core.py                   # runtime: Agent, Network, STOP, plumbing
@@ -24,21 +29,17 @@ DisSysLab/
 │  │  └─ fanin.py               # Merge (sync/async)
 │  │  └─ graph_structures.py    # Pipeline and other graphs
 │  ├─ connectors/               # data/app connectors (e.g., Google Sheets)
-│  │  └─ sheets.py
+│  │  └─ jetstream_filter.py    # connector to jetstream on Bluesky
+│  │  └─ .... many more         # connector to jetstream on Bluesky
 │  └─ extensions/               # optional add-ons (heavy deps; install as extras)
 │     ├─ llm/
 │     │  └─ openai_agent.py     # OpenAIAgent.fn(...)
 │     └─ ml/
 │        └─ sklearn.py          # featurize(...), predict(...)
-├─ examples/                    # runnable scripts (buffet for exploration)
+├─ examples/                    # runnable scripts
 │  ├─ graph_simple_source_sink.py
 │  ├─ graph_openai_agent.py     # requires [llm]
 │  └─ graph_sklearn_text_classify.py  # requires [ml]
-├─ lessons/                     # 5–10 minute guided mini-tutorials
-│  ├─ 01_networks_blocks_connections/
-│  ├─ 02_msg_as_dict/
-│  ├─ 03_fanout/
-│  └─ 04_fanin/
 ├─ tests/                       # small pytest suite
 │  ├─ test_graph_basics.py
 │  ├─ test_broadcast.py
