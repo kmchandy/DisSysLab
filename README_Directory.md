@@ -9,18 +9,20 @@ Most directories have `README.md` and examples).
 DisSysLab/
 ├─ README.md
 ├─ README_Directory.md          # this file
-├─ dsl/                         # the library students import
+├─ dsl/                         # the library most users import
 │  ├─ graph.py                  # Graph DSL (spec)
 │  ├─ core.py                   # runtime: Agent, Network, STOP, plumbing
 │  ├─ ops/                      # tiny, dependency-free callables (pure Python)
-│  │  ├─ sources/lists.py       # from_list(...)
-│  │  └─ sinks/lists.py         # to_list(...)
+│  │  ├─ sources/               # e.g. from_list(...)
+│  │  └─ sinks/                 # e.g. to_list(...)
+│  |  └─ transforms/            # e.g. common_transforms  
 │  ├─ blocks/                   # runtime blocks used by Network
 │  │  ├─ source.py              # Source
 │  │  ├─ transform.py           # Transform
 │  │  ├─ sink.py                # Sink
 │  │  ├─ fanout.py              # Broadcast / Split
 │  │  └─ fanin.py               # Merge (sync/async)
+│  │  └─ graph_structures.py    # Pipeline and other graphs
 │  ├─ connectors/               # data/app connectors (e.g., Google Sheets)
 │  │  └─ sheets.py
 │  └─ extensions/               # optional add-ons (heavy deps; install as extras)
