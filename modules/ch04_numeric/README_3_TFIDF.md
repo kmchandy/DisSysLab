@@ -1,4 +1,6 @@
-# 📚 Part 2 — Real Bag-of-Words (TF-IDF → KMeans, PCA for plotting)
+#modules.ch04_numeric.README_3_TFIDF.md
+
+# 📚 4.3 Bag-of-Words (TF-IDF), KMeans & PCA
 
 ## Goal
 Stream a small set of movie reviews through a graph of functions to cluster them, showing a snapshot after 5 and a final view after 10. The emphasis is on the nodes in the network and how they compose, not on the specific ML techniques.
@@ -109,3 +111,7 @@ Use standard libraries (scikit-learn for TF-IDF, KMeans, PCA) as nodes.
 - KMeans: n_clusters, random_state, n_init
 
 - Reviews: replace with your own list; the network stays the same.
+
+
+## 👉 Next
+[Signal Processing Filters](./README_4_filter.md)

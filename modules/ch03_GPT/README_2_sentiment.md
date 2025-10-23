@@ -146,9 +146,12 @@ You’ll see output like:
 
 ---
 
-## Next steps
+## Try 
 
 - Swap the source to **RSS** or **Jetstream** text and keep the same `agent_op` transformer.  
 - Create a **keyword filter** transformer before the LLM call to reduce cost.  
 - Record results to **JSONL** and plot sentiment over time (Module 5 + later examples).  
 - Try **summarization** or **entity extraction** with a similar `AgentOpenAI` wrapper.
+
+## 👉 Next
+[Use LLM to create a simple graph that extracts entities in text](./README_3_entity.md)

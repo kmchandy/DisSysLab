@@ -169,9 +169,11 @@ You should see alert summaries printed in the live console (after a possible del
 
 ---
 
-## Next steps
+## Try
 - Swap the sink for a **JSONL/CSV recorder** (Module 5) to log alerts for later analysis.  
 - Add a transform to **filter by alert type or location** (e.g., marine only, a specific state).  
 - Combine with other sources (Module 2) to build a **situational awareness dashboard**.  
 - Extend the prompt to extract **severity**, **areas**, or **expiration** when present.
 
+## 👉 Next
+[Create graphs that use numeric libraries: detect anomalies](../ch04_numeric/README_2_anomaly.md) 

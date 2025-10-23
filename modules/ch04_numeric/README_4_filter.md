@@ -1,4 +1,4 @@
-# 4.1 • Numeric Transformers — Synthetic Sine Mixture (Library Functions as Nodes)
+# 4.4 • Signal Processing Filters
 
 This demo shows how **plain Python functions that call existing libraries** (NumPy/SciPy) can act as **nodes** in a DisSysLab network.  
 We synthesize a **sum of noisy sine waves**, then run **two transforms**:

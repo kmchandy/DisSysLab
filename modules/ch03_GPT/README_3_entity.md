@@ -156,8 +156,11 @@ ______________________________
 
 ---
 
-## Next steps
+## Try
 - Swap the source to **RSS** or **Jetstream** to extract entities from live feeds.  
 - Chain a transformer to **count entities** by type or name and compute frequencies.  
 - Record results to **JSONL** for later analysis (Module 5), or visualize top entities.  
 - Try a **hybrid prompt** that extracts both entities **and** sentiment per entity.
+
+## 👉 Next
+[Use LLM to create a simple graph that summarizes a text](./README_4_summarizer.md) w

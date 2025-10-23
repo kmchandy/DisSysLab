@@ -138,7 +138,10 @@ A play is a theatrical work written by a playwright and intended for performance
 
 ---
 
-## Next steps
+## Try
 - Chain with **entity extraction** or **sentiment** to build richer annotations.  
 - Record results to **JSONL/CSV** (Module 5) and evaluate summary quality over time.  
 - Add a pre-transform to **truncate** or **clean** inputs (strip boilerplate, HTML).
+
+## 👉 Next
+[Develop a simple graph that extracts data from weather alerts](./README_5_WeatherAlerts.md) w
