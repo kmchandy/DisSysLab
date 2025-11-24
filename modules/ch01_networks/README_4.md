@@ -1,15 +1,38 @@
-## 🧩 1.4  Pattern: Enrich Messages at Nodes
+## 🧩 1.4  Pattern: Enrich Dictionary Messages at Nodes
 
 
 ## 🎯 Goal
 
 
-- Using dictionaries (```dict```) to enrich messages as they flow through a network.
+- Use dictionaries (```dict```) to enrich messages as they flow through a network.
 ---
 
 ## 💻 Example of enriching messages (adding fields)
 
 ```python
+
+# Messages in this example are dicts
+
+     +-----------+
+     | from_list |
+     +-----------+
+          |
+          v
+     +-----------+
+     |  exclaim  |
+     +-----------+
+          |
+          v
+     +-----------+
+     | uppercase |
+     +-----------+
+          |
+          v
+     +-----------+
+     | to_results|
+     +-----------+
+
+
 # modules.ch01_networks.simple_dict
 
 from dsl import network
@@ -47,12 +70,12 @@ assert results == [
     {'text': 'python', 'exclaim': 'python!', 'uppercase': 'PYTHON'}
 ]
 ```
-## 📍 Enriching Messages
+## 📍 Enriching Dictionary Messages
 A common pattern is to represent a message as a dict and have nodes add fields as they process it. This becomes especially useful with AI agents:
 
-Example: a topic-extractor adds ```msg["topics"] = [...]```.
+Example: an agent that extracts topics from the natural language content field of a dict message adds the field ```msg["topics"] = [...]``` to the dict.
 
-Then a sentiment step adds ```msg["sentiment"] = -1 | 0 | 1```.
+Then an agent that determines the sentiment of the message content adds the field ```msg["sentiment"] = ...```.
 
 
 ## 🧠 Key Concepts
