@@ -25,16 +25,16 @@ python -m modules.ch01_networks.simple_network
   - a wrapper around a **standard library** function (NumPy, SciPy, requests),
   - or a service call (e.g., OpenAI) behind a simple adapter.
   
-- You specify a graph by its list of edges. Here is an example of a graph `g`with three agents -- `data_source`, `compute`, and `data_sink` and two edges: (1) an edge from `data_source` to `compute` and (2) an edge from `compute` to `data_sink`.
+- You specify a graph by its list of edges. Here is an example of a graph `g`with three agents -- `data_source`, `data_transformer`, and `data_sink` and two edges: (1) an edge from `data_source` to `data_transformer` and (2) an edge from `data_transformer` to `data_sink`.
 
 ```python
 from dsl import network
 
-g = network([(data_source, compute), (compute, data_sink)])
+g = network([(data_source, data_transformer), (data_transformer, data_sink)])
 
 ```
 
-You can specify the agents that generate data, such as `data_source` in the example, as functions or wrappers to sensors, RSS feeds or other sources. Likewise you can write your own function for `data_sink` or use a wrapper that stores a stream of data in a database, controls an actuator, or carries out other actions. Similarly, can write your own function for the `compute` node or choose a function from Python's rich libraries or interfaces to OpenAI, Gemini or other services.
+You can specify the agents that generate data, such as `data_source` in the example, as functions or wrappers to sensors, RSS feeds or other sources. Likewise you can write your own function for `data_sink` or use a wrapper that stores a stream of data in a database, controls an actuator, or carries out other actions. Similarly, can write your own function for the `data_transformer` node or choose a function from Python's rich libraries or interfaces to OpenAI, Gemini or other services.
 
 You can create arbitrary graphs. The initial modules of this description use acyclic graphs. Later modules deal with graphs that contain cycles.
 

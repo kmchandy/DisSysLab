@@ -10,6 +10,22 @@
 ## 💻 Example of dropping messages
  
 ```python
+
+      +----------------+
+      |   from_list    |
+      +----------------+
+               |
+               v
+      +----------------+
+      |      drop      |
+      +----------------+
+               |
+               v
+      +----------------+
+      |   to_results   |
+      +----------------+
+
+
 # modules.ch01_networks.simple_filter
 
 from dsl import network

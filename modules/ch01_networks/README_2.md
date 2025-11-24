@@ -5,11 +5,25 @@
 
 
 - Understand behavior of **fanout** (multiple output edges from a node) and **fanin** (multiple input edges to a node.)
+
+
 ---
 
 ## 💻 Example of fanout
- 
+
+  
 ```python
+             +-------------+
+             |  from_list  |
+             +-------------+
+               /         \
+              v           v
+        +-----------+   +-----------+
+        |  sink_0   |   |  sink_1   |
+        +-----------+   +-----------+
+
+
+
 # modules.ch01_networks.simple_broadcast
 
 from dsl import network
@@ -41,8 +55,17 @@ print(results_1)    # Output: ['hello', 'world']
 The messages output by a node are broadcast along each of the node's output edges.
 
 ## 💻 Example of fanin
- 
 ```python
+        +----------------+     +----------------+
+        | from_list_0    |     | from_list_1    |
+        +----------------+     +----------------+
+               \                     /
+                \                   /
+                 v                 v
+                    +----------------+
+                    |   to_results   |
+                    +----------------+
+
 # modules.ch01_networks.simple_merge
 
 from dsl import network
@@ -74,8 +97,18 @@ assert set(results) == {"A", "B", "X", "Y", "Z"}
 
 ---
 ## 📍 Fanin
-The messages arriving along multiple edges at a node are merged nondeterministically and fairly. Messages sent along an edge arrive at the destination node eventually. The time that a message takes in transit along an edge is unknown. Even if message "X" is sent along the edge (from_list_1, to_results) before message "A" is sent along the edge (from_list_0, to_results) it is possible that "A" arrives at to_results before "X" does.
+The messages arriving along multiple edges at a node are merged nondeterministically and fairly. Every message that is sent is received eventually. The time that a message takes in transit between sender and receiver is unknown.
 
+It is possible that **from_list_1** sends a message "X" before **from_list_0** sends a message "A" but message "A" arrives before message "X".
+
+You can run these examples by executing the following from the DisSysLab directory.
+```
+python -m modules.ch01_networks.simple_broadcast
+```
+and
+```
+python -m modules.ch01_networks.simple_merge
+```
 
 ## 🧠 Key Concepts
 - Fanout is a broadcast.
