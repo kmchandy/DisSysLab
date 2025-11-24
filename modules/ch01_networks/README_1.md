@@ -5,11 +5,26 @@
 
 
 - Build a distributed application by creating a **network** which is **directed graph** in which nodes are **agents** that process messages and edges are channels along which messages flow. Agents execute concurrently. 
+- Introduction to **sources**, **transformers**, and **sinks**.
 ---
 
 ## 💻 Example
  
 ```python
+      +----------------+
+      |   from_list    |
+      +----------------+
+               |
+               v
+      +----------------+
+      |   uppercase    |
+      +----------------+
+               |
+               v
+      +----------------+
+      |  to_results    |
+      +----------------+
+
 # modules.ch01_networks.basic_network.py
 
 from dsl import network
