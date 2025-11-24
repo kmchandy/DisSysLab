@@ -3,7 +3,7 @@
 from pathlib import Path
 from dsl import network
 from dsl.connectors.replay_csv_in import ReplayCSV_In
-from .rolling_stats_anom_forecast import rolling_stats_anom_forecast
+from .rolling_stats_anom_forecast import RollingStatsAnomForecast
 from .temp_live_sink import temp_live_sink
 
 # -------------------------------------------------------------------------
@@ -24,7 +24,7 @@ replay = ReplayCSV_In(path=CSV_PATH, transform=transform_row, period_s=0.25)
 
 # -------------------------------------------------------------------------
 # Transform: Rolling statistics for anomaly detection and forecasting
-xf = rolling_stats_anom_forecast(
+xf = RollingStatsAnomForecast(
     window=20,
     k_anom=2.0,      # anomaly threshold
     k_pred=0.5,      # prediction band width
@@ -39,5 +39,5 @@ xf = rolling_stats_anom_forecast(
 # -------------------------------------------------------------------------
 # Network: Connect functions
 
-g = network([(replay.run, xf), (xf, temp_live_sink)])
+g = network([(replay, xf), (xf, temp_live_sink)])
 g.run_network()

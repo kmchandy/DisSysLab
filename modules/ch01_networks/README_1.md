@@ -33,6 +33,13 @@ g.run_network()
 print(results)  # Output: ['HELLO', 'WORLD']
 
 ```
+
+You can run the example from the DisSysLab directory by executing:
+
+```
+python -m modules.ch01_networks.basic_network
+
+```
 ## 📍 Network
 A network is specified by the list of edges of a directed graph. An edge is an ordered pair **(u, v)** which is an edge from node **u** to node **v**. Every node in the network has at least one incident edge. 
 
