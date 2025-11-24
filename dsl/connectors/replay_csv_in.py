@@ -41,7 +41,7 @@ class ReplayCSV_In:
         self.start_row = start_row
         self.max_rows = max_rows
 
-    def run(self) -> Iterable[Dict]:
+    def __call__(self) -> Iterable[Dict]:
         start_t = time.time()
         emitted = 0
         while True:
@@ -67,3 +67,4 @@ class ReplayCSV_In:
 
             if not self.loop:
                 return
+    run = __call__

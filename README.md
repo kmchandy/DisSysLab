@@ -1,8 +1,8 @@
 # 🕸️ DisSysLab — Build distributed apps by connecting functions
 
-**DisSysLab (aka `dsl`)** is a lightweight teaching framework where you build distributed programs as **graphs of plain Python callables**. Each node is just a function — often a call into familiar libraries (NumPy/SciPy, requests, OpenAI). Edges carry messages. Agents run concurrently.
+**DisSysLab (aka `dsl`)** is a Python framework that helps you build distributed programs. A program is represented by a directed graph in which each node is a Python function which receives and sends messages. Often, the function is selected from widely-used libraries such as Numpy, OpenAI and Gemini. Edges in the graph carry messages from function to function. The functions at the nodes run concurrently. A node of the graph is called an agent.
 
-DisSysLab is designed for first-year undergrads. This is an early release; it will evolve, and feedback is welcome.
+DisSysLab is designed to introduce first-year undergraduates to distributed programs. This is an early release; it will evolve, and feedback is welcome.
 
 ## TL;DR – try it
 
@@ -22,27 +22,22 @@ python -m modules.ch01_networks.simple_network
 - An **agent is a callable**. It can be:
   - a pure Python function (`def f(x): ...`),
   - a class instance with `__call__`,
-  - a thin wrapper around a **standard library** function (NumPy, SciPy, requests),
+  - a wrapper around a **standard library** function (NumPy, SciPy, requests),
   - or a service call (e.g., OpenAI) behind a simple adapter.
   
-- You don’t use concurrency primitives such as ***send***, ***receive***, and ***threads***. Instead you connect functions.
+- You specify a graph by its list of edges. Here is an example of a graph `g`with three agents -- `data_source`, `compute`, and `data_sink` and two edges: (1) an edge from `data_source` to `compute` and (2) an edge from `compute` to `data_sink`.
 
 ```python
 from dsl import network
 
-def src():
-   for i in range(10):              # zero-arg source → yields messages
-    yield i
+g = network([(data_source, compute), (compute, data_sink)])
 
-def double(x): return 2 * x     # transform
-def show(x): print(x)           # sink
-
-g = network([
-  (src, double),
-  (double, show),
-])
-g.run_network()
 ```
+
+You can specify the agents that generate data, such as `data_source` in the example, as functions or wrappers to sensors, RSS feeds or other sources. Likewise you can write your own function for `data_sink` or use a wrapper that stores a stream of data in a database, controls an actuator, or carries out other actions. Similarly, can write your own function for the `compute` node or choose a function from Python's rich libraries or interfaces to OpenAI, Gemini or other services.
+
+You can create arbitrary graphs. The initial modules of this description use acyclic graphs. Later modules deal with graphs that contain cycles.
+
 
 ## 👉 Start Here
 [Module 1. An introduction to dsl.](./modules/ch01_networks/README_1.md) 
