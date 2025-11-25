@@ -74,8 +74,10 @@ if __name__ == "__main__":
 ---
 
 ## Run the demo
-```bash
-python3 -m modules.ch02_sources.feed_numeric_price
+Execute the following from the DisSysLab directory:
+
+```python
+python -m modules.ch02_sources.feed_numeric_price
 ```
 
 You’ll see key–value output like this whenever the price changes:
@@ -91,6 +93,7 @@ note
 Coinbase spot (REST)
 ```
 
+You may have to wait for a few minutes to see changes in prices.
 ---
 
 ## Parameters you can modify

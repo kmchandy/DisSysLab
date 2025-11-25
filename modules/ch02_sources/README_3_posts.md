@@ -1,6 +1,11 @@
 # 2.3 • Source: Social Media (e.g Bluesky) Feeds
 
 This page just shows you how to use a **connector** to a social media feed.
+This example uses the feed **Bluesky Jetstream**. You can build connectors to
+many social media feeds; however, several social media organizations have
+regulations on how their social media feeds are accessed, and you are responsible 
+for following the regulations.
+
 Connectors are described in module 7.
 
 ---
@@ -77,9 +82,9 @@ g.run_network()
 ```
 
 ## Run the demo
-
+Execute the following from the DisSysLab directory:
 ```bash
-python3 -m modules.ch02_sources.feed_from_posts
+python -m modules.ch02_sources.feed_from_posts
 ```
 
 You will see a growing list of items like:
