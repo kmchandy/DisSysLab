@@ -82,6 +82,5 @@ Then an agent that determines the sentiment of the message content adds the fiel
 - Messages as dicts make enrichment easy: read → compute → attach → pass on.
 
 ## 👉 Next
-[Agents should not concurrently modify mutable objects](./README_5.md).  
-
-Later in the course we will describe methods by which agents can share mutable objects. These methods ensure that (1) at most one agent reads or writes a mutable object at a time and (2) all agents that are waiting to read or write a mutable object gets to do so eventually.
+Look at an example
+[example of a network with fanout and fanin](./README_5.md)

@@ -1,108 +1,129 @@
-## 🧩 1.5 Sharing Mutable Objects
+# 🕸 1.5 • Simple Network — Fan-Out & Fan-In
 
+This page shows how to build an **arbitrary graph** (not just a linear pipeline) with **fan-out** (one node → many) and **fan-in** (many → one).
+
+---
 
 ## 🎯 Goal
 
+- Create a small network with two sources that **fan-out** to two transforms and then **fan-in** to a single sink.
+- Observe interleaved outputs as items flow concurrently from multiple sources.
 
-- Understand the danger of multiple agents concurrently modifying mutable objects. Later in the course we will describe methods for safe sharing of mutables.
 ---
 
-## 💻 Example: Don't modify mutables concurrently
- 
+## 💻 Example: Arbitrary Graph with Fan-Out / Fan-In
+
 ```python
-
-     +------------------+
-     | emit_empty_dict  |
-     +------------------+
-            |
-            |  <- msg is empty dict
-            v
-     +------------------+
-     |      run_A       |
-     +------------------+
-            |
-            |   adds msg["notes"]
-            v
-     +------------------+
-     |      run_B       |
-     +------------------+
-            |
-            | concurrently modifies msg["notes"]
-            v  
-     +------------------+
-     |    print_msg     |
-     +------------------+
+      +---------------+                     +---------------+
+      | from_list_0   |                     | from_list_1   |
+      +---------------+                     +---------------+
+            |                                  |
+            +--------------------------+       |
+                |                      |       |
+                |     -------------------------
+                |     |                |   |
+                v     v                v   v
+            +---------------+      +---------------+
+            |     lower     |      |   add_bangs   |
+            +---------------+      +---------------+
+                  |                      |
+                  +----+  +-------------+
+                       v  v
+                 +----------------+
+                 |   to_results   |
+                 +----------------+
 
 
-# modules.ch01_networks.mutables
+
+# modules.ch01_networks.simple_network
 
 from dsl import network
+import time
 
+# -----------------------------------------------------------
+# Sources
+# -----------------------------------------------------------
 
-class AgentA:
-    def __init__(self):
-        self.my_list = []  # A's local state
+def from_list_0():
+    for item in ["A", "B"]:
+        yield item
+        time.sleep(0.12)
 
-    def run(self, msg):
-        # ❌ BUG: A publishes *its local list object* into the message
-        msg["notes"] = self.my_list
-        msg["notes"].append("A1")  # mutate (also mutates A.my_list)
-        return msg
+def from_list_1():
+    for item in ["X", "Y", "Z"]:
+        yield item
+        time.sleep(0.1)
 
+# -----------------------------------------------------------
+# Transforms
+# -----------------------------------------------------------
 
-class AgentB:
-    def __init__(self):
-        self.my_list = []  # B's local state
+def lower(v):
+    return v.lower()
 
-    def run(self, msg):
-        # ❌ BUG: B *adopts the same object* from the message
-        self.my_list = msg["notes"]   # alias, not a copy
-        # mutate (also mutates A.my_list and B.my_list)
-        msg["notes"].append("B1")
-        return msg
+def add_bangs(v):
+    return v + "!!"
 
+# -----------------------------------------------------------
+# Sink (fan-in target)
+# -----------------------------------------------------------
 
-a, b = AgentA(), AgentB()
-def run_A(msg): return a.run(msg)
-def run_B(msg): return b.run(msg)
+results = []
+def to_results(v): 
+    results.append(v)
 
+# -----------------------------------------------------------
+# Graph wiring
+# - Fan OUT: each source feeds BOTH transforms
+# - Fan IN: both transforms feed the SAME sink
+# -----------------------------------------------------------
 
-def emit_empty_dict():
-    # emits a single message which is an empty dict
-    yield {}
+g = network([
+    (from_list_0, lower), 
+    (from_list_1, lower),
+    (from_list_0, add_bangs), 
+    (from_list_1, add_bangs),
+    (lower, to_results), 
+    (add_bangs, to_results)
+])
 
-
-def print_msg(msg):
-    print("msg.notes:", msg["notes"], " id:", id(msg["notes"]))
-    print("A.my_list:", a.my_list,     " id:", id(a.my_list))
-    print("B.my_list:", b.my_list,     " id:", id(b.my_list))
-    # All three ids match → it's the SAME object
-    #
-    # msg.notes: ['A1', 'B1']
-    # A.my_list: ['A1', 'B1']
-    # B.my_list: ['A1', 'B1']
-    #
-
-
-g = network([(emit_empty_dict, run_A), (run_A, run_B), (run_B, print_msg)])
 g.run_network()
+
+if __name__ == "__main__":
+    print(set(results))
+    assert set(results) == {"A!!", "B!!", "X!!", "Y!!", "Z!!", "a", "b", "x", "y", "z"}
 ```
-## 📍 Concurrent Modification of Mutables
-Some applications require mutable objects, such as files, to be shared by multiple agents. In such applications the operating system (or supervising program) ensures that (1) at most one agent accesses the object at a time and (2) all agents that require access to the object get access to it eventually. We discuss sharing mutable agents later. Now let's look at problems that arise when mutable objects are modified concurrently.
 
-In this example, agent ```a``` appends "A1" to ```msg['notes']``` and takes no other action. So you may think that ```a.my_list``` is either ```[]``` or ```['A1']```. But when the program terminates ```a.my_list = ['A1', 'B1']``` because when agent ```b``` modifies ```msg['notes']``` it also modifies ```a.my_list```.
+---
 
-## 📍 Safe Use of Data by Multiple Agents
-- Send a **copy**: ```msg["notes"] = list(self.my_list)```. This makes ```msg["notes"]``` a copy of ```self.my_list```, and so modifying ```msg["notes"]``` does not modify ```self.my_list```.
-  
-- Read a **copy** of a message: ```self.my_list = list(msg["notes"])```.
-  
-- Note that as you saw in the previous lesson: You can enrich a message, by adding fields to the message without otherwise modifying the message.
+## ▶️ Run the demo
+
+```bash
+python3 -m modules.ch01_networks.simple_network
+```
+
+You’ll see outputs interleaved depending on source timing, with both lowercase variants and “!!” variants collected in `results`.
+
+---
+
+## 🧩 Fan-Out and Fan-In
+
+- **Fan-Out:** Messages from a node can be broadcast to multiple nodes (e.g., `from_list_0 → lower` and `from_list_0 → add_bangs`).
+- **Fan-In:** A node can receives messages from multiple nodes (e.g., `lower → to_results` and `add_bangs → to_results`).
+
+---
 
 ## 🧠 Key Concepts
-- Beware of aliasing with mutables passed through messages.
 
-- If you need independent state, copy before mutate (or use immutables).
-- 
+- **Arbitrary graphs:** You can create networks with arbitrary topologies. (Note: Later we discuss termination detection of networks with cycles. )
+
+---
+
+
 ## 👉 Next
-[Example of a network with fanout and fanin](./README_6.md). 
+
+
+Multiple agents must not modify the same mutable object. Later in the course we will describe methods by which agents can share mutable objects. These methods ensure that (1) at most one agent reads or writes a mutable object at a time and (2) all agents that are waiting to read or write a mutable object gets to do so eventually.
+
+Next look at an [example of agents concurrently modifying a mutable object](./README_mutables.md).
+ 
