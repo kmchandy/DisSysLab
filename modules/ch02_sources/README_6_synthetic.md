@@ -1,7 +1,8 @@
 # 2.6 • Synthetic Numeric Source — Noisy Sum of Sine Waves
 
-This page shows how to generate a **synthetic numeric stream** as a source in DisSysLab.  
-The signal is a **noisy sum of sine waves** (e.g., 5 Hz, 12 Hz, 30 Hz plus Gaussian noise), emitted at a fixed sample rate.
+This page shows how to generate a **synthetic numeric stream** as a source in DisSysLab. You may want to test your distributed system against a synthetic input data stream before connecting your system to a streaming souce. 
+
+In this example, the signal is a **noisy sum of sine waves** (e.g., 5 Hz, 12 Hz, 30 Hz plus Gaussian noise), emitted at a fixed sample rate.
 
 ---
 
@@ -59,8 +60,9 @@ g.run_network()
 ---
 
 ## Run the demo
+Execute the following from the DisSysLab directory:
 ```bash
-python3 -m modules.ch02_sources.feed_synthetic
+python -m modules.ch02_sources.feed_synthetic
 ```
 
 You’ll see periodic lines like:
