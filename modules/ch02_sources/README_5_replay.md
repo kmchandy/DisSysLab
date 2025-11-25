@@ -8,6 +8,9 @@ Connectors are described in module 7.
 ## What you’ll do
 Run a tiny script that replays temperature data for 2024. This data is in ```open-meteo_clean.csv``` which is obtained by extracting the maximum daily temperature from ```open-meteo-37.79N122.41W18m.csv```.
 
+Open-Meteo is an open-source weather API and offers free access for non-commercial use. 
+This example shows how you can store data from archived data sources and then replay the stored data.
+
 ---
 
 ## Setup (once)
@@ -52,8 +55,10 @@ g.run_network()
 ---
 
 ## Run the demo
+Execute the following from DisSysLab:
+
 ```bash
-python3 -m modules.ch02_sources.feed_numeric_replay
+python -m modules.ch02_sources.feed_numeric_replay
 ```
 
 You’ll see a stream of temperatures.
