@@ -32,8 +32,8 @@ price_source = NumericREST_In(
     url=URL,
     extract_fn=coinbase_extract_fn,
     poll_seconds=1.0,   # <- pace you can watch
-    # stop after 20s for the demo (set None to run forever)
-    life_time=20.0,
+    # stop after 60s for the demo (set None to run forever)
+    life_time=60.0,
     dedupe=True,
     epsilon=1e-4,       # require >=$0.0001 change to emit a new reading
 )

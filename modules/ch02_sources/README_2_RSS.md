@@ -1,7 +1,7 @@
 # 2.2 • RSS feeds
 
-This page just shows you how to use a **connector** to an RSS feed.
-Connectors are described in module 7.
+This page just shows you how to use a **connector** to an RSS (Real Simple Syndication) feed to create a source of data.
+An RSS feed checks a source of data, such as a website, regularly and displays new its in the feed. 
 
 ---
 
@@ -79,9 +79,10 @@ g.run_network()
 ```
 
 ## Run the demo
+Execute the following from the DisSysLab directory.
 
 ```bash
-python3 -m modules.ch02_sources.rss_NASA_simple_demo
+python -m modules.ch02_sources.rss_NASA_simple_demo
 ```
 
 You will see a growing list of items like:
