@@ -7,6 +7,31 @@ This page shows how to use transformers using OpenAI to **extract entities** -- 
 ## What you’ll do
 Run a tiny script that sends each text to an OpenAI agent and **adds an `entities` field** to each dict with the extracted entities.
 
+```python
+     +------------------+
+     | generate stream  |
+     | of news articles |
+     +------------------+
+            |
+            | stream of articles
+            | example: "BRICS is an organization of Brazil, Russia, .."
+            |
+            v
+     +----------------------+
+     | AI agent determines  |
+     | entities in  each    |
+     |        article        |
+     +----------------------+
+            |
+            |example:
+            |  {"Organization": ["BRICS"], "Country": ["Brazil, .."]}
+            |
+            v
+     +------------------+
+     |    print         |
+     +------------------+
+```
+
 ---
 
 ## Setup (once)
@@ -116,17 +141,23 @@ python3 -m modules.ch03_openai.entities_from_list
 
 You’ll see output like (shape depends on your `AgentOpenAI` implementation and prompt):
 ```
+
 ==============================
 text
-Obama was the first African American president of the USA.
+BRICS is an organization of Brazil, Russia, ...
 ______________________________
-entities
-Entities extracted:
-- Obama (Person)
-- African American (Ethnicity)
-- USA (Country)
+Organization
+['BRICS']
 ______________________________
-
+Country
+['Brazil', 'Russia', 'India', 'China', 'South Africa']
+______________________________
+Person
+['Putin', 'Xi', 'Modi']
+______________________________
+Location
+['Beijing']
+______________________________
 
 ```
 

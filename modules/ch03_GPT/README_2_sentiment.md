@@ -9,6 +9,30 @@ A transformer function takes one input and returns one value. In this example th
 ## What you’ll do
 Run a tiny script that sends each text to an OpenAI agent which adds a **sentiment score** in the range **−10..+10** and gives a short reason.
 
+```python
+     +------------------+
+     | generate stream  |
+     | of reviews       |
+     +------------------+
+            |
+            | stream of reviews
+            | example: "The concert was terrible. I hated the performance.",
+            |
+            v
+     +----------------------+
+     | AI agent determines  |
+     | sentiment of each    |
+     |        review        |
+     +----------------------+
+            |
+            |example: sentiment_score: -9
+            |  reason: The words 'terrible' and 'hated' clearly indicate ...
+            v
+     +------------------+
+     |    print         |
+     +------------------+
+```
+
 ---
 
 ## Setup (once)
@@ -105,18 +129,27 @@ g.run_network()
 ---
 
 ## Run the demo
+From the DisSysLab directory execute:
 ```bash
 python -m modules.ch03_openai.sentiment_from_list
 ```
 
 You’ll see output like:
 ```
-{'text': 'The concert was terrible. I hated the performance.',
- 'sentiment': {'score': -8, 'reason': 'Strong negative language'}}
-{'text': 'The book was okay, not too bad but not great either.',
- 'sentiment': {'score': 0, 'reason': 'Mixed, neutral overall'}}
-{'text': "This is the best course on AI I've ever taken!",
- 'sentiment': {'score': 9, 'reason': 'Highly positive wording'}}
+text:   The concert was terrible. I hated the performance.
+sentiment_score:   -9
+reason:   The words 'terrible' and 'hated' clearly indicate a very strong negative sentiment towards the concert and performance.
+--------------------------------
+
+text:   The book was okay, not too bad but not great either.
+sentiment_score:   0
+reason:   The sentiment is neutral as the statement expresses neither strong positive nor negative feelings, describing the book as average.
+--------------------------------
+
+text:   This is the best course on AI I've ever taken!
+sentiment_score:   9
+reason:   The phrase expresses strong positive enthusiasm and satisfaction with the course.
+--------------------------------
 ```
 
 *(Exact structure/content depends on your AgentOpenAI implementation.)*
