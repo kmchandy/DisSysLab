@@ -1,10 +1,9 @@
 #modules/ch04_numerics/README_1_numeric_transformers.md
 
 # 4.1 • Numeric Transformers
-This module has examples in which nodes of the dsl graph are calls to numeric libraries such as those in NumPy and Scikit-Learn. The previous module showed examples in which the nodes of the dsl graph were calls to LLM functions. Of course, a graph can have nodes that use LLMs as well as numeric libraries.
+This module gives examples of simple distributed systems in which agents are calls to numeric libraries such as those in NumPy and Scikit-Learn. Distributed systems allow you to create networks of agents of different types that communicate with each other and run forever.
 
-This page gives you an example of a simple numeric transform using sliding windows. This is a simplistic example of detecting anomalies in streams. The next module gives a more realistic example of anomaly detection. 
-
+This page gives you an example of an agent that detects anomalies in streams of data. This example computes statistics on sliding windows over data streams. The next module gives other algorithms for anomaly detection.
 
 ---
 ## What you’ll do
@@ -24,7 +23,65 @@ pip install rich
 
 ---
 
-## A numeric transformer
+## Sliding window
+``` python
+Data Stream →      x0   x1   x2   x3   x4   x5   x6 .....
+
+Window of size 4 at t = 4:
+                         ┌──────────────────────────┐
+                         |   x1   x2   x3   x4      |
+                         └──────────────────────────┘
+
+Window at t+1: x1 drops out and x5 is added
+                               ┌──────────────────────────┐
+                               |   x2   x3   x4   x5      |
+                               └──────────────────────────┘
+
+```
+
+## Predicting range of next value
+```markup
+                   ┌──────────────────────────┐
+Window at t = 4    |   x1   x2   x3   x4      |
+                   └──────────────────────────┘
+
+Compute mean and standard deviation of this window
+μ = mean(x1, x2, x3, x4)
+σ = std(x1, x2, x3, x4)
+
+Anomaly range factor is k_anom
+Predicted range for the next value, x5 =  [ μ - k_anom * σ ,  μ + k_anom * σ ]
+
+```
+
+## Distributed System Network of Agents
+```markup
+     +------------------+
+     |    replay        |
+     | generate stream  |
+     | of numbers:      |
+     +------------------+
+            |
+            | messages: x0, x1, x2, x3, ...
+            |
+            v
+     +----------------------+
+     |      xf              |
+     | Compute sliding      |
+     | windowstatistics     |
+     | Predict anomaly band |
+     | for next value       |
+     +----------------------+
+            |
+            | Output anomaly
+            |  
+            |
+            v
+     +------------------+
+     | temp_live_sink   |
+     | print anomalies  |
+     +------------------+
+```
 
 ```python
 # modules.ch04_numeric.simple_anomaly
@@ -54,9 +111,8 @@ replay = ReplayCSV_In(path=CSV_PATH, transform=transform_row, period_s=0.25)
 # -------------------------------------------------------------------------
 # Transform: Rolling statistics for anomaly detection and forecasting
 xf = RollingStatsAnomForecast(
-    window=20,
-    k_anom=2.0,      # anomaly threshold
-    k_pred=0.5,      # prediction band width
+    window=20,       # window size
+    k_anom=2.0,      # anomaly threshold 
     key_in="tmax_f",
     date_key="date",
     prefix="w20"

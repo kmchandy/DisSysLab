@@ -21,13 +21,11 @@ class RollingStatsAnomForecast:
     def __init__(
         self,
         *,
-        window: int = 20,
+        window: int = 20,  # length of sliding window
         k_anom: float = 2.0,           # anomaly threshold (|x-μ| > k_anom·σ)
-        # prediction band width for NEXT value (μ ± k_pred·σ)
-        k_pred: float = 0.5,
-        key_in: str = "tmax_f",
-        date_key: str = "date",
-        time_key: str = "time",
+        key_in: str = "tmax_f",  # input key - max temp in a message
+        date_key: str = "date",  # date key in a message
+        time_key: str = "time",  # time key in a message
         prefix: str = "w",
         printer: Callable[[str], None] = print,
         debug: bool = False,
@@ -35,7 +33,6 @@ class RollingStatsAnomForecast:
     ) -> None:
         self.window = int(window)
         self.k_anom = float(k_anom)
-        self.k_pred = float(k_pred)
         self.key_in = key_in
         self.date_key = date_key
         self.time_key = time_key
@@ -44,37 +41,42 @@ class RollingStatsAnomForecast:
         self.debug = debug
         self._name = name or f"rolling_stats_{prefix}"
 
-        # rolling window state
-        self.q = deque()
+        # sliding window state
+        self.q = deque()  # elements in sliding window
         self.s = 0.0     # sum(x)
         self.ss = 0.0    # sum(x^2)
 
         # last-step prediction band (for fit/miss on current x)
         self.prev_pred_low: Optional[float] = None
         self.prev_pred_high: Optional[float] = None
-        self.prev_pred_made_for: Optional[str] = None
+        self.prev_pred_made_for_date: Optional[str] = None
 
         # coverage stats
-        self.cover_total = 0
-        self.cover_hits = 0
+        self.cover_total = 0  # The total number of predictions made
+        self.cover_hits = 0   # The number of times the actual value fell within the predicted band
 
     @property
     def __name__(self) -> str:
         return self._name
 
     def reset(self) -> None:
+        """_summary_: Reset internal state of sliding window and stats.
+
+        """
         self.q.clear()
         self.s = 0.0
         self.ss = 0.0
         self.prev_pred_low = None
         self.prev_pred_high = None
-        self.prev_pred_made_for = None
+        self.prev_pred_made_for_date = None
         self.cover_total = 0
         self.cover_hits = 0
 
     def __call__(self, msg: Dict[str, Any]) -> Dict[str, Any]:
-        x = msg.get(self.key_in)
+        x = msg.get(self.key_in)          # temp in the message
+        # date in the message; if none in message then "-"
         d = msg.get(self.date_key, "-")
+        # time in the message; if none in message then "-"
         t = msg.get(self.time_key, "-")
 
         # Coerce to float if string
@@ -86,25 +88,29 @@ class RollingStatsAnomForecast:
 
         # 1) Verify previous prediction against current x (fit/miss)
         fits: Optional[bool] = None
-        if self.prev_pred_low is not None and x is not None:
+        if self.prev_pred_low is not None and x is not None and self.prev_pred_high is not None:
             # type: ignore[operator]
             fits = (self.prev_pred_low <= x <= self.prev_pred_high)
-            self.cover_total += 1
+            self.cover_total += 1  # Increment total numer of predictions.
             if fits:
+                # Increment number of correct predictions.
                 self.cover_hits += 1
             elif self.debug:
                 self.printer(
                     f"[miss] {d}: x={x:.3f} ∉ "
                     f"[{self.prev_pred_low:.3f}, {self.prev_pred_high:.3f}] "
-                    f"(pred @ {self.prev_pred_made_for})"
+                    f"(pred @ {self.prev_pred_made_for_date})"
                 )
+        # if self.prev_pred_low or self.prev_pred_high or x is None, then no predicition is made,
+        # and so cover_total and cover_hits remain unchanged.
 
-        # 2) Update rolling stats with current x
+        # 2) Update sliding window with current data item, x
         if x is not None:
-            self.q.append(x)
-            self.s += x
-            self.ss += x * x
+            self.q.append(x)    # add new value to the window
+            self.s += x         # update sum of window
+            self.ss += x * x    # update sum of squares of window
             if len(self.q) > self.window:
+                # remove oldest value from window
                 old = self.q.popleft()
                 self.s -= old
                 self.ss -= old * old
@@ -115,12 +121,14 @@ class RollingStatsAnomForecast:
                   mean if mean is not None else 0.0), 0.0) if n > 0 else None
         std = math.sqrt(var) if var is not None else None
 
+        # Build output message (dict)
         out = dict(msg)
         out[f"{self.prefix}_n"] = n
         out[f"{self.prefix}_mean"] = mean
         out[f"{self.prefix}_std"] = std
 
         # 3) Anomaly test on current x using k_anom
+        # anomaly if |x - mean| > k_anom * std
         anomalous = (std is not None and std > 0 and x is not None and n >= 2
                      # type: ignore[operator]
                      and abs(x - mean) > self.k_anom * std)
@@ -129,22 +137,6 @@ class RollingStatsAnomForecast:
             self.printer(
                 f"Anomaly. {d}, {t}, mean={mean:.3f}, std={std:.3f}, x={x:.3f}"
             )
-
-        # 4) Build prediction band for NEXT value using k_pred
-        if std is not None and mean is not None and n >= 2:
-            pred_low = mean - self.k_pred * std
-            pred_high = mean + self.k_pred * std
-            out["pred_low"] = pred_low
-            out["pred_high"] = pred_high
-            self.prev_pred_low = pred_low
-            self.prev_pred_high = pred_high
-            self.prev_pred_made_for = d
-        else:
-            out["pred_low"] = None
-            out["pred_high"] = None
-            self.prev_pred_low = None
-            self.prev_pred_high = None
-            self.prev_pred_made_for = None
 
         out["fits"] = fits
         out["cover_total"] = self.cover_total
