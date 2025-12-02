@@ -176,4 +176,4 @@ You should see alert summaries printed in the live console (after a possible del
 - Extend the prompt to extract **severity**, **areas**, or **expiration** when present.
 
 ## 👉 Next
-[Create graphs that use numeric libraries: detect anomalies](../ch04_numeric/README_2_anomaly.md) 
+[Create graphs that use numeric libraries: detect anomalies](../ch04_numeric/README_1_simple.md) 

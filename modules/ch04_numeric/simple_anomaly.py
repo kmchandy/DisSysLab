@@ -27,7 +27,6 @@ replay = ReplayCSV_In(path=CSV_PATH, transform=transform_row, period_s=0.25)
 xf = RollingStatsAnomForecast(
     window=20,
     k_anom=2.0,      # anomaly threshold
-    k_pred=0.5,      # prediction band width
     key_in="tmax_f",
     date_key="date",
     prefix="w20"
