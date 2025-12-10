@@ -4,12 +4,12 @@
 
 # 4.2 An Example of Anomaly Detection
 
-Many applications require the detection of anomalies in streaming data. There are several ways of detecting anomalies. This example shows an algorithm that uses exponential moving statistics, and bands around predicted values.
+Many applications require the detection of anomalies in streaming data. There are several ways of detecting anomalies. This example has agents that generate random walks, uses exponential moving averages, and uses dynamic bands around predicted values to compute anomalies.
 
 The nodes of the graph are:
 
 
-1) **RandomWalkDeterministic** emits a reproducible sequence `{t_step, x}` (no wall-clock timing, no sleeps).
+1) **RandomWalkDeterministic** A source that outputs messages which are dicts with two fields **x** and **tstep** where **x** is the state (position) of a linear random walk walk and **t_step** is the step number. 
 2) **EMAStd** maintains a streaming **exponential moving average** (level) and **exp-weighted std** (volatility). No buffers; O(1) per message.
 3) **ZScoreBands** computes a **z-score** `z = (x − ema)/std` and **dynamic bands** `ema ± k·std`.
 4) **FlagAnomaly** marks `anomaly=True` if `|z| ≥ z_thresh` or `x` falls outside the bands (after a short warm-up).
@@ -58,7 +58,8 @@ The nodes of the graph are:
 
 From DisSysLab:
 ```
-python -m modules.ch05_ds.anomaly_demo
+python -m modules.ch04_numeric.anomaly_demo
+
 ```
 
 ## 👉 Next
