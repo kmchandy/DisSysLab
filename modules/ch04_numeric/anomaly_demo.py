@@ -42,11 +42,11 @@ class RandomWalkDeterministic:
     def __init__(
         self,
         *,
-        steps: int = 500,
-        base: float = 100.0,
-        drift_per_step: float = 0.1,
-        sigma: float = 5.0,
-        seed: int = 0,
+        steps: int = 500,             # number of steps of random walk generated
+        base: float = 100.0,          # starting value of random walk
+        drift_per_step: float = 0.1,  # deterministic drift added to each step
+        sigma: float = 5.0,           # stddev of Gaussian noise added to each step
+        seed: int = 0,                # random number generator seed for reproducibility
         sleep_time_per_step: float = 0.01,
         name: Optional[str] = None,
     ) -> None:
@@ -55,7 +55,7 @@ class RandomWalkDeterministic:
         self.x = float(base)
         self.drift = float(drift_per_step)
         self.sigma = float(sigma)
-        self.rng = random.Random(seed)
+        self.rng = random.Random(seed)  # uniform random number generator
         self.sleep_time_per_step = float(sleep_time_per_step)
         self._name = name or "src_random_walk"
 
@@ -65,6 +65,7 @@ class RandomWalkDeterministic:
 
     def __call__(self):
         for i in range(self.steps):
+            # add drift and Gaussian noise to walk position
             self.x += self.drift
             self.x += self.rng.gauss(0.0, self.sigma)
             yield {"t_step": i, "x": float(self.x)}
@@ -74,15 +75,28 @@ class RandomWalkDeterministic:
 
 
 class EMAStd:
-    def __init__(self, *, alpha: float = 0.1, eps: float = 1e-8, std_min: float = 1e-6, name: Optional[str] = None):
+    """
+    Receives a message which is a dict with key "x" (float) which is a random walk value.
+    Outputs the same message with added keys: "ema" (float) and "std" (float) where
+    ema is the exponential moving average of x, and std is the exponentially-weighted 
+    standard deviation.
+
+    """
+
+    def __init__(
+            self, *,
+            # exponential smoothing factor (0 < alpha <= 1)
+            alpha: float = 0.1,
+            eps: float = 1e-8,          # small constant to avoid zero stddev
+            std_min: float = 1e-6,      # minimum stddev to avoid zero division
+            name: Optional[str] = None):
         assert 0.0 < alpha <= 1.0
         self.alpha = float(alpha)
-        self.eps = float(eps)
-        self.std_min = float(std_min)
+        self.eps = float(eps)       # square of min stddev
         self._name = name or "ema_std"
         self._initialized = False
-        self._ema = 0.0
-        self._m = 0.0
+        self._ema = 0.0             # exponential moving average
+        self._m = 0.0               # exponentially-weighted variance accumulator
 
     @property
     def __name__(self) -> str:
@@ -96,20 +110,19 @@ class EMAStd:
     def __call__(self, msg: Dict[str, float]) -> Dict[str, float]:
         import math
         x = float(msg["x"])
-        a = self.alpha
+        a = self.alpha  # shorthand for exponential smoothing factor
 
         if not self._initialized:
             self._ema = x
             self._m = 0.0
             self._initialized = True
-            std = max(self.std_min, math.sqrt(self.eps))
+            std = math.sqrt(self.eps)  # initial stddev is a small constant.
         else:
             ema_prev = self._ema
             self._m = a * (x - ema_prev) ** 2 + (1.0 - a) * self._m
             self._ema = a * x + (1.0 - a) * ema_prev
+            # add eps (small constant) for numerical stability
             std = math.sqrt(self._m + self.eps)
-            if std < self.std_min:
-                std = self.std_min
 
         msg["ema"] = float(self._ema)
         msg["std"] = float(std)
@@ -119,11 +132,18 @@ class EMAStd:
 
 
 class ZScoreBands:
-    def __init__(self, *, k: float = 2.0, std_floor: float = 1e-6, z_clip: Optional[float] = None, name: Optional[str] = None):
+    def __init__(
+            self, *,
+            k: float = 2.0,
+            std_floor: float = 1e-6,
+            z_clip: Optional[float] = None,
+            name: Optional[str] = None):
         assert k >= 0.0
         assert std_floor > 0.0
+        # number of stddevs for bands. E.g., k=2 → bands at ±2 stddevs from ema.
         self.k = float(k)
-        self.std_floor = float(std_floor)
+        self.std_floor = float(std_floor)  # to avoid division by zero
+        # z_clip: if set, clip the maximum number of stddevs from ema to z_clip
         self.z_clip = float(z_clip) if z_clip is not None else None
         self._name = name or f"zscore_bands_k{int(self.k)}"
 
@@ -132,6 +152,10 @@ class ZScoreBands:
         return self._name
 
     def __call__(self, msg: Dict[str, float]) -> Dict[str, float]:
+        # msg is a dict with fields "x", "ema", "std" where "x" is the current value,
+        # of a stream, "ema" is the exponential moving average, and "std" is the
+        # exponentially-weighted standard deviation.
+        # Compute z which is the number of standard deviations x is from ema.
         x = float(msg["x"])
         ema = float(msg["ema"])
         std = float(msg["std"])
@@ -153,7 +177,11 @@ class FlagAnomaly:
     Optional warm-up to avoid early false flags.
     """
 
-    def __init__(self, *, z_thresh: float = 2.5, warmup_steps: int = 20, name: Optional[str] = None):
+    def __init__(
+            self, *,
+            z_thresh: float = 2.5,
+            warmup_steps: int = 20,
+            name: Optional[str] = None):
         self.z_thresh = float(z_thresh)
         self.warmup = int(warmup_steps)
         self._name = name or f"flag_anomaly_z{self.z_thresh:g}"
@@ -163,8 +191,11 @@ class FlagAnomaly:
         return self._name
 
     def __call__(self, msg: Dict[str, float]) -> Dict[str, float]:
+        # msg is a dict with fields "x", "ema", "std", "z", "band_lo", "band_hi"
+        # msg is generated by ZScoreBands transform.
         i = int(msg.get("t_step", 0))
         if i < self.warmup:
+            # Not enough history yet to make a reliable decision.
             msg["anomaly"] = False
             msg["reason"] = "warmup"
             return msg
