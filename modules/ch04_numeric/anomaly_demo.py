@@ -1,4 +1,4 @@
-# dsl/examples/ch05_ds/anomaly_demo.py
+# modules.ch04_numeric.anomaly_demo.py
 from __future__ import annotations
 import json
 from typing import Dict, Optional
