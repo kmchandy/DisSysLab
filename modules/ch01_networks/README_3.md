@@ -4,28 +4,30 @@
 ## 🎯 Goal
 
 
-- Drop messages in streams by returning ```None```.
+  Data transformer drops messages in streams by returning ```None```.
 ---
 
-## 💻 Example of dropping messages
+## 💻 Example network: dropping messages
  
 ```python
 
       +----------------+
-      |   from_list    |
+      |   from_list    | source of words
       +----------------+
                |
                v
       +----------------+
-      |      drop      |
+      |      drop      | drop some words
       +----------------+
                |
                v
       +----------------+
-      |   to_results   |
+      |   to_results   | print results
       +----------------+
+```
 
-
+## 💻 dsl program
+```
 # modules.ch01_networks.simple_filter
 
 from dsl import network
