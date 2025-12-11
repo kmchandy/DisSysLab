@@ -1,8 +1,22 @@
 # 🕸️ DisSysLab — Build distributed apps by connecting functions
 
-**DisSysLab (aka `dsl`)** is a Python framework that helps you build distributed programs. A program is represented by a directed graph in which each node is a Python function which receives and sends messages. Often, the function is selected from widely-used libraries such as Numpy, OpenAI and Gemini. Edges in the graph carry messages from function to function. The functions at the nodes run concurrently. A node of the graph is called an agent.
+**DisSysLab (aka `dsl`)** is a Python framework that helps you build distributed programs. A program is represented by a directed graph in which each node is a Python function. The Python functions at nodes do not use parallel programming primitives such as threads or send/receive messages. Often the function is selected from a library such as Numpy or OpenAI. You can build distributed programs using **dsl** if you are familiar with elementary programming.
 
-DisSysLab is designed to introduce first-year undergraduates to distributed programs. This is an early release; it will evolve, and feedback is welcome.
+**dsl** is designed to introduce first-year undergraduates to distributed programs. A goal is to help each student build distributed system applications that specifically interest her, and to do so easily. This is done by using **dsl** to connect functions in widely-used libraries such as Scikit and Gemini. **dsl** is an early release; it will evolve, and feedback is welcome.
+
+Edges in the graph carry messages from function to function. The functions at the nodes run concurrently. We call a node of the graph an **agent**. You specify a graph by its list of edges. Here is an example of a graph `g`with three agents -- `data_source`, `data_transformer`, and `data_sink` and two edges: (1) an edge from `data_source` to `data_transformer` and (2) an edge from `data_transformer` to `data_sink`.
+
+```python
+from dsl import network
+
+g = network([(data_source, data_transformer), (data_transformer, data_sink)])
+
+```
+
+You can specify the agents that generate data, such as `data_source` in the example, as Python functions or use **dsl** wrappers to sensors, RSS feeds, or other sources of data. Likewise a `data_sink` can be a Python function, or a wrapper that controls an actuator or stores a stream of data in a database. Similarly, can write your own function for the `data_transformer` node or choose a function from Python's rich libraries.
+
+You can create arbitrary graphs. The initial modules of this description use acyclic graphs. Later modules deal with graphs that contain cycles.
+
 
 ## TL;DR – try it
 
@@ -13,30 +27,6 @@ python -m venv .venv && source .venv/bin/activate   # Windows: .\.venv\Scripts\A
 python -m pip install -e .
 python -m modules.ch01_networks.simple_network
 ```
-
----
-
-## Core idea
-
-- A **program is specified as directed graph** where nodes are agents and edges are message channels.
-- An **agent is a callable**. It can be:
-  - a pure Python function (`def f(x): ...`),
-  - a class instance with `__call__`,
-  - a wrapper around a **standard library** function (NumPy, SciPy, requests),
-  - or a service call (e.g., OpenAI) behind a simple adapter.
-  
-- You specify a graph by its list of edges. Here is an example of a graph `g`with three agents -- `data_source`, `data_transformer`, and `data_sink` and two edges: (1) an edge from `data_source` to `data_transformer` and (2) an edge from `data_transformer` to `data_sink`.
-
-```python
-from dsl import network
-
-g = network([(data_source, data_transformer), (data_transformer, data_sink)])
-
-```
-
-You can specify the agents that generate data, such as `data_source` in the example, as functions or wrappers to sensors, RSS feeds or other sources. Likewise you can write your own function for `data_sink` or use a wrapper that stores a stream of data in a database, controls an actuator, or carries out other actions. Similarly, can write your own function for the `data_transformer` node or choose a function from Python's rich libraries or interfaces to OpenAI, Gemini or other services.
-
-You can create arbitrary graphs. The initial modules of this description use acyclic graphs. Later modules deal with graphs that contain cycles.
 
 
 ## 👉 Start Here
