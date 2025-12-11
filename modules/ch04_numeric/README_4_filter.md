@@ -1,3 +1,5 @@
+#modules.ch04_numeric.README_4_filter.md
+
 # 4.4 • Signal Processing Filters
 
 This demo shows how **plain Python functions that call existing libraries** (NumPy/SciPy) can act as **nodes** in a DisSysLab network.  
