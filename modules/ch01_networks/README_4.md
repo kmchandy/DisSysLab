@@ -4,35 +4,42 @@
 ## 🎯 Goal
 
 
-- Use dictionaries (```dict```) to enrich messages as they flow through a network.
+- Data transformers use dictionaries (```dict```) to enrich messages as they flow through a network.
 ---
 
-## 💻 Example of enriching messages (adding fields)
+## 💻 Example network: transformers enrich dict messages (add fields)
 
 ```python
 
 # Messages in this example are dicts
 
      +-----------+
-     | from_list |
+     | from_list | source of dict {'text': item}
      +-----------+
           |
+          | example msg: {'text': 'hello'}
           v
      +-----------+
-     |  exclaim  |
+     |  exclaim  | add field 'exclaim' to msg
      +-----------+
           |
+          | example: {'text': 'hello', 'exclaim': 'hello!'}
           v
      +-----------+
-     | uppercase |
+     | uppercase | add field 'uppercase' to msg
      +-----------+
           |
+          | example: {'text': 'hello', 'exclaim': 'hello!', 'uppercase': 'HELLO'}
           v
      +-----------+
-     | to_results|
+     | to_results| print msg
+     |           | example: {'text': 'hello', 'exclaim': 'hello!', 'uppercase': 'HELLO'}
      +-----------+
 
+```
 
+## 💻 dsl program
+```
 # modules.ch01_networks.simple_dict
 
 from dsl import network
@@ -71,15 +78,11 @@ assert results == [
 ]
 ```
 ## 📍 Enriching Dictionary Messages
-A common pattern is to represent a message as a dict and have nodes add fields as they process it. This becomes especially useful with AI agents:
-
-Example: an agent that extracts topics from the natural language content field of a dict message adds the field ```msg["topics"] = [...]``` to the dict.
-
-Then an agent that determines the sentiment of the message content adds the field ```msg["sentiment"] = ...```.
+We often use messages that are dicts. A transformer may add fields to the dict as it processes the message.  We will see that this pattern is especially useful when the data transformers are AI agents.
 
 
 ## 🧠 Key Concepts
-- Messages as dicts make enrichment easy: read → compute → attach → pass on.
+- A useful pattern is to have messages that are dicts and where agents add fields to the dicts.
 
 ## 👉 Next
 Look at an example

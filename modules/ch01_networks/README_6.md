@@ -32,8 +32,10 @@
      +------------------+
      |    print_msg     |
      +------------------+
+```
 
-
+## 💻 dsl program
+```
 # modules.ch01_networks.mutables
 
 from dsl import network
@@ -45,8 +47,9 @@ class AgentA:
 
     def run(self, msg):
         # ❌ BUG: A publishes *its local list object* into the message
-        msg["notes"] = self.my_list
-        msg["notes"].append("A1")  # mutate (also mutates A.my_list)
+        msg["notes"] = self.my_list   # alias, not a copy
+        msg["notes"].append("A1")     # modifies both msg["notes"] and A.my_list
+        # Now msg["notes"] is ["A1"] and A.my_list is also ["A1"]
         return msg
 
 
@@ -55,10 +58,12 @@ class AgentB:
         self.my_list = []  # B's local state
 
     def run(self, msg):
-        # ❌ BUG: B *adopts the same object* from the message
+        # ❌ BUG: B *aliases the same object* from the message
         self.my_list = msg["notes"]   # alias, not a copy
-        # mutate (also mutates A.my_list and B.my_list)
+        # Now B.my_list = ["A1"]
         msg["notes"].append("B1")
+        # Now msg["notes"] is ["A1", "B1"], and B.my_list is also ["A1", "B1"]
+        # A.my_list is also ["A1", "B1"]
         return msg
 
 
@@ -81,7 +86,6 @@ def print_msg(msg):
     # msg.notes: ['A1', 'B1']
     # A.my_list: ['A1', 'B1']
     # B.my_list: ['A1', 'B1']
-    #
 
 
 g = network([(emit_empty_dict, run_A), (run_A, run_B), (run_B, print_msg)])
@@ -92,17 +96,54 @@ Some applications require mutable objects, such as files, to be shared by multip
 
 In this example, agent ```a``` appends "A1" to ```msg['notes']``` and takes no other action. So you may think that ```a.my_list``` is either ```[]``` or ```['A1']```. But when the program terminates ```a.my_list = ['A1', 'B1']``` because when agent ```b``` modifies ```msg['notes']``` it also modifies ```a.my_list```.
 
+You can run the example from the DisSysLab directory by executing:
+
+```
+python -m modules.ch01_networks.mutables
+
+```
+
 ## 📍 Safe Use of Data by Multiple Agents
-- Send a **copy**: ```msg["notes"] = list(self.my_list)```. This makes ```msg["notes"]``` a copy of ```self.my_list```, and so modifying ```msg["notes"]``` does not modify ```self.my_list```.
+- ***Enrich dict messages***. As you saw in the previous module, you can use dicts and fields to the dict without modifying existing fields.
   
-- Read a **copy** of a message: ```self.my_list = list(msg["notes"])```.
+- If you want to use the same field of the dict -- rather than add a field --- then use a **copy**: ```msg["notes"] = list(self.my_list)```. This makes ```msg["notes"]``` a copy of ```self.my_list```, and so modifying ```msg["notes"]``` does not modify ```self.my_list```.
   
-- Note that as you saw in the previous lesson: You can enrich a message, by adding fields to the message without otherwise modifying the message.
+- Likewise read a **copy** of a message: ```self.my_list = list(msg["notes"])```.
 
 ## 🧠 Key Concepts
-- Beware of aliasing with mutables passed through messages.
+- Beware of aliasing with mutables passed through messages. Use copies of data to prevent multiple agents modifying the same data concurrently as in the following modification of agents A and B.
+  
+```python
+class AgentA:
+    def __init__(self):
+        self.my_list = []  # A's local state
 
-- If you need independent state, copy before mutate (or use immutables).
+    def run(self, msg):
+        msg["notes"] = list(self.my_list)   # msg["notes"] is a copy of A.my_list
+        msg["notes"].append("A1")     # modifies msg["notes"] but not A.my_list
+        # Now msg["notes"] is ["A1"] and A.my_list remains []
+        return msg
+
+class AgentB:
+    def __init__(self):
+        self.my_list = []  # B's local state
+
+    def run(self, msg):
+        self.my_list = list(msg["notes"])   # B.my_list is a copy of msg["notes"]
+        # Now B.my_list = ["A1"]
+        msg["notes"].append("B1")
+        # Now msg["notes"] is ["A1", "B1"], and B.my_list remains ["A1"]
+        # A.my_list is not changed
+        return msg
+
+```
+
+You can run the corrected example from the DisSysLab directory by executing:
+
+```
+python -m modules.ch01_networks.mutables_proper
+
+```
 - 
 ## 👉 Next
 
