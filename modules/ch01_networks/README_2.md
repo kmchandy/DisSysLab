@@ -9,7 +9,7 @@
 
 ---
 
-## 💻 Example of fanout
+## 💻 Example of fanout network
 
   
 ```python
@@ -22,8 +22,10 @@
         |  sink_0   |   |  sink_1   |
         +-----------+   +-----------+
 
+```
 
-
+## 💻 dsl program
+```
 # modules.ch01_networks.simple_broadcast
 
 from dsl import network
@@ -44,7 +46,7 @@ def sink_1(item):
     results_1.append(item)
 
 
-# Define the network as a list of directed edges of a graph
+# Specify and run the network
 g = network([(from_list, sink_0), (from_list, sink_1)])
 g.run_network()
 
@@ -59,13 +61,16 @@ The messages output by a node are broadcast along each of the node's output edge
         +----------------+     +----------------+
         | from_list_0    |     | from_list_1    |
         +----------------+     +----------------+
-               \                     /
-                \                   /
-                 v                 v
+                   \                   /
+                    \                 /
+                     v               v
                     +----------------+
                     |   to_results   |
                     +----------------+
+```
 
+## 💻 dsl program
+```
 # modules.ch01_networks.simple_merge
 
 from dsl import network
