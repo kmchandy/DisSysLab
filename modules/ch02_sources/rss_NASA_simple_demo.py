@@ -1,5 +1,6 @@
 # modules/ch02_sources/rss_NASA_simple_demo.py
 
+from pprint import pprint
 import time
 from dsl import network
 from dsl.connectors.rss_in import RSS_In           # << simplified connector
@@ -17,7 +18,7 @@ from .live_kv_console import kv_live_sink             # pretty-print messages li
 rss = RSS_In(
     url="https://www.nasa.gov/feed/",
     fetch_page=True,
-    output_keys=["title", "link", "page_text"],
+    output_keys=["title", "link", "summary"],
     poll_seconds=4,
     life_time=20,
 )
@@ -28,7 +29,9 @@ rss = RSS_In(
 
 
 def print_sink(msg):
-    print(msg)
+    print()
+    pprint(msg)
+    print()
     print("-" * 40)
 
 

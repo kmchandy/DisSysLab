@@ -1,7 +1,7 @@
 # 2.2 • RSS feeds
 
 This page just shows you how to use a **connector** to an RSS (Real Simple Syndication) feed to create a source of data.
-An RSS feed checks a source of data, such as a website, regularly and displays new its in the feed. 
+An RSS feed checks a source of data regularly and displays new values in its in the feed. 
 
 ---
 
@@ -22,6 +22,7 @@ pip install feedparser requests beautifulsoup4 rich
 ```python
 # modules/ch02_sources/rss_NASA_simple_demo.py
 
+from pprint import pprint
 import time
 from dsl import network
 from dsl.connectors.rss_in import RSS_In           # << simplified connector
@@ -30,7 +31,7 @@ from .live_kv_console import kv_live_sink             # pretty-print messages li
 # ────────────────────────────────────────────────────────────────────────────
 # 1) Configure the RSS source (connector)
 # ────────────────────────────────────────────────────────────────────────────
-# Key knobs:
+# Key parameters:
 #   url           – which RSS/Atom feed to poll (NASA)
 #   fetch_page    – also fetch the linked article and extract plain text
 #   output_keys   – keep only these fields from each item/page
@@ -39,49 +40,42 @@ from .live_kv_console import kv_live_sink             # pretty-print messages li
 rss = RSS_In(
     url="https://www.nasa.gov/feed/",
     fetch_page=True,
-    output_keys=["title", "link", "page_text"],
+    output_keys=["title", "link", "summary"],
     poll_seconds=4,
     life_time=20,
 )
 
 # ────────────────────────────────────────────────────────────────────────────
-# 2) Source function: turn the connector into a generator
-# ────────────────────────────────────────────────────────────────────────────
-# A source function is a zero-argument callable that yields dicts.
-# We keep only "title" and "page_text" to keep the console tidy.
-
-
-def from_rss():
-    for news_item in rss.run():     # iterator of dicts from the connector
-        yield {
-            "title": news_item.get("title"),
-            "page_text": news_item.get("page_text"),
-        }
-        # Tiny pause so items don't scroll too fast during the demo
-        time.sleep(0.1)
-
-# ────────────────────────────────────────────────────────────────────────────
 # 3) Connect source → sink and run the network
 # ────────────────────────────────────────────────────────────────────────────
 
-
 def print_sink(msg):
-    print(msg)
+    print()
+    pprint(msg)
+    print()
     print("-" * 40)
 
 
-g = network([(from_rss, print_sink)])
-
+g = network([(rss.run, print_sink)])
 g.run_network()
 
-
+# Experiment with the following:
+# • Change the feed URL to any RSS/Atom you like.
+# • Set fetch_page=False for speed and fewer deps.
+# • Edit output_keys and the yielded dict to show different fields.
+# • Change life_time (or None to run until Ctrl-C).
 
 ```
 
 ## Run the demo
-Execute the following from the DisSysLab directory.
+Execute the following from the DisSysLab directory. Remember to install the services required to run the demo. Install and active your virtual environment (venv) and execute 
 
 ```bash
+pip install feedparser requests beautifulsoup4 rich
+```
+
+## 💻 dsl program
+```
 python -m modules.ch02_sources.rss_NASA_simple_demo
 ```
 
