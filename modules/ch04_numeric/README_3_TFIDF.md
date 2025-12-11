@@ -3,11 +3,12 @@
 # 📚 4.3 Bag-of-Words (TF-IDF), KMeans & PCA
 
 ## Goal
-Stream a small set of movie reviews through a graph of functions to cluster them, showing a snapshot after 5 and a final view after 10. The emphasis is on the nodes in the network and how they compose, not on the specific ML techniques.
+Stream a small set of movie reviews through a network of agents to cluster the reviews. Showing a snapshot of the clustering after processing 5 reviews and a present the final view after processing 10 reviews. The emphasis in this example is on constructing a network of agents and not on specific machine-learning techniques.
 
 ## What you’ll build
 A dsl graph that processes one review at a time:
 
+***Network of agents structure***
 ```
 from_reviews  →  tfidfify  →  predict_cluster  →  to_results
                           ↘
