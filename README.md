@@ -1,6 +1,6 @@
 # 🕸️ DisSysLab — Build distributed apps by connecting functions
 
-**DisSysLab (aka `dsl`)** is a Python framework that helps you build distributed programs. A program is represented by a directed graph in which each node is a Python function. The Python functions at nodes do not use parallel programming primitives such as threads or send/receive messages. Often the function is selected from a library such as Numpy or OpenAI. You can build distributed programs using **dsl** if you are familiar with elementary programming.
+**DisSysLab (aka `dsl`)** is a Python framework that helps you build distributed programs. A program is represented by a directed graph in which each node is a Python function. The Python functions at nodes do not use parallel programming primitives such as threads or send/receive messages. You can build distributed programs using **dsl** if you are familiar with elementary programming.
 
 **dsl** is designed to introduce first-year undergraduates to distributed programs. A goal is to help each student build distributed system applications that specifically interest her, and to do so easily. This is done by using **dsl** to connect functions in widely-used libraries such as Scikit and Gemini. **dsl** is an early release; it will evolve, and feedback is welcome.
 
