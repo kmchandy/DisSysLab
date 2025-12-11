@@ -127,5 +127,5 @@ You’ll see outputs interleaved depending on source timing, with both lowercase
 
 Multiple agents must not modify the same mutable object. Later in the course we will describe methods by which agents can share mutable objects safely. These methods ensure that (1) at most one agent reads or writes a mutable object at a time and (2) all agents that are waiting to read or write a mutable object gets to do so eventually.
 
-Next look at an [example of agents concurrently modifying a mutable object](./README_mutables.md).
+Next look at an [example of agents concurrently modifying a mutable object](./README_6.md).
  

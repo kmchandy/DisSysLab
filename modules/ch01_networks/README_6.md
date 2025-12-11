@@ -112,7 +112,9 @@ python -m modules.ch01_networks.mutables
 
 ## 🧠 Key Concepts
 - Beware of aliasing with mutables passed through messages. Use copies of data to prevent multiple agents modifying the same data concurrently as in the following modification of agents A and B.
-  
+
+## 💻 dsl program that avoids concurrent modification of mutables
+
 ```python
 class AgentA:
     def __init__(self):
