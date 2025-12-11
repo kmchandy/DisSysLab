@@ -11,7 +11,7 @@ This page shows how to build an **arbitrary graph** (not just a linear pipeline)
 
 ---
 
-## 💻 Example: Arbitrary Graph with Fan-Out / Fan-In
+## 💻 Example: Network with Fan-Out / Fan-In
 
 ```python
       +---------------+                     +---------------+
@@ -33,15 +33,17 @@ This page shows how to build an **arbitrary graph** (not just a linear pipeline)
                  |   to_results   |
                  +----------------+
 
+```
 
-
+## 💻 dsl program
+```
 # modules.ch01_networks.simple_network
 
 from dsl import network
 import time
 
 # -----------------------------------------------------------
-# Sources
+# Data sources
 # -----------------------------------------------------------
 
 def from_list_0():
@@ -55,7 +57,7 @@ def from_list_1():
         time.sleep(0.1)
 
 # -----------------------------------------------------------
-# Transforms
+# Data transformers
 # -----------------------------------------------------------
 
 def lower(v):
@@ -65,7 +67,7 @@ def add_bangs(v):
     return v + "!!"
 
 # -----------------------------------------------------------
-# Sink (fan-in target)
+# Data sink
 # -----------------------------------------------------------
 
 results = []
@@ -99,7 +101,7 @@ if __name__ == "__main__":
 ## ▶️ Run the demo
 
 ```bash
-python3 -m modules.ch01_networks.simple_network
+python -m modules.ch01_networks.simple_network
 ```
 
 You’ll see outputs interleaved depending on source timing, with both lowercase variants and “!!” variants collected in `results`.
@@ -123,7 +125,7 @@ You’ll see outputs interleaved depending on source timing, with both lowercase
 ## 👉 Next
 
 
-Multiple agents must not modify the same mutable object. Later in the course we will describe methods by which agents can share mutable objects. These methods ensure that (1) at most one agent reads or writes a mutable object at a time and (2) all agents that are waiting to read or write a mutable object gets to do so eventually.
+Multiple agents must not modify the same mutable object. Later in the course we will describe methods by which agents can share mutable objects safely. These methods ensure that (1) at most one agent reads or writes a mutable object at a time and (2) all agents that are waiting to read or write a mutable object gets to do so eventually.
 
 Next look at an [example of agents concurrently modifying a mutable object](./README_mutables.md).
  
