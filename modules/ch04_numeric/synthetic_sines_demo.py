@@ -22,9 +22,9 @@ from dsl import network
 def sine_mixture_source(
     *,
     sample_rate: float = 200.0,
-    duration_s: float = 8.0,
+    duration_s: float = 16.0,
     tones: Iterable[Tuple[float, float]] = (
-        (5.0, 1.0), (12.0, 0.6), (30.0, 0.3)),  # (freq_hz, amplitude)
+        (6.0, 2.0), (10.0, 2.0), (30.0, 0.5)),  # (freq_hz, amplitude)
     noise_std: float = 0.15,
 ):
     n_total = int(duration_s * sample_rate)
@@ -95,21 +95,27 @@ class ButterBandpassFilter:
     def __repr__(self) -> str:
         return f"<ButterBandpassFilter {self.name}>"
 
-    def run(self, x: ArrayLike) -> ArrayLike:
+    def run(self, msg: Dict) -> ArrayLike:
         """
         Apply the streaming band-pass.
+        First extract x = `msg["x"]`, then apply the filter to x.
         - Scalar in  -> scalar out
         - 1D array in -> 1D array out (and state advanced across the whole block)
         """
+        # msg is a dict with fields "t", "x".
+        x = msg["x"]  # now filter on x.
+
         # Scalar fast-path
-        if isinstance(x, (float, int)):
-            xf = float(x)
+        if np.isscalar(x) or (isinstance(x, np.ndarray) and x.ndim == 0):
+            xf = float(x)   # works for Python and NumPy scalars
             if not math.isfinite(xf):
                 if self.strict:
                     raise ValueError(f"Non-finite scalar input: {xf}")
-                return x  # pass-through
+                msg["x_bp"] = xf  # pass-through unfiltered
+                return msg
             y, self.zi = sosfilt(self.sos, [xf], zi=self.zi)
-            return float(y[-1])
+            msg["x_bp"] = float(y[-1])
+            return msg
 
         # Array path
         x = np.asarray(x)
@@ -122,10 +128,12 @@ class ButterBandpassFilter:
                 raise ValueError(
                     f"Array contains non-finite values at indices {bad.tolist()} (showing up to 5).")
             # pass-through non-finite inputs unfiltered
-            return x
+            msg["x_bp"] = x
+            return msg
 
         y, self.zi = sosfilt(self.sos, x, zi=self.zi)
-        return y
+        msg["x_bp"] = y
+        return msg
 
 
 # ─────────────────────────────────────────────────────────
@@ -134,45 +142,52 @@ class ButterBandpassFilter:
 # ─────────────────────────────────────────────────────────
 
 
-def welch_peak_detector(
-    *,
-    window_samples: int = 1024,
-    sample_rate: float = 200.0,
-    key_in: str = "x_bp",          # detect on band-passed signal
-    key_out_freq: str = "f0_hz",
-    key_out_peaks: str = "peaks_hz",
-    min_prominence: float = 0.02
-):
-    buf = deque(maxlen=window_samples)
+class welch_peak_detector:
+    def __init__(
+        self,
+        *,
+        window_samples: int = 1024,
+        sample_rate: float = 200.0,
+        key_in: str = "x_bp",          # detect on band-passed signal
+        key_out_freq: str = "f0_hz",
+        key_out_peaks: str = "peaks_hz",
+        min_prominence: float = 0.02
+    ):
+        self.buf = deque(maxlen=window_samples)
+        self.window_samples = window_samples
+        self.sample_rate = sample_rate
+        self.key_in = key_in
+        self.key_out_freq = key_out_freq
+        self.key_out_peaks = key_out_peaks
+        self.min_prominence = min_prominence
 
-    def _transform(msg: Dict[str, Any]) -> Dict[str, Any]:
-        x = float(msg[key_in])
-        buf.append(x)
-        if len(buf) == window_samples:
-            arr = np.asarray(buf, dtype=np.float32)
-            freqs, psd = welch(arr, fs=sample_rate,
-                               nperseg=min(256, window_samples))
+    def run(self, msg: Dict[str, Any]) -> Dict[str, Any]:
+        x = float(msg[self.key_in])
+        self.buf.append(x)
+        if len(self.buf) == self.window_samples:
+            arr = np.asarray(self.buf, dtype=np.float32)
+            freqs, psd = welch(arr, fs=self.sample_rate,
+                               nperseg=min(256, self.window_samples))
             # expose arrays for the snapshot sink
             msg["freqs"] = freqs.tolist()
             msg["psd"] = psd.tolist()
-            peaks, props = find_peaks(psd, prominence=min_prominence)
+            # Call SciPy peak finder
+            peaks, props = find_peaks(psd, prominence=self.min_prominence)
             if peaks.size > 0:
                 order = np.argsort(psd[peaks])[::-1]
                 main = peaks[order[0]]
-                msg[key_out_freq] = float(freqs[main])
-                msg[key_out_peaks] = [float(freqs[p])
-                                      for p in peaks[order[:5]]]
+                msg[self.key_out_freq] = float(freqs[main])
+                msg[self.key_out_peaks] = [float(freqs[p])
+                                           for p in peaks[order[:5]]]
             else:
-                msg[key_out_freq] = None
-                msg[key_out_peaks] = []
+                msg[self.key_out_freq] = None
+                msg[self.key_out_peaks] = []
         else:
-            msg[key_out_freq] = None
-            msg[key_out_peaks] = []
+            msg[self.key_out_freq] = None
+            msg[self.key_out_peaks] = []
             msg["freqs"] = None
             msg["psd"] = None
         return msg
-    return _transform
-
 # ─────────────────────────────────────────────────────────
 # 4) Sink — save a spectrum snapshot (PNG) at the end
 #    Call sink.finalize() after g.run_network()
@@ -218,6 +233,10 @@ def live_console_sink(msg: Dict[str, Any]):
         print(f"t={t:5.2f}  f0={('None' if f0 is None else f'{f0:6.2f} Hz')}")
     return msg
 
+
+def output(msg: Dict[str, Any]):
+    print(f"Output message: {msg}")
+    return msg
 # ─────────────────────────────────────────────────────────
 # 6) Wire the graph — library functions as nodes
 # ─────────────────────────────────────────────────────────
@@ -235,25 +254,34 @@ def src():
 bp_obj = ButterBandpassFilter()
 
 
-def bp(v):
-    bp_obj.run(v)
+def bp(msg: Dict[str, Any]) -> Dict[str, Any]:
+    bp_msg = bp_obj.run(msg)
+    return bp_msg
 
 
-det = welch_peak_detector(
+wpd = welch_peak_detector(
     window_samples=1024, sample_rate=200.0, key_in="x_bp", min_prominence=0.02)
+
+
+def det(msg: Dict[str, Any]) -> Dict[str, Any]:
+    wpd_msg = wpd.run(msg)
+    return wpd_msg
+
 
 snap = snapshot_spectrum_sink("spectrum.png")
 
-# g = network([
-#     (src, bp),           # Transform 1: band-pass
-#     (bp, det),           # Transform 2: Welch + peaks
-#     (det, live_console_sink),  # optional console
-#     (det, snap),         # PNG snapshot sink
-# ])
 g = network([
-    (src, bp), (bp, live_console_sink),         # PNG snapshot sink
+    (src, bp),           # Transform 1: band-pass
+    (bp, det),           # Transform 2: Welch + peaks
+    # (det, output),      # optional output sink
+    (det, live_console_sink),  # optional console
+    (det, snap),         # PNG snapshot sink
 ])
-print(g.nodes)
+# g = network([
+#     (src, bp), (bp, live_console_sink),         # PNG snapshot sink
+# ])
+# g = network([(src, bp), (bp, output)])
+# g = network([(src, output)])
 g.run_network()
 if hasattr(snap, "finalize"):
     snap.finalize()
