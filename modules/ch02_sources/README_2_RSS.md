@@ -1,13 +1,14 @@
 # 2.2 • RSS feeds
 
 This page just shows you how to use a **connector** to an RSS (Real Simple Syndication) feed to create a source of data.
-An RSS feed checks a source of data regularly and displays new values in its in the feed. 
+An RSS feed checks a source of data regularly and displays new values in its in the feed.
+You may have to wait for several seconds to the see output.
 
 ---
 
 ## What you’ll do
 
-Run a tiny script that reads NASA’s public RSS feed and prints items.
+Create a network with two agents. One agent gets a stream of documents from NASA’s public RSS feed. The other agent prints the stream. Later we will work with networks that get RSS feeds and analyze the RSS stream.
 
 ---
 
@@ -68,7 +69,7 @@ g.run_network()
 ```
 
 ## Run the demo
-Execute the following from the DisSysLab directory. Remember to install the services required to run the demo. Install and active your virtual environment (venv) and execute 
+Execute the following from the DisSysLab directory. Remember to install the services (eg feedparser) required to run the demo.
 
 ```bash
 pip install feedparser requests beautifulsoup4 rich
@@ -111,4 +112,7 @@ and return values.
 - output_keys: choose which fields to print (keep it small for readability).
 
 ## 👉 Next
-[**Social Media** sources →](./README_3_posts.md)
+
+[**Social Media**](./README_3_posts.md)
+
+You can also see [several examples of RSS feeds](./rss_general.py)
