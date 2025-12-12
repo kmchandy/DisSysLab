@@ -3,7 +3,7 @@
 ## 🎯 Goal
 - Learn how to use different types of sources and create your own sources of data.
 
-## 📍 What’s a “source”?
+## 📍 What is a “source”?
 A **source** is a zero-argument Python callable that yields a stream of values (e.g., a generator).  
 In this module we use standard sources such as RSS news feeds, social media posts, and sensors.
 

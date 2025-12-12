@@ -1,17 +1,18 @@
 # 2.3 • Source: Social Media (e.g Bluesky) Feeds
 
-This page just shows you how to use a **connector** to a social media feed.
-This example uses the feed **Bluesky Jetstream**. You can build connectors to
-many social media feeds; however, several social media organizations have
-regulations on how their social media feeds are accessed, and you are responsible 
-for following the regulations.
+This page shows you how to get data from a social media feed to feed a **dsl** network. You use a **connector** to extract data from the feed.
+This example uses the feed **Bluesky Jetstream**. You can build a connector to
+any social media feed; however, several social media organizations have
+regulations on how their feeds are accessed. ***You are responsible 
+for following these regulations.***
 
-Connectors are described in module 7.
+**Bluesky** is a decentralized social network built on the open AT Protocol.
+For this example we use Bluesky’s **Jetstream** service, which converts the AT Protocol data stream into a JSON event stream.
 
 ---
 ## What you’ll do
 
-Run a tiny script that listens to the **Bluesky Jetstream** and prints posts.
+Create a network with two agents. One agent outputs a stream of posts from **Bluesky Jetstream** and the other agent prints the posts.
 
 ---
 
