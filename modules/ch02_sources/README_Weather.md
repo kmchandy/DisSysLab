@@ -1,17 +1,36 @@
-# modules/ch02_sources/rss_NASA_simple_demo.py
+<!--  modules.ch02_sources.README_Weather.md    -->
+# 2.3 • RSS Weather Alerts
 
-import time
+This page is an example of generating a stream of weather alerts. This stream is used by first responders. Please use this RSS feed carefully. Do not poll it too frequently.
+
+---
+
+## What you’ll do
+
+Create a network with two agents. One agent gets a stream of alerts from weather.gov. The other agent prints the stream.
+
+---
+
+## Setup (once)
+
+```bash
+pip install feedparser requests beautifulsoup4 rich
+```
+
+## The RSS Weather Alerts Demo
+
+```python
+# modules/ch02_sources/rss_weather.py
+
 from dsl import network
 from dsl.connectors.rss_in import RSS_In           # << simplified connector
 from .live_kv_console import kv_live_sink             # pretty-print messages live
 
 # ────────────────────────────────────────────────────────────────────────────
-# 1) Configure the RSS source (connector)
+# Configure the RSS source (connector)
 # ────────────────────────────────────────────────────────────────────────────
 # Key parameters:
-#   url           – which RSS/Atom feed to poll (NASA)
 #   fetch_page    – also fetch the linked article and extract plain text
-#   output_keys   – keep only these fields from each item/page
 #   poll_seconds  – how often to check the feed (watchable pace)
 #   life_time     – how long to run before stopping (seconds)
 rss = RSS_In(
@@ -22,20 +41,21 @@ rss = RSS_In(
 )
 
 # ────────────────────────────────────────────────────────────────────────────
-# 3) Connect source → sink and run the network
+# Make network: source → sink, i.e. rss.run → kv_live_sink Then run network
 # ────────────────────────────────────────────────────────────────────────────
-
-
-def print_sink(msg):
-    print(msg)
-    print("-" * 40)
-
-
-g = network([(rss.run, print_sink)])
+g = network([(rss.run, kv_live_sink)])
 g.run_network()
 
-# Experiment with the following:
-# • Change the feed URL to any RSS/Atom you like.
-# • Set fetch_page=False for speed and fewer deps.
-# • Edit output_keys and the yielded dict to show different fields.
-# • Change life_time (or None to run until Ctrl-C).
+```
+
+## Run the demo
+Execute the following from the DisSysLab directory.
+
+```
+python -m modules.ch02_sources.rss_weather
+```
+
+You will see a growing list of weather alerts. You may have to wait several few seconds for the site to be polled and return values.
+
+## 👉 Next
+Look at [more examples of RSS feeds](./README_RSS_General.md) or jump ahead to streams from posts to [**social media**](./README_posts.md).

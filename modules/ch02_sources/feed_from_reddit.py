@@ -38,17 +38,8 @@ def from_reddit():
         }
 
 
-def print_sink(v):
-    print(v)
-    print("-" * 40)
-
-
-# If you prefer the live key–value console, you could also do:
-# print_sink = kv_live_sink
-
-
 # ----------------------------------------------------
-# 3) Connect nodes and run
+# 3) Create and run network: from_reddit -> kv_live_sink
 # ----------------------------------------------------
 g = network([(from_reddit, kv_live_sink)])
 g.run_network()

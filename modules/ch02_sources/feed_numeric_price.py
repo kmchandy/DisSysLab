@@ -8,6 +8,9 @@ from dsl import network
 from dsl.connectors.live_kv_console import kv_live_sink
 from dsl.connectors.numeric_rest_in import NumericREST_In
 
+# ----------------------------------------------------
+# Configure the coinbase source
+# ----------------------------------------------------
 # Coinbase spot price (no API key). Returns:
 # {"data":{"base":"BTC","currency":"USD","amount":"67890.12"}}
 URL = "https://api.coinbase.com/v2/prices/BTC-USD/spot"
@@ -33,10 +36,15 @@ price_source = NumericREST_In(
     extract_fn=coinbase_extract_fn,
     poll_seconds=1.0,   # <- pace you can watch
     # stop after 60s for the demo (set None to run forever)
-    life_time=60.0,
-    dedupe=True,
+    life_time=60.0,     # stop after 60s (adjust as needed)
+    dedupe=True,        # skip duplicates (no change in price)
     epsilon=1e-4,       # require >=$0.0001 change to emit a new reading
 )
+
+# ----------------------------------------------------
+# Create source function: from_price() which is an iterator
+# that yields a dict per price reading.
+# ----------------------------------------------------
 
 
 def from_price():
@@ -45,8 +53,8 @@ def from_price():
         yield msg
 
 
+# ----------------------------------------------------
+# Connect and run network: from_price -> kv_live_sink
+# ----------------------------------------------------
 g = network([(from_price, kv_live_sink)])
 g.run_network()
-
-if __name__ == "__main__":
-    print("finished")

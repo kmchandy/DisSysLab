@@ -1,11 +1,13 @@
-# 2.4 • Source: Polling JSON/REST for Numeric Streams
+<!--- modules/ch02_sources/README_REST.md         -->
 
-This page shows how to use a **connector** that polls a REST/JSON endpoint and turns it into a numeric stream you can process in DisSysLab.  Connectors are described in module 7.
+# 2.7 • Source: Polling JSON/REST for Numeric Streams
+
+This page gives an example of agent that polls a REST/JSON endpoint and generates a numeric stream.
 
 ---
 
 ## What you’ll do
-Run a tiny script that polls the **Coinbase spot-price** endpoint ~1×/sec and prints a record each time the price changes.
+Create a network with two agents where one agent polls the **Coinbase spot-price** endpoint ~1×/ sec to generate a numeric stream which outputs a record each time the price changes, and the other agent prints values.
 
 ---
 
@@ -21,22 +23,30 @@ pip install requests rich
 ## The REST → Numeric Feed Demo
 
 ```python
-# modules.ch02_sources.feed_numeric_price
+# modules/02_sources/feed_numeric_price.py
+#
+# Goal:
+# - Shows a numeric stream at  ~1 msg/sec.
+# - You can swap URL/extractor for any JSON feed.
 
 from dsl import network
 from dsl.connectors.live_kv_console import kv_live_sink
 from dsl.connectors.numeric_rest_in import NumericREST_In
 
-# Coinbase spot price (no API key). Returns JSON like:
+# ----------------------------------------------------
+# Configure the coinbase source
+# ----------------------------------------------------
+# Coinbase spot price (no API key). Returns:
 # {"data":{"base":"BTC","currency":"USD","amount":"67890.12"}}
 URL = "https://api.coinbase.com/v2/prices/BTC-USD/spot"
 
 
 def coinbase_extract_fn(j):
     data = j.get("data", {})
-    # Convert "amount" string -> float; include symbol for clarity.
+    # Convert "amount" string -> float; add symbol + a local timestamp for display.
     try:
-        price = float(data.get("amount")) if data.get("amount") is not None else None
+        price = float(data.get("amount")) if data.get(
+            "amount") is not None else None
     except ValueError:
         price = None
     return {
@@ -49,26 +59,31 @@ def coinbase_extract_fn(j):
 price_source = NumericREST_In(
     url=URL,
     extract_fn=coinbase_extract_fn,
-    poll_seconds=1.0,    # pace you can watch
-    life_time=20.0,      # stop after ~20 s for the demo (None = run forever)
-    dedupe=True,         # emit only on change
-    epsilon=1e-4,        # require ≥ $0.0001 change to emit a new reading
+    poll_seconds=1.0,   # <- pace you can watch
+    # stop after 60s for the demo (set None to run forever)
+    life_time=60.0,     # stop after 60s (adjust as needed)
+    dedupe=True,        # skip duplicates (no change in price)
+    epsilon=1e-4,       # require >=$0.0001 change to emit a new reading
 )
+
+# ----------------------------------------------------
+# Create source function: from_price() which is an iterator
+# that yields a dict per price reading.
+# ----------------------------------------------------
 
 
 def from_price():
     for msg in price_source.run():
-        # Optionally compute derived fields here (e.g., returns, z-scores)
+        # You can compute derived fields here if you like (e.g., returns)
         yield msg
 
 
-# Wire up the source to a live console sink.
+# ----------------------------------------------------
+# Connect and run network: from_price -> kv_live_sink
+# ----------------------------------------------------
 g = network([(from_price, kv_live_sink)])
-
 g.run_network()
 
-if __name__ == "__main__":
-    print("finished")
 ```
 
 ---
@@ -122,4 +137,4 @@ You may have to wait for a few minutes to see changes in prices.
 ---
 
 ## 👉 Next
-[**Replay archived data**  →](./README_5_replay.md). See how you can replay saved data to simulate live message streams.
+[**Replay archived data**  →](./README_replay.md). See how you can replay saved data to simulate live message streams.
