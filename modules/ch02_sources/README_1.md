@@ -4,10 +4,9 @@
 - Use different types of data sources.
 
 ## 📍 What is a “source”?
-A **source** is a zero-argument Python callable that yields a stream of values (e.g., a generator).  
-In this module we use standard sources such as RSS news feeds, social media posts, and sensors.
+A **source** is a zero-argument Python callable that yields a stream of values (e.g., a generator).  In this module we use standard sources such as RSS news feeds, social media posts, and sensors.
 
-The next set of examples illustrates sources. In these examples, a source agent is connected to a sink agent which displays the data acquired by the source. Later, we will study examples in which sources are connected to AI agents or Python data science functions that analyze data streams.
+The next set of examples illustrates sources. In these examples, a source agent is connected to a sink agent which displays the data acquired by the source. Later, we will study examples in which sources are connected to AI agents or Python data science functions that analyze data streams. Use these examples to create source agents that deliver the data streams that you want.
 
 ## 📍 Connectors
 `dsl.connectors` contains interfaces to different **sources** and **sinks**. We are adding more connectors and welcome contributions.
