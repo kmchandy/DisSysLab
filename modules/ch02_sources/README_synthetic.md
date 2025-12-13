@@ -1,13 +1,15 @@
-# 2.6 • Synthetic Numeric Source — Noisy Sum of Sine Waves
+<!-- modules/ch02_sources/README_synthetic.md    -->
 
-This page shows how to generate a **synthetic numeric stream** as a source in DisSysLab. You may want to test your distributed system against a synthetic input data stream before connecting your system to a streaming souce. 
+# 2.9 • Synthetic Numeric Sourc
+
+This page shows how to generate a **synthetic numeric stream** as a source. You may want to test your distributed system against a synthetic input data stream before connecting your system to a streaming souce. 
 
 In this example, the signal is a **noisy sum of sine waves** (e.g., 5 Hz, 12 Hz, 30 Hz plus Gaussian noise), emitted at a fixed sample rate.
 
 ---
 
 ## What you’ll do
-Run a tiny script that produces `{"t", "x"}` messages in real time (time in seconds, value as a float) and prints a line every _N_ messages to the console.
+Create a network with an agent that outputs  `{"t", "x"}` messages in real time (time in seconds, value as a float) and and an agent that prints a line every _N_ messages to the console.
 
 ---
 

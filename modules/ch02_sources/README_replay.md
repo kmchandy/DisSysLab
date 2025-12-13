@@ -1,4 +1,6 @@
-# 2.5 • Source - Replay Archived Data Streams
+<!--  modules/ch02_sources/README_replay.md      -->
+
+# 2.8 • Source - Replay Archived Data Streams
 
 This page shows how to **replay rows from a CSV file as a live stream** at a specified pace. 
 Connectors are described in module 7.
@@ -6,7 +8,7 @@ Connectors are described in module 7.
 ---
 
 ## What you’ll do
-Run a tiny script that replays temperature data for 2024. This data is in ```open-meteo_clean.csv``` which is obtained by extracting the maximum daily temperature from ```open-meteo-37.79N122.41W18m.csv```.
+Create a network with two agents where the source agent replays temperature data for 2024. This data is in ```open-meteo_clean.csv``` which is obtained by extracting the maximum daily temperature from ```open-meteo-37.79N122.41W18m.csv```.
 
 Open-Meteo is an open-source weather API and offers free access for non-commercial use. 
 This example shows how you can store data from archived data sources and then replay the stored data.
@@ -29,9 +31,11 @@ pip install rich
 from pathlib import Path
 from dsl import network
 from dsl.connectors.replay_csv_in import ReplayCSV_In
+from dsl.connectors.live_kv_console import kv_live_sink
 
+# Create source that generates a stream of data read from the 
+# specified file which is "open-meteo_clean.csv" in this example.
 CSV_PATH = str(Path(__file__).resolve().parent / "open-meteo_clean.csv")
-
 
 def transform_row(row):
     t = row.get("time")
@@ -40,15 +44,10 @@ def transform_row(row):
         return None
     return {"date": t, "max_temp": float(temp)}
 
-
 replay = ReplayCSV_In(path=CSV_PATH, transform=transform_row, period_s=0.25)
 
-
-def print_sink(v):
-    print(v)
-
-
-g = network([(replay.run, print_sink)])
+# Create and run network: replay.run -> kv_live_sink
+g = network([(replay.run, kv_live_sink)])
 g.run_network()
 ```
 
@@ -73,4 +72,4 @@ You’ll see a stream of temperatures.
 ---
 
 ## 👉 Next
-[**Synthetic data**  →](./README_6_synthetic.md). Generate sources from synthetic data for experiments.
+[**Synthetic data**  →](./README_synthetic.md). Generate sources from synthetic data for experiments.

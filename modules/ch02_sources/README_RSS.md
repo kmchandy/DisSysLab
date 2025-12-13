@@ -8,7 +8,7 @@ You may have to wait for several seconds to the see output.
 
 ## What you’ll do
 
-Create a network with two agents. One agent gets a stream of documents from NASA’s public RSS feed. The other agent prints the stream. Later we will work with networks that get RSS feeds and analyze the RSS stream.
+Create a network with two agents. One agent outputs a stream of documents that it gets from NASA’s public RSS feed. The other agent prints the stream. Later we will work with networks that get RSS feeds and analyze the RSS stream.
 
 ---
 
@@ -23,14 +23,12 @@ pip install feedparser requests beautifulsoup4 rich
 ```python
 # modules/ch02_sources/rss_NASA_simple_demo.py
 
-from pprint import pprint
-import time
 from dsl import network
 from dsl.connectors.rss_in import RSS_In           # << simplified connector
 from .live_kv_console import kv_live_sink             # pretty-print messages live
 
 # ────────────────────────────────────────────────────────────────────────────
-# 1) Configure the RSS source (connector)
+# Configure the RSS source (connector)
 # ────────────────────────────────────────────────────────────────────────────
 # Key parameters:
 #   url           – which RSS/Atom feed to poll (NASA)
@@ -47,17 +45,10 @@ rss = RSS_In(
 )
 
 # ────────────────────────────────────────────────────────────────────────────
-# 3) Connect source → sink and run the network
+# Make network: source → sink (i.e rss.run  → kv_live_sink). Then run network
 # ────────────────────────────────────────────────────────────────────────────
 
-def print_sink(msg):
-    print()
-    pprint(msg)
-    print()
-    print("-" * 40)
-
-
-g = network([(rss.run, print_sink)])
+g = network([(rss.run, kv_live_sink)])
 g.run_network()
 
 # Experiment with the following:
@@ -65,22 +56,16 @@ g.run_network()
 # • Set fetch_page=False for speed and fewer deps.
 # • Edit output_keys and the yielded dict to show different fields.
 # • Change life_time (or None to run until Ctrl-C).
-
 ```
 
 ## Run the demo
 Execute the following from the DisSysLab directory. Remember to install the services (eg feedparser) required to run the demo.
 
-```bash
-pip install feedparser requests beautifulsoup4 rich
-```
-
-## 💻 dsl program
 ```
 python -m modules.ch02_sources.rss_NASA_simple_demo
 ```
 
-You will see a growing list of items like:
+You may have to wait a few seconds after which you will see a growing list of items like:
 ```bash
 ----------------------------------------
 title
@@ -112,7 +97,4 @@ and return values.
 - output_keys: choose which fields to print (keep it small for readability).
 
 ## 👉 Next
-
-[**Social Media**](./README_3_posts.md)
-
-You can also see [several examples of RSS feeds](./rss_general.py)
+Look at a [data stream of weather alerts](./README_Weather.md), or look at [RSS feeds from newspapers and other sources](./README_RSS_General.md), or jump ahead to look at data sources that output streams of posts from [**Social Media**](./README_posts.md).

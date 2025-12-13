@@ -1,6 +1,8 @@
-# 2.3 • Source: Social Media (e.g Bluesky) Feeds
+<!--- modules/ch02_sources/README_posts.md           -->
 
-This page shows you how to get data from a social media feed to feed a **dsl** network. You use a **connector** to extract data from the feed.
+# 2.5 • Source: Social Media (e.g Bluesky) Feeds
+
+This page has an example of an agent that generates a stream of data from a social media feed.
 This example uses the feed **Bluesky Jetstream**. You can build a connector to
 any social media feed; however, several social media organizations have
 regulations on how their feeds are accessed. ***You are responsible 
@@ -36,7 +38,7 @@ from dsl.connectors.jetstream_in import Jetstream_In
 from dsl.connectors.live_kv_console import kv_live_sink
 
 # ----------------------------------------------------
-# 1) Configure the Jetstream source
+# Configure the Jetstream source
 # ----------------------------------------------------
 # Key params:
 # - wanted_collections: tuple of Bluesky NSIDs to pass through.
@@ -48,12 +50,12 @@ from dsl.connectors.live_kv_console import kv_live_sink
 
 jetstream = Jetstream_In(
     wanted_collections=("app.bsky.feed.post",),  # filter to posts only
-    life_time=20,          # run ~20 seconds then stop (adjust as needed)
-    max_num_posts=25      # or stop after 100 posts, whichever comes first
+    life_time=60,          # run ~60 seconds then stop (adjust as needed)
+    max_num_posts=100      # or stop after 100 posts, whichever comes first
 )
 
 # ----------------------------------------------------
-# 2) Source function, from_jetstream(), is an iterator
+# Source function, from_jetstream(), is an iterator
 # ----------------------------------------------------
 # Yields a dict per post.
 
@@ -70,16 +72,12 @@ def from_jetstream():
         }
 
 
-def print_sink(v):
-    print(v)
-    print("-" * 40)
-
-
-# ----------------------------------------------------
-# 3) Connect nodes and run
-# ----------------------------------------------------
-g = network([(from_jetstream, print_sink)])
+# ------------------------------------------------------
+# Create and run network: from_jetstream  →  kv_live_sink
+# ------------------------------------------------------
+g = network([(from_jetstream, kv_live_sink)])
 g.run_network()
+
 ```
 
 ## Run the demo
