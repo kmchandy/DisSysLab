@@ -8,16 +8,16 @@ from .live_alert_console import live_alert_sink
 # Define functions.
 rss = RSS_In(
     url="https://api.weather.gov/alerts/active.atom/",
-    fetch_page=True,
     poll_seconds=4,
-    life_time=20,
+    life_time=5,
+    max_items=10,
+    fetch_page=True,
 )
 
 
 def from_rss():
     news_items = rss.run()
     for news_item in news_items:
-        print(f"news_item = {news_item}")
         yield {k: news_item.get(k) for k in ("title", "page_text")}
 
 
@@ -86,5 +86,5 @@ agent = AgentOpenAI(system_prompt=system_prompt)
 
 
 # Define the network
-g = network([(from_rss, agent.fn), (agent.fn, live_alert_sink)])
+g = network([(from_rss, agent.run), (agent.run, live_alert_sink)])
 g.run_network()

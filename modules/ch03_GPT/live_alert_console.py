@@ -25,7 +25,7 @@ def _ensure_live_started() -> Live:
     global _live
     if _live is None:
         _live = Live(Align.left("Waiting for alerts..."),
-                     console=_console, refresh_per_second=8, transient=False)
+                     console=_console, refresh_per_second=20, transient=False)
         _live.start()
         atexit.register(_stop_live)
     return _live

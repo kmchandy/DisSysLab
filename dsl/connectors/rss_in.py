@@ -96,7 +96,8 @@ class RSS_In:
         url: str,
         poll_seconds: float = 3.0,
         life_time: Optional[float] = 30.0,
-        # e.g. ["title","link","page_text"]
+        max_items: Optional[int] = 25,
+        # e.g. output_keys ["title","link","page_text"]
         output_keys: Optional[List[str]] = None,
         fetch_page: bool = False,
         fetch_timeout: float = 8.0,
@@ -105,7 +106,8 @@ class RSS_In:
     ):
         self.url = url
         self.poll_seconds = float(poll_seconds)
-        self.life_time = life_time
+        self.life_time = float(life_time) if life_time is not None else None
+        self.max_items = int(max_items) if max_items is not None else None
         self.output_keys = output_keys
         self.fetch_page = fetch_page
         self.fetch_timeout = float(fetch_timeout)
@@ -114,17 +116,36 @@ class RSS_In:
         self.headers_page = {"User-Agent": user_agent,
                              "Accept": "text/html,*/*;q=0.8"}
         self._seen: set = set()  # simple per-process de-dupe
+        self.num_items_emitted = 0
 
     # public API used by modules: zero-arg iterator
     def run(self) -> Iterator[Dict[str, Any]]:
-        start = time.time()
+        self.start = time.time()
         while True:
             # stop condition
-            if self.life_time is not None and (time.time() - start) >= self.life_time:
+            print(f"self.life_time = {self.life_time}")
+            t = time.time()
+            print(f"t = {t}")
+            print(f"t - self.start = {t - self.start}")
+            life_time_condition = (t - self.start) >= self.life_time
+            print(
+                f"life_time_condition = {life_time_condition}")
+            if life_time_condition:
+                for _ in range(20):
+                    print('__________________________________________')
+            if life_time_condition:
                 break
 
             # poll once and emit each new item
-            for item in self._poll_once():
+            items = self._poll_once()
+            if self.max_items is not None:
+                remaining = self.max_items - self.num_items_emitted
+                if remaining <= 0:
+                    break
+                items = items[:remaining]
+                self.num_items_emitted += len(items)
+            print(f"Polled {len(items)} new items from {self.url}")
+            for item in items:
                 yield item
 
             time.sleep(self.poll_seconds)
