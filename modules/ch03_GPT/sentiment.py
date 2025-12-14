@@ -3,9 +3,10 @@
 from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI
 import json
+from dsl.connectors.live_kv_console import kv_live_sink
 
 # -----------------------------------------------------------
-# 1) Source — yield dicts with a "text" field
+#  Source — yield dicts with a "text" field
 # -----------------------------------------------------------
 
 list_of_text = [
@@ -14,13 +15,16 @@ list_of_text = [
     "This is the best course on AI I've ever taken!",
 ]
 
+# Iterator of a stream of messages where each message is a dict
+# with a "text" field which is an item from list_of_text
+
 
 def from_list_of_text():
     for data_item in list_of_text:
         yield {"text": data_item}
 
 # -----------------------------------------------------------
-# 2) OpenAI agent — provide a system prompt
+#  Creat OpenAI agent by providing a system prompt
 # -----------------------------------------------------------
 
 
@@ -32,33 +36,22 @@ system_prompt = (
 agent = AgentOpenAI(system_prompt=system_prompt)
 
 # -----------------------------------------------------------
-# 3) Transformer — call the agent and enrich the message
+#  Transformer — call the agent and enrich the message
 # -----------------------------------------------------------
 
 
 def compute_sentiment(msg):
+    # msg is a dict with a "text" field
     # Make a dict from the json str response of the agent
-    sentiment_score_and_reason_json = json.loads(agent.fn(msg["text"]))
+    sentiment_score_and_reason_json = json.loads(agent.run(msg["text"]))
     # enrich the message by adding sentiment_score and reason fields
     msg.update(sentiment_score_and_reason_json)
     return msg
 
-# -----------------------------------------------------------
-# 4) Sink — print values
-# -----------------------------------------------------------
-
-
-def print_sink(msg):
-    for key, val in msg.items():
-        print(f"{key}:   {val}")
-    print("--------------------------------")
-    print()
 
 # -----------------------------------------------------------
-# 5) Connect functions and run network
+#  Connect functions and run network
 # -----------------------------------------------------------
-
-
 g = network([(from_list_of_text, compute_sentiment),
-             (compute_sentiment, print_sink)])
+             (compute_sentiment, kv_live_sink)])
 g.run_network()

@@ -3,6 +3,7 @@
 from dsl import Graph
 from typing import Optional
 import os
+import json
 
 from openai import OpenAI
 
@@ -78,3 +79,13 @@ class AgentOpenAI:
         return r.output_text.strip()
     fn = __call__
     run = __call__
+
+    def enrich_dict(self, msg: dict) -> dict:
+        """
+        Call the agent with msg["text"] and update msg with the parsed JSON result
+        """
+        ai_response_str = self.__call__(msg["text"])
+        ai_dict = json.loads(ai_response_str)
+        # enrich the message by adding ai_dict fields
+        msg.update(ai_dict)
+        return msg

@@ -1,35 +1,36 @@
-# 3.2 • Transformer — Sentiment Analysis
+# 3.3 • Simple AI demos from text
 
-This page shows how to use **AI-based transformers**. This example uses OpenAI to score the sentiment of text. You can use AI providers in addition to OpenAI. Other types of transformers are covered in later modules.
-
-A transformer function takes one input and returns one value. In this example the function calls an OpenAI agent.
+This page gives a short program that is used to give examples of AI agents operating on texts from a list. An agent is specified by a system prompt
 
 ---
 
 ## What you’ll do
-Run a tiny script that sends each text to an OpenAI agent which adds a **sentiment score** in the range **−10..+10** and gives a short reason.
+Create a network with three agents shown in the diagram below. 
 
 ```python
      +------------------+
-     | generate stream  |
-     | of reviews       |
+     | source: iterator |
+     |  yields msg      |
+     | {"text": "..."}  |
      +------------------+
             |
-            | stream of reviews
-            | example: "The concert was terrible. I hated the performance.",
+            | stream of messages which are dicts
+            | example: {"text": "The concert was terrible. I hated the performance."}
             |
             v
      +----------------------+
-     | AI agent determines  |
-     | sentiment of each    |
-     |        review        |
+     | AI agent enriches    |
+     | msg it receives by   |
+     |adding fields to msg  |
      +----------------------+
             |
-            |example: sentiment_score: -9
-            |  reason: The words 'terrible' and 'hated' clearly indicate ...
+            |example msg; {"text": "The concert...",
+            |              "sentiment_score":  -9,
+            |              "reason": "The words 'terrible'..."}
             v
      +------------------+
-     |    print         |
+     |    print:        |
+     |  kv_live_sink    |
      +------------------+
 ```
 
@@ -64,9 +65,10 @@ $env:OPENAI_API_KEY="sk-…your key…"
 from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI
 import json
+from dsl.connectors.live_kv_console import kv_live_sink
 
 # -----------------------------------------------------------
-# 1) Source — yield dicts with a "text" field
+#  Source — yield dicts with a "text" field
 # -----------------------------------------------------------
 
 list_of_text = [
@@ -75,13 +77,16 @@ list_of_text = [
     "This is the best course on AI I've ever taken!",
 ]
 
+# Iterator of a stream of messages where each message is a dict
+# with a "text" field which is an item from list_of_text
+
 
 def from_list_of_text():
     for data_item in list_of_text:
         yield {"text": data_item}
 
 # -----------------------------------------------------------
-# 2) OpenAI agent — provide a system prompt
+#  Creat OpenAI agent by providing a system prompt
 # -----------------------------------------------------------
 
 
@@ -93,35 +98,24 @@ system_prompt = (
 agent = AgentOpenAI(system_prompt=system_prompt)
 
 # -----------------------------------------------------------
-# 3) Transformer — call the agent and enrich the message
+#  Transformer — call the agent and enrich the message
 # -----------------------------------------------------------
 
 
 def compute_sentiment(msg):
+    # msg is a dict with a "text" field
     # Make a dict from the json str response of the agent
-    sentiment_score_and_reason_json = json.loads(agent.fn(msg["text"]))
+    sentiment_score_and_reason_json = json.loads(agent.run(msg["text"]))
     # enrich the message by adding sentiment_score and reason fields
     msg.update(sentiment_score_and_reason_json)
     return msg
 
-# -----------------------------------------------------------
-# 4) Sink — print values
-# -----------------------------------------------------------
-
-
-def print_sink(msg):
-    for key, val in msg.items():
-        print(f"{key}:   {val}")
-    print("--------------------------------")
-    print()
 
 # -----------------------------------------------------------
-# 5) Connect functions and run network
+#  Create and run network
 # -----------------------------------------------------------
-
-
 g = network([(from_list_of_text, compute_sentiment),
-             (compute_sentiment, print_sink)])
+             (compute_sentiment, kv_live_sink)])
 g.run_network()
 
 ```
