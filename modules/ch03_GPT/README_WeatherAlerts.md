@@ -2,9 +2,9 @@
 
 > **Important notes**
 > 1) **Do not use the weather alerts feed casually.** This is an operational feed intended for real, potentially life-threatening alerts. Use it respectfully and only for learning/testing as needed.  
-> 2) **The weather alerts feed can be slow to respond.** You may need to wait several minutes before seeing output.
+> 2) **The weather alerts feed can be very slow to respond.** You may need to wait several minutes before seeing output.
 
-This page shows how to connect to the **NWS Weather Alerts (Atom/RSS) feed** and run an **OpenAI transformer** to extract a compact, safety-focused summary from each alert.
+This page shows how to connect to the **NWS Weather Alerts (Atom/RSS) feed** and use an AI agent to extract a compact, safety-focused summary of each alert. This page gives an example of a complex prompt. This page also shows an example of an AI agent that does not enrich a message (dict); in this example, the agent outputs a message that is different from the message it receives. In previous examples, the agent in the network was **ai_agent.enrich_dict** which is replaced here by **ai_agent.run**.
 
 ---
 
@@ -122,11 +122,8 @@ Output rules:
 '''
 agent = AgentOpenAI(system_prompt=system_prompt)
 
-def print_sink(v):
-    print(v)
-
 # Define the network
-g = network([(from_rss, agent.fn), (agent.fn, live_alert_sink)])
+g = network([(from_rss, agent.run), (agent.run, live_alert_sink)])
 g.run_network()
 ```
 
