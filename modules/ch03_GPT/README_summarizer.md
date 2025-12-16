@@ -180,4 +180,6 @@ A play is a theatrical work written by a playwright and intended for performance
 ---
 
 ## 👉 Next
-[Develop a simple graph that extracts data from weather alerts](./README_5_WeatherAlerts.md) w
+
+Look at a [short program that you can use to test AI agents](./README_general.md) or 
+an AI agent that [extracts information from weather alerts](./README_WeatherAlerts.md)
