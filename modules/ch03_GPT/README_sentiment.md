@@ -1,32 +1,34 @@
-# 3.3 • Simple AI demos from text
+<!-- modules/ch03_GPT/README_2_general.md    -->
 
-This page gives a short program that is used to give examples of AI agents operating on texts from a list. An agent is specified by a system prompt
+# 3.2 • AI agent: Sentiment Analysis
+
+This module describes an example that uses an AI agent to score the sentiment of text. 
 
 ---
 
 ## What you’ll do
-Create a network with three agents shown in the diagram below. 
+Create a network with three agents shown in the diagram below. The first agent is a source that generates a stream of reviews. Usually, the source would extract reviews from an RSS newsfeed or from social media posts. In this page the list of reviews is given in the source agent. 
+
+The second agent in the network receives streams of reviews. It sends each review to an OpenAI service which adds a **sentiment score** in the range **−10..+10** and gives a short reason for the score. The third agent receives a stream of messages containing reviews, their scores and rationale, and the agent merely prints each message.
 
 ```python
      +------------------+
      | source: iterator |
-     |  yields msg      |
-     | {"text": "..."}  |
+     |  yields reviews  |
      +------------------+
             |
-            | stream of messages which are dicts
-            | example: {"text": "The concert was terrible. I hated the performance."}
+            | stream of reviews
+            | example: "The concert was terrible. I hated the performance.",
             |
             v
      +----------------------+
-     | AI agent enriches    |
-     | msg it receives by   |
-     |adding fields to msg  |
+     | AI agent determines  |
+     | sentiment of each    |
+     |        review        |
      +----------------------+
             |
-            |example msg; {"text": "The concert...",
-            |              "sentiment_score":  -9,
-            |              "reason": "The words 'terrible'..."}
+            |example: sentiment_score: -9
+            |  reason: The words 'terrible' and 'hated' clearly indicate ...
             v
      +------------------+
      |    print:        |
@@ -57,67 +59,38 @@ $env:OPENAI_API_KEY="sk-…your key…"
 
 ---
 
-## The Sentiment Demo
+## AI Agent: Get Sentiment of Text
 
 ```python
 # modules.ch03_GPT.sentiment
 
 from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI
-import json
 from dsl.connectors.live_kv_console import kv_live_sink
+from .source_list_of_text import source_list_of_text
 
-# -----------------------------------------------------------
-#  Source — yield dicts with a "text" field
-# -----------------------------------------------------------
-
+# example data
 list_of_text = [
     "The concert was terrible. I hated the performance.",
     "The book was okay, not too bad but not great either.",
     "This is the best course on AI I've ever taken!",
 ]
 
-# Iterator of a stream of messages where each message is a dict
-# with a "text" field which is an item from list_of_text
-
-
-def from_list_of_text():
-    for data_item in list_of_text:
-        yield {"text": data_item}
-
-# -----------------------------------------------------------
-#  Creat OpenAI agent by providing a system prompt
-# -----------------------------------------------------------
-
-
+# system prompt for sentiment analysis
 system_prompt = (
     "Determine sentiment score in -10..+10 with -10 most negative, +10 most positive. "
     "Give a brief reason. Return a JSON object with exactly the following format: "
     '{"sentiment_score": sentiment score, "reason": reason for the score}'
 )
-agent = AgentOpenAI(system_prompt=system_prompt)
 
-# -----------------------------------------------------------
-#  Transformer — call the agent and enrich the message
-# -----------------------------------------------------------
+# Create source and AI agent
+source = source_list_of_text(list_of_text)
+ai_agent = AgentOpenAI(system_prompt=system_prompt)
 
-
-def compute_sentiment(msg):
-    # msg is a dict with a "text" field
-    # Make a dict from the json str response of the agent
-    sentiment_score_and_reason_json = json.loads(agent.run(msg["text"]))
-    # enrich the message by adding sentiment_score and reason fields
-    msg.update(sentiment_score_and_reason_json)
-    return msg
-
-
-# -----------------------------------------------------------
 #  Create and run network
-# -----------------------------------------------------------
-g = network([(from_list_of_text, compute_sentiment),
-             (compute_sentiment, kv_live_sink)])
+g = network([(source.run, ai_agent.enrich_dict),
+            (ai_agent.enrich_dict, kv_live_sink)])
 g.run_network()
-
 ```
 
 ---
@@ -181,4 +154,4 @@ reason:   The phrase expresses strong positive enthusiasm and satisfaction with 
 - Try **summarization** or **entity extraction** with a similar `AgentOpenAI` wrapper.
 
 ## 👉 Next
-[Use LLM to create a simple graph that extracts entities in text](./README_3_entity.md)
+[Identify entities in a text](./README_entity.md)
