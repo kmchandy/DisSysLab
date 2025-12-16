@@ -2,10 +2,8 @@
 
 from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI
-
-# -----------------------------------------------------------
-# 1) Source — yield dicts with a "text" field
-# -----------------------------------------------------------
+from dsl.connectors.live_kv_console import kv_live_sink
+from .source_list_of_text import source_list_of_text
 
 list_of_text = [
     (
@@ -30,46 +28,14 @@ list_of_text = [
      )
 ]
 
+system_prompt = (
+    "Summarize the text in a single line"
+    "and put the summary in the 'summary' field."
+)
 
-def from_list_of_text():
-    for data_item in list_of_text:
-        yield {"text": data_item}
+source = source_list_of_text(list_of_text)
+ai_agent = AgentOpenAI(system_prompt=system_prompt)
 
-# -----------------------------------------------------------
-# 2) OpenAI agent — provide a system prompt
-# -----------------------------------------------------------
-
-
-system_prompt = "Summarize the text in a single line."
-make_summary = AgentOpenAI(system_prompt=system_prompt)
-
-# -----------------------------------------------------------
-# 3) Transformer — call the agent, add result under 'summary'
-# -----------------------------------------------------------
-
-
-def add_summary_to_msg(msg):
-    msg["summary"] = make_summary(msg["text"])
-    return msg
-
-# -----------------------------------------------------------
-# 4) Sink — print
-# -----------------------------------------------------------
-
-
-def print_sink(msg):
-    print("==============================")
-    for key, value in msg.items():
-        print(key)
-        print(value)
-        print("______________________________")
-    print("")
-
-# -----------------------------------------------------------
-# 5) Connect functions and run
-# -----------------------------------------------------------
-
-
-g = network([(from_list_of_text, add_summary_to_msg),
-            (add_summary_to_msg, print_sink)])
+g = network([(source.run, ai_agent.enrich_dict),
+             (ai_agent.enrich_dict, kv_live_sink)])
 g.run_network()

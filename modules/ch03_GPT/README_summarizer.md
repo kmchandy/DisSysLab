@@ -1,11 +1,11 @@
-# 3.4 • Transformer — Summarize Text
+# 3.4 • AI Agent — Summarize Text
 
-This page shows how to use a transformer using OpenAI to **summarize text**.
+This page is an example of an AI agent that summarizes a text.
 
 ---
 
 ## What you’ll do
-Run a tiny script that sends each text to an OpenAI agent and **adds a one-line summary** to the message dict.
+Run a network of three agents -- a source, an ai agent, and a sink that prints results.  The ai agent sends text to an OpenAI agent which summarizes the text and adds a **summary** fields to each message.
 
 ```python
      +------------------+
@@ -28,112 +28,136 @@ Run a tiny script that sends each text to an OpenAI agent and **adds a one-line 
             |
             v
      +------------------+
-     |    print         |
+     |  kv_live_sink    |
      +------------------+
 ```
 
 ---
 
 ## Setup (once)
-```bash
-pip install openai rich
-```
 
-Set your OpenAI API key (choose one):
 
-**macOS / Linux**
-```bash
-export OPENAI_API_KEY="sk-…your key…"
-```
-
-**Windows (PowerShell)**
-```powershell
-$env:OPENAI_API_KEY="sk-…your key…"
-```
-
-> _Note:_ This example uses `dsl.extensions.agent_openai.AgentOpenAI`, which looks for `OPENAI_API_KEY`.
+As in the [earlier page on sentiment scoring](README_sentiment.md)
 
 ---
 
-## The Summarization Demo
+## The Summarizer Demo
 
 ```python
-# modules.ch03_GPT.summary_from_list
+# 3.2 • AI Agent — Identify Entities
+
+This page is an example of an AI agent that **identifies entities** -- people, places, organizations -- in a text.
+
+---
+
+## What you’ll do
+Run a network of three agents -- a source, an ai agent, and a sink that prints results.  The ai agent sends text to an OpenAI agent and **adds an `entities` field** to each message.
+
+```python
+     +------------------+
+     | generate stream  |
+     | of news articles |
+     +------------------+
+            |
+            | stream of articles
+            | example: "BRICS is an organization of Brazil, Russia, .."
+            |
+            v
+     +----------------------+
+     | AI agent determines  |
+     | entities in  each    |
+     |        article        |
+     +----------------------+
+            |
+            |example:
+            |  {"Organization": ["BRICS"], "Country": ["Brazil, .."]}
+            |
+            v
+     +------------------+
+     |   kv_live_sink   |
+     +------------------+
+```
+
+---
+
+## Setup 
+
+
+As in the [previous page on sentiment scoring](README_sentiment.md)
+
+
+## The Entity Extraction Demo
+```python
+# modules.ch03_GPT.entities_from_list
 
 from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI
-
-# -----------------------------------------------------------
-# 1) Source — yield dicts with a "text" field
-# -----------------------------------------------------------
+import json
+from dsl.connectors.live_kv_console import kv_live_sink
+from .source_list_of_text import source_list_of_text
 
 list_of_text = [
-    (
-        "A play is a form of theatre that primarily consists of"
-        " script between speakers and is intended for acting rather"
-        " than mere reading. The writer and author of a play is"
-        " known as a playwright. Plays are staged at various levels,"
-        " ranging from London's West End and New York City's"
-        " Broadway – the highest echelons of commercial theatre in"
-        " the English-speaking world – to regional theatre, community"
-        " theatre, and academic productions at universities and schools."
-    ),
-    ("Artificial general intelligence (AGI)—sometimes called human‑level"
-     "intelligence AI—is a type of artificial intelligence that would"
-     "match or surpass human capabilities across virtually all cognitive tasks."
-
-     "Some researchers argue that state‑of‑the‑art large language models (LLMs)"
-     "already exhibit signs of AGI‑level capability, while others maintain that"
-     "genuine AGI has not yet been achieved. Beyond AGI, artificial"
-     "superintelligence (ASI) would outperform the best human abilities across"
-     "every domain by a wide margin."
-     )
+    "Obama was the first African American president of the USA.",
+    "The capital of India is New Delhi and its Prime Minister is Narendra Modi.",
+    "BRICS is an organization of Brazil, Russia, India, China and South Africa. Putin, Xi, and Modi met in Beijing",
 ]
 
-
-def from_list_of_text():
-    for data_item in list_of_text:
-        yield {"text": data_item}
-
-# -----------------------------------------------------------
-# 2) OpenAI agent — provide a system prompt
-# -----------------------------------------------------------
-
-
-system_prompt = "Summarize the text in a single line."
-make_summary = AgentOpenAI(system_prompt=system_prompt)
-
-# -----------------------------------------------------------
-# 3) Transformer — call the agent, add result under 'summary'
-# -----------------------------------------------------------
+system_prompt = (
+    "Your task is to read the input text and extract entities"
+    "such as names of people, organizations, countries and locations."
+    "Return a JSON array of the entities found in the text where the key is"
+    " the type of entity (e.g., Person, Organization, Location) and the value"
+    "is the list of entities of that type. For example"
+    '{"Person": ["Obama", "Modi"], "Location": ["USA", "New Delhi"]}'
+)
 
 
-def add_summary_to_msg(msg):
-    msg["summary"] = make_summary(msg["text"])
-    return msg
+source = source_list_of_text(list_of_text)
+ai_agent = AgentOpenAI(system_prompt=system_prompt)
 
-# -----------------------------------------------------------
-# 4) Sink — print
-# -----------------------------------------------------------
-
-
-def print_sink(msg):
-    print("==============================")
-    for key, value in msg.items():
-        print(key)
-        print(value)
-        print("______________________________")
-    print("")
-
-# -----------------------------------------------------------
-# 5) Connect functions and run
-# -----------------------------------------------------------
-
-
-g = network([(from_list_of_text, add_summary_to_msg),
-            (add_summary_to_msg, print_sink)])
+g = network([(source.run, ai_agent.enrich_dict),
+             (ai_agent.enrich_dict, kv_live_sink)])
 g.run_network()
 
+```
+
+---
+
+## Run the demo
+```bash
+python3 -m modules.ch03_openai.entities_from_list
+```
+
+You’ll see output like
+```
+----------------------------------------                                             
+                                                                                     
+Location                                                                             
+- India                                                                              
+- New Delhi                                                                          
+                                                                                     
+Person                                                                               
+- Narendra Modi                                                                      
+                                                                                     
+text                                                                                 
+The capital of India is New Delhi and its Prime Minister is Narendra Modi.           
+                                                                                     
+----------------------------------------                                             
+                                                                                     
+Location                                                                             
+- USA                                                                                
+                                                                                     
+Person                                                                               
+- Obama                                                                              
+                                                                                     
+text                                                                                 
+Obama was the first African American president of the USA. 
+
+```
+
+
+## 👉 Next
+[Agent that summarizes a text](./README_summarizer.md)
 ```
 
 ---
@@ -154,34 +178,6 @@ A play is a theatrical work written by a playwright and intended for performance
 ```
 
 ---
-
-## Parameters you can modify
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| **list_of_text** | list[str] | Replace with your own texts (e.g., RSS article bodies). |
-| **system_prompt** | str | Controls style/length (e.g., “bullet list,” “max 20 words,” “include keywords”). |
-| **add_key** | str | Dict key where the summary is stored (default `"summary"`). |
-| **AgentOpenAI(...)** | ctor args | If supported, override model/temperature/max tokens. |
-| **agent.fn(x)** | callable | The callable that runs the LLM for a single string input. |
-
-> _Tip:_ To ensure consistent formatting, ask for **strict JSON**:  
-> “Return JSON `{ "summary": "<one line>" }` with no extra text.”
-
----
-
-## Troubleshooting
-
-- **Auth errors:** Ensure `OPENAI_API_KEY` is available in your shell/environment.  
-- **Very long outputs:** Tighten the prompt (e.g., “≤ 20 words”), reduce input length, or change model params.  
-- **Latency / cost:** Batch fewer items, trim text, or switch to a faster/cheaper model if supported.
-
----
-
-## Try
-- Chain with **entity extraction** or **sentiment** to build richer annotations.  
-- Record results to **JSONL/CSV** (Module 5) and evaluate summary quality over time.  
-- Add a pre-transform to **truncate** or **clean** inputs (strip boilerplate, HTML).
 
 ## 👉 Next
 [Develop a simple graph that extracts data from weather alerts](./README_5_WeatherAlerts.md) w

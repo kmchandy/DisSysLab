@@ -1,11 +1,10 @@
-# modules.ch03_openai.entities_from_list
+# modules.ch03_GPT.entities_from_list
 
 from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI
+import json
 from dsl.connectors.live_kv_console import kv_live_sink
 from .source_list_of_text import source_list_of_text
-from .ai_simple_demo import ai_simple_demo
-
 
 list_of_text = [
     "Obama was the first African American president of the USA.",
@@ -22,4 +21,10 @@ system_prompt = (
     '{"Person": ["Obama", "Modi"], "Location": ["USA", "New Delhi"]}'
 )
 
-ai_simple_demo(list_of_text, system_prompt)
+
+source = source_list_of_text(list_of_text)
+ai_agent = AgentOpenAI(system_prompt=system_prompt)
+
+g = network([(source.run, ai_agent.enrich_dict),
+             (ai_agent.enrich_dict, kv_live_sink)])
+g.run_network()
