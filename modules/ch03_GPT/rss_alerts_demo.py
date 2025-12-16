@@ -84,7 +84,6 @@ Output rules:
 '''
 agent = AgentOpenAI(system_prompt=system_prompt)
 
-
 # Define the network
 g = network([(from_rss, agent.run), (agent.run, live_alert_sink)])
 g.run_network()
