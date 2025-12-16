@@ -1,43 +1,6 @@
-# 3.3 • Simple AI demos from text
+# 3.5 • Simple AI demos from text
 
-This page gives a short program that is used to give examples of AI agents operating on texts from a list. An agent is specified by a system prompt.
-
----
-
-## What you’ll do
-Create a network with three agents shown in the diagram below. 
-
-```python
-     +------------------+
-     | source: iterator |
-     |  yields msg      |
-     | {"text": "..."}  |
-     +------------------+
-            |
-            | stream of messages which are dicts
-            | example: {"text": "The concert was terrible. I hated the performance."}
-            |
-            v
-     +----------------------+
-     | ai_agent enriches    |
-     | msg it receives by   |
-     |adding fields to msg  |
-     +----------------------+
-            |
-            |example msg; {"text": "The concert...",
-            |              "sentiment_score":  -9,
-            |              "reason": "The words 'terrible'..."}
-            v
-     +------------------+
-     |    print:        |
-     |  kv_live_sink    |
-     +------------------+
-```
-
----
-
-##  AI Simple Demo
-In the program, **source** is an iterator that yields a text from a specified list of texts. **ai_agent** is an agent that calls OpenAI services with a specified system prompt. The function **ai_agent.enrich_dict** has a single message (a dict) as input where the dict has a field called ```text```. The function outputs a single message which is a dict which is the input message with additional fields supplied by ai_agent.
+The following lines are helpful in inspecting output of AI agents that operate on texts. Run the program with your AI agent specified by a prompt, and your list of text documents.
 
 ```python
 # modules.ch03_openai.ai_simple_demo
@@ -70,4 +33,5 @@ ai_simple_demo(list_of_text, system_prompt)
 
 
 ## 👉 Next
-[Extract entities in a text](./README_entity.md)
+
+AI agent that [extracts information from weather alerts](./README_WeatherAlerts.md)
