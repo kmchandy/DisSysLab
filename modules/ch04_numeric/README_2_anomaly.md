@@ -6,6 +6,34 @@
 
 Many applications require the detection of anomalies in streaming data. There are several ways of detecting anomalies. This example has agents that generate random walks, uses exponential moving averages, and uses dynamic bands around predicted values to compute anomalies.
 
+
+```python
+     +------------------+
+     |   source: src    |
+     |   random walk    |
+     +------------------+
+            |
+            | stream of dict with keys "t_step" and "x" where msg["x"] is 
+            | a float that represents the location of a one-dimension random 
+            | walk and msg["t_step"] is the number of steps in the walk.
+            v
+     +----------------------+
+     |    ema: exponential  | compute exponential moving average and 
+     |     moving average   | exponentially weighted standard deviation.
+     |       and std        | 
+     +----------------------+
+            |
+            | dict enriched with "ema" and "std"
+            v
+     +------------------------+
+     |  zb:ZScoreBands        |
+     |"z": num std from ema   |
+     |"band_hi" and "band_lo" |
+     | bands for "z" anomalies|
+     +------------------------+
+```
+
+
 The nodes of the graph are:
 
 

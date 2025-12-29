@@ -1,15 +1,19 @@
 #modules/ch04_numerics/README_1_numeric_transformers.md
 
 # 4.1 • Numeric Transformers
-This module gives examples of simple distributed systems in which agents are calls to numeric libraries such as those in NumPy and Scikit-Learn. Distributed systems allow you to create networks of agents of different types that communicate with each other and run forever.
+This module gives examples of simple distributed systems in which agents call numeric libraries such as NumPy and Scikit-Learn. 
 
-This page gives you an example of an agent that detects anomalies in streams of data. This example computes statistics on sliding windows over data streams. The next module gives other algorithms for anomaly detection.
+This page gives you an example of an agent that detects anomalies in streams of data by computing statistics on sliding windows over data streams. The next page gives an example of anomaly detection using exponential smoothing.
 
 ---
 ## What you’ll do
 
 
-Run a tiny script that replays temperatures recorded for San Francisco, emits each row at ~4×/sec, computes statistics over sliding windows, and uses these statistics to predict future temperatures and identify anomalies in the temperature stream. The results are displayed on the console.
+Create a network with three agents: 
+
+1. A source agent that replays temperatures recorded for San Francisco and emits each row at ~4×/sec.
+2. An agent that computes statistics over sliding windows; uses these statistics to predict upper and lower ranges of temperature for the next day; and identifies anomalies in the temperature stream if the actual temperature lies outside the predicted range. 
+3. An agent that displays results.
 
 
 
@@ -19,7 +23,7 @@ Run a tiny script that replays temperatures recorded for San Francisco, emits ea
 ```bash
 pip install rich
 ```
-> _Note:_ This example assumes you have `open-meteo_clean.csv`, `ReplayCSV_In`, `rolling_stats_anom_forecast`, and a `temp_live_sink` available in your project paths as shown below.
+> _Note:_ This example assumes you have `open-meteo_clean.csv`, `ReplayCSV_In`, `sliding_window_anomaly`, and a `temp_live_sink` available in your project paths as shown below.
 
 ---
 
@@ -49,9 +53,11 @@ Compute mean and standard deviation of this window
 μ = mean(x1, x2, x3, x4)
 σ = std(x1, x2, x3, x4)
 
-Anomaly range factor is k_anom
-Predicted range for the next value, x5 =  [ μ - k_anom * σ ,  μ + k_anom * σ ]
+std_limit: max number of standard deviations from the mean for no anomaly
 
+Predicted range for the next value, x5 =  [ μ - std_limit * σ ,  μ + std_limit * σ ]
+
+Anomaly if x5 is outside this range.
 ```
 
 ## Distributed System Network of Agents
@@ -65,17 +71,17 @@ Predicted range for the next value, x5 =  [ μ - k_anom * σ ,  μ + k_anom * σ
             | messages: x0, x1, x2, x3, ...
             |
             v
-     +----------------------+
-     |      xf              |
-     | Compute sliding      |
-     | windowstatistics     |
-     | Predict anomaly band |
-     | for next value       |
-     +----------------------+
+     +-------------------------+
+     | agent_sliding_window.run|
+     | Compute sliding         |
+     | windowstatistics        |
+     | Predict anomaly band    |
+     | for next value          |
+     +-------------------------+
             |
             | Output anomaly
-            |  
-            |
+            | Enriches message received by adding predicted range
+            | and whether anomaly occurred
             v
      +------------------+
      | temp_live_sink   |
@@ -89,15 +95,15 @@ Predicted range for the next value, x5 =  [ μ - k_anom * σ ,  μ + k_anom * σ
 from pathlib import Path
 from dsl import network
 from dsl.connectors.replay_csv_in import ReplayCSV_In
-from .rolling_stats_anom_forecast import RollingStatsAnomForecast
+from .sliding_window_anomaly import SlidingWindowAnomaly
 from .temp_live_sink import temp_live_sink
 
 # -------------------------------------------------------------------------
-# Source: Generate historical daily max temperature from Open-Meteo
+# Source: Replay historical daily max temperature from Open-Meteo
 CSV_PATH = str(Path(__file__).resolve().parent / "open-meteo_clean.csv")
 
 
-def transform_row(row):
+def from_CSV_row_to_dict(row):
     t = row.get("time")
     temp = row.get("temperature_2m_max (°F)")
     if not t or not temp:
@@ -105,27 +111,26 @@ def transform_row(row):
     return {"date": t, "tmax_f": float(temp)}
 
 
-replay = ReplayCSV_In(path=CSV_PATH, transform=transform_row, period_s=0.25)
+replay = ReplayCSV_In(
+    path=CSV_PATH, transform=from_CSV_row_to_dict, period_s=0.25)
 
 
 # -------------------------------------------------------------------------
-# Transform: Rolling statistics for anomaly detection and forecasting
-xf = RollingStatsAnomForecast(
-    window=20,       # window size
-    k_anom=2.0,      # anomaly threshold 
-    key_in="tmax_f", # extract temperature from message
-    date_key="date", # extract date
-    prefix="w20"
+# Agent: Sliding window statistics for anomaly detection and forecasting
+
+agent_sliding_window = SlidingWindowAnomaly(
+    window_size=20,
+    std_limit=2.0,      # anomaly threshold
+    key_data="tmax_f",
 )
 
 # -------------------------------------------------------------------------
-# Sink: Use temp_live_sink to display results
-
-# -------------------------------------------------------------------------
-# Network: Connect functions
-
-g = network([(replay, xf), (xf, temp_live_sink)])
+# Create and run network
+g = network([(replay.run, agent_sliding_window.run),
+            (agent_sliding_window.run, temp_live_sink)])
 g.run_network()
+
+
 
 ```
 
@@ -138,30 +143,7 @@ python -m modules.ch04_numeric.simple_anomaly
 
 You’ll see a live stream of key–value output with rolling statistics, anomaly flags, and prediction band fields.
 
-## Explanation
-```replay``` is an object with a method ```__call__```. The object gets weather data from the specified file and outputs a message stream where each message is a dict containing the date and maximum temperature. You can define the edge of the graph from ```replay``` to ```xf``` as ```(replay, xf)``` or ```(replay.__call__, xf)``` or ```(replay.run, xf)```. 
-
-The message stream generated by ```replay``` is received by object ```xf``` which computes anomalies using a simple algorithm that uses basic statistics on sliding windows to predict the next value in the stream. The stream output by ```xf``` is displayed on the console by ```temp_live_sink```.
-
 ---
-
-## Parameters you can modify
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| **path** | str | Path to the CSV file to replay. |
-| **transform** | callable \| None | Maps a CSV row (dict) → cleaned dict (return `None` to skip a row). |
-| **period_s** | float | Seconds between emitted rows (e.g., `0.25` ≈ 4 msgs/sec). |
-| **window** | int | Rolling window length for stats (e.g., `20`). |
-| **k_anom** | float | Anomaly threshold multiplier (e.g., `2.0`). |
-| **key_in** | str | Input numeric field name (e.g., `"tmax_f"`). |
-| **date_key** | str | Timestamp/date field name (e.g., `"date"`). |
-| **prefix** | str | Prefix for derived fields (e.g., `"w20"` → `w20_mean`, `w20_lo`, `w20_hi`, etc.). |
-
-> _Tip:_ Customize `transform_row` to rename columns and cast types up front so downstream transformers can operate on a predictable schema.
-
----
-
 ## Troubleshooting
 
 - **No output:** Ensure `CSV_PATH` points to an existing file and your `transform_row` does not return `None` for all rows.  
@@ -170,11 +152,6 @@ The message stream generated by ```replay``` is received by object ```xf``` whic
 - **Missing fields in sink:** Confirm your sink expects the fields your pipeline emits (e.g., `date`, `tmax_f`, `w20_*`).  
 
 ---
-
-## Try
-- Replace `temp_live_sink` with a **JSONL/CSV recorder** to log outputs (Module 2.5 / Module 5).  
-- Chain a **keyword/threshold filter** before the sink to highlight anomalies.  
-- Plot the replayed series and prediction bands in a notebook or dashboard.
 
 ## 👉 Next
 [Anomaly detection](./README_2_anomaly.md)
