@@ -34,6 +34,6 @@ agent_sliding_window = SlidingWindowAnomaly(
 
 # -------------------------------------------------------------------------
 # Create and run network
-g = network([(replay, agent_sliding_window.run),
+g = network([(replay.run, agent_sliding_window.run),
             (agent_sliding_window.run, temp_live_sink)])
 g.run_network()
