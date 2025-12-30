@@ -47,10 +47,10 @@ class RandomWalkDeterministic:
         n_steps: int = 500,           # number of steps of random walk generated
         base: float = 100.0,          # starting value of random walk
         drift_per_step: float = 0.1,  # deterministic drift added to each step
-        sigma: float = 5.0,           # stddev of Gaussian noise added to each step
+        sigma: float = 1.0,           # stddev of Gaussian noise added to each step
         seed: int = 0,                # random number generator seed for reproducibility
         prob_jump: float = 0.1,       # prob of big jump at a step
-        jump_stdev: float = 100.0,    # standard deviation of a big jump
+        jump_stdev: float = 10.0,    # standard deviation of a big jump
         sleep_time_per_step: float = 0.01,
         name: Optional[str] = None,
     ) -> None:
@@ -126,9 +126,9 @@ class EMAStd:
             std = math.sqrt(self._m + self.eps)
             if (x < self._ema - self.k * std) or (x > self._ema + self.k * std):
                 # Volatility spike detected; reset variance accumulator.
-                msg["anomaly"] = True
-            else:
                 msg["anomaly"] = False
+            else:
+                msg["anomaly"] = True
             msg["ema"] = float(self._ema)
             msg["std"] = float(std)
             msg["pred_low"] = float(self._ema - self.k * std)
@@ -152,8 +152,8 @@ def make_console_summary(every_n: int = 1):
     def _sink(msg: Dict[str, float]):
         i["n"] += 1
         if i["n"] % every_n == 0:
-            print(f"t={msg['t_step']:4d}  x={msg['x']:+8.3f}  ema={msg['ema']:+8.3f} std={msg['std']:+6.3f}"
-                  f"band = [{msg['pred_low']}, {msg['pred_high']}] anomaly={msg['anomaly']}"
+            print(f"t={msg['t_step']:3d}  x={msg['x']:+8.2f}  ema={msg['ema']:+8.2f} std={msg['std']:+6.2f}"
+                  f"band = [{msg['pred_low']:3f}, {msg['pred_high']:3f}] anomaly={msg['anomaly']}"
                   )
         return msg
     _sink.__name__ = f"console_every_{every_n}"
@@ -192,15 +192,15 @@ class JSONLRecorder:
 if __name__ == "__main__":
     # Source: deterministic, finite stream
     src = RandomWalkDeterministic(
-        n_steps=600, base=100.0, drift_per_step=0.01, sigma=0.6, seed=42, name="src_random_walk"
+        n_steps=600, base=100.0, drift_per_step=0.01, sigma=0.6, seed=42, name="src"
     )
     f = src.run
 
     # Transforms
-    ema = EMAStd(alpha=0.1, name="ema_std")
+    ema = EMAStd(alpha=0.1, name="ema")
     # Sinks
     console = make_console_summary(every_n=20)
-    rec = JSONLRecorder(path="anomaly_stream.jsonl", name="jsonl_out")
+    rec = JSONLRecorder(path="anomaly_stream.jsonl", name="rec")
 
     g = network([
         (src.run,  ema.run),
