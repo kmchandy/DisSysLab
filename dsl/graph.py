@@ -1,5 +1,6 @@
 # dsl/graph.py
 from __future__ import annotations
+from typing import Callable
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 import warnings
 import inspect
@@ -17,7 +18,7 @@ NodePair = Tuple[str, Callable[..., Any]]
 
 # Reserved prefixes created by the rewriter
 _RESERVED_PREFIXES = ("broadcast_", "merge_")
-# Optional: exact names you don't want students to reuse
+# Optional: exact names you don't want users to reuse
 _RESERVED_EXACT = {"broadcast", "merge", "source", "sink", "transform"}
 
 # Match pairs like: (from_data, upper_case)
@@ -36,6 +37,38 @@ def strip_quotes(s: str) -> str:
     return s
 
 
+def _resolve_name(f: Callable, sep: str = "#") -> str:
+    ''' Gives each node of the graph a unique name.
+    A graph may have multiple nodes that are instances of the same class.
+    Examples: obj_0 = Class_A(.., name="OBJ_0")), obj_1 = Class_A(.., name="OBJ_1")) 
+    where obj_0.run and obj_1.run are nodes in the graph, and run(msg) is a method.
+    Then the names of the nodes will be "OBJ_0#run" and "OBJ_1#run".
+    Later, when building networks of networks we use full path names separated by dots
+    as in "ParentNetwork.ChildNetwork.OBJ_0#run".
+
+    '''
+    # Bound method: obj.run
+    self_obj = getattr(f, "__self__", None)
+    if self_obj is not None:
+        inst = (
+            getattr(self_obj, "name", None)
+            or getattr(self_obj, "_name", None)
+            or getattr(self_obj, "label", None)
+            or getattr(self_obj, "_label", None)
+        )
+        if inst:
+            return f"{inst}{sep}{getattr(f, '__name__', 'call')}"
+        return f"{self_obj.__class__.__name__}{sep}{getattr(f, '__name__', 'call')}"
+
+    # Function on class / plain function
+    qn = getattr(f, "__qualname__", None)
+    if qn:
+        return qn.replace(".", sep)
+
+    nm = getattr(f, "__name__", None)
+    return nm.replace(".", sep) if nm else repr(f)
+
+
 def network(x: Iterable[Tuple[Callable, Callable]]) -> Graph:
     """
     x example: [(from_list, upper_case), (upper_case, to_results)]
@@ -45,14 +78,6 @@ def network(x: Iterable[Tuple[Callable, Callable]]) -> Graph:
         nodes=[("from_list", from_list), ("upper_case", upper_case), ("to_results", to_results)]
       )
     """
-
-    def _resolve_name(f: Callable) -> str:
-        # Prefer an explicit label if the callable provides one; then fallback.
-        return (
-            getattr(f, "name", None)
-            or getattr(f, "__name__", None)
-            or type(f).__name__
-        )
 
     edges: List[Tuple[str, str]] = []
     seen_names: set[str] = set()
@@ -109,7 +134,6 @@ class Graph:
     """
 
     def __init__(self, *, edges: Iterable[Tuple[str, str]], nodes: Iterable[NodePair]) -> None:
-
         # check types of parameters ----
         try:
             edge_list = list(edges)
