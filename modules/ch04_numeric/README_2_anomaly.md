@@ -25,12 +25,12 @@ Many applications require the detection of anomalies in streaming data. There ar
             |
             | dict enriched with "ema" and "std"
             v
-     +------------------------+
-     |  zb:ZScoreBands        |
-     |"z": num std from ema   |
-     |"band_hi" and "band_lo" |
-     | bands for "z" anomalies|
-     +------------------------+
+     +---------------------------+
+     |  rec:           |
+     |print a summary to the    |
+     |console |
+     | bands for "z" anomalies   |
+     +---------------------------+
 ```
 
 
