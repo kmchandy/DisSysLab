@@ -17,7 +17,6 @@ COLS = [
     ("actual",     7),
     ("pred_high", 10),
     ("fits",       6),
-    ("anomaly",    8),
 ]
 
 
