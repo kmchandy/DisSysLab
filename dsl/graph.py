@@ -50,6 +50,8 @@ def _resolve_name(f: Callable, sep: str = "#") -> str:
     # Bound method: obj.run
     self_obj = getattr(f, "__self__", None)
     if self_obj is not None:
+        # f is a method of an object which is an instance of a class.
+        # inst is the name of the object instance.
         inst = (
             getattr(self_obj, "name", None)
             or getattr(self_obj, "_name", None)
@@ -57,11 +59,13 @@ def _resolve_name(f: Callable, sep: str = "#") -> str:
             or getattr(self_obj, "_label", None)
         )
         if inst:
+            # The name is the object instance name + separator + method name
             return f"{inst}{sep}{getattr(f, '__name__', 'call')}"
         return f"{self_obj.__class__.__name__}{sep}{getattr(f, '__name__', 'call')}"
 
     # Function on class / plain function
     qn = getattr(f, "__qualname__", None)
+    # qn is a fully qualified name like ClassName.method_name
     if qn:
         return qn.replace(".", sep)
 
