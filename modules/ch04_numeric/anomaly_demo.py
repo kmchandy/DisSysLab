@@ -26,7 +26,7 @@ t= 60 x=+101.234 ema=+101.120 z= +1.72 [+100.500,+101.740] anomaly=True (|z|>=1.
 
 Interpretation:
 - `z` measures how far away the current value is from the adaptive mean.
-- Bands move with `ema`; a jump beyond `band_hi/lo` flags an anomaly.
+- Bands move with `ema`; a jump beyond `pred_high/lo` flags an anomaly.
 - Early steps are “warmup” until the history is large enough for stats stabilize.
 
 '''
@@ -36,25 +36,26 @@ Interpretation:
 
 class RandomWalkDeterministic:
     """
-    Minimal, deterministic random-walk source.
-    Yields exactly `steps` messages: {"t_step": int, "x": float}
+    Yields exactly `n_steps` messages: {"t_step": int, "x": float}
+    where x is a random walk with drift (drift_per_step), Gaussian noise (standard deviation 
+    of sigma), and occasional big jumps with probability prob_jump and std of jump_stdev.
     """
 
     def __init__(
         self,
         *,
-        steps: int = 500,             # number of steps of random walk generated
+        n_steps: int = 500,           # number of steps of random walk generated
         base: float = 100.0,          # starting value of random walk
         drift_per_step: float = 0.1,  # deterministic drift added to each step
         sigma: float = 5.0,           # stddev of Gaussian noise added to each step
         seed: int = 0,                # random number generator seed for reproducibility
-        prob_jump: float = 0.1,        # prob of big jump at a step
-        jump_stdev: float = 100.0,      # standard deviation of a big jump
+        prob_jump: float = 0.1,       # prob of big jump at a step
+        jump_stdev: float = 100.0,    # standard deviation of a big jump
         sleep_time_per_step: float = 0.01,
         name: Optional[str] = None,
     ) -> None:
         import random
-        self.steps = int(steps)
+        self.n_steps = int(n_steps)
         self.x = float(base)
         self.drift = float(drift_per_step)
         self.sigma = float(sigma)
@@ -68,8 +69,8 @@ class RandomWalkDeterministic:
     def __name__(self) -> str:
         return self._name
 
-    def __call__(self):
-        for i in range(self.steps):
+    def run(self):
+        for i in range(self.n_steps):
             # add drift and Gaussian noise to walk position
             self.x += self.drift
             self.x += self.rng.gauss(0.0, self.sigma)
@@ -110,12 +111,7 @@ class EMAStd:
     def __name__(self) -> str:
         return self._name
 
-    def reset(self):  # optional
-        self._initialized = False
-        self._ema = 0.0
-        self._m = 0.0
-
-    def __call__(self, msg: Dict[str, float]) -> Dict[str, float]:
+    def run(self, msg: Dict[str, float]) -> Dict[str, float]:
         import math
         x = float(msg["x"])
         a = self.alpha  # shorthand for exponential smoothing factor
@@ -135,8 +131,8 @@ class EMAStd:
                 msg["anomaly"] = False
             msg["ema"] = float(self._ema)
             msg["std"] = float(std)
-            msg["band_lo"] = float(self._ema - self.k * std)
-            msg["band_hi"] = float(self._ema + self.k * std)
+            msg["pred_low"] = float(self._ema - self.k * std)
+            msg["pred_high"] = float(self._ema + self.k * std)
             ema_prev = self._ema
             # self._m is the updated exponentially-weighted variance accumulator.
             self._m = a * (x - ema_prev) ** 2 + (1.0 - a) * self._m
@@ -157,7 +153,7 @@ def make_console_summary(every_n: int = 1):
         i["n"] += 1
         if i["n"] % every_n == 0:
             print(f"t={msg['t_step']:4d}  x={msg['x']:+8.3f}  ema={msg['ema']:+8.3f} std={msg['std']:+6.3f}"
-                  f"band = [{msg['band_lo']}, {msg['band_hi']}] anomaly={msg['anomaly']}"
+                  f"band = [{msg['pred_low']}, {msg['pred_high']}] anomaly={msg['anomaly']}"
                   )
         return msg
     _sink.__name__ = f"console_every_{every_n}"
@@ -180,7 +176,7 @@ class JSONLRecorder:
 
     def __call__(self, msg: Dict[str, float]):
         rec = {k: msg[k] for k in (
-            "t_step", "x", "ema", "std", "z", "band_lo", "band_hi", "anomaly") if k in msg}
+            "t_step", "x", "ema", "std", "z", "pred_low", "pred_high", "anomaly") if k in msg}
         self._fh.write(json.dumps(rec) + "\n")
         return msg
 
@@ -196,8 +192,9 @@ class JSONLRecorder:
 if __name__ == "__main__":
     # Source: deterministic, finite stream
     src = RandomWalkDeterministic(
-        steps=600, base=100.0, drift_per_step=0.01, sigma=0.6, seed=42, name="src_random_walk"
+        n_steps=600, base=100.0, drift_per_step=0.01, sigma=0.6, seed=42, name="src_random_walk"
     )
+    f = src.run
 
     # Transforms
     ema = EMAStd(alpha=0.1, name="ema_std")
@@ -206,10 +203,10 @@ if __name__ == "__main__":
     rec = JSONLRecorder(path="anomaly_stream.jsonl", name="jsonl_out")
 
     g = network([
-        (src,  ema),
+        (src.run,  ema.run),
         # fan-out to two sinks
-        (ema, console),
-        (ema, rec),
+        (ema.run, console),
+        (ema.run, rec),
     ])
     g.run_network()
     if hasattr(rec, "finalize"):
