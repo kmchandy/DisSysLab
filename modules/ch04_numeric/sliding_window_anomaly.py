@@ -21,6 +21,10 @@ class SlidingWindowAnomaly:
         self.pred_high: Optional[float] = None  # predicted high for next value
 
     def run(self, msg: Dict[str, Any]) -> Dict[str, Any]:
+        '''
+        msg: input message containing data value at key self.key_data
+        Returns msg enriched with: pred_low, pred_high, fits (if enough data available)
+        '''
         x = msg.get(self.key_data)          # x is data in the message
 
         # Coerce to float if x is a string

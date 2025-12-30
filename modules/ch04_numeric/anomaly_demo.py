@@ -4,34 +4,10 @@ import json
 from typing import Dict, Optional
 import time
 import random
-
 from dsl import network
-'''
-You’ll see a brief summary every N messages and a `anomaly_stream.jsonl` file with the run.
 
----
-
-## Tuning tips
-- Want **more anomalies** without code changes? Try:
-  - `EMAStd(alpha=0.03)` (slower volatility adapts → bigger z early in jumps)
-  - `ZScoreBands(k=1.5)`
-  - `FlagAnomaly(z_thresh=2.0)`
-- Want **obvious, teachable spikes**? Add a few deterministic shocks in the source (e.g., +20 at `t_step=120`). Keeps the run reproducible and the screenshots compelling.
-
----
-
-## What to look for in the console
-Lines like:
-t= 60 x=+101.234 ema=+101.120 z= +1.72 [+100.500,+101.740] anomaly=True (|z|>=1.5)
-
-Interpretation:
-- `z` measures how far away the current value is from the adaptive mean.
-- Bands move with `ema`; a jump beyond `pred_high/lo` flags an anomaly.
-- Early steps are “warmup” until the history is large enough for stats stabilize.
-
-'''
-
-# --- Source (deterministic random walk) --------------------------------------
+# ------------------------------------------------------------
+# Source agent: Generates a random walk with occasional big jumps
 
 
 class RandomWalkDeterministic:
@@ -81,6 +57,8 @@ class RandomWalkDeterministic:
             time.sleep(self.sleep_time_per_step)  # simulate real-time stream
 
 
+# -----------------------------------------------------------------
+# Transform agent: Computes exponentially weighted mean and stddev
 class EMAStd:
     """
     Receives a message which is a dict with key "x" (float) which is a random walk value.
@@ -140,7 +118,10 @@ class EMAStd:
             self._ema = a * x + (1.0 - a) * ema_prev
         return msg
 
-# --- Sinks: console summary + JSONL recorder --------------------------------
+# -----------------------------------------------------------------
+# Sink agents:
+# (1) Agent that writes summary to console
+# (2) Agent that writes selected fields to JSONL file
 
 
 def make_console_summary(every_n: int = 1):
@@ -188,13 +169,11 @@ class JSONLRecorder:
             pass
 
 
-# --- Make the graph (anomaly branch: fan-out to sinks) ----------------------
 if __name__ == "__main__":
     # Source: deterministic, finite stream
     src = RandomWalkDeterministic(
         n_steps=600, base=100.0, drift_per_step=0.01, sigma=0.6, seed=42, name="src"
     )
-    f = src.run
 
     # Transforms
     ema = EMAStd(alpha=0.1, name="ema")
@@ -202,6 +181,7 @@ if __name__ == "__main__":
     console = make_console_summary(every_n=20)
     rec = JSONLRecorder(path="anomaly_stream.jsonl", name="rec")
 
+    # Build and run network
     g = network([
         (src.run,  ema.run),
         # fan-out to two sinks
@@ -209,6 +189,8 @@ if __name__ == "__main__":
         (ema.run, rec),
     ])
     g.run_network()
+
+    # Finalize writing to JSONL file
     if hasattr(rec, "finalize"):
         rec.finalize()
     print("Wrote JSONL to anomaly_stream.jsonl")
