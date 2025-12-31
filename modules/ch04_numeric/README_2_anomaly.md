@@ -2,9 +2,13 @@
 
 ---
 
-# 4.2 An Example of Anomaly Detection
+# 4.2 Anomaly Detection with Exponential Smoothing
+ This page shows you how to build systems in which agents, running concurrently, execute programs in Python's extensive libraries. 
 
-Many applications require the detection of anomalies in streaming data. There are several ways of detecting anomalies. This example has agents that generate random walks, uses exponential moving averages, and uses dynamic bands around predicted values to compute anomalies.
+Many applications require the detection of anomalies in streaming data. There are several ways of detecting anomalies. This example has a network with three agents. The source generates a stream of values that represent locations in a random walk. A second agent receives this stream and computes the exponential moving average and the exponentially-weighted standard deviation after receiving each message. A third agent receives the stream of messages containing the random walk and sliding-window statistics and prints a summary to the console.
+
+This simplistic example illustrates how anomalies can be detected by multiple agents operating concurrently. You can build more complex examples with live streams from multiple sources and more complex detection algorithms and better console displays. For example, look at the [Caltech Community Seismic Network](http://csn.caltech.edu/).
+
 
 
 ```python
@@ -26,10 +30,8 @@ Many applications require the detection of anomalies in streaming data. There ar
             | dict enriched with "ema" and "std"
             v
      +---------------------------+
-     |  rec:           |
-     |print a summary to the    |
-     |console |
-     | bands for "z" anomalies   |
+     |  rec: print a summary to  |
+     |   the console             |
      +---------------------------+
 ```
 
@@ -278,4 +280,4 @@ python -m modules.ch04_numeric.anomaly_demo
 ```
 
 ## 👉 Next
-[Better techniques: TFIDF and PCA](./README_3_TFIDF.md)
+[Clustering texts](./README_cluster.md)

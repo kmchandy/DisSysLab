@@ -1,6 +1,7 @@
 # modules.ch05_ds.plot_after_execution.py
 
 import matplotlib.pyplot as plt
+import random
 
 
 def _scatter_by_cluster(subset_results, title, out_path):
@@ -10,6 +11,8 @@ def _scatter_by_cluster(subset_results, title, out_path):
 
     for r in subset_results:
         g, b = r["vector"][0]
+        g += (random.random() - 0.5) * 0.2  # jitter for visibility
+        b += (random.random() - 0.5) * 0.2  # jitter to prevent overlap
         c = r["cluster"]
         if c is None:
             xsn.append(g)
@@ -41,17 +44,6 @@ def _scatter_by_cluster(subset_results, title, out_path):
 
 
 def print_results_snapshots(results):
-    # Snapshot after first 5 reviews
-    first5 = results[:5]
-    print("\n--- Snapshot after 5 reviews ---")
-    print("clusters(first 5):", [r["cluster"] for r in first5])
     _scatter_by_cluster(
-        first5, "KMeans on First 5 Reviews ([good,bad])", "part1_first5.svg")
-    print("Saved: part1_first5.svg")
-
-    # Snapshot after all 10 reviews
-    print("\n=== Final summary ===")
-    print("clusters(all):", [r["cluster"] for r in results])
-    _scatter_by_cluster(
-        results, "KMeans on All 10 Reviews ([good,bad])", "part1_all10.svg")
-    print("Saved: part1_all10.svg")
+        results, "KMeans on All Reviews ([good,bad])", "part1_all.svg")
+    print("See diagram of clusters: part1_all.svg")
