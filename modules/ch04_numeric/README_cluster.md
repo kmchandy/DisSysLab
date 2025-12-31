@@ -1,3 +1,25 @@
+#modules.ch04_numeric.README_cluster.md
+
+# 📚 4.3 Simple Clustering
+This module has examples in which agents execute programs in Python's numeric libraries. The examples show that building multiple-agent systems is straightforward. These examples do not describe the Python libraries.
+
+This page and the next describe the same problem; the next page uses more sophisticated algorithms. The example has an agent that outputs a stream of movie reviews. The example uses a stored list of fake reviews. You can replace it by an agent that streams reviews from websites. 
+The stream of reviews is analyzed by an agent which makes a vector from the text of each review when the agent receives the review.
+A third agent receives streams of these vectors and classifies these vectors into categories. As more vector representations of reviews arrive, new reviews are evaluated and the classification of old reviews may change. 
+
+In this example, reviews are re-clustered after the agent receives each new review. You can modify the code so that re-clustering takes place only after N reviews are received where N is a suitably large number.
+
+These extremely simplistic examples illustrate how multiple agents concurrently input and output streams of messages.
+
+***Network of agents structure***
+```
+from_reviews  →  vectorize  →  predict_cluster  →  to_results
+                                               ↘
+                                                print_vec
+```
+
+
+```python
 # dsl/examples/ch05_ds/part1_counts_kmeans.py
 
 from .plot_after_execution import print_results_snapshots
@@ -23,7 +45,8 @@ def from_reviews():
 
 
 # -----------------------------------------------------
-#         Transform: Vectorize Text                  |
+#  Transform: Vectorize Text using CountVectorizer    |
+#    from library                                     |         
 # -----------------------------------------------------
 vectorizer = text.CountVectorizer(vocabulary=["good", "bad"])
 
@@ -35,9 +58,9 @@ def vectorize(msg):
     return msg
 
 
-# -----------------------------------------------------
-#        Transform: Cluster Vectors                  |
-# -----------------------------------------------------
+# ------------------------------------------------------
+# Transform: Cluster Vectors using KMeans from Library |
+# ------------------------------------------------------
 kmeans = cluster.KMeans(n_clusters=2)
 vectors_so_far = []
 
@@ -90,3 +113,16 @@ g.run_network()
 # --- Post-run snapshots (main thread; no GUI) ---
 print_results_snapshots(results)
 # Open part1_all.svg to see clustering after all reviews.
+
+```
+
+
+## Run the demo
+```
+python -m modules.ch04_numeric.part1_counts_kmeans
+```
+
+
+
+## 👉 Next
+[Clustering with TFIDF and PCA](./README_3_TFIDF.md)

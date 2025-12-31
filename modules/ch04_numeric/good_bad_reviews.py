@@ -3,7 +3,7 @@
 # simple reviews for testing. Replace by reviews from website.
 
 reviews = [
-    "good fun and a good ending of a good evening",            # good=2, bad=0
+    "good fun and a good ending of a good evening",            # good=3, bad=0
     "bad movie, bad sound, bad acting, bad jokes, good date!",  # good=1, bad=4
     "really bad, bad acting and a poor script",                # good=0, bad=2
     "good soundtrack and good jokes but some bad scenes",      # good=2, bad=1
@@ -13,4 +13,8 @@ reviews = [
     "good plot, good characters, good direction",              # good=3, bad=0
     "bad movie, bad acting, bad politics, good soundtrack, good scenery",  # good=1, bad=3
     "good cinematography, beautiful landscapes, good music, bad acting",  # good=2, bad=1
+    "good tunes, bad lyrics, bad vocals, bad story",             # good=1, bad=3
+    "good actor, good script, good direction",                   # good=3, bad=0
+    "good time",                                                  # good=1, bad=0
+    "popcorn was good, seats were good too",                      # good=2, bad=0
 ]

@@ -1,9 +1,9 @@
 #modules/ch04_numerics/README_1_numeric_transformers.md
 
 # 4.1 • Numeric Transformers
-This module gives examples of simple distributed systems in which agents call numeric libraries such as NumPy and Scikit-Learn. 
+This module shows you how to build distributed systems in which agents call numeric libraries such as NumPy and Scikit-Learn. You will build systems in which agents, running concurrently, execute programs from Python's extensive libraries.
 
-This page gives you an example of an agent that detects anomalies in streams of data by computing statistics on sliding windows over data streams. The next page gives an example of anomaly detection using exponential smoothing.
+This page and the next deal with the same problem: detecting anomalies in streams of data. This page has a simple example in which an agent detects anomalies by computing statistics on sliding windows over data streams. The next page uses exponential smoothing on sliding windows.
 
 ---
 ## What you’ll do
@@ -221,4 +221,4 @@ You’ll see a live stream of key–value output with rolling statistics, anomal
 ---
 
 ## 👉 Next
-[Anomaly detection](./README_2_anomaly.md)
+[Anomaly detection with exponential smoothing](./README_2_anomaly.md)

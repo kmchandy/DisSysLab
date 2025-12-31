@@ -53,7 +53,7 @@ def tfidfify(msg):
 # ----------------------------------------------------------------------
 # Transformer 2: KMeans (streaming predict; refit on all seen so far)
 # ----------------------------------------------------------------------
-kmeans = KMeans(n_clusters=2, random_state=42, n_init=10)
+kmeans = KMeans(n_clusters=2)
 tfidf_so_far = []  # list of 1xV arrays
 
 
