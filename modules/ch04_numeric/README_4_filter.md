@@ -1,8 +1,9 @@
 #modules.ch04_numeric.README_4_filter.md
 
-# 4.4 • Signal Processing Filters
+# 4.5 • Signal Processing Filters
 
-This demo shows how **plain Python functions that call existing libraries** (NumPy/SciPy) can act as **nodes** in a DisSysLab network.  
+This page describe another example of how to build a distributed system by connecting agents that **call programs in libraries** (NumPy/SciPy).
+
 We synthesize a **sum of noisy sine waves**, then run **two transforms**:
 1) a **Butterworth band-pass filter** (SciPy), and  
 2) a **spectrum/peak detector** (Welch PSD + peak pick, SciPy),  
