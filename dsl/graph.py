@@ -167,14 +167,14 @@ class Graph:
         for i, item in enumerate(node_list):
             if not (isinstance(item, (tuple, list)) and len(item) == 2):
                 raise TypeError(
-                    f"nodes[{i}] must be ('name', function); got {item!r}, nodes ={node_list}")
+                    f"nodes[{i}] must be ('name', function); {item!r} is not such a pair")
             name, fn = item
             if not (isinstance(name, str) and name.strip()):
                 raise TypeError(
-                    f"nodes[{i}]: name must be a non-empty str; got {name!r}, nodes ={node_list}")
+                    f"nodes[{i}]: name must be a non-empty str; {name!r} is not a nonempty str")
             if not callable(fn):
                 raise TypeError(
-                    f"nodes[{i}]: function must be callable; got {type(fn).__name__}, nodes ={node_list}")
+                    f"nodes[{i}]: function must be callable; {type(fn).__name__} is not callable")
 
         self.edges, self._fns = self._validate_and_normalize(
             edges, nodes)  # _fns: Dict[name, fn]

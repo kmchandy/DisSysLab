@@ -1,18 +1,8 @@
 #modules.ch04_numeric.README_3_TFIDF.md
 
-# 📚 4.3 Bag-of-Words (TF-IDF), KMeans & PCA
+# 📚 4.4 Clustering with TF-IDF and PCA
 
-## Goal
-Stream a small set of movie reviews through a network of agents to cluster the reviews. Showing a snapshot of the clustering after processing 5 reviews and a present the final view after processing 10 reviews. The emphasis in this example is on constructing a network of agents and not on specific machine-learning techniques.
-
-## What you’ll build
-A dsl graph that processes one review at a time:
-
-***Network of agents structure***
-```
-from_reviews  →  tfidfify  →  predict_cluster  →  to_results
-                          ↘
-                           print_vec   (optional per-item log)
+The problem is the same as in the previous page: cluster reviews. The agent that converts a text to a vector of numbers uses [TF-IDF](https://en.wikipedia.org/wiki/Tf%E2%80%93idf) instead of counting positive and negative words in the text. The network structure is the same as in the previous page.
 ```
 
 ***TF-IDF*** converts text to numeric features (sparse counts reweighted by inverse document frequency).
@@ -21,78 +11,132 @@ from_reviews  →  tfidfify  →  predict_cluster  →  to_results
 
 ***PCA*** is used only after the run to reduce features to 2D for plotting snapshots.
 
-## Message shape (per review)
-Each node passes a small dict downstream:
 ```
-{
-  "text_of_review": str,
-  "tfidf": np.ndarray  # shape (1, V) after tfidfify
-  "cluster": int | None
-}
+```python
+# modules/ch04_numeric/part2_tfidf_pca_kmeans.py
+
+import time
+from .good_bad_reviews import reviews  # list of 10 text reviews
+from .plot_after_PCA import print_results_snapshots
+from dsl import network
+from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans
+from sklearn.feature_extraction.text import TfidfVectorizer
+import matplotlib.pyplot as plt
+import numpy as np
+import matplotlib
+matplotlib.use("Agg")  # headless backend for safe, post-run plotting
+
+
+# ----------------------------------------------------------------------
+# Source
+# ----------------------------------------------------------------------
+
+
+def from_reviews():
+    """Yield one review at a time."""
+    for review in reviews:
+        yield {"text_of_review": review}
+        time.sleep(0.25)  # simulate delay
+
+
+# ----------------------------------------------------------------------
+# Transformer 1: TF-IDF
+# We fit the vectorizer ONCE on the full corpus so the feature space is fixed.
+# Then we stream-transform each incoming review.
+# ----------------------------------------------------------------------
+# A light, reasonable config; adjust as desired.
+vectorizer = TfidfVectorizer(
+    lowercase=True,
+    stop_words="english",
+    # unigrams + bigrams for slightly richer features
+    ngram_range=(1, 2),
+    min_df=1,
+)
+
+# Fit once on the full corpus
+vectorizer.fit(reviews)
+
+
+def tfidfify(msg):
+    """Attach a 1xV TF-IDF vector for the incoming review."""
+    X = vectorizer.transform([msg["text_of_review"]]).toarray()  # shape (1, V)
+    msg["tfidf"] = X
+    return msg
+
+
+# ----------------------------------------------------------------------
+# Transformer 2: KMeans (streaming predict; refit on all seen so far)
+# ----------------------------------------------------------------------
+kmeans = KMeans(n_clusters=2)
+tfidf_so_far = []  # list of 1xV arrays
+
+
+def predict_cluster(msg):
+    """Refit KMeans on TF-IDF vectors seen so far, predict cluster for current item."""
+    v = msg["tfidf"]              # shape (1, V)
+    tfidf_so_far.append(v)
+    X = np.vstack(tfidf_so_far)   # shape (t, V)
+
+    if X.shape[0] < kmeans.n_clusters:
+        msg["cluster"] = None
+        return msg
+
+    kmeans.fit(X)
+    msg["cluster"] = int(kmeans.predict(v)[0])
+    return msg
+
+
+# ----------------------------------------------------------------------
+#                         Sink: Store results
+# ----------------------------------------------------------------------
+# each: {"text_of_review", "tfidf": (1, V) array, "cluster": int|None}
+results = []
+
+
+def to_results(msg):
+    results.append(msg)
+    return msg
+
+
+# ----------------------------------------------------------------------
+#                       Sink per-item logger
+# ----------------------------------------------------------------------
+
+
+def print_vec(msg):
+    # Show nnz, the number of nonzero features, and current cluster
+    nnz = int(np.count_nonzero(msg["tfidf"]))
+    print(f"review → nnz={nnz}, cluster={msg.get('cluster')}")
+
+
+# ----------------------------------------------------------------------
+# Build and run the streaming graph
+# ----------------------------------------------------------------------
+print("nnz = number of nonzero TF-IDF features per review")
+g = network([
+    (from_reviews, tfidfify),     # optional console log per item
+    (tfidfify, predict_cluster),
+    (predict_cluster, to_results),
+    (predict_cluster, print_vec),
+])
+g.run_network()
+
+# ----------------------------------------------------------------------
+# Post-run visualization with PCA(2D)
+# - Fit PCA on the full TF-IDF matrix (all reviews)
+# - Plot a snapshot of the first 5 and then all 10
+# ----------------------------------------------------------------------
+
+print_results_snapshots(results)
+
+
 ```
 
-
-- cluster=None means unassigned (too few points to fit KMeans yet).
-
-## Nodes (callables)
-
-### Source
-
-```
-from_reviews()
-Yields one review at a time as {"text_of_review": ...}.
-```
-
-### Transform 1
-```
-tfidfify(msg)
-```
-Applies a TfidfVectorizer (fitted once on the full corpus upfront) and adds msg["tfidf"] (shape (1, V)).
-
-### Transform 2
-```
-predict_cluster(msg)
-```
-
-- Maintains tfidf_so_far (all vectors up to now).
-- Refits KMeans(k=2) on tfidf_so_far and predicts a label for the current msg["tfidf"].
-- If fewer than k samples seen, sets msg["cluster"] = None.
-
-### Sink: Log
-
-print_vec(msg)
-Prints a compact signature (e.g., number of non-zero TF-IDF features and current cluster). No plotting here.
-
-### Sink saves results
-
-to_results(msg)
-Appends the processed message to a list for post-run snapshots.
-
-## Snapshots: after network terminates execution
-After g.run_network() finishes:
-
--Fit PCA(2D) once on all TF-IDF vectors (for visualization only).
-
-=Save two plots:
-
-- 1. part2_first5.svg — first 5 reviews only
-
-- 2. part2_all10.svg — all 10 reviews
-
-
-Rendering details:
-
-- unassigned points (pre-KMeans) → gray “×”
-
-- cluster 0 → ● circles
-
-- cluster 1 → ■ squares
-
-We plot after the run with a non-GUI backend to avoid problems with multithread plotting.
 
 ## Run the demo
 ```
-python -m dsl.examples.ch05_ds.part2_tfidf_pca_kmeans
+python -m modules.ch04_numeric.part2_tfidf_pca_kmeans
 ```
 
 You’ll see a short log per review, and two files will be written:
@@ -100,18 +144,6 @@ You’ll see a short log per review, and two files will be written:
 - ```part2_first5.svg```
 
 - ```part2_all10.svg```
-
-## Takeaway
-
-Use standard libraries (scikit-learn for TF-IDF, KMeans, PCA) as nodes.
-
-## Tweakable parameters
-
-- TfidfVectorizer: ngram_range, stop_words, min_df
-
-- KMeans: n_clusters, random_state, n_init
-
-- Reviews: replace with your own list; the network stays the same.
 
 
 ## 👉 Next
