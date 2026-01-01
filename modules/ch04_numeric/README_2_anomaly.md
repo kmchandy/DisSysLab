@@ -47,29 +47,6 @@ The nodes of the graph are:
 
 ---
 
-## Parameters
-
-### RandomWalkDeterministic
-- `steps` (int): number of messages to emit (finite run → easy postprocessing).
-- `base` (float): starting value of the series.
-- `drift_per_step` (float): deterministic change per step (e.g., 0.01).
-- `sigma` (float): Gaussian noise std per step (higher → noisier).
-- `seed` (int): makes the sequence reproducible.
-- `name` (str, optional): label used in graph diagrams/logs.
-
-### EMAStd  -- exponential moving statistics
-- `alpha` (float in (0,1]): responsiveness; larger = faster, noisier.  
-  Tip: small `alpha` (e.g., 0.03) makes **std** adapt slowly → clearer anomalies.
-- `eps` (float): tiny constant under the square root for numerical safety.
-- `std_min` (float): floor to prevent division by (near) zero early on.
-- `name` (str, optional): display label.
-  
-### Sinks
-- **console**: `every_n` controls how often to print (e.g., 20).
-- **JSONLRecorder**: `path` for the output file; stores key fields per line.
-
-## Exponential Smoothing Anomaly Detection
-### Network with Four Agents
 ```python
 # modules.ch04_numeric.anomaly_demo.py
 from __future__ import annotations

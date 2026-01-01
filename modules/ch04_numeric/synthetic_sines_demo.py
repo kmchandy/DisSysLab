@@ -19,12 +19,12 @@ from dsl import network
 # ─────────────────────────────────────────────────────────
 
 
-def sine_mixture_source(
+def src(
     *,
     sample_rate: float = 200.0,
-    duration_s: float = 16.0,
+    duration_s: float = 8.0,
     tones: Iterable[Tuple[float, float]] = (
-        (6.0, 2.0), (10.0, 2.0), (30.0, 0.5)),  # (freq_hz, amplitude)
+        (5.0, 2.0), (12.0, 2.0), (30.0, 0.5)),  # (freq_hz, amplitude)
     noise_std: float = 0.15,
 ):
     n_total = int(duration_s * sample_rate)
@@ -151,7 +151,10 @@ class welch_peak_detector:
         key_in: str = "x_bp",          # detect on band-passed signal
         key_out_freq: str = "f0_hz",
         key_out_peaks: str = "peaks_hz",
-        min_prominence: float = 0.02
+        output_freq_key: str = "freqs",
+        output_peak_detector_key: str = "psd",
+        min_prominence: float = 0.02,
+        name: str = "welch_peak_detector"
     ):
         self.buf = deque(maxlen=window_samples)
         self.window_samples = window_samples
@@ -159,7 +162,10 @@ class welch_peak_detector:
         self.key_in = key_in
         self.key_out_freq = key_out_freq
         self.key_out_peaks = key_out_peaks
+        self.output_freq_key = output_freq_key
+        self.output_peak_detector_key = output_peak_detector_key
         self.min_prominence = min_prominence
+        self.name = name
 
     def run(self, msg: Dict[str, Any]) -> Dict[str, Any]:
         x = float(msg[self.key_in])
@@ -169,8 +175,8 @@ class welch_peak_detector:
             freqs, psd = welch(arr, fs=self.sample_rate,
                                nperseg=min(256, self.window_samples))
             # expose arrays for the snapshot sink
-            msg["freqs"] = freqs.tolist()
-            msg["psd"] = psd.tolist()
+            msg[self.output_freq_key] = freqs.tolist()
+            msg[self.output_peak_detector_key] = psd.tolist()
             # Call SciPy peak finder
             peaks, props = find_peaks(psd, prominence=self.min_prominence)
             if peaks.size > 0:
@@ -185,8 +191,8 @@ class welch_peak_detector:
         else:
             msg[self.key_out_freq] = None
             msg[self.key_out_peaks] = []
-            msg["freqs"] = None
-            msg["psd"] = None
+            msg[self.output_freq_key] = None
+            msg[self.output_peak_detector_key] = None
         return msg
 # ─────────────────────────────────────────────────────────
 # 4) Sink — save a spectrum snapshot (PNG) at the end
@@ -194,19 +200,30 @@ class welch_peak_detector:
 # ─────────────────────────────────────────────────────────
 
 
-def snapshot_spectrum_sink(filename="spectrum.png", key_freqs="freqs", key_psd="psd"):
-    latest = {"freqs": None, "psd": None}
+class snapshot_spectrum_sink:
+    def __init__(
+            self,
+            *,
+            filename: str = "spectrum.png",
+            key_freqs: str = "freqs",
+            key_psd="psd",
+            name: str = "snapshot_spectrum_sink"):
+        self.filename = filename
+        self.key_freqs = key_freqs
+        self.key_psd = key_psd
+        self.name = name
+        self.latest = {"freqs": None, "psd": None}
 
-    def _sink(msg: Dict[str, Any]):
-        f = msg.get(key_freqs)
-        Pxx = msg.get(key_psd)
+    def run(self, msg: Dict[str, Any]):
+        f = msg.get(self.key_freqs)
+        Pxx = msg.get(self.key_psd)
         if f is not None and Pxx is not None:
-            latest["freqs"] = np.asarray(f)
-            latest["psd"] = np.asarray(Pxx)
+            self.latest[self.key_freqs] = np.asarray(f)
+            self.latest[self.key_psd] = np.asarray(Pxx)
         return msg
 
-    def _finalize():
-        f, Pxx = latest["freqs"], latest["psd"]
+    def _finalize(self):
+        f, Pxx = self.latest[self.key_freqs], self.latest[self.key_psd]
         if f is None or Pxx is None:
             print("[snapshot] No PSD captured; nothing to save.")
             return
@@ -216,10 +233,8 @@ def snapshot_spectrum_sink(filename="spectrum.png", key_freqs="freqs", key_psd="
         plt.ylabel("Power spectral density")
         plt.title("Welch PSD snapshot")
         plt.tight_layout()
-        plt.savefig(filename, dpi=150)
-        print(f"[snapshot] Saved {filename}")
-    _sink.finalize = _finalize
-    return _sink
+        plt.savefig(self.filename, dpi=150)
+        print(f"[snapshot] Saved {self.filename}")
 
 # ─────────────────────────────────────────────────────────
 # 5) (Optional) Console sink for quick feedback
@@ -230,58 +245,37 @@ def live_console_sink(msg: Dict[str, Any]):
     t = msg["t"]
     f0 = msg.get("f0_hz")
     if int(t * 10) == t * 10:  # ~10 Hz logging
+        print(f"logging")
         print(f"t={t:5.2f}  f0={('None' if f0 is None else f'{f0:6.2f} Hz')}")
     return msg
 
-
-def output(msg: Dict[str, Any]):
-    print(f"Output message: {msg}")
-    return msg
 # ─────────────────────────────────────────────────────────
-# 6) Wire the graph — library functions as nodes
+# 6) Construct and run the network
 # ─────────────────────────────────────────────────────────
 
 
-def src():
-    # yield for generator function (callable)
-    yield from sine_mixture_source(
-        sample_rate=200.0, duration_s=8.0,
-        tones=((5.0, 1.0), (12.0, 0.6), (30.0, 0.3)),
-        noise_std=0.15,
-    )
+# Make and name agents.
+bp_obj = ButterBandpassFilter(name="bandpass")
+
+before_filter_wpd = welch_peak_detector(key_in="x", name="wpd_before_bp")
+after_filter_wpd = welch_peak_detector(key_in="x_bp", name="wpd_after_bp")
 
 
-bp_obj = ButterBandpassFilter()
-
-
-def bp(msg: Dict[str, Any]) -> Dict[str, Any]:
-    bp_msg = bp_obj.run(msg)
-    return bp_msg
-
-
-wpd = welch_peak_detector(
-    window_samples=1024, sample_rate=200.0, key_in="x_bp", min_prominence=0.02)
-
-
-def det(msg: Dict[str, Any]) -> Dict[str, Any]:
-    wpd_msg = wpd.run(msg)
-    return wpd_msg
-
-
-snap = snapshot_spectrum_sink("spectrum.png")
+before_filter_snap = snapshot_spectrum_sink(
+    filename="before_filter_spectrum.png", name="snap_before_bp")
+after_filter_snap = snapshot_spectrum_sink(
+    filename="after_filter_spectrum.png", name="snap_after_bp")
 
 g = network([
-    (src, bp),           # Transform 1: band-pass
-    (bp, det),           # Transform 2: Welch + peaks
-    # (det, output),      # optional output sink
-    (det, live_console_sink),  # optional console
-    (det, snap),         # PNG snapshot sink
+    (src, before_filter_wpd.run),  # Transform 0: Welch + peaks
+    (before_filter_wpd.run, before_filter_snap.run),  # optional output
+
+    (src, bp_obj.run),           # Transform 1: band-pass
+    (bp_obj.run, after_filter_wpd.run),           # Transform 2: Welch + peaks
+    (after_filter_wpd.run, after_filter_snap.run),         # PNG snapshot sink
 ])
-# g = network([
-#     (src, bp), (bp, live_console_sink),         # PNG snapshot sink
-# ])
-# g = network([(src, bp), (bp, output)])
-# g = network([(src, output)])
+
 g.run_network()
-if hasattr(snap, "finalize"):
-    snap.finalize()
+
+before_filter_snap._finalize()
+after_filter_snap._finalize()

@@ -51,7 +51,7 @@ def _scatter_pca(subset_results, pca_model, title, out_path):
 
 def print_results_snapshots(results):
     # Fit PCA on the full TF-IDF matrix (all reviews)
-    X_all = np.vstack([r["tfidf"] for r in results])   # (10, V)
+    X_all = np.vstack([r["tfidf"] for r in results])   # (n, V)
     pca = PCA(n_components=2, random_state=42).fit(X_all)
 
     # First 5 snapshot
@@ -62,9 +62,9 @@ def print_results_snapshots(results):
                  "part2_first5.svg")
     print("Saved: part2_first5.svg")
 
-    # All 10 snapshot
+    # All reviews snapshot
     print("\n=== Part 2 Final summary ===")
     print("clusters(all):", [r["cluster"] for r in results])
-    _scatter_pca(results, pca, "TF-IDF + PCA + KMeans (all 10)",
-                 "part2_all10.svg")
-    print("Saved: part2_all10.svg")
+    _scatter_pca(results, pca, "TF-IDF + PCA + KMeans (all reviews)",
+                 "part2_all.svg")
+    print("Open the files: part2_all.svg and part2_first5.svg")
