@@ -1,3 +1,5 @@
+<!--  modules.ch03_GPT.README_1.md    -->
+
 ## 🧩 3.1 Agents that call AI Services
 
 ## 🎯 Goal

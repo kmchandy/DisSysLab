@@ -1,4 +1,4 @@
-<!-- modules/ch03_GPT/README_2_general.md    -->
+<!-- modules/ch03_GPT/README_sentiment.md    -->
 
 # 3.2 • AI agent: Sentiment Analysis
 

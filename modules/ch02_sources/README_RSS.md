@@ -1,3 +1,5 @@
+<!-- modules.ch02_sources.README_RSS.md -->
+
 # 2.2 • RSS feeds
 
 This page just shows you how to use a **connector** to an RSS (Real Simple Syndication) feed to create a source of data.

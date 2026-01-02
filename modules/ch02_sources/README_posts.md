@@ -119,5 +119,5 @@ and return values.
 - output_keys: choose which fields to print (keep it small for readability).
 
 ## 👉 Next
-[**Poll from REST sites** Poll numeric data from REST →](./README_4_REST.md)
+[**Poll from REST sites** Poll numeric data from REST →](./README_REST.md)
 

@@ -1,4 +1,4 @@
-# modules.ch03_openai.ai_simple_demo
+# modules.ch03_GPT.ai_simple_demo
 
 from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI

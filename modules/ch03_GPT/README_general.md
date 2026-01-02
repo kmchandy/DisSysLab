@@ -1,9 +1,11 @@
-# 3.5 • Simple AI demos from text
+<!--  modules.ch03_GPT.README_general.md    -->
 
-The following lines are helpful in inspecting output of AI agents that operate on texts. Run the program with your AI agent specified by a prompt, and your list of text documents.
+# 3.5 • Simple networks of AI agents operating on text
+
+The following code segment is a general framework for AI agents that operate on texts. You can use this framework for a variety of applications by specifying the prompt.
 
 ```python
-# modules.ch03_openai.ai_simple_demo
+# modules.ch03_GPT.ai_simple_demo
 
 from dsl import network
 from dsl.extensions.agent_openai import AgentOpenAI
