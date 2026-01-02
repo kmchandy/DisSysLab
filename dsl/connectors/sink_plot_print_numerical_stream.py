@@ -35,7 +35,7 @@ class PlotPrintNumericalStream:
         self.x.append(xx)
 
         if self.i <= self.first_k:
-            print(f"i = {self.i:02d}  t={tt:.4f}  x={xx:+.6f}")
+            print(f"i = {self.i:02d}   t={tt:.4f}  x={xx:+.6f}")
         elif self.every_n > 0 and (self.i % self.every_n == 0):
             print(f"i = {self.i:02d}  t={tt:6.3f}  x={xx:+8.4f}")
 

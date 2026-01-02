@@ -20,9 +20,9 @@ src = SineMixtureSource(
 
 # Specify the sink to print and plot the output
 snk = PlotPrintNumericalStream(
-    every_n=20,
-    first_k=10,
-    expected_n=100,
+    every_n=20,            # print every every_n samples
+    first_k=10,            # print all of the first_k samples
+    expected_n=100,        # expected number for plotting = sample_rate*duration_s
     title="Sine Mixture Source Output",
     name="sink",
 )
