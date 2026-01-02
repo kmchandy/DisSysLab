@@ -1,3 +1,4 @@
+<!-- modules.ch01_networks.README_5.md   -->
 # 🕸 1.5 • Simple Network — Fan-Out & Fan-In
 
 This page shows how to build an **arbitrary graph** (not just a linear pipeline) with **fan-out** (one node → many) and **fan-in** (many → one).

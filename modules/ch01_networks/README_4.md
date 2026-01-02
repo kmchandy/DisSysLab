@@ -1,3 +1,4 @@
+<!-- modules.ch01_networks.README4.md -->
 ## 🧩 1.4  Pattern: Enrich Dictionary Messages at Nodes
 
 
@@ -26,15 +27,16 @@
           | example: {'text': 'hello', 'exclaim': 'hello!'}
           v
      +-----------+
-     | uppercase | add field 'uppercase' to msg
+     | uppercase |   add field 'uppercase' to msg
      +-----------+
           |
           | example: {'text': 'hello', 'exclaim': 'hello!', 'uppercase': 'HELLO'}
           v
      +-----------+
-     | to_results| print msg
-     |           | example: {'text': 'hello', 'exclaim': 'hello!', 'uppercase': 'HELLO'}
-     +-----------+
+     | to_results|   print msg
+     |           |   example: {'text': 'hello', 'exclaim': 'hello!', 
+     |           |             'uppercase': 'HELLO'}
+     +-----------+           
 
 ```
 

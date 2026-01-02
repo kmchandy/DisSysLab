@@ -1,3 +1,5 @@
+<!-- modules.ch01_networks.README3.md -->
+
 ## 🧩 1.3 Filtering Message Streams
 
 
@@ -66,4 +68,4 @@ Transform functions return a value. If the value is ```None`` then the value is 
 - Filtering streams
 
 ## 👉 Next
-[Nodes add fields to messages](./README_4.md) and thus enrich messages as they flow through the network.
+[Agents add fields to messages](./README_4.md) and thus enrich messages as they flow through the network.

@@ -1,3 +1,5 @@
+<!-- modules.ch02_networks.README_2.md -->
+
 ## 🧩 1.2 Fanout and Fanin
 
 

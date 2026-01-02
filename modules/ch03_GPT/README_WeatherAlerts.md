@@ -1,4 +1,6 @@
-# 5 • Transformers: Weather Alerts
+<!--  modules.ch03_GPT.README_WeatherAlerts.md    -->
+
+# 3.6 • AI Agent: Weather Alerts
 
 > **Important notes**
 > 1) **Do not use the weather alerts feed casually.** This is an operational feed intended for real, potentially life-threatening alerts. Use it respectfully and only for learning/testing as needed.  
@@ -39,7 +41,7 @@ $env:OPENAI_API_KEY="sk-…your key…"
 ## The Weather Alerts Demo
 
 ```python
-# modules.ch03_GPT.rss_alerts_demo
+# modules.ch03_GPT.rss_alerts_demo.py
 
 from dsl.connectors.rss_in import RSS_In
 from dsl import network
@@ -131,7 +133,7 @@ g.run_network()
 
 ## Run the demo
 ```bash
-python3 -m examples.rss_alerts_demo
+python -m modules.ch03_GPT.rss_alerts_demo
 ```
 
 You should see alert summaries printed in the live console (after a possible delay).  

@@ -1,4 +1,6 @@
-# 3.2 • AI Agent — Identify Entities
+<!--  modules.ch03_GPT.README_entity.md    -->
+
+# 3.3 • AI Agent — Identify Entities
 
 This page is an example of an AI agent that **identifies entities** -- people, places, organizations -- in a text.
 

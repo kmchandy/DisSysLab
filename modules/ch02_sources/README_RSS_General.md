@@ -1,3 +1,5 @@
+<!--  modules.ch02_sources.README_RSS_General.md    -->
+
 # 2.4 • More Examples of RSS feeds
 
 This page gives several examples of RSS feeds.
