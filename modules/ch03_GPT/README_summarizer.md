@@ -77,15 +77,15 @@ list_of_text = [
 ]
 
 system_prompt = (
-    "Summarize the text in a single line"
-    "and put the summary in the 'summary' field."
+    "Return a JSON document {'summary': x}"
+    "where x is a summary of the input text."
 )
 
 source = source_list_of_text(list_of_text)
 ai_agent = AgentOpenAI(system_prompt=system_prompt)
 
-g = network([(source.run, ai_agent.enrich_dict),
-             (ai_agent.enrich_dict, kv_live_sink)])
+g = network([(source.run, ai_agent.run),
+             (ai_agent.run, kv_live_sink)])
 g.run_network()
 
 
@@ -96,7 +96,7 @@ g.run_network()
 ## Run the demo
 In the DisSysLab directory execute:
 ```bash
-python -m modules.ch03_openai.summary_from_list
+python -m modules.ch03_GPT.summary_from_list
 ```
 
 You’ll see output containing the original `text` and a one-line `summary`, for example:

@@ -30,6 +30,8 @@ python -m modules.ch01_networks.simple_network
 
 
 ## 👉 Start Here
+Make sure that you have the keys you need for your services (eg OpenAI) in your .env file.
+
 [Module 1. An introduction to dsl.](./modules/ch01_networks/README_1.md) 
 
 
