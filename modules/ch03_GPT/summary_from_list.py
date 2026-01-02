@@ -29,8 +29,8 @@ list_of_text = [
 ]
 
 system_prompt = (
-    "Summarize the text in a single line"
-    "and put the summary in the 'summary' field."
+    "Return a JSON document {'summary': x}"
+    "where x is a summary of the input text."
 )
 
 source = source_list_of_text(list_of_text)
