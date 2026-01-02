@@ -122,17 +122,9 @@ class RSS_In:
     def run(self) -> Iterator[Dict[str, Any]]:
         self.start = time.time()
         while True:
-            # stop condition
-            print(f"self.life_time = {self.life_time}")
+            # stop condition is life_time_condition (life_time exceeded)
             t = time.time()
-            print(f"t = {t}")
-            print(f"t - self.start = {t - self.start}")
             life_time_condition = (t - self.start) >= self.life_time
-            print(
-                f"life_time_condition = {life_time_condition}")
-            if life_time_condition:
-                for _ in range(20):
-                    print('__________________________________________')
             if life_time_condition:
                 break
 
@@ -144,7 +136,6 @@ class RSS_In:
                     break
                 items = items[:remaining]
                 self.num_items_emitted += len(items)
-            print(f"Polled {len(items)} new items from {self.url}")
             for item in items:
                 yield item
 

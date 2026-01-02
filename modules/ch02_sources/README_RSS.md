@@ -23,7 +23,7 @@ pip install feedparser requests beautifulsoup4 rich
 ## The RSS Feed Demo
 
 ```python
-# modules/ch02_sources/rss_NASA_simple_demo.py
+# modules/ch02_sources/rss_NASA.py
 
 from dsl import network
 from dsl.connectors.rss_in import RSS_In           # << simplified connector
@@ -52,22 +52,16 @@ rss = RSS_In(
 
 g = network([(rss.run, kv_live_sink)])
 g.run_network()
-
-# Experiment with the following:
-# • Change the feed URL to any RSS/Atom you like.
-# • Set fetch_page=False for speed and fewer deps.
-# • Edit output_keys and the yielded dict to show different fields.
-# • Change life_time (or None to run until Ctrl-C).
 ```
 
 ## Run the demo
-Execute the following from the DisSysLab directory. Remember to install the services (eg feedparser) required to run the demo.
+Execute the following from the DisSysLab directory. Remember to install feedparser.
 
 ```
-python -m modules.ch02_sources.rss_NASA_simple_demo
+python -m modules.ch02_sources.rss_NASA
 ```
 
-You may have to wait a few seconds after which you will see a growing list of items like:
+You may have to wait for a few seconds after which you will see a growing list of items like:
 ```bash
 ----------------------------------------
 title

@@ -1,4 +1,4 @@
-# modules/ch02_sources/rss_NASA_simple_demo.py
+# modules/ch02_sources/rss_NASA.py
 
 from dsl import network
 from dsl.connectors.rss_in import RSS_In           # << simplified connector
@@ -27,9 +27,3 @@ rss = RSS_In(
 
 g = network([(rss.run, kv_live_sink)])
 g.run_network()
-
-# Experiment with the following:
-# • Change the feed URL to any RSS/Atom you like.
-# • Set fetch_page=False for speed and fewer deps.
-# • Edit output_keys and the yielded dict to show different fields.
-# • Change life_time (or None to run until Ctrl-C).

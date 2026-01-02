@@ -13,12 +13,18 @@ from .temp_live_sink import temp_live_sink
 
 
 class SlidingWindowAnomaly:
-    def __init__(self, window_size: int, std_limit: float, key_data: str) -> None:
+    def __init__(
+            self,
+            window_size: int,
+            std_limit: float,
+            key_data: str,
+            name: str = None) -> None:
         self.window_size = window_size
         # std: standard deviation
         # detect anomaly if actual value is out outside mean ± std_limit·std
         self.std_limit = std_limit
         self.key_data = key_data        # key in the input dict for the data value
+        self.name = name or f"sliding_window_anomaly_agent)"
         self.window = deque()           # sliding window of data values
         self.sum = 0.0      # sum of values in the window
         self.sum_sq = 0.0   # sum of squares of values in the window
@@ -89,7 +95,10 @@ def from_CSV_row_to_dict(row):
 
 
 replay = ReplayCSV_In(
-    path=CSV_PATH, transform=from_CSV_row_to_dict, period_s=0.25)
+    path=CSV_PATH,
+    transform=from_CSV_row_to_dict,
+    period_s=0.25,
+    name="source_replay")
 
 
 # -------------------------------------------------------------------------
@@ -99,6 +108,7 @@ agent_sliding_window = SlidingWindowAnomaly(
     window_size=20,
     std_limit=2.0,      # anomaly threshold
     key_data="tmax_f",
+    name="sliding_window_anomaly_agent"
 )
 
 # -------------------------------------------------------------------------

@@ -1,7 +1,7 @@
-#modules/ch04_numerics/README_1_numeric_transformers.md
+<!--- #modules/ch04_numerics/README_1_numeric_transformers.md -->
 
 # 4.1 • Numeric Transformers
-This module shows you how to build distributed systems in which agents call numeric libraries such as NumPy and Scikit-Learn. You will build systems in which agents, running concurrently, execute programs from Python's extensive libraries.
+This module shows you how to build distributed systems in which agents, running concurrently, execute programs from Python's extensive libraries.
 
 This page and the next deal with the same problem: detecting anomalies in streams of data. This page has a simple example in which an agent detects anomalies by computing statistics on sliding windows over data streams. The next page uses exponential smoothing on sliding windows.
 
@@ -62,19 +62,20 @@ Anomaly if x5 is outside this range.
 
 ## Distributed System Network of Agents
 ```markup
-     +------------------+
-     |    replay        |
-     | generate stream  |
-     | of numbers:      |
-     +------------------+
+     +-------------------------+
+     | replay: yield stream of |
+     | dicts with fields       |   source
+     | 'date' and              |
+     | 'tmax_f' (temperature)  |
+     +-------------------------+
             |
-            | messages: x0, x1, x2, x3, ...
+            | messages: {'date': 23, 'txmax_f': 68}, ...
             |
             v
      +-------------------------+
      | agent_sliding_window.run|
      | Compute sliding         |
-     | windowstatistics        |
+     | window statistics       |  transform
      | Predict anomaly band    |
      | for next value          |
      +-------------------------+
@@ -105,12 +106,18 @@ from .temp_live_sink import temp_live_sink
 
 
 class SlidingWindowAnomaly:
-    def __init__(self, window_size: int, std_limit: float, key_data: str) -> None:
+    def __init__(
+            self,
+            window_size: int,
+            std_limit: float,
+            key_data: str,
+            name: str) -> None:
         self.window_size = window_size
         # std: standard deviation
         # detect anomaly if actual value is out outside mean ± std_limit·std
         self.std_limit = std_limit
         self.key_data = key_data        # key in the input dict for the data value
+        self.name = name
         self.window = deque()           # sliding window of data values
         self.sum = 0.0      # sum of values in the window
         self.sum_sq = 0.0   # sum of squares of values in the window
@@ -191,6 +198,7 @@ agent_sliding_window = SlidingWindowAnomaly(
     window_size=20,
     std_limit=2.0,      # anomaly threshold
     key_data="tmax_f",
+    name="sliding_window_anomaly_agent"
 )
 
 # -------------------------------------------------------------------------
@@ -198,6 +206,7 @@ agent_sliding_window = SlidingWindowAnomaly(
 g = network([(replay.run, agent_sliding_window.run),
             (agent_sliding_window.run, temp_live_sink)])
 g.run_network()
+
 
 ```
 
