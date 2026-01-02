@@ -4,7 +4,7 @@
 
 This page shows how to generate a **synthetic numeric stream** as a source. You may want to test your distributed system against a synthetic input data stream before connecting your system to a streaming souce. 
 
-In this example, the signal is a **noisy sum of sine waves** (e.g., 5 Hz, 12 Hz, 30 Hz plus Gaussian noise), emitted at a fixed sample rate.
+In this example, the signal is a **noisy sum of sine waves** (e.g., 5 Hz, 12 Hz, 30 Hz plus Gaussian noise), emitted at a fixed sample rate. You can specify the amplitude and phase shift for each frequency.
 
 ---
 
@@ -26,37 +26,38 @@ pip install numpy rich
 # modules.ch02_sources.feed_synthetic
 
 from dsl import network
+from dsl.connectors.sine_mixture_source import SineMixtureSource
+from dsl.connectors.sink_plot_print_numerical_stream import PlotPrintNumericalStream
 
-def sine_mixture_source(*, sample_rate=200.0, duration_s=2.0, tones=((5.0, 1.0),), noise_std=0.1):
-    import time
-    import math
-    import numpy as np
-    n_total = int(duration_s * sample_rate)
-    dt = 1.0 / sample_rate
-    t = 0.0
-    tones = list(tones)
-    for _ in range(n_total):
-        x = sum(a * math.sin(2*math.pi*f*t) for f, a in tones) + np.random.normal(scale=noise_std)
-        yield {"t": t, "x": float(x)}
-        t += dt
-        time.sleep(dt)
+# Specify the source that generates a mixture of sine waves
+src = SineMixtureSource(
+    sample_rate=50.0,
+    duration_s=2.0,
+    components=(
+        (2.0, 1.0, 0.0),     # (freq_hz, amplitude, phase_rad)
+        (7.0, 0.4, 0.75),
+    ),
+    noise_std=0.05,          # standard deviation of added Gaussian noise
+    seed=123,                # for repeatability of Gaussian noise
+    realtime=False,          # generate quickly for the test; no wait between samples
+    name="demo_sines",
+)
 
-# --- sink that prints every N messages so it doesn’t spam ---
-def make_live_console_sink(every_n=20):
-    i = 0
-    def _sink(msg):
-        nonlocal i
-        i += 1
-        if i % every_n == 0:
-            print(f"t={msg['t']:6.3f}  x={msg['x']:+8.4f}")
-        return msg
-    return _sink
-
-live_console_sink = make_live_console_sink(every_n=20)
+# Specify the sink to print and plot the output
+snk = PlotPrintNumericalStream(
+    every_n=20,            # print every every_n samples
+    first_k=10,            # print all of the first_k samples
+    expected_n=100,        # expected number for plotting = sample_rate*duration_s
+    title="Sine Mixture Source Output",
+    name="sink",
+)
 
 # Define and run the network
-g = network([(sine_mixture_source, live_console_sink)])
+g = network([(src.run, snk.run)])
 g.run_network()
+
+# Plot after network terminates execution
+snk.finalize()
 ```
 
 ---
