@@ -35,6 +35,7 @@ class NumericREST_In:
         life_time: Optional[float] = 20.0,
         dedupe: bool = True,
         epsilon: float = 1e-9,
+        name="NumericREST_In",
     ):
         self.url = url
         self.extract_fn = extract_fn

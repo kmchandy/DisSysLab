@@ -32,6 +32,7 @@ class ReplayCSV_In:
         loop: bool = False,
         start_row: int = 0,
         max_rows: Optional[int] = None,
+        name: str = None,
     ):
         self.path = path
         self.transform = transform
@@ -40,6 +41,7 @@ class ReplayCSV_In:
         self.loop = loop
         self.start_row = start_row
         self.max_rows = max_rows
+        self.name: str = name or f"ReplayCSV)"
 
     def __call__(self) -> Iterable[Dict]:
         start_t = time.time()

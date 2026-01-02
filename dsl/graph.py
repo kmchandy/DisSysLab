@@ -5,6 +5,7 @@ from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
 import warnings
 import inspect
 import re
+import uuid
 
 from dsl.core import Network
 from dsl.blocks.source import Source
@@ -37,35 +38,62 @@ def strip_quotes(s: str) -> str:
     return s
 
 
-def _resolve_name(f: Callable, sep: str = "#") -> str:
-    ''' Gives each node of the graph a unique name.
-    A graph may have multiple nodes that are instances of the same class.
-    Examples: obj_0 = Class_A(.., name="OBJ_0")), obj_1 = Class_A(.., name="OBJ_1")) 
-    where obj_0.run and obj_1.run are nodes in the graph, and run(msg) is a method.
-    Then the names of the nodes will be "OBJ_0#run" and "OBJ_1#run".
-    Later, when building networks of networks we use full path names separated by dots
-    as in "ParentNetwork.ChildNetwork.OBJ_0#run".
+def _ensure_uid(obj) -> uuid.UUID:
+    """
+    Ensure obj has a stable UUID in obj.uid, creating it once if missing.
 
-    '''
+    - If obj.uid is already a uuid.UUID, return it.
+    - If obj.uid exists but is a string (or other), normalize it to uuid.UUID.
+    - If missing, assign uuid.uuid4() and store it.
+    """
+    u = getattr(obj, "uid", None)
+
+    if isinstance(u, uuid.UUID):
+        return u
+
+    if u is None:
+        u = uuid.uuid4()
+        setattr(obj, "uid", u)
+        return u
+
+    # Normalize (e.g., string) to UUID
+    u2 = uuid.UUID(str(u))
+    setattr(obj, "uid", u2)
+    return u2
+
+
+def _resolve_name(f: Callable, sep: str = "#", uid_sep: str = "@") -> str:
+    """
+    Give each node a globally unique name.
+
+    Bound method node naming:
+        <instance_name_or_class>@<FULL_UUID><sep><method_name>
+
+    Examples:
+        OBJ_0@f47ac10b-58cc-4372-a567-0e02b2c3d479#run
+        ClassA@0c91d2aa-2a8f-4db8-8a7e-7f6a3b1b2c90#call
+
+    Non-bound callables:
+        Use __qualname__ (with '.' replaced by sep) if available, else __name__.
+    """
     # Bound method: obj.run
     self_obj = getattr(f, "__self__", None)
+    method = getattr(f, "__name__", "call")
+
     if self_obj is not None:
-        # f is a method of an object which is an instance of a class.
-        # inst is the name of the object instance.
         inst = (
             getattr(self_obj, "name", None)
             or getattr(self_obj, "_name", None)
             or getattr(self_obj, "label", None)
             or getattr(self_obj, "_label", None)
+            or self_obj.__class__.__name__
         )
-        if inst:
-            # The name is the object instance name + separator + method name
-            return f"{inst}{sep}{getattr(f, '__name__', 'call')}"
-        return f"{self_obj.__class__.__name__}{sep}{getattr(f, '__name__', 'call')}"
+
+        u = _ensure_uid(self_obj)   # stable UUID stored on the instance
+        return f"{inst}{uid_sep}{u}{sep}{method}"
 
     # Function on class / plain function
     qn = getattr(f, "__qualname__", None)
-    # qn is a fully qualified name like ClassName.method_name
     if qn:
         return qn.replace(".", sep)
 
