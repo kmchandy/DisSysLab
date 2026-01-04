@@ -26,6 +26,7 @@ from .plot_after_execution import print_results_snapshots
 from .good_bad_reviews import reviews  # list of 10 text reviews
 import time
 from dsl import network
+from dsl.natural_language_lib.count_words_vectorizer import CountWordsVectorizer
 import sklearn.cluster as cluster
 import sklearn.feature_extraction.text as text
 import matplotlib.pyplot as plt
@@ -48,15 +49,19 @@ def from_reviews():
 #  Transform: Vectorize Text using CountVectorizer    |
 #    from library                                     |         
 # -----------------------------------------------------
-vectorizer = text.CountVectorizer(vocabulary=["good", "bad"])
+# vectorizer = text.CountVectorizer(vocabulary=["good", "bad"])
 
 
-def vectorize(msg):
-    vec = vectorizer.transform(
-        [msg["text_of_review"]]).toarray()  # shape (1,2)
-    msg["vector"] = vec
-    return msg
-
+# def vectorize(msg):
+#     vec = vectorizer.transform(
+#         [msg["text_of_review"]]).toarray()  # shape (1,2)
+#     msg["vector"] = vec
+#     return msg
+vectorizer = CountWordsVectorizer(
+    vocabulary = ["good", "bad"],
+    input_field = "text_of_review",
+    output_field = "vector"
+    )
 
 # ------------------------------------------------------
 # Transform: Cluster Vectors using KMeans from Library |
@@ -103,8 +108,8 @@ def print_vector(msg):
 #          Build and run the graph                   |
 # -----------------------------------------------------
 g = network([
-    (from_reviews, vectorize),
-    (vectorize, predict_cluster),
+    (from_reviews, vectorizer.run),
+    (vectorizer.run, predict_cluster),
     (predict_cluster, to_results),
     (predict_cluster, print_vector),
 ])

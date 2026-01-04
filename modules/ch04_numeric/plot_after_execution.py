@@ -4,16 +4,17 @@ import matplotlib.pyplot as plt
 import random
 
 
-def _scatter_by_cluster(subset_results, title, out_path):
+def _scatter_by_cluster(subset_results, title, out_path, cluster_field="cluster_incremental"):
     xs0, ys0 = [], []   # cluster 0
     xs1, ys1 = [], []   # cluster 1
     xsn, ysn = [], []   # None/unassigned
 
     for r in subset_results:
+        print(f"r = {r}")
         g, b = r["vector"][0]
         g += (random.random() - 0.5) * 0.2  # jitter for visibility
         b += (random.random() - 0.5) * 0.2  # jitter to prevent overlap
-        c = r["cluster"]
+        c = r[cluster_field]
         if c is None:
             xsn.append(g)
             ysn.append(b)
@@ -43,7 +44,8 @@ def _scatter_by_cluster(subset_results, title, out_path):
     plt.close()
 
 
-def print_results_snapshots(results):
+def print_results_snapshots(results, diagram_title):
     _scatter_by_cluster(
-        results, "KMeans on All Reviews ([good,bad])", "part1_all.svg")
-    print("See diagram of clusters: part1_all.svg")
+        results, "KMeans on All Reviews ([good,bad])", diagram_title,
+        cluster_field="cluster_incremental")
+    print(f"Saved diagram to: {diagram_title}")
