@@ -38,28 +38,19 @@ def strip_quotes(s: str) -> str:
     return s
 
 
-def _ensure_uid(obj) -> uuid.UUID:
+def _ensure_uid(obj) -> str:
     """
-    Ensure obj has a stable UUID in obj.uid, creating it once if missing.
+    Ensure the object has a stable UUID. If not, create and store one.
 
-    - If obj.uid is already a uuid.UUID, return it.
-    - If obj.uid exists but is a string (or other), normalize it to uuid.UUID.
-    - If missing, assign uuid.uuid4() and store it.
+    Args:
+        obj: Any Python object (function, class instance, etc.)
+
+    Returns:
+        String representation of the UUID
     """
-    u = getattr(obj, "uid", None)
-
-    if isinstance(u, uuid.UUID):
-        return u
-
-    if u is None:
-        u = uuid.uuid4()
-        setattr(obj, "uid", u)
-        return u
-
-    # Normalize (e.g., string) to UUID
-    u2 = uuid.UUID(str(u))
-    setattr(obj, "uid", u2)
-    return u2
+    if not hasattr(obj, "_dsl_uid"):
+        obj._dsl_uid = str(uuid.uuid4())
+    return obj._dsl_uid
 
 
 def _resolve_name(f: Callable, sep: str = "#", uid_sep: str = "@") -> str:
@@ -73,8 +64,17 @@ def _resolve_name(f: Callable, sep: str = "#", uid_sep: str = "@") -> str:
         OBJ_0@f47ac10b-58cc-4372-a567-0e02b2c3d479#run
         ClassA@0c91d2aa-2a8f-4db8-8a7e-7f6a3b1b2c90#call
 
-    Non-bound callables:
-        Use __qualname__ (with '.' replaced by sep) if available, else __name__.
+    Plain function naming:
+        <function_name>@<FULL_UUID>
+
+    Examples:
+        clean_text@f47ac10b-58cc-4372-a567-0e02b2c3d479
+        analyze_sentiment@8b9e3d2a-1f4c-4a5b-9c7d-3e8f1a2b4c5d
+
+    This ensures that:
+    - Each node gets a unique name even if the same function is used multiple times
+    - Bound methods from different instances are distinguished
+    - Plain functions used at multiple nodes are distinguished
     """
     # Bound method: obj.run
     self_obj = getattr(f, "__self__", None)
@@ -92,13 +92,22 @@ def _resolve_name(f: Callable, sep: str = "#", uid_sep: str = "@") -> str:
         u = _ensure_uid(self_obj)   # stable UUID stored on the instance
         return f"{inst}{uid_sep}{u}{sep}{method}"
 
-    # Function on class / plain function
+    # Plain function or unbound callable
+    # Get the function name
     qn = getattr(f, "__qualname__", None)
     if qn:
-        return qn.replace(".", sep)
+        base_name = qn.replace(".", sep)
+    else:
+        nm = getattr(f, "__name__", None)
+        if nm:
+            base_name = nm.replace(".", sep)
+        else:
+            # Fallback to repr, but ensure all dots are replaced
+            base_name = repr(f).replace(".", sep)
 
-    nm = getattr(f, "__name__", None)
-    return nm.replace(".", sep) if nm else repr(f)
+    # Add UID to make each node unique (even when same function used multiple times)
+    u = _ensure_uid(f)
+    return f"{base_name}{uid_sep}{u}"
 
 
 def network(x: Iterable[Tuple[Callable, Callable]]) -> Graph:

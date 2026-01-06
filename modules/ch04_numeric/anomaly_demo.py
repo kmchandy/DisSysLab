@@ -4,7 +4,7 @@ from dsl import network
 from dsl.math_lib.random_walk import RandomWalkOneDimensional
 from dsl.math_lib.sliding_window_anomaly_exponential import SlidingWindowAnomalyExponential
 from dsl.connectors.sink_jsonl_recorder import JSONLRecorder
-from .MakeConsoleSummary import make_console_summary
+from dsl.connectors.sink_make_console_summary import make_console_summary
 
 
 # Make a source object: one-dimensional random walk
