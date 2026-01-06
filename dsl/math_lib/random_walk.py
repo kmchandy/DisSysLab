@@ -25,7 +25,9 @@ class RandomWalkOneDimensional:
         jump_stdev: float = 10.0,    # standard deviation of a big jump
         # time to sleep per step to simulate real-time stream
         sleep_time_per_step: float = 0.0,
-        name: Optional[str] = None,
+        t_key: Optional[str] = "t_step",  # time step key in output dict
+        x_key: Optional[str] = "x",      # position key in output dict
+        name: Optional[str] = None,   # name of this object
     ) -> None:
         self.n_steps = int(n_steps)
         self.x = float(base)
@@ -35,6 +37,8 @@ class RandomWalkOneDimensional:
         self.jump_stdev = float(jump_stdev)
         self.rng = random.Random(seed)  # uniform random number generator
         self.sleep_time_per_step = float(sleep_time_per_step)
+        self.t_key = t_key
+        self.x_key = x_key
         self._name = name or "src_random_walk"
 
     @property
@@ -49,7 +53,7 @@ class RandomWalkOneDimensional:
             # add a big jump with probability prob_jump
             if self.rng.random() < self.prob_jump:
                 self.x += self.rng.gauss(0.0, self.jump_stdev)
-            yield {"t_step": i, "x": float(self.x)}
+            yield {self.t_key: i, self.x_key: float(self.x)}
             if self.sleep_time_per_step > 0:
                 # simulate real-time stream
                 time.sleep(self.sleep_time_per_step)

@@ -1,4 +1,4 @@
-# modules.ch04_numeric.make_console_summary.py
+# dsl/connectors/sink_make_console_summary.py
 
 from typing import Dict
 

@@ -1,0 +1,11 @@
+{"text": "Just got promoted at work! Best day ever! 🎉", "platform": "X", "clean_text": "Just got promoted at work! Best day ever!", "sentiment": "POSITIVE", "score": 2}
+{"text": "Breaking: New tech announced!", "platform": "X", "clean_text": "Breaking New tech announced!", "sentiment": "NEUTRAL", "score": 0}
+{"text": "Just had the best lunch ever", "platform": "X", "clean_text": "Just had the best lunch ever", "sentiment": "POSITIVE", "score": 1}
+{"text": "Had an amazing coffee this morning ☕", "platform": "Reddit", "clean_text": "Had an amazing coffee this morning", "sentiment": "POSITIVE", "score": 1}
+{"text": "Amazing discovery in science", "platform": "Reddit", "clean_text": "Amazing discovery in science", "sentiment": "POSITIVE", "score": 1}
+{"text": "Looking forward to the weekend", "platform": "Reddit", "clean_text": "Looking forward to the weekend", "sentiment": "POSITIVE", "score": 1}
+{"text": "Excited to start my new project tomorrow!", "platform": "Reddit", "clean_text": "Excited to start my new project tomorrow!", "sentiment": "POSITIVE", "score": 1}
+{"text": "Traffic is terrible today, stuck for 2 hours 😤", "platform": "Facebook", "clean_text": "Traffic is terrible today, stuck for 2 hours", "sentiment": "NEGATIVE", "score": -2}
+{"text": "Family vacation was incredible", "platform": "Facebook", "clean_text": "Family vacation was incredible", "sentiment": "POSITIVE", "score": 1}
+{"text": "My package got lost in delivery again...", "platform": "Facebook", "clean_text": "My package got lost in delivery again...", "sentiment": "NEGATIVE", "score": -1}
+{"text": "Terrible customer service today", "platform": "Facebook", "clean_text": "Terrible customer service today", "sentiment": "NEGATIVE", "score": -1}
