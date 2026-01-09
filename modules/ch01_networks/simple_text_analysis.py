@@ -47,8 +47,8 @@ class SourceOfSocialMediaPosts:
         self.name = name
 
     def __call__(self):
-        for post in self.posts:  # Fixed: was 'posts', should be 'self.posts'
-            yield post  # Already a dict, no need to wrap
+        for post in self.posts:
+            yield post
 
     run = __call__
 

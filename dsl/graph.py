@@ -1,41 +1,22 @@
 # dsl/graph.py
 from __future__ import annotations
-from typing import Callable
-from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 import warnings
-import inspect
-import re
 import uuid
 
-from dsl.core import Network
+from dsl.core import Network, Agent, PortReference
 from dsl.blocks.source import Source
 from dsl.blocks.sink import Sink
 from dsl.blocks.transform import Transform
 from dsl.blocks.fanout import Broadcast
 from dsl.blocks.fanin import MergeAsynch
 
-# Node = ("name", function)
-NodePair = Tuple[str, Callable[..., Any]]
-
-# Reserved prefixes created by the rewriter
-_RESERVED_PREFIXES = ("broadcast_", "merge_")
-# Optional: exact names you don't want users to reuse
-_RESERVED_EXACT = {"broadcast", "merge", "source", "sink", "transform"}
-
-# Match pairs like: (from_data, upper_case)
-_PAIR_RE = re.compile(
-    r"\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*,\s*([A-Za-z_][A-Za-z0-9_]*)\s*\)")
+# Type alias for edges - can be agents or port references
+EdgeNode = Agent | PortReference
 
 # ---------------------------------------------------------
-#                  NETWORK                          |
+#                  HELPER FUNCTIONS                       |
 # ---------------------------------------------------------
-
-
-def strip_quotes(s: str) -> str:
-    s = s.strip()
-    if len(s) >= 2 and s[0] == s[-1] and s[0] in ("'", '"'):
-        return s[1:-1]
-    return s
 
 
 def _ensure_uid(obj) -> str:
@@ -43,7 +24,7 @@ def _ensure_uid(obj) -> str:
     Ensure the object has a stable UUID. If not, create and store one.
 
     Args:
-        obj: Any Python object (function, class instance, etc.)
+        obj: Any Python object (Agent instance, etc.)
 
     Returns:
         String representation of the UUID
@@ -53,92 +34,205 @@ def _ensure_uid(obj) -> str:
     return obj._dsl_uid
 
 
-def _resolve_name(f: Callable, sep: str = "#", uid_sep: str = "@") -> str:
+def _resolve_name(agent: Agent, sep: str = "#", uid_sep: str = "@") -> str:
     """
-    Give each node a globally unique name.
+    Give each agent a globally unique name.
 
-    Bound method node naming:
-        <instance_name_or_class>@<FULL_UUID><sep><method_name>
-
-    Examples:
-        OBJ_0@f47ac10b-58cc-4372-a567-0e02b2c3d479#run
-        ClassA@0c91d2aa-2a8f-4db8-8a7e-7f6a3b1b2c90#call
-
-    Plain function naming:
-        <function_name>@<FULL_UUID>
+    Agent naming:
+        <agent_class_name>@<FULL_UUID>
 
     Examples:
-        clean_text@f47ac10b-58cc-4372-a567-0e02b2c3d479
-        analyze_sentiment@8b9e3d2a-1f4c-4a5b-9c7d-3e8f1a2b4c5d
+        Source@f47ac10b-58cc-4372-a567-0e02b2c3d479
+        Transform@8b9e3d2a-1f4c-4a5b-9c7d-3e8f1a2b4c5d
 
     This ensures that:
-    - Each node gets a unique name even if the same function is used multiple times
-    - Bound methods from different instances are distinguished
-    - Plain functions used at multiple nodes are distinguished
+    - Each agent gets a unique name even if the same agent class is used multiple times
+    - Different agent instances are distinguished
     """
-    # Bound method: obj.run
-    self_obj = getattr(f, "__self__", None)
-    method = getattr(f, "__name__", "call")
+    # Get the agent's class name
+    class_name = agent.__class__.__name__
+    
+    # Get or create stable UUID
+    u = _ensure_uid(agent)
+    
+    return f"{class_name}{uid_sep}{u}"
 
-    if self_obj is not None:
-        inst = (
-            getattr(self_obj, "name", None)
-            or getattr(self_obj, "_name", None)
-            or getattr(self_obj, "label", None)
-            or getattr(self_obj, "_label", None)
-            or self_obj.__class__.__name__
+
+def _parse_edge_from_node(node: EdgeNode) -> Tuple[Agent, str]:
+    """
+    Parse the FROM side of an edge (sender).
+    
+    Args:
+        node: Either an Agent or a PortReference
+    
+    Returns:
+        Tuple of (agent, output_port_name)
+    
+    Raises:
+        ValueError: If agent cannot be used as sender
+        TypeError: If node is not Agent or PortReference
+    
+    Examples:
+        >>> source = Source(fn=data.run)
+        >>> _parse_edge_from_node(source)
+        (source, "out")
+        
+        >>> split = Split(router=router, num_outputs=3)
+        >>> _parse_edge_from_node(split.out_0)
+        (split, "out_0")
+    """
+    if isinstance(node, PortReference):
+        # Explicit port reference: split.out_0
+        return node.agent, node.port_name
+    
+    elif isinstance(node, Agent):
+        # Determine default output port based on agent type
+        if isinstance(node, Source):
+            return node, "out"
+        elif isinstance(node, (Transform, Broadcast)):
+            return node, "out"
+        elif isinstance(node, Sink):
+            raise ValueError(
+                f"Sink cannot be used as sender (from side of edge). "
+                f"Sinks have no output ports."
+            )
+        else:
+            # Generic agent with unknown ports - requires explicit syntax
+            raise ValueError(
+                f"Cannot determine output port for {node.__class__.__name__}. "
+                f"Use explicit port syntax: agent.port_name"
+            )
+    else:
+        raise TypeError(
+            f"Edge node must be Agent or PortReference, got {type(node).__name__}"
         )
 
-        u = _ensure_uid(self_obj)   # stable UUID stored on the instance
-        return f"{inst}{uid_sep}{u}{sep}{method}"
 
-    # Plain function or unbound callable
-    # Get the function name
-    qn = getattr(f, "__qualname__", None)
-    if qn:
-        base_name = qn.replace(".", sep)
-    else:
-        nm = getattr(f, "__name__", None)
-        if nm:
-            base_name = nm.replace(".", sep)
-        else:
-            # Fallback to repr, but ensure all dots are replaced
-            base_name = repr(f).replace(".", sep)
-
-    # Add UID to make each node unique (even when same function used multiple times)
-    u = _ensure_uid(f)
-    return f"{base_name}{uid_sep}{u}"
-
-
-def network(x: Iterable[Tuple[Callable, Callable]]) -> Graph:
+def _parse_edge_to_node(node: EdgeNode) -> Tuple[Agent, str]:
     """
-    x example: [(from_list, upper_case), (upper_case, to_results)]
+    Parse the TO side of an edge (receiver).
+    
+    Args:
+        node: Either an Agent or a PortReference
+    
     Returns:
-      Graph(
-        edges=[("from_list","upper_case"), ("upper_case","to_results")],
-        nodes=[("from_list", from_list), ("upper_case", upper_case), ("to_results", to_results)]
-      )
+        Tuple of (agent, input_port_name)
+    
+    Raises:
+        ValueError: If agent cannot be used as receiver
+        TypeError: If node is not Agent or PortReference
+    
+    Examples:
+        >>> sink = Sink(fn=handler.run)
+        >>> _parse_edge_to_node(sink)
+        (sink, "in")
+        
+        >>> transform = Transform(fn=processor.run)
+        >>> _parse_edge_to_node(transform)
+        (transform, "in")
     """
+    if isinstance(node, PortReference):
+        # Explicit port reference: handler.in
+        return node.agent, node.port_name
+    
+    elif isinstance(node, Agent):
+        # Determine default input port based on agent type
+        if isinstance(node, Sink):
+            return node, "in"
+        elif isinstance(node, (Transform, MergeAsynch)):
+            return node, "in"
+        elif isinstance(node, Source):
+            raise ValueError(
+                f"Source cannot be used as receiver (to side of edge). "
+                f"Sources have no input ports."
+            )
+        else:
+            # Generic agent with unknown ports - requires explicit syntax
+            raise ValueError(
+                f"Cannot determine input port for {node.__class__.__name__}. "
+                f"Use explicit port syntax: agent.port_name"
+            )
+    else:
+        raise TypeError(
+            f"Edge node must be Agent or PortReference, got {type(node).__name__}"
+        )
 
-    edges: List[Tuple[str, str]] = []
+
+# ---------------------------------------------------------
+#                  NETWORK BUILDER                        |
+# ---------------------------------------------------------
+
+
+def network(edges: Iterable[Tuple[EdgeNode, EdgeNode]]) -> Graph:
+    """
+    Build a graph from a list of agent edges.
+    
+    Supports both simple and explicit port syntax:
+    
+    Simple (Module 1):
+        network([
+            (source, transform),
+            (transform, sink)
+        ])
+    
+    Explicit (Module 2+):
+        network([
+            (source, split),
+            (split.out_0, handler1),
+            (split.out_1, handler2)
+        ])
+    
+    Args:
+        edges: List of (from_node, to_node) tuples where each node is 
+               either an Agent or a PortReference (agent.port_name)
+    
+    Returns:
+        Graph instance ready to compile and run
+    
+    Examples:
+        >>> # Simple syntax
+        >>> g = network([
+        ...     (twitter_source, clean),
+        ...     (reddit_source, clean),
+        ...     (clean, sentiment),
+        ...     (sentiment, logger)
+        ... ])
+        
+        >>> # Explicit ports for Split
+        >>> g = network([
+        ...     (source, splitter),
+        ...     (splitter.out_0, spam_handler),
+        ...     (splitter.out_1, safe_handler)
+        ... ])
+    """
+    
+    # Parse edges and build connections
+    parsed_edges: List[Tuple[str, str, str, str]] = []
     seen_names: set[str] = set()
-    ordered_funcs: List[Callable] = []
-
-    for a, b in x:
-        # Resolve readable, unique names for endpoints
-        a_name = _resolve_name(a)
-        b_name = _resolve_name(b)
-        edges.append((a_name, b_name))
-
-        # Collect unique functions in first-seen order
-        for f, name in ((a, a_name), (b, b_name)):
+    ordered_agents: List[Agent] = []
+    
+    for from_node, to_node in edges:
+        # Parse from side (sender) - uses context-aware function
+        from_agent, from_port = _parse_edge_from_node(from_node)
+        from_name = _resolve_name(from_agent)
+        
+        # Parse to side (receiver) - uses context-aware function
+        to_agent, to_port = _parse_edge_to_node(to_node)
+        to_name = _resolve_name(to_agent)
+        
+        # Build connection tuple - ports are already determined!
+        parsed_edges.append((from_name, from_port, to_name, to_port))
+        
+        # Collect unique agents in first-seen order
+        for agent, name in ((from_agent, from_name), (to_agent, to_name)):
             if name not in seen_names:
                 seen_names.add(name)
-                ordered_funcs.append(f)
-
-    nodes = [(_resolve_name(f), f)
-             for f in ordered_funcs]  # ("name", function)
-    return Graph(edges=edges, nodes=nodes)
+                ordered_agents.append(agent)
+    
+    # Build node list: (name, agent)
+    nodes = [(_resolve_name(agent), agent) for agent in ordered_agents]
+    
+    return Graph(edges=parsed_edges, nodes=nodes)
 
 
 # ---------------------------------------------------------
@@ -148,365 +242,428 @@ def network(x: Iterable[Tuple[Callable, Callable]]) -> Graph:
 
 class Graph:
     """
-    V2 Graph spec (single style):
-
-      edges: list[tuple[str, str]]
-          Edges as (u, v) pairs.
-
-      nodes: list[tuple[str, callable]]
-          Each node defined exactly once as ("name", fn).
-          - Source  fn: () -> Iterator[Any]
-          - Transform fn: (msg) -> Any
-          - Sink     fn: (msg) -> None
-
-    Roles are inferred by in/out-degree on the ORIGINAL edges:
-      source    : indeg == 0 & outdeg >= 1
-      sink      : outdeg == 0 & indeg >= 1
-      transform : otherwise
-
-    Rewriting:
-      - If a node has >1 outgoing edges, insert a Broadcast node "broadcast_k".
-      - If a node has >1 incoming edges, insert a Merge node "merge_j".
-      - The final graph sends multi-fanouts via Broadcast and multi-fanins via MergeAsynch.
-
-    Implementation notes:
-      - We accept only the single style nodes=[("src", src), ("trn", trn), ...].
-      - No params are passed via the graph; wrap config in closures.
+    Graph specification for distributed dataflow networks.
+    
+    A Graph:
+    - Defines edges as (from_name, from_port, to_name, to_port) tuples
+    - Defines nodes as (name, agent) pairs
+    - Infers roles (source, transform, sink) from in/out-degree
+    - Automatically inserts Broadcast for fanout (>1 outgoing)
+    - Automatically inserts Merge for fanin (>1 incoming)
+    - Compiles into executable Network with threading and queues
+    
+    **Key Changes from Old Version:**
+    - Nodes are Agent instances (not functions)
+    - No params parameter needed
+    - Supports PortReference for explicit port syntax
+    - Simplified role inference
+    
+    **Examples:**
+    
+    Simple pipeline:
+        >>> g = Graph(
+        ...     edges=[("src", "out", "trans", "in"), 
+        ...            ("trans", "out", "snk", "in")],
+        ...     nodes=[("src", source_agent), 
+        ...            ("trans", transform_agent), 
+        ...            ("snk", sink_agent)]
+        ... )
+        >>> g.run_network()
+    
+    With automatic fanout:
+        >>> g = Graph(
+        ...     edges=[("src", "out", "trans1", "in"),
+        ...            ("src", "out", "trans2", "in")],  # Fanout!
+        ...     nodes=[("src", source), ("trans1", t1), ("trans2", t2)]
+        ... )
+        >>> # Broadcast automatically inserted
     """
 
-    def __init__(self, *, edges: Iterable[Tuple[str, str]], nodes: Iterable[NodePair]) -> None:
-        # check types of parameters ----
-        try:
-            edge_list = list(edges)
-        except TypeError:
-            raise TypeError("edges must be an iterable of (u, v) pairs")
-
-        try:
-            node_list = list(nodes)
-        except TypeError:
-            raise TypeError(
-                "nodes must be an iterable of ('name', function) pairs")
-
-        # edges: (str, str)
+    def __init__(
+        self, 
+        *, 
+        edges: Iterable[Tuple[str, str, str, str]], 
+        nodes: Iterable[Tuple[str, Agent]]
+    ) -> None:
+        """
+        Initialize a Graph.
+        
+        Args:
+            edges: List of (from_name, from_port, to_name, to_port) tuples
+            nodes: List of (name, agent) tuples
+        
+        Raises:
+            TypeError: If nodes are not Agent instances
+            ValueError: If edges reference non-existent nodes or ports
+        """
+        # Validate and store edges
+        edge_list = list(edges)
         for i, e in enumerate(edge_list):
-            if not (isinstance(e, (tuple, list)) and len(e) == 2):
-                raise TypeError(f"edges[{i}] must be a (u, v) pair; got {e!r}")
-            u, v = e
-            if not (isinstance(u, str) and isinstance(v, str)):
+            if not (isinstance(e, (tuple, list)) and len(e) == 4):
                 raise TypeError(
-                    f"edges[{i}] must be (str, str); got ({type(u).__name__}, {type(v).__name__})"
+                    f"edges[{i}] must be (from_name, from_port, to_name, to_port); got {e!r}"
                 )
-            if not u.strip() or not v.strip():
-                raise ValueError(
-                    f"edges[{i}] endpoints must be non-empty strings; got {e!r}")
-
-        # nodes: ("name", callable)
+            fn, fp, tn, tp = e
+            if not all(isinstance(x, str) and x.strip() for x in [fn, fp, tn, tp]):
+                raise TypeError(
+                    f"edges[{i}] all components must be non-empty strings; got {e!r}"
+                )
+        
+        # Validate and store nodes
+        node_list = list(nodes)
+        agents_dict: Dict[str, Agent] = {}
+        
         for i, item in enumerate(node_list):
             if not (isinstance(item, (tuple, list)) and len(item) == 2):
                 raise TypeError(
-                    f"nodes[{i}] must be ('name', function); {item!r} is not such a pair")
-            name, fn = item
+                    f"nodes[{i}] must be (name, agent); got {item!r}"
+                )
+            name, agent = item
+            
             if not (isinstance(name, str) and name.strip()):
                 raise TypeError(
-                    f"nodes[{i}]: name must be a non-empty str; {name!r} is not a nonempty str")
-            if not callable(fn):
+                    f"nodes[{i}]: name must be non-empty string; got {name!r}"
+                )
+            
+            if not isinstance(agent, Agent):
                 raise TypeError(
-                    f"nodes[{i}]: function must be callable; {type(fn).__name__} is not callable")
-
-        self.edges, self._fns = self._validate_and_normalize(
-            edges, nodes)  # _fns: Dict[name, fn]
-        self.nodes = self._fns.keys()
+                    f"nodes[{i}]: must be Agent instance; got {type(agent).__name__}"
+                )
+            
+            if name in agents_dict:
+                raise ValueError(
+                    f"Duplicate node name '{name}'"
+                )
+            
+            agents_dict[name] = agent
+        
+        self.edges = edge_list
+        self._agents = agents_dict
+        self.nodes = self._agents.keys()
         self.network: Optional[Network] = None
         self.indeg: Dict[str, int] = {}
         self.outdeg: Dict[str, int] = {}
-
-    # ---------- Validation / normalization ----------
-
-    @staticmethod
-    def _validate_and_normalize(
-        edges_in: Iterable[Tuple[str, str]],
-        nodes_in: Iterable[NodePair],
-    ) -> Tuple[List[Tuple[str, str]], Dict[str, Callable[..., Any]]]:
-        # Nodes: iterable of ("name", fn)
-
-        try:
-            pairs = list(nodes_in)
-        except TypeError:
-            raise TypeError(
-                "nodes must be an iterable of ('name', function) pairs")
-
-        fns: Dict[str, Callable[..., Any]] = {}
-        for i, (name, fn) in enumerate(pairs):
-            if not isinstance(name, str) or not name.strip():
-                raise ValueError(f"Node #{i} has invalid name: {name!r}")
-            if name in fns:
-                raise ValueError(f"Duplicate node name '{name}' in nodes list")
-            if not callable(fn):
-                raise TypeError(
-                    f"Node '{name}' must be a function/callable; got {type(fn).__name__}")
-
-            # Reserved names/prefixes
-            if any(name.startswith(pfx) for pfx in _RESERVED_PREFIXES):
-                raise ValueError(
-                    f"Node name '{name}' uses reserved prefix {_RESERVED_PREFIXES}")
-            if name in _RESERVED_EXACT:
-                raise ValueError(
-                    f"Node name '{name}' is a reserved exact name: {_RESERVED_EXACT}")
-
-            fns[name] = fn
-
-        # Edges: list of (u, v)
-        try:
-            edge_list = list(edges_in)
-        except TypeError:
-            raise TypeError("edges must be an iterable of (u, v) pairs")
-
-        norm_edges: List[Tuple[str, str]] = []
-        for idx, e in enumerate(edge_list):
-            if not (isinstance(e, (tuple, list)) and len(e) == 2):
-                raise ValueError(
-                    f"Edge #{idx} must be a pair (u, v); got {e!r}")
-            u, v = e
-            if not (isinstance(u, str) and u.strip() and isinstance(v, str) and v.strip()):
-                raise ValueError(
-                    f"Edge #{idx} endpoints must be non-empty strings; got {e!r}")
-            norm_edges.append((u, v))
-
-        # Cross-check membership
-        referenced = {u for u, v in norm_edges} | {v for u, v in norm_edges}
-        missing = sorted(n for n in referenced if n not in fns)
+    
+    def _validate_edges(self) -> None:
+        """
+        Validate that all edges reference existing nodes and ports.
+        """
+        # Check that all referenced nodes exist
+        referenced = {u for u, _, _, _ in self.edges} | {v for _, _, v, _ in self.edges}
+        missing = sorted(n for n in referenced if n not in self._agents)
+        
         if missing:
-            hints = "\n".join(
-                f"  - Add node ('{n}', fn) or remove/rename edges mentioning '{n}'"
-                for n in missing
-            )
             raise KeyError(
-                f"Node(s) referenced by edges are missing: {missing}\nSuggestions:\n{hints}"
+                f"Edge(s) reference non-existent node(s): {missing}\n"
+                f"Available nodes: {sorted(self._agents.keys())}"
             )
-
-        # De-dup edges (preserve first)
-        seen = set()
-        dedup_edges: List[Tuple[str, str]] = []
-        dropped: List[Tuple[str, str]] = []
-        for e in norm_edges:
-            if e in seen:
-                dropped.append(e)
-                continue
-            seen.add(e)
-            dedup_edges.append(e)
-        if dropped:
-            warnings.warn(
-                f"Removed {len(dropped)} duplicate edge(s): {dropped}", RuntimeWarning)
-
-        # Warn on nodes not referenced
-        unused = sorted(n for n in fns if n not in referenced)
-        if unused:
-            warnings.warn(
-                f"{len(unused)} node(s) defined but not used in edges: {unused}\n"
-                "Hint: add edges to connect them or remove the unused definitions.",
-                RuntimeWarning,
-            )
-
-        return dedup_edges, fns
-
-    @staticmethod
-    def _validate_function_signature(name: str, role: str, fn: Callable[..., Any]) -> None:
-        sig = inspect.signature(fn)
-        params = list(sig.parameters.values())
-
-        def required_positional_count() -> int:
-            cnt = 0
-            for p in params:
-                if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD) and p.default is p.empty:
-                    cnt += 1
-            return cnt
-
-        req_pos = required_positional_count()
-
-        if role == "source":
-            # Should require no positional args (zero-arg callable)
-            if req_pos > 0 and all(p.kind != p.VAR_POSITIONAL for p in params):
-                raise TypeError(
-                    f"Source node '{name}' should be a zero-argument function. "
-                    f"Got signature: {fn.__name__}{sig}. "
-                    "Hint: wrap configuration in a closure: "
-                    "def src(): return from_list(items=..., key=...)"
+        
+        # Check that all ports exist on agents
+        for (fn, fp, tn, tp) in self.edges:
+            from_agent = self._agents[fn]
+            to_agent = self._agents[tn]
+            
+            if fp not in from_agent.outports:
+                raise ValueError(
+                    f"Edge references non-existent outport '{fp}' on node '{fn}'\n"
+                    f"Available outports: {from_agent.outports}"
                 )
-        else:
-            # Transform/sink should accept at least one positional (the message), unless using *args
-            if req_pos == 0 and not any(p.kind == p.VAR_POSITIONAL for p in params):
-                raise TypeError(
-                    f"Node '{name}' (role {role}) must accept a message parameter. "
-                    f"Got signature: {fn.__name__}{sig}. Hint: def {name}(msg): ..."
+            
+            if tp not in to_agent.inports:
+                raise ValueError(
+                    f"Edge references non-existent inport '{tp}' on node '{tn}'\n"
+                    f"Available inports: {to_agent.inports}"
                 )
-
-    # ---------- Public API ----------
-
-    def compile(self) -> Network:
-        roles = self._infer_roles()  # may rewrite self.edges and recompute indeg/outdeg
-        blocks: Dict[str, Any] = {}
-
-        # Build blocks for all role-bearing nodes, including injected broadcast/merge nodes
-        for name, role in roles.items():
-            if role in {"source", "transform", "sink"}:
-                if name not in self._fns:
-                    raise KeyError(
-                        f"Node '{name}' referenced by edges but not provided in nodes list.")
-                fn = self._fns[name]
-                self._validate_function_signature(name, role, fn)
-                if role == "source":
-                    blocks[name] = Source(fn=fn, params={})
-                elif role == "transform":
-                    blocks[name] = Transform(fn=fn, params={})
-                else:  # sink
-                    blocks[name] = Sink(fn=fn, params={})
-
-            elif role == "broadcast":
-                blocks[name] = Broadcast(num_outports=self.outdeg[name])
-
-            elif role == "merge":
-                blocks[name] = MergeAsynch(num_inports=self.indeg[name])
-
-            else:
-                raise ValueError(f"Unknown role '{role}' for node '{name}'")
-
-        # Build connections, handling multi-port broadcast/merge
-        n_connected: Dict[str, int] = {n: 0 for n in roles.keys()}
-        connections: List[Tuple[str, str, str, str]] = []
-
-        for u, v in self.edges:
-            ru, rv = roles[u], roles[v]
-
-            if ru != "broadcast" and rv != "merge":
-                # single out → single in
-                connections.append((u, "out", v, "in"))
-
-            elif ru == "broadcast" and rv != "merge":
-                # broadcast has numbered outports
-                out_i = n_connected[u]
-                connections.append((u, f"out_{out_i}", v, "in"))
-                n_connected[u] += 1
-
-            elif ru != "broadcast" and rv == "merge":
-                # merge has numbered inports
-                in_i = n_connected[v]
-                connections.append((u, "out", v, f"in_{in_i}"))
-                n_connected[v] += 1
-
-            else:
-                # broadcast → merge
-                out_i = n_connected[u]
-                in_i = n_connected[v]
-                connections.append((u, f"out_{out_i}", v, f"in_{in_i}"))
-                n_connected[u] += 1
-                n_connected[v] += 1
-
-        self.network = Network(blocks=blocks, connections=connections)
-        return self.network
-
-    def compile_and_run(self) -> None:
-        net = self.network or self.compile()
-        net.compile_and_run()
-
-    def run_network(self, *args, **kwargs):
-        """Run the network (alias for compile_and_run)."""
-        return self.compile_and_run(*args, **kwargs)
-
-    # ---------- Role inference + rewrites ----------
-
+    
     def _infer_roles(self) -> Dict[str, str]:
+        """
+        Infer roles from graph topology and insert Broadcast/Merge nodes.
+        
+        Automatically detects fanout (out-degree > 1) and fanin (in-degree > 1) 
+        patterns and inserts helper agents to maintain the 1-to-1 connection invariant.
+        
+        **Fanout:** One agent sending to multiple receivers
+            - Detected: node has out-degree > 1
+            - Solution: Insert Broadcast agent
+            - Broadcast copies each message to all outputs
+        
+        **Fanin:** Multiple agents sending to one receiver
+            - Detected: node has in-degree > 1
+            - Solution: Insert MergeAsynch agent
+            - Merge combines multiple streams (first-come-first-served)
+        
+        Returns:
+            Dictionary mapping node names to roles
+        
+        **Complete Example:**
+        
+        Student writes:
+            >>> g = network([
+            ...     (twitter, clean),
+            ...     (reddit, clean),      # Fanin at clean
+            ...     (clean, sentiment),
+            ...     (clean, urgency),     # Fanout from clean
+            ...     (sentiment, logger),
+            ...     (urgency, logger)     # Fanin at logger
+            ... ])
+        
+        Initial edges (after parsing):
+            [
+                ("twitter", "out", "clean", "in"),
+                ("reddit", "out", "clean", "in"),    # Same to-port (FANIN)
+                ("clean", "out", "sentiment", "in"),
+                ("clean", "out", "urgency", "in"),   # Same from-port (FANOUT)
+                ("sentiment", "out", "logger", "in"),
+                ("urgency", "out", "logger", "in")   # Same to-port (FANIN)
+            ]
+        
+        Degrees computed:
+            indeg = {
+                "twitter": 0,
+                "reddit": 0,
+                "clean": 2,      # ← FANIN detected
+                "sentiment": 1,
+                "urgency": 1,
+                "logger": 2      # ← FANIN detected
+            }
+            
+            outdeg = {
+                "twitter": 1,
+                "reddit": 1,
+                "clean": 2,      # ← FANOUT detected
+                "sentiment": 1,
+                "urgency": 1,
+                "logger": 0
+            }
+        
+        Step 1 - Process FANOUT at clean:
+            Detect: clean has out-degree 2
+            Insert: Broadcast(num_outports=2) named "broadcast_0"
+            
+            Remove edges:
+                ("clean", "out", "sentiment", "in")
+                ("clean", "out", "urgency", "in")
+            
+            Add edges:
+                ("clean", "out", "broadcast_0", "in")
+                ("broadcast_0", "out_0", "sentiment", "in")
+                ("broadcast_0", "out_1", "urgency", "in")
+        
+        Step 2 - Process FANIN at clean:
+            Detect: clean has in-degree 2
+            Insert: MergeAsynch(num_inports=2) named "merge_0"
+            
+            Remove edges:
+                ("twitter", "out", "clean", "in")
+                ("reddit", "out", "clean", "in")
+            
+            Add edges:
+                ("twitter", "out", "merge_0", "in_0")
+                ("reddit", "out", "merge_0", "in_1")
+                ("merge_0", "out", "clean", "in")
+        
+        Step 3 - Process FANIN at logger:
+            Detect: logger has in-degree 2
+            Insert: MergeAsynch(num_inports=2) named "merge_1"
+            
+            Remove edges:
+                ("sentiment", "out", "logger", "in")
+                ("urgency", "out", "logger", "in")
+            
+            Add edges:
+                ("sentiment", "out", "merge_1", "in_0")
+                ("urgency", "out", "merge_1", "in_1")
+                ("merge_1", "out", "logger", "in")
+        
+        Final edges (all 1-to-1):
+            [
+                ("twitter", "out", "merge_0", "in_0"),
+                ("reddit", "out", "merge_0", "in_1"),
+                ("merge_0", "out", "clean", "in"),
+                ("clean", "out", "broadcast_0", "in"),
+                ("broadcast_0", "out_0", "sentiment", "in"),
+                ("broadcast_0", "out_1", "urgency", "in"),
+                ("sentiment", "out", "merge_1", "in_0"),
+                ("urgency", "out", "merge_1", "in_1"),
+                ("merge_1", "out", "logger", "in")
+            ]
+        
+        Final agents (including auto-inserted):
+            {
+                "twitter": Source(...),
+                "reddit": Source(...),
+                "merge_0": MergeAsynch(num_inports=2),    # ← INSERTED
+                "clean": Transform(...),
+                "broadcast_0": Broadcast(num_outports=2),  # ← INSERTED
+                "sentiment": Transform(...),
+                "urgency": Transform(...),
+                "merge_1": MergeAsynch(num_inports=2),    # ← INSERTED
+                "logger": Sink(...)
+            }
+        
+        Visual representation:
+            Before:
+                twitter ─┐
+                         ├─→ clean ─┬─→ sentiment ─┐
+                reddit ──┘          └─→ urgency ───┴─→ logger
+            
+            After (with auto-inserted nodes):
+                twitter ─┐
+                         ├─→ merge_0 ─→ clean ─→ broadcast_0 ─┬─→ sentiment ─┐
+                reddit ──┘                                     └─→ urgency ───┴─→ merge_1 ─→ logger
+        
+        **Key Properties:**
+        - All final edges are 1-to-1 connections (each port connected exactly once)
+        - Message flow is preserved (semantically equivalent to original intent)
+        - Transparent to students (they write simple edges, we handle complexity)
+        - Order matters for Merge: first source → in_0, second → in_1, etc.
+        """
         # Snapshot original edges for degree computation
         original_edges = list(self.edges)
-
+        
         names = set(self.nodes)
-        for u, v in original_edges:
-            names.add(u)
-            names.add(v)
-        names = sorted(names)  # determinism
-
-        # Degrees on original graph
+        for fn, fp, tn, tp in original_edges:
+            names.add(fn)
+            names.add(tn)
+        names = sorted(names)
+        
+        # Compute degrees on original graph
         indeg0 = {n: 0 for n in names}
         outdeg0 = {n: 0 for n in names}
-        for u, v in original_edges:
-            outdeg0[u] += 1
-            indeg0[v] += 1
-
-        # Initial roles (on original)
+        
+        for fn, fp, tn, tp in original_edges:
+            outdeg0[fn] += 1
+            indeg0[tn] += 1
+        
+        # Initial role assignment
         roles: Dict[str, str] = {}
         for n in names:
             if indeg0[n] == 0 and outdeg0[n] == 0:
-                raise ValueError(f"node '{n}' has no incident edges.")
-            if indeg0[n] == 0:
+                raise ValueError(f"Node '{n}' has no incident edges")
+            elif indeg0[n] == 0:
                 roles[n] = "source"
             elif outdeg0[n] == 0:
                 roles[n] = "sink"
             else:
                 roles[n] = "transform"
-
-        # Rewire: fan-out via broadcast, fan-in via merge
-        # new_edges will be modified but original_edges stays unchanged.
+        
+        # Rewrite edges for fanout/fanin
         new_edges = list(original_edges)
         bcount = 0
         mcount = 0
-
-        # Fan-out: for any node with >1 outgoing (in new_edges)
+        
+        # Fanout: insert Broadcast for nodes with >1 outgoing
         for n in names:
-            outs = [v for (u, v) in new_edges if u == n]
+            outs = [(fn, fp, tn, tp) for (fn, fp, tn, tp) in new_edges if fn == n]
             if len(outs) > 1:
                 bname = f"broadcast_{bcount}"
-                while bname in roles or bname in self._fns:
+                while bname in roles or bname in self._agents:
                     bcount += 1
                     bname = f"broadcast_{bcount}"
                 bcount += 1
+                
+                # Create Broadcast agent
+                num_outs = len(outs)
+                broadcast_agent = Broadcast(num_outports=num_outs)
+                self._agents[bname] = broadcast_agent
                 roles[bname] = "broadcast"
-                # remove (n, outs) then add (n, bname) + (bname, v)
-                new_edges = [(u, v)
-                             for (u, v) in new_edges if not (u == n and v in outs)]
-                new_edges.append((n, bname))
-                new_edges.extend((bname, v) for v in outs)
-
-        # Fan-in: for any node with >1 incoming (in new_edges)
+                
+                # Rewrite edges: n → [outs] becomes n → broadcast → [outs]
+                # Remove old edges
+                for edge in outs:
+                    new_edges.remove(edge)
+                
+                # Add n → broadcast
+                # Use the port from first outgoing edge
+                new_edges.append((n, outs[0][1], bname, "in"))
+                
+                # Add broadcast → each target
+                for i, (fn, fp, tn, tp) in enumerate(outs):
+                    new_edges.append((bname, f"out_{i}", tn, tp))
+        
+        # Fanin: insert Merge for nodes with >1 incoming
         for n in names:
-            ins = [u for (u, v) in new_edges if v == n]
+            ins = [(fn, fp, tn, tp) for (fn, fp, tn, tp) in new_edges if tn == n]
             if len(ins) > 1:
                 mname = f"merge_{mcount}"
-                while mname in roles or mname in self._fns:
+                while mname in roles or mname in self._agents:
                     mcount += 1
                     mname = f"merge_{mcount}"
                 mcount += 1
+                
+                # Create Merge agent
+                num_ins = len(ins)
+                merge_agent = MergeAsynch(num_inports=num_ins)
+                self._agents[mname] = merge_agent
                 roles[mname] = "merge"
-                # remove (ins, n) then add (mname, n) + (u, mname)
-                new_edges = [(u, v)
-                             for (u, v) in new_edges if not (u in ins and v == n)]
-                new_edges.append((mname, n))
-                new_edges.extend((u, mname) for u in ins)
-
-        # Commit rewritten edges
+                
+                # Rewrite edges: [ins] → n becomes [ins] → merge → n
+                # Remove old edges
+                for edge in ins:
+                    new_edges.remove(edge)
+                
+                # Add each source → merge
+                for i, (fn, fp, tn, tp) in enumerate(ins):
+                    new_edges.append((fn, fp, mname, f"in_{i}"))
+                
+                # Add merge → n
+                # Use the port from first incoming edge
+                new_edges.append((mname, "out", n, ins[0][3]))
+        
+        # Update edges
         self.edges = new_edges
-
-        # Recompute degrees on the FINAL graph for port counts
-        final_names = set(self._fns.keys()) | {u for u, v in self.edges} | {
-            v for u, v in self.edges}
+        
+        # Recompute degrees on final graph
+        final_names = set(self._agents.keys())
         self.indeg = {n: 0 for n in final_names}
         self.outdeg = {n: 0 for n in final_names}
-        for u, v in self.edges:
-            self.outdeg[u] += 1
-            self.indeg[v] += 1
-
-        # Check
-        for n in final_names:
-            if n not in roles:
-                # Single-degree nodes may appear only if injected; infer from final degrees
-                if self.indeg[n] > 1:
-                    assert (roles[n] == "merge") and (self.outdeg[n] == 1)
-                elif self.outdeg[n] > 1:
-                    assert (roles[n] == "broadcast") and (self.indeg[n] == 1)
-                elif self.indeg[n] == 0:
-                    assert (roles[n] == "source") and (self.outdeg[n] == 1)
-                elif self.outdeg[n] == 0:
-                    assert (roles[n] == "sink") and (self.indeg[n] == 1)
-                else:
-                    assert (roles[n] == "transform") and (
-                        self.indeg == 1) and (self.outdeg == 1)
-
+        
+        for fn, fp, tn, tp in self.edges:
+            self.outdeg[fn] += 1
+            self.indeg[tn] += 1
+        
         return roles
+    
+    def compile(self) -> Network:
+        """
+        Compile the graph into an executable Network.
+        
+        Steps:
+        1. Validate edges reference existing nodes and ports
+        2. Infer roles and insert Broadcast/Merge as needed
+        3. Build Network with blocks and connections
+        
+        Returns:
+            Compiled Network ready to run
+        """
+        # Validate structure
+        self._validate_edges()
+        
+        # Infer roles and rewrite graph
+        roles = self._infer_roles()
+        
+        # Build blocks dictionary (all agents are already created)
+        blocks: Dict[str, Agent] = {}
+        
+        for name, role in roles.items():
+            if name in self._agents:
+                # Use the agent we already have
+                blocks[name] = self._agents[name]
+            else:
+                raise ValueError(f"Missing agent for node '{name}' with role '{role}'")
+        
+        # Build connections (edges are already in the right format)
+        connections = self.edges
+        
+        # Create Network
+        self.network = Network(blocks=blocks, connections=connections)
+        return self.network
+    
+    def compile_and_run(self) -> None:
+        """Compile and run the network."""
+        net = self.network or self.compile()
+        net.compile_and_run()
+    
+    def run_network(self, *args, **kwargs):
+        """Run the network (alias for compile_and_run)."""
+        return self.compile_and_run(*args, **kwargs)
