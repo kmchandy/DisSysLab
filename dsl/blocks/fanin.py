@@ -1,59 +1,10 @@
 # dsl/blocks/fanin.py
-# =================================================
-#                    MergeSynch                   |
-# =================================================
+
 from __future__ import annotations
-from typing import Any, Callable, Optional, Set
-from rich import print as rprint
+from typing import Set
 import threading
 
 from dsl.core import Agent, STOP
-
-
-class MergeSynch(Agent):
-    """
-    Block with multiple inports and one outport "out".
-    Waits to receive one message from EACH inport synchronously in order,
-    then applies func([msg1, msg2, ...]) and sends the result to "out".
-    """
-
-    def __init__(
-        self,
-        inports: list[str],
-        func: Optional[Callable[[list[Any]], Any]] = None,
-        name: Optional[str] = None
-    ):
-        if not inports:
-            raise ValueError(
-                "TransformMultipleStreams requires at least one inport.")
-
-        super().__init__(name=name or "MergeSynch",
-                         inports=inports,
-                         outports=["out"],
-                         run=self.run)
-
-        self.func = func
-        self.buffers = {port: [] for port in inports}
-
-    def run(self):
-        while True:
-            for port in self.inports:
-                msg = self.recv(port)
-                if isinstance(msg, str) and msg == STOP:
-                    self.send(STOP, "out")
-                    return
-                self.buffers[port].append(msg)
-
-            if all(self.buffers[port] for port in self.inports):
-                inputs = [self.buffers[port].pop(0) for port in self.inports]
-                try:
-                    result = self.func(
-                        inputs) if self.func else inputs
-                    self.send(result, "out")
-                except Exception as e:
-                    rprint(
-                        f"[bold red]❌ TransformMergeSynch error:[/bold red] {e}")
-                    self.send(STOP, "out")
 
 
 # =================================================
@@ -63,12 +14,41 @@ class MergeSynch(Agent):
 class MergeAsynch(Agent):
     """
     Asynchronous N→1 merge of message streams.
-    Emits a single STOP after receiving STOP from all inports.
+
+    **This is the recommended merge for most use cases.**
+    Automatically inserted by graph when multiple nodes feed into one node.
+
+    **Ports:**
+    - Inports: ["in_0", "in_1", ..., "in_{N-1}"] (N numbered inputs)
+    - Outports: ["out"]
+
+    **Message Flow:**
+    1. Receives messages from any inport as they arrive (asynchronous)
+    2. Immediately forwards each message to output
+    3. Waits for STOP from ALL inports before sending final STOP
+    4. Uses threading to handle multiple inputs concurrently
+
+    **Key Feature:**
+    Emits a single STOP downstream only after receiving STOP from all inports.
+    This ensures proper shutdown coordination in complex graphs.
+
+    **Usage:**
+    Automatically inserted by graph. Students typically don't create this directly.
     """
 
     def __init__(self, num_inports: int):
+        """
+        Initialize MergeAsynch agent.
+
+        Args:
+            num_inports: Number of input ports to create
+
+        Raises:
+            ValueError: If num_inports < 2
+        """
         if num_inports < 2:
             raise ValueError("MergeAsynch requires at least two inports.")
+
         inports = [f"in_{i}" for i in range(num_inports)]
         super().__init__(inports=inports, outports=["out"])
 
@@ -78,24 +58,30 @@ class MergeAsynch(Agent):
         self._all_stopped = threading.Event()
 
     def _worker(self, port: str) -> None:
+        """Worker thread for one input port."""
         while True:
-            msg = self.recv(port)  # blocking read from inport queue
-            if isinstance(msg, str) and msg == STOP:
+            msg = self.recv(port)  # Blocking read from inport queue
+
+            # Check for termination signal
+            if msg is STOP:
                 with self._stop_lock:
                     self._stopped_ports.add(port)
                     if len(self._stopped_ports) == len(self.inports):
                         self._all_stopped.set()
                 break
-            # forward message
+
+            # Forward message immediately (asynchronous)
             self.send(msg, "out")
 
     def run(self) -> None:
+        """Main loop - spawn worker threads for each input port."""
         threads = []
         for p in self.inports:
             t = threading.Thread(
                 target=self._worker,
                 args=(p,),
                 name=f"merge_worker_{p}",
+                daemon=False
             )
             t.start()
             threads.append(t)
@@ -109,3 +95,6 @@ class MergeAsynch(Agent):
 
         # Emit a single STOP downstream
         self.send(STOP, "out")
+
+
+__all__ = ["MergeAsynch"]

@@ -67,6 +67,10 @@ def msg_map(input_keys, output_keys=None):
             if not isinstance(result, tuple):
                 result = (result,)
 
+            # Check if result is None or contains None values - if so, drop message
+            if result == (None,) or any(v is None for v in result):
+                return None
+
             # Create msg_out with results mapped to output_keys
             msg_out = msg_in.copy()  # Preserve other fields from msg_in
             for key, value in zip(output_keys, result):
