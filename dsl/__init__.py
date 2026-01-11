@@ -1,6 +1,33 @@
 # dsl/__init__.py
-from __future__ import annotations
+"""
+DisSysLab: Distributed Systems Learning Framework
 
-from .graph import network, Graph   # re-export at top level
+A framework for teaching distributed systems concepts through building
+concurrent agent networks.
 
-__all__ = ["network", "Graph"]  # add "Graph" here too if you export it
+Main exports:
+- Agent, Network, STOP, PortReference: Core classes
+- network, Graph: Network building
+- source_map, transform_map, sink_map: Decorators for wrapping functions
+"""
+
+from dsl.core import Agent, Network, STOP, PortReference
+from dsl.graph import network, Graph
+from dsl.decorators import source_map, transform_map, sink_map
+
+__version__ = "1.0.0"
+
+__all__ = [
+    # Core classes
+    "Agent",
+    "Network",
+    "STOP",
+    "PortReference",
+    # Network building
+    "network",
+    "Graph",
+    # Decorators
+    "source_map",
+    "transform_map",
+    "sink_map",
+]

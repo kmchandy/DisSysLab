@@ -87,7 +87,7 @@ class Transform(Agent):
         ...     def clean(self, msg):
         ...         import re
         ...         text = msg["text"]
-        ...         cleaned = re.sub(r'[^\w\s.,!?-]', '', text)
+        ...         cleaned = re.sub(r'[^\\w\\s.,!?-]', '', text)
         ...         return {**msg, "clean_text": cleaned}
         >>> 
         >>> cleaner = TextCleaner()

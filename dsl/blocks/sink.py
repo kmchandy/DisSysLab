@@ -19,7 +19,6 @@ class Sink(Agent):
     2. Calls fn(msg) for each message
     3. Filters out None messages (not passed to fn)
     4. Stops when STOP signal received
-    5. Closes input queue on termination
 
     **Function Requirements:**
     The fn parameter should be a callable that:
@@ -31,7 +30,6 @@ class Sink(Agent):
     - Exceptions during fn(msg) are caught and logged
     - Pipeline terminates gracefully on errors
     - STOP signal always triggers clean termination
-    - Input queue is closed properly on STOP
 
     **Examples:**
 
@@ -103,10 +101,7 @@ class Sink(Agent):
 
                 # Check for termination signal
                 if msg is STOP:
-                    try:
-                        self.close("in")
-                    finally:
-                        return
+                    return
 
                 # Filter out None messages (don't pass to fn)
                 if msg is None:
