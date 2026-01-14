@@ -73,7 +73,7 @@ class MergeAsynch(Agent):
             # Forward message immediately (asynchronous)
             self.send(msg, "out")
 
-    def run(self) -> None:
+    def __call__(self) -> None:
         """Main loop - spawn worker threads for each input port."""
         threads = []
         for p in self.inports:
@@ -95,6 +95,8 @@ class MergeAsynch(Agent):
 
         # Emit a single STOP downstream
         self.send(STOP, "out")
+
+    run = __call__
 
 
 __all__ = ["MergeAsynch"]

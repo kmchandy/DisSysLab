@@ -54,7 +54,8 @@ class MockRSSSource:
             "Open source project reaches 10k GitHub stars",
             "Company announces layoffs in tech sector restructuring",
             "Analysis: The future of edge computing",
-            "Review: Best tools for monitoring distributed systems"
+            "Review: Best tools for monitoring distributed systems",
+            "Critical security flaw patched in major web framework"
         ],
         "reddit_python": [
             "Just finished my first Django project! Feeling proud!",
@@ -66,7 +67,8 @@ class MockRSSSource:
             "You won't believe this one simple trick! Act now!",  # SPAM
             "Help: How do I optimize this database query?",
             "Show: Built a CLI tool for managing Docker containers",
-            "Discussion: Is Python still relevant in 2025?"
+            "Discussion: Is Python still relevant in 2025?",
+            "Emergency! Security breach in popular package."
         ]
     }
 
@@ -98,9 +100,8 @@ class MockRSSSource:
 
         # State tracking (follows Source pattern)
         self.index = 0
-        self._printed_header = False
 
-    def run(self):
+    def __call__(self):
         """
         Returns next article or None when exhausted.
 
@@ -111,11 +112,6 @@ class MockRSSSource:
         Returns:
             str: Next article text, or None if no more articles
         """
-        # Print header on first call
-        if not self._printed_header:
-            print(
-                f"[{self.name}] Fetching {len(self.articles)} articles from mock feed...")
-            self._printed_header = True
 
         # Check if exhausted
         if self.index >= len(self.articles):
@@ -126,6 +122,7 @@ class MockRSSSource:
         self.index += 1
 
         return article
+    run = __call__
 
     def get_stats(self) -> Dict[str, Any]:
         """

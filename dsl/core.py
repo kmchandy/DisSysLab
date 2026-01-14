@@ -722,6 +722,7 @@ class Network:
                     raise TypeError(
                         f"Outport '{outport}' of block '{block_name}' is not connected. "
                         f"All outports must be connected exactly once."
+                        f"connections are: {self.connections}"
                     )
                 if len(matches) > 1:
                     raise ValueError(

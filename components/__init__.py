@@ -3,12 +3,12 @@
 """
 Components: Reusable building blocks for distributed networks.
 
-This library provides sources, transforms, and sinks that can be
+This library provides sources, transformers, and sinks that can be
 composed into distributed systems using the DSL.
 
 Organized by type:
 - sources/: Data stream origins (RSS, mocks, lists)
-- transforms/: Processing nodes (AI agents, filters)
+- transformers/: Processing nodes (AI agents, filters)
 - sinks/: Output destinations (console, email, files)
 
 Each component comes in two versions:
@@ -18,7 +18,7 @@ Each component comes in two versions:
 
 # Make subpackages easily accessible
 from . import sources
-from . import transforms
+from . import transformers
 from . import sinks
 
-__all__ = ['sources', 'transforms', 'sinks']
+__all__ = ['sources', 'transformers', 'sinks']
