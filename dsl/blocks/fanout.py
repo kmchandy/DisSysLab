@@ -42,7 +42,7 @@ class Broadcast(Agent):
             outports=[f"out_{i}" for i in range(num_outports)]
         )
 
-    def run(self):
+    def __call__(self):
         """Main processing loop - broadcast each message to all outputs."""
         while True:
             msg = self.recv("in")
@@ -57,10 +57,12 @@ class Broadcast(Agent):
                 outport_msg = copy.deepcopy(msg)
                 self.send(outport_msg, outport=outport)
 
+    run = __call__  # Alias for run method
 
 # =================================================
 #                  SplitBinary                    |
 # =================================================
+
 
 class SplitBinary(Agent):
     """

@@ -89,7 +89,7 @@ class Source(Agent):
         >>> source = Source(fn=lambda: next(items, None))
     """
 
-    def __init__(self, *, fn: Callable[[], Optional[Any]], interval: float = 0):
+    def __init__(self, fn: Callable[[], Optional[Any]], interval: float = 0):
         """
         Initialize a Source agent.
 
@@ -117,7 +117,7 @@ class Source(Agent):
         self._fn = fn
         self._interval = interval
 
-    def run(self) -> None:
+    def __call__(self) -> None:
         """
         Main processing loop for the Source agent.
 
@@ -146,6 +146,8 @@ class Source(Agent):
             print(f"[Source] Error during fn(): {e}")
             print(traceback.format_exc())
             self.send(STOP, "out")
+
+    run = __call__
 
     def __repr__(self) -> str:
         fn_name = getattr(self._fn, "__name__", repr(self._fn))

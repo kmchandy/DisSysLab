@@ -10,6 +10,7 @@ from dsl.blocks.sink import Sink
 from dsl.blocks.transform import Transform
 from dsl.blocks.fanout import Broadcast
 from dsl.blocks.fanin import MergeAsynch
+from dsl.blocks.split import Split
 
 # Type alias for edges - can be agents or port references
 EdgeNode = Agent | PortReference
@@ -97,7 +98,7 @@ def _parse_edge_from_node(node: EdgeNode) -> Tuple[Agent, str]:
                 f"Sinks have no output ports."
             )
         else:
-            # Generic agent with unknown ports - requires explicit syntax
+            # Generic agent or Split with unknown ports - requires explicit syntax
             raise ValueError(
                 f"Cannot determine output port for {node.__class__.__name__}. "
                 f"Use explicit port syntax: agent.port_name"
@@ -139,7 +140,7 @@ def _parse_edge_to_node(node: EdgeNode) -> Tuple[Agent, str]:
         # Determine default input port based on agent type
         if isinstance(node, Sink):
             return node, "in"
-        elif isinstance(node, (Transform, MergeAsynch)):
+        elif isinstance(node, (Transform, MergeAsynch, Split)):
             return node, "in"
         elif isinstance(node, Source):
             raise ValueError(
@@ -163,47 +164,32 @@ def _parse_edge_to_node(node: EdgeNode) -> Tuple[Agent, str]:
 # ---------------------------------------------------------
 
 
-def network(edges: Iterable[Tuple[EdgeNode, EdgeNode]]) -> Graph:
+def network(edges: Iterable[Tuple[EdgeNode, ...]]) -> Graph:
     """
     Build a graph from a list of agent edges.
 
-    Supports both simple and explicit port syntax:
+    Supports both simple 2-tuple and explicit 4-tuple port syntax:
 
-    Simple (Module 1):
+    2-tuple (auto-detect ports):
         network([
             (source, transform),
             (transform, sink)
         ])
 
-    Explicit (Module 2+):
+    4-tuple (explicit ports):
         network([
-            (source, split),
-            (split.out_0, handler1),
-            (split.out_1, handler2)
+            (source, "out", splitter, "in"),
+            (splitter, "out_0", handler1, "in"),
+            (splitter, "out_1", handler2, "in")
         ])
 
     Args:
-        edges: List of (from_node, to_node) tuples where each node is 
-               either an Agent or a PortReference (agent.port_name)
+        edges: List of edge tuples, either:
+               - (from_node, to_node) - 2-tuple with auto port detection
+               - (from_node, from_port, to_node, to_port) - 4-tuple explicit
 
     Returns:
         Graph instance ready to compile and run
-
-    Examples:
-        >>> # Simple syntax
-        >>> g = network([
-        ...     (twitter_source, clean),
-        ...     (reddit_source, clean),
-        ...     (clean, sentiment),
-        ...     (sentiment, logger)
-        ... ])
-
-        >>> # Explicit ports for Split
-        >>> g = network([
-        ...     (source, splitter),
-        ...     (splitter.out_0, spam_handler),
-        ...     (splitter.out_1, safe_handler)
-        ... ])
     """
 
     # Parse edges and build connections
@@ -211,16 +197,56 @@ def network(edges: Iterable[Tuple[EdgeNode, EdgeNode]]) -> Graph:
     seen_names: set[str] = set()
     ordered_agents: List[Agent] = []
 
-    for from_node, to_node in edges:
-        # Parse from side (sender) - uses context-aware function
-        from_agent, from_port = _parse_edge_from_node(from_node)
-        from_name = _resolve_name(from_agent)
+    for edge in edges:
+        # Handle both 2-tuple and 4-tuple syntax
+        if len(edge) == 2:
+            # 2-tuple: (from_node, to_node)
+            from_node, to_node = edge
+            # Parse from side (sender) - auto-detect port
+            from_agent, from_port = _parse_edge_from_node(from_node)
+            # Parse to side (receiver) - auto-detect port
+            to_agent, to_port = _parse_edge_to_node(to_node)
 
-        # Parse to side (receiver) - uses context-aware function
-        to_agent, to_port = _parse_edge_to_node(to_node)
+        elif len(edge) == 4:
+            # 4-tuple: (from_node, from_port, to_node, to_port)
+            from_node, from_port, to_node, to_port = edge
+
+            # Extract agents (nodes might be PortReferences, but we ignore them here)
+            if isinstance(from_node, PortReference):
+                from_agent = from_node.agent
+            elif isinstance(from_node, Agent):
+                from_agent = from_node
+            else:
+                raise TypeError(
+                    f"from_node must be Agent or PortReference, got {type(from_node).__name__}"
+                )
+
+            if isinstance(to_node, PortReference):
+                to_agent = to_node.agent
+            elif isinstance(to_node, Agent):
+                to_agent = to_node
+            else:
+                raise TypeError(
+                    f"to_node must be Agent or PortReference, got {type(to_node).__name__}"
+                )
+
+            # from_port and to_port are already provided as strings
+            if not isinstance(from_port, str) or not isinstance(to_port, str):
+                raise TypeError(
+                    f"Ports must be strings in 4-tuple syntax. "
+                    f"Got from_port={type(from_port).__name__}, to_port={type(to_port).__name__}"
+                )
+        else:
+            raise ValueError(
+                f"Edge must be 2-tuple (node, node) or 4-tuple (node, port, node, port). "
+                f"Got {len(edge)}-tuple: {edge}"
+            )
+
+        # Resolve names
+        from_name = _resolve_name(from_agent)
         to_name = _resolve_name(to_agent)
 
-        # Build connection tuple - ports are already determined!
+        # Build connection tuple
         parsed_edges.append((from_name, from_port, to_name, to_port))
 
         # Collect unique agents in first-seen order
@@ -553,10 +579,17 @@ class Graph:
         bcount = 0
         mcount = 0
 
-        # Fanout: insert Broadcast for nodes with >1 outgoing
-        for n in names:
-            outs = [(fn, fp, tn, tp)
-                    for (fn, fp, tn, tp) in new_edges if fn == n]
+        # Fanout: insert Broadcast for (node, port) pairs with >1 outgoing
+        # Group edges by (from_node, from_port)
+        from collections import defaultdict
+
+        outgoing_by_port = defaultdict(list)
+        for edge in new_edges:
+            fn, fp, tn, tp = edge
+            outgoing_by_port[(fn, fp)].append(edge)
+
+        # Process each (node, port) that has multiple outgoing edges
+        for (n, port), outs in outgoing_by_port.items():
             if len(outs) > 1:
                 bname = f"broadcast_{bcount}"
                 while bname in roles or bname in self._agents:
@@ -570,23 +603,27 @@ class Graph:
                 self._agents[bname] = broadcast_agent
                 roles[bname] = "broadcast"
 
-                # Rewrite edges: n → [outs] becomes n → broadcast → [outs]
+                # Rewrite edges: (n, port) → [outs] becomes (n, port) → broadcast → [outs]
                 # Remove old edges
                 for edge in outs:
                     new_edges.remove(edge)
 
-                # Add n → broadcast
-                # Use the port from first outgoing edge
-                new_edges.append((n, outs[0][1], bname, "in"))
+                # Add (n, port) → broadcast
+                new_edges.append((n, port, bname, "in"))
 
                 # Add broadcast → each target
                 for i, (fn, fp, tn, tp) in enumerate(outs):
                     new_edges.append((bname, f"out_{i}", tn, tp))
 
-        # Fanin: insert Merge for nodes with >1 incoming
-        for n in names:
-            ins = [(fn, fp, tn, tp)
-                   for (fn, fp, tn, tp) in new_edges if tn == n]
+        # Fanin: insert Merge for (node, port) pairs with >1 incoming
+        # Group edges by (to_node, to_port)
+        incoming_by_port = defaultdict(list)
+        for edge in new_edges:
+            fn, fp, tn, tp = edge
+            incoming_by_port[(tn, tp)].append(edge)
+
+        # Process each (node, port) that has multiple incoming edges
+        for (n, port), ins in incoming_by_port.items():
             if len(ins) > 1:
                 mname = f"merge_{mcount}"
                 while mname in roles or mname in self._agents:
@@ -600,7 +637,7 @@ class Graph:
                 self._agents[mname] = merge_agent
                 roles[mname] = "merge"
 
-                # Rewrite edges: [ins] → n becomes [ins] → merge → n
+                # Rewrite edges: [ins] → (n, port) becomes [ins] → merge → (n, port)
                 # Remove old edges
                 for edge in ins:
                     new_edges.remove(edge)
@@ -609,9 +646,8 @@ class Graph:
                 for i, (fn, fp, tn, tp) in enumerate(ins):
                     new_edges.append((fn, fp, mname, f"in_{i}"))
 
-                # Add merge → n
-                # Use the port from first incoming edge
-                new_edges.append((mname, "out", n, ins[0][3]))
+                # Add merge → (n, port)
+                new_edges.append((mname, "out", n, port))
 
         # Update edges
         self.edges = new_edges

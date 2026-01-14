@@ -2,23 +2,24 @@
 
 from __future__ import annotations
 import traceback
-from typing import Any, List, Optional, Union
+from typing import Any, Callable, List, Optional
 from dsl.core import Agent, STOP
 
 
 class Split(Agent):
     """
-    Split Agent: Route messages to N outputs based on router decisions.
+    Split Agent: Route messages to N outputs based on router function.
 
     **Ports:**
     - Inports: ["in"] (receives messages to route)
     - Outports: ["out_0", "out_1", ..., "out_{N-1}"] (N numbered outputs)
 
-    **Router Requirements:**
-    The router object must have a .run(msg) method that returns a list of N messages,
-    where each message is sent to the corresponding output port.
-
-    If a message in the list is None, it's filtered (not sent to that output).
+    **Function Requirements:**
+    The fn parameter should be a callable that:
+    - Takes a single message argument: fn(msg)
+    - Returns a list of N messages (one per output port)
+    - None values in the list are filtered (not sent to that output)
+    - Signature: fn(msg) -> List[Optional[msg]]
 
     **Capabilities:**
     This pattern allows:
@@ -29,21 +30,21 @@ class Split(Agent):
 
     **Message Flow:**
     1. Receives message from "in" port
-    2. Calls router.run(msg) to get list of N messages
+    2. Calls fn(msg) to get list of N messages
     3. Sends each non-None message to corresponding output port
-    4. If router returns None for a position, that output is filtered
+    4. If fn returns None for a position, that output is filtered
     5. Forwards STOP signal to all outputs and terminates
 
     **Error Handling:**
-    - Validates that router returns a list of correct length
-    - Catches exceptions in router logic
+    - Validates that fn returns a list of correct length
+    - Catches exceptions in routing logic
     - Broadcasts STOP on errors
 
     **Examples:**
 
     Simple content routing:
         >>> class ContentRouter:
-        ...     def run(self, msg):
+        ...     def route(self, msg):
         ...         if is_spam(msg["text"]):
         ...             return [msg, None, None]  # Route to spam handler
         ...         elif is_abuse(msg["text"]):
@@ -52,11 +53,11 @@ class Split(Agent):
         ...             return [None, None, msg]  # Route to safe handler
         >>> 
         >>> router = ContentRouter()
-        >>> split = Split(router=router, num_outputs=3)
+        >>> split = Split(fn=router.route, num_outputs=3)
 
     Sentiment-based routing:
         >>> class SentimentRouter:
-        ...     def run(self, msg):
+        ...     def route(self, msg):
         ...         score = analyze_sentiment(msg["text"])
         ...         if score > 0.5:
         ...             return [msg, None, None]  # Positive
@@ -66,11 +67,26 @@ class Split(Agent):
         ...             return [None, None, msg]  # Neutral
         >>> 
         >>> router = SentimentRouter()
-        >>> split = Split(router=router, num_outputs=3)
+        >>> split = Split(fn=router.route, num_outputs=3)
+
+    Round-robin routing:
+        >>> class RoundRobinRouter:
+        ...     def __init__(self, num_outputs):
+        ...         self.num_outputs = num_outputs
+        ...         self.counter = 0
+        ...     
+        ...     def route(self, msg):
+        ...         results = [None] * self.num_outputs
+        ...         results[self.counter % self.num_outputs] = msg
+        ...         self.counter += 1
+        ...         return results
+        >>> 
+        >>> router = RoundRobinRouter(num_outputs=3)
+        >>> split = Split(fn=router.route, num_outputs=3)
 
     Multicast to multiple handlers:
         >>> class AlertRouter:
-        ...     def run(self, msg):
+        ...     def route(self, msg):
         ...         if msg["priority"] == "critical":
         ...             return [msg, msg, msg]  # Send to all handlers
         ...         elif msg["priority"] == "high":
@@ -79,14 +95,14 @@ class Split(Agent):
         ...             return [msg, None, None]  # Send to one handler
         >>> 
         >>> router = AlertRouter()
-        >>> split = Split(router=router, num_outputs=3)
+        >>> split = Split(fn=router.route, num_outputs=3)
 
     Transform while routing:
         >>> class EnrichingRouter:
         ...     def __init__(self):
         ...         self.count = 0
         ...     
-        ...     def run(self, msg):
+        ...     def route(self, msg):
         ...         self.count += 1
         ...         category = self.categorize(msg["text"])
         ...         enriched = {
@@ -101,52 +117,47 @@ class Split(Agent):
         ...             return [None, enriched]
         >>> 
         >>> router = EnrichingRouter()
-        >>> split = Split(router=router, num_outputs=2)
+        >>> split = Split(fn=router.route, num_outputs=2)
     """
 
-    def __init__(self, *, router: Any, num_outputs: int) -> None:
+    def __init__(self, fn: Callable[[Any], List[Optional[Any]]], *, num_outputs: int) -> None:
         """
         Initialize a Split agent.
 
         Args:
-            router: Object with .run(msg) method that returns list of N messages.
-                    Each message in the list corresponds to an output port.
-                    None values are filtered (not sent).
+            fn: Callable that routes messages to outputs.
+                Signature: fn(msg) -> List[Optional[msg]]
+                - Takes a message as input
+                - Returns list of N messages (one per output)
+                - None values are filtered (not sent to that output)
             num_outputs: Number of output ports to create.
 
         Raises:
-            AttributeError: If router doesn't have .run() method
+            TypeError: If fn is not callable
             ValueError: If num_outputs < 2
         """
+        if not callable(fn):
+            raise TypeError(
+                f"Split fn must be callable. Got {type(fn).__name__}"
+            )
+
         if num_outputs < 2:
             raise ValueError(
                 f"Split requires at least 2 outputs, got {num_outputs}"
-            )
-
-        if not hasattr(router, 'run'):
-            raise AttributeError(
-                f"Router must have .run(msg) method. "
-                f"Got {type(router).__name__} with no .run() method."
-            )
-
-        if not callable(router.run):
-            raise AttributeError(
-                f"Router.run must be callable. "
-                f"Got {type(router.run).__name__}"
             )
 
         super().__init__(
             inports=["in"],
             outports=[f"out_{i}" for i in range(num_outputs)]
         )
-        self.router = router
+        self._fn = fn
         self.num_outputs = num_outputs
 
-    def run(self) -> None:
+    def __call__(self) -> None:
         """
         Main processing loop for the Split agent.
 
-        Receives messages, routes them via router, and sends to outputs.
+        Receives messages, routes them via fn, and sends to outputs.
         """
         while True:
             msg = self.recv("in")
@@ -157,19 +168,19 @@ class Split(Agent):
                 return
 
             try:
-                # Get routing decisions from router
-                results = self.router.run(msg)
+                # Get routing decisions from function
+                results = self._fn(msg)
 
                 # Validate results
                 if not isinstance(results, (list, tuple)):
                     raise TypeError(
-                        f"Router.run() must return a list of {self.num_outputs} messages. "
+                        f"Split fn must return a list of {self.num_outputs} messages. "
                         f"Got {type(results).__name__}: {results!r}"
                     )
 
                 if len(results) != self.num_outputs:
                     raise ValueError(
-                        f"Router.run() must return exactly {self.num_outputs} messages. "
+                        f"Split fn must return exactly {self.num_outputs} messages. "
                         f"Got {len(results)} messages: {results!r}"
                     )
 
@@ -179,14 +190,16 @@ class Split(Agent):
                     self.send(out_msg, f"out_{i}")
 
             except Exception as e:
-                print(f"[Split] Error in router: {e}")
+                print(f"[Split] Error in fn: {e}")
                 print(traceback.format_exc())
                 self.broadcast_stop()
                 return
 
+    run = __call__
+
     def __repr__(self) -> str:
-        router_name = type(self.router).__name__
-        return f"<Split router={router_name} num_outputs={self.num_outputs}>"
+        fn_name = getattr(self._fn, "__name__", repr(self._fn))
+        return f"<Split fn={fn_name} num_outputs={self.num_outputs}>"
 
     def __str__(self) -> str:
         return f"Split({self.num_outputs} outputs)"

@@ -145,7 +145,7 @@ def analyze_sentiment(text):
     return sentiment, score
 
 
-def analyze_urgency(text):
+def filter_non_urgent(text):
     """
     Analyzes urgency and calculates text metrics.
 
@@ -167,19 +167,9 @@ def analyze_urgency(text):
         1 for indicator in urgent_indicators if indicator in text_lower)
 
     if urgency_score >= 2:
-        urgency = "HIGH"
-    elif urgency_score == 1:
-        urgency = "MEDIUM"
+        return text
     else:
-        urgency = "LOW"
-
-    metrics = {
-        "char_count": len(text),
-        "word_count": len(text.split()),
-        "urgency_score": urgency_score
-    }
-
-    return urgency, metrics
+        return None
 # modules/basic/mock_email_alerter.py
 
 

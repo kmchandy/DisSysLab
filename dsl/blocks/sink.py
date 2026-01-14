@@ -69,7 +69,7 @@ class Sink(Agent):
         >>> sink = Sink(fn=collector.process)
     """
 
-    def __init__(self, *, fn: Callable[[Any], None]) -> None:
+    def __init__(self, fn: Callable[[Any], None]) -> None:
         """
         Initialize a Sink agent.
 
@@ -89,7 +89,7 @@ class Sink(Agent):
         super().__init__(inports=["in"], outports=[])
         self._fn = fn
 
-    def run(self) -> None:
+    def __call__(self) -> None:
         """
         Main processing loop for the Sink agent.
 
@@ -99,7 +99,7 @@ class Sink(Agent):
             while True:
                 msg = self.recv("in")
 
-                # Check for termination signal
+                # Halt if termination signal.
                 if msg is STOP:
                     return
 
@@ -119,6 +119,22 @@ class Sink(Agent):
             print(f"[Sink] Error: {e}")
             print(traceback.format_exc())
             return
+
+    def shutdown(self) -> None:
+        """
+        Cleanup after run() completes.
+
+        Calls finalize() on the wrapped function if it exists.
+        This ensures files are properly closed, connections cleaned up, etc.
+        """
+        if hasattr(self._fn, 'finalize') and callable(self._fn.finalize):
+            try:
+                print(f"[Sink] Finalizing {self._fn.__name__}...")
+                self._fn.finalize()
+            except Exception as e:
+                print(f"[Sink] Error during finalize: {e}")
+
+    run = __call__
 
     def __repr__(self) -> str:
         fn_name = getattr(self._fn, "__name__", repr(self._fn))

@@ -94,7 +94,7 @@ class Transform(Agent):
         >>> transform = Transform(fn=cleaner.clean)
     """
 
-    def __init__(self, *, fn: Callable[[Any], Optional[Any]]) -> None:
+    def __init__(self, fn: Callable[[Any], Optional[Any]]) -> None:
         """
         Initialize a Transform agent.
 
@@ -115,7 +115,7 @@ class Transform(Agent):
         super().__init__(inports=["in"], outports=["out"])
         self._fn = fn
 
-    def run(self) -> None:
+    def __call__(self) -> None:
         """
         Main processing loop for the Transform agent.
 
@@ -140,6 +140,8 @@ class Transform(Agent):
 
             # Send result (None is automatically filtered by send())
             self.send(result, "out")
+
+    run = __call__
 
     def __repr__(self) -> str:
         fn_name = getattr(self._fn, "__name__", repr(self._fn))

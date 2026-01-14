@@ -52,10 +52,7 @@ class MockEmailAlerter:
         self.from_address = from_address or "noreply@example.com"
         self.subject_prefix = subject_prefix
 
-        # Statistics
-        self.alert_count = 0
-
-    def run(self, msg: Dict[str, Any]):
+    def __call__(self, msg: Dict[str, Any]):
         """
         Simulate sending an email alert by printing to console.
 
@@ -64,38 +61,18 @@ class MockEmailAlerter:
 
         Args:
             msg: Dictionary containing message data
+
         """
-        self.alert_count += 1
-
-        # Extract content
-        text = msg.get('text', str(msg))
-        subject = msg.get('subject', 'Alert')
-
         # Print formatted alert
         print()
-        print("=" * 70)
-        print(f"📧 MOCK EMAIL ALERT #{self.alert_count}")
-        print("=" * 70)
         print(f"From:    {self.from_address}")
         print(f"To:      {self.to_address}")
-        print(f"Subject: {self.subject_prefix} {subject}")
+        print(f"Subject: {self.subject_prefix}")
         print()
-        print("Message:")
-        print(text)
+        print(msg)
         print()
 
-        # Show additional fields if present
-        other_fields = {k: v for k, v in msg.items() if k not in [
-            'text', 'subject']}
-        if other_fields:
-            print("Additional Details:")
-            for key, value in other_fields.items():
-                print(f"  {key}: {value}")
-            print()
-
-        print(f"Time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        print("=" * 70)
-        print()
+    run = __call__
 
     def get_stats(self) -> Dict[str, Any]:
         """
@@ -113,21 +90,22 @@ class MockEmailAlerter:
 
     def print_stats(self):
         """Print statistics in a readable format."""
-        stats = self.get_stats()
-        print()
-        print("=" * 70)
-        print("Mock Email Alerter Statistics")
-        print("=" * 70)
-        print(f"From:         {stats['from_address']}")
-        print(f"To:           {stats['to_address']}")
-        print(f"Alerts sent:  {stats['alerts_sent']} (printed to console)")
-        print(f"Mode:         Mock (no real emails)")
-        print("=" * 70)
-        print()
+        # stats = self.get_stats()
+        # print()
+        # print("=" * 70)
+        # print("Mock Email Alerter Statistics")
+        # print("=" * 70)
+        # print(f"From:         {stats['from_address']}")
+        # print(f"To:           {stats['to_address']}")
+        # print(f"Alerts sent:  {stats['alerts_sent']} (printed to console)")
+        # print(f"Mode:         Mock (no real emails)")
+        # print("=" * 70)
+        # print()
 
     def finalize(self):
         """Cleanup - prints summary."""
-        self.print_stats()
+        # self.print_stats()
+        pass
 
 
 # ============================================================================

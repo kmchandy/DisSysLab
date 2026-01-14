@@ -1,18 +1,101 @@
 # Basic Network Example: Distributed Social Media Analysis
 
-## What This Example Does
+## Key Insight
+You build a distributed system by constructing a graph in which nodes call
+ordinary Python functions that are often from widely-used libraries such as NumPy. 
+These functions are independent of dsl and have no concurrency primitives such 
+as threads, processes, locks, or message passing. 
+
+## The Graph
+The graph is specified as a list of directed edges where an edge from node u to
+node v is written as (u, v). Each node in the graph has at least one incident edge.
+The graph in this example is:
+
+```python
+    (hacker_data_source, discard_spam),
+    (tech_data_source, discard_spam),
+    (reddit_data_source, discard_spam),
+    (discard_spam, analyze_sentiment),
+    (discard_spam, discard_non_urgent),
+    (discard_non_urgent, issue_alert),
+    (analyze_sentiment, archive_recorder), 
+
+RSS FEEDS (Sources)
+
+┌─────────────┐    ┌─────────────┐    ┌─────────────┐
+│ hacker_data │    │ tech_data   │    │ reddit_data │
+│   _source   │    │   _source   │    │   _source   │
+└──────┬──────┘    └──────┬──────┘    └──────┬──────┘
+       │                  │                  │
+       │                  │                  │
+       └──────────────────┼──────────────────┘
+                          │
+                 FANIN    ▼
+                   ┌─────────────┐
+                   │  discard_   │ (Transform: AI Spam Filter)
+                   │    spam     │
+                   └──────┬──────┘
+                          │
+                          │
+                 FANOUT   ├──────────────────┐
+                          │                  │
+                          ▼                  ▼
+                   ┌─────────────┐    ┌─────────────┐
+                   │  analyze_   │    │  discard_   │ (Transform: Filter Urgent)
+                   │  sentiment  │    │  non_urgent │
+                   └──────┬──────┘    └──────┬──────┘
+                          │                  │
+                          │                  │
+                          ▼                  ▼
+                   ┌─────────────┐    ┌─────────────┐
+                   │  archive_   │    │  issue_     │ (Sink: Email Alerts)
+                   │  recorder   │    │  alert      │
+                   └─────────────┘    └─────────────┘
+                    (Sink: JSON)
+```
+
+## Nodes: Sources, Transformers and Sinks
+
+Nodes without input edges are called **Source** nodes. Nodes without output edges are
+called **Sink** nodes. Nodes with at least one input and one output edge are called **Transformers**. 
+
+
+In this example, the nodes **hacker_data_source**, **tech_data_source**, and **reddit_data_source**  are souces; nodes **discard_spam**, **analyze_sentiment**, and **discard_non_urgent**, are transformers; and nodes **issue_alert** and **archive_recorder** are sinks.
+
+## Streams
+A message stream is a sequence of messages. Associated with each edge of the graph (u, v) is a stream created by u and sent to v. 
+
+For example **discard_spam** receives streams from **hacker_data_source**, **tech_data_source**, and **reddit_data_source** while it sends streams to **issue_alert** and **archive_recorder**.
+
+## Components Library
+The components library is a library of ordinary Python functions that are independent of **dsl** and have no concurrency primitives such as threads, processes, locks, or message passing. We will often build distributed systems by using standard Python libraries such as those in NumPy.
+
+In this example, we use functions in the library that are mockups of calls to AI services. For example, we use a mockup call to an AI service to determine the sentiment of a text. You can exeucte the code in this example without registering for services, getting keys, and downloading APIs. Later we will replace the mockups with AI services and APIs. 
+
+# From Plain Python to a Node of a Distributed System Graph
+
+### Sources ###
+You build a source node of the graph by calling **Source(f)** where **f** is a function that returns a value. Look at
+```python
+hacker_data_source = Source(MockRSSSource(
+    feed_name="hacker_news", max_articles=100).run)
+```
+**MockRSSSource** is a class, and **MockRSSSource(feed_name="hacker_news", max_articles=100)** is an object -- an instance of that class -- while **MockRSSSource(feed_name="hacker_news", max_articles=100).run** is a function. This function returns a new value, the next article, when it is called. The infrastructure calls the function repeatedyl to generate a stream of articles.
+
+### Transformers ###
+Similarly **Transform(f)**, where where **f** is a function, is a transformer node. Function **f** has a single argument and returns a single value.
+
+In this example **MockAISentimentAnalyzer.run** is a function that has a single argument, a text, and that returns a single value which is a dict. When a message arrives at this node the contents of the message are passed to the function and the function's return value is sent as a message by the node.
+
+### Fanin ###
+
+
 
 This example builds a distributed system that processes social media posts from three platforms (X, Reddit, Facebook), cleans the text, and performs two types of analysis in parallel: sentiment analysis and urgency detection. The results are archived and displayed in real-time.
 
 **The key insight:** You build this entire distributed system using ordinary Python functions—no threads, processes, locks, or explicit message passing required. The functions know nothing about distributed systems.
 
-## Key Concepts Demonstrated
 
-1. **Fanin**: Multiple data sources merge into a single processing node
-2. **Fanout**: One node broadcasts its output to multiple downstream nodes  
-3. **Message Passing**: Data flows automatically between nodes as dictionaries
-4. **Parallel Processing**: Multiple analyzers process data simultaneously
-5. **Ordinary Functions**: Vanilla Python functions become distributed system components
 
 ## The Central Teaching Point
 
