@@ -87,9 +87,11 @@ Similarly **Transform(f)**, where where **f** is a function, is a transformer no
 
 In this example **MockAISentimentAnalyzer.run** is a function that has a single argument, a text, and that returns a single value which is a dict. When a message arrives at this node the contents of the message are passed to the function and the function's return value is sent as a message by the node.
 
-### Fanin ###
+### Merge Streams ###
+A node may have input edges from multple nodes. In the example, the node **discard_spam** has inputs from all three source nodes. The streams from all edges feeding a node are merged nondeterministically and fairly. This means that the order in which messages are received is unknown; however, every message in every input stream of a node is received by the node eventually if the system runs forever. In the example, a hacker news article may be sent by a source before a tech article is sent by a different source but the tech article may be received before the hacker one. We also know that the hacker article will be received eventually.
 
-
+### Broadcast ###
+A node may have multiple edges leading from it. In the example, the node **discard_spam** has outputs to nodes **analyze_sentiment**, and **discard_non_urgent**. A stream output by a node is broadcast along all the output edges from that node. In the example, nodes **analyze_sentiment** and **discard_non_urgent** receive identical streams. The delay of messages on different streams is unknown. So, at a given instant, **analyze_sentiment** may have received more, or fewer, or the same number of messages as **discard_non_urgent**.
 
 This example builds a distributed system that processes social media posts from three platforms (X, Reddit, Facebook), cleans the text, and performs two types of analysis in parallel: sentiment analysis and urgency detection. The results are archived and displayed in real-time.
 
