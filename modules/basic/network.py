@@ -55,8 +55,13 @@ archive_recorder = Sink(JSONLRecorder(
 )
 
 # ============================================================================
-# STEP 5: Build Network Topology
+# STEP 5: Specify network - a list of edges
 # ============================================================================
+print(f"{'='*50}")
+print(f"Output consists of mock emails")
+print(f"{'='*50}")
+print()
+
 
 g = network([
     (hacker_data_source, discard_spam),
@@ -69,3 +74,5 @@ g = network([
 ])
 
 g.run_network()
+
+print(f"Read 'basic_network_archive.jsonl' to see archived sentiment analysis results.")

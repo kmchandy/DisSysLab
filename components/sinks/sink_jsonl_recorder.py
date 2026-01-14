@@ -35,7 +35,6 @@ class JSONLRecorder:
         return self._name
 
     def __call__(self, msg: Dict[str, Any]):
-        print(f"in JSLONLRecorder: msg = {msg}")
         self._fh.write(
             json.dumps(msg, default=str, ensure_ascii=self.ensure_ascii,
                        sort_keys=self.sort_keys)

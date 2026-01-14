@@ -1,4 +1,4 @@
-# Basic Network Example: Distributed Social Media Analysis
+# Module 1: Specify a distributed system as a graph
 
 ## Key Insight
 You build a distributed system by specifying a graph. You do not use concurrency primitives such as threads, processes locks, or message passing.
@@ -87,7 +87,6 @@ Likewise, **Sink(f)**, where where **f** is a function, is a sink node. Function
 Streams do not contain **None** messages. When a node sends a **None** message the dsl infrastructure filters out the message and does not send it. This feature is used to build filters. In the example, the spam filter node executes a function that receives a text and returns **None** if the text is spam and returns the text if it is not spam. So the only messages output by spam filter are non-spam.
 
 
-
 ## Merge and Broadcast ##
 
 ### Merge Streams ###
@@ -97,6 +96,12 @@ The order of messages in the same edge is maintained. If u sends m to w and late
 
 ### Broadcast ###
 A node may have multiple edges leading from it. In the example, the node **discard_spam** has outputs to nodes **analyze_sentiment**, and **discard_non_urgent**. A stream output by a node is broadcast along all the output edges from that node. In the example, nodes **analyze_sentiment** and **discard_non_urgent** receive identical streams. The delay of messages on different streams is unknown. So, at a given instant, **analyze_sentiment** may have received more, or fewer, or the same number of messages as **discard_non_urgent**.
+
+## Run the System
+From the root directory, ```DisSysLab```, execute
+```python
+python -m modules.basic.network
+```
 
 ## The Key Point ##
 You built a distributed system in which multiple nodes execute concurrently. You specified the system network as a graph -- a list of edges. You specified each node in the graph by its type (Source, Transform, or Sink) and the function that the node called. These functions do not use concurrency primitives.
