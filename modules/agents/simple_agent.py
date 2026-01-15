@@ -18,11 +18,6 @@ from dsl import network
 from dsl.core import Agent, STOP
 from dsl.blocks import Source, Sink
 from components.sources.list_source import ListSource
-from components.sinks.sink_list_collector import ListCollector
-
-# ============================================================================
-# Custom Multi-Port Agent
-# ============================================================================
 
 
 class Adder(Agent):
@@ -65,41 +60,36 @@ class Adder(Agent):
 
 
 # ============================================================================
-# Sinks (Output Handlers)
-# ============================================================================
-
-
-# ============================================================================
 # Build Network
 # ============================================================================
-# Create sources
-source_x_data = ListSource([10, 20, 30], name="source_x")
-source_y_data = ListSource([1, 2, 3], name="source_y")
+# Make sources
+x_source = Source(ListSource([10, 20, 30]).run)
+y_source = Source(ListSource([1, 2, 3]).run)
 
-source_x = Source(ListSource([10, 20, 30], name="source_x").run)
-source_y = Source(ListSource([1, 2, 3], name="source_y").run)
-
-# Create the adder agent
+# Make the adder agent
 adder = Adder()
 
-store_sums = ListCollector()
-sink_sums = Sink(store_sums.run)
+# Make sinks
+sums, diffs = [], []
+def append_to_sums(msg): sums.append(msg)
+def append_to_diffs(msg): diffs.append(msg)
 
-store_diffs = ListCollector()
-sink_diffs = Sink(store_diffs.run)
 
-# Define network topology using port attribute syntax
-# agent.port_name automatically creates PortReference(agent, "port_name")
+# Make the network.
+# Explicitly name ports for adder because it is an agent with named ports.
 g = network([
-    # Connect sources to adder's specific input ports
-    (source_x, adder.x),      # adder.x → PortReference(adder, "x")
-    (source_y, adder.y),      # adder.y → PortReference(adder, "y")
+    # Connect x_source to adder's input port named "x"
+    (x_source, adder.x),   # adder.x means port "x" of adder
+    # Connect y_source to adder's input port named "y"
+    (y_source, adder.y),   # adder.y means port "y" of  adder
 
-    # Connect adder's output ports to sinks
-    # adder.sum → PortReference(adder, "sum")
-    (adder.sum, sink_sums),
-    # adder.diff → PortReference(adder, "diff")
-    (adder.diff, sink_diffs)
+    # Connect adder's output port named "sum" to Sink(append_to_sums)
+    # adder.sum means port "sum" of agent adder
+    (adder.sum, Sink(append_to_sums)),
+
+    # Connect adder's output port named "diff" to Sink(append_to_diffs)
+    # adder.sum means port "sum" of agent adder
+    (adder.diff, Sink(append_to_diffs)),
 ])
 
 
@@ -122,15 +112,15 @@ if __name__ == "__main__":
 
     print("-" * 60)
     print()
-    print("Collected sums:", store_sums.values)
-    print("Collected diffs:", store_diffs.values)
+    print("Collected sums:", sums)
+    print("Collected diffs:", diffs)
     print()
 
     # Verify results
-    assert store_sums.values == [
-        11, 22, 33], f"Expected [11, 22, 33], got {store_sums.values}"
-    assert store_diffs.values == [
-        9, 18, 27], f"Expected [9, 18, 27], got {store_diffs.values}"
+    assert sums == [
+        11, 22, 33], f"Expected [11, 22, 33], got {sums}"
+    assert diffs == [
+        9, 18, 27], f"Expected [9, 18, 27], got {diffs}"
 
     print("✓ Multi-port agent test passed!")
     print("=" * 60)

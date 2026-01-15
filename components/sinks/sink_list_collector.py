@@ -5,14 +5,14 @@
 
 class ListCollector:
 
-    def __init__(self, print_values=False):
+    def __init__(self, values, print_values=False):
         """
         Args:
             value_key: Key to extract from messages (default: "result")
             name: Display name for printing (default: "collector")
             print_values: Whether to print collected values (default: True)
         """
-        self.values = []
+        self.values = values
         self.print_values = print_values
 
     def run(self, msg):
