@@ -162,31 +162,40 @@ def _parse_edge_to_node(node: EdgeNode) -> Tuple[Agent, str]:
 # ---------------------------------------------------------
 #                  NETWORK BUILDER                        |
 # ---------------------------------------------------------
-
-
 def network(edges: Iterable[Tuple[EdgeNode, ...]]) -> Graph:
     """
     Build a graph from a list of agent edges.
 
-    Supports both simple 2-tuple and explicit 4-tuple port syntax:
+    Supports multiple edge syntaxes:
 
-    2-tuple (auto-detect ports):
+    2-tuple (auto-detect both ports):
         network([
-            (source, transform),
-            (transform, sink)
+            (source, transform),      # → (source, "out", transform, "in")
+            (transform, sink)         # → (transform, "out", sink, "in")
         ])
 
-    4-tuple (explicit ports):
+    3-tuple (explicit from_port, auto-detect to_port):
+        network([
+            (splitter, "out_0", sink)  # → (splitter, "out_0", sink, "in")
+        ])
+
+    3-tuple (auto-detect from_port, explicit to_port):
+        network([
+            (source, merge, "in_0")    # → (source, "out", merge, "in_0")
+        ])
+
+    4-tuple (fully explicit):
         network([
             (source, "out", splitter, "in"),
-            (splitter, "out_0", handler1, "in"),
-            (splitter, "out_1", handler2, "in")
+            (splitter, "out_0", handler1, "in")
         ])
 
     Args:
-        edges: List of edge tuples, either:
-               - (from_node, to_node) - 2-tuple with auto port detection
-               - (from_node, from_port, to_node, to_port) - 4-tuple explicit
+        edges: List of edge tuples:
+               - (from_node, to_node) - 2-tuple, auto-detect both ports
+               - (from_node, from_port, to_node) - 3-tuple, explicit from_port
+               - (from_node, to_node, to_port) - 3-tuple, explicit to_port
+               - (from_node, from_port, to_node, to_port) - 4-tuple, fully explicit
 
     Returns:
         Graph instance ready to compile and run
@@ -198,20 +207,73 @@ def network(edges: Iterable[Tuple[EdgeNode, ...]]) -> Graph:
     ordered_agents: List[Agent] = []
 
     for edge in edges:
-        # Handle both 2-tuple and 4-tuple syntax
+        # Normalize all edge formats to 4-tuple: (from_agent, from_port, to_agent, to_port)
+
         if len(edge) == 2:
             # 2-tuple: (from_node, to_node)
+            # Auto-detect both ports
             from_node, to_node = edge
-            # Parse from side (sender) - auto-detect port
             from_agent, from_port = _parse_edge_from_node(from_node)
-            # Parse to side (receiver) - auto-detect port
             to_agent, to_port = _parse_edge_to_node(to_node)
+
+        elif len(edge) == 3:
+            # 3-tuple: two possibilities
+            # (1) (from_node, from_port, to_node) - explicit from_port
+            # (2) (from_node, to_node, to_port) - explicit to_port
+            #
+            # Distinguish by checking if middle element is a string
+            elem0, elem1, elem2 = edge
+
+            if isinstance(elem1, str):
+                # Case 1: (from_node, from_port, to_node)
+                from_node = elem0
+                from_port = elem1
+                to_node = elem2
+
+                # Extract from_agent
+                if isinstance(from_node, PortReference):
+                    from_agent = from_node.agent
+                elif isinstance(from_node, Agent):
+                    from_agent = from_node
+                else:
+                    raise TypeError(
+                        f"from_node must be Agent or PortReference, got {type(from_node).__name__}"
+                    )
+
+                # Auto-detect to_port
+                to_agent, to_port = _parse_edge_to_node(to_node)
+
+            else:
+                # Case 2: (from_node, to_node, to_port)
+                from_node = elem0
+                to_node = elem1
+                to_port = elem2
+
+                if not isinstance(to_port, str):
+                    raise TypeError(
+                        f"In 3-tuple (from_node, to_node, to_port), to_port must be string. "
+                        f"Got {type(to_port).__name__}"
+                    )
+
+                # Auto-detect from_port
+                from_agent, from_port = _parse_edge_from_node(from_node)
+
+                # Extract to_agent
+                if isinstance(to_node, PortReference):
+                    to_agent = to_node.agent
+                elif isinstance(to_node, Agent):
+                    to_agent = to_node
+                else:
+                    raise TypeError(
+                        f"to_node must be Agent or PortReference, got {type(to_node).__name__}"
+                    )
 
         elif len(edge) == 4:
             # 4-tuple: (from_node, from_port, to_node, to_port)
+            # Fully explicit - no auto-detection
             from_node, from_port, to_node, to_port = edge
 
-            # Extract agents (nodes might be PortReferences, but we ignore them here)
+            # Extract from_agent
             if isinstance(from_node, PortReference):
                 from_agent = from_node.agent
             elif isinstance(from_node, Agent):
@@ -221,6 +283,7 @@ def network(edges: Iterable[Tuple[EdgeNode, ...]]) -> Graph:
                     f"from_node must be Agent or PortReference, got {type(from_node).__name__}"
                 )
 
+            # Extract to_agent
             if isinstance(to_node, PortReference):
                 to_agent = to_node.agent
             elif isinstance(to_node, Agent):
@@ -230,15 +293,19 @@ def network(edges: Iterable[Tuple[EdgeNode, ...]]) -> Graph:
                     f"to_node must be Agent or PortReference, got {type(to_node).__name__}"
                 )
 
-            # from_port and to_port are already provided as strings
-            if not isinstance(from_port, str) or not isinstance(to_port, str):
+            # Validate port strings
+            if not isinstance(from_port, str):
                 raise TypeError(
-                    f"Ports must be strings in 4-tuple syntax. "
-                    f"Got from_port={type(from_port).__name__}, to_port={type(to_port).__name__}"
+                    f"from_port must be string, got {type(from_port).__name__}"
                 )
+            if not isinstance(to_port, str):
+                raise TypeError(
+                    f"to_port must be string, got {type(to_port).__name__}"
+                )
+
         else:
             raise ValueError(
-                f"Edge must be 2-tuple (node, node) or 4-tuple (node, port, node, port). "
+                f"Edge must be 2-tuple, 3-tuple, or 4-tuple. "
                 f"Got {len(edge)}-tuple: {edge}"
             )
 
@@ -246,7 +313,7 @@ def network(edges: Iterable[Tuple[EdgeNode, ...]]) -> Graph:
         from_name = _resolve_name(from_agent)
         to_name = _resolve_name(to_agent)
 
-        # Build connection tuple
+        # Build connection tuple - all edges normalized to 4-tuple format
         parsed_edges.append((from_name, from_port, to_name, to_port))
 
         # Collect unique agents in first-seen order
