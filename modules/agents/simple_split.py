@@ -14,12 +14,6 @@ from dsl.blocks import Source, Split, Sink
 from dsl import network
 from components.sinks.sink_simple_file import FileLineWriter
 from components.sources.natural_numbers_source import NaturalNumberGenerator
-import sys
-from pathlib import Path
-
-# Add project root to path
-project_root = Path(__file__).parent.parent
-sys.path.insert(0, str(project_root))
 
 
 class RoundRobinRouter:
@@ -29,7 +23,7 @@ class RoundRobinRouter:
         self.num_outputs = num_outputs
         self.counter = 0
 
-    def __call__(self, msg):
+    def run(self, msg):
         """
         Route message to one output based on counter.
         Returns list of N messages where only one is non-None.
@@ -46,19 +40,16 @@ class RoundRobinRouter:
 
         return results
 
-    run = __call__  # Alias
-
 
 # ============================================================================
 # Step 4: Build the Network
 # ============================================================================
-
 # Create source
 num_gen = NaturalNumberGenerator(max_count=10)
 source = Source(num_gen.run)
 
 # Create split with round-robin router
-router = RoundRobinRouter(num_outputs=3)
+router = RoundRobinRouter(3)
 # num_outputs must be specified for splitter
 splitter = Split(fn=router.run, num_outputs=3)
 
@@ -74,9 +65,9 @@ sink2 = Sink(writer2.run)
 # Build network topology
 g = network([
     (source, splitter),
-    (splitter, "out_0", sink0, "in"),
-    (splitter, "out_1", sink1, "in"),
-    (splitter, "out_2", sink2, "in"),
+    (splitter, "out_0", sink0),
+    (splitter, "out_1", sink1),
+    (splitter, "out_2", sink2),
 ])
 
 
