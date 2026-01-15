@@ -79,7 +79,7 @@ def append_to_diffs(msg): diffs.append(msg)
 # Explicitly name ports for adder because it is an agent with named ports.
 g = network([
     # Connect x_source to adder's input port named "x"
-    (x_source, adder, "x"),   # adder.x means port "x" of adder
+    (x_source, adder.x),   # adder.x means port "x" of adder
     # Connect y_source to adder's input port named "y"
     (y_source, adder.y),   # adder.y means port "y" of  adder
 

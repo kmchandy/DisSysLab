@@ -42,7 +42,7 @@ class RoundRobinRouter:
 
 
 # ============================================================================
-# Step 4: Build the Network
+# Build the Network
 # ============================================================================
 # Create source
 num_gen = NaturalNumberGenerator(max_count=10)
@@ -65,9 +65,9 @@ sink2 = Sink(writer2.run)
 # Build network topology
 g = network([
     (source, splitter),
-    (splitter, "out_0", sink0),
-    (splitter, "out_1", sink1),
-    (splitter, "out_2", sink2),
+    (splitter.out_0, sink0),
+    (splitter.out_1, sink1),
+    (splitter.out_2, sink2),
 ])
 
 

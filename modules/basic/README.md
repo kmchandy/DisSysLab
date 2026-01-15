@@ -3,9 +3,9 @@
 # Module 2: Specify a distributed system as a graph
 
 ## Key Point
-You build a distributed system by specifying a graph. You do not use concurrency primitives such as threads, processes locks, or message passing.
+ Build a distributed system without using concurrency primitives such as threads, processes locks, or message passing.
 
-The nodes of the graph call ordinary functions that are not designed for parallel execution. Often these functions are obtained from scikit-learn and other libraries from Python's rich collection.
+You specify a distributed system as a graph. The nodes of the graph call ordinary functions Often these functions are obtained from Python's rich collection of libraries. These functions do not have concurrency features such as threads, processes, locks, and messages.
 
 ## The Graph
 The graph is specified as a list of directed edges where an edge from node u to
@@ -105,10 +105,9 @@ From the root directory, ```DisSysLab```, execute
 python -m modules.basic.network
 ```
 
-## What you did ##
-You built a distributed system in which multiple nodes execute concurrently. You specified the system network as a graph -- a list of edges. You specified each node in the graph by its type (Source, Transform, or Sink) and the function that the node called. These functions do not use concurrency primitives.
+
+## What you did
+You built a distributed system in which multiple nodes execute concurrently. You specified the system network as a graph -- a list of edges. You specified each node in the graph by its type (Source, Transform, or Sink) and the function that the node called. These functions do not use concurrency operators. So, you built a distributed system without using parallel operators.
 
 ## Next
 In this module, a node receives a message from one input queue and it outputs a message by appending it to one output queue. Next, we introduce a type of node called a **split** node which has more than one output queue. We also generalize a node to an **agent** which may send and receive messages from arbitrary numbers of queues.
-
-The nodes described in this module have named ports where we adopt the following convention for naming.
