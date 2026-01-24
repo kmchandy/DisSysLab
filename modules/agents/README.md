@@ -9,7 +9,18 @@ The module also shows how to build systems with agents that may have multiple na
 
 
 ## Naming Convention
-In the previous module we described nodes in a graph representation of a distributed system. The nodes are sources, transformers or sinks. A source has exactly one output port which is called "out" and it has no output ports. A sink has exactly one input port which is called "in" and it has no output ports. A transformer has exactly one input port and exactly one output port which are called "in" and "out" respectively. A split with n > 1 outputs has a single input port called "in" and n output ports called "out_k", for 0 <= k <n.
+In the previous module we described nodes in a graph representation of a distributed system. The nodes are sources, transformers or sinks. 
+
+A source has exactly one output port which is called "out" and has no input ports. A sink has exactly one input port which is called "in" and has no output ports. A transformer has exactly one input port and exactly one output port which are called "in" and "out" respectively. An edge of the graph is from an output port of a node to an input port of a node. You can (though you don't have to) specify ports explicitly in edges between sources, sinks and transformers. The following are equivalent ways of specifying edges:
+```python
+(v.out, w.in)
+(v, w.in)
+(v.out, w)
+(v, w)
+```
+
+
+A split with n > 1 outputs has a single input port called "in" and n output ports called "out_k", for 0 <= k <n.
 
 You can specify arbitrary names for ports of agents.
 

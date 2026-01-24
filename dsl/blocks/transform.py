@@ -11,13 +11,13 @@ class Transform(Agent):
     Transform Agent: Applies a function to transform messages flowing through.
 
     **Ports:**
-    - Inports: ["in"] (receives messages to transform)
-    - Outports: ["out"] (sends transformed messages)
+    - Inports: ["in_"] (receives messages to transform)
+    - Outports: ["out_"] (sends transformed messages)
 
     **Message Flow:**
-    1. Receives message from "in" port
+    1. Receives message from "in_" port
     2. Applies fn(msg) to transform it
-    3. Sends result to "out" port
+    3. Sends result to "out_" port
     4. If fn returns None, message is filtered out (not sent downstream)
     5. Forwards STOP signal downstream and terminates
 
@@ -112,7 +112,7 @@ class Transform(Agent):
                 f"Transform fn must be callable. Got {type(fn).__name__}"
             )
 
-        super().__init__(inports=["in"], outports=["out"])
+        super().__init__(inports=["in_"], outports=["out_"])
         self._fn = fn
 
     def __call__(self) -> None:
@@ -122,7 +122,7 @@ class Transform(Agent):
         Receives messages, transforms them, and sends results downstream.
         """
         while True:
-            msg = self.recv("in")
+            msg = self.recv("in_")
 
             # Check for termination signal
             if msg is STOP:
@@ -139,7 +139,7 @@ class Transform(Agent):
                 return
 
             # Send result (None is automatically filtered by send())
-            self.send(result, "out")
+            self.send(result, "out_")
 
     run = __call__
 

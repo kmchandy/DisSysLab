@@ -11,11 +11,11 @@ class Sink(Agent):
     Sink Agent: Terminal node that consumes messages without producing output.
 
     **Ports:**
-    - Inports: ["in"] (receives messages to consume)
+    - Inports: ["in_"] (receives messages to consume)
     - Outports: [] (no outputs - this is a terminal node)
 
     **Message Flow:**
-    1. Receives messages from "in" port
+    1. Receives messages from "in_" port
     2. Calls fn(msg) for each message
     3. Filters out None messages (not passed to fn)
     4. Stops when STOP signal received
@@ -86,7 +86,7 @@ class Sink(Agent):
                 f"Sink fn must be callable. Got {type(fn).__name__}"
             )
 
-        super().__init__(inports=["in"], outports=[])
+        super().__init__(inports=["in_"], outports=[])
         self._fn = fn
 
     def __call__(self) -> None:
@@ -97,7 +97,7 @@ class Sink(Agent):
         """
         try:
             while True:
-                msg = self.recv("in")
+                msg = self.recv("in_")
 
                 # Halt if termination signal.
                 if msg is STOP:

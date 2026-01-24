@@ -13,7 +13,7 @@ class Source(Agent):
 
     **Ports:**
     - Inports: [] (no inputs - sources generate data)
-    - Outports: ["out"] (emits generated messages)
+    - Outports: ["out_"] (emits generated messages)
 
     **Function Requirements:**
     The fn callable must:
@@ -23,7 +23,7 @@ class Source(Agent):
 
     **Message Flow:**
     1. Calls fn() repeatedly
-    2. Sends returned messages to "out" port
+    2. Sends returned messages to "out_" port
     3. When fn() returns None, sends STOP and terminates
 
     **Optional Rate Limiting:**
@@ -113,7 +113,7 @@ class Source(Agent):
                 "Source(fn=...) must be callable with signature fn() -> Optional[message]"
             )
 
-        super().__init__(inports=[], outports=["out"])
+        super().__init__(inports=[], outports=["out_"])
         self._fn = fn
         self._interval = interval
 
@@ -131,11 +131,11 @@ class Source(Agent):
 
                 # None means the source is exhausted
                 if msg is None:
-                    self.send(STOP, "out")
+                    self.send(STOP, "out_")
                     return
 
                 # Send the message downstream
-                self.send(msg, "out")
+                self.send(msg, "out_")
 
                 # Optional rate limiting
                 if self._interval > 0:
@@ -145,7 +145,7 @@ class Source(Agent):
             # Log error and terminate gracefully
             print(f"[Source] Error during fn(): {e}")
             print(traceback.format_exc())
-            self.send(STOP, "out")
+            self.send(STOP, "out_")
 
     run = __call__
 

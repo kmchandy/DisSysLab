@@ -76,7 +76,7 @@ def _parse_edge_from_node(node: EdgeNode) -> Tuple[Agent, str]:
     Examples:
         >>> source = Source(fn=data.run)
         >>> _parse_edge_from_node(source)
-        (source, "out")
+        (source, "out_")
 
         >>> split = Split(router=router, num_outputs=3)
         >>> _parse_edge_from_node(split.out_0)
@@ -89,9 +89,9 @@ def _parse_edge_from_node(node: EdgeNode) -> Tuple[Agent, str]:
     elif isinstance(node, Agent):
         # Determine default output port based on agent type
         if isinstance(node, Source):
-            return node, "out"
+            return node, "out_"
         elif isinstance(node, (Transform, Broadcast)):
-            return node, "out"
+            return node, "out_"
         elif isinstance(node, Sink):
             raise ValueError(
                 f"Sink cannot be used as sender (from side of edge). "
@@ -126,11 +126,11 @@ def _parse_edge_to_node(node: EdgeNode) -> Tuple[Agent, str]:
     Examples:
         >>> sink = Sink(fn=handler.run)
         >>> _parse_edge_to_node(sink)
-        (sink, "in")
+        (sink, "in_")
 
         >>> transform = Transform(fn=processor.run)
         >>> _parse_edge_to_node(transform)
-        (transform, "in")
+        (transform, "in_")
     """
     if isinstance(node, PortReference):
         # Explicit port reference: handler.in
@@ -139,9 +139,9 @@ def _parse_edge_to_node(node: EdgeNode) -> Tuple[Agent, str]:
     elif isinstance(node, Agent):
         # Determine default input port based on agent type
         if isinstance(node, Sink):
-            return node, "in"
+            return node, "in_"
         elif isinstance(node, (Transform, MergeAsynch, Split)):
-            return node, "in"
+            return node, "in_"
         elif isinstance(node, Source):
             raise ValueError(
                 f"Source cannot be used as receiver (to side of edge). "
@@ -171,7 +171,7 @@ def network(edges: Iterable[Tuple[EdgeNode, ...]]) -> Graph:
 
     2-tuple (auto-detect both ports):
         network([
-            (source, transform),      # → (source, "out", transform, "in")
+            (source, transform),      # → (source, "out_", transform, "in_")
         ])
 
     2-tuple with explicit ports (dot notation):
@@ -254,6 +254,63 @@ def network(edges: Iterable[Tuple[EdgeNode, ...]]) -> Graph:
 
 
 # ---------------------------------------------------------
+#    AS_COMPONENT: MAKES A GRAPH A SUBGRAPH COMPONENT     |
+# ---------------------------------------------------------
+
+def as_component(graph, inports=None, outports=None):
+    # Step 1: Parse inports to 4-tuples
+    parsed_inports = []
+    for (external_name, node_or_port) in (inports or []):
+        agent, port = _parse_agent_and_port_from(node_or_port)
+        agent_name = _find_agent_name_in_graph(graph, agent)
+        parsed_inports.append(("external", external_name, agent_name, port))
+
+    # Step 2: Parse outports to 4-tuples
+    parsed_outports = []
+    for (external_name, node_or_port) in (outports or []):
+        agent, port = _parse_agent_and_port_to(node_or_port)
+        agent_name = _find_agent_name_in_graph(graph, agent)
+        parsed_outports.append((agent_name, port, "external", external_name))
+
+    # Step 3 & 4: Replace edges
+    new_edges = list(graph.edges)
+    agents_to_remove = set()
+
+    for (ext_node, ext_port, agent_name, agent_port) in parsed_inports:
+        # Find and replace: (agent_name, agent_port, X, Y) → (ext_node, ext_port, X, Y)
+        for i, (fn, fp, tn, tp) in enumerate(new_edges):
+            if fn == agent_name and fp == agent_port:
+                new_edges[i] = (ext_node, ext_port, tn, tp)
+                agents_to_remove.add(agent_name)
+
+    for (agent_name, agent_port, ext_node, ext_port) in parsed_outports:
+        # Find and replace: (X, Y, agent_name, agent_port) → (X, Y, ext_node, ext_port)
+        for i, (fn, fp, tn, tp) in enumerate(new_edges):
+            if tn == agent_name and tp == agent_port:
+                new_edges[i] = (fn, fp, ext_node, ext_port)
+                agents_to_remove.add(agent_name)
+
+    # Step 5: Build blocks dict (remove replaced agents)
+    new_blocks = {
+        name: agent
+        for name, agent in graph._agents.items()
+        if name not in agents_to_remove
+    }
+
+    # Step 6: Extract external port names
+    inport_names = [ext_port for (_, ext_port, _, _) in parsed_inports]
+    outport_names = [ext_port for (_, _, _, ext_port) in parsed_outports]
+
+    # Step 7: Create and return Network
+    return Network(
+        blocks=new_blocks,
+        connections=new_edges,
+        inports=inport_names,
+        outports=outport_names
+    )
+
+
+# ---------------------------------------------------------
 #                  CLASS GRAPH                           |
 # ---------------------------------------------------------
 
@@ -280,8 +337,8 @@ class Graph:
 
     Simple pipeline:
         >>> g = Graph(
-        ...     edges=[("src", "out", "trans", "in"), 
-        ...            ("trans", "out", "snk", "in")],
+        ...     edges=[("src", "out_", "trans", "in_"), 
+        ...            ("trans", "out_", "snk", "in_")],
         ...     nodes=[("src", source_agent), 
         ...            ("trans", transform_agent), 
         ...            ("snk", sink_agent)]
@@ -290,8 +347,8 @@ class Graph:
 
     With automatic fanout:
         >>> g = Graph(
-        ...     edges=[("src", "out", "trans1", "in"),
-        ...            ("src", "out", "trans2", "in")],  # Fanout!
+        ...     edges=[("src", "out_", "trans1", "in_"),
+        ...            ("src", "out_", "trans2", "in_")],  # Fanout!
         ...     nodes=[("src", source), ("trans1", t1), ("trans2", t2)]
         ... )
         >>> # Broadcast automatically inserted
@@ -428,12 +485,12 @@ class Graph:
 
         Initial edges (after parsing):
             [
-                ("twitter", "out", "clean", "in"),
-                ("reddit", "out", "clean", "in"),    # Same to-port (FANIN)
-                ("clean", "out", "sentiment", "in"),
-                ("clean", "out", "urgency", "in"),   # Same from-port (FANOUT)
-                ("sentiment", "out", "logger", "in"),
-                ("urgency", "out", "logger", "in")   # Same to-port (FANIN)
+                ("twitter", "out_", "clean", "in_"),
+                ("reddit", "out_", "clean", "in_"),    # Same to-port (FANIN)
+                ("clean", "out_", "sentiment", "in_"),
+                ("clean", "out_", "urgency", "in_"),   # Same from-port (FANOUT)
+                ("sentiment", "out_", "logger", "in_"),
+                ("urgency", "out_", "logger", "in_")   # Same to-port (FANIN)
             ]
 
         Degrees computed:
@@ -460,51 +517,51 @@ class Graph:
             Insert: Broadcast(num_outports=2) named "broadcast_0"
 
             Remove edges:
-                ("clean", "out", "sentiment", "in")
-                ("clean", "out", "urgency", "in")
+                ("clean", "out_", "sentiment", "in_")
+                ("clean", "out_", "urgency", "in_")
 
             Add edges:
-                ("clean", "out", "broadcast_0", "in")
-                ("broadcast_0", "out_0", "sentiment", "in")
-                ("broadcast_0", "out_1", "urgency", "in")
+                ("clean", "out_", "broadcast_0", "in_")
+                ("broadcast_0", "out_0", "sentiment", "in_")
+                ("broadcast_0", "out_1", "urgency", "in_")
 
         Step 2 - Process FANIN at clean:
             Detect: clean has in-degree 2
             Insert: MergeAsynch(num_inports=2) named "merge_0"
 
             Remove edges:
-                ("twitter", "out", "clean", "in")
-                ("reddit", "out", "clean", "in")
+                ("twitter", "out_", "clean", "in_")
+                ("reddit", "out_", "clean", "in_")
 
             Add edges:
-                ("twitter", "out", "merge_0", "in_0")
-                ("reddit", "out", "merge_0", "in_1")
-                ("merge_0", "out", "clean", "in")
+                ("twitter", "out_", "merge_0", "in_0")
+                ("reddit", "out_", "merge_0", "in_1")
+                ("merge_0", "out_", "clean", "in_")
 
         Step 3 - Process FANIN at logger:
             Detect: logger has in-degree 2
             Insert: MergeAsynch(num_inports=2) named "merge_1"
 
             Remove edges:
-                ("sentiment", "out", "logger", "in")
-                ("urgency", "out", "logger", "in")
+                ("sentiment", "out_", "logger", "in_")
+                ("urgency", "out_", "logger", "in_")
 
             Add edges:
-                ("sentiment", "out", "merge_1", "in_0")
-                ("urgency", "out", "merge_1", "in_1")
-                ("merge_1", "out", "logger", "in")
+                ("sentiment", "out_", "merge_1", "in_0")
+                ("urgency", "out_", "merge_1", "in_1")
+                ("merge_1", "out_", "logger", "in_")
 
         Final edges (all 1-to-1):
             [
-                ("twitter", "out", "merge_0", "in_0"),
-                ("reddit", "out", "merge_0", "in_1"),
-                ("merge_0", "out", "clean", "in"),
-                ("clean", "out", "broadcast_0", "in"),
-                ("broadcast_0", "out_0", "sentiment", "in"),
-                ("broadcast_0", "out_1", "urgency", "in"),
-                ("sentiment", "out", "merge_1", "in_0"),
-                ("urgency", "out", "merge_1", "in_1"),
-                ("merge_1", "out", "logger", "in")
+                ("twitter", "out_", "merge_0", "in_0"),
+                ("reddit", "out_", "merge_0", "in_1"),
+                ("merge_0", "out_", "clean", "in_"),
+                ("clean", "out_", "broadcast_0", "in_"),
+                ("broadcast_0", "out_0", "sentiment", "in_"),
+                ("broadcast_0", "out_1", "urgency", "in_"),
+                ("sentiment", "out_", "merge_1", "in_0"),
+                ("urgency", "out_", "merge_1", "in_1"),
+                ("merge_1", "out_", "logger", "in_")
             ]
 
         Final agents (including auto-inserted):
@@ -601,7 +658,7 @@ class Graph:
                     new_edges.remove(edge)
 
                 # Add (n, port) → broadcast
-                new_edges.append((n, port, bname, "in"))
+                new_edges.append((n, port, bname, "in_"))
 
                 # Add broadcast → each target
                 for i, (fn, fp, tn, tp) in enumerate(outs):
@@ -639,7 +696,7 @@ class Graph:
                     new_edges.append((fn, fp, mname, f"in_{i}"))
 
                 # Add merge → (n, port)
-                new_edges.append((mname, "out", n, port))
+                new_edges.append((mname, "out_", n, port))
 
         # Update edges
         self.edges = new_edges

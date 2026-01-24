@@ -11,7 +11,7 @@ class Split(Agent):
     Split Agent: Route messages to N outputs based on router function.
 
     **Ports:**
-    - Inports: ["in"] (receives messages to route)
+    - Inports: ["in_"] (receives messages to route)
     - Outports: ["out_0", "out_1", ..., "out_{N-1}"] (N numbered outputs)
 
     **Function Requirements:**
@@ -29,7 +29,7 @@ class Split(Agent):
     - Complex routing logic with state
 
     **Message Flow:**
-    1. Receives message from "in" port
+    1. Receives message from "in_" port
     2. Calls fn(msg) to get list of N messages
     3. Sends each non-None message to corresponding output port
     4. If fn returns None for a position, that output is filtered
@@ -147,7 +147,7 @@ class Split(Agent):
             )
 
         super().__init__(
-            inports=["in"],
+            inports=["in_"],
             outports=[f"out_{i}" for i in range(num_outputs)]
         )
         self._fn = fn
@@ -160,7 +160,7 @@ class Split(Agent):
         Receives messages, routes them via fn, and sends to outputs.
         """
         while True:
-            msg = self.recv("in")
+            msg = self.recv("in_")
 
             # Check for termination signal
             if msg is STOP:
