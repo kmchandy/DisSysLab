@@ -20,7 +20,7 @@ class MergeAsynch(Agent):
 
     **Ports:**
     - Inports: ["in_0", "in_1", ..., "in_{N-1}"] (N numbered inputs)
-    - Outports: ["out"]
+    - Outports: ["out_"]
 
     **Message Flow:**
     1. Receives messages from any inport as they arrive (asynchronous)
@@ -50,7 +50,7 @@ class MergeAsynch(Agent):
             raise ValueError("MergeAsynch requires at least two inports.")
 
         inports = [f"in_{i}" for i in range(num_inports)]
-        super().__init__(inports=inports, outports=["out"])
+        super().__init__(inports=inports, outports=["out_"])
 
         # Threading / shutdown coordination
         self._stop_lock = threading.Lock()
@@ -71,7 +71,7 @@ class MergeAsynch(Agent):
                 break
 
             # Forward message immediately (asynchronous)
-            self.send(msg, "out")
+            self.send(msg, "out_")
 
     def __call__(self) -> None:
         """Main loop - spawn worker threads for each input port."""
@@ -94,7 +94,7 @@ class MergeAsynch(Agent):
             t.join()
 
         # Emit a single STOP downstream
-        self.send(STOP, "out")
+        self.send(STOP, "out_")
 
     run = __call__
 
