@@ -67,6 +67,8 @@ An Agent is an **independent processing unit** that:
 
 **Key Insight**: Agents are like functions, but concurrent and communicating via message passing instead of function calls.
 
+Messages can be any Python object: integers, strings, dicts, arrays, custom classes, etc.
+
 ### Class Signature
 
 ```python
@@ -197,7 +199,7 @@ def send(self, msg: Any, outport: str) -> None:
     Send message to output port.
     
     Args:
-        msg: Message to send (any Python object, typically dict)
+        msg: Message to send (any pickleable Python object)
         outport: Name of output port (must exist on this agent)
     
     Behavior:
@@ -211,9 +213,12 @@ def send(self, msg: Any, outport: str) -> None:
         ValueError: If outport is not connected (network validation failed)
     
     Example:
-        >>> self.send({"value": 42}, "out_")
-        >>> self.send(STOP, "out_")  # Signal termination
-        >>> self.send(None, "out_")  # Dropped, not sent
+        >>> self.send(42, "out_")                    # Integer
+        >>> self.send("Hello", "out_")               # String
+        >>> self.send(np.array([1,2,3]), "out_")    # NumPy array
+        >>> self.send({"value": 42}, "out_")        # Dict
+        >>> self.send(STOP, "out_")                 # Signal termination
+        >>> self.send(None, "out_")                 # Dropped, not sent
     """
 ```
 
@@ -224,9 +229,9 @@ result = compute_result(msg)
 self.send(result, "out_")  # If result is None, nothing sent
 
 # This pattern enables filtering:
-def filter_positive(msg):
-    if msg["value"] > 0:
-        return msg
+def filter_positive(value):
+    if value > 0:
+        return value
     return None  # Message filtered out
 ```
 
@@ -242,7 +247,7 @@ def recv(self, inport: str) -> Any:
         inport: Name of input port (must exist on this agent)
     
     Returns:
-        Message received (any Python object, typically dict or STOP)
+        Message received (any Python object, or STOP)
     
     Behavior:
         - Blocks until message available
@@ -257,7 +262,8 @@ def recv(self, inport: str) -> Any:
         >>> msg = self.recv("in_")
         >>> if msg is STOP:
         ...     return
-        >>> # Process msg
+        >>> # msg could be: int, string, dict, array, custom object, etc.
+        >>> # Process based on expected type
     """
 ```
 
@@ -380,7 +386,7 @@ class MySource(Agent):
     
     def run(self):
         for item in self.data:
-            self.send({"value": item}, "out_")
+            self.send(item, "out_")  # item can be any type
         self.broadcast_stop()  # Signal completion
 ```
 
@@ -397,7 +403,7 @@ class MyTransform(Agent):
             if msg is STOP:
                 self.broadcast_stop()
                 return
-            result = self.fn(msg)
+            result = self.fn(msg)  # msg can be any type
             self.send(result, "out_")
 ```
 
@@ -497,14 +503,14 @@ def run(self):
 ```python
 def test_transform_agent():
     # Create agent
-    transform = Transform(fn=lambda msg: {"value": msg["value"] * 2})
+    transform = Transform(fn=lambda x: x * 2)
     
     # Mock queues
     transform.in_q["in_"] = SimpleQueue()
     transform.out_q["out_"] = SimpleQueue()
     
-    # Send test message
-    transform.in_q["in_"].put({"value": 5})
+    # Send test message (any type)
+    transform.in_q["in_"].put(5)
     transform.in_q["in_"].put(STOP)
     
     # Run agent
@@ -512,7 +518,7 @@ def test_transform_agent():
     
     # Check output
     result = transform.out_q["out_"].get()
-    assert result == {"value": 10}
+    assert result == 10
     
     stop_signal = transform.out_q["out_"].get()
     assert stop_signal is STOP
@@ -522,9 +528,11 @@ def test_transform_agent():
 Use Network to test agent in realistic scenario:
 ```python
 def test_agent_in_network():
-    source = Source(fn=lambda: [{"value": i} for i in range(3)])
-    transform = MyTransform(fn=lambda msg: msg)
-    sink = Sink(fn=collector.append)
+    results = []
+    
+    source = Source(fn=lambda: [1, 2, 3])
+    transform = MyTransform(fn=lambda x: x * 2)
+    sink = Sink(fn=results.append)
     
     g = network([
         (source, transform),
@@ -532,7 +540,7 @@ def test_agent_in_network():
     ])
     g.run_network()
     
-    assert len(collector) == 3
+    assert results == [2, 4, 6]
 ```
 
 ---

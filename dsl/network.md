@@ -800,7 +800,7 @@ def test_execution():
     )
     net.run_network()
     
-    assert results == [{"value": 1}, {"value": 2}, {"value": 3}]
+    assert results == [1, 2, 3]
 ```
 
 ### Property-Based Testing
