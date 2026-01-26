@@ -1,10 +1,18 @@
 # dsl/blocks/source.py
+"""
+Source Agent: Repeatedly calls a function to generate messages.
+
+Sources have no inputs and generate data by calling fn() repeatedly until
+it returns None. This pattern supports stateful data generation via instance
+methods.
+"""
 
 from __future__ import annotations
 import traceback
 import time
 from typing import Any, Callable, Optional
-from dsl.core import Agent, STOP
+
+from dsl.core import Agent
 
 
 class Source(Agent):
@@ -17,7 +25,7 @@ class Source(Agent):
 
     **Function Requirements:**
     The fn callable must:
-    - Return a message (typically a dict) on each call
+    - Return a message (any type) on each call
     - Return None when exhausted (no more messages)
     - Maintain its own state between calls (if needed)
 
@@ -37,14 +45,6 @@ class Source(Agent):
     - STOP signal is sent to downstream agents
     - Pipeline terminates gracefully
 
-    **Consistent Pattern:**
-    All agents now use the same pattern:
-        source = Source(fn=data_source.run)
-        transform = Transform(fn=processor.run)
-        sink = Sink(fn=handler.run)
-
-    This makes the API uniform and easier to teach.
-
     **Examples:**
 
     Simple list source:
@@ -61,7 +61,7 @@ class Source(Agent):
         ...         return {"value": item}
         >>> 
         >>> data = ListSource([1, 2, 3])
-        >>> source = Source(fn=data.run)  # ← Consistent with Transform/Sink!
+        >>> source = Source(fn=data.run, name="numbers")
 
     Counter source:
         >>> class CounterSource:
@@ -77,47 +77,55 @@ class Source(Agent):
         ...         return result
         >>> 
         >>> counter = CounterSource(max_count=5)
-        >>> source = Source(fn=counter.run)
+        >>> source = Source(fn=counter.run, name="counter")
 
     With rate limiting:
         >>> data = ListSource([1, 2, 3])
-        >>> source = Source(fn=data.run, interval=1.0)  # One per second
+        >>> source = Source(fn=data.run, interval=1.0, name="slow_src")
 
     Using a lambda:
-        >>> # Simple inline source
         >>> items = iter([1, 2, 3])
-        >>> source = Source(fn=lambda: next(items, None))
+        >>> source = Source(fn=lambda: next(items, None), name="iter_src")
     """
 
-    def __init__(self, fn: Callable[[], Optional[Any]], interval: float = 0):
+    def __init__(
+        self, 
+        *,
+        fn: Callable[[], Optional[Any]], 
+        name: str,
+        interval: float = 0
+    ):
         """
         Initialize a Source agent.
 
         Args:
             fn: Callable that returns messages or None when exhausted.
                 Should have signature: fn() -> Optional[message]
+            name: Unique name for this agent (REQUIRED)
             interval: Optional delay in seconds between messages (default: 0)
 
         Raises:
+            ValueError: If name is empty
             TypeError: If fn is not callable
-
-        Examples:
-            >>> data = ListSource([1, 2, 3])
-            >>> source = Source(fn=data.run)
-            >>> 
-            >>> # With rate limiting
-            >>> source = Source(fn=data.run, interval=1.0)
         """
+        if not name:
+            raise ValueError("Source agent requires a name")
+        
         if not callable(fn):
             raise TypeError(
-                "Source(fn=...) must be callable with signature fn() -> Optional[message]"
+                "Source fn must be callable with signature: fn() -> Optional[message]"
             )
 
-        super().__init__(inports=[], outports=["out_"])
+        super().__init__(name=name, inports=[], outports=["out_"])
         self._fn = fn
         self._interval = interval
 
-    def __call__(self) -> None:
+    @property
+    def default_outport(self) -> str:
+        """Default output port for edge syntax."""
+        return "out_"
+
+    def run(self) -> None:
         """
         Main processing loop for the Source agent.
 
@@ -131,7 +139,7 @@ class Source(Agent):
 
                 # None means the source is exhausted
                 if msg is None:
-                    self.send(STOP, "out_")
+                    self.broadcast_stop()
                     return
 
                 # Send the message downstream
@@ -143,19 +151,14 @@ class Source(Agent):
 
         except Exception as e:
             # Log error and terminate gracefully
-            print(f"[Source] Error during fn(): {e}")
+            print(f"[Source '{self.name}'] Error in fn: {e}")
             print(traceback.format_exc())
-            self.send(STOP, "out_")
-
-    run = __call__
+            self.broadcast_stop()
 
     def __repr__(self) -> str:
         fn_name = getattr(self._fn, "__name__", repr(self._fn))
         interval_str = f", interval={self._interval}" if self._interval > 0 else ""
-        return f"<Source fn={fn_name}{interval_str}>"
+        return f"<Source name={self.name} fn={fn_name}{interval_str}>"
 
     def __str__(self) -> str:
         return "Source"
-
-
-__all__ = ["Source"]

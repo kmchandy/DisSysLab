@@ -1,154 +1,144 @@
 # dsl/blocks/transform.py
+"""
+Transform Agent: Applies a function to transform messages.
+
+Transforms have one input and one output. They process each message by
+calling fn(msg, **params) and sending the result downstream.
+"""
 
 from __future__ import annotations
+from typing import Any, Callable, Optional, Dict
 import traceback
-from typing import Any, Callable, Optional
+
 from dsl.core import Agent, STOP
 
 
 class Transform(Agent):
     """
-    Transform Agent: Applies a function to transform messages flowing through.
-
+    Transform agent: applies a function to each message.
+    
+    Single input, single output. Processes each message by calling
+    fn(msg, **params) and sending the result.
+    
     **Ports:**
-    - Inports: ["in_"] (receives messages to transform)
-    - Outports: ["out_"] (sends transformed messages)
-
+    - Inports: ["in_"]
+    - Outports: ["out_"]
+    
     **Message Flow:**
-    1. Receives message from "in_" port
-    2. Applies fn(msg) to transform it
-    3. Sends result to "out_" port
-    4. If fn returns None, message is filtered out (not sent downstream)
-    5. Forwards STOP signal downstream and terminates
-
-    **Function Requirements:**
-    The fn parameter should be a callable that:
-    - Takes a single message argument: fn(msg)
-    - Returns transformed message or None to filter
-    - Signature: fn(msg) -> Optional[msg]
-
-    **Filtering:**
-    Returning None from fn drops the message - it won't be sent downstream.
-    This enables filter patterns in the transform.
-
+    - Receives msg from "in_" port
+    - Calls fn(msg, **params)
+    - Sends result to "out_" port
+    - If fn returns None, message is filtered (not sent)
+    - Forwards STOP and terminates
+    
     **Error Handling:**
-    - Exceptions during transformation are caught and logged
-    - Transform fails fast - first error stops the pipeline
-    - STOP signal is broadcast to downstream agents
-    - This helps students debug issues immediately
-
-    **State:**
-    Use class methods for stateful transformations that need to maintain
-    counters, caches, or other state between messages.
-
+    - Exceptions caught, logged, pipeline stopped
+    - Fail-fast for educational clarity
+    
     **Examples:**
-
-    Simple stateless transform:
-        >>> def double(msg):
-        ...     return {"value": msg["value"] * 2}
-        >>> 
-        >>> transform = Transform(fn=double)
-
-    Stateful transform with class:
+    
+    Simple transform:
+        >>> def double(x):
+        ...     return x * 2
+        >>> transform = Transform(fn=double, name="doubler")
+    
+    With parameters:
+        >>> def scale(x, factor):
+        ...     return x * factor
+        >>> transform = Transform(fn=scale, params={"factor": 10}, name="scaler")
+    
+    Stateful transform (instance method):
         >>> class Counter:
         ...     def __init__(self):
         ...         self.count = 0
-        ...     
-        ...     def add_index(self, msg):
+        ...     def process(self, msg):
         ...         self.count += 1
-        ...         return {**msg, "index": self.count}
-        >>> 
+        ...         return {"value": msg, "index": self.count}
         >>> counter = Counter()
-        >>> transform = Transform(fn=counter.add_index)
-
-    Transform with parameters (using class):
-        >>> class Scaler:
-        ...     def __init__(self, factor):
-        ...         self.factor = factor
-        ...     
-        ...     def scale(self, msg):
-        ...         return {"value": msg["value"] * self.factor}
-        >>> 
-        >>> scaler = Scaler(10)
-        >>> transform = Transform(fn=scaler.scale)
-
-    Filter pattern (returning None drops messages):
-        >>> class PositiveFilter:
-        ...     def filter(self, msg):
-        ...         if msg["value"] > 0:
-        ...             return msg
-        ...         return None  # Message filtered out
-        >>> 
-        >>> filter_obj = PositiveFilter()
-        >>> transform = Transform(fn=filter_obj.filter)
-
-    Text processing:
-        >>> class TextCleaner:
-        ...     def clean(self, msg):
-        ...         import re
-        ...         text = msg["text"]
-        ...         cleaned = re.sub(r'[^\\w\\s.,!?-]', '', text)
-        ...         return {**msg, "clean_text": cleaned}
-        >>> 
-        >>> cleaner = TextCleaner()
-        >>> transform = Transform(fn=cleaner.clean)
+        >>> transform = Transform(fn=counter.process, name="counter")
+    
+    Filter pattern:
+        >>> def filter_positive(x):
+        ...     return x if x > 0 else None
+        >>> transform = Transform(fn=filter_positive, name="filter")
     """
-
-    def __init__(self, fn: Callable[[Any], Optional[Any]]) -> None:
+    
+    def __init__(
+        self,
+        *,
+        fn: Callable[..., Optional[Any]],
+        name: str,
+        params: Optional[Dict[str, Any]] = None
+    ):
         """
-        Initialize a Transform agent.
-
+        Initialize Transform agent.
+        
         Args:
             fn: Callable that transforms messages.
-                Signature: fn(msg) -> Optional[msg]
-                - Takes a message as input
+                Signature: fn(msg, **params) -> result
+                - Takes message and optional keyword arguments
                 - Returns transformed message, or None to filter
-
+            name: Unique name for this agent (REQUIRED)
+            params: Optional dict of keyword arguments passed to fn
+        
         Raises:
+            ValueError: If name is empty
             TypeError: If fn is not callable
         """
+        if not name:
+            raise ValueError("Transform agent requires a name")
+        
         if not callable(fn):
             raise TypeError(
-                f"Transform fn must be callable. Got {type(fn).__name__}"
+                f"Transform fn must be callable, got {type(fn).__name__}"
             )
-
-        super().__init__(inports=["in_"], outports=["out_"])
+        
+        super().__init__(name=name, inports=["in_"], outports=["out_"])
         self._fn = fn
-
-    def __call__(self) -> None:
+        self._params = params or {}
+    
+    @property
+    def default_inport(self) -> str:
+        """Default input port for edge syntax."""
+        return "in_"
+    
+    @property
+    def default_outport(self) -> str:
+        """Default output port for edge syntax."""
+        return "out_"
+    
+    def run(self) -> None:
         """
-        Main processing loop for the Transform agent.
-
-        Receives messages, transforms them, and sends results downstream.
+        Process messages in loop.
+        
+        Receives messages, transforms them, sends results.
+        Stops on STOP signal or exception.
         """
         while True:
+            # Receive message
             msg = self.recv("in_")
-
-            # Check for termination signal
+            
+            # Check for termination
             if msg is STOP:
                 self.broadcast_stop()
                 return
-
-            # Transform the message
+            
+            # Transform message
             try:
-                result = self._fn(msg)
+                result = self._fn(msg, **self._params)
             except Exception as e:
-                print(f"[Transform] Error in fn: {e}")
+                # Fail-fast: log error and stop pipeline
+                print(f"[Transform '{self.name}'] Error in fn: {e}")
                 print(traceback.format_exc())
                 self.broadcast_stop()
                 return
-
-            # Send result (None is automatically filtered by send())
+            
+            # Send result (None filtered automatically by send())
             self.send(result, "out_")
-
-    run = __call__
-
+    
     def __repr__(self) -> str:
         fn_name = getattr(self._fn, "__name__", repr(self._fn))
-        return f"<Transform fn={fn_name}>"
+        return f"<Transform name={self.name} fn={fn_name}>"
 
     def __str__(self) -> str:
         return "Transform"
-
-
-__all__ = ["Transform"]
