@@ -84,8 +84,9 @@ class Receiver(Agent):
     - How to handle STOP (no need to broadcast - no outputs)
     """
 
-    def __init__(self, name: str):
+    def __init__(self, msgs_received: list, name: str):
         super().__init__(name=name, inports=["in_"], outports=[])
+        self.msgs_received = msgs_received
 
     def run(self):
         while True:
@@ -97,7 +98,7 @@ class Receiver(Agent):
                 return  # Sink has no outputs, so just stop
 
             # Perform side effect
-            print(msg)
+            self.msgs_received.append(msg)
 
 
 # ==============================================================================
@@ -106,7 +107,7 @@ class Receiver(Agent):
 
 sender = Sender(items=["hello", "world", "how", "Are", "YOU"], name="sender")
 transformer = Uppercase(name="uppercase", start_with_upper=True)
-receiver = Receiver(name="receiver")
+receiver = Receiver(msgs_received=[], name="receiver")
 
 # Network: sender → transformer → receiver
 g = network([
@@ -115,3 +116,6 @@ g = network([
 ])
 
 g.run_network()
+assert receiver.msgs_received == ["HELLO", "world", "HOW", "are", "YOU"]
+print(f"Messages received: {receiver.msgs_received}")
+print("✓ simple_agent completed successfully!")
