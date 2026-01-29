@@ -1,54 +1,117 @@
-from dsl.core import Agent, Network
+"""
+Custom Agent Example - Building Agents from Scratch
 
+This example shows how to create custom agents by subclassing Agent:
+1. Sender: Source agent that emits items from a list
+2. Uppercase: Transform agent with state (alternates upper/lower case)
+3. Receiver: Sink agent that prints messages
+
+Data flow: ["hello", "world", ...] → ALTERNATE CASE → print
+"""
+
+from dsl import network, Agent
+from dsl.core import STOP
+
+
+# ==============================================================================
+# Custom Agent Classes
+# ==============================================================================
 
 class Sender(Agent):
-    def __init__(self, seq, outports=["out"]):
-        super().__init__()
-        self.outports = outports
-        self.seq = seq
+    """
+    Source agent that sends items from a list.
+
+    This demonstrates:
+    - How to create a source (no inports)
+    - How to send messages
+    - How to signal completion with broadcast_stop()
+    """
+
+    def __init__(self, items: list, name: str):
+        super().__init__(name=name, inports=[], outports=["out_"])
+        self.items = items
 
     def run(self):
-        for msg in self.seq:
-            self.send(msg, "out")
-            if msg == "__STOP__":
-                break
+        # Send each item
+        for msg in self.items:
+            self.send(msg, "out_")
 
-
-class Receiver(Agent):
-    def __init__(self, inports=["in"]):
-        super().__init__()
-        self.inports = inports
-
-    def run(self):
-        while True:
-            msg = self.recv("in")
-            print(f"Received: {msg}")
-            if msg == "__STOP__":
-                break
+        # Signal we're done
+        self.broadcast_stop()
 
 
 class Uppercase(Agent):
-    def __init__(self, inports=["in"], outports=["out"]):
-        super().__init__()
-        self.inports = inports
-        self.outports = outports
+    """
+    Stateful transform agent that alternates between upper and lower case.
+
+    This demonstrates:
+    - How to maintain state between messages
+    - How to transform messages
+    - How to handle STOP and propagate it downstream
+    """
+
+    def __init__(self, name: str, start_with_upper: bool = True):
+        super().__init__(name=name, inports=["in_"], outports=["out_"])
+        self.use_upper = start_with_upper
 
     def run(self):
         while True:
-            msg = self.recv("in")
-            if msg == "__STOP__":
-                self.send(msg, "out")
-                break
-            upper_msg = msg.upper()
-            self.send(upper_msg, "out")
+            # Receive message
+            msg = self.recv("in_")
+
+            # Check for termination
+            if msg is STOP:
+                self.broadcast_stop()
+                return
+
+            # Transform based on current state
+            output_msg = msg.upper() if self.use_upper else msg.lower()
+
+            # Toggle state for next message
+            self.use_upper = not self.use_upper
+
+            # Send transformed message
+            self.send(output_msg, "out_")
 
 
-net = Network(
-    blocks={"src": Sender(seq=["hello", "world", "__STOP__"]),
-            "uppercase": Uppercase(),
-            "snk": Receiver()
-            },
-    connections=[("src", "out", "uppercase", "in"),
-                 ("uppercase", "out", "snk", "in")]
-)
-net.compile_and_run()
+class Receiver(Agent):
+    """
+    Sink agent that prints received messages.
+
+    This demonstrates:
+    - How to create a sink (no outports)
+    - How to receive messages in a loop
+    - How to handle STOP (no need to broadcast - no outputs)
+    """
+
+    def __init__(self, name: str):
+        super().__init__(name=name, inports=["in_"], outports=[])
+
+    def run(self):
+        while True:
+            # Receive message
+            msg = self.recv("in_")
+
+            # Check for termination
+            if msg is STOP:
+                return  # Sink has no outputs, so just stop
+
+            # Perform side effect
+            print(msg)
+
+
+# ==============================================================================
+# Build and Run Network
+# ==============================================================================
+
+sender = Sender(items=["hello", "world", "how", "Are", "YOU"], name="sender")
+transformer = Uppercase(name="uppercase", start_with_upper=True)
+receiver = Receiver(name="receiver")
+
+# Network: sender → transformer → receiver
+g = network([
+    (sender, transformer),
+    (transformer, receiver),
+])
+
+g.run_network()
