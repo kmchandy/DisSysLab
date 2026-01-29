@@ -7,7 +7,7 @@ requires-python = ">=3.8"
 license = { text = "MIT" }
 authors = [{ name = "K. Mani Chandy", email = "kmchandy@gmail.com" }]
 
-# Core  matches requirements.txt)
+# Core dependencies (matches requirements.txt)
 dependencies = [
   "rich>=13.7.0",
   "requests>=2.31.0",
@@ -27,6 +27,8 @@ rss = ["feedparser>=6.0.11"]
 
 dev = [
   "pytest>=8.0.0",
+  "pytest-cov>=4.0.0",      # Added for coverage
+  "pytest-timeout>=2.1.0",  # Added for timeouts
   "ruff>=0.6.9",
   "black>=24.8.0",
   "build>=1.2.1",
@@ -44,15 +46,20 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["dsl*"]
-exclude = ["dsl/tests*"]
+exclude = ["tests*"]  # Changed: tests is at root level, not in dsl
 
 [tool.setuptools.package-data]
 "dsl" = ["py.typed", "**/*.json", "**/*.yaml", "**/*.yml", "**/*.txt", "**/*.md"]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-addopts = "-ra -q"
-testpaths = ["dsl/tests"]
+testpaths = ["tests"]  # ✅ Changed: tests at root level
+addopts = "-v --tb=short --strict-markers"  # Added more useful defaults
+markers = [
+    "unit: Unit tests",
+    "integration: Integration tests",
+    "slow: Slow running tests"
+]
 
 # Optional tooling config 
 [tool.ruff]

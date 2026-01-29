@@ -1,68 +1,122 @@
 # dsl/blocks/fanin.py
+"""
+Merge Agents: Combine multiple inputs into single output (fanin).
+
+MergeAsynch is the recommended merge for most use cases - it's fast and
+automatically inserted by the framework when multiple senders connect to
+one receiver.
+"""
 
 from __future__ import annotations
-from typing import Set
+from typing import Optional, Set
 import threading
 
 from dsl.core import Agent, STOP
 
 
-# =================================================
-#                   MergeAsynch                   |
-# =================================================
-
 class MergeAsynch(Agent):
     """
-    Asynchronous N→1 merge of message streams.
+    MergeAsynch agent: combines multiple inputs (fanin, non-deterministic).
+
+    Multiple inputs, single output. Receives from whichever input has
+    a message available first. Fast but non-deterministic order.
 
     **This is the recommended merge for most use cases.**
-    Automatically inserted by graph when multiple nodes feed into one node.
+    Automatically inserted when multiple nodes feed into one node.
 
     **Ports:**
-    - Inports: ["in_0", "in_1", ..., "in_{N-1}"] (N numbered inputs)
+    - Inports: ["in_0", "in_1", ..., "in_{n-1}"]
     - Outports: ["out_"]
 
     **Message Flow:**
-    1. Receives messages from any inport as they arrive (asynchronous)
-    2. Immediately forwards each message to output
-    3. Waits for STOP from ALL inports before sending final STOP
-    4. Uses threading to handle multiple inputs concurrently
+    - Receives from any "in_*" port (whichever is ready first)
+    - Immediately forwards each message to "out_" port
+    - Waits for STOP from ALL inputs before sending final STOP
+    - Uses threading to handle multiple inputs concurrently
 
     **Key Feature:**
-    Emits a single STOP downstream only after receiving STOP from all inports.
+    Emits single STOP downstream only after receiving STOP from all inputs.
     This ensures proper shutdown coordination in complex graphs.
 
-    **Usage:**
-    Automatically inserted by graph. Students typically don't create this directly.
+    **Ordering:**
+    Non-deterministic - depends on which input produces messages fastest.
+
+    **Threading:**
+    - One worker thread per input port
+    - Thread-safe message forwarding
+    - Clean shutdown coordination
+
+    **Examples:**
+
+    Explicit merge:
+        >>> merge = MergeAsynch(num_inputs=3, name="combine")
+        >>> g = network([
+        ...     (source_a, merge.in_0),
+        ...     (source_b, merge.in_1),
+        ...     (source_c, merge.in_2),
+        ...     (merge, sink)
+        ... ])
+
+    Auto-inserted (framework creates merge automatically):
+        >>> g = network([
+        ...     (source_a, sink),
+        ...     (source_b, sink),  # Merge auto-inserted here
+        ...     (source_c, sink)
+        ... ])
     """
 
-    def __init__(self, num_inports: int):
+    def __init__(self, *, num_inputs: int, name: str):
         """
         Initialize MergeAsynch agent.
 
         Args:
-            num_inports: Number of input ports to create
+            num_inputs: Number of input ports to create
+            name: Unique name for this agent (REQUIRED)
 
         Raises:
-            ValueError: If num_inports < 2
+            ValueError: If name is empty
+            ValueError: If num_inputs < 1
         """
-        if num_inports < 2:
-            raise ValueError("MergeAsynch requires at least two inports.")
+        if not name:
+            raise ValueError("MergeAsynch agent requires a name")
 
-        inports = [f"in_{i}" for i in range(num_inports)]
-        super().__init__(inports=inports, outports=["out_"])
+        if num_inputs < 1:
+            raise ValueError(
+                f"MergeAsynch requires at least 1 input, got {num_inputs}"
+            )
 
-        # Threading / shutdown coordination
+        # Create input ports: in_0, in_1, ..., in_{n-1}
+        inports = [f"in_{i}" for i in range(num_inputs)]
+
+        super().__init__(name=name, inports=inports, outports=["out_"])
+        self.num_inputs = num_inputs
+
+        # Threading for shutdown coordination
         self._stop_lock = threading.Lock()
         self._stopped_ports: Set[str] = set()
         self._all_stopped = threading.Event()
 
-    def _worker(self, port: str) -> None:
-        """Worker thread for one input port."""
-        while True:
-            msg = self.recv(port)  # Blocking read from inport queue
+    @property
+    def default_inport(self) -> Optional[str]:
+        """No default input (multiple inputs - ambiguous)."""
+        return None
 
-            # Check for termination signal
+    @property
+    def default_outport(self) -> str:
+        """Default output port for edge syntax."""
+        return "out_"
+
+    def _worker(self, port: str) -> None:
+        """
+        Worker thread for one input port.
+
+        Continuously receives messages from port and forwards them.
+        Stops when STOP received, coordinates with other workers.
+        """
+        while True:
+            msg = self.recv(port)  # Blocking read
+
+            # Check for termination
             if msg is STOP:
                 with self._stop_lock:
                     self._stopped_ports.add(port)
@@ -73,8 +127,14 @@ class MergeAsynch(Agent):
             # Forward message immediately (asynchronous)
             self.send(msg, "out_")
 
-    def __call__(self) -> None:
-        """Main loop - spawn worker threads for each input port."""
+    def run(self) -> None:
+        """
+        Main loop.
+
+        Spawns worker threads for each input, waits for all to finish,
+        then sends final STOP downstream.
+        """
+        # Spawn worker thread for each input
         threads = []
         for p in self.inports:
             t = threading.Thread(
@@ -86,17 +146,18 @@ class MergeAsynch(Agent):
             t.start()
             threads.append(t)
 
-        # Wait until all inports have delivered STOP
+        # Wait until all inputs delivered STOP
         self._all_stopped.wait()
 
         # Clean shutdown of workers
         for t in threads:
             t.join()
 
-        # Emit a single STOP downstream
+        # Emit single STOP downstream
         self.send(STOP, "out_")
 
-    run = __call__
+    def __repr__(self) -> str:
+        return f"<MergeAsynch name={self.name} inputs={self.num_inputs}>"
 
-
-__all__ = ["MergeAsynch"]
+    def __str__(self) -> str:
+        return f"MergeAsynch({self.num_inputs} inputs)"

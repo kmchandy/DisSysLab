@@ -88,8 +88,10 @@ class Network:
         self.connections: List[Tuple[str, str, str, str]] = connections or []
 
         # Assign names to blocks (for debugging/errors)
+        # Only set name for Agents, not Networks (Networks keep their own names)
         for block_name, block_object in self.blocks.items():
-            block_object.name = block_name
+            if isinstance(block_object, Agent):
+                block_object.name = block_name
 
         # Validate immediately
         self.check()
@@ -122,6 +124,12 @@ class Network:
             ValueError: Invalid names, missing connections, or duplicate connections
         """
         # ========== Validate Block Names ==========
+        if not self.blocks:
+            raise ValueError(
+                f"Network '{self.name or '(unnamed)'}' must have at least one block. "
+                f"Empty networks are not allowed."
+            )
+
         for block_name in self.blocks:
             # Must be string
             if not isinstance(block_name, str):
@@ -419,8 +427,10 @@ class Network:
                 self.block = block
                 self.path = path
 
-        # Breadth-first traversal starting from root
-        root = PathNode(self, "root")
+        # Breadth-first traversal starting from this network
+        # Use network's actual name, or "root" if no name provided
+        root_name = self.name if self.name else "root"
+        root = PathNode(self, root_name)
         pending = deque([root])
 
         while pending:
@@ -658,29 +668,75 @@ class Network:
             msgs = "; ".join(f"{n}: {repr(e)}" for n, e in errors)
             raise RuntimeError(f"Startup failed for agent(s): {msgs}")
 
-    def run(self) -> None:
+    def run(self, timeout: Optional[float] = 30.0) -> None:
         """
         Start all agent threads and wait for completion.
 
         Each agent runs in its own thread, executing its run() method.
-        This method blocks until all threads have joined.
+        This method blocks until all threads have joined or timeout occurs.
+
+        Args:
+            timeout: Maximum seconds to wait for completion (default 30s, None = no timeout)
 
         If any agent thread raises an exception, it's captured and reported
         after all threads complete, then re-raised for debugging.
 
         Raises:
             RuntimeError: If any agent thread failed with an exception
+            TimeoutError: If network doesn't complete within timeout
         """
+        import time
+
         # Start all threads
+        start_time = time.time()
         for t in self.threads:
             t.start()
 
-        # Wait for all to complete
+        # Wait for all to complete with timeout
         failed_threads = []
+        hung_threads = []
+
         for t in self.threads:
-            t.join()
+            if timeout is not None:
+                elapsed = time.time() - start_time
+                remaining = max(0.1, timeout - elapsed)
+                t.join(timeout=remaining)
+
+                if t.is_alive():
+                    hung_threads.append(t)
+            else:
+                t.join()
+
             if hasattr(t, 'exception') and t.exception:
                 failed_threads.append(t)
+
+        # Report hung threads (timeout)
+        if hung_threads:
+            print("\n" + "="*70)
+            print("NETWORK TIMEOUT - AGENTS STILL RUNNING:")
+            print("="*70)
+            print(f"\n⏱️  Network did not complete within {timeout} seconds")
+            print(f"\n🔍 These agents are still running (may be hung):")
+            for t in hung_threads:
+                agent_name = t.name.replace("_thread", "")
+                print(f"   - {agent_name}")
+
+            print(f"\n💡 Common causes of hanging:")
+            print(f"   1. Source not sending STOP signal when done")
+            print(f"   2. Agent waiting forever on recv() with no data")
+            print(f"   3. Infinite loop in agent logic")
+            print(f"   4. Deadlock between agents")
+
+            print(f"\n🔧 Debug tips:")
+            print(f"   - Check that sources send STOP: self.broadcast_stop()")
+            print(f"   - Verify agents handle STOP: if msg is STOP: return")
+            print(f"   - Add print() statements to see where agents hang")
+            print(f"   - Run with timeout=None to wait indefinitely")
+            print("="*70)
+            raise TimeoutError(
+                f"Network timed out after {timeout}s. "
+                f"Agents still running: {[t.name for t in hung_threads]}"
+            )
 
         # Report failures
         if failed_threads:
@@ -719,14 +775,21 @@ class Network:
             msgs = "; ".join(f"{n}: {repr(e)}" for n, e in errors)
             raise RuntimeError(f"Shutdown failed for agent(s): {msgs}")
 
-    def run_network(self) -> None:
+    def run_network(self, timeout: Optional[float] = 30.0) -> None:
         """
         Compile (if needed), startup, run, and shutdown the network.
 
         This is the main entry point for executing a network.
         Students typically call this after creating a network.
 
+        Args:
+            timeout: Maximum seconds to wait for completion (default 30s, None = no timeout)
+
         Ensures shutdown is called even if errors occur.
+
+        Raises:
+            TimeoutError: If network doesn't complete within timeout
+            RuntimeError: If agents fail during execution
         """
         # Compile if not already compiled
         if not self.compiled:
@@ -734,7 +797,7 @@ class Network:
 
         try:
             self.startup()
-            self.run()
+            self.run(timeout=timeout)
         finally:
             try:
                 self.shutdown()

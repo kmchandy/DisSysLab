@@ -1,33 +1,26 @@
 # dsl/__init__.py
 """
-DisSysLab: Distributed Systems Learning Framework
+DisSysLab - Distributed Systems Teaching Framework
 
-A framework for teaching distributed systems concepts through building
-concurrent agent networks.
-
-Main exports:
-- Agent, Network, STOP, PortReference: Core classes
-- network, Graph: Network building
-- source_map, transform_map, sink_map: Decorators for wrapping functions
+Public API exports.
 """
 
-from dsl.core import Agent, Network, STOP, PortReference
-from dsl.graph import network, Graph
-from dsl.decorators import source_map, transform_map, sink_map
-
-__version__ = "1.0.0"
+from dsl.core import Agent, STOP, ExceptionThread
+from dsl.network import Network
+from dsl.builder import network, PortReference
 
 __all__ = [
-    # Core classes
-    "Agent",
-    "Network",
-    "STOP",
-    "PortReference",
-    # Network building
-    "network",
-    "Graph",
-    # Decorators
-    "source_map",
-    "transform_map",
-    "sink_map",
+    # Core
+    'Agent',
+    'STOP',
+    'ExceptionThread',
+
+    # Network
+    'Network',
+    'network',
+
+    # Builder
+    'PortReference',
 ]
+
+__version__ = '0.1.0'

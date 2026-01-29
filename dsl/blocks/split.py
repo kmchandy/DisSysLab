@@ -1,144 +1,121 @@
 # dsl/blocks/split.py
+"""
+Split Agent: Routes messages to different outputs based on function.
+
+Split agents use a router function to determine which output port(s)
+should receive each message. The router returns a list of N messages
+(one per output), with None values indicating that output should not
+receive the message.
+"""
 
 from __future__ import annotations
+from typing import Callable, Any, Optional, List
 import traceback
-from typing import Any, Callable, List, Optional
+
 from dsl.core import Agent, STOP
 
 
 class Split(Agent):
     """
-    Split Agent: Route messages to N outputs based on router function.
+    Split agent: routes messages based on function (conditional routing).
+
+    Single input, multiple outputs. Calls router function to determine
+    which output port(s) receive each message.
 
     **Ports:**
-    - Inports: ["in_"] (receives messages to route)
-    - Outports: ["out_0", "out_1", ..., "out_{N-1}"] (N numbered outputs)
+    - Inports: ["in_"]
+    - Outports: ["out_0", "out_1", ..., "out_{n-1}"]
 
-    **Function Requirements:**
-    The fn parameter should be a callable that:
-    - Takes a single message argument: fn(msg)
-    - Returns a list of N messages (one per output port)
-    - None values in the list are filtered (not sent to that output)
+    **Function Contract:**
+    fn(msg) must:
+    - Take a single message argument
+    - Return a list of N messages (one per output)
+    - None values filtered (not sent to that output)
     - Signature: fn(msg) -> List[Optional[msg]]
 
     **Capabilities:**
-    This pattern allows:
-    - Routing to one output: [msg, None, None]
-    - Routing to multiple outputs: [msg, msg, None] (multicast)
-    - Transforming while routing: [enriched_msg, None, None]
-    - Complex routing logic with state
+    This pattern supports:
+    - Routing: [msg, None, None] → only out_0
+    - Multicast: [msg, msg, None] → both out_0 and out_1
+    - Transform: [enriched_msg, None, None] → modified message to out_0
+    - Filter: [None, None, None] → drop message completely
 
     **Message Flow:**
-    1. Receives message from "in_" port
-    2. Calls fn(msg) to get list of N messages
-    3. Sends each non-None message to corresponding output port
-    4. If fn returns None for a position, that output is filtered
-    5. Forwards STOP signal to all outputs and terminates
+    - Receives message from "in_"
+    - Calls fn(msg) to get list of N messages
+    - Sends each non-None message to corresponding output
+    - Forwards STOP to all outputs and terminates
 
     **Error Handling:**
-    - Validates that fn returns a list of correct length
+    - Validates fn returns list of correct length
     - Catches exceptions in routing logic
     - Broadcasts STOP on errors
 
     **Examples:**
 
-    Simple content routing:
-        >>> class ContentRouter:
+    Even/odd routing:
+        >>> class EvenOddRouter:
         ...     def route(self, msg):
-        ...         if is_spam(msg["text"]):
-        ...             return [msg, None, None]  # Route to spam handler
-        ...         elif is_abuse(msg["text"]):
-        ...             return [None, msg, None]  # Route to abuse handler
+        ...         if msg % 2 == 0:
+        ...             return [msg, None]  # Even → out_0
         ...         else:
-        ...             return [None, None, msg]  # Route to safe handler
-        >>> 
-        >>> router = ContentRouter()
-        >>> split = Split(fn=router.route, num_outputs=3)
+        ...             return [None, msg]  # Odd → out_1
+        >>> router = EvenOddRouter()
+        >>> split = Split(fn=router.route, num_outputs=2, name="even_odd")
 
-    Sentiment-based routing:
-        >>> class SentimentRouter:
+    Range-based routing:
+        >>> class RangeRouter:
         ...     def route(self, msg):
-        ...         score = analyze_sentiment(msg["text"])
-        ...         if score > 0.5:
-        ...             return [msg, None, None]  # Positive
-        ...         elif score < -0.5:
-        ...             return [None, msg, None]  # Negative
+        ...         if msg < 0:
+        ...             return [msg, None, None]  # Negative
+        ...         elif msg < 100:
+        ...             return [None, msg, None]  # Mid-range
         ...         else:
-        ...             return [None, None, msg]  # Neutral
-        >>> 
-        >>> router = SentimentRouter()
-        >>> split = Split(fn=router.route, num_outputs=3)
+        ...             return [None, None, msg]  # Large
+        >>> router = RangeRouter()
+        >>> split = Split(fn=router.route, num_outputs=3, name="range")
 
-    Round-robin routing:
-        >>> class RoundRobinRouter:
-        ...     def __init__(self, num_outputs):
-        ...         self.num_outputs = num_outputs
-        ...         self.counter = 0
-        ...     
+    Multicast (send to multiple outputs):
+        >>> class MulticastRouter:
         ...     def route(self, msg):
-        ...         results = [None] * self.num_outputs
-        ...         results[self.counter % self.num_outputs] = msg
-        ...         self.counter += 1
-        ...         return results
-        >>> 
-        >>> router = RoundRobinRouter(num_outputs=3)
-        >>> split = Split(fn=router.route, num_outputs=3)
-
-    Multicast to multiple handlers:
-        >>> class AlertRouter:
-        ...     def route(self, msg):
-        ...         if msg["priority"] == "critical":
-        ...             return [msg, msg, msg]  # Send to all handlers
-        ...         elif msg["priority"] == "high":
-        ...             return [msg, msg, None]  # Send to two handlers
+        ...         if msg > 100:
+        ...             return [msg, msg, msg]  # All outputs
+        ...         elif msg > 50:
+        ...             return [msg, msg, None]  # Two outputs
         ...         else:
-        ...             return [msg, None, None]  # Send to one handler
-        >>> 
-        >>> router = AlertRouter()
-        >>> split = Split(fn=router.route, num_outputs=3)
-
-    Transform while routing:
-        >>> class EnrichingRouter:
-        ...     def __init__(self):
-        ...         self.count = 0
-        ...     
-        ...     def route(self, msg):
-        ...         self.count += 1
-        ...         category = self.categorize(msg["text"])
-        ...         enriched = {
-        ...             **msg, 
-        ...             "category": category,
-        ...             "index": self.count
-        ...         }
-        ...         
-        ...         if category == "spam":
-        ...             return [enriched, None]
-        ...         else:
-        ...             return [None, enriched]
-        >>> 
-        >>> router = EnrichingRouter()
-        >>> split = Split(fn=router.route, num_outputs=2)
+        ...             return [msg, None, None]  # One output
+        >>> router = MulticastRouter()
+        >>> split = Split(fn=router.route, num_outputs=3, name="multi")
     """
 
-    def __init__(self, fn: Callable[[Any], List[Optional[Any]]], *, num_outputs: int) -> None:
+    def __init__(
+        self,
+        *,
+        fn: Callable[[Any], List[Optional[Any]]],
+        num_outputs: int,
+        name: str
+    ):
         """
-        Initialize a Split agent.
+        Initialize Split agent.
 
         Args:
-            fn: Callable that routes messages to outputs.
+            fn: Callable that routes messages.
                 Signature: fn(msg) -> List[Optional[msg]]
-                - Takes a message as input
-                - Returns list of N messages (one per output)
-                - None values are filtered (not sent to that output)
-            num_outputs: Number of output ports to create.
+                Must return list of num_outputs messages
+            num_outputs: Number of output ports to create
+            name: Unique name for this agent (REQUIRED)
 
         Raises:
+            ValueError: If name is empty
             TypeError: If fn is not callable
             ValueError: If num_outputs < 2
         """
+        if not name:
+            raise ValueError("Split agent requires a name")
+
         if not callable(fn):
             raise TypeError(
-                f"Split fn must be callable. Got {type(fn).__name__}"
+                f"Split fn must be callable, got {type(fn).__name__}"
             )
 
         if num_outputs < 2:
@@ -146,29 +123,40 @@ class Split(Agent):
                 f"Split requires at least 2 outputs, got {num_outputs}"
             )
 
-        super().__init__(
-            inports=["in_"],
-            outports=[f"out_{i}" for i in range(num_outputs)]
-        )
+        # Create output ports: out_0, out_1, ..., out_{n-1}
+        outports = [f"out_{i}" for i in range(num_outputs)]
+
+        super().__init__(name=name, inports=["in_"], outports=outports)
         self._fn = fn
         self.num_outputs = num_outputs
 
-    def __call__(self) -> None:
-        """
-        Main processing loop for the Split agent.
+    @property
+    def default_inport(self) -> str:
+        """Default input port for edge syntax."""
+        return "in_"
 
-        Receives messages, routes them via fn, and sends to outputs.
+    @property
+    def default_outport(self) -> Optional[str]:
+        """No default output (multiple outputs - ambiguous)."""
+        return None
+
+    def run(self) -> None:
+        """
+        Route messages to outputs based on fn.
+
+        Calls fn(msg) to get list of messages, sends each to corresponding output.
         """
         while True:
+            # Receive message
             msg = self.recv("in_")
 
-            # Check for termination signal
+            # Check for termination
             if msg is STOP:
                 self.broadcast_stop()
                 return
 
             try:
-                # Get routing decisions from function
+                # Get routing decisions
                 results = self._fn(msg)
 
                 # Validate results
@@ -184,25 +172,20 @@ class Split(Agent):
                         f"Got {len(results)} messages: {results!r}"
                     )
 
-                # Send to each output port
-                # (None values are automatically filtered by send())
+                # Send to each output
+                # (None values filtered automatically by send())
                 for i, out_msg in enumerate(results):
                     self.send(out_msg, f"out_{i}")
 
             except Exception as e:
-                print(f"[Split] Error in fn: {e}")
+                print(f"[Split '{self.name}'] Error in fn: {e}")
                 print(traceback.format_exc())
                 self.broadcast_stop()
                 return
 
-    run = __call__
-
     def __repr__(self) -> str:
         fn_name = getattr(self._fn, "__name__", repr(self._fn))
-        return f"<Split fn={fn_name} num_outputs={self.num_outputs}>"
+        return f"<Split name={self.name} fn={fn_name} outputs={self.num_outputs}>"
 
     def __str__(self) -> str:
         return f"Split({self.num_outputs} outputs)"
-
-
-__all__ = ["Split"]
