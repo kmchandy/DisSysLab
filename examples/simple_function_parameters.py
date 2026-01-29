@@ -15,7 +15,7 @@ from components.sources import ListSource
 from dsl.blocks import Source, Sink, Transform
 
 # ==============================================================================
-# STEP 1: Write Ordinary Python Functions Independent of DSL
+# STEP 1: Write Ordinary Python Functions and objects Independent of DSL
 # ==============================================================================
 
 list_source = ListSource(items=["hello", "world"])
@@ -27,7 +27,7 @@ def convert_to_upper_case(text):
 
 
 def add_suffix(text, suffix):
-    """Function used in a transform node."""
+    """Add a suffix to text. Function used in a transform node."""
     return text + suffix
 
 
@@ -36,6 +36,7 @@ def add_suffix(text, suffix):
 # ==============================================================================
 
 # Source node
+
 source = Source(
     fn=list_source.run,
     name="list_source"
@@ -50,7 +51,7 @@ uppercase = Transform(
 # Transform node: (function add_suffix has parameters)
 add_emphasis = Transform(
     fn=add_suffix,
-    params={"suffix": "!!"},
+    params={"suffix": "!!"},  # Configure the suffix
     name="add_emphasis"
 )
 
@@ -84,5 +85,6 @@ g.run_network()
 # ==============================================================================
 if __name__ == "__main__":
     print(f"Results: {results}")
-    assert results == ["HELLO!!", "WORLD!!"], f"Expected ['HELLO!!', 'WORLD!!'], got {results}"
+    assert results == [
+        "HELLO!!", "WORLD!!"], f"Expected ['HELLO!!', 'WORLD!!'], got {results}"
     print("✓ Pipeline completed successfully!")

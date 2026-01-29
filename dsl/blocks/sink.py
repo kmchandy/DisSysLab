@@ -1,147 +1,130 @@
 # dsl/blocks/sink.py
+"""
+Sink Agent: Consumes messages for side effects.
+
+Sinks have one input and no outputs. They are terminal nodes that call
+fn(msg, **params) for each message to perform side effects like printing,
+saving, or collecting.
+"""
 
 from __future__ import annotations
+from typing import Any, Callable, Optional, Dict
 import traceback
-from typing import Any, Callable
+
 from dsl.core import Agent, STOP
 
 
 class Sink(Agent):
     """
-    Sink Agent: Terminal node that consumes messages without producing output.
-
+    Sink agent: consumes messages for side effects.
+    
+    Single input, no outputs. Terminal node that calls fn(msg, **params)
+    for each message. Used for actions like printing, saving, or sending.
+    
     **Ports:**
-    - Inports: ["in_"] (receives messages to consume)
-    - Outports: [] (no outputs - this is a terminal node)
-
+    - Inports: ["in_"]
+    - Outports: [] (no outputs)
+    
     **Message Flow:**
-    1. Receives messages from "in_" port
-    2. Calls fn(msg) for each message
-    3. Filters out None messages (not passed to fn)
-    4. Stops when STOP signal received
-
-    **Function Requirements:**
-    The fn parameter should be a callable that:
-    - Takes a single message argument: fn(msg)
-    - Returns nothing (return value is ignored)
-    - Typically prints, saves to file, or collects results
-
+    - Receives msg from "in_" port
+    - Calls fn(msg, **params)
+    - No outputs (terminal node)
+    - Terminates on STOP
+    
     **Error Handling:**
-    - Exceptions during fn(msg) are caught and logged
-    - Pipeline terminates gracefully on errors
-    - STOP signal always triggers clean termination
-
+    - Exceptions caught, logged, pipeline stopped
+    - Fail-fast for educational clarity
+    
     **Examples:**
-
-    Simple print sink:
-        >>> def print_msg(msg):
-        ...     print(f"Received: {msg}")
-        >>> 
-        >>> sink = Sink(fn=print_msg)
-
-    Collector sink:
+    
+    Print to console:
+        >>> sink = Sink(fn=print, name="printer")
+    
+    Collect results:
         >>> results = []
-        >>> def collect(msg):
-        ...     results.append(msg)
-        >>> 
-        >>> sink = Sink(fn=collect)
-
-    File writer sink:
-        >>> def write_to_file(msg):
+        >>> sink = Sink(fn=results.append, name="collector")
+    
+    Save to file:
+        >>> def save_to_file(msg):
         ...     with open("output.txt", "a") as f:
         ...         f.write(str(msg) + "\\n")
-        >>> 
-        >>> sink = Sink(fn=write_to_file)
-
-    Stateful sink (using class method):
-        >>> class ResultCollector:
-        ...     def __init__(self):
-        ...         self.results = []
-        ...         self.count = 0
-        ...     
-        ...     def process(self, msg):
-        ...         self.count += 1
-        ...         self.results.append(msg)
-        ...         if self.count % 10 == 0:
-        ...             print(f"Processed {self.count} messages")
-        >>> 
-        >>> collector = ResultCollector()
-        >>> sink = Sink(fn=collector.process)
+        >>> sink = Sink(fn=save_to_file, name="writer")
+    
+    With parameters:
+        >>> def save_json(msg, filename):
+        ...     with open(filename, "a") as f:
+        ...         json.dump(msg, f)
+        ...         f.write("\\n")
+        >>> sink = Sink(fn=save_json, params={"filename": "data.jsonl"}, name="saver")
     """
-
-    def __init__(self, fn: Callable[[Any], None]) -> None:
+    
+    def __init__(
+        self,
+        *,
+        fn: Callable[..., None],
+        name: str,
+        params: Optional[Dict[str, Any]] = None
+    ):
         """
-        Initialize a Sink agent.
-
+        Initialize Sink agent.
+        
         Args:
-            fn: Callable that processes each message. 
-                Signature: fn(msg) -> None
-                Return value is ignored.
-
+            fn: Callable that processes messages for side effects.
+                Signature: fn(msg, **params) -> None
+                - Takes message and optional keyword arguments
+                - Return value ignored (side effects only)
+            name: Unique name for this agent (REQUIRED)
+            params: Optional dict of keyword arguments passed to fn
+        
         Raises:
+            ValueError: If name is empty
             TypeError: If fn is not callable
         """
+        if not name:
+            raise ValueError("Sink agent requires a name")
+        
         if not callable(fn):
             raise TypeError(
-                f"Sink fn must be callable. Got {type(fn).__name__}"
+                f"Sink fn must be callable, got {type(fn).__name__}"
             )
-
-        super().__init__(inports=["in_"], outports=[])
+        
+        super().__init__(name=name, inports=["in_"], outports=[])
         self._fn = fn
-
-    def __call__(self) -> None:
+        self._params = params or {}
+    
+    @property
+    def default_inport(self) -> str:
+        """Default input port for edge syntax."""
+        return "in_"
+    
+    def run(self) -> None:
         """
-        Main processing loop for the Sink agent.
-
-        Receives messages and passes them to fn until STOP is received.
+        Process messages until STOP.
+        
+        Calls fn for each message, terminates on STOP.
         """
-        try:
-            while True:
-                msg = self.recv("in_")
-
-                # Halt if termination signal.
-                if msg is STOP:
-                    return
-
-                # Filter out None messages (don't pass to fn)
-                if msg is None:
-                    continue
-
-                # Process the message
-                try:
-                    self._fn(msg)
-                except Exception as e:
-                    print(f"[Sink] Error in fn: {e}")
-                    print(traceback.format_exc())
-                    return
-
-        except Exception as e:
-            print(f"[Sink] Error: {e}")
-            print(traceback.format_exc())
-            return
-
-    def shutdown(self) -> None:
-        """
-        Cleanup after run() completes.
-
-        Calls finalize() on the wrapped function if it exists.
-        This ensures files are properly closed, connections cleaned up, etc.
-        """
-        if hasattr(self._fn, 'finalize') and callable(self._fn.finalize):
+        while True:
+            # Receive message
+            msg = self.recv("in_")
+            
+            # Check for termination
+            if msg is STOP:
+                # No outputs to broadcast to
+                return
+            
+            # Process message for side effects
             try:
-                print(f"[Sink] Finalizing {self._fn.__name__}...")
-                self._fn.finalize()
+                self._fn(msg, **self._params)
             except Exception as e:
-                print(f"[Sink] Error during finalize: {e}")
-
-    run = __call__
-
+                # Fail-fast: log error and stop
+                print(f"[Sink '{self.name}'] Error in fn: {e}")
+                print(traceback.format_exc())
+                # No broadcast_stop() - we have no outputs
+                return
+    
     def __repr__(self) -> str:
         fn_name = getattr(self._fn, "__name__", repr(self._fn))
-        return f"<Sink fn={fn_name}>"
+        return f"<Sink name={self.name} fn={fn_name}>"
 
     def __str__(self) -> str:
         return "Sink"
-
-
-__all__ = ["Sink"]
