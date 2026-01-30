@@ -1,6 +1,6 @@
 <!-- modules/basic/README.md  -->
 
-# Module 2: Specify a distributed system as a graph
+# Simple Network
 
 ## Key Point
  Build a distributed system without using concurrency primitives such as threads, processes locks, or message passing.
