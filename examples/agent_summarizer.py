@@ -1,4 +1,6 @@
 from dsl import network
+from components.sources import ListSource
+from dsl.blocks import Source, Sink, Transform
 from dsl.extensions.agent_openai import AgentOpenAI
 
 list_of_text = [
@@ -23,23 +25,19 @@ list_of_text = [
      "every domain by a wide margin."
      )
 ]
-# Source iterator
+# Source node
+list_source = ListSource(items=list_of_text)
+source = Source(
+    fn=list_source.run,
+    name="source"
+)
 
-
-def from_list_of_text():
-    for data_item in list_of_text:
-        yield {"text": data_item}
-
-# Print sink
-
-
-def print_sink(v):
-    for key, value in v.items():
-        print()
-        print(key)
-        print()
-        print(value)
-    print("")
+# Sink node: Collect results
+results = []
+sink = Sink(
+    fn=results.append,
+    name="collector"
+)
 
 
 # Create agent
@@ -47,13 +45,12 @@ system_prompt = "Summarize the text in a single line."
 agent = AgentOpenAI(system_prompt=system_prompt)
 
 # Transformer function input one value output one value
-
-
-def agent_op(v):
-    v["summary"] = agent.fn(v["text"])
-    return v
+transformer = Transform(
+    fn=agent.fn,
+    name="summarizer"
+)
 
 
 # Create network by connecting functions
-g = network([(from_list_of_text, agent_op), (agent_op, print_sink)])
+g = network([(source, transformer), (transformer, sink)])
 g.run_network()
