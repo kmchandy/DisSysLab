@@ -36,7 +36,7 @@ class Adder(Agent):
     5. Repeat until STOP received on either input
     """
 
-    def __init__(self, name: str = "adder"):
+    def __init__(self, name: str):
         super().__init__(name=name, inports=[
             "x", "y"], outports=["sum", "diff"])
 
@@ -77,7 +77,7 @@ source_y = Source(
 
 
 # Make the adder agent
-adder = Adder()
+adder = Adder(name="adder")
 
 # Make sinks
 sums, diffs = [], []
