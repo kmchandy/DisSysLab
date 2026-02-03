@@ -12,6 +12,72 @@ In Module 9, students replace this with the real RSSSource.
 
 from typing import Optional, Dict, Any
 
+# Predefined test articles for different "feeds"
+MOCK_FEEDS = {
+    "hacker_news": [
+        "Show HN: Built a new Python library for distributed systems",
+        "Ask HN: What are your favorite RSS feeds for tech news?",
+        "Google announces new AI model with improved reasoning",
+        "CLICK HERE for FREE cryptocurrency! Limited time only!",  # SPAM
+        "Discussion: Best practices for building distributed networks",
+        "Python 3.13 released with performance improvements",
+        "ACT NOW! Make money fast with this one weird trick!",  # SPAM
+        "Show HN: Open source alternative to commercial monitoring tool",
+        "Breaking: Major security vulnerability discovered in popular library",
+        "Tutorial: Building real-time data pipelines with Python"
+    ],
+    "tech_news": [
+        "Startup raises $50M for AI-powered code analysis",
+        "New framework promises to simplify microservices development",
+        "BUY NOW! Get rich quick with automated trading!",  # SPAM
+        "Interview: How we scaled to 1M concurrent users",
+        "Study shows remote work increases developer productivity",
+        "Limited time offer - click here for amazing deals!",  # SPAM
+        "Open source project reaches 10k GitHub stars",
+        "Company announces layoffs in tech sector restructuring",
+        "Analysis: The future of edge computing",
+        "Review: Best tools for monitoring distributed systems",
+        "Critical security flaw patched in major web framework"
+    ],
+    "reddit_python": [
+        "Just finished my first Django project! Feeling proud!",
+        "What's the best way to handle async operations in Flask?",
+        "FREE MONEY! Click this link now! Winner selected!",  # SPAM
+        "TIL: Python's asyncio can significantly speed up I/O bound tasks",
+        "My journey from bootcamp to senior developer",
+        "Amazing discovery in Python internals",
+        "You won't believe this one simple trick! Act now!",  # SPAM
+        "Help: How do I optimize this database query?",
+        "Show: Built a CLI tool for managing Docker containers",
+        "Discussion: Is Python still relevant in 2025?",
+        "Emergency! Security breach in popular package."
+    ]
+}
+
+MOCK_FEEDS_2 = {
+    "example_posts_from_X": [
+    "Just got promoted at work! Best day ever! 🎉",  # HAS EMOJI
+    "Breaking: New tech announced!",
+    "CLICK HERE for FREE MONEY! Limited time offer!",  # SPAM
+    "Just had the best lunch ever",
+    "ACT NOW! Buy now and save! Winner selected!"  # SPAM
+    ],
+    "example_posts_from_Reddit": [
+        "Had an amazing coffee this morning ☕",  # HAS EMOJI
+        "Amazing discovery in science",
+        "Click here to claim your free money now!",  # SPAM
+        "Looking forward to the weekend",
+        "Excited to start my new project tomorrow!",
+        "Limited time winner! Act now or miss out!"  # SPAM
+    ],
+    "example_posts_from_Facebook": [
+        "Traffic is terrible today, stuck for 2 hours 😤", # HAS EMOJI
+        "Family vacation was incredible",
+        "My package got lost in delivery again...",
+        "Terrible customer service today"
+    ]
+}
+
 
 class MockRSSSource:
     """
@@ -30,52 +96,11 @@ class MockRSSSource:
         >>> rss_source = Source(fn=rss_data.run)
     """
 
-    # Predefined test articles for different "feeds"
-    MOCK_FEEDS = {
-        "hacker_news": [
-            "Show HN: Built a new Python library for distributed systems",
-            "Ask HN: What are your favorite RSS feeds for tech news?",
-            "Google announces new AI model with improved reasoning",
-            "CLICK HERE for FREE cryptocurrency! Limited time only!",  # SPAM
-            "Discussion: Best practices for building distributed networks",
-            "Python 3.13 released with performance improvements",
-            "ACT NOW! Make money fast with this one weird trick!",  # SPAM
-            "Show HN: Open source alternative to commercial monitoring tool",
-            "Breaking: Major security vulnerability discovered in popular library",
-            "Tutorial: Building real-time data pipelines with Python"
-        ],
-        "tech_news": [
-            "Startup raises $50M for AI-powered code analysis",
-            "New framework promises to simplify microservices development",
-            "BUY NOW! Get rich quick with automated trading!",  # SPAM
-            "Interview: How we scaled to 1M concurrent users",
-            "Study shows remote work increases developer productivity",
-            "Limited time offer - click here for amazing deals!",  # SPAM
-            "Open source project reaches 10k GitHub stars",
-            "Company announces layoffs in tech sector restructuring",
-            "Analysis: The future of edge computing",
-            "Review: Best tools for monitoring distributed systems",
-            "Critical security flaw patched in major web framework"
-        ],
-        "reddit_python": [
-            "Just finished my first Django project! Feeling proud!",
-            "What's the best way to handle async operations in Flask?",
-            "FREE MONEY! Click this link now! Winner selected!",  # SPAM
-            "TIL: Python's asyncio can significantly speed up I/O bound tasks",
-            "My journey from bootcamp to senior developer",
-            "Amazing discovery in Python internals",
-            "You won't believe this one simple trick! Act now!",  # SPAM
-            "Help: How do I optimize this database query?",
-            "Show: Built a CLI tool for managing Docker containers",
-            "Discussion: Is Python still relevant in 2025?",
-            "Emergency! Security breach in popular package."
-        ]
-    }
-
     def __init__(
         self,
-        feed_name: str = "hacker_news",
+        feed_name: str,
         max_articles: Optional[int] = None,
+        MOCK_FEEDS: Dict[str, Any] = MOCK_FEEDS,
         name: Optional[str] = None
     ):
         """
@@ -88,11 +113,12 @@ class MockRSSSource:
         """
         self.feed_name = feed_name
         self.max_articles = max_articles
+        self.MOCK_FEEDS = MOCK_FEEDS
         self.name = name or f"mock_{feed_name}"
 
         # Get the mock articles
         self.articles = self.MOCK_FEEDS.get(
-            feed_name, self.MOCK_FEEDS["hacker_news"])
+            feed_name, [])
 
         # Limit if requested
         if max_articles:

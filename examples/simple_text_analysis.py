@@ -13,31 +13,29 @@ You can use DSL to make a distributed network in which agents call these
 functions.
 """
 
-# Example data for different social media platforms
-# Note: These are just strings, not dicts - general-purpose data
-example_posts_from_X = [
+MOCK_FEEDS_2 = {
+    "example_posts_from_X": [
     "Just got promoted at work! Best day ever! 🎉",  # HAS EMOJI
     "Breaking: New tech announced!",
     "CLICK HERE for FREE MONEY! Limited time offer!",  # SPAM
     "Just had the best lunch ever",
     "ACT NOW! Buy now and save! Winner selected!"  # SPAM
-]
-
-example_posts_from_Reddit = [
-    "Had an amazing coffee this morning ☕",  # HAS EMOJI
-    "Amazing discovery in science",
-    "Click here to claim your free money now!",  # SPAM
-    "Looking forward to the weekend",
-    "Excited to start my new project tomorrow!",
-    "Limited time winner! Act now or miss out!"  # SPAM
-]
-
-example_posts_from_Facebook = [
-    "Traffic is terrible today, stuck for 2 hours 😤",
-    "Family vacation was incredible",
-    "My package got lost in delivery again...",
-    "Terrible customer service today"
-]
+    ],
+    "example_posts_from_Reddit": [
+        "Had an amazing coffee this morning ☕",  # HAS EMOJI
+        "Amazing discovery in science",
+        "Click here to claim your free money now!",  # SPAM
+        "Looking forward to the weekend",
+        "Excited to start my new project tomorrow!",
+        "Limited time winner! Act now or miss out!"  # SPAM
+    ],
+    "example_posts_from_Facebook": [
+        "Traffic is terrible today, stuck for 2 hours 😤", # HAS EMOJI
+        "Family vacation was incredible",
+        "My package got lost in delivery again...",
+        "Terrible customer service today"
+    ]
+}
 
 
 class SourceOfSocialMediaPosts:

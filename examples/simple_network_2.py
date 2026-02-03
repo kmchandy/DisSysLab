@@ -1,4 +1,4 @@
-# examples.simple_network.py
+# examples/simple_network_2.py
 
 """
 Build a distributed system by constructing a graph in which nodes call
@@ -10,10 +10,10 @@ as threads, processes, locks, or message passing.
 """
 
 from dsl import network
-from dsl.blocks import Source, Transform, Sink
+from dsl.blocks import Source, Transform, Sink, MergeSynch
 
 # Import components from the components library
-from components.sources.mock_rss_source import MOCK_FEEDS
+from components.sources.mock_rss_source import MOCK_FEEDS_2
 from components.sources import MockRSSSource
 from components.transformers import MockAISpamFilter, MockAISentimentAnalyzer, MockAINonUrgentFilter
 from components.sinks import MockEmailAlerter, JSONLRecorder
@@ -24,28 +24,59 @@ from components.sinks import MockEmailAlerter, JSONLRecorder
 # ============================================================================
 
 # Objects used for source functions
-hacker_articles = MockRSSSource(
-    MOCK_FEEDS=MOCK_FEEDS, feed_name="hacker_news", max_articles=100)
-tech_articles = MockRSSSource(
-    MOCK_FEEDS=MOCK_FEEDS, feed_name="tech_news", max_articles=100)
-reddit_articles = MockRSSSource(
-    MOCK_FEEDS=MOCK_FEEDS, feed_name="reddit_python", max_articles=100)
+X_posts = MockRSSSource(
+    MOCK_FEEDS=MOCK_FEEDS_2, feed_name="example_posts_from_X", max_articles=100)
+Reddit_posts = MockRSSSource(
+    MOCK_FEEDS=MOCK_FEEDS_2, feed_name="example_posts_from_Reddit", max_articles=100)
+Facebook_posts = MockRSSSource(
+    MOCK_FEEDS=MOCK_FEEDS_2, feed_name="example_posts_from_Facebook", max_articles=100)
 
 # Source agents
-hacker_data_source = Source(fn=hacker_articles.run, name="hacker_source")
-tech_data_source = Source(fn=tech_articles.run, name="tech_source")
-reddit_data_source = Source(fn=reddit_articles.run, name="reddit_source")
+X_data_source = Source(fn=X_posts.run, name="hacker_source")
+Reddit_data_source = Source(fn=Reddit_posts.run, name="tech_source")
+Facebook_data_source = Source(fn=Facebook_posts.run, name="reddit_source")
 
 # ============================================================================
 # Create Transform Nodes:  construction:
 #    transform_agent = Transform(fn=transform_function, name="transform_name")
 # ============================================================================
 
+
+def clean_text(text):
+    """
+    Removes emojis and cleans whitespace.
+
+    This is a pure Python function - it knows nothing about distributed systems.
+
+    Args:
+        text: String to clean
+
+    Returns:
+        Cleaned string
+    """
+    import re
+    cleaned = re.sub(r'[^\w\s.,!?-]', '', text)
+    cleaned = ' '.join(cleaned.split())
+    return cleaned
+
+
+def print_msg(msg):
+    print(f"text")
+    print(f"{msg[0]}")
+    print(f"sentiment: {msg[1]['sentiment']}")
+    print(f"reasoning")
+    print(f"{msg[1]['reasoning']}")
+    print(f"{'-'*40}")
+    print()
+
+
 discard_spam = Transform(fn=MockAISpamFilter().run, name="spam_filter")
 analyze_sentiment = Transform(
     fn=MockAISentimentAnalyzer().run, name="sentiment_analyzer")
-discard_non_urgent = Transform(
-    fn=MockAINonUrgentFilter().run, name="non_urgent_filter")
+clean = Transform(
+    fn=clean_text, name="clean_text_transformer")
+merge_synch_text_and_sentiment = MergeSynch(
+    num_inputs=2, name="merge_text_and_sentiment")
 
 # ============================================================================
 # Create Sink Nodes. construction:
@@ -53,34 +84,21 @@ discard_non_urgent = Transform(
 # ============================================================================
 
 # Mock email alerter agent for spam (prints to console, no real emails)
-email_alerter = MockEmailAlerter(
-    to_address="security@example.com",
-    subject_prefix="[URGENT]")
-
-issue_alert = Sink(fn=email_alerter.run, name="email_alerter")
-
-# Object used for function in the Sink agent archive_recorder.
-recorder = JSONLRecorder(
-    path="basic_network_archive.jsonl",
-    mode="w",
-    flush_every=1,
-    name="basic_network_archive")
-
-# The archive recorder agent
-archive_recorder = Sink(fn=recorder.run, name="sentiment_archive")
+print_output = Sink(fn=print_msg, name="print_output")
 
 # ============================================================================
 # Specify network - a list of edges (x, y) where x → y and x, y are agents.
 # ============================================================================
 
 g = network([
-    (hacker_data_source, discard_spam),
-    (tech_data_source, discard_spam),
-    (reddit_data_source, discard_spam),
+    (X_data_source, clean),
+    (Reddit_data_source, clean),
+    (Facebook_data_source, clean),
+    (clean, discard_spam),
     (discard_spam, analyze_sentiment),
-    (discard_spam, discard_non_urgent),
-    (discard_non_urgent, issue_alert),
-    (analyze_sentiment, archive_recorder),
+    (discard_spam.out_, merge_synch_text_and_sentiment.in_0),
+    (analyze_sentiment.out_, merge_synch_text_and_sentiment.in_1),
+    (merge_synch_text_and_sentiment, print_output),
 ])
 
 # ============================================================================
@@ -93,5 +111,3 @@ print(f"{'='*50}")
 print()
 
 g.run_network()
-
-print(f"Read 'basic_network_archive.jsonl' to see archived sentiment analysis results.")
