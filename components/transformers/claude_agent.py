@@ -255,3 +255,44 @@ Return JSON format:
 }""",
         output_format="json"
     )
+
+# components/transformers/claude_agent.py
+
+def create_spam_filter():
+    """
+    Create a spam filter function that returns None for spam, text for non-spam.
+    
+    This wraps create_spam_detector() to provide a clean filtering interface.
+    Returns None for spam (filtered out), or the original text for valid messages.
+    
+    Returns:
+        Callable that takes text and returns text or None
+        
+    Example:
+        >>> from components.transformers.claude_agent import create_spam_filter
+        >>> from dsl.blocks import Transform
+        >>> 
+        >>> spam_filter = Transform(fn=create_spam_filter(), name="spam_filter")
+    """
+    # Reuse the existing spam detector
+    detector = create_spam_detector()
+    
+    # Wrapper function that filters
+    def spam_filter(text: str) -> Optional[str]:
+        """Returns None if spam, original text if not spam."""
+        try:
+            result = detector.run(text)
+            
+            # If spam, return None (filters out message)
+            if result.get("is_spam", False):
+                return None
+            
+            # Not spam, return original text
+            return text
+            
+        except Exception as e:
+            print(f"[spam_filter] Error: {e}")
+            # On error, let message through (fail open for teaching)
+            return text
+    
+    return spam_filter

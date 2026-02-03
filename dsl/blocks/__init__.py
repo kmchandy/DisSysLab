@@ -16,6 +16,7 @@ from dsl.blocks.transform import Transform
 from dsl.blocks.sink import Sink
 from dsl.blocks.fanout import Broadcast
 from dsl.blocks.fanin import MergeAsynch
+from dsl.blocks.merge_synch import MergeSynch
 from dsl.blocks.split import Split
 
 __all__ = [
@@ -24,5 +25,6 @@ __all__ = [
     "Sink",
     "Broadcast",
     "MergeAsynch",
+    "MergeSynch",
     "Split",
 ]
