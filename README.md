@@ -50,6 +50,8 @@ print(results)  # ['HELLO', 'WORLD']
 
 You just built a distributed system where nodes run concurrently. No threading code required.
 
+**What's next?** Go to [Module 01: Basics](examples/module_01_basics/) to understand what just happened and start building more complex networks.
+
 ## Core Idea
 
 DisSysLab has three layers:
@@ -70,7 +72,7 @@ You write Layer 1. DisSysLab handles Layers 2 & 3.
 - **Transform** - Processes data (filter spam, analyze sentiment, translate)
 - **Sink** - Consumes data (save to file, send email, display)
 
-### General Node Type
+### Agent: The General Node Type
 
 - **Agent** - Receives and sends messages from arbitrary numbers of input and output ports
 
@@ -180,6 +182,8 @@ python3 -m examples.module_01.01_simple_source_sink
 
 ## Learning Path
 
+**→ Start here:** [Module 01: The Lightning Strike](examples/module_01_basics/) (30 minutes)
+
 **Module 1: The Lightning Strike** (30 minutes)
 - First network in 5 minutes
 - Understanding the three-layer model
@@ -268,6 +272,7 @@ python3 -m examples.module_01.01_simple_source_sink
 - [API Reference](docs/api.md) - Complete documentation
 - [Examples](examples/) - Progressive tutorials
 - [Teaching Guide](docs/teaching.md) - For instructors
+- [Site Directory Structure](dev/README_Directory.md)
 
 ## Philosophy
 
