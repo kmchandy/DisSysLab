@@ -21,6 +21,7 @@ def detect_spam(text: str) -> dict:
 
     Returns:
         Dict with:
+        - text: original text (passed through)
         - is_spam: bool (True if spam detected)
         - confidence: float from 0.0 to 1.0
         - spam_type: "promotional" | "phishing" | "scam" | "legitimate"
@@ -29,7 +30,7 @@ def detect_spam(text: str) -> dict:
     Example:
         >>> result = detect_spam("CLICK HERE for FREE MONEY!")
         >>> print(result)
-        {'is_spam': True, 'confidence': 0.95, 'spam_type': 'promotional', 'reason': '...'}
+        {'text': '...', 'is_spam': True, 'confidence': 0.95, 'spam_type': 'promotional', 'reason': '...'}
     """
     # Spam indicator keywords
     spam_keywords = [
@@ -103,6 +104,7 @@ def detect_spam(text: str) -> dict:
         reason = "No significant spam indicators detected"
 
     return {
+        "text": text,
         "is_spam": is_spam,
         "confidence": round(confidence, 2),
         "spam_type": spam_type,
