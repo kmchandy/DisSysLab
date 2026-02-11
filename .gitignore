@@ -73,3 +73,5 @@ pytest_cache/
 test_outputs/
 temp/
 output/
+test_webhook.py
+test_*.py
