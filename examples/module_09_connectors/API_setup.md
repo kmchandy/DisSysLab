@@ -163,75 +163,140 @@ BlueSky is very generous:
 
 Environment variables keep credentials secure and separate from your code.
 
-#### **macOS/Linux (using zsh):**
+### Option 1: Shell Environment Variables (Recommended for Development)
 
-1. **Open your shell configuration file:**
-   ```bash
-   nano ~/.zshrc
-   ```
+Environment variables are stored in your shell and available to all programs you run.
 
-2. **Add your credentials at the end:**
-   ```bash
-   # BlueSky API Credentials
-   export BLUESKY_HANDLE='your.handle.bsky.social'
-   export BLUESKY_PASSWORD='xxxx-xxxx-xxxx-xxxx'
-   
-   # Gmail Credentials (if using)
-   export GMAIL_EMAIL='your.email@gmail.com'
-   export GMAIL_APP_PASSWORD='abcdefghijklmnop'
-   
-   # Slack Webhook (if using)
-   export SLACK_WEBHOOK_URL='https://hooks.slack.com/services/...'
-   ```
+#### **macOS/Linux (using zsh - RECOMMENDED):**
 
-3. **Save and exit:**
-   - Press `Ctrl+O` (write out)
-   - Press `Enter` (confirm)
-   - Press `Ctrl+X` (exit)
+**1. Open your shell configuration file:**
+```bash
+nano ~/.zshrc
+```
 
-4. **Reload your shell:**
-   ```bash
-   source ~/.zshrc
-   ```
+**2. Add your credentials at the end:**
+```bash
+# ============================================
+# DisSysLab API Credentials
+# ============================================
+# IMPORTANT: Never commit these to git!
 
-5. **Verify it worked:**
-   ```bash
-   echo $BLUESKY_HANDLE
-   # Should print: your.handle.bsky.social
-   ```
+# BlueSky API
+export BLUESKY_HANDLE='your.handle.bsky.social'
+export BLUESKY_PASSWORD='xxxx-xxxx-xxxx-xxxx'
+
+# Gmail Credentials (if using)
+export GMAIL_EMAIL='your.email@gmail.com'
+export GMAIL_APP_PASSWORD='abcdefghijklmnop'
+
+# Slack Webhook (if using)
+export SLACK_WEBHOOK_URL='https://hooks.slack.com/services/T07.../B08.../XXX...'
+```
+
+**3. Save and exit:**
+- Press `Ctrl+O` (write out)
+- Press `Enter` (confirm)
+- Press `Ctrl+X` (exit)
+
+**4. Reload your shell:**
+```bash
+source ~/.zshrc
+```
+
+**5. Verify it worked:**
+```bash
+echo $BLUESKY_HANDLE
+# Should print: your.handle.bsky.social
+
+echo $SLACK_WEBHOOK_URL
+# Should print your webhook URL
+```
+
+**6. Test in Python:**
+```bash
+python3 -c "import os; print('BlueSky:', os.environ.get('BLUESKY_HANDLE'))"
+# Should print: BlueSky: your.handle.bsky.social
+```
+
+✅ **Done!** Every new terminal will have these variables.
+
+---
 
 #### **macOS/Linux (using bash):**
 
 Same steps, but use `~/.bashrc` or `~/.bash_profile` instead of `~/.zshrc`
 
-#### **Windows (PowerShell):**
+```bash
+nano ~/.bashrc
+# Add same export commands as above
+source ~/.bashrc
+```
 
-1. **Open PowerShell as Administrator**
+---
 
-2. **Set environment variables:**
-   ```powershell
-   [System.Environment]::SetEnvironmentVariable('BLUESKY_HANDLE', 'your.handle.bsky.social', 'User')
-   [System.Environment]::SetEnvironmentVariable('BLUESKY_PASSWORD', 'xxxx-xxxx-xxxx-xxxx', 'User')
-   ```
+#### **Windows (PowerShell - RECOMMENDED):**
 
-3. **Restart PowerShell** to apply changes
+**1. Open PowerShell as Administrator:**
+- Right-click Start Menu → "Windows PowerShell (Admin)"
 
-4. **Verify:**
-   ```powershell
-   $env:BLUESKY_HANDLE
-   ```
+**2. Set user environment variables (permanent):**
+```powershell
+# BlueSky
+[System.Environment]::SetEnvironmentVariable('BLUESKY_HANDLE', 'your.handle.bsky.social', 'User')
+[System.Environment]::SetEnvironmentVariable('BLUESKY_PASSWORD', 'xxxx-xxxx-xxxx-xxxx', 'User')
+
+# Gmail (if using)
+[System.Environment]::SetEnvironmentVariable('GMAIL_EMAIL', 'your.email@gmail.com', 'User')
+[System.Environment]::SetEnvironmentVariable('GMAIL_APP_PASSWORD', 'abcdefghijklmnop', 'User')
+
+# Slack Webhook (if using)
+[System.Environment]::SetEnvironmentVariable('SLACK_WEBHOOK_URL', 'https://hooks.slack.com/services/...', 'User')
+```
+
+**3. Restart PowerShell** (close and reopen)
+
+**4. Verify:**
+```powershell
+$env:BLUESKY_HANDLE
+# Should print: your.handle.bsky.social
+```
+
+---
 
 #### **Windows (Command Prompt):**
 
-1. **Open Command Prompt as Administrator**
+**1. Open Command Prompt as Administrator**
 
-2. **Set environment variables:**
-   ```cmd
-   setx BLUESKY_HANDLE "your.handle.bsky.social"
-   setx BLUESKY_PASSWORD "xxxx-xxxx-xxxx-xxxx"
-   ```
+**2. Set environment variables (permanent):**
+```cmd
+setx BLUESKY_HANDLE "your.handle.bsky.social"
+setx BLUESKY_PASSWORD "xxxx-xxxx-xxxx-xxxx"
+setx GMAIL_EMAIL "your.email@gmail.com"
+setx GMAIL_APP_PASSWORD "abcdefghijklmnop"
+setx SLACK_WEBHOOK_URL "https://hooks.slack.com/services/..."
+```
 
-3. **Restart Command Prompt**
+**3. Restart Command Prompt**
+
+---
+
+#### **Temporary Variables (Testing Only)**
+
+Set for current terminal session only (disappears when you close terminal):
+
+```bash
+# macOS/Linux
+export BLUESKY_HANDLE='your.handle.bsky.social'
+export SLACK_WEBHOOK_URL='https://hooks.slack.com/...'
+
+# Windows PowerShell
+$env:BLUESKY_HANDLE = 'your.handle.bsky.social'
+$env:SLACK_WEBHOOK_URL = 'https://hooks.slack.com/...'
+```
+
+**Use this for quick tests, but add to shell config for permanent setup.**
+
+---
 
 ### Option 2: .env File (For Projects)
 
@@ -618,30 +683,61 @@ sender.run({
 
 ---
 
-## Slack Webhook Setup (5 minutes) ⭐ EASY
+## Slack Webhook Setup (10 minutes) ⭐ EASY
 
 Webhooks let you send messages to Slack channels.
 
-### Step 1: Create Incoming Webhook
+### Step 1: Create Incoming Webhook App
 
-1. Go to https://api.slack.com/apps
-2. Click **Create New App**
-3. Choose **From scratch**
-4. App name: `DisSysLab` (or any name)
-5. Choose your workspace
-6. Click **Create App**
+1. **Go to Slack API Apps page:**
+   - Visit: https://api.slack.com/apps
+   - Click **"Create New App"**
 
-7. In the left sidebar, click **Incoming Webhooks**
-8. Toggle **Activate Incoming Webhooks** to ON
-9. Click **Add New Webhook to Workspace**
-10. Choose a channel (e.g., `#general` or create `#alerts`)
-11. Click **Allow**
+2. **Choose "From scratch":**
+   - App Name: `DisSysLab` (or any name you like)
+   - Pick your workspace: Select your workspace from dropdown
+   - Click **"Create App"**
 
-12. **COPY THE WEBHOOK URL**
-    - It looks like: `https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXX`
-    - Save it somewhere safe
+3. **You'll land on the "Basic Information" page:**
+   - This is your app's main settings page
+   - Look at the **LEFT SIDEBAR**
 
-**Time:** 5 minutes
+4. **Navigate to Incoming Webhooks:**
+   - In the left sidebar, find the **"Features"** section
+   - Click **"Incoming Webhooks"**
+   - (If you don't see it, scroll down the left sidebar)
+
+5. **Activate Incoming Webhooks:**
+   - At the top of the page, toggle **"Activate Incoming Webhooks"** to **ON**
+   - The toggle will turn green when activated
+
+6. **Add Webhook to Your Workspace:**
+   - Scroll down to "Webhook URLs for Your Workspace"
+   - Click **"Add New Webhook to Workspace"** button
+   - You'll be asked to authorize the app
+
+7. **Choose a Channel:**
+   - Select a channel from the dropdown (e.g., `#general`)
+   - Or create a new channel like `#alerts` or `#monitoring`
+   - Click **"Allow"**
+
+8. **Copy the Webhook URL:**
+   - You'll see a webhook URL appear
+   - Format: `https://hooks.slack.com/services/T07CHK56K9U/B08.../XXX...`
+   - Click the **"Copy"** button next to it
+   - **DO NOT share this URL or commit it to git!**
+
+**Time:** 5-10 minutes
+
+### Important: The Webhook URL is a SECRET!
+
+⚠️ **Treat the webhook URL like a password:**
+- Anyone with this URL can post to your Slack channel
+- Never commit it to git
+- Never share it publicly
+- If exposed, revoke it and create a new one
+
+See the "Security: Protecting Your Secrets" section below for proper handling.
 
 ### Step 2: Test Connection
 
@@ -731,11 +827,188 @@ _Italic text_
 
 ---
 
-## Environment Variables (Recommended)
+## Security: Protecting Your Secrets
 
-**Don't hardcode credentials in your code!**
+**CRITICAL: Never commit credentials to git!**
 
-### Using Environment Variables
+GitHub and other platforms actively scan for exposed secrets. If you accidentally commit a secret, it can be discovered and abused even after you delete it from the current code.
+
+### What Are Secrets?
+
+Secrets are sensitive credentials that grant access to services:
+- API keys and passwords
+- Webhook URLs
+- Database connection strings
+- Authentication tokens
+- Email app passwords
+
+### The Golden Rule
+
+**❌ NEVER do this:**
+```python
+# BAD - Hardcoded secret in code
+webhook = Webhook(url="https://hooks.slack.com/services/T07.../B08.../XXX...")
+```
+
+**✅ ALWAYS do this:**
+```python
+# GOOD - Secret from environment variable
+import os
+webhook = Webhook(url=os.environ.get("SLACK_WEBHOOK_URL"))
+```
+
+### If You Accidentally Commit a Secret
+
+**Don't panic, but act quickly:**
+
+#### 1. **Revoke the Secret Immediately**
+
+For each type of secret:
+- **BlueSky:** Delete the app password, create a new one
+- **Gmail:** Revoke the app password, generate a new one
+- **Slack Webhook:** Delete the webhook, create a new one
+
+#### 2. **Remove from Git History**
+
+The secret is still in your git history! Remove it:
+
+**Option A: Remove specific file (recommended):**
+```bash
+cd ~/Documents/DisSysLab
+
+# Remove the file from git history
+git filter-branch --force --index-filter \
+  "git rm --cached --ignore-unmatch path/to/file.py" \
+  --prune-empty --tag-name-filter cat -- --all
+
+# Force push (rewrites history)
+git push origin --force --all
+```
+
+**Option B: If it's your most recent commit:**
+```bash
+# Remove file from last commit
+git rm --cached path/to/file.py
+git commit --amend --no-edit
+git push --force
+```
+
+**Option C: Use BFG Repo Cleaner (easiest for large repos):**
+```bash
+# Install BFG
+brew install bfg  # macOS
+# or download from https://rtyley.github.io/bfg-repo-cleaner/
+
+# Clean secrets
+bfg --replace-text secrets.txt  # File with secrets to remove
+git reflog expire --expire=now --all
+git gc --prune=now --aggressive
+git push --force
+```
+
+#### 3. **Add to .gitignore**
+
+```bash
+# Prevent future commits
+echo "test_*.py" >> .gitignore
+echo ".env" >> .gitignore
+echo "credentials.json" >> .gitignore
+git add .gitignore
+git commit -m "Add sensitive files to gitignore"
+git push
+```
+
+### Preventing Accidents
+
+#### 1. **Use .gitignore Proactively**
+
+Create `.gitignore` at the start:
+```bash
+# In your project root
+cat > .gitignore << 'EOF'
+# Secrets and credentials
+.env
+credentials.json
+secrets.json
+*_credentials.py
+*_secrets.py
+
+# Test files with hardcoded values
+test_*.py
+*_test.py
+
+# Environment-specific
+.venv/
+__pycache__/
+*.pyc
+
+# OS files
+.DS_Store
+Thumbs.db
+EOF
+```
+
+#### 2. **Use Pre-commit Hooks**
+
+Install git-secrets to prevent commits:
+```bash
+# Install git-secrets
+brew install git-secrets  # macOS
+# or https://github.com/awslabs/git-secrets
+
+# Set up for your repo
+cd ~/Documents/DisSysLab
+git secrets --install
+git secrets --register-aws  # Scans for AWS keys
+git secrets --add 'hooks\.slack\.com/services/[A-Z0-9/]+'  # Slack webhooks
+git secrets --add '[a-z]{4}-[a-z]{4}-[a-z]{4}-[a-z]{4}'    # BlueSky app passwords
+```
+
+Now git will warn you before committing secrets!
+
+#### 3. **Review Before Pushing**
+
+Always check what you're committing:
+```bash
+# See what will be committed
+git diff --cached
+
+# Review file contents
+git diff --cached path/to/file.py
+
+# If you see secrets, unstage and fix
+git reset HEAD path/to/file.py
+```
+
+### GitHub Secret Scanning
+
+GitHub automatically scans commits for secrets. If detected, you'll see:
+
+```
+remote: —— Slack Incoming Webhook URL ————————————————
+remote:        locations:
+remote:          - commit: abc123...
+remote:            path: test_webhook.py:6
+remote:        
+remote:        To push, remove secret from commit(s)
+```
+
+**This means:**
+1. GitHub blocked your push (good!)
+2. The secret is in your git history
+3. Follow "Remove from Git History" steps above
+4. Revoke the exposed secret
+5. Create a new secret
+
+---
+
+## Managing Credentials (All Services)
+
+**IMPORTANT: Never hardcode credentials in your code!**
+
+Environment variables keep credentials secure and separate from your code.
+
+### Option 1: Shell Environment Variables (Recommended for Development)
 
 **In your terminal:**
 ```bash
