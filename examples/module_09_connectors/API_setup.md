@@ -155,6 +155,214 @@ BlueSky is very generous:
 
 ---
 
+## Managing Credentials (All Services)
+
+**IMPORTANT: Never hardcode credentials in your code!**
+
+### Option 1: Environment Variables (Recommended)
+
+Environment variables keep credentials secure and separate from your code.
+
+#### **macOS/Linux (using zsh):**
+
+1. **Open your shell configuration file:**
+   ```bash
+   nano ~/.zshrc
+   ```
+
+2. **Add your credentials at the end:**
+   ```bash
+   # BlueSky API Credentials
+   export BLUESKY_HANDLE='your.handle.bsky.social'
+   export BLUESKY_PASSWORD='xxxx-xxxx-xxxx-xxxx'
+   
+   # Gmail Credentials (if using)
+   export GMAIL_EMAIL='your.email@gmail.com'
+   export GMAIL_APP_PASSWORD='abcdefghijklmnop'
+   
+   # Slack Webhook (if using)
+   export SLACK_WEBHOOK_URL='https://hooks.slack.com/services/...'
+   ```
+
+3. **Save and exit:**
+   - Press `Ctrl+O` (write out)
+   - Press `Enter` (confirm)
+   - Press `Ctrl+X` (exit)
+
+4. **Reload your shell:**
+   ```bash
+   source ~/.zshrc
+   ```
+
+5. **Verify it worked:**
+   ```bash
+   echo $BLUESKY_HANDLE
+   # Should print: your.handle.bsky.social
+   ```
+
+#### **macOS/Linux (using bash):**
+
+Same steps, but use `~/.bashrc` or `~/.bash_profile` instead of `~/.zshrc`
+
+#### **Windows (PowerShell):**
+
+1. **Open PowerShell as Administrator**
+
+2. **Set environment variables:**
+   ```powershell
+   [System.Environment]::SetEnvironmentVariable('BLUESKY_HANDLE', 'your.handle.bsky.social', 'User')
+   [System.Environment]::SetEnvironmentVariable('BLUESKY_PASSWORD', 'xxxx-xxxx-xxxx-xxxx', 'User')
+   ```
+
+3. **Restart PowerShell** to apply changes
+
+4. **Verify:**
+   ```powershell
+   $env:BLUESKY_HANDLE
+   ```
+
+#### **Windows (Command Prompt):**
+
+1. **Open Command Prompt as Administrator**
+
+2. **Set environment variables:**
+   ```cmd
+   setx BLUESKY_HANDLE "your.handle.bsky.social"
+   setx BLUESKY_PASSWORD "xxxx-xxxx-xxxx-xxxx"
+   ```
+
+3. **Restart Command Prompt**
+
+### Option 2: .env File (For Projects)
+
+Good for project-specific credentials.
+
+1. **Create `.env` file in your project directory:**
+   ```bash
+   cd ~/Documents/DisSysLab
+   nano .env
+   ```
+
+2. **Add credentials:**
+   ```
+   BLUESKY_HANDLE=your.handle.bsky.social
+   BLUESKY_PASSWORD=xxxx-xxxx-xxxx-xxxx
+   GMAIL_EMAIL=your.email@gmail.com
+   GMAIL_APP_PASSWORD=abcdefghijklmnop
+   SLACK_WEBHOOK_URL=https://hooks.slack.com/services/...
+   ```
+
+3. **Add `.env` to `.gitignore`:**
+   ```bash
+   echo ".env" >> .gitignore
+   ```
+
+4. **Install python-dotenv:**
+   ```bash
+   pip3 install python-dotenv
+   ```
+
+5. **Use in your code:**
+   ```python
+   from dotenv import load_dotenv
+   import os
+   
+   # Load .env file
+   load_dotenv()
+   
+   # Access credentials
+   handle = os.environ.get("BLUESKY_HANDLE")
+   password = os.environ.get("BLUESKY_PASSWORD")
+   ```
+
+### Option 3: Temporary (For Testing Only)
+
+**WARNING: Only for quick tests. Never commit to git!**
+
+```bash
+# Set for current terminal session only
+export BLUESKY_HANDLE='your.handle.bsky.social'
+export BLUESKY_PASSWORD='xxxx-xxxx-xxxx-xxxx'
+
+# Run your code
+python3 your_script.py
+
+# Variables disappear when you close the terminal
+```
+
+### Using Credentials in Your Code
+
+```python
+import os
+
+# Always use environment variables
+from components.sources.bluesky_source import BlueSkySource
+
+source = BlueSkySource(
+    handle=os.environ.get("BLUESKY_HANDLE"),
+    app_password=os.environ.get("BLUESKY_PASSWORD")
+)
+
+# Never do this:
+# source = BlueSkySource(
+#     handle="hardcoded.bsky.social",  # ❌ BAD
+#     app_password="xxxx-xxxx-xxxx"    # ❌ BAD
+# )
+```
+
+### Security Checklist
+
+✅ **Do:**
+- Store credentials in environment variables or `.env` files
+- Add `.env` to `.gitignore`
+- Use different credentials for development vs production
+- Revoke credentials you're not using
+- Use app passwords (not main passwords)
+
+❌ **Don't:**
+- Hardcode credentials in your code
+- Commit credentials to git
+- Share credentials in Slack/Discord/email
+- Use your main passwords for API access
+- Leave credentials in screenshot or screen recordings
+
+### Troubleshooting Credentials
+
+**Problem:** "Credentials not found"
+
+**Solution:**
+```bash
+# Check if set:
+echo $BLUESKY_HANDLE
+
+# If empty, they're not set. Follow steps above to set them.
+```
+
+**Problem:** "Authentication failed" but credentials are set
+
+**Solution:**
+```bash
+# Check for extra spaces or quotes:
+echo "$BLUESKY_HANDLE" | od -c
+
+# Should show just your handle, no extra characters
+```
+
+**Problem:** Variables work in terminal but not in Python
+
+**Solution:**
+```bash
+# Make sure you restarted terminal after editing ~/.zshrc
+
+# Or reload it:
+source ~/.zshrc
+
+# Then verify in Python:
+python3 -c "import os; print(os.environ.get('BLUESKY_HANDLE'))"
+```
+
+---
+
 ## Gmail IMAP Setup (15 minutes) ⭐⭐⭐ HARD
 
 IMAP lets you read emails from Gmail (or any email provider).
