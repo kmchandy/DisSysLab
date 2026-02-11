@@ -75,3 +75,4 @@ temp/
 output/
 test_webhook.py
 test_*.py
+.env
