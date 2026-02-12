@@ -1,24 +1,16 @@
 # DisSysLab
 
-**A teaching framework for building distributed systems with ordinary Python functions**
+**Mission**: DisSysLab (dsl) makes distributed systems accessible to anybody familiar with elementary programming. You build a distributed application by simply associating ordinary Python functions with nodes of a network. 
+
 
 [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-> **Mission**: DisSysLab makes distributed systems accessible to beginners. Build real AI-powered networks using ordinary Python functions - no threads, processes, or message-passing complexity. Start building in 5 minutes, use distributed patterns in weeks.
+**Persistent distributed applications** With dsl you can build persistent networks that include AI agents, streaming data sources such as social media feeds, and connections to services such as email and calendars.
 
-## Why DisSysLab?
+**Teaching**: dsl is used as part of an online, self-study course in distributed algorithms for first-year undergraduates. Most distributed programming frameworks are based on concurrency concepts such as threads, processes, message-passing, and locks. You build a distributed app with dsl by assigning ordinary Python functions to nodes of a network. 
 
-Distributed systems are hard to learn. Most courses require understanding threads, locks, and complex concurrency before you can build anything useful.
-
-DisSysLab flips this: write plain Python functions, wrap them in network nodes, connect the nodes, and run. The framework handles all the concurrency.
-
-**Perfect for:**
-- First-year CS students learning distributed systems
-- Developers building AI agent networks
-- Anyone who wants to create data pipelines without fighting infrastructure
-
-## Quick Start: Your First Network in 5 Minutes
+### Quick Start: An Example Network
 
 ```python
 from dsl import network
@@ -48,9 +40,7 @@ g.run_network()
 print(results)  # ['HELLO', 'WORLD']
 ```
 
-You just built a distributed system where nodes run concurrently. No threading code required.
-
-**What's next?** Go to [Module 01: Basics](examples/module_01_basics/) to understand what just happened and start building more complex networks.
+You just built a distributed system where nodes run concurrently.
 
 ## Core Idea
 
@@ -59,45 +49,24 @@ DisSysLab has three layers:
 ```
 Layer 1: Plain Python Functions (your code)
     ↓
-Layer 2: Network Nodes (Source, Transform, Sink)
+Layer 2: Network Nodes (Source, Transform, Agent, Sink)
     ↓  
 Layer 3: Distributed Network (runs concurrently)
 ```
 
-You write Layer 1. DisSysLab handles Layers 2 & 3.
+You write Layer 1. dsl handles Layers 2 & 3.
 
-### Three Basic Node Types
+### Network
+
+A network is specified by a directed graph. The nodes of a networks are called agents. We often use the following special cases of agents
 
 - **Source** - Generates data (RSS feeds, sensors, databases)
 - **Transform** - Processes data (filter spam, analyze sentiment, translate)
 - **Sink** - Consumes data (save to file, send email, display)
 
-### Agent: The General Node Type
+This documentation discusses acyclic networks first and general networks later.
 
-- **Agent** - Receives and sends messages from arbitrary numbers of input and output ports
-
-### Network Topologies
-
-DisSysLab supports any acyclic network topology:
-
-- **Pipeline** - Linear chain: A → B → C → D
-- **Fanout** - Broadcast: Source → [Dest1, Dest2, Dest3]
-- **Fanin** - Merge: [Source1, Source2, Source3] → Processor
-- **Trees** - Hierarchical processing with multiple levels
-- **DAGs** - Complex directed acyclic graphs with any structure
-
-**Note:** Modules covering cyclic networks (feedback loops, iterative refinement) will be added soon.
-
-### Automatic Features
-
-The framework automatically handles:
-- **Concurrency** - Each node runs in its own thread
-- **Message passing** - Nodes communicate via queues
-- **Filtering** - Return `None` to drop messages
-- **Termination** - Clean shutdown with STOP signals
-- **Timeouts** - Detect hanging networks with helpful errors
-
-## Real-World Example: AI News Monitor
+## A Persistent Network of Agents: AI News Monitor
 
 ```python
 from dsl import network
@@ -133,7 +102,6 @@ g = network([
 g.run_network()
 ```
 
-This network demonstrates multiple patterns: fanin (merging feeds), pipeline (sequential processing), and AI integration.
 
 ## What You Can Build
 
@@ -151,13 +119,6 @@ This network demonstrates multiple patterns: fanin (merging feeds), pipeline (se
 - Multi-language translators
 - Automated summarizers
 - Topic classifiers
-
-### Complex Topologies
-- Diamond networks (parallel processing paths)
-- Tree networks (hierarchical aggregation)
-- Multi-stage filtering cascades
-- Gather-process-distribute patterns
-- Custom DAG structures
 
 ### Integrations
 - Gmail → AI analysis → Calendar events
@@ -177,7 +138,7 @@ source .venv/bin/activate  # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
 # Run first example
-python3 -m examples.module_01.01_simple_source_sink
+python3 -m examples.module_01_basics.example
 ```
 
 ## Learning Path
