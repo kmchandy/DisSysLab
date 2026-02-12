@@ -1030,3 +1030,22 @@ Next steps:
 **Remember: Every app is just Sources → Transforms → Sinks!**
 
 Answer the 3 questions, build layer by layer, and you'll succeed. 🚀
+
+
+## Advanced: Other Network Node Types
+
+This guide focused on the three essential building blocks:
+- **Sources:** Where data comes from
+- **Transforms:** How to process data  
+- **Sinks:** Where data goes to
+
+**DisSysLab also provides specialized blocks for advanced patterns:**
+
+- **Agents:** AI-powered processing nodes (see Module 8)
+- **MergeAsynch:** Combine multiple asynchronous streams
+- **Split:** Duplicate streams for parallel processing
+- **Broadcast:** Send to multiple destinations with routing logic
+
+For details on these advanced blocks, see [ADVANCED_BLOCKS.md](ADVANCED_BLOCKS.md).
+
+**For most apps, Sources → Transforms → Sinks is all you need!**
