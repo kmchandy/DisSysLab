@@ -1,18 +1,22 @@
-# Module 01: Basics - Your First DisSysLab Network
+# Module 01: Basics - Your First dsl Network
 
-Learn how to build distributed systems by wrapping ordinary Python functions into a network that runs concurrently.
+Build distributed systems using ordinary Python functions.
 
-## What You'll Learn
+## The Problem that We're Solving
 
-- The three types of nodes: Source, Transform, and Sink
-- How to wrap ordinary Python functions into network nodes
-- How to define network topology as a list of connections
+You may have developed applications that have the form: get data; process the data; save results and terminate. You may have written a sequential program which executes one step at a time to implement the application. dsl is different from sequential programming in two ways: (1) dsl applications are persistent: they run forever, or (2) steps of the applications are executed concurrently.
+
+Many of the example apps in the initial modules terminate; apps that are persistent are described later.
+
+## What You'll Learn in this Module
+
+- Types of nodes: Source, Transform, Sink, and Agent.
+- How to build a node of a network from an ordinary Python function
+- How to define a network topology as a directed graph.
 - How to run a network where nodes execute concurrently
-- The fundamental pattern you'll use in every DisSysLab program
+- Patterns you use in most dsl programs
 
-## The Problem We're Solving
 
-You have data processing tasks that naturally flow in stages: get data, process it, save results. Normally, you'd write sequential code that runs one step at a time. DisSysLab lets you express this as a **network** where each stage runs **concurrently** in its own thread, automatically passing messages between stages. You get parallelism without writing any threading code.
 
 ## Network Topology
 
@@ -72,6 +76,8 @@ Where `NodeType` is one of:
 - **`Sink`** - for functions that consume data
 
 **That's it!** You're telling DisSysLab: "Take this ordinary function and turn it into a network node."
+
+Later we describe the **agent** class in which you can write programs that explicitly send and receive messages.
 
 ---
 
