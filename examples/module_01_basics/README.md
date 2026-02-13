@@ -357,7 +357,7 @@ In our example:
 
 **This is why DisSysLab is powerful:** You get parallelism for free.
 
-### Concept 5: The Three Basic Node Types (Agents described later)
+### Concept 5: The Three Basic Node Types (Agents described in later modules)
 
 Every DisSysLab network uses these three building blocks:
 
@@ -535,69 +535,3 @@ You've learned the fundamental pattern! Every DisSysLab program follows these sa
 4. Run network
 
 **Next module:** [Module 02: Filtering](../module_02_filtering/) - Learn how to drop messages by returning `None`, enabling conditional processing.
-
-**Want to understand more deeply?** Read [How It Works](../../docs/HOW_IT_WORKS.md) to see what happens inside DisSysLab when you run a network.
-
-## Quick Reference
-
-**Import what you need:**
-```python
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from components.sources import ListSource  # or other helpers
-```
-
-**The pattern:**
-```python
-# 1. Functions
-def my_function(data):
-    return data.upper()
-
-# 2. Nodes
-node = Transform(fn=my_function, name="my_node")
-
-# 3. Network
-g = network([(node1, node2), (node2, node3)])
-
-# 4. Run
-g.run_network()
-```
-
-**Node types:**
-- `Source(fn=..., name=...)` - Generates data
-- `Transform(fn=..., name=..., params={})` - Processes data
-- `Sink(fn=..., name=...)` - Consumes data
-
----
-
-**Questions or stuck?** Check [Troubleshooting](../../docs/troubleshooting.md) or review this README again. The concepts are simple once you see them work!# Module 01 Basics
-
-Introduction to DisSysLab - First network, basic patterns
-
-## Topics Covered
-
-- Source, Transform, Sink nodes
-- Simple pipeline
-- Message flow
-
-
-## Examples
-
-[To be added]
-
-## Running the Examples
-```bash
-python3 -m examples.module_01_basics.example_name
-```
-
-## Key Concepts
-
-[To be documented]
-
-## Exercises
-
-[To be added]
-
----
-
-*See [MODULE_ORDER.md](../../MODULE_ORDER.md) for the complete learning sequence.*
