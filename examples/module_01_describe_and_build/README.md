@@ -2,28 +2,38 @@
 
 *Your first distributed system in 10 minutes.*
 
+This module uses **mock components** — simulated data sources and keyword-based AI analyzers that run instantly with no API keys, no accounts, and no cost. But here's the important part: mock and real components share the same interface. When you're ready to connect to live RSS feeds, real AI services, or actual email alerts, you swap one import line. The network topology, the transform functions, the entire architecture of your app stays exactly the same. What you build in this module is the real structure of a persistent, concurrent, distributed application — only the data sources are simulated.
+
 ---
 
 ## Part 1: Generate Your App With Claude (5 minutes)
 
 ### One-Time Setup
 
-DisSysLab includes a context file that teaches Claude how to generate DisSysLab applications. You only need to set this up once.
+DisSysLab includes a context file called `CLAUDE_CONTEXT.md` that teaches Claude how to generate DisSysLab applications. You set this up once, and then every conversation in the project understands the framework.
 
 **Option A — Claude Project (recommended):**
-1. Go to [claude.ai](https://claude.ai) and create a new Project
-2. Name it "DisSysLab"
-3. Add `CLAUDE_CONTEXT.md` (from the DisSysLab root directory) to the project knowledge
-4. Start a conversation inside the project
 
-**Option B — Paste into conversation:**
-1. Open [claude.ai](https://claude.ai)
-2. Copy the contents of `CLAUDE_CONTEXT.md` and paste it at the start of your conversation
-3. Then type your request
+1. Go to [claude.ai](https://claude.ai) and sign in.
+2. In the left sidebar, click **Projects**, then **Create Project**.
+3. Name the project **DisSysLab** (or any name you like).
+4. You'll see two sections: **Instructions** and **Files**. 
+5. Click **Files** and upload `CLAUDE_CONTEXT.md` from the DisSysLab root directory. (You can drag and drop it, or click to browse.) Do **not** put it in Instructions — that section is for behavioral guidance, not reference material.
+6. Click into the project to start a new conversation. 
+
+That's it. Every conversation you open inside this project now has access to the full DisSysLab component catalog, conventions, and code generation rules. You never need to upload the file again — just open a new conversation in the project and start describing what you want.
+
+**Option B — No Claude access:**
+
+If you don't have access to Claude, skip ahead to Part 2. The pre-built example files (`example_generated.py` and `example_modified.py`) contain the same code Claude would generate. You can run and study them directly:
+
+```bash
+python3 -m examples.module_01_describe_and_build.example_generated
+```
 
 ### Build Your First App
 
-Now just tell Claude what you want in plain English:
+Inside your DisSysLab project, start a new conversation and type:
 
 > Build me an app that monitors Hacker News for articles, filters out spam, analyzes the sentiment of each article, and prints the results. Use mock components.
 
@@ -34,16 +44,6 @@ python3 my_app.py
 ```
 
 You should see articles printed with their sentiment — and no spam. **You just built a distributed system where four nodes run concurrently, passing messages through queues, with automatic spam filtering.**
-
-### No Claude Access?
-
-Use the pre-built version instead:
-
-```bash
-python3 -m examples.module_01_describe_and_build.example_generated
-```
-
-This runs the same app. Read on to understand what it does.
 
 ---
 
@@ -100,7 +100,9 @@ g = network([
 ])
 
 # --- Run ---
+print("\n📰 Hacker News Feed — Spam Filtered, Sentiment Analyzed\n")
 g.run_network()
+print("\n✅ Done!\n")
 ```
 
 ### What just happened?
@@ -110,57 +112,41 @@ When you called `g.run_network()`, DisSysLab:
 1. **Created four threads** — one per node, all running concurrently.
 2. **Created message queues** between connected nodes.
 3. **Started all threads simultaneously.** The source began producing articles while downstream nodes waited for messages.
-4. **Messages flowed through the network:**
-   - `source` produced "Show HN: Built a new Python library..."
-   - `spam_gate` received it, checked for spam (not spam), returned the text
-   - `sentiment` received the text, analyzed it, returned `{"text": ..., "sentiment": "NEUTRAL", ...}`
-   - `display` received the dict and printed it
-5. **Spam was silently dropped.** When `filter_spam` returned `None` for "CLICK HERE for FREE cryptocurrency!", DisSysLab didn't send it downstream. No error, no special handling — just gone.
-6. **Clean shutdown.** When the source ran out of articles, it sent a STOP signal that propagated through every node, and all threads terminated.
+4. **Routed messages automatically.** Each article flowed from source → spam_filter → sentiment → display, passing through queues between threads.
+5. **Shut down cleanly** when the source ran out of articles, propagating a stop signal through the network.
 
-You wrote zero threading code. Zero queue management. Zero synchronization logic.
+### The four-step pattern
 
-### The four building blocks
+Every DisSysLab app follows the same structure:
 
-Every DisSysLab app uses the same pattern:
-
-**Source** — produces data. Your function returns the next item each time it's called, or `None` when done.
-
+**Step 1: Create components** — data sources, analyzers, output handlers.
 ```python
-source = Source(fn=rss.run, name="rss_feed")
+rss = MockRSSSource(feed_name="hacker_news")
+spam_detector = MockClaudeAgent(task="spam_detection")
 ```
 
-**Transform** — processes data. Your function takes one input, returns one output (or `None` to drop the message).
-
+**Step 2: Write transform functions** — ordinary Python functions that process data.
 ```python
+def filter_spam(text):
+    result = spam_detector.run(text)
+    if result["is_spam"]:
+        return None
+    return text
+```
+
+**Step 3: Wrap into nodes and connect** — Source, Transform, Sink, then edges.
+```python
+source    = Source(fn=rss.run, name="rss_feed")
 spam_gate = Transform(fn=filter_spam, name="spam_filter")
+g = network([(source, spam_gate), ...])
 ```
 
-**Sink** — consumes data. Your function takes one input and does something with it (print, save, send) but doesn't pass it on.
-
+**Step 4: Run.**
 ```python
-display = Sink(fn=print_article, name="display")
+g.run_network()
 ```
 
-**network()** — connects nodes. You provide a list of edges as `(from_node, to_node)` tuples.
-
-```python
-g = network([
-    (source, spam_gate),
-    (spam_gate, sentiment),
-    (sentiment, display)
-])
-```
-
-### The topology
-
-Our app is a **pipeline** — a linear chain:
-
-```
-rss_feed → spam_filter → sentiment → display
-```
-
-This is the simplest topology. Module 2 introduces more powerful shapes — multiple sources feeding into one processor, one processor sending to multiple destinations.
+That's it. This pattern scales from four-node demos to complex multi-source, multi-destination monitoring systems. You'll use it in every module.
 
 ### Filtering: the power of None
 
