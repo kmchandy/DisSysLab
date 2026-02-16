@@ -4,50 +4,52 @@
 
 ---
 
-## Part 1: Tell Claude What You Want (5 minutes)
+## Part 1: Generate Your App With Claude (5 minutes)
 
-Open [claude.ai](https://claude.ai) and paste this prompt:
+### One-Time Setup
 
-```
-Using the DisSysLab framework, build me a Python app that:
+DisSysLab includes a context file that teaches Claude how to generate DisSysLab applications. You only need to set this up once.
 
-1. Reads articles from a mock Hacker News RSS feed
-2. Filters out spam articles
-3. Analyzes the sentiment of the remaining articles
-4. Prints each article with its sentiment to the console
+**Option A — Claude Project (recommended):**
+1. Go to [claude.ai](https://claude.ai) and create a new Project
+2. Name it "DisSysLab"
+3. Add `CLAUDE_CONTEXT.md` (from the DisSysLab root directory) to the project knowledge
+4. Start a conversation inside the project
 
-Use these existing components:
-- MockRSSSource from components.sources.mock_rss_source (feed_name="hacker_news")
-- MockClaudeAgent from components.transformers.mock_claude_agent (task="spam_detection")
-- MockClaudeAgent from components.transformers.mock_claude_agent (task="sentiment_analysis")
+**Option B — Paste into conversation:**
+1. Open [claude.ai](https://claude.ai)
+2. Copy the contents of `CLAUDE_CONTEXT.md` and paste it at the start of your conversation
+3. Then type your request
 
-The spam filter should return None for spam (which DisSysLab drops automatically)
-and return the original text for non-spam.
+### Build Your First App
 
-The sentiment analyzer should return a dict with "text" and "sentiment" keys.
+Now just tell Claude what you want in plain English:
 
-Use dsl's network() function and Source, Transform, Sink from dsl.blocks.
-Source wraps a callable with fn=..., Transform wraps a function with fn=...,
-Sink wraps a function with fn=....
-Connect them with: g = network([(node1, node2), ...])
-Run with: g.run_network()
-```
+> Build me an app that monitors Hacker News for articles, filters out spam, analyzes the sentiment of each article, and prints the results. Use mock components.
 
-Claude generates a complete working app. Copy the code into a file called `my_app.py` in the DisSysLab root directory. Run it:
+Claude generates a complete, runnable application. Copy the code into a file called `my_app.py` in the DisSysLab root directory and run it:
 
 ```bash
 python3 my_app.py
 ```
 
-You should see articles printed with their sentiment — and no spam. **You just built a distributed system where four nodes run concurrently, passing messages through queues, with automatic filtering.**
+You should see articles printed with their sentiment — and no spam. **You just built a distributed system where four nodes run concurrently, passing messages through queues, with automatic spam filtering.**
 
-If you don't have access to Claude, use the pre-built version in `example_generated.py` (described below).
+### No Claude Access?
+
+Use the pre-built version instead:
+
+```bash
+python3 -m examples.module_01_describe_and_build.example_generated
+```
+
+This runs the same app. Read on to understand what it does.
 
 ---
 
 ## Part 2: Understanding What Claude Built (20 minutes)
 
-Whether you generated the code or are using `example_generated.py`, let's walk through it. The complete app looks like this:
+Whether Claude generated your code or you're using `example_generated.py`, the app looks like this:
 
 ```python
 from dsl import network
@@ -98,9 +100,7 @@ g = network([
 ])
 
 # --- Run ---
-print("\n📰 Hacker News Feed — Spam Filtered, Sentiment Analyzed\n")
 g.run_network()
-print("\n✅ Done!\n")
 ```
 
 ### What just happened?
@@ -111,14 +111,14 @@ When you called `g.run_network()`, DisSysLab:
 2. **Created message queues** between connected nodes.
 3. **Started all threads simultaneously.** The source began producing articles while downstream nodes waited for messages.
 4. **Messages flowed through the network:**
-   - `source` produced "Show HN: Built a new Python library for distributed systems"
+   - `source` produced "Show HN: Built a new Python library..."
    - `spam_gate` received it, checked for spam (not spam), returned the text
    - `sentiment` received the text, analyzed it, returned `{"text": ..., "sentiment": "NEUTRAL", ...}`
    - `display` received the dict and printed it
-5. **Spam was silently dropped.** When `filter_spam` returned `None` for "CLICK HERE for FREE cryptocurrency!", DisSysLab simply didn't send it downstream. No error, no special handling — just gone.
+5. **Spam was silently dropped.** When `filter_spam` returned `None` for "CLICK HERE for FREE cryptocurrency!", DisSysLab didn't send it downstream. No error, no special handling — just gone.
 6. **Clean shutdown.** When the source ran out of articles, it sent a STOP signal that propagated through every node, and all threads terminated.
 
-You wrote zero threading code. Zero queue management. Zero synchronization logic. DisSysLab handled all of it.
+You wrote zero threading code. Zero queue management. Zero synchronization logic.
 
 ### The four building blocks
 
@@ -174,11 +174,11 @@ def filter_spam(text):
     return text        # ← This message continues downstream
 ```
 
-Any transform can filter by returning `None`. The framework drops the message silently. This means you can put a filter anywhere in your network — after a source, between two transforms, right before a sink — and it just works.
+Any transform can filter by returning `None`. The framework drops the message silently. You can put a filter anywhere in your network and it just works.
 
 ### Mock and real: one line to swap
 
-The mock components use keyword matching. Crude, but instant and free:
+The mock components use keyword matching — crude, but instant and free:
 
 ```python
 # Mock — keyword matching, no API key needed
@@ -195,15 +195,27 @@ from components.transformers.prompts import get_prompt
 spam_detector = ClaudeAgent(get_prompt("spam_detector"))
 ```
 
-Same interface. Same `.run(text)` method. Everything else in your app stays exactly the same. Module 4 covers this in detail.
+Same interface. Same `.run(text)` method. Everything else in your app stays exactly the same. Module 4 covers AI integration in depth.
 
 ---
 
 ## Part 3: Make It Yours (15 minutes)
 
-Now modify the app to prove you understand the pieces.
+Now modify the app to prove you understand the pieces — or ask Claude to do it for you.
 
-### Experiment 1: Change the feed
+### Experiment 1: Ask Claude for a variation
+
+Try these prompts (or make up your own):
+
+> Add an urgency detector to my app. After sentiment analysis, check how urgent each article is, and include the urgency level in the output.
+
+> Change my app to use two feeds — Hacker News and tech news — both feeding into the same spam filter.
+
+> Modify my app so it only shows positive articles. Drop anything negative.
+
+Each time, Claude generates updated code. Run it. Compare with what you had before. Notice that the pattern is always the same: functions → nodes → edges → run.
+
+### Experiment 2: Change the feed by hand
 
 Replace `"hacker_news"` with `"tech_news"` or `"reddit_python"`:
 
@@ -213,7 +225,7 @@ rss = MockRSSSource(feed_name="tech_news")
 
 Run it again. Different articles, same network.
 
-### Experiment 2: Add a transform
+### Experiment 3: Add a transform by hand
 
 Add an urgency detector between sentiment analysis and display:
 
@@ -242,7 +254,7 @@ g = network([
 
 Update the display function to show urgency. Run it. You just added a node to a distributed system by writing one function and adding one edge.
 
-### Experiment 3: Filter by sentiment
+### Experiment 4: Filter by sentiment
 
 Add a transform that drops negative articles:
 
@@ -256,9 +268,9 @@ def only_positive(article):
 positive_filter = Transform(fn=only_positive, name="positive_only")
 ```
 
-Insert it into the network. Where should it go? Between `sentiment` and `display` — because it needs the sentiment analysis to already be in the article dict.
+Insert it into the network between `sentiment` and `display`.
 
-### Experiment 4: Add print statements to see concurrency
+### Experiment 5: See concurrency in action
 
 Add a print to each function:
 
@@ -271,15 +283,15 @@ def filter_spam(text):
     return text
 ```
 
-Do the same for `analyze_sentiment` and `print_article`. Run the app and watch the interleaved output — you'll see nodes processing different messages at the same time. That's concurrency, and you got it for free.
+Do the same for `analyze_sentiment` and `print_article`. Run the app and watch the interleaved output — nodes process different messages at the same time. That's concurrency, and you got it for free.
 
-### Experiment 5: Ask Claude for a different app
+### Experiment 6: Something completely different
 
-Go back to Claude and describe a different app entirely:
+Go back to Claude and describe an entirely different app:
 
-> "Using DisSysLab, build me an app that monitors a tech news feed, filters articles about AI, detects urgency, and saves urgent AI articles to a list."
+> Build me a DisSysLab app that reads from three different news feeds, merges them, filters for articles about Python, checks urgency, and saves urgent Python articles to a JSON file. Use mock components.
 
-Compare what Claude generates with what you built by hand. The pattern is the same every time: functions → nodes → edges → run.
+Compare what Claude generates with what you built by hand. The pattern is the same every time.
 
 ---
 
@@ -287,12 +299,12 @@ Compare what Claude generates with what you built by hand. The pattern is the sa
 
 After this module, you know:
 
+- **Claude can generate DisSysLab apps from natural language descriptions.** Describe what you want, get working code.
 - **The DisSysLab pattern:** write functions, wrap into nodes (Source/Transform/Sink), connect with `network()`, run with `run_network()`.
 - **Filtering:** return `None` from any transform to drop a message.
-- **Concurrency for free:** each node runs in its own thread, messages flow through queues, and you write zero threading code.
+- **Concurrency for free:** each node runs in its own thread, messages flow through queues, you write zero threading code.
 - **Mock/real swap:** mock components use keywords, real components use AI. Same interface, one-line swap.
-- **AI-assisted development:** describe your app to Claude, get working code, understand and customize it.
 
 ## What's Next
 
-**[Module 2: Multiple Sources, Multiple Destinations](../module_02/)** — pull from several feeds at once (fanin), send results to multiple outputs (fanout). Your app goes from a single pipeline to a real monitoring system.
+**[Module 2: Multiple Sources, Multiple Destinations](../module_02/)** — pull from several feeds at once (fanin), send results to multiple outputs (fanout). Your app goes from a single pipeline to a real monitoring system. And yes — you can ask Claude to build that too.
