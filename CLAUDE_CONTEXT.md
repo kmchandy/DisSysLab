@@ -75,6 +75,80 @@ g = network([
 
 Any acyclic directed graph is valid: pipelines, fanin, fanout, diamonds, trees, complex DAGs.
 
+
+## Split Node (Content-Based Routing)
+
+**Split** — routes each message to specific output ports based on your logic. Unlike fanout (which copies every message to all destinations), split sends each message to the ports you choose.
+
+```python
+from dsl.blocks import Split
+
+splitter = Split(fn=my_routing_function, num_outputs=3, name="router")
+```
+
+The routing function receives one message and returns a **list** of length `num_outputs`. Non-None elements are sent to the corresponding output port. None elements mean "skip this port."
+
+```python
+def route_by_sentiment(article):
+    """Route based on sentiment score."""
+    score = article["score"]
+    if score > 0.2:
+        return [article, article, None]    # positive → out_0 AND out_1
+    elif score < -0.2:
+        return [None, article, article]    # negative → out_1 AND out_2
+    else:
+        return [None, article, None]       # neutral → out_1 only
+
+splitter = Split(fn=route_by_sentiment, num_outputs=3, name="sentiment_router")
+```
+
+**Port references** connect split outputs to downstream nodes:
+
+```python
+g = network([
+    (source, sentiment),
+    (sentiment, splitter),
+    (splitter.out_0, archive_sink),    # positive posts
+    (splitter.out_1, console_sink),    # all non-neutral posts
+    (splitter.out_2, alert_sink)       # negative posts
+])
+```
+
+**Key rules:**
+- `num_outputs` must match the length of the returned list
+- Output ports are `splitter.out_0`, `splitter.out_1`, `splitter.out_2`, etc. (0-indexed)
+- A message can go to multiple ports (put the message at multiple positions)
+- A message can be dropped entirely (return all Nones)
+- Split ≠ Fanout: fanout copies everything everywhere, split routes selectively
+
+**Common routing patterns:**
+
+```python
+# Conditional: each message to exactly one output
+def route_priority(msg):
+    if msg["priority"] == "HIGH":
+        return [msg, None]      # → out_0 (fast lane)
+    else:
+        return [None, msg]      # → out_1 (normal lane)
+
+# Selective broadcast: some messages to multiple outputs
+def route_important(msg):
+    if msg["score"] > 0.8:
+        return [msg, msg, msg]  # important → ALL outputs
+    else:
+        return [msg, None, None]  # normal → out_0 only
+
+# Filter via split: drop some messages entirely
+def route_or_drop(msg):
+    if msg["relevance"] < 0.1:
+        return [None, None]     # dropped — goes nowhere
+    elif msg["urgent"]:
+        return [msg, None]      # → out_0
+    else:
+        return [None, msg]      # → out_1
+```
+
+
 ## Available Mock Components (no API keys needed)
 
 ### Mock Sources
