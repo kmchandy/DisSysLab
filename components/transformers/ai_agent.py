@@ -1,4 +1,4 @@
-# components/transformers/claude_agent.py
+# components/transformers/ai_agent.py
 
 """
 Real AI Agent - Uses Claude API for analysis
@@ -8,10 +8,10 @@ Compare with demo_ai_agent.py to see the difference between demo and real.
 
 Usage:
     from components.transformers.prompts import SENTIMENT_ANALYZER
-    from components.transformers.claude_agent import ai_transform
+    from components.transformers.ai_agent import ai_agent
     
-    ai_function = ai_transform(SENTIMENT_ANALYZER)
-    result = ai_function("I love this!")
+    analyzer = ai_agent(SENTIMENT_ANALYZER)
+    result = analyzer("I love this!")
     # Returns: {"text": "I love this!", "sentiment": "POSITIVE", "score": 0.9, ...}
     
 Requirements:
@@ -25,15 +25,15 @@ import json
 from anthropic import Anthropic
 
 
-def ai_transform(prompt: str):
+def ai_agent(prompt: str):
     """
     Creates a real AI transform function from a prompt.
 
     This calls Claude API for actual AI analysis using the provided prompt.
-    Returns the same JSON format as demo_ai_transform, but with real AI intelligence.
+    Returns the same JSON format as demo_ai_agent, but with real AI intelligence.
 
     Args:
-        prompt: Prompt string (should be a constant from prompts.py)
+        prompt: Prompt constant from prompts.py (e.g. SENTIMENT_ANALYZER)
 
     Returns:
         Callable that takes text and returns enriched JSON dict
@@ -43,9 +43,9 @@ def ai_transform(prompt: str):
 
     Example:
         >>> from components.transformers.prompts import SENTIMENT_ANALYZER
-        >>> from components.transformers.claude_agent import ai_transform
+        >>> from components.transformers.ai_agent import ai_agent
         >>> 
-        >>> analyzer = ai_transform(SENTIMENT_ANALYZER)
+        >>> analyzer = ai_agent(SENTIMENT_ANALYZER)
         >>> result = analyzer("I love this framework!")
         >>> print(result)
         {'text': 'I love this framework!', 
@@ -74,7 +74,6 @@ def ai_transform(prompt: str):
     call_count = 0
     total_cost = 0.0
 
-    # Return the analysis function
     def analyze(text: str) -> dict:
         """
         Analyzes text using Claude API.
@@ -93,7 +92,7 @@ def ai_transform(prompt: str):
                 model="claude-sonnet-4-20250514",
                 max_tokens=1024,
                 temperature=1.0,
-                system=prompt,  # The prompt defines what AI does
+                system=prompt,
                 messages=[
                     {"role": "user", "content": text}
                 ]
@@ -104,7 +103,7 @@ def ai_transform(prompt: str):
             input_tokens = message.usage.input_tokens
             output_tokens = message.usage.output_tokens
 
-            # Estimate cost (Claude Sonnet 4 pricing as of Jan 2025)
+            # Estimate cost (Claude Sonnet 4 pricing)
             cost = (input_tokens / 1_000_000 * 3.00) + \
                 (output_tokens / 1_000_000 * 15.00)
             total_cost += cost
@@ -112,10 +111,8 @@ def ai_transform(prompt: str):
             # Extract response text
             response_text = message.content[0].text
 
-            # Parse JSON response
-            # Claude sometimes wraps JSON in markdown code blocks, so handle that
+            # Handle markdown code blocks
             if response_text.strip().startswith("```"):
-                # Extract JSON from code block
                 lines = response_text.strip().split("\n")
                 json_lines = [
                     l for l in lines if not l.strip().startswith("```")]
@@ -130,18 +127,12 @@ def ai_transform(prompt: str):
                 print(f"Error: {e}\n")
                 raise
 
-            # IMPORTANT: Add original text to result (enrich the message)
-            # This matches the demo_ai_agent pattern
+            # Add original text to result (enrich the message)
             result["text"] = text
-
-            # Optional: Add usage info for debugging
-            # Uncomment if you want to see costs
-            # print(f"[AI] Call #{call_count}: ${cost:.4f} (Total: ${total_cost:.4f})")
 
             return result
 
         except json.JSONDecodeError:
-            # Already handled above, re-raise
             raise
 
         except Exception as e:
@@ -156,13 +147,8 @@ def ai_transform(prompt: str):
     return analyze
 
 
-# Utility function for cost tracking
 def print_usage_info():
-    """
-    Print information about API usage and costs.
-
-    Call this to remind students about costs.
-    """
+    """Print information about API usage and costs."""
     print("\n" + "=" * 70)
     print("REAL AI USAGE INFORMATION")
     print("=" * 70)
@@ -176,29 +162,21 @@ Typical costs per message:
 - Medium message (paragraph):  $0.001 - $0.002
 - Long message (page):         $0.002 - $0.005
 
-Example 1 (10 messages):  ~$0.01
-Example 2 (12 messages):  ~$0.015
-Example 3 (12 messages):  ~$0.015
-
-Total for all examples: ~$0.04 - $0.10
-
 For learning and testing, use demo_ai_agent instead (FREE)!
     """)
     print("=" * 70 + "\n")
 
 
 if __name__ == "__main__":
-    # When run directly, show usage info
     print_usage_info()
 
-    # Quick test if API key is available
     try:
         from components.transformers.prompts import SENTIMENT_ANALYZER
 
-        print("Testing real AI transform...")
+        print("Testing real AI agent...")
         print("-" * 70)
 
-        analyzer = ai_transform(SENTIMENT_ANALYZER)
+        analyzer = ai_agent(SENTIMENT_ANALYZER)
         result = analyzer("This framework is amazing!")
 
         print(f"Input: This framework is amazing!")

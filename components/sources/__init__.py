@@ -4,13 +4,13 @@
 Sources: Data stream origins for networks.
 
 Available sources:
-- RSSSource: Read RSS/Atom feeds (real, no auth needed)
-- MockRSSSource: Mock RSS source for testing (Module 2)
+- DemoRSSSource: Demo RSS source with test data (no network needed)
 - ListSource: Simple list-based source for testing
+- RSSSource: Read real RSS/Atom feeds (requires network)
 """
 
-from .rss_source import RSSSource
-from .mock_rss_source import MockRSSSource
+from .demo_rss_source import DemoRSSSource
 from .list_source import ListSource
+from .rss_source import RSSSource
 
-__all__ = ['RSSSource', 'MockRSSSource', 'ListSource']
+__all__ = ['DemoRSSSource', 'ListSource', 'RSSSource']

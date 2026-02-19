@@ -8,21 +8,23 @@ No API keys needed, no costs, instant results.
 
 Usage:
     from components.transformers.prompts import SENTIMENT_ANALYZER
-    from components.transformers.demo_ai_agent import demo_ai_transform
+    from components.transformers.demo_ai_agent import demo_ai_agent
     
-    ai_function = demo_ai_transform(SENTIMENT_ANALYZER)
-    result = ai_function("I love this!")
+    analyzer = demo_ai_agent(SENTIMENT_ANALYZER)
+    result = analyzer("I love this!")
     # Returns: {"sentiment": "POSITIVE", "score": 0.8, "reasoning": "..."}
+
+Swapping demo → real:
+    from components.transformers.ai_agent import ai_agent
+    
+    analyzer = ai_agent(SENTIMENT_ANALYZER)
+    # Same call, real AI instead of keyword matching
 """
 
 from components.transformers.prompts import (
     SENTIMENT_ANALYZER,
     SPAM_DETECTOR,
     URGENCY_DETECTOR,
-    EMOTION_DETECTOR,
-    TONE_ANALYZER,
-    TOPIC_CLASSIFIER,
-    TEXT_SUMMARIZER,
 )
 
 # Import demo implementations
@@ -31,16 +33,15 @@ from components.transformers.demo_spam import detect_spam
 from components.transformers.demo_urgency import detect_urgency
 
 
-# Mapping from prompts to demo functions
+# Mapping from prompt constants to demo functions
 PROMPT_TO_FUNCTION = {
     SENTIMENT_ANALYZER: analyze_sentiment,
     SPAM_DETECTOR: detect_spam,
     URGENCY_DETECTOR: detect_urgency,
-    # Add more mappings as we create more demo functions
 }
 
 
-def demo_ai_transform(prompt: str):
+def demo_ai_agent(prompt: str):
     """
     Creates a demo AI transform function from a prompt.
 
@@ -48,7 +49,7 @@ def demo_ai_transform(prompt: str):
     Returns the same JSON format as real AI, but uses Python rules instead.
 
     Args:
-        prompt: Prompt string (should be one of the constants from prompts.py)
+        prompt: Prompt constant from prompts.py (e.g. SENTIMENT_ANALYZER)
 
     Returns:
         Callable that takes text and returns JSON dict
@@ -58,19 +59,16 @@ def demo_ai_transform(prompt: str):
 
     Example:
         >>> from components.transformers.prompts import SENTIMENT_ANALYZER
-        >>> from components.transformers.demo_ai_agent import demo_ai_transform
+        >>> from components.transformers.demo_ai_agent import demo_ai_agent
         >>> 
-        >>> analyzer = demo_ai_transform(SENTIMENT_ANALYZER)
+        >>> analyzer = demo_ai_agent(SENTIMENT_ANALYZER)
         >>> result = analyzer("I love this!")
         >>> print(result)
         {'sentiment': 'POSITIVE', 'score': 0.8, 'reasoning': 'Contains positive words'}
     """
-    # Look up the demo function for this prompt
     if prompt in PROMPT_TO_FUNCTION:
         return PROMPT_TO_FUNCTION[prompt]
     else:
-        # Provide helpful error message
-        available_prompts = list(PROMPT_TO_FUNCTION.keys())
         raise ValueError(
             f"No demo implementation available for this prompt.\n"
             f"Available demo prompts:\n"
@@ -81,60 +79,95 @@ def demo_ai_transform(prompt: str):
         )
 
 
-# Convenience function for checking what's available
 def list_available_demos():
-    """
-    Print list of available demo transforms.
-
-    Example:
-        >>> from components.transformers.demo_ai_agent import list_available_demos
-        >>> list_available_demos()
-    """
+    """Print list of available demo transforms."""
     print("\n" + "=" * 60)
-    print("Available Demo AI Transforms")
+    print("Available Demo AI Agents")
     print("=" * 60)
-
-    for prompt in PROMPT_TO_FUNCTION.keys():
-        # Extract prompt name from the constant
-        # (This is a bit hacky but works for display)
-        if prompt == SENTIMENT_ANALYZER:
-            print("  ✓ SENTIMENT_ANALYZER - Analyze positive/negative/neutral sentiment")
-        elif prompt == SPAM_DETECTOR:
-            print("  ✓ SPAM_DETECTOR - Detect spam and promotional content")
-        elif prompt == URGENCY_DETECTOR:
-            print("  ✓ URGENCY_DETECTOR - Detect urgent/time-sensitive content")
-
+    print("  ✓ SENTIMENT_ANALYZER - Positive/negative/neutral")
+    print("  ✓ SPAM_DETECTOR      - Spam detection")
+    print("  ✓ URGENCY_DETECTOR   - Urgency detection")
     print("=" * 60)
     print("\nUsage:")
     print("  from components.transformers.prompts import SENTIMENT_ANALYZER")
-    print("  from components.transformers.demo_ai_agent import demo_ai_transform")
+    print("  from components.transformers.demo_ai_agent import demo_ai_agent")
     print("  ")
-    print("  analyzer = demo_ai_transform(SENTIMENT_ANALYZER)")
+    print("  analyzer = demo_ai_agent(SENTIMENT_ANALYZER)")
     print("  result = analyzer('Your text here')")
     print("=" * 60 + "\n")
 
 
 if __name__ == "__main__":
-    # When run directly, show available demos
     list_available_demos()
 
-    # Run quick test
-    print("\nQuick Test:")
-    print("-" * 60)
+    passed = 0
+    failed = 0
 
-    # Test sentiment
-    sentiment_fn = demo_ai_transform(SENTIMENT_ANALYZER)
-    result = sentiment_fn("I love this framework!")
-    print(f"Sentiment test: {result}")
+    # Test 1: Positive sentiment
+    print("Test 1: Positive sentiment")
+    fn = demo_ai_agent(SENTIMENT_ANALYZER)
+    result = fn("I love this framework!")
+    if result.get("sentiment") == "POSITIVE":
+        print(f"  ✓ {result}")
+        passed += 1
+    else:
+        print(f"  ✗ Expected POSITIVE, got: {result}")
+        failed += 1
 
-    # Test spam
-    spam_fn = demo_ai_transform(SPAM_DETECTOR)
-    result = spam_fn("CLICK HERE for FREE MONEY!")
-    print(f"Spam test: {result}")
+    # Test 2: Negative sentiment
+    print("Test 2: Negative sentiment")
+    result = fn("This is terrible and I hate it")
+    if result.get("sentiment") == "NEGATIVE":
+        print(f"  ✓ {result}")
+        passed += 1
+    else:
+        print(f"  ✗ Expected NEGATIVE, got: {result}")
+        failed += 1
 
-    # Test urgency
-    urgency_fn = demo_ai_transform(URGENCY_DETECTOR)
-    result = urgency_fn("URGENT: System is down!")
-    print(f"Urgency test: {result}")
+    # Test 3: Spam detected
+    print("Test 3: Spam detection - spam")
+    fn = demo_ai_agent(SPAM_DETECTOR)
+    result = fn("CLICK HERE for FREE MONEY!")
+    if result.get("is_spam") == True:
+        print(f"  ✓ {result}")
+        passed += 1
+    else:
+        print(f"  ✗ Expected is_spam=True, got: {result}")
+        failed += 1
 
-    print("-" * 60)
+    # Test 4: Not spam
+    print("Test 4: Spam detection - legitimate")
+    result = fn("Python 3.13 released with performance improvements")
+    if result.get("is_spam") == False:
+        print(f"  ✓ {result}")
+        passed += 1
+    else:
+        print(f"  ✗ Expected is_spam=False, got: {result}")
+        failed += 1
+
+    # Test 5: Urgency
+    print("Test 5: Urgency detection")
+    fn = demo_ai_agent(URGENCY_DETECTOR)
+    result = fn("URGENT: System is down!")
+    if result.get("urgency") == "HIGH":
+        print(f"  ✓ {result}")
+        passed += 1
+    else:
+        print(f"  ✗ Expected HIGH, got: {result}")
+        failed += 1
+
+    # Test 6: Unknown prompt
+    print("Test 6: Unknown prompt raises ValueError")
+    try:
+        demo_ai_agent("not a real prompt")
+        print("  ✗ Should have raised ValueError")
+        failed += 1
+    except ValueError:
+        print("  ✓ ValueError raised")
+        passed += 1
+
+    print(f"\nResults: {passed}/{passed + failed} tests passed")
+    if failed == 0:
+        print("✓ All tests passed!")
+    else:
+        print(f"✗ {failed} test(s) failed")
