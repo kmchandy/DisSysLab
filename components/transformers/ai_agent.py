@@ -92,7 +92,7 @@ def ai_agent(prompt: str):
                 model="claude-sonnet-4-20250514",
                 max_tokens=1024,
                 temperature=1.0,
-                system=prompt,
+                system=prompt + "\n\nReturn ONLY valid JSON, no other text.",
                 messages=[
                     {"role": "user", "content": text}
                 ]

@@ -9,7 +9,7 @@ Requires: ANTHROPIC_API_KEY, internet connection
 Run:  python3 -m examples.module_03.example_real
 Cost: ~$0.03-0.06 for 20 items
 """
-
+import re
 from dsl import network
 from dsl.blocks import Source, Transform, Sink
 from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
@@ -19,8 +19,17 @@ from components.transformers.ai_agent import ai_agent
 from components.sinks import JSONLRecorder, MockEmailAlerter
 
 bluesky = BlueSkyJetstreamSource(
-    search_keywords=["AI", "machine learning"], max_posts=10)
-rss = RSSSource("https://news.ycombinator.com/rss")
+    filter_keywords=["AI", "machine learning"], max_posts=5)
+
+rss = RSSSource(urls=["https://news.ycombinator.com/rss"], max_articles=2)
+# Wrap the generator so Source block gets one item per call
+rss_gen = rss.run()
+
+
+def rss_next():
+    return next(rss_gen, None)
+
+
 sentiment_analyzer = ai_agent(SENTIMENT_ANALYZER)
 recorder = JSONLRecorder(path="module_03_output.jsonl",
                          mode="w", flush_every=1, name="archive")
@@ -28,7 +37,12 @@ alerter = MockEmailAlerter(
     to_address="you@example.com", subject_prefix="[MONITOR]")
 
 
-def analyze_sentiment(text):
+def analyze_sentiment(post):
+    text = post["text"] if isinstance(post, dict) else post
+    # Strip HTML tags from RSS content
+    text = re.sub(r'<[^>]+>', '', text).strip()
+    if not text:
+        return None  # Drop empty articles
     result = sentiment_analyzer(text)
     return {
         "text": text,
@@ -39,7 +53,7 @@ def analyze_sentiment(text):
 
 
 bluesky_source = Source(fn=bluesky.run, name="bluesky")
-rss_source = Source(fn=rss.run, name="hackernews")
+rss_source = Source(fn=rss_next, name="hackernews")
 sentiment = Transform(fn=analyze_sentiment, name="sentiment")
 file_sink = Sink(fn=recorder.run, name="file")
 email_sink = Sink(fn=alerter.run, name="email")

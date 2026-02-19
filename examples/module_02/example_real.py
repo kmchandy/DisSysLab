@@ -18,14 +18,15 @@ from components.transformers.ai_agent import ai_agent
 from components.sinks import JSONLRecorder
 
 bluesky = BlueSkyJetstreamSource(
-    search_keywords=["AI", "machine learning"], max_posts=20)
+    filter_keywords=["AI", "machine learning"], max_posts=5)
 sentiment_analyzer = ai_agent(SENTIMENT_ANALYZER)
 entity_extractor = ai_agent(ENTITY_EXTRACTOR)
 recorder = JSONLRecorder(path="module_02_output.jsonl",
                          mode="w", flush_every=1, name="archive")
 
 
-def analyze_sentiment(text):
+def analyze_sentiment(post):
+    text = post["text"] if isinstance(post, dict) else post
     result = sentiment_analyzer(text)
     return {
         "text": text,

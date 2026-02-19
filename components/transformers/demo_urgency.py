@@ -87,7 +87,7 @@ def detect_urgency(text: str) -> dict:
     urgency_score = min(urgency_score, 10)
 
     # Determine urgency level
-    if urgency_score >= 6:
+    if urgency_score >= 4:
         urgency = "HIGH"
         reasoning = "Contains critical/urgent language"
         if high_count > 0:

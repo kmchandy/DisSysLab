@@ -9,7 +9,7 @@ Requires: ANTHROPIC_API_KEY, internet connection
 Run:  python3 -m examples.module_04.example_real
 Cost: ~$0.02-0.04 for 20 posts
 """
-
+import re
 from dsl import network
 from dsl.blocks import Source, Transform, Sink, Split
 from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
@@ -18,7 +18,7 @@ from components.transformers.ai_agent import ai_agent
 from components.sinks import JSONLRecorder, MockEmailAlerter
 
 bluesky = BlueSkyJetstreamSource(
-    search_keywords=["AI", "machine learning"], max_posts=20)
+    filter_keywords=["AI", "machine learning"], max_posts=2)
 sentiment_analyzer = ai_agent(SENTIMENT_ANALYZER)
 recorder = JSONLRecorder(path="module_04_positive.jsonl",
                          mode="w", flush_every=1, name="positive_archive")
@@ -26,7 +26,11 @@ alerter = MockEmailAlerter(
     to_address="you@example.com", subject_prefix="[NEGATIVE]")
 
 
-def analyze_sentiment(text):
+def analyze_sentiment(post):
+    text = post["text"] if isinstance(post, dict) else post
+    text = re.sub(r'<[^>]+>', '', text).strip()
+    if not text:
+        return None
     result = sentiment_analyzer(text)
     return {
         "text": text,
