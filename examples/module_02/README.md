@@ -2,9 +2,28 @@
 
 *Your first real-world AI-powered distributed system.*
 
-In Module 1 you built a pipeline with mock components — keyword-based spam detection, simulated sentiment analysis, fake RSS data. It worked, and you learned the pattern. Now you're going to do the same thing with real data and real AI. The generated code will look almost identical. The results will be dramatically better.
+---
 
-This module uses **BlueSky** (a free social media platform) as a live data source and **Claude AI** for real sentiment analysis and entity extraction. Your app will monitor real posts from real people in real time, analyze them with real AI, and save the results to a real file. The mock-to-real swap is exactly what Module 1 promised: same architecture, different components.
+## Files in This Module
+
+| File | What it does |
+|------|-------------|
+| `README.md` | This guide |
+| `example_demo.py` | Demo version: DemoRSSSource → sentiment → entity extraction → display (no API key) |
+| `example_real.py` | Real version: BlueSky → Claude AI sentiment → entity extraction → JSONL + display |
+| `test_module_02.py` | Test suite — run with `python3 -m pytest examples/module_02/test_module_02.py -v` |
+
+Run any example from the DisSysLab root:
+```bash
+python3 -m examples.module_02.example_demo
+python3 -m examples.module_02.example_real    # requires ANTHROPIC_API_KEY
+```
+
+---
+
+In Module 1 you built a pipeline with demo components — keyword-based spam detection, simulated sentiment analysis, fake RSS data. It worked, and you learned the pattern. Now you're going to do the same thing with real data and real AI. The code looks almost identical. The results will be dramatically better.
+
+This module uses **BlueSky** (a public social media platform) as a live data source and **Claude AI** for real sentiment analysis and entity extraction. Your app will monitor real posts from real people in real time, analyze them with real AI, and save the results to a file.
 
 ---
 
@@ -29,154 +48,164 @@ You already have a Claude account from Module 1. Now you need an API key so your
 export ANTHROPIC_API_KEY='sk-ant-api03-your-key-here'
 ```
 
-**Windows (PowerShell):**
-```powershell
-$env:ANTHROPIC_API_KEY="sk-ant-api03-your-key-here"
-```
-
-To make this permanent, add the export line to your `~/.bashrc` or `~/.zshrc` file.
+To make this permanent, add the export line to your `~/.zshrc` (macOS) or `~/.bashrc` (Linux) file.
 
 **Verify it works:**
-```python
+```bash
 python3 -c "
 from anthropic import Anthropic
 client = Anthropic()
 msg = client.messages.create(
     model='claude-sonnet-4-20250514',
-    max_tokens=50,
-    messages=[{'role': 'user', 'content': 'Say hello in 5 words.'}]
+    max_tokens=20,
+    messages=[{'role': 'user', 'content': 'Say OK'}]
 )
 print(msg.content[0].text)
-print('API key works!')
 "
 ```
 
-If you see a greeting followed by "API key works!" — you're ready.
+If you see "OK" — you're ready.
 
 ### Upload Component Files to Your Claude Project
 
-In Module 1, your Claude Project had only `CLAUDE_CONTEXT.md`. For Module 2, Claude needs to see the actual source code of the real components so it generates correct imports and constructor parameters.
+In Module 1, your Claude Project had only `CLAUDE_CONTEXT.md`. For Module 2, Claude needs to see the real component source code so it generates correct imports and constructor parameters.
 
 1. Open your **DisSysLab** project on [claude.ai](https://claude.ai).
 2. Go to the project's **Files** section.
 3. Upload these files from your DisSysLab repository:
    - `components/sources/bluesky_jetstream_source.py`
-   - `components/transformers/claude_agent.py`
+   - `components/transformers/ai_agent.py`
    - `components/transformers/prompts.py`
    - `components/sinks/jsonl_recorder.py`
 
 `CLAUDE_CONTEXT.md` should already be there from Module 1. If not, upload it too.
 
-That's the complete setup. You won't need to do this again — these files stay in your project.
+That's the complete setup. You won't need to do this again.
 
 ---
 
-## Part 2: Describe Your App to Claude (5 minutes)
+## Part 2: Try the Demo First (5 minutes)
 
-Open a new conversation inside your DisSysLab project and type:
-
-> Build me an app that monitors BlueSky for posts mentioning AI or machine learning. Use BlueSkyJetstreamSource with max_posts=20. Analyze the sentiment of each post using real Claude AI with the sentiment_analyzer prompt. Then extract the names of people and places mentioned using the entity_extractor prompt. Save the fully enriched results to a JSONL file. Use real components — BlueSkyJetstreamSource, ClaudeAgent, and JSONLRecorder.
-
-Claude generates a complete app. Copy the code into `my_real_app.py` in the DisSysLab root directory and run it:
+Before using real AI, run the demo version to see the pipeline shape:
 
 ```bash
-python3 my_real_app.py
+python3 -m examples.module_02.example_demo
 ```
 
-You should see real BlueSky posts flowing through real AI analysis, with results saved to a JSONL file. Open the file and look — each line is a JSON object with the original text, sentiment, score, and extracted names.
-
-**You just built a live AI-powered social media monitoring system.**
+This uses `DemoRSSSource` and `demo_ai_agent` — the same demo components from Module 1. No API key needed. The output shows the pipeline working: articles flow through sentiment analysis, then entity extraction, then display.
 
 ---
 
-## Part 3: Side-by-Side with Module 1 (10 minutes)
+## Part 3: Run With Real AI (5 minutes)
 
-Put your Module 1 code next to your Module 2 code. Notice:
+Now run the real version:
+
+```bash
+python3 -m examples.module_02.example_real
+```
+
+The real version looks like this:
+
+```python
+from dsl import network
+from dsl.blocks import Source, Transform, Sink
+from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
+from components.transformers.prompts import SENTIMENT_ANALYZER, ENTITY_EXTRACTOR
+from components.transformers.ai_agent import ai_agent
+from components.sinks import JSONLRecorder
+
+# --- Live data source ---
+bluesky = BlueSkyJetstreamSource(filter_keywords=["AI", "machine learning"], max_posts=5)
+
+# --- Real AI agents ---
+sentiment_analyzer = ai_agent(SENTIMENT_ANALYZER)
+entity_extractor = ai_agent(ENTITY_EXTRACTOR)
+
+# --- Transform functions ---
+def analyze_sentiment(post):
+    text = post["text"] if isinstance(post, dict) else post
+    result = sentiment_analyzer(text)
+    return {
+        "text": text,
+        "sentiment": result.get("sentiment", "UNKNOWN"),
+        "score": result.get("score", 0.0),
+        "reasoning": result.get("reasoning", "")
+    }
+
+def extract_entities(article):
+    result = entity_extractor(article["text"])
+    article["people"] = result.get("people", [])
+    article["organizations"] = result.get("organizations", [])
+    article["locations"] = result.get("locations", [])
+    return article
+
+def print_article(article):
+    icon = {"POSITIVE": "😊", "NEGATIVE": "😞", "NEUTRAL": "😐"}
+    emoji = icon.get(article["sentiment"], "❓")
+    people = ", ".join(article.get("people", [])) or "none"
+    locations = ", ".join(article.get("locations", [])) or "none"
+    print(f"  {emoji} [{article['sentiment']:>8}] {article['text'][:80]}")
+    print(f"     People: {people} | Places: {locations}")
+```
+
+The network:
+
+```
+  bluesky  →  sentiment  →  entities  →  display
+                                       →  archive (JSONL file)
+```
+
+Each post flows through two AI analyses. The sentiment transform adds sentiment fields. The entity transform adds people, organizations, and locations. The display sink shows results on screen. The archive sink saves everything to a JSONL file.
+
+---
+
+## Part 4: Side-by-Side — Demo vs Real (10 minutes)
+
+Put the demo code next to the real code. Notice:
 
 **What changed:**
 
-| | Module 1 (mock) | Module 2 (real) |
+| | Demo (Module 1) | Real (Module 2) |
 |---|---|---|
-| Source | `MockRSSSource(feed_name="hacker_news")` | `BlueSkyJetstreamSource(search_keywords=["AI"], max_posts=20)` |
-| AI | `MockClaudeAgent(task="sentiment_analysis")` | `ClaudeAgent(get_prompt("sentiment_analyzer"))` |
-| Sink | `Sink(fn=print, ...)` | `Sink(fn=recorder.run, ...)` |
+| Source | `DemoRSSSource(feed_name="hacker_news")` | `BlueSkyJetstreamSource(filter_keywords=["AI"], max_posts=5)` |
+| AI | `demo_ai_agent(SENTIMENT_ANALYZER)` | `ai_agent(SENTIMENT_ANALYZER)` |
+| Call | `spam_detector(text)` | `sentiment_analyzer(text)` |
 
 **What didn't change:**
 
-- The transform functions have the same structure — call `.run(text)`, get a dict back, use the dict fields.
+- The import for prompts is identical: `from components.transformers.prompts import SENTIMENT_ANALYZER`
+- The transform functions have the same structure — call the analyzer, get a dict back, use the fields.
 - The network definition is the same — `network([(source, transform), ...])`.
 - The `run_network()` call is identical.
 - Filtering with `None` works the same way.
 
-**The conclusion:** You learned the framework in Module 1. Module 2 didn't teach you new framework concepts — it showed you that the same pattern works with real data and real AI. That's the power of DisSysLab's uniform interface.
-
----
-
-## Part 4: Understanding the Real Components (15 minutes)
-
-### BlueSkyJetstreamSource
-
-Connects to BlueSky's public Jetstream API — a real-time stream of every post on the platform. The `search_keywords` parameter filters for posts containing your keywords. Each call to `.run()` returns one post as a string. After `max_posts` posts, it returns `None` to stop the network.
-
-```python
-bluesky = BlueSkyJetstreamSource(search_keywords=["AI", "machine learning"], max_posts=20)
-```
-
-No authentication is needed — the Jetstream API is public. You're reading the same data that anyone on BlueSky can see.
-
-### ClaudeAgent
-
-Takes a prompt string (from the prompt library or custom), sends each piece of text to the Claude API as a message, and parses the JSON response into a Python dict. Same `.run(text)` interface as `MockClaudeAgent`.
-
-```python
-from components.transformers.claude_agent import ClaudeAgent
-from components.transformers.prompts import get_prompt
-
-sentiment_analyzer = ClaudeAgent(get_prompt("sentiment_analyzer"))
-result = sentiment_analyzer.run("This new AI model is incredible!")
-# result: {"sentiment": "POSITIVE", "score": 0.85, "reasoning": "..."}
-```
-
-The prompt defines *what* the AI does. The `get_prompt()` function looks up a pre-built prompt from the library. The agent handles the API call, JSON parsing, error handling, and token tracking.
-
-### JSONLRecorder
-
-Opens a file and appends each result as one JSON line. JSONL (JSON Lines) is a common format for structured log data — each line is a complete, valid JSON object.
-
-```python
-recorder = JSONLRecorder(path="output.jsonl", mode="w", flush_every=1, name="archive")
-```
-
-After the network runs, you can open `output.jsonl` and see every result:
-
-```json
-{"text": "Just tried the new Claude model...", "sentiment": "POSITIVE", "score": 0.82, "people": ["Claude"], "locations": []}
-{"text": "AI regulation debate in Congress...", "sentiment": "NEUTRAL", "score": 0.05, "people": [], "locations": ["Congress"]}
-```
+The swap from demo to real is: `demo_ai_agent` → `ai_agent`. That's it.
 
 ---
 
 ## Part 5: The Prompt Library (10 minutes)
 
-The `sentiment_analyzer` and `entity_extractor` prompts you used are two of 30+ pre-built prompts in the library. Browse them:
+The `SENTIMENT_ANALYZER` and `ENTITY_EXTRACTOR` prompts are two of 30+ pre-built prompts in `components/transformers/prompts.py`. See all available prompts:
 
-```python
-from components.transformers.prompts import print_prompt_catalog
-print_prompt_catalog()
+```bash
+python3 -m components.transformers.prompts
 ```
 
-Or search for a specific capability:
+Prompts are Python constants. Import the ones you need:
 
 ```python
-from components.transformers.prompts import search_prompts
-print(search_prompts("spam").keys())
+from components.transformers.prompts import (
+    SENTIMENT_ANALYZER,    # Positive/negative/neutral
+    ENTITY_EXTRACTOR,      # People, places, organizations
+    SPAM_DETECTOR,         # Spam detection
+    URGENCY_DETECTOR,      # Urgency levels
+    TOPIC_CLASSIFIER,      # Topic categories
+    TONE_ANALYZER,         # Formal/casual/sarcastic
+    # ... 25+ more
+)
 ```
 
-Every prompt follows the same pattern: it tells Claude what to analyze and what JSON format to return. Your transform function receives that JSON as a Python dict and uses it however you want.
-
-**You don't need to understand prompt engineering to use these.** Just call `get_prompt("key")` and pass it to `ClaudeAgent`. The prompts are pre-tested and produce consistent JSON output.
-
-If you're curious about writing your own prompts, Anthropic's prompt engineering documentation is at [docs.anthropic.com](https://docs.anthropic.com). The file `tutorial_prompts_to_python.md` in the DisSysLab repo also walks through the Prompt → JSON → Python pattern in detail.
+Every prompt follows the same pattern: it tells Claude what to analyze and what JSON format to return. Your transform function receives that JSON as a Python dict. You don't need to understand prompt engineering to use these — just import a constant and pass it to `ai_agent()` or `demo_ai_agent()`.
 
 ---
 
@@ -184,115 +213,88 @@ If you're curious about writing your own prompts, Anthropic's prompt engineering
 
 ### Experiment 1: Change the search keywords
 
-Ask Claude:
+```python
+bluesky = BlueSkyJetstreamSource(filter_keywords=["climate", "climate change"], max_posts=5)
+```
+
+Or ask Claude:
 
 > Change my app to monitor BlueSky for posts about climate change instead of AI.
 
-Or change it yourself — it's one line:
-
-```python
-bluesky = BlueSkyJetstreamSource(search_keywords=["climate", "climate change"], max_posts=20)
-```
-
 ### Experiment 2: Swap the AI analysis
 
-Ask Claude:
+Replace sentiment analysis with urgency detection:
 
-> Replace sentiment analysis with urgency detection. Use the urgency_detector prompt.
+```python
+from components.transformers.prompts import URGENCY_DETECTOR
+urgency_detector = ai_agent(URGENCY_DETECTOR)
 
-Now your app detects urgent posts instead of emotional ones. Same pipeline, different prompt.
+def analyze_urgency(post):
+    text = post["text"] if isinstance(post, dict) else post
+    result = urgency_detector(text)
+    return {"text": text, "urgency": result.get("urgency", "LOW")}
+```
+
+Same pipeline, different prompt. Now your app detects urgent posts instead of emotional ones.
 
 ### Experiment 3: Add a filter
 
-Ask Claude:
-
-> Add a filter after sentiment analysis that drops neutral posts. Only save positive and negative posts to the file.
-
-This combines real AI with filtering — the `None` pattern from Module 1 works identically with real data.
-
-### Experiment 4: Add a second transform
-
-Ask Claude:
-
-> Add topic classification after entity extraction. Use the topic_classifier prompt. Include the topic in the saved output.
-
-Your pipeline now runs three AI analyses in sequence: sentiment → entity extraction → topic classification. Each transform enriches the dict, and the sink gets the fully enriched result.
-
-### Experiment 5: Run longer
-
-Change `max_posts=20` to `max_posts=100` or remove the limit entirely for continuous monitoring. Note: each post costs a fraction of a cent in API calls. You can check your spending with:
+Add a filter after sentiment analysis that drops neutral posts:
 
 ```python
-sentiment_agent.print_usage_stats()
+def only_strong_sentiment(article):
+    """Keep only positive and negative — drop neutral."""
+    if article["sentiment"] == "NEUTRAL":
+        return None
+    return article
 ```
 
-### Experiment 6: Describe something completely different
+The `None` pattern from Module 1 works identically with real data.
 
-> Build me an app that monitors BlueSky for posts about my university, detects if they're complaints or praise using sentiment analysis, extracts any person names mentioned, and saves only the complaints to a file. Use real components.
+### Experiment 4: Chain multiple AI analyses
 
-Compare what Claude generates with your original app. Same pattern, different application.
+Add topic classification after entity extraction:
+
+```python
+from components.transformers.prompts import TOPIC_CLASSIFIER
+topic_classifier = ai_agent(TOPIC_CLASSIFIER)
+
+def classify_topic(article):
+    result = topic_classifier(article["text"])
+    article["topic"] = result.get("primary_topic", "unknown")
+    return article
+```
+
+Your pipeline now runs three AI analyses in sequence: sentiment → entities → topic. Each transform enriches the dict, and the sink gets the fully enriched result.
+
+### Experiment 5: Compare demo vs real quality
+
+Run both:
+```bash
+python3 -m examples.module_02.example_demo
+python3 -m examples.module_02.example_real
+```
+
+The demo uses keyword matching. The real version uses Claude AI. Notice how real AI understands nuance, sarcasm, and context that keyword matching misses entirely.
 
 ---
 
-## Part 7: What You Should See
+## Cost Awareness
 
-Your output will differ because BlueSky is live — you're seeing real posts from real people in real time. But the structure looks like this:
+Each AI call costs a fraction of a cent. For Module 2's example (5 posts × 2 AI calls each = 10 API calls), the total cost is roughly $0.02-0.05. You can monitor your spending at [console.anthropic.com](https://console.anthropic.com) under **Usage**.
 
-```
-📡 Monitoring BlueSky for: AI, machine learning (20 posts)
-
-  😊 [POSITIVE] "Just deployed my first ML model to production — it actually works!"
-     People: none | Places: none
-  😐 [ NEUTRAL] "Anyone have recommendations for machine learning courses?"
-     People: none | Places: none
-  😊 [POSITIVE] "Yann LeCun's talk at NeurIPS was absolutely fascinating"
-     People: Yann LeCun | Places: NeurIPS
-  😞 [NEGATIVE] "Frustrated with the AI hype — most of these tools don't deliver"
-     People: none | Places: none
-  ...
-
-✅ Done! 20 posts processed. Results saved to output.jsonl
-
-Claude API usage:
-  API Calls:       40
-  Input Tokens:    12,350
-  Output Tokens:   3,200
-  Estimated Cost:  $0.0851 USD
-```
-
-Notice: the sentiment analysis is dramatically better than the keyword-matching mock from Module 1. Real AI understands nuance, sarcasm, context. That's the difference one import swap makes.
-
----
-
-## Part 8: Exploration
-
-### Test Claude's limits
-
-Try removing the component files from your Claude Project and regenerating the app with only `CLAUDE_CONTEXT.md`. Does Claude still produce correct code? What breaks? What still works? This teaches you something about how AI assistants use context — more specific information produces better results.
-
-### Other sources you could build
-
-BlueSky is just one data source. Any Python code that returns data can be a DisSysLab Source:
-
-- **RSS feeds** — `RSSSource` is already in the component library (no authentication needed)
-- **Reddit** — the Reddit API has a free tier
-- **Email** — IMAP libraries let you read incoming mail
-- **Databases** — query results become source data
-- **Files** — CSV, JSON, text files on disk
-- **Any API** — if you can call it from Python, you can wrap it
-
-Module 3 shows how to combine multiple sources. And you can always ask Claude to help you build a custom source for any API.
+When experimenting, keep `max_posts` small (5-10) to minimize costs. Increase it once you're satisfied with your pipeline.
 
 ---
 
 ## What You've Learned
 
-- **Real components have the same interface as mock components.** The swap is one import line.
-- **The Prompt → JSON → Python pattern.** A prompt defines what AI does. JSON structures the output. Your Python function uses the result.
-- **The prompt library** has 30+ pre-built prompts ready to use. Browse with `print_prompt_catalog()`.
+- **Real components have the same interface as demo components.** The swap is `demo_ai_agent` → `ai_agent`.
+- **The Prompt → JSON → Python pattern.** A prompt constant defines what AI does. JSON structures the output. Your Python function uses the result as a dict.
+- **The prompt library** has 30+ pre-built prompts ready to import and use.
 - **Enrichment pipelines** — each transform adds fields to the data dict. The final result contains everything.
 - **Live data is different.** Results vary because the data is real. AI analysis captures nuance that keyword matching misses.
 
 ## What's Next
 
-**[Module 3: Multiple Sources, Multiple Destinations](../module_03/)** — pull from BlueSky *and* an RSS feed at the same time, and send results to both a file *and* email alerts. Your app goes from a single pipeline to a real monitoring system.
+**[Module 3: Multiple Sources, Multiple Destinations](../module_03/)** — pull from BlueSky *and* an RSS feed at the same time (fanin), and send results to both a file *and* email alerts (fanout). Your app goes from a single pipeline to a real monitoring system.
