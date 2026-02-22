@@ -25,8 +25,8 @@ from components.sinks import JSONLRecorder
 # ── Data sources ──────────────────────────────────────────────────────────────
 # Still using demo RSS feeds — same articles as app.py.
 # This lets you compare demo vs real AI output on identical input.
-hn = DemoRSSSource(feed_name="hacker_news")
-tech = DemoRSSSource(feed_name="tech_news")
+hn = DemoRSSSource(feed_name="hacker_news", max_articles=2)
+tech = DemoRSSSource(feed_name="tech_news",   max_articles=2)
 
 
 # ── AI component (real Claude API) ───────────────────────────────────────────
@@ -85,9 +85,10 @@ if __name__ == "__main__":
     print("  tech_news   ─┘           └→ results_live.jsonl")
     print()
     print("  (Using real Claude API — expect a few seconds per article)")
+    print("  (max_articles=2 per feed to keep API costs low)")
     print()
 
-    g.run_network()
+    g.run_network(timeout=60)
 
     print()
     print("═" * 60)

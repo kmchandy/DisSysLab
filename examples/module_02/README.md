@@ -219,6 +219,10 @@ export ANTHROPIC_API_KEY='your-key-here'
 python3 -m examples.module_02.app_live
 ```
 
+`app_live.py` sets `max_articles=2` per feed. This keeps the number of API
+calls small and the cost of running the demo low. You can increase it once
+you're comfortable with how the app behaves.
+
 The topology, the transform functions, the sinks — all identical to `app.py`.
 Only the import and the agent constructor change.
 
