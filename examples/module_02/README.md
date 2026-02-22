@@ -1,300 +1,305 @@
-# Module 2: AI Integration
+# Module 02: Multiple Sources, Multiple Destinations
 
-*Your first real-world AI-powered distributed system.*
+*Read from two feeds at once. Send results to two places at once.*
+
+---
+
+## What You'll Build
+
+A news monitor that reads from two demo feeds simultaneously (fanin), analyzes
+the sentiment of every article, and sends results to two destinations at the
+same time (fanout) — a live display and a file that saves every result.
+
+```
+hacker_news ─┐
+              ├→ sentiment → display
+tech_news   ─┘           └→ results.jsonl
+```
+
+Two new ideas appear here that weren't in Module 01:
+
+**Fanin** — multiple sources feed into one node. Messages from both feeds
+merge into a single stream and are processed by the same sentiment analyzer.
+
+**Fanout** — one node sends to multiple destinations. Every analyzed article
+goes to both the display and the file simultaneously.
+
+This module uses demo components — no API keys needed. Part 3 shows the
+two-line change to connect real Claude AI.
 
 ---
 
 ## Files in This Module
 
-| File | What it does |
-|------|-------------|
-| `README.md` | This guide |
-| `example_demo.py` | Demo version: DemoRSSSource → sentiment → entity extraction → display (no API key) |
-| `example_real.py` | Real version: BlueSky → Claude AI sentiment → entity extraction → JSONL + display |
-| `test_module_02.py` | Test suite — run with `python3 -m pytest examples/module_02/test_module_02.py -v` |
-
-Run any example from the DisSysLab root:
-```bash
-python3 -m examples.module_02.example_demo
-python3 -m examples.module_02.example_real    # requires ANTHROPIC_API_KEY
-```
+| File                      | What it is                                              |
+|---------------------------|---------------------------------------------------------|
+| `README.md`               | This file                                               |
+| `app.py`                  | The canonical demo app — run this first                 |
+| `claude_generated_app.py` | Exactly what Claude produced from the Part 4 prompt     |
+| `app_live.py`             | Same app with real Claude API (Part 3)                  |
+| `app_extended.py`         | Extended version with spam filtering added              |
+| `test_module_02.py`       | Tests you can run to verify everything works            |
 
 ---
 
-In Module 1 you built a pipeline with demo components — keyword-based spam detection, simulated sentiment analysis, fake RSS data. It worked, and you learned the pattern. Now you're going to do the same thing with real data and real AI. The code looks almost identical. The results will be dramatically better.
+## Part 1: Run the App (2 minutes)
 
-This module uses **BlueSky** (a public social media platform) as a live data source and **Claude AI** for real sentiment analysis and entity extraction. Your app will monitor real posts from real people in real time, analyze them with real AI, and save the results to a file.
+From the DisSysLab root directory:
+
+```bash
+python3 -m examples.module_02.app
+```
+
+You should see something like:
+
+```
+📰 Two-Feed Sentiment Monitor
+════════════════════════════════════════════════════════════
+
+  hacker_news ─┐
+                ├→ sentiment → display
+  tech_news   ─┘           └→ results.jsonl
+
+  😊 [ POSITIVE] New Python 3.13 features are incredible
+  😐 [  NEUTRAL] Stack Overflow Developer Survey results
+  😊 [ POSITIVE] Open source project hits 10k GitHub stars
+  😊 [ POSITIVE] Rust adoption growing in systems programming
+  😞 [ NEGATIVE] Why most software projects fail
+  ...
+
+════════════════════════════════════════════════════════════
+✅ Done! Results also saved to results.jsonl
+```
+
+If you see this output, everything is working. Move to Part 2.
+
+**If something went wrong:** make sure you're running from the DisSysLab
+root directory. The command starts with `python3 -m`, not `python3 app.py`.
 
 ---
 
-## Part 1: Setup (10 minutes)
+## Part 2: Understand What You Just Built (10 minutes)
 
-You need two things: an Anthropic API key and the component files in your Claude Project.
+Open `app.py`. Two things are new compared to Module 01.
 
-### Get Your Anthropic API Key
+### The network topology
 
-You already have a Claude account from Module 1. Now you need an API key so your Python code can call Claude programmatically.
-
-1. Go to [console.anthropic.com](https://console.anthropic.com).
-2. Sign in with the same account you use for claude.ai.
-3. Click **Settings** in the left sidebar, then **API Keys**.
-4. Click **Create Key**.
-5. Give it a name like "DisSysLab" and click **Create**.
-6. **Copy the key immediately** — you won't see it again. It looks like `sk-ant-api03-...`.
-7. Set it as an environment variable in your terminal:
-
-**macOS / Linux:**
-```bash
-export ANTHROPIC_API_KEY='sk-ant-api03-your-key-here'
+```
+  [DemoRSSSource: hacker_news] ──┐
+                                  ├──→ [sentiment] ──→ [display]
+  [DemoRSSSource: tech_news]   ──┘              └──→ [jsonl_recorder]
 ```
 
-To make this permanent, add the export line to your `~/.zshrc` (macOS) or `~/.bashrc` (Linux) file.
+The sentiment node has **two upstream sources** (fanin) and the sentiment
+node sends to **two downstream sinks** (fanout).
 
-**Verify it works:**
-```bash
-python3 -c "
-from anthropic import Anthropic
-client = Anthropic()
-msg = client.messages.create(
-    model='claude-sonnet-4-20250514',
-    max_tokens=20,
-    messages=[{'role': 'user', 'content': 'Say OK'}]
-)
-print(msg.content[0].text)
-"
-```
-
-If you see "OK" — you're ready.
-
-### Upload Component Files to Your Claude Project
-
-In Module 1, your Claude Project had only `CLAUDE_CONTEXT.md`. For Module 2, Claude needs to see the real component source code so it generates correct imports and constructor parameters.
-
-1. Open your **DisSysLab** project on [claude.ai](https://claude.ai).
-2. Go to the project's **Files** section.
-3. Upload these files from your DisSysLab repository:
-   - `components/sources/bluesky_jetstream_source.py`
-   - `components/transformers/ai_agent.py`
-   - `components/transformers/prompts.py`
-   - `components/sinks/jsonl_recorder.py`
-
-`CLAUDE_CONTEXT.md` should already be there from Module 1. If not, upload it too.
-
-That's the complete setup. You won't need to do this again.
-
----
-
-## Part 2: Try the Demo First (5 minutes)
-
-Before using real AI, run the demo version to see the pipeline shape:
-
-```bash
-python3 -m examples.module_02.example_demo
-```
-
-This uses `DemoRSSSource` and `demo_ai_agent` — the same demo components from Module 1. No API key needed. The output shows the pipeline working: articles flow through sentiment analysis, then entity extraction, then display.
-
----
-
-## Part 3: Run With Real AI (5 minutes)
-
-Now run the real version:
-
-```bash
-python3 -m examples.module_02.example_real
-```
-
-The real version looks like this:
+### Step 1: Imports
 
 ```python
 from dsl import network
 from dsl.blocks import Source, Transform, Sink
-from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
-from components.transformers.prompts import SENTIMENT_ANALYZER, ENTITY_EXTRACTOR
-from components.transformers.ai_agent import ai_agent
-from components.sinks import JSONLRecorder
+from components.sources.demo_rss_source import DemoRSSSource
+from components.transformers.prompts import SENTIMENT_ANALYZER
+from components.transformers.demo_ai_agent import demo_ai_agent
+from components.sinks import DemoEmailAlerter, JSONLRecorder
+```
 
-# --- Live data source ---
-bluesky = BlueSkyJetstreamSource(filter_keywords=["AI", "machine learning"], max_posts=5)
+`JSONLRecorder` saves every message to a file in JSON Lines format —
+one JSON object per line. This is a common format for storing streaming data.
 
-# --- Real AI agents ---
-sentiment_analyzer = ai_agent(SENTIMENT_ANALYZER)
-entity_extractor = ai_agent(ENTITY_EXTRACTOR)
+### Step 2: Create components
 
-# --- Transform functions ---
-def analyze_sentiment(post):
-    text = post["text"] if isinstance(post, dict) else post
+```python
+hn   = DemoRSSSource(feed_name="hacker_news")
+tech = DemoRSSSource(feed_name="tech_news")
+
+sentiment_analyzer = demo_ai_agent(SENTIMENT_ANALYZER)
+
+recorder = JSONLRecorder(path="results.jsonl", mode="w", flush_every=1)
+```
+
+Two source instances — one for each feed. They run concurrently in separate
+threads, producing articles independently.
+
+### Step 3: Write ordinary Python functions
+
+**Source**, **Transform**, **Sink**, and **Message** contracts are the same
+as Module 01. The only new behavior is in how the network is wired.
+
+```python
+def analyze_sentiment(text):
     result = sentiment_analyzer(text)
     return {
-        "text": text,
-        "sentiment": result.get("sentiment", "UNKNOWN"),
-        "score": result.get("score", 0.0),
-        "reasoning": result.get("reasoning", "")
+        "text":      text,
+        "sentiment": result["sentiment"],
+        "score":     result["score"]
     }
-
-def extract_entities(article):
-    result = entity_extractor(article["text"])
-    article["people"] = result.get("people", [])
-    article["organizations"] = result.get("organizations", [])
-    article["locations"] = result.get("locations", [])
-    return article
 
 def print_article(article):
     icon = {"POSITIVE": "😊", "NEGATIVE": "😞", "NEUTRAL": "😐"}
     emoji = icon.get(article["sentiment"], "❓")
-    people = ", ".join(article.get("people", [])) or "none"
-    locations = ", ".join(article.get("locations", [])) or "none"
-    print(f"  {emoji} [{article['sentiment']:>8}] {article['text'][:80]}")
-    print(f"     People: {people} | Places: {locations}")
+    print(f"  {emoji} [{article['sentiment']:>8}] {article['text']}")
 ```
 
-The network:
+These functions are identical to Module 01. Nothing about them changes when
+you add more sources or more sinks — the functions stay simple and focused.
+
+### Step 4: Wrap functions into nodes
+
+```python
+hn_source   = Source(fn=hn.run,              name="hacker_news")
+tech_source = Source(fn=tech.run,            name="tech_news")
+sentiment   = Transform(fn=analyze_sentiment, name="sentiment")
+display     = Sink(fn=print_article,          name="display")
+archive     = Sink(fn=recorder.run,           name="archive")
+```
+
+Two Source nodes, one Transform node, two Sink nodes.
+
+### Step 5: Connect and run — where fanin and fanout happen
+
+```python
+g = network([
+    (hn_source,   sentiment),   # ← fanin: both sources send to sentiment
+    (tech_source, sentiment),   # ← fanin: same destination node
+    (sentiment,   display),     # ← fanout: sentiment sends to display
+    (sentiment,   archive)      # ← fanout: and also to archive
+])
+```
+
+**Fanin** happens because `sentiment` appears as the destination in two
+edges. The `network()` call specifies a list of edges of a graph, where
+each edge is a tuple `(from_node, to_node)`. The agent at `sentiment`
+receives messages from whichever source produces them first — the order
+is non-deterministic because both source threads run concurrently.
+
+**Fanout** happens because `sentiment` appears as the source in two edges.
+DisSysLab automatically copies each outgoing message so that both `display`
+and `archive` receive it. The two sink threads run independently — one slow
+sink does not delay the other.
+
+```python
+g.run_network()
+```
+
+DisSysLab starts a thread for each of the five nodes, routes messages
+through queues between connected nodes, and shuts everything down cleanly
+when both sources have exhausted their articles.
+
+### What's actually happening when you run it
 
 ```
-  bluesky  →  sentiment  →  entities  →  display
-                                       →  archive (JSONL file)
+hn_source   → produces articles from hacker_news (its own thread)
+tech_source → produces articles from tech_news   (its own thread)
+sentiment   → receives from both, analyzes each  (its own thread)
+display     → receives copies, prints them        (its own thread)
+archive     → receives copies, writes to file     (its own thread)
 ```
 
-Each post flows through two AI analyses. The sentiment transform adds sentiment fields. The entity transform adds people, organizations, and locations. The display sink shows results on screen. The archive sink saves everything to a JSONL file.
+All five threads run simultaneously. Articles from the two feeds arrive at
+`sentiment` interleaved — you'll see hacker_news and tech_news articles
+mixed together in the output. That's correct distributed systems behavior.
 
 ---
 
-## Part 4: Side-by-Side — Demo vs Real (10 minutes)
+## Part 3: Connect Real Claude AI (5 minutes)
 
-Put the demo code next to the real code. Notice:
+`app.py` uses demo components. `app_live.py` shows the two-line change for
+real Claude AI — identical to Module 01.
 
-**What changed:**
-
-| | Demo (Module 1) | Real (Module 2) |
-|---|---|---|
-| Source | `DemoRSSSource(feed_name="hacker_news")` | `BlueSkyJetstreamSource(filter_keywords=["AI"], max_posts=5)` |
-| AI | `demo_ai_agent(SENTIMENT_ANALYZER)` | `ai_agent(SENTIMENT_ANALYZER)` |
-| Call | `spam_detector(text)` | `sentiment_analyzer(text)` |
-
-**What didn't change:**
-
-- The import for prompts is identical: `from components.transformers.prompts import SENTIMENT_ANALYZER`
-- The transform functions have the same structure — call the analyzer, get a dict back, use the fields.
-- The network definition is the same — `network([(source, transform), ...])`.
-- The `run_network()` call is identical.
-- Filtering with `None` works the same way.
-
-The swap from demo to real is: `demo_ai_agent` → `ai_agent`. That's it.
-
----
-
-## Part 5: The Prompt Library (10 minutes)
-
-The `SENTIMENT_ANALYZER` and `ENTITY_EXTRACTOR` prompts are two of 30+ pre-built prompts in `components/transformers/prompts.py`. See all available prompts:
+**Setup:**
 
 ```bash
-python3 -m components.transformers.prompts
+export ANTHROPIC_API_KEY='your-key-here'
 ```
 
-Prompts are Python constants. Import the ones you need:
+**Run:**
 
-```python
-from components.transformers.prompts import (
-    SENTIMENT_ANALYZER,    # Positive/negative/neutral
-    ENTITY_EXTRACTOR,      # People, places, organizations
-    SPAM_DETECTOR,         # Spam detection
-    URGENCY_DETECTOR,      # Urgency levels
-    TOPIC_CLASSIFIER,      # Topic categories
-    TONE_ANALYZER,         # Formal/casual/sarcastic
-    # ... 25+ more
-)
-```
-
-Every prompt follows the same pattern: it tells Claude what to analyze and what JSON format to return. Your transform function receives that JSON as a Python dict. You don't need to understand prompt engineering to use these — just import a constant and pass it to `ai_agent()` or `demo_ai_agent()`.
-
----
-
-## Part 6: Make It Yours (15 minutes)
-
-### Experiment 1: Change the search keywords
-
-```python
-bluesky = BlueSkyJetstreamSource(filter_keywords=["climate", "climate change"], max_posts=5)
-```
-
-Or ask Claude:
-
-> Change my app to monitor BlueSky for posts about climate change instead of AI.
-
-### Experiment 2: Swap the AI analysis
-
-Replace sentiment analysis with urgency detection:
-
-```python
-from components.transformers.prompts import URGENCY_DETECTOR
-urgency_detector = ai_agent(URGENCY_DETECTOR)
-
-def analyze_urgency(post):
-    text = post["text"] if isinstance(post, dict) else post
-    result = urgency_detector(text)
-    return {"text": text, "urgency": result.get("urgency", "LOW")}
-```
-
-Same pipeline, different prompt. Now your app detects urgent posts instead of emotional ones.
-
-### Experiment 3: Add a filter
-
-Add a filter after sentiment analysis that drops neutral posts:
-
-```python
-def only_strong_sentiment(article):
-    """Keep only positive and negative — drop neutral."""
-    if article["sentiment"] == "NEUTRAL":
-        return None
-    return article
-```
-
-The `None` pattern from Module 1 works identically with real data.
-
-### Experiment 4: Chain multiple AI analyses
-
-Add topic classification after entity extraction:
-
-```python
-from components.transformers.prompts import TOPIC_CLASSIFIER
-topic_classifier = ai_agent(TOPIC_CLASSIFIER)
-
-def classify_topic(article):
-    result = topic_classifier(article["text"])
-    article["topic"] = result.get("primary_topic", "unknown")
-    return article
-```
-
-Your pipeline now runs three AI analyses in sequence: sentiment → entities → topic. Each transform enriches the dict, and the sink gets the fully enriched result.
-
-### Experiment 5: Compare demo vs real quality
-
-Run both:
 ```bash
-python3 -m examples.module_02.example_demo
-python3 -m examples.module_02.example_real
+python3 -m examples.module_02.app_live
 ```
 
-The demo uses keyword matching. The real version uses Claude AI. Notice how real AI understands nuance, sarcasm, and context that keyword matching misses entirely.
+The topology, the transform functions, the sinks — all identical to `app.py`.
+Only the import and the agent constructor change.
 
 ---
 
-## Cost Awareness
+## Part 4: Build Your Own App (homework)
 
-Each AI call costs a fraction of a cent. For Module 2's example (5 posts × 2 AI calls each = 10 API calls), the total cost is roughly $0.02-0.05. You can monitor your spending at [console.anthropic.com](https://console.anthropic.com) under **Usage**.
+Use your DisSysLab Claude project (set up in Module 01) to describe your
+own fanin/fanout app. Here are some prompts to try — or write your own.
 
-When experimenting, keep `max_posts` small (5-10) to minimize costs. Increase it once you're satisfied with your pipeline.
+### The prompt that generated `claude_generated_app.py`
+
+> Build me a DisSysLab app that reads from the hacker_news and tech_news
+> demo feeds, merges them, analyzes sentiment, and sends results to both
+> a display and a jsonl file called my_results.jsonl. Use demo components.
+
+### Ideas for your own app
+
+- *"Read from hacker_news and reddit_python, filter spam from both, analyze
+  sentiment, and save only positive articles to a file."*
+- *"Monitor tech_news and hacker_news simultaneously, detect urgency in each
+  article, and print HIGH urgency articles to the terminal."*
+- *"Read from all three demo feeds, merge them, analyze sentiment, and send
+  results to both a display and a file."*
+
+### Available demo feeds
+
+| Feed name       | What it simulates                    |
+|-----------------|--------------------------------------|
+| `hacker_news`   | Programming and tech articles        |
+| `tech_news`     | General technology news              |
+| `reddit_python` | Python community discussions         |
+
+### Available demo AI analyzers
+
+| Constant             | Returns                                                  |
+|----------------------|----------------------------------------------------------|
+| `SPAM_DETECTOR`      | `{"is_spam": bool, "confidence": float, "reason": str}`  |
+| `SENTIMENT_ANALYZER` | `{"sentiment": str, "score": float, "reasoning": str}`   |
+| `URGENCY_DETECTOR`   | `{"urgency": str, "metrics": dict, "reasoning": str}`    |
+
+### Available sinks
+
+| Component          | What it does                                  |
+|--------------------|-----------------------------------------------|
+| `print`            | Prints to terminal                            |
+| `DemoEmailAlerter` | Prints formatted email-style alerts           |
+| `JSONLRecorder`    | Saves every result to a `.jsonl` file         |
 
 ---
 
-## What You've Learned
+## Key Concepts
 
-- **Real components have the same interface as demo components.** The swap is `demo_ai_agent` → `ai_agent`.
-- **The Prompt → JSON → Python pattern.** A prompt constant defines what AI does. JSON structures the output. Your Python function uses the result as a dict.
-- **The prompt library** has 30+ pre-built prompts ready to import and use.
-- **Enrichment pipelines** — each transform adds fields to the data dict. The final result contains everything.
-- **Live data is different.** Results vary because the data is real. AI analysis captures nuance that keyword matching misses.
+**Three basic node types.** `Source` generates data. `Transform` processes
+it. `Sink` consumes it. Additional node types — such as Split, Broadcast,
+and MergeAsynch — are introduced in later modules.
+
+**`None` drops messages.** Any Transform that returns `None` silently removes
+that message from the network. Downstream nodes never see it.
+
+**Fanin: multiple sources, one destination.** When two edges share the same
+`to_node`, messages from both sources merge into that node's input queue.
+The order of arrival is non-deterministic — it depends on thread timing.
+Do not write code that assumes a particular order.
+
+**Fanout: one source, multiple destinations.** When two edges share the same
+`from_node`, DisSysLab copies each message and delivers it independently to
+each destination. Both destinations receive every message. One slow sink does
+not delay the other.
+
+**Demo and real components are interchangeable.** The only difference is the
+import line. Your app's architecture doesn't change when you go live.
+
+**You write functions; DisSysLab handles the rest.** Threading, queuing,
+message copying, shutdown coordination — none of that is your problem.
+
+---
 
 ## What's Next
 
-**[Module 3: Multiple Sources, Multiple Destinations](../module_03/)** — pull from BlueSky *and* an RSS feed at the same time (fanin), and send results to both a file *and* email alerts (fanout). Your app goes from a single pipeline to a real monitoring system.
+**Module 03** introduces smart routing with the Split node — sending
+different messages to different destinations based on their content. You'll
+build a monitor that routes positive, negative, and neutral articles to three
+separate outputs.
