@@ -179,12 +179,12 @@ and `archive` receive it. The two sink threads run independently — one slow
 sink does not delay the other.
 
 ```python
-g.run_network()
+g.run_network(timeout=60)
 ```
 
 DisSysLab starts a thread for each of the five nodes, routes messages
 through queues between connected nodes, and shuts everything down cleanly
-when both sources have exhausted their articles.
+when both sources have exhausted their articles or the execution hits the specified timeout.
 
 ### What's actually happening when you run it
 

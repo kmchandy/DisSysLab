@@ -1,253 +1,330 @@
-# Module 3: Multiple Sources, Multiple Destinations
+# Module 03: Smart Routing
 
-*Aggregate and distribute — your app becomes a real monitoring system.*
+*Send the right message to the right place.*
+
+---
+
+## What You'll Build
+
+A news monitor that reads from a Hacker News feed, analyzes the sentiment
+of each article, and routes articles to three different destinations based
+on their sentiment:
+
+```
+                              ┌→ positive → archive (results.jsonl)
+hacker_news → sentiment → split ┤→ negative → alerts  (email-style display)
+                              └→ neutral  → display  (terminal)
+```
+
+One new idea appears here that wasn't in Modules 01 or 02:
+
+**Split** — a node that routes each message to a specific output port based
+on your logic. Unlike fanout, which copies every message to every destination,
+Split sends each message to exactly the destination it belongs in.
+
+This module uses demo components — no API keys needed. Part 3 shows the
+two-line change to connect real Claude AI.
 
 ---
 
 ## Files in This Module
 
-| File | What it does |
-|------|-------------|
-| `README.md` | This guide |
-| `claude_generated.py` | Example of app produced by Claude — demo version |
-| `example_demo.py` | Demo version: two DemoRSS feeds → sentiment → display + collector (no API key) |
-| `example_real.py` | Real version: BlueSky + RSS → Claude AI sentiment → JSONL + email alerts |
-| `test_module_03.py` | Test suite — run with `python3 -m pytest examples/module_03/test_module_03.py -v` |
-
-Run any example from the DisSysLab root:
-```bash
-python3 -m examples.module_03.example_demo
-python3 -m examples.module_03.example_real    # requires ANTHROPIC_API_KEY
-```
+| File                      | What it is                                              |
+|---------------------------|---------------------------------------------------------|
+| `README.md`               | This file                                               |
+| `app.py`                  | The canonical demo app — run this first                 |
+| `claude_generated_app.py` | Exactly what Claude produced from the Part 4 prompt     |
+| `app_live.py`             | Same app with real Claude API (Part 3)                  |
+| `app_extended.py`         | Extended version with spam filtering added              |
+| `test_module_03.py`       | Tests you can run to verify everything works            |
 
 ---
 
-In Modules 1 and 2 you built pipelines: one source, a chain of transforms, one sink. Real monitoring systems pull from multiple data streams and send results to multiple destinations. This module teaches you how — and it's simpler than you'd expect. You add edges to the network definition. That's it.
+## Part 1: Run the App (2 minutes)
 
----
-
-## Part 1: Try the Demo First (5 minutes)
-
-Before using real AI, run the demo version to see the new topology:
+From the DisSysLab root directory:
 
 ```bash
-python3 -m examples.module_03.example_demo
+python3 -m examples.module_03.app
 ```
 
-This uses two `DemoRSSSource` feeds merging into one sentiment analyzer, with results going to both a display sink and a collector sink. No API key needed. The output shows messages from both sources arriving interleaved — that's fanin in action.
+You should see something like:
 
 ```
-  hacker_news ─┐
-                ├→  sentiment  →  email_alerts (console)
-  tech_news   ─┘               →  file (collected in memory)
+📰 Sentiment Router — Three-Way Split
+════════════════════════════════════════════════════════════
+
+  hacker_news → sentiment → split → positive → archive
+                                  → negative → alerts
+                                  → neutral  → display
+
+[DISPLAY - NEUTRAL]
+  😐 Stack Overflow Developer Survey results
+
+[ALERT - NEGATIVE]
+  📧 To: alerts@newsroom.com
+  📧 Subject: [ALERT] Negative article detected
+  😞 Why most software projects fail
+
+════════════════════════════════════════════════════════════
+✅ Done! Positive articles saved to results.jsonl
 ```
 
-### Generate with Claude
+If you see output routed to different destinations, everything is working.
+Move to Part 2.
 
-Just like Module 1, you can ask Claude to build this for you. Try this prompt in your DisSysLab project:
-
-> Build me a demo app that reads from two feeds — hacker_news and tech_news — merges them into one pipeline, analyzes sentiment, and sends results to both email alerts on the console and a file collector. Use demo components.
-
-Claude generates the complete app. You can also design the app yourself, which is what we do next.
+**If something went wrong:** make sure you're running from the DisSysLab
+root directory. The command starts with `python3 -m`, not `python3 app.py`.
 
 ---
 
-## Part 2: Run With Real Data (10 minutes)
+## Part 2: Understand What You Just Built (10 minutes)
 
-### Setup
-
-You already have your API key from Module 2. The only new step is uploading one more component file to your Claude Project so Claude can generate code with the new components.
-
-1. Open your **DisSysLab** project on [claude.ai](https://claude.ai).
-2. Go to **Files** and upload:
-   - `components/sources/rss_source.py`
-   - `components/sinks/mock_email_alerter.py`
-
-### Run it
-
-```bash
-python3 -m examples.module_03.example_real
-```
-
-You'll see posts from BlueSky and articles from Hacker News arriving interleaved, analyzed by real AI, with results appearing as email alerts on screen while simultaneously being saved to a JSONL file.
-
-The real version looks like this:
-
-```python
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
-from components.sources.rss_source import RSSSource
-from components.transformers.prompts import SENTIMENT_ANALYZER
-from components.transformers.ai_agent import ai_agent
-from components.sinks import JSONLRecorder, MockEmailAlerter
-
-# --- Two data sources ---
-bluesky = BlueSkyJetstreamSource(filter_keywords=["AI", "machine learning"], max_posts=5)
-rss = RSSSource(urls=["https://news.ycombinator.com/rss"], max_articles=5)
-
-# --- Real AI ---
-sentiment_analyzer = ai_agent(SENTIMENT_ANALYZER)
-
-# --- Two sinks ---
-recorder = JSONLRecorder(path="module_03_output.jsonl", mode="w", flush_every=1, name="archive")
-alerter = MockEmailAlerter(to_address="you@example.com", subject_prefix="[MONITOR]")
-```
-
-**Two sources, one processor, two outputs — all running concurrently.**
-
----
-
-## Part 3: Understanding Fanin and Fanout (15 minutes)
+Open `app.py`. One thing is new compared to Modules 01 and 02.
 
 ### The network topology
 
-Your app has this shape:
-
 ```
-  bluesky    ─┐
-               ├→  sentiment  →  file (JSONL)
-  hackernews ─┘               →  email (console)
+  [DemoRSSSource]
+        |
+        ↓
+  [sentiment]  ← adds sentiment + score to each article
+        |
+        ↓
+  [splitter]   ← routes each article to one of three ports
+     |    |    |
+     ↓    ↓    ↓
+  out_0 out_1 out_2
+     |    |    |
+     ↓    ↓    ↓
+ [archive][alerts][display]
 ```
 
-This isn't a pipeline anymore — it's a **diamond**. Two sources converge (fanin), processing happens, then results diverge (fanout).
+### Step 1: Imports
 
-### Fanin: multiple sources, one destination
+```python
+from dsl import network
+from dsl.blocks import Source, Transform, Sink, Split
+from components.sources.demo_rss_source import DemoRSSSource
+from components.transformers.prompts import SENTIMENT_ANALYZER
+from components.transformers.demo_ai_agent import demo_ai_agent
+from components.sinks import DemoEmailAlerter, JSONLRecorder
+```
 
-Look at the network definition:
+`Split` is the new import. It is the fourth basic node type.
+
+### Step 2: Create components
+
+```python
+rss                = DemoRSSSource(feed_name="hacker_news")
+sentiment_analyzer = demo_ai_agent(SENTIMENT_ANALYZER)
+recorder           = JSONLRecorder(path="results.jsonl", mode="w", flush_every=1)
+alerter            = DemoEmailAlerter(to_address="alerts@newsroom.com",
+                                      subject_prefix="[ALERT]")
+```
+
+### Step 3: Write ordinary Python functions
+
+The routing function is the key new concept. It receives one message and
+returns a list — one element per output port. Non-None elements are sent
+to the corresponding port. None elements mean "skip this port."
+
+```python
+def analyze_sentiment(text):
+    result = sentiment_analyzer(text)
+    return {
+        "text":      text,
+        "sentiment": result["sentiment"],
+        "score":     result["score"]
+    }
+
+
+def route_by_sentiment(article):
+    """
+    Route each article to exactly one output port based on sentiment.
+
+    Returns a list of 3 elements — one per output port:
+      out_0 ← positive articles  → archive
+      out_1 ← negative articles  → alerts
+      out_2 ← neutral articles   → display
+
+    Non-None elements are sent to the corresponding port.
+    None elements mean "skip this port."
+    """
+    if article["sentiment"] == "POSITIVE":
+        return [article, None,    None   ]   # → out_0
+    elif article["sentiment"] == "NEGATIVE":
+        return [None,    article, None   ]   # → out_1
+    else:
+        return [None,    None,    article]   # → out_2
+
+
+def print_article(article):
+    icon = {"POSITIVE": "😊", "NEGATIVE": "😞", "NEUTRAL": "😐"}
+    emoji = icon.get(article["sentiment"], "❓")
+    print(f"  {emoji} {article['text']}")
+```
+
+**The Split function contract:**
+- Receives one message
+- Returns a list of exactly `num_outputs` elements
+- Each element is either the message (to send) or `None` (to skip)
+- The list length must match `num_outputs` exactly
+
+### Step 4: Wrap functions into nodes
+
+```python
+source    = Source(fn=rss.run,              name="rss_feed")
+sentiment = Transform(fn=analyze_sentiment, name="sentiment")
+splitter  = Split(fn=route_by_sentiment,    num_outputs=3,  name="router")
+archive   = Sink(fn=recorder.run,           name="archive")
+alerts    = Sink(fn=alerter.run,            name="alerts")
+display   = Sink(fn=print_article,          name="display")
+```
+
+`Split` takes a `num_outputs` parameter. DisSysLab automatically creates
+output ports named `out_0`, `out_1`, `out_2`, and so on.
+
+### Step 5: Connect and run — where Split happens
 
 ```python
 g = network([
-    (bluesky_source, sentiment),    # BlueSky posts go to sentiment
-    (rss_source, sentiment),        # RSS articles also go to sentiment
-    (sentiment, file_sink),
-    (sentiment, email_sink)
+    (source,          sentiment),
+    (sentiment,       splitter),
+    (splitter.out_0,  archive),    # ← positive articles → archive
+    (splitter.out_1,  alerts),     # ← negative articles → alerts
+    (splitter.out_2,  display)     # ← neutral articles  → display
 ])
 ```
 
-Both sources connect to the same transform. DisSysLab merges the streams automatically. The sentiment analyzer doesn't know or care whether each message came from BlueSky or RSS — it just receives text and analyzes it.
+Port references (`splitter.out_0`, `splitter.out_1`, `splitter.out_2`)
+connect each output port to its downstream node. The port number corresponds
+to the index in the list returned by the routing function.
 
-**What this means:** You can add a third source (Reddit, another RSS feed, email inbox) by adding *one line* to the network. The rest of the app doesn't change. The transform functions don't change. The sinks don't change. Only the network edges change.
+The `network()` call specifies a list of edges of a graph, where each edge
+is a tuple `(from_node, to_node)`. For Split nodes, the `from_node` is a
+port reference rather than the node itself. DisSysLab starts a thread for
+each node, routes messages through queues, and shuts everything down cleanly
+when the source runs out of articles.
 
-### Fanout: one source, multiple destinations
+### Split vs. Fanout — the key difference
 
-The sentiment transform connects to both sinks. Every result goes to both. DisSysLab copies messages automatically. The file sink and email sink don't know about each other — they each receive every result independently.
-
-**What this means:** You can add a third sink (webhook, database, Slack notification) by adding one line. The rest of the app doesn't change.
-
-### The key insight
-
-Adding sources and sinks is adding *edges to the network*, not rewriting processing logic. The transform functions are identical to Module 2. The only thing that changed is the shape of the graph.
-
----
-
-## Part 4: Side-by-Side with Module 2 (10 minutes)
-
-| | Module 2 | Module 3 |
-|---|---|---|
-| Sources | 1 (BlueSky) | 2 (BlueSky + RSS) |
-| Transforms | sentiment + entities | sentiment |
-| Sinks | 1 (JSONL + display) | 2 (JSONL + email alerts) |
-| Network shape | pipeline | diamond (fanin + fanout) |
-
-The `analyze_sentiment` function is the same from Module 2. The `network()` call is the same function. The `run_network()` call is identical.
-
-You didn't learn new Python to do fanin and fanout. You learned a new *topology*. The framework handles the rest.
-
----
-
-## Part 5: The New Components (10 minutes)
-
-### RSSSource
-
-Reads articles from any public RSS feed. No authentication, no API key, completely free. It's a generator — each `yield` produces one article as a string (the article title and description). When the feed is exhausted, the generator ends.
-
-```python
-from components.sources.rss_source import RSSSource
-
-rss = RSSSource(urls=["https://news.ycombinator.com/rss"], max_articles=5)
+**Fanout** (Module 02) copies every message to every destination:
+```
+article → [archive, alerts, display]   ← all three get every article
 ```
 
-Note: `RSSSource` takes `urls` as a **list** (even for one feed) and `max_articles` to limit how many articles are processed.
-
-Because `RSSSource.run()` is a generator (not a one-item-per-call function), the real example wraps it for the Source block:
-
-```python
-rss_gen = rss.run()
-
-def rss_next():
-    return next(rss_gen, None)
-
-rss_source = Source(fn=rss_next, name="hackernews")
+**Split** (this module) routes each message to one destination:
+```
+positive article → [archive, None,   None   ]  ← only archive
+negative article → [None,    alerts, None   ]  ← only alerts
+neutral article  → [None,    None,   display]  ← only display
 ```
 
-Some feeds to try:
-
-- Hacker News: `https://news.ycombinator.com/rss`
-- BBC News: `http://feeds.bbci.co.uk/news/rss.xml`
-- Reddit Python: `https://www.reddit.com/r/python/.rss`
-
-### MockEmailAlerter
-
-Formats each result as an email notification and prints it to the console. No real email is sent — this simulates what email alerts would look like. It has the same interface as a real email sink, so when you're ready to send actual emails, you swap one import.
-
-```python
-from components.sinks import MockEmailAlerter
-
-alerter = MockEmailAlerter(to_address="you@example.com", subject_prefix="[ALERT]")
-```
+Use fanout when every destination needs every message.
+Use Split when each message belongs in exactly one place.
 
 ---
 
-## Part 6: Make It Yours (15 minutes)
+## Part 3: Connect Real Claude AI (5 minutes)
 
-### Experiment 1: Add a third source
+`app.py` uses demo components. `app_live.py` shows the two-line change for
+real Claude AI.
 
-Ask Claude:
+**Setup:**
 
-> Add a third source to my app: the BBC News RSS feed. Merge it into the same pipeline with BlueSky and Hacker News.
+```bash
+export ANTHROPIC_API_KEY='your-key-here'
+```
 
-One new Source node, one new edge. Everything else stays the same.
+**Run:**
 
-### Experiment 2: Filter before the sinks
+```bash
+python3 -m examples.module_03.app_live
+```
 
-Ask Claude:
-
-> Only send email alerts for posts with negative sentiment. Save everything to the file.
-
-This is where fanout gets interesting: the file sink gets all results, but the email path has a filter that returns `None` for non-negative posts. Different destinations see different subsets of the data. This previews Module 4's routing concept.
-
-### Experiment 3: Different AI analysis
-
-Ask Claude:
-
-> Replace sentiment analysis with urgency detection. Use the URGENCY_DETECTOR prompt. Send HIGH urgency items as email alerts and save everything to the file.
-
-Same topology, different intelligence inside the transforms.
-
-### Experiment 4: Change the RSS feed
-
-Point the RSS source at a feed that interests you — a subreddit, a tech blog, a news outlet in your field. The framework doesn't care what the data is — it's all just text flowing through nodes.
-
-### Experiment 5: Add enrichment
-
-Ask Claude:
-
-> After sentiment analysis, add entity extraction using the ENTITY_EXTRACTOR prompt. Include the extracted names in both the file output and the email alerts.
-
-Now both sinks receive the fully enriched data — sentiment plus entity extraction — from both sources.
+`app_live.py` sets `max_articles=2` to keep API calls and cost low. You
+can increase this once you're comfortable with how the app behaves.
 
 ---
 
-## What You've Learned
+## Part 4: Build Your Own App (homework)
 
-- **Fanin:** multiple sources → one processor. Add sources by adding edges.
-- **Fanout:** one processor → multiple sinks. Add sinks by adding edges.
-- **The topology is the design.** Transform functions don't change when you add sources or sinks.
-- **Concurrency is automatic.** Both sources run simultaneously. Both sinks receive results simultaneously. You wrote zero threading code.
-- **RSSSource** reads any public RSS feed — free, no authentication. Takes `urls` as a list and `max_articles` to limit volume.
-- **MockEmailAlerter** simulates email alerts on the console.
+Use your DisSysLab Claude project to describe your own routing app.
+
+### The prompt that generated `claude_generated_app.py`
+
+> Build me a DisSysLab app that reads from the hacker_news demo feed,
+> analyzes sentiment, and routes articles to three outputs: positive
+> articles saved to a jsonl file, negative articles printed as email
+> alerts, and neutral articles printed to the terminal. Use demo components.
+
+### Ideas for your own app
+
+- *"Read from tech_news, detect urgency, and route HIGH urgency articles
+  to an email alert, MEDIUM to a file, and LOW to the terminal."*
+- *"Monitor hacker_news and reddit_python, filter spam, analyze sentiment,
+  and route only positive articles to a file."*
+- *"Read from all three feeds, analyze sentiment, and route positive and
+  neutral articles to a file while dropping negative ones."*
+
+### Available demo feeds
+
+| Feed name       | What it simulates                    |
+|-----------------|--------------------------------------|
+| `hacker_news`   | Programming and tech articles        |
+| `tech_news`     | General technology news              |
+| `reddit_python` | Python community discussions         |
+
+### Available demo AI analyzers
+
+| Constant             | Returns                                                  |
+|----------------------|----------------------------------------------------------|
+| `SPAM_DETECTOR`      | `{"is_spam": bool, "confidence": float, "reason": str}`  |
+| `SENTIMENT_ANALYZER` | `{"sentiment": str, "score": float, "reasoning": str}`   |
+| `URGENCY_DETECTOR`   | `{"urgency": str, "metrics": dict, "reasoning": str}`    |
+
+### Available sinks
+
+| Component          | What it does                                  |
+|--------------------|-----------------------------------------------|
+| `print`            | Prints to terminal                            |
+| `DemoEmailAlerter` | Prints formatted email-style alerts           |
+| `JSONLRecorder`    | Saves every result to a `.jsonl` file         |
+
+---
+
+## Key Concepts
+
+**Three basic node types.** `Source` generates data. `Transform` processes
+it. `Sink` consumes it. Additional node types — such as Split, Broadcast,
+and MergeAsynch — are introduced in later modules.
+
+**Split is the fourth basic node type.** It routes each message to one or
+more specific output ports based on your routing function. Port references
+(`splitter.out_0`, `splitter.out_1`, etc.) connect each port to its
+downstream node.
+
+**The Split function contract.** Your routing function receives one message
+and returns a list of exactly `num_outputs` elements. Non-None elements are
+sent to the corresponding port. None elements skip that port. The list
+length must match `num_outputs` exactly.
+
+**Split vs. Fanout.** Fanout copies every message to every destination.
+Split routes each message to the destination it belongs in. Use Split when
+messages need to be sorted by content.
+
+**`None` drops messages.** Any Transform that returns `None` silently removes
+that message. In a Split routing function, `None` at a list position means
+"skip this port" — not a dropped message, just a skipped destination.
+
+**Demo and real components are interchangeable.** The only difference is the
+import line.
+
+---
 
 ## What's Next
 
-**[Module 4: Smart Routing](../module_04/)** — your app currently sends all results to both sinks. But what if you want to send *different* results to different places — positive posts to an archive, negative posts to email alerts, and neutral posts just to the console? That's the Split node, and it gives you complete control over where every message goes.
+**Module 04** puts it all together — fanin, fanout, and Split combined in
+one app that reads from multiple sources, filters, analyzes, and routes
+to multiple destinations.

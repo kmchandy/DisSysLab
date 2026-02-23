@@ -28,7 +28,7 @@ from components.transformers.ai_agent import ai_agent             # ← CHANGED
 # ── Data source ───────────────────────────────────────────────────────────────
 # Still using the demo RSS feed — same articles as app.py.
 # This lets you compare demo vs real AI output on identical input.
-rss = DemoRSSSource(feed_name="hacker_news")
+rss = DemoRSSSource(feed_name="hacker_news", max_articles=2)
 
 
 # ── AI components (real Claude API) ──────────────────────────────────────────
@@ -92,7 +92,7 @@ if __name__ == "__main__":
     print("  (Using real Claude API — expect a few seconds per article)")
     print()
 
-    g.run_network()
+    g.run_network(timeout=60)
 
     print()
     print("═" * 60)

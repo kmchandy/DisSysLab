@@ -201,7 +201,7 @@ g = network([
     (sentiment, display)
 ])
 
-g.run_network()
+g.run_network(timeout=60)
 ```
 
 The `network()` call specifies a list of edges of a graph, where each edge
@@ -212,7 +212,7 @@ the agent at `to_node`. This is like a wiring diagram.
 
 DisSysLab starts a thread that runs the agent at each node, routes messages
 through queues between connected nodes, and shuts everything down cleanly
-when the source agent signals it has no more messages to send.
+when the source agent signals it has no more messages to send or the execution hits the specified timeout.
 
 ---
 
@@ -246,8 +246,12 @@ export ANTHROPIC_API_KEY='your-key-here'
 Then run:
 
 ```bash
-python3 -m examples.module_01_describe_and_build.app_live
+python3 -m examples.module_01.app_live
 ```
+
+`app_live.py` sets `max_articles=2` per feed. This keeps the number of API
+calls small and the cost of running the demo low. You can increase it once
+you're comfortable with how the app behaves.
 
 The output looks identical to `app.py`, but the analysis is now done by
 Claude. You'll notice it's slower — that's the network round-trip to the API.

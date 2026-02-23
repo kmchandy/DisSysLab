@@ -1,171 +1,317 @@
 # examples/module_03/test_module_03.py
 
 """
-Tests for Module 03: Multiple Sources, Multiple Destinations
+Tests for Module 03: Smart Routing
+
+Tests are organized in three layers:
+    1. Component tests  — do the individual components work correctly?
+    2. Function tests   — do the transform and routing functions behave correctly?
+    3. Network tests    — do the full pipelines produce the right results?
+
+Key behaviors being tested:
+    - Split routing function returns correct list structure
+    - Each article goes to exactly one output port
+    - Positive → out_0, Negative → out_1, Neutral → out_2
+    - Spam is dropped before routing (extended app)
 
 Run from the DisSysLab root directory:
     pytest examples/module_03/test_module_03.py -v
 """
 
+import json
 import pytest
 from components.sources.demo_rss_source import DemoRSSSource, DEMO_FEEDS
 from components.transformers.prompts import SPAM_DETECTOR, SENTIMENT_ANALYZER
 from components.transformers.demo_ai_agent import demo_ai_agent
+from components.sinks import DemoEmailAlerter, JSONLRecorder
 from dsl import network
-from dsl.blocks import Source, Transform, Sink
+from dsl.blocks import Source, Transform, Sink, Split
 
 
-class TestFanin:
-    def test_two_sources_merge(self):
-        rss1 = DemoRSSSource(feed_name="hacker_news", max_articles=3)
-        rss2 = DemoRSSSource(feed_name="tech_news", max_articles=3)
-        sent_ana = demo_ai_agent(SENTIMENT_ANALYZER)
+# ============================================================================
+# Layer 1: Component Tests
+# ============================================================================
 
-        def analyze(text):
-            result = sent_ana(text)
+class TestDemoComponents:
+    """Demo components produce correct output shapes."""
+
+    def test_rss_source_produces_strings(self):
+        rss = DemoRSSSource(feed_name="hacker_news")
+        article = rss.run()
+        assert article is not None
+        assert isinstance(article, str)
+
+    def test_sentiment_analyzer_returns_required_keys(self):
+        analyzer = demo_ai_agent(SENTIMENT_ANALYZER)
+        result = analyzer("Python is great!")
+        assert "sentiment" in result
+        assert "score" in result
+        assert result["sentiment"] in ["POSITIVE", "NEGATIVE", "NEUTRAL"]
+
+    def test_demo_email_alerter_accepts_dict(self):
+        alerter = DemoEmailAlerter(to_address="test@example.com",
+                                   subject_prefix="[TEST]")
+        # Should not raise
+        alerter.run({"text": "Test article",
+                    "sentiment": "NEGATIVE", "score": -0.5})
+
+
+# ============================================================================
+# Layer 2: Transform and Routing Function Tests
+# ============================================================================
+
+class TestRoutingFunction:
+    """The routing function returns the correct list structure."""
+
+    def setup_method(self):
+        self.sentiment_analyzer = demo_ai_agent(SENTIMENT_ANALYZER)
+        self.spam_detector = demo_ai_agent(SPAM_DETECTOR)
+
+    def _analyze_sentiment(self, text):
+        result = self.sentiment_analyzer(text)
+        return {"text": text, "sentiment": result["sentiment"], "score": result["score"]}
+
+    def _route_by_sentiment(self, article):
+        if article["sentiment"] == "POSITIVE":
+            return [article, None,    None]
+        elif article["sentiment"] == "NEGATIVE":
+            return [None,    article, None]
+        else:
+            return [None,    None,    article]
+
+    def test_routing_returns_list(self):
+        article = {"text": "test", "sentiment": "POSITIVE", "score": 0.8}
+        result = self._route_by_sentiment(article)
+        assert isinstance(result, list)
+
+    def test_routing_returns_correct_length(self):
+        article = {"text": "test", "sentiment": "POSITIVE", "score": 0.8}
+        result = self._route_by_sentiment(article)
+        assert len(result) == 3
+
+    def test_positive_routes_to_index_0(self):
+        article = {"text": "amazing!", "sentiment": "POSITIVE", "score": 0.9}
+        result = self._route_by_sentiment(article)
+        assert result[0] is not None    # out_0 gets the article
+        assert result[1] is None        # out_1 skipped
+        assert result[2] is None        # out_2 skipped
+
+    def test_negative_routes_to_index_1(self):
+        article = {"text": "terrible!", "sentiment": "NEGATIVE", "score": -0.8}
+        result = self._route_by_sentiment(article)
+        assert result[0] is None        # out_0 skipped
+        assert result[1] is not None    # out_1 gets the article
+        assert result[2] is None        # out_2 skipped
+
+    def test_neutral_routes_to_index_2(self):
+        article = {"text": "normal day", "sentiment": "NEUTRAL", "score": 0.0}
+        result = self._route_by_sentiment(article)
+        assert result[0] is None        # out_0 skipped
+        assert result[1] is None        # out_1 skipped
+        assert result[2] is not None    # out_2 gets the article
+
+    def test_exactly_one_non_none_per_route(self):
+        """Every article goes to exactly one destination."""
+        for sentiment in ["POSITIVE", "NEGATIVE", "NEUTRAL"]:
+            article = {"text": "test", "sentiment": sentiment, "score": 0.0}
+            result = self._route_by_sentiment(article)
+            non_none = [x for x in result if x is not None]
+            assert len(non_none) == 1, \
+                f"Expected 1 non-None for {sentiment}, got {len(non_none)}"
+
+    def test_filter_spam_drops_spam(self):
+        detector = demo_ai_agent(SPAM_DETECTOR)
+        result = detector("CLICK HERE for FREE MONEY!")
+        assert result["is_spam"] is True
+
+    def test_filter_spam_passes_legit(self):
+        detector = demo_ai_agent(SPAM_DETECTOR)
+        result = detector("Python 3.13 released with performance improvements")
+        assert result["is_spam"] is False
+
+
+# ============================================================================
+# Layer 3: Full Network Tests
+# ============================================================================
+
+class TestAppNetwork:
+    """The complete app.py pipeline routes articles correctly."""
+
+    def _make_pipeline(self, tmp_path):
+        rss = DemoRSSSource(feed_name="hacker_news")
+        sentiment_analyzer = demo_ai_agent(SENTIMENT_ANALYZER)
+        pos_path = str(tmp_path / "positive.jsonl")
+        pos_recorder = JSONLRecorder(path=pos_path, mode="w", flush_every=1)
+        alerter = DemoEmailAlerter(to_address="test@example.com",
+                                              subject_prefix="[TEST]")
+
+        def analyze_sentiment(text):
+            result = sentiment_analyzer(text)
             return {"text": text, "sentiment": result["sentiment"], "score": result["score"]}
 
-        results = []
-        source1 = Source(fn=rss1.run, name="hacker_news")
-        source2 = Source(fn=rss2.run, name="tech_news")
-        sentiment = Transform(fn=analyze, name="sentiment")
-        collector = Sink(fn=results.append, name="out")
+        def route_by_sentiment(article):
+            if article["sentiment"] == "POSITIVE":
+                return [article, None,    None]
+            elif article["sentiment"] == "NEGATIVE":
+                return [None,    article, None]
+            else:
+                return [None,    None,    article]
+
+        neutral_results = []
+        negative_results = []
+
+        source = Source(fn=rss.run,              name="rss_feed")
+        sentiment = Transform(fn=analyze_sentiment, name="sentiment")
+        splitter = Split(fn=route_by_sentiment,
+                         num_outputs=3, name="router")
+        archive = Sink(fn=pos_recorder.run,       name="archive")
+        alerts = Sink(fn=negative_results.append, name="alerts")
+        display = Sink(fn=neutral_results.append,  name="display")
 
         g = network([
-            (source1, sentiment),
-            (source2, sentiment),
-            (sentiment, collector)
+            (source,         sentiment),
+            (sentiment,      splitter),
+            (splitter.out_0, archive),
+            (splitter.out_1, alerts),
+            (splitter.out_2, display)
         ])
+        return g, neutral_results, negative_results, pos_path
+
+    def test_pipeline_runs_without_error(self, tmp_path):
+        g, neutral, negative, pos_path = self._make_pipeline(tmp_path)
+        g.run_network()
+        total = (neutral + negative +
+                 [1] * sum(1 for _ in open(pos_path) if _.strip()))
+        assert len(total) > 0
+
+    def test_all_articles_routed_somewhere(self, tmp_path):
+        g, neutral, negative, pos_path = self._make_pipeline(tmp_path)
+        g.run_network()
+        with open(pos_path) as f:
+            positive_count = sum(1 for l in f if l.strip())
+        total_routed = positive_count + len(negative) + len(neutral)
+        # All non-spam articles should be routed somewhere
+        assert total_routed > 0
+
+    def test_no_article_routed_to_multiple_destinations(self, tmp_path):
+        """Each article text should appear in exactly one destination."""
+        g, neutral, negative, pos_path = self._make_pipeline(tmp_path)
         g.run_network()
 
-        assert len(
-            results) == 6, f"Expected 6 results (3+3), got {len(results)}"
+        with open(pos_path) as f:
+            positive = [json.loads(l) for l in f if l.strip()]
 
-    def test_three_sources_merge(self):
-        rss1 = DemoRSSSource(feed_name="hacker_news", max_articles=2)
-        rss2 = DemoRSSSource(feed_name="tech_news", max_articles=2)
-        rss3 = DemoRSSSource(feed_name="reddit_python", max_articles=2)
+        all_texts = (
+            [r["text"] for r in positive] +
+            [r["text"] for r in negative] +
+            [r["text"] for r in neutral]
+        )
+        # No duplicates — each article in exactly one place
+        assert len(all_texts) == len(set(all_texts)), \
+            "Some articles appeared in more than one destination"
 
-        results = []
-        source1 = Source(fn=rss1.run, name="hn")
-        source2 = Source(fn=rss2.run, name="tech")
-        source3 = Source(fn=rss3.run, name="reddit")
-        passthrough = Transform(fn=lambda x: x, name="pass")
-        collector = Sink(fn=results.append, name="out")
-
-        g = network([
-            (source1, passthrough),
-            (source2, passthrough),
-            (source3, passthrough),
-            (passthrough, collector)
-        ])
+    def test_positive_articles_in_archive(self, tmp_path):
+        g, neutral, negative, pos_path = self._make_pipeline(tmp_path)
         g.run_network()
+        with open(pos_path) as f:
+            positive = [json.loads(l) for l in f if l.strip()]
+        for r in positive:
+            assert r["sentiment"] == "POSITIVE", \
+                f"Non-positive article in archive: {r['text']}"
 
-        assert len(
-            results) == 6, f"Expected 6 results (2+2+2), got {len(results)}"
-
-
-class TestFanout:
-    def test_fanout_to_two_sinks(self):
-        rss = DemoRSSSource(feed_name="hacker_news", max_articles=5)
-        sent_ana = demo_ai_agent(SENTIMENT_ANALYZER)
-
-        def analyze(text):
-            result = sent_ana(text)
-            return {"text": text, "sentiment": result["sentiment"], "score": result["score"]}
-
-        results_file = []
-        results_email = []
-
-        source = Source(fn=rss.run, name="source")
-        sentiment = Transform(fn=analyze, name="sentiment")
-        file_sink = Sink(fn=results_file.append, name="file")
-        email_sink = Sink(fn=results_email.append, name="email")
-
-        g = network([
-            (source, sentiment),
-            (sentiment, file_sink),
-            (sentiment, email_sink)
-        ])
+    def test_negative_articles_in_alerts(self, tmp_path):
+        g, neutral, negative, pos_path = self._make_pipeline(tmp_path)
         g.run_network()
+        for r in negative:
+            assert r["sentiment"] == "NEGATIVE", \
+                f"Non-negative article in alerts: {r['text']}"
 
-        assert len(results_file) == len(results_email)
-        assert len(results_file) == 5
-
-    def test_fanout_to_three_sinks(self):
-        rss = DemoRSSSource(feed_name="tech_news", max_articles=4)
-
-        r1, r2, r3 = [], [], []
-        source = Source(fn=rss.run, name="source")
-        passthrough = Transform(fn=lambda x: x, name="pass")
-        s1 = Sink(fn=r1.append, name="s1")
-        s2 = Sink(fn=r2.append, name="s2")
-        s3 = Sink(fn=r3.append, name="s3")
-
-        g = network([
-            (source, passthrough),
-            (passthrough, s1),
-            (passthrough, s2),
-            (passthrough, s3)
-        ])
+    def test_neutral_articles_in_display(self, tmp_path):
+        g, neutral, negative, pos_path = self._make_pipeline(tmp_path)
         g.run_network()
+        for r in neutral:
+            assert r["sentiment"] == "NEUTRAL", \
+                f"Non-neutral article in display: {r['text']}"
 
-        assert len(r1) == len(r2) == len(r3) == 4
 
+class TestAppExtendedNetwork:
+    """The app_extended.py pipeline — spam filter + Split routing."""
 
-class TestDiamond:
-    def test_diamond_topology(self):
-        rss1 = DemoRSSSource(feed_name="hacker_news", max_articles=3)
-        rss2 = DemoRSSSource(feed_name="tech_news", max_articles=3)
-        sent_ana = demo_ai_agent(SENTIMENT_ANALYZER)
-
-        def analyze(text):
-            result = sent_ana(text)
-            return {"text": text, "sentiment": result["sentiment"], "score": result["score"]}
-
-        results_file = []
-        results_alert = []
-
-        source1 = Source(fn=rss1.run, name="hn")
-        source2 = Source(fn=rss2.run, name="tech")
-        sentiment = Transform(fn=analyze, name="sentiment")
-        file_sink = Sink(fn=results_file.append, name="file")
-        alert_sink = Sink(fn=results_alert.append, name="alert")
-
-        g = network([
-            (source1, sentiment),
-            (source2, sentiment),
-            (sentiment, file_sink),
-            (sentiment, alert_sink)
-        ])
-        g.run_network()
-
-        assert len(results_file) == 6
-        assert len(results_alert) == 6
-
-    def test_diamond_with_filter(self):
-        rss1 = DemoRSSSource(feed_name="hacker_news", max_articles=5)
-        rss2 = DemoRSSSource(feed_name="tech_news", max_articles=5)
-        spam_det = demo_ai_agent(SPAM_DETECTOR)
+    def _make_extended_pipeline(self, tmp_path):
+        rss = DemoRSSSource(feed_name="hacker_news")
+        spam_detector = demo_ai_agent(SPAM_DETECTOR)
+        sentiment_analyzer = demo_ai_agent(SENTIMENT_ANALYZER)
+        pos_path = str(tmp_path / "positive_ext.jsonl")
+        pos_recorder = JSONLRecorder(path=pos_path, mode="w", flush_every=1)
+        alerter = DemoEmailAlerter(to_address="test@example.com",
+                                              subject_prefix="[TEST]")
 
         def filter_spam(text):
-            result = spam_det(text)
+            result = spam_detector(text)
             return None if result["is_spam"] else text
 
-        r1, r2 = [], []
-        source1 = Source(fn=rss1.run, name="hn")
-        source2 = Source(fn=rss2.run, name="tech")
-        spam_gate = Transform(fn=filter_spam, name="spam")
-        sink1 = Sink(fn=r1.append, name="s1")
-        sink2 = Sink(fn=r2.append, name="s2")
+        def analyze_sentiment(text):
+            result = sentiment_analyzer(text)
+            return {"text": text, "sentiment": result["sentiment"], "score": result["score"]}
+
+        def route_by_sentiment(article):
+            if article["sentiment"] == "POSITIVE":
+                return [article, None,    None]
+            elif article["sentiment"] == "NEGATIVE":
+                return [None,    article, None]
+            else:
+                return [None,    None,    article]
+
+        neutral_results = []
+        negative_results = []
+
+        source = Source(fn=rss.run,               name="rss_feed")
+        spam_gate = Transform(fn=filter_spam,        name="spam_filter")
+        sentiment = Transform(fn=analyze_sentiment,  name="sentiment")
+        splitter = Split(fn=route_by_sentiment,
+                         num_outputs=3, name="router")
+        archive = Sink(fn=pos_recorder.run,        name="archive")
+        alerts = Sink(fn=negative_results.append, name="alerts")
+        display = Sink(fn=neutral_results.append,  name="display")
 
         g = network([
-            (source1, spam_gate),
-            (source2, spam_gate),
-            (spam_gate, sink1),
-            (spam_gate, sink2)
+            (source,         spam_gate),
+            (spam_gate,      sentiment),
+            (sentiment,      splitter),
+            (splitter.out_0, archive),
+            (splitter.out_1, alerts),
+            (splitter.out_2, display)
         ])
-        g.run_network()
+        return g, neutral_results, negative_results, pos_path
 
-        assert len(r1) == len(r2)
-        assert len(r1) < 10
+    def test_extended_runs_without_error(self, tmp_path):
+        g, neutral, negative, pos_path = self._make_extended_pipeline(tmp_path)
+        g.run_network()
+        with open(pos_path) as f:
+            positive_count = sum(1 for l in f if l.strip())
+        total = positive_count + len(negative) + len(neutral)
+        assert total > 0
+
+    def test_extended_fewer_total_than_feed(self, tmp_path):
+        """Spam filtering should reduce the total article count."""
+        g, neutral, negative, pos_path = self._make_extended_pipeline(tmp_path)
+        g.run_network()
+        with open(pos_path) as f:
+            positive_count = sum(1 for l in f if l.strip())
+        total_routed = positive_count + len(negative) + len(neutral)
+        feed_total = len(DEMO_FEEDS["hacker_news"])
+        assert total_routed < feed_total, \
+            "Spam filter should reduce total article count"
+
+    def test_extended_correct_routing(self, tmp_path):
+        """Articles still route to correct destinations after spam filtering."""
+        g, neutral, negative, pos_path = self._make_extended_pipeline(tmp_path)
+        g.run_network()
+        with open(pos_path) as f:
+            positive = [json.loads(l) for l in f if l.strip()]
+        for r in positive:
+            assert r["sentiment"] == "POSITIVE"
+        for r in negative:
+            assert r["sentiment"] == "NEGATIVE"
+        for r in neutral:
+            assert r["sentiment"] == "NEUTRAL"
