@@ -13,8 +13,8 @@ Network topology:
     ml_jobs     ─┘                                           → out_0 → display
                                                              → out_1 → discard
 
-The salary extractor adds a "salary" key to each posting dict.
-Postings without salary information get salary: null.
+The salary extractor adds salary keys to each posting dict.
+Postings without salary information get salary_mentioned: false.
 
 Run from the DisSysLab root directory:
     python3 -m examples.module_05.app_extended
@@ -22,69 +22,26 @@ Run from the DisSysLab root directory:
 
 from dsl import network
 from dsl.blocks import Source, Transform, Sink, Split
-from components.transformers.prompts import SPAM_DETECTOR
+from components.sources.demo_job_source import DemoJobSource
+from components.transformers.prompts import SPAM_DETECTOR, JOB_DETECTOR, SALARY_EXTRACTOR
 from components.transformers.demo_ai_agent import demo_ai_agent
 from components.sinks import JSONLRecorder
-from examples.module_05.demo_job_source import DEMO_JOB_FEEDS
-
-
-# ── Custom prompts ────────────────────────────────────────────────────────────
-
-JOB_RELEVANCE_PROMPT = """You are helping a job seeker find relevant postings.
-
-The target role: senior Python engineer or ML engineer, remote or hybrid,
-at a well-known tech company working on interesting problems.
-
-Return JSON format:
-{
-    "match": "STRONG" | "PARTIAL" | "NONE",
-    "confidence": 0.0-1.0,
-    "reason": "one sentence explanation"
-}"""
-
-SALARY_EXTRACTOR_PROMPT = """Extract salary information from the given job posting text.
-
-Look for salary ranges, hourly rates, or compensation mentions.
-If no salary information is present, return null for all fields.
-
-Return JSON format:
-{
-    "salary_mentioned": true | false,
-    "salary_text": "the salary text as written, or null",
-    "min_salary": integer in USD/year or null,
-    "max_salary": integer in USD/year or null
-}"""
-
-
-# ── Demo data source ──────────────────────────────────────────────────────────
-
-class DemoJobSource:
-    def __init__(self, feed_name, max_articles=None):
-        self.articles     = list(DEMO_JOB_FEEDS[feed_name])
-        self.max_articles = max_articles or len(self.articles)
-        self.index        = 0
-
-    def run(self):
-        if self.index >= min(len(self.articles), self.max_articles):
-            return None
-        article = self.articles[self.index]
-        self.index += 1
-        return article
 
 
 # ── Data sources ──────────────────────────────────────────────────────────────
 python_src = DemoJobSource(feed_name="python_jobs")
-ml_src     = DemoJobSource(feed_name="ml_jobs")
+ml_src = DemoJobSource(feed_name="ml_jobs")
 
 
 # ── AI components ─────────────────────────────────────────────────────────────
-spam_detector      = demo_ai_agent(SPAM_DETECTOR)
-relevance_checker  = demo_ai_agent(JOB_RELEVANCE_PROMPT)
-salary_extractor   = demo_ai_agent(SALARY_EXTRACTOR_PROMPT)
+spam_detector = demo_ai_agent(SPAM_DETECTOR)
+relevance_checker = demo_ai_agent(JOB_DETECTOR)
+salary_extractor = demo_ai_agent(SALARY_EXTRACTOR)
 
 
 # ── Sink components ───────────────────────────────────────────────────────────
-recorder = JSONLRecorder(path="job_matches_extended.jsonl", mode="w", flush_every=1)
+recorder = JSONLRecorder(
+    path="job_matches_extended.jsonl", mode="w", flush_every=1)
 
 
 def discard(msg):
@@ -112,22 +69,21 @@ def extract_salary(posting):
     """
     Add salary information to the posting dict.
 
-    This runs on ALL postings, before routing — salary is extracted
-    whether or not the posting will match. Routing happens next.
-    Only matching postings ever reach the archive, so only their
-    salary data gets saved.
+    Runs on ALL postings before routing — salary is extracted whether
+    or not the posting will match. Only matching postings ever reach
+    the archive, so only their salary data gets saved.
     """
     result = salary_extractor(posting["text"])
     posting["salary_mentioned"] = result.get("salary_mentioned", False)
-    posting["salary_text"]      = result.get("salary_text", None)
-    posting["min_salary"]       = result.get("min_salary", None)
-    posting["max_salary"]       = result.get("max_salary", None)
+    posting["salary_text"] = result.get("salary_text", None)
+    posting["min_salary"] = result.get("min_salary", None)
+    posting["max_salary"] = result.get("max_salary", None)
     return posting
 
 
 def route_by_match(posting):
     if posting["match"] in ("STRONG", "PARTIAL"):
-        return [posting, None   ]
+        return [posting, None]
     else:
         return [None,    posting]
 
@@ -144,25 +100,25 @@ def display_match(posting):
 
 # ── Build the network ─────────────────────────────────────────────────────────
 
-python_source = Source(fn=python_src.run,    name="python_jobs")
-ml_source     = Source(fn=ml_src.run,        name="ml_jobs")
-spam_gate     = Transform(fn=filter_spam,     name="spam_filter")
-relevance     = Transform(fn=check_relevance, name="relevance")
-salary        = Transform(fn=extract_salary,  name="salary")
-splitter      = Split(fn=route_by_match,      num_outputs=2, name="router")
-archive       = Sink(fn=recorder.run,         name="archive")
-display       = Sink(fn=display_match,        name="display")
-discard_sink  = Sink(fn=discard,              name="discard")
+python_source = Source(fn=python_src.run,     name="python_jobs")
+ml_source = Source(fn=ml_src.run,         name="ml_jobs")
+spam_gate = Transform(fn=filter_spam,      name="spam_filter")
+relevance = Transform(fn=check_relevance,  name="relevance")
+salary = Transform(fn=extract_salary,   name="salary")
+splitter = Split(fn=route_by_match,       num_outputs=2, name="router")
+archive = Sink(fn=recorder.run,          name="archive")
+display = Sink(fn=display_match,         name="display")
+discard_sink = Sink(fn=discard,               name="discard")
 
 g = network([
     (python_source,  spam_gate),
     (ml_source,      spam_gate),
     (spam_gate,      relevance),
-    (relevance,      salary),          # new: salary extracted before routing
+    (relevance,      salary),          # salary extracted before routing
     (salary,         splitter),
     (splitter.out_0, archive),
     (splitter.out_0, display),
-    (splitter.out_1, discard_sink)
+    (splitter.out_1, discard_sink),
 ])
 
 
@@ -174,7 +130,7 @@ if __name__ == "__main__":
     print()
     print("  python_jobs ─┐")
     print("                ├→ spam_filter → relevance → salary → split")
-    print("  ml_jobs     ─┘                                   → match → archive + display")
+    print("  ml_jobs     ─┘                                   → match   → archive + display")
     print("                                                   → no_match → dropped")
     print()
 

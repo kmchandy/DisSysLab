@@ -1,15 +1,23 @@
-# components/rss_source.py
+# components/sources/rss_source.py
 
 """
 RSSSource: Read and parse RSS/Atom feeds
 
 This component reads RSS feeds and yields articles as messages.
 No authentication required - perfect for teaching!
+
+Usage:
+    from components.sources.rss_source import RSSSource
+    from dsl.blocks import Source
+
+    rss = RSSSource(urls=["https://www.python.org/jobs/feed/rss/"], max_articles=5)
+    source = Source(fn=rss.run, name="python_jobs")
+    # No wrapper needed — Source handles generators automatically
 """
 
+import re
 import feedparser
-from typing import List, Dict, Any, Optional
-from datetime import datetime
+from typing import List, Optional
 import time
 
 
@@ -17,13 +25,12 @@ class RSSSource:
     """
     RSS feed reader that yields articles as messages.
 
-    This class reads RSS/Atom feeds and yields structured data for each article.
-    It's designed to work seamlessly with the DSL's source_map decorator.
+    Yields one article per call to run(). Compatible with Source() directly —
+    no generator wrapper needed in application code.
 
     Example:
-        >>> rss = RSSSource(urls=["https://hnrss.org/newest"])
-        >>> for article in rss.run():
-        ...     print(article['title'])
+        >>> rss = RSSSource(urls=["https://www.python.org/jobs/feed/rss/"])
+        >>> source = Source(fn=rss.run, name="jobs")
     """
 
     def __init__(
@@ -38,85 +45,70 @@ class RSSSource:
 
         Args:
             urls: List of RSS/Atom feed URLs to read
-            max_articles: Maximum number of articles to fetch (None = all)
-            poll_interval: If set, poll feeds every N seconds (for persistent mode)
-            name: Name for this source (for debugging)
+            max_articles: Maximum number of articles to fetch per feed
+                          (None = all)
+            poll_interval: If set, poll feeds every N seconds
+                           (for persistent/infinite mode)
+            name: Name for this source (used in log messages)
 
-        Examples of good RSS feeds:
-            - Hacker News: "https://hnrss.org/newest"
-            - NY Times Tech: "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml"
-            - Reddit: "https://www.reddit.com/r/python/.rss"
-            - BBC News: "http://feeds.bbci.co.uk/news/rss.xml"
+        Example feeds:
+            Python jobs:    "https://www.python.org/jobs/feed/rss/"
+            Remote OK:      "https://remoteok.com/rss"
+            Hacker News:    "https://hnrss.org/newest"
+            NY Times Tech:  "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml"
+            Reddit Python:  "https://www.reddit.com/r/python/.rss"
         """
         self.urls = urls
         self.max_articles = max_articles
         self.poll_interval = poll_interval
         self.name = name
 
-        # Track what we've seen (for persistent mode)
         self.seen_ids = set()
-
-        # Statistics
         self.total_fetched = 0
         self.total_errors = 0
 
     def run(self):
         """
-        Generator that yields articles from RSS feeds.
+        Generator that yields one article (str) per iteration.
 
-        Yields:
-            str: Article text (title + description combined)
+        Source() in dsl/blocks/source.py automatically wraps generators,
+        so this works directly with Source(fn=rss.run, ...).
 
-        For persistent mode (poll_interval set):
-            Runs forever, polling feeds at regular intervals
-
-        For one-shot mode (poll_interval None):
-            Fetches feeds once and stops
+        In one-shot mode (poll_interval=None): fetches all feeds once.
+        In polling mode (poll_interval set): runs forever.
         """
         if self.poll_interval:
-            # Persistent mode: poll forever
             while True:
                 yield from self._fetch_articles()
-                print(f"[{self.name}] Sleeping for {self.poll_interval} seconds...")
+                print(f"[{self.name}] Sleeping {self.poll_interval}s...")
                 time.sleep(self.poll_interval)
         else:
-            # One-shot mode: fetch once and stop
             yield from self._fetch_articles()
 
     def _fetch_articles(self):
-        """Fetch articles from all configured feeds."""
+        """Fetch and yield articles from all configured feed URLs."""
         for url in self.urls:
             try:
                 print(f"[{self.name}] Fetching {url}...")
                 feed = feedparser.parse(url)
 
                 if feed.bozo:
-                    # Feed has parsing errors
                     print(f"[{self.name}] Warning: Feed parsing errors for {url}")
 
-                # Get entries
                 entries = feed.entries
-
-                # Limit if requested
                 if self.max_articles:
                     entries = entries[:self.max_articles]
 
                 print(f"[{self.name}] Found {len(entries)} articles from {url}")
 
                 for entry in entries:
-                    # Create unique ID for deduplication
                     entry_id = entry.get('id', entry.get('link', ''))
 
-                    # Skip if we've seen this before (in persistent mode)
                     if self.poll_interval and entry_id in self.seen_ids:
                         continue
-
-                    # Mark as seen
                     self.seen_ids.add(entry_id)
 
-                    # Extract article text
                     text = self._extract_text(entry)
-
                     if text:
                         self.total_fetched += 1
                         yield text
@@ -125,74 +117,54 @@ class RSSSource:
                 self.total_errors += 1
                 print(f"[{self.name}] Error fetching {url}: {e}")
 
-    def _extract_text(self, entry: Dict[str, Any]) -> str:
+    def _extract_text(self, entry) -> str:
         """
-        Extract text from a feed entry.
+        Extract plain text from a feed entry.
 
-        Combines title and description/summary into a single text string.
-
-        Args:
-            entry: Feed entry dictionary from feedparser
-
-        Returns:
-            Combined text string
+        Combines title and description/summary, then strips HTML tags
+        so the result is clean plain text suitable for AI analysis.
         """
         parts = []
 
-        # Get title
         if 'title' in entry:
             parts.append(entry['title'])
 
-        # Get description/summary
         if 'description' in entry:
             parts.append(entry['description'])
         elif 'summary' in entry:
             parts.append(entry['summary'])
 
-        return " | ".join(parts)
+        text = " | ".join(parts)
 
-    def get_stats(self) -> Dict[str, Any]:
-        """
-        Get statistics for this source.
+        # Strip HTML tags — RSS descriptions often contain raw HTML
+        text = re.sub(r'<[^>]+>', ' ', text)
 
-        Returns:
-            Dictionary with fetched count, error count, etc.
-        """
+        # Decode common HTML entities
+        text = text.replace('&amp;', '&')
+        text = text.replace('&lt;', '<')
+        text = text.replace('&gt;', '>')
+        text = text.replace('&nbsp;', ' ')
+        text = text.replace('&#39;', "'")
+        text = text.replace('&quot;', '"')
+
+        # Collapse whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        return text
+
+    def get_stats(self):
         return {
-            "name": self.name,
-            "feeds": len(self.urls),
+            "name":          self.name,
+            "feeds":         len(self.urls),
             "total_fetched": self.total_fetched,
-            "total_errors": self.total_errors,
-            "seen_ids": len(self.seen_ids)
+            "total_errors":  self.total_errors,
+            "seen_ids":      len(self.seen_ids),
         }
 
-    def print_stats(self):
-        """Print statistics in a readable format."""
-        stats = self.get_stats()
-        print("\n" + "=" * 60)
-        print(f"RSS Source Statistics: {stats['name']}")
-        print("=" * 60)
-        print(f"Feeds configured: {stats['feeds']}")
-        print(f"Articles fetched: {stats['total_fetched']}")
-        print(f"Errors:           {stats['total_errors']}")
-        print(f"Unique articles:  {stats['seen_ids']}")
-        print("=" * 60 + "\n")
 
-
-# ============================================================================
-# Convenience Factory Functions
-# ============================================================================
+# ── Convenience factory functions ─────────────────────────────────────────────
 
 def create_hacker_news_source(max_articles: int = 10) -> RSSSource:
-    """
-    Create an RSS source for Hacker News.
-
-    Args:
-        max_articles: Maximum number of articles to fetch
-
-    Returns:
-        RSSSource configured for Hacker News
-    """
     return RSSSource(
         urls=["https://hnrss.org/newest"],
         max_articles=max_articles,
@@ -200,37 +172,23 @@ def create_hacker_news_source(max_articles: int = 10) -> RSSSource:
     )
 
 
-def create_tech_news_source(max_articles: int = 10) -> RSSSource:
-    """
-    Create an RSS source for technology news from multiple sources.
-
-    Args:
-        max_articles: Maximum articles per feed
-
-    Returns:
-        RSSSource configured for tech news
-    """
+def create_python_jobs_source(max_articles: int = 10) -> RSSSource:
     return RSSSource(
-        urls=[
-            "https://hnrss.org/newest",
-            "https://rss.nytimes.com/services/xml/rss/nyt/Technology.xml",
-        ],
+        urls=["https://www.python.org/jobs/feed/rss/"],
         max_articles=max_articles,
-        name="tech_news"
+        name="python_jobs"
+    )
+
+
+def create_remote_jobs_source(max_articles: int = 10) -> RSSSource:
+    return RSSSource(
+        urls=["https://remoteok.com/rss"],
+        max_articles=max_articles,
+        name="remote_jobs"
     )
 
 
 def create_reddit_source(subreddit: str = "python", max_articles: int = 10) -> RSSSource:
-    """
-    Create an RSS source for a Reddit subreddit.
-
-    Args:
-        subreddit: Name of the subreddit (without r/)
-        max_articles: Maximum number of posts to fetch
-
-    Returns:
-        RSSSource configured for Reddit
-    """
     return RSSSource(
         urls=[f"https://www.reddit.com/r/{subreddit}/.rss"],
         max_articles=max_articles,

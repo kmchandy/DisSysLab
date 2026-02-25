@@ -456,6 +456,37 @@ Return JSON format:
     "intended_meaning": "what it means"
 }"""
 
+# ============================================================================
+# JOB MATCHING
+# ============================================================================
+
+JOB_DETECTOR = """You are helping a job seeker find relevant postings.
+
+The target role: senior Python engineer or ML engineer, remote or hybrid,
+at a well-known tech company working on interesting problems.
+
+Given a job posting title/summary, determine if it is a strong match,
+partial match, or not a match for this target role.
+
+Return JSON format:
+{
+    "match": "STRONG" | "PARTIAL" | "NONE",
+    "confidence": 0.0-1.0,
+    "reason": "one sentence explanation"
+}"""
+
+SALARY_EXTRACTOR = """Extract salary information from the given job posting text.
+
+Look for salary ranges, hourly rates, or compensation mentions.
+If no salary information is present, return null for all fields.
+
+Return JSON format:
+{
+    "salary_mentioned": true | false,
+    "salary_text": "the salary text as written, or null",
+    "min_salary": integer in USD/year or null,
+    "max_salary": integer in USD/year or null
+}"""
 
 # ============================================================================
 # Quick Reference
@@ -521,6 +552,8 @@ AVAILABLE PROMPTS:
    • CALL_TO_ACTION_DETECTOR - Marketing CTAs
    • SARCASM_DETECTOR - Sarcasm and irony
 
+🎯 FINDING JOBS
+    • JOB_DETECTOR - Match job postings to target role
 ════════════════════════════════════════════════════════════════════════════
 
 💡 TIP: Type "from components.transformers.prompts import " in your IDE

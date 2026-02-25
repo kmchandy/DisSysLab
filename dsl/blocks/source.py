@@ -8,6 +8,7 @@ methods.
 """
 
 from __future__ import annotations
+import inspect
 import traceback
 import time
 from typing import Any, Callable, Optional
@@ -28,6 +29,9 @@ class Source(Agent):
     - Return a message (any type) on each call
     - Return None when exhausted (no more messages)
     - Maintain its own state between calls (if needed)
+
+    Generator functions are also accepted — Source wraps them automatically
+    so that each call to fn() advances the generator by one step.
 
     **Message Flow:**
     1. Calls fn() repeatedly
@@ -52,30 +56,35 @@ class Source(Agent):
         ...     def __init__(self, items):
         ...         self.items = items
         ...         self.index = 0
-        ...     
+        ...
         ...     def run(self):
         ...         if self.index >= len(self.items):
         ...             return None  # Exhausted
         ...         item = self.items[self.index]
         ...         self.index += 1
         ...         return {"value": item}
-        >>> 
+        >>>
         >>> data = ListSource([1, 2, 3])
         >>> source = Source(fn=data.run, name="numbers")
+
+    Generator source (e.g. RSSSource):
+        >>> rss = RSSSource(urls=["https://hnrss.org/newest"], max_articles=5)
+        >>> source = Source(fn=rss.run, name="news")
+        >>> # No wrapper needed — Source handles generators automatically
 
     Counter source:
         >>> class CounterSource:
         ...     def __init__(self, max_count):
         ...         self.count = 0
         ...         self.max_count = max_count
-        ...     
+        ...
         ...     def run(self):
         ...         if self.count >= self.max_count:
         ...             return None
         ...         result = {"count": self.count}
         ...         self.count += 1
         ...         return result
-        >>> 
+        >>>
         >>> counter = CounterSource(max_count=5)
         >>> source = Source(fn=counter.run, name="counter")
 
@@ -89,9 +98,9 @@ class Source(Agent):
     """
 
     def __init__(
-        self, 
+        self,
         *,
-        fn: Callable[[], Optional[Any]], 
+        fn: Callable[[], Optional[Any]],
         name: str,
         interval: float = 0
     ):
@@ -101,6 +110,7 @@ class Source(Agent):
         Args:
             fn: Callable that returns messages or None when exhausted.
                 Should have signature: fn() -> Optional[message]
+                Generator functions are also accepted.
             name: Unique name for this agent (REQUIRED)
             interval: Optional delay in seconds between messages (default: 0)
 
@@ -110,13 +120,21 @@ class Source(Agent):
         """
         if not name:
             raise ValueError("Source agent requires a name")
-        
+
         if not callable(fn):
             raise TypeError(
                 "Source fn must be callable with signature: fn() -> Optional[message]"
             )
 
         super().__init__(name=name, inports=[], outports=["out_"])
+
+        # If fn is a generator function, wrap it so each call returns one item.
+        # This allows RSSSource and other generators to work with Source directly
+        # without any wrapper in application code.
+        if inspect.isgeneratorfunction(fn):
+            _gen = fn()
+            def fn(): return next(_gen, None)
+
         self._fn = fn
         self._interval = interval
 

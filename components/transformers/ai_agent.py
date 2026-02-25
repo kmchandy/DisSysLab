@@ -86,6 +86,10 @@ def ai_agent(prompt: str):
         """
         nonlocal call_count, total_cost
 
+        # Guard: skip empty text rather than sending invalid request to API
+        if not text or not text.strip():
+            return {"text": text, "error": "empty input", "skipped": True}
+
         try:
             # Call Claude API
             message = client.messages.create(

@@ -14,7 +14,7 @@ Key behaviors being tested:
     - Matching postings reach archive and display (fanout from split port)
     - Non-matching postings are discarded
     - No posting appears in both match and discard paths
-    - Extended app: salary key is added to all routed postings
+    - Extended app: salary keys are added to all routed postings
 
 Note: app_live.py is NOT tested here — it requires a real API key and
 live network access. Test that manually after setting ANTHROPIC_API_KEY.
@@ -25,51 +25,13 @@ Run from the DisSysLab root directory:
 
 import json
 import pytest
-from components.transformers.prompts import SPAM_DETECTOR
+from components.sources.demo_job_source import DemoJobSource
+from components.transformers.prompts import SPAM_DETECTOR, JOB_DETECTOR, SALARY_EXTRACTOR
 from components.transformers.demo_ai_agent import demo_ai_agent
 from components.sinks import JSONLRecorder
 from dsl import network
 from dsl.blocks import Source, Transform, Sink, Split
 from examples.module_05.demo_job_source import DEMO_JOB_FEEDS
-
-
-# ── Shared helpers ────────────────────────────────────────────────────────────
-
-JOB_RELEVANCE_PROMPT = """You are helping a job seeker find relevant postings.
-
-The target role: senior Python engineer or ML engineer, remote or hybrid,
-at a well-known tech company working on interesting problems.
-
-Return JSON format:
-{
-    "match": "STRONG" | "PARTIAL" | "NONE",
-    "confidence": 0.0-1.0,
-    "reason": "one sentence explanation"
-}"""
-
-SALARY_EXTRACTOR_PROMPT = """Extract salary information from job posting text.
-
-Return JSON format:
-{
-    "salary_mentioned": true | false,
-    "salary_text": "the salary text as written, or null",
-    "min_salary": integer in USD/year or null,
-    "max_salary": integer in USD/year or null
-}"""
-
-
-class DemoJobSource:
-    def __init__(self, feed_name, max_articles=None):
-        self.articles     = list(DEMO_JOB_FEEDS[feed_name])
-        self.max_articles = max_articles or len(self.articles)
-        self.index        = 0
-
-    def run(self):
-        if self.index >= min(len(self.articles), self.max_articles):
-            return None
-        article = self.articles[self.index]
-        self.index += 1
-        return article
 
 
 # ============================================================================
@@ -85,7 +47,9 @@ class TestDemoJobSource:
 
     def test_exhausts_cleanly(self):
         src = DemoJobSource(feed_name="python_jobs", max_articles=3)
-        src.run(); src.run(); src.run()
+        src.run()
+        src.run()
+        src.run()
         assert src.run() is None
 
     def test_respects_max_articles(self):
@@ -118,19 +82,44 @@ class TestDemoAIComponents:
 
     def test_spam_detector_drops_job_spam(self):
         detector = demo_ai_agent(SPAM_DETECTOR)
-        result = detector("CLICK HERE for FREE MONEY — work from home guaranteed!")
+        result = detector(
+            "CLICK HERE for FREE MONEY — work from home guaranteed!")
         assert result["is_spam"] is True
 
     def test_spam_detector_passes_real_job(self):
         detector = demo_ai_agent(SPAM_DETECTOR)
-        result = detector("Senior Python Engineer at Stripe — Remote, $180k-$220k")
+        result = detector(
+            "Senior Python Engineer at Stripe — Remote, $180k-$220k")
         assert result["is_spam"] is False
 
-    def test_relevance_checker_returns_required_keys(self):
-        checker = demo_ai_agent(JOB_RELEVANCE_PROMPT)
+    def test_job_detector_returns_required_keys(self):
+        checker = demo_ai_agent(JOB_DETECTOR)
         result = checker("Senior Python Engineer at Stripe — Remote, $180k")
         assert "match" in result
         assert "confidence" in result
+
+    def test_salary_extractor_returns_required_keys(self):
+        extractor = demo_ai_agent(SALARY_EXTRACTOR)
+        result = extractor(
+            "Senior Python Engineer at Stripe — Remote, $180k-$220k")
+        assert "salary_mentioned" in result
+        assert "salary_text" in result
+        assert "min_salary" in result
+        assert "max_salary" in result
+
+    def test_salary_extractor_finds_salary(self):
+        extractor = demo_ai_agent(SALARY_EXTRACTOR)
+        result = extractor(
+            "Senior Python Engineer at Stripe — Remote, $180k-$220k")
+        assert result["salary_mentioned"] is True
+        assert result["min_salary"] == 180000
+        assert result["max_salary"] == 220000
+
+    def test_salary_extractor_handles_no_salary(self):
+        extractor = demo_ai_agent(SALARY_EXTRACTOR)
+        result = extractor("ML Engineer at DeepMind — London or Remote")
+        assert result["salary_mentioned"] is False
+        assert result["salary_text"] is None
 
 
 # ============================================================================
@@ -141,9 +130,9 @@ class TestTransformFunctions:
     """Transform functions behave correctly."""
 
     def setup_method(self):
-        self.spam_detector     = demo_ai_agent(SPAM_DETECTOR)
-        self.relevance_checker = demo_ai_agent(JOB_RELEVANCE_PROMPT)
-        self.salary_extractor  = demo_ai_agent(SALARY_EXTRACTOR_PROMPT)
+        self.spam_detector = demo_ai_agent(SPAM_DETECTOR)
+        self.relevance_checker = demo_ai_agent(JOB_DETECTOR)
+        self.salary_extractor = demo_ai_agent(SALARY_EXTRACTOR)
 
     def _filter_spam(self, text):
         result = self.spam_detector(text)
@@ -160,7 +149,7 @@ class TestTransformFunctions:
 
     def _route_by_match(self, posting):
         if posting["match"] in ("STRONG", "PARTIAL"):
-            return [posting, None   ]
+            return [posting, None]
         else:
             return [None,    posting]
 
@@ -182,21 +171,25 @@ class TestTransformFunctions:
         assert result["text"] == text
 
     def test_routing_returns_list_of_two(self):
-        posting = {"text": "test", "match": "STRONG", "confidence": 0.9, "reason": ""}
+        posting = {"text": "test", "match": "STRONG",
+                   "confidence": 0.9, "reason": ""}
         assert len(self._route_by_match(posting)) == 2
 
     def test_strong_match_routes_to_index_0(self):
-        posting = {"text": "test", "match": "STRONG", "confidence": 0.9, "reason": ""}
+        posting = {"text": "test", "match": "STRONG",
+                   "confidence": 0.9, "reason": ""}
         result = self._route_by_match(posting)
         assert result[0] is not None and result[1] is None
 
     def test_partial_match_routes_to_index_0(self):
-        posting = {"text": "test", "match": "PARTIAL", "confidence": 0.6, "reason": ""}
+        posting = {"text": "test", "match": "PARTIAL",
+                   "confidence": 0.6, "reason": ""}
         result = self._route_by_match(posting)
         assert result[0] is not None and result[1] is None
 
     def test_none_match_routes_to_index_1(self):
-        posting = {"text": "test", "match": "NONE", "confidence": 0.1, "reason": ""}
+        posting = {"text": "test", "match": "NONE",
+                   "confidence": 0.1, "reason": ""}
         result = self._route_by_match(posting)
         assert result[0] is None and result[1] is not None
 
@@ -208,16 +201,16 @@ class TestTransformFunctions:
 def _make_app_pipeline(tmp_path):
     """Shared factory for the main app.py pipeline."""
     python_src = DemoJobSource(feed_name="python_jobs")
-    ml_src     = DemoJobSource(feed_name="ml_jobs")
+    ml_src = DemoJobSource(feed_name="ml_jobs")
 
-    spam_detector     = demo_ai_agent(SPAM_DETECTOR)
-    relevance_checker = demo_ai_agent(JOB_RELEVANCE_PROMPT)
+    spam_detector = demo_ai_agent(SPAM_DETECTOR)
+    relevance_checker = demo_ai_agent(JOB_DETECTOR)
 
     pos_path = str(tmp_path / "matches.jsonl")
     recorder = JSONLRecorder(path=pos_path, mode="w", flush_every=1)
 
-    display_results  = []
-    discard_results  = []
+    display_results = []
+    discard_results = []
 
     def filter_spam(text):
         result = spam_detector(text)
@@ -231,21 +224,21 @@ def _make_app_pipeline(tmp_path):
 
     def route_by_match(posting):
         if posting["match"] in ("STRONG", "PARTIAL"):
-            return [posting, None   ]
+            return [posting, None]
         else:
             return [None,    posting]
 
     def discard(msg):
         discard_results.append(msg)
 
-    python_source = Source(fn=python_src.run,    name="python_jobs")
-    ml_source     = Source(fn=ml_src.run,        name="ml_jobs")
-    spam_gate     = Transform(fn=filter_spam,     name="spam_filter")
-    relevance     = Transform(fn=check_relevance, name="relevance")
-    splitter      = Split(fn=route_by_match,      num_outputs=2, name="router")
-    archive       = Sink(fn=recorder.run,         name="archive")
-    display       = Sink(fn=display_results.append, name="display")
-    discard_sink  = Sink(fn=discard,              name="discard")
+    python_source = Source(fn=python_src.run,      name="python_jobs")
+    ml_source = Source(fn=ml_src.run,          name="ml_jobs")
+    spam_gate = Transform(fn=filter_spam,       name="spam_filter")
+    relevance = Transform(fn=check_relevance,   name="relevance")
+    splitter = Split(fn=route_by_match,        num_outputs=2, name="router")
+    archive = Sink(fn=recorder.run,           name="archive")
+    display = Sink(fn=display_results.append, name="display")
+    discard_sink = Sink(fn=discard,                name="discard")
 
     g = network([
         (python_source,  spam_gate),
@@ -254,7 +247,7 @@ def _make_app_pipeline(tmp_path):
         (relevance,      splitter),
         (splitter.out_0, archive),
         (splitter.out_0, display),
-        (splitter.out_1, discard_sink)
+        (splitter.out_1, discard_sink),
     ])
     return g, display_results, discard_results, pos_path
 
@@ -276,7 +269,8 @@ class TestAppNetwork:
         with open(pos_path) as f:
             archived_count = sum(1 for l in f if l.strip())
         total_processed = archived_count + len(discard)
-        total_feed = len(DEMO_JOB_FEEDS["python_jobs"]) + len(DEMO_JOB_FEEDS["ml_jobs"])
+        total_feed = len(
+            DEMO_JOB_FEEDS["python_jobs"]) + len(DEMO_JOB_FEEDS["ml_jobs"])
         assert total_processed < total_feed, \
             "Spam filter should reduce total count"
 
@@ -314,7 +308,7 @@ class TestAppNetwork:
         g.run_network()
         with open(pos_path) as f:
             archived = [json.loads(l) for l in f if l.strip()]
-        match_texts   = {r["text"] for r in archived}
+        match_texts = {r["text"] for r in archived}
         discard_texts = {r["text"] for r in discard}
         overlap = match_texts & discard_texts
         assert len(overlap) == 0, \
@@ -326,11 +320,11 @@ class TestAppExtendedNetwork:
 
     def _make_extended_pipeline(self, tmp_path):
         python_src = DemoJobSource(feed_name="python_jobs")
-        ml_src     = DemoJobSource(feed_name="ml_jobs")
+        ml_src = DemoJobSource(feed_name="ml_jobs")
 
-        spam_detector    = demo_ai_agent(SPAM_DETECTOR)
-        relevance_checker = demo_ai_agent(JOB_RELEVANCE_PROMPT)
-        salary_extractor  = demo_ai_agent(SALARY_EXTRACTOR_PROMPT)
+        spam_detector = demo_ai_agent(SPAM_DETECTOR)
+        relevance_checker = demo_ai_agent(JOB_DETECTOR)
+        salary_extractor = demo_ai_agent(SALARY_EXTRACTOR)
 
         pos_path = str(tmp_path / "matches_ext.jsonl")
         recorder = JSONLRecorder(path=pos_path, mode="w", flush_every=1)
@@ -349,29 +343,30 @@ class TestAppExtendedNetwork:
         def extract_salary(posting):
             result = salary_extractor(posting["text"])
             posting["salary_mentioned"] = result.get("salary_mentioned", False)
-            posting["salary_text"]      = result.get("salary_text", None)
-            posting["min_salary"]       = result.get("min_salary", None)
-            posting["max_salary"]       = result.get("max_salary", None)
+            posting["salary_text"] = result.get("salary_text", None)
+            posting["min_salary"] = result.get("min_salary", None)
+            posting["max_salary"] = result.get("max_salary", None)
             return posting
 
         def route_by_match(posting):
             if posting["match"] in ("STRONG", "PARTIAL"):
-                return [posting, None   ]
+                return [posting, None]
             else:
                 return [None,    posting]
 
         def discard(msg):
             pass
 
-        python_source = Source(fn=python_src.run,    name="python_jobs")
-        ml_source     = Source(fn=ml_src.run,        name="ml_jobs")
-        spam_gate     = Transform(fn=filter_spam,     name="spam_filter")
-        relevance     = Transform(fn=check_relevance, name="relevance")
-        salary        = Transform(fn=extract_salary,  name="salary")
-        splitter      = Split(fn=route_by_match,      num_outputs=2, name="router")
-        archive       = Sink(fn=recorder.run,         name="archive")
-        display       = Sink(fn=display_results.append, name="display")
-        discard_sink  = Sink(fn=discard,              name="discard")
+        python_source = Source(fn=python_src.run,      name="python_jobs")
+        ml_source = Source(fn=ml_src.run,          name="ml_jobs")
+        spam_gate = Transform(fn=filter_spam,       name="spam_filter")
+        relevance = Transform(fn=check_relevance,   name="relevance")
+        salary = Transform(fn=extract_salary,    name="salary")
+        splitter = Split(fn=route_by_match,
+                         num_outputs=2, name="router")
+        archive = Sink(fn=recorder.run,           name="archive")
+        display = Sink(fn=display_results.append, name="display")
+        discard_sink = Sink(fn=discard,                name="discard")
 
         g = network([
             (python_source,  spam_gate),
@@ -381,7 +376,7 @@ class TestAppExtendedNetwork:
             (salary,         splitter),
             (splitter.out_0, archive),
             (splitter.out_0, display),
-            (splitter.out_1, discard_sink)
+            (splitter.out_1, discard_sink),
         ])
         return g, display_results, pos_path
 
