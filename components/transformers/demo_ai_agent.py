@@ -22,6 +22,7 @@ Swapping demo → real:
 """
 
 from components.transformers.prompts import (
+    TOPIC_CLASSIFIER,
     SENTIMENT_ANALYZER,
     SPAM_DETECTOR,
     URGENCY_DETECTOR,
@@ -35,6 +36,7 @@ from components.transformers.demo_spam import detect_spam
 from components.transformers.demo_urgency import detect_urgency
 from components.transformers.demo_jobs import check_job_relevance
 from components.transformers.demo_salary import extract_salary
+from components.transformers.demo_topic import classify_topic
 
 # Mapping from prompt constants to demo functions
 PROMPT_TO_FUNCTION = {
@@ -43,6 +45,7 @@ PROMPT_TO_FUNCTION = {
     URGENCY_DETECTOR:   detect_urgency,
     JOB_DETECTOR:       check_job_relevance,
     SALARY_EXTRACTOR:   extract_salary,
+    TOPIC_CLASSIFIER:   classify_topic,
 }
 
 
@@ -69,7 +72,8 @@ def demo_ai_agent(prompt: str):
         >>> analyzer = demo_ai_agent(SENTIMENT_ANALYZER)
         >>> result = analyzer("I love this!")
         >>> print(result)
-        {'sentiment': 'POSITIVE', 'score': 0.8, 'reasoning': 'Contains positive words'}
+        {'sentiment': 'POSITIVE', 'score': 0.8,
+            'reasoning': 'Contains positive words'}
     """
     if prompt in PROMPT_TO_FUNCTION:
         return PROMPT_TO_FUNCTION[prompt]
@@ -82,6 +86,7 @@ def demo_ai_agent(prompt: str):
             f"  - URGENCY_DETECTOR\n"
             f"  - JOB_DETECTOR\n"
             f"  - SALARY_EXTRACTOR\n"
+            f"  - TOPIC_CLASSIFIER\n"
             f"\nTo add more, create a demo function and add it to PROMPT_TO_FUNCTION."
         )
 
@@ -96,6 +101,7 @@ def list_available_demos():
     print("  ✓ URGENCY_DETECTOR   - Urgency detection")
     print("  ✓ JOB_DETECTOR       - Job relevance matching")
     print("  ✓ SALARY_EXTRACTOR   - Salary extraction")
+    print("  ✓ TOPIC_CLASSIFIER   - Topic classification")
     print("=" * 60)
     print("\nUsage:")
     print("  from components.transformers.prompts import SENTIMENT_ANALYZER")

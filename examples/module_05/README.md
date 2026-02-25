@@ -16,9 +16,7 @@ python_jobs ─┐
 ml_jobs     ─┘                                  → no_match → (dropped)
 ```
 
-This is the first Gallery module — a complete, real application built with
-the same four building blocks from Modules 01-04. No new node types.
-What's new is the application: a monitor you'd actually want to run.
+This is the first module that gets data from real data sources. The example is one of a persistent distributed system -- a system with multiple concurrent agents that acquire and process data forever. Other than that the structure of the programs and the modules remains exactly the same as in the previous modules.
 
 ---
 
