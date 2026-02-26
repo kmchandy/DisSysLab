@@ -11,16 +11,13 @@ Three layers:
 
 import pytest
 import numpy as np
-import sys
-import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 
-from components.sources.cartpole_source              import CartPoleSource
-from components.transformers.reward_analyzer         import RewardAnalyzer
-from components.transformers.policy_analyzer         import PolicyAnalyzer
+from components.sources.cartpole_source import CartPoleSource
+from components.transformers.reward_analyzer import RewardAnalyzer
+from components.transformers.policy_analyzer import PolicyAnalyzer
 from components.transformers.learning_curve_analyzer import LearningCurveAnalyzer
-from components.sinks.rl_dashboard                   import RLDashboard
+from components.sinks.rl_dashboard import RLDashboard
 
 
 # ── Shared fixtures ───────────────────────────────────────────────────────────
@@ -61,12 +58,12 @@ class TestCartPoleSource:
         cart = CartPoleSource(total_episodes=50, checkpoint_every=50, seed=0)
         checkpoints = list(cart.run())
         cp = checkpoints[0]
-        assert "episode"     in cp
-        assert "rewards"     in cp
-        assert "epsilon"     in cp
-        assert "q_table"     in cp
+        assert "episode" in cp
+        assert "rewards" in cp
+        assert "epsilon" in cp
+        assert "q_table" in cp
         assert "mean_reward" in cp
-        assert "max_reward"  in cp
+        assert "max_reward" in cp
 
     def test_rewards_list_length(self):
         cart = CartPoleSource(total_episodes=100, checkpoint_every=50, seed=0)
@@ -93,16 +90,17 @@ class TestCartPoleSource:
         checkpoints = list(cart.run())
         qt = checkpoints[0]["q_table"]
         assert "n_visited_states" in qt
-        assert "action_counts"    in qt
-        assert "q_value_mean"     in qt
-        assert "q_value_max"      in qt
+        assert "action_counts" in qt
+        assert "q_value_mean" in qt
+        assert "q_value_max" in qt
 
     def test_agent_learns_over_time(self):
         """Mean reward should increase from first to last checkpoint."""
-        cart = CartPoleSource(total_episodes=1000, checkpoint_every=50, seed=42)
+        cart = CartPoleSource(total_episodes=1000,
+                              checkpoint_every=50, seed=42)
         checkpoints = list(cart.run())
         first_mean = np.mean([cp["mean_reward"] for cp in checkpoints[:3]])
-        last_mean  = np.mean([cp["mean_reward"] for cp in checkpoints[-3:]])
+        last_mean = np.mean([cp["mean_reward"] for cp in checkpoints[-3:]])
         assert last_mean > first_mean, \
             f"Agent should improve: {first_mean:.1f} → {last_mean:.1f}"
 
@@ -114,46 +112,49 @@ class TestRewardAnalyzer:
         self.analyzer = RewardAnalyzer()
 
     def test_returns_required_keys(self):
-        cp     = make_checkpoint()
+        cp = make_checkpoint()
         result = self.analyzer.run(cp)
-        assert "episode"     in result
+        assert "episode" in result
         assert "mean_reward" in result
-        assert "max_reward"  in result
-        assert "min_reward"  in result
-        assert "std_reward"  in result
-        assert "trend"       in result
+        assert "max_reward" in result
+        assert "min_reward" in result
+        assert "std_reward" in result
+        assert "trend" in result
         assert "trend_delta" in result
 
     def test_first_checkpoint_trend_is_starting(self):
-        cp     = make_checkpoint(episode=50)
+        cp = make_checkpoint(episode=50)
         result = self.analyzer.run(cp)
         assert result["trend"] == "starting"
 
     def test_detects_improvement(self):
         self.analyzer.run(make_checkpoint(episode=50,  mean_reward=20.0))
-        result = self.analyzer.run(make_checkpoint(episode=100, mean_reward=40.0))
+        result = self.analyzer.run(
+            make_checkpoint(episode=100, mean_reward=40.0))
         assert result["trend"] == "improving"
 
     def test_detects_plateau(self):
         self.analyzer.run(make_checkpoint(episode=50,  mean_reward=50.0))
-        result = self.analyzer.run(make_checkpoint(episode=100, mean_reward=52.0))
+        result = self.analyzer.run(
+            make_checkpoint(episode=100, mean_reward=52.0))
         assert result["trend"] == "plateauing"
 
     def test_detects_decline(self):
         self.analyzer.run(make_checkpoint(episode=50,  mean_reward=80.0))
-        result = self.analyzer.run(make_checkpoint(episode=100, mean_reward=60.0))
+        result = self.analyzer.run(
+            make_checkpoint(episode=100, mean_reward=60.0))
         assert result["trend"] == "declining"
 
     def test_mean_reward_is_correct(self):
         rewards = [10.0, 20.0, 30.0]
-        cp      = make_checkpoint(rewards=rewards, mean_reward=20.0)
-        result  = self.analyzer.run(cp)
+        cp = make_checkpoint(rewards=rewards, mean_reward=20.0)
+        result = self.analyzer.run(cp)
         assert result["mean_reward"] == pytest.approx(20.0, abs=0.1)
 
     def test_max_reward_is_correct(self):
         rewards = [10.0, 20.0, 30.0]
-        cp      = make_checkpoint(rewards=rewards, mean_reward=20.0)
-        result  = self.analyzer.run(cp)
+        cp = make_checkpoint(rewards=rewards, mean_reward=20.0)
+        result = self.analyzer.run(cp)
         assert result["max_reward"] == pytest.approx(30.0, abs=0.1)
 
 
@@ -164,38 +165,38 @@ class TestPolicyAnalyzer:
         self.analyzer = PolicyAnalyzer()
 
     def test_returns_required_keys(self):
-        cp     = make_checkpoint()
+        cp = make_checkpoint()
         result = self.analyzer.run(cp)
-        assert "episode"          in result
-        assert "epsilon"          in result
-        assert "phase"            in result
+        assert "episode" in result
+        assert "epsilon" in result
+        assert "phase" in result
         assert "n_visited_states" in result
-        assert "action_dist"      in result
-        assert "dominant_action"  in result
+        assert "action_dist" in result
+        assert "dominant_action" in result
 
     def test_high_epsilon_is_exploring(self):
-        cp     = make_checkpoint(epsilon=0.8)
+        cp = make_checkpoint(epsilon=0.8)
         result = self.analyzer.run(cp)
         assert result["phase"] == "exploring"
 
     def test_mid_epsilon_is_transitioning(self):
-        cp     = make_checkpoint(epsilon=0.3)
+        cp = make_checkpoint(epsilon=0.3)
         result = self.analyzer.run(cp)
         assert result["phase"] == "transitioning"
 
     def test_low_epsilon_is_exploiting(self):
-        cp     = make_checkpoint(epsilon=0.01)
+        cp = make_checkpoint(epsilon=0.01)
         result = self.analyzer.run(cp)
         assert result["phase"] == "exploiting"
 
     def test_action_dist_sums_to_one(self):
-        cp     = make_checkpoint(action_counts=[60, 40], n_visited=100)
+        cp = make_checkpoint(action_counts=[60, 40], n_visited=100)
         result = self.analyzer.run(cp)
-        total  = sum(result["action_dist"].values())
+        total = sum(result["action_dist"].values())
         assert total == pytest.approx(1.0, abs=0.01)
 
     def test_dominant_action_is_most_frequent(self):
-        cp     = make_checkpoint(action_counts=[80, 20], n_visited=100)
+        cp = make_checkpoint(action_counts=[80, 20], n_visited=100)
         result = self.analyzer.run(cp)
         assert result["dominant_action"] == "push_left"
 
@@ -207,17 +208,17 @@ class TestLearningCurveAnalyzer:
         self.analyzer = LearningCurveAnalyzer()
 
     def test_returns_required_keys(self):
-        cp     = make_checkpoint()
+        cp = make_checkpoint()
         result = self.analyzer.run(cp)
-        assert "episode"       in result
+        assert "episode" in result
         assert "n_checkpoints" in result
-        assert "slope"         in result
-        assert "r_squared"     in result
-        assert "verdict"       in result
+        assert "slope" in result
+        assert "r_squared" in result
+        assert "verdict" in result
         assert "projected_200" in result
 
     def test_first_checkpoint_is_gathering_data(self):
-        cp     = make_checkpoint(episode=50)
+        cp = make_checkpoint(episode=50)
         result = self.analyzer.run(cp)
         assert result["verdict"] == "gathering data"
 
@@ -259,11 +260,11 @@ class TestAnalyzersOnRealCheckpoints:
     """All three analyzers process real CartPole checkpoints correctly."""
 
     def setup_method(self):
-        cart         = CartPoleSource(total_episodes=200, checkpoint_every=50, seed=42)
+        cart = CartPoleSource(total_episodes=200, checkpoint_every=50, seed=42)
         self.checkpoints = list(cart.run())
-        self.reward_an   = RewardAnalyzer()
-        self.policy_an   = PolicyAnalyzer()
-        self.curve_an    = LearningCurveAnalyzer()
+        self.reward_an = RewardAnalyzer()
+        self.policy_an = PolicyAnalyzer()
+        self.curve_an = LearningCurveAnalyzer()
 
     def test_all_analyzers_return_dicts(self):
         cp = self.checkpoints[0]
@@ -302,11 +303,11 @@ class TestModule06Network:
 
         archive_path = str(tmp_path / "test_rl_log.jsonl")
 
-        cart      = CartPoleSource(total_episodes=100, checkpoint_every=50, seed=0)
+        cart = CartPoleSource(total_episodes=100, checkpoint_every=50, seed=0)
         reward_an = RewardAnalyzer()
         policy_an = PolicyAnalyzer()
-        curve_an  = LearningCurveAnalyzer()
-        recorder  = JSONLRecorder(path=archive_path, mode="w", flush_every=1)
+        curve_an = LearningCurveAnalyzer()
+        recorder = JSONLRecorder(path=archive_path, mode="w", flush_every=1)
 
         results = []
 
@@ -321,19 +322,19 @@ class TestModule06Network:
             })
 
         cartpole_source = Source(fn=cart.run,         name="cartpole")
-        reward_node     = Transform(fn=reward_an.run, name="reward")
-        policy_node     = Transform(fn=policy_an.run, name="policy")
-        curve_node      = Transform(fn=curve_an.run,  name="curve")
-        merge           = MergeSynch(num_inputs=3,    name="merge")
-        sink            = Sink(fn=collect_and_archive, name="sink")
+        reward_node = Transform(fn=reward_an.run, name="reward")
+        policy_node = Transform(fn=policy_an.run, name="policy")
+        curve_node = Transform(fn=curve_an.run,  name="curve")
+        merge = MergeSynch(num_inputs=3,    name="merge")
+        sink = Sink(fn=collect_and_archive, name="sink")
 
         g = network([
             (cartpole_source, reward_node),
             (cartpole_source, policy_node),
             (cartpole_source, curve_node),
-            (reward_node, merge, "in_0"),
-            (policy_node, merge, "in_1"),
-            (curve_node,  merge, "in_2"),
+            (reward_node, merge.in_0),
+            (policy_node, merge.in_1),
+            (curve_node,  merge.in_2),
             (merge, sink),
         ])
 
@@ -353,36 +354,36 @@ class TestModule06Network:
         with open(archive_path) as f:
             lines = [json.loads(l) for l in f if l.strip()]
         assert len(lines) == 2
-        assert "episode"     in lines[0]
+        assert "episode" in lines[0]
         assert "mean_reward" in lines[0]
-        assert "slope"       in lines[0]
+        assert "slope" in lines[0]
 
     def test_merge_synch_collects_all_three(self, tmp_path):
         """MergeSynch output is always a list of exactly 3 items."""
         from dsl import network
         from dsl.blocks import Source, Transform, Sink, MergeSynch
 
-        cart      = CartPoleSource(total_episodes=50, checkpoint_every=50, seed=0)
+        cart = CartPoleSource(total_episodes=50, checkpoint_every=50, seed=0)
         reward_an = RewardAnalyzer()
         policy_an = PolicyAnalyzer()
-        curve_an  = LearningCurveAnalyzer()
+        curve_an = LearningCurveAnalyzer()
 
         merged_outputs = []
 
         cartpole_source = Source(fn=cart.run,          name="cartpole")
-        reward_node     = Transform(fn=reward_an.run,  name="reward")
-        policy_node     = Transform(fn=policy_an.run,  name="policy")
-        curve_node      = Transform(fn=curve_an.run,   name="curve")
-        merge           = MergeSynch(num_inputs=3,     name="merge")
-        sink            = Sink(fn=merged_outputs.append, name="sink")
+        reward_node = Transform(fn=reward_an.run,  name="reward")
+        policy_node = Transform(fn=policy_an.run,  name="policy")
+        curve_node = Transform(fn=curve_an.run,   name="curve")
+        merge = MergeSynch(num_inputs=3,     name="merge")
+        sink = Sink(fn=merged_outputs.append, name="sink")
 
         g = network([
             (cartpole_source, reward_node),
             (cartpole_source, policy_node),
             (cartpole_source, curve_node),
-            (reward_node, merge, "in_0"),
-            (policy_node, merge, "in_1"),
-            (curve_node,  merge, "in_2"),
+            (reward_node, merge.in_0),
+            (policy_node, merge.in_1),
+            (curve_node,  merge.in_2),
             (merge, sink),
         ])
 

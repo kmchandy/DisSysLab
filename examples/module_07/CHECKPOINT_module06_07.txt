@@ -1,0 +1,133 @@
+=== MODULE 06 + 07 IMPLEMENTATION SESSION ===
+Date: 2026-02-26
+Duration: ~4 hours
+
+== MODULE 06: RL AGENT ANALYZER (COMPLETED) ==
+
+All 7 files implemented and tested:
+
+FILES:
+  components/sources/cartpole_source.py
+  components/transformers/reward_analyzer.py
+  components/transformers/policy_analyzer.py
+  components/transformers/learning_curve_analyzer.py
+  components/sinks/rl_dashboard.py
+  examples/module_06/app.py
+  examples/module_06/test_module_06.py
+  examples/module_06/README.md
+  examples/module_06/plot_results.py
+  examples/module_06/claude_generated_prompt.py
+
+KEY DECISIONS:
+- CartPole Q-learning with 20 bins, lr=0.2, epsilon_decay=0.993, seed=42
+- 1000 episodes, checkpoint every 50 = 20 checkpoints, ~2 min runtime
+- Agent improves from mean~23 to mean~115, hitting 500 (perfect) by ep 950
+- LearningCurveAnalyzer is stateful (class with run method) - accumulates history
+- RewardAnalyzer and PolicyAnalyzer are stateless
+- Checkpoint message format: {episode, rewards, epsilon, q_table, mean_reward, max_reward}
+- q_table summary (not full array): {n_visited_states, action_counts, q_value_mean, q_value_max}
+- MergeSynch port syntax: merge.in_0, merge.in_1, merge.in_2 (not "in_0" string)
+- pytest.ini needed pythonpath = . to fix ModuleNotFoundError for examples/ tests
+- plot_results.py produces 5-panel matplotlib figure saved as rl_training_analysis.png
+
+TESTS: 3-layer structure (component/integration/network), all passing
+README: 4-part structure (Run/Understand/Make It Yours/Real AI)
+
+== MODULE 07: PHOTO QUALITY SCORER (COMPLETED - AWAITING PLACEMENT) ==
+
+All 8 files implemented and tested locally:
+
+FILES:
+  examples/module_07/download_demo_images.py
+  components/sources/image_folder_source.py
+  components/transformers/sharpness_analyzer.py
+  components/transformers/exposure_analyzer.py
+  components/transformers/composition_analyzer.py
+  components/sinks/photo_dashboard.py
+  examples/module_07/app.py
+  examples/module_07/test_module_07.py
+
+KEY DECISIONS:
+- Same gather-scatter pattern as M06 - identical 9-line network wiring
+- Images from Lorem Picsum (picsum.photos) - CC0 licensed, stable URLs
+- 6 demo images: forest_path(25), mountain_snow(29), city_street(14),
+  foggy_trees(80), bright_bokeh(130), night_scene(120)
+- Expected verdicts: Post it(forest,mountain,city), Maybe(foggy,bokeh), Delete(night)
+- Quality weights: sharpness 40%, exposure 40%, composition 20%
+- Sharpness: Laplacian variance, thresholds SHARP=2000, SOFT=300
+- Exposure: mean brightness, IDEAL_LOW=0.35, IDEAL_HIGH=0.76, CLIP_THRESHOLD=0.08
+- Composition: rule-of-thirds power points, ZONE_FRACTION=0.125, GOOD_THRESHOLD=0.25
+- Image message format: {filename, filepath, pixels(H×W×3 float), gray(H×W float), width, height, index, total}
+- ImageFolderSource raises FileNotFoundError with helpful message if demo_images/ missing
+- Tests use @pytest.mark.skipif(not demo_images_available()) for real-image tests
+- Synthetic image tests (no disk access) for unit layer
+
+DOWNLOAD SCRIPT DESIGN:
+- Students edit IMAGES list to fetch photos that interest them (key customization point)
+- Re-running skips existing files
+- Shows expected verdicts after download
+
+STILL TODO FOR M07:
+  - README (not yet written)
+  - plot_results.py (not yet written)
+  - claude_generated_prompt.py (not yet written)
+
+== MODULE PROGRESSION OVERVIEW ==
+
+M01: Describe & Build (simple pipeline)
+M02: Multiple Sources/Destinations (fanin/fanout)  
+M03: Smart Routing/Split (conditional routing)
+M04: Build Your Own (Split node, BlueSky + sentiment)
+M05: Job Postings Monitor (gallery - real RSS + AI)
+M06: RL Agent Analyzer (gather-scatter, MergeSynch, numerical Python)
+M07: Photo Quality Scorer (same pattern, images, PIL/scipy)
+M08+: Human-in-the-loop RL (hobbyist labels photos, reward signal for RL)
+      - M07 feature vector [sharpness, exposure, composition] becomes M08 RL state
+      - Human feedback becomes reward signal
+      - "You just built a simplified version of how ChatGPT was trained"
+
+== FRAMEWORK FIXES APPLIED THIS SESSION ==
+
+1. pytest.ini: added pythonpath = . 
+   Fixes ModuleNotFoundError for pytest on examples/module_XX/test files
+
+2. test_module_06.py: removed sys.path.insert lines
+   All module tests should use pytest.ini rootdir, not manual path manipulation
+
+3. app.py (M06): MergeSynch port syntax
+   WRONG:   (reward_node, merge, "in_0")
+   CORRECT: (reward_node, merge.in_0)
+
+== SHIP TIMELINE ==
+
+Deadline: March 30
+Wk1-2: M2+M3 READMEs (in progress)
+Wk3-4: M4+M5 READMEs + tests
+Wk5: integration test
+Wk6: polish + ship
+
+== PENDING TASKS ==
+
+1. M07 README (same 4-part structure as M06)
+2. M07 plot_results.py (similar to M06 but for photo scores)
+3. M07 claude_generated_prompt.py
+4. Verify all M07 files work end-to-end after placement in DisSysLab repo
+5. M08 design (human-in-the-loop RL - future session)
+6. M01-M05 READMEs (Wk1-2 priority)
+
+== NOTES ON DESIGN PHILOSOPHY ==
+
+"Same pattern - different app" is the core pedagogical goal for M06→M07.
+Network wiring is identical. Students see the gather-scatter pattern
+is universal, not domain-specific.
+
+Hobbyist arc: M07 photo scorer → M08 human labels photos → M08 RL learns
+from feedback. This is RLHF (same concept as ChatGPT training) built from
+components students already understand.
+
+The download_demo_images.py script is deliberately the first customization
+point. Students edit it to fetch photos they care about before touching
+any analyzer code. This follows the "excitement first" pedagogy.
+
+Social media readiness checker (M07 option 4) is offered as homework
+in the README - same technical implementation, different framing.

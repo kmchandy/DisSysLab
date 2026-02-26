@@ -30,12 +30,12 @@ Run from the DisSysLab root directory:
 
 from dsl import network
 from dsl.blocks import Source, Transform, Sink, MergeSynch
-from components.sources.cartpole_source              import CartPoleSource
-from components.transformers.reward_analyzer         import RewardAnalyzer
-from components.transformers.policy_analyzer         import PolicyAnalyzer
+from components.sources.cartpole_source import CartPoleSource
+from components.transformers.reward_analyzer import RewardAnalyzer
+from components.transformers.policy_analyzer import PolicyAnalyzer
 from components.transformers.learning_curve_analyzer import LearningCurveAnalyzer
-from components.sinks.rl_dashboard                   import RLDashboard
-from components.sinks                                import JSONLRecorder
+from components.sinks.rl_dashboard import RLDashboard
+from components.sinks import JSONLRecorder
 
 
 # ── Source: Q-learning agent ──────────────────────────────────────────────────
@@ -56,11 +56,11 @@ cart = CartPoleSource(
 
 reward_an = RewardAnalyzer()
 policy_an = PolicyAnalyzer()
-curve_an  = LearningCurveAnalyzer()
+curve_an = LearningCurveAnalyzer()
 
 # ── Sinks ─────────────────────────────────────────────────────────────────────
 dashboard = RLDashboard()
-recorder  = JSONLRecorder(
+recorder = JSONLRecorder(
     path="rl_training_log.jsonl",
     mode="w",
     flush_every=1,
@@ -101,12 +101,12 @@ def archive_merged(merged: list) -> None:
 # ── Build the network ─────────────────────────────────────────────────────────
 
 cartpole_source = Source(fn=cart.run,         name="cartpole")
-reward_node     = Transform(fn=reward_an.run, name="reward_analyzer")
-policy_node     = Transform(fn=policy_an.run, name="policy_analyzer")
-curve_node      = Transform(fn=curve_an.run,  name="curve_analyzer")
-merge           = MergeSynch(num_inputs=3,    name="merge_synch")
-dashboard_sink  = Sink(fn=dashboard.run,      name="dashboard")
-archive_sink    = Sink(fn=archive_merged,     name="archive")
+reward_node = Transform(fn=reward_an.run, name="reward_analyzer")
+policy_node = Transform(fn=policy_an.run, name="policy_analyzer")
+curve_node = Transform(fn=curve_an.run,  name="curve_analyzer")
+merge = MergeSynch(num_inputs=3,    name="merge_synch")
+dashboard_sink = Sink(fn=dashboard.run,      name="dashboard")
+archive_sink = Sink(fn=archive_merged,     name="archive")
 
 g = network([
     # Scatter: one source fans out to three analyzers
@@ -115,9 +115,9 @@ g = network([
     (cartpole_source, curve_node),
 
     # Gather: three analyzers merge synchronously
-    (reward_node, merge, "in_0"),
-    (policy_node, merge, "in_1"),
-    (curve_node,  merge, "in_2"),
+    (reward_node, merge.in_0),
+    (policy_node, merge.in_1),
+    (curve_node,  merge.in_2),
 
     # Output: dashboard + archive both receive the merged result
     (merge, dashboard_sink),
@@ -139,5 +139,6 @@ if __name__ == "__main__":
     print("To plot the learning curve:")
     print("  import json, matplotlib.pyplot as plt")
     print("  data = [json.loads(l) for l in open('rl_training_log.jsonl')]")
-    print("  plt.plot([d['episode'] for d in data], [d['mean_reward'] for d in data])")
+    print(
+        "  plt.plot([d['episode'] for d in data], [d['mean_reward'] for d in data])")
     print("  plt.xlabel('Episode'); plt.ylabel('Mean Reward'); plt.show()")
