@@ -13,8 +13,8 @@ from __future__ import annotations
 from typing import Optional, List, Dict, Tuple, Any, Union
 from queue import SimpleQueue
 from collections import deque
-
-from dsl.core import Agent, ExceptionThread
+import multiprocessing
+from dsl.core import Agent, ExceptionThread, ExceptionProcess
 
 
 # ============================================================================
@@ -103,6 +103,11 @@ class Network:
         self.queues: List[SimpleQueue] = []
         self.threads: List[ExceptionThread] = []
         self.unresolved_connections: List[Tuple[str, str, str, str]] = []
+
+        # Process compilation state (populated by compile_for_processes())
+        self.compiled_for_processes: bool = False
+        self.mp_queues: List[multiprocessing.Queue] = []
+        self.processes: List[ExceptionProcess] = []
 
     # ========== Validation ==========
 
@@ -803,6 +808,110 @@ class Network:
                 self.shutdown()
             except Exception:
                 pass  # Don't mask run errors with shutdown errors
+
+    # ========== Process-based Execution ==========
+
+    def _wire_mp_queues(self) -> None:
+        """Wire multiprocessing.Queue objects between agents."""
+        for agent in self.agents.values():
+            for port in agent.inports:
+                q = multiprocessing.Queue()
+                agent.in_q[port] = q
+                self.mp_queues.append(q)
+
+        for (fb, fp, tb, tp) in self.graph_connections:
+            sender = self.agents[fb]
+            receiver = self.agents[tb]
+            sender.out_q[fp] = receiver.in_q[tp]
+
+    def _create_processes(self) -> None:
+        """Create one ExceptionProcess per agent."""
+        for full_name, agent in self.agents.items():
+            p = ExceptionProcess(
+                target=agent.run,
+                name=f"{full_name}_process",
+                daemon=False
+            )
+            self.processes.append(p)
+
+    def compile_for_processes(self) -> None:
+        """
+        Compile network for process-based execution.
+
+        Calls compile() to reuse graph-structure work, then overlays
+        multiprocessing.Queue objects and ExceptionProcess instances.
+        """
+        if self.compiled_for_processes:
+            return
+        if not self.compiled:
+            self.compile()
+        self._wire_mp_queues()
+        self._create_processes()
+        self.compiled_for_processes = True
+
+    def process_network(self, timeout: Optional[float] = 30.0) -> None:
+        """
+        Compile (if needed) and run the network using OS processes.
+
+        Drop-in alternative to run_network():
+
+            g.run_network()      # threads (default)
+            g.process_network()  # processes (true CPU parallelism)
+        """
+        if not self.compiled_for_processes:
+            self.compile_for_processes()
+
+        try:
+            self.startup()
+            self._run_processes(timeout=timeout)
+        finally:
+            try:
+                self.shutdown()
+            except Exception:
+                pass
+
+    def _run_processes(self, timeout: Optional[float] = 30.0) -> None:
+        """Start all agent processes and wait for completion."""
+        import time
+        start_time = time.time()
+
+        for p in self.processes:
+            p.start()
+
+        failed = []
+        hung = []
+
+        for p in self.processes:
+            if timeout is not None:
+                elapsed = time.time() - start_time
+                remaining = max(0.1, timeout - elapsed)
+                p.join(timeout=remaining)
+                if p.is_alive():
+                    hung.append(p)
+                    p.terminate()
+            else:
+                p.join()
+
+            if p.exception:
+                failed.append(p)
+
+        if hung:
+            raise TimeoutError(
+                f"Network timed out after {timeout}s. "
+                f"Agents still running: {[p.name for p in hung]}"
+            )
+
+        if failed:
+            print("\n" + "="*70)
+            print("AGENT FAILURES DETECTED (processes):")
+            print("="*70)
+            for p in failed:
+                print(f"\nProcess: {p.name}")
+                print(p.traceback_str)
+            print("="*70)
+            raise RuntimeError(
+                f"{len(failed)} agent(s) failed. See traceback above."
+            )
 
     # ========== Debug Output Formatting ==========
 
