@@ -1,3 +1,39 @@
+# DisSysLab requirements.txt
+#
+# Install everything:
+#     pip install -r requirements.txt
+#
+# Modules that need each package:
+#
+#   anthropic        — M01-M05, M09-M10  (real Claude AI via ai_agent)
+#   python-dotenv    — all modules       (load ANTHROPIC_API_KEY from .env)
+#   feedparser       — M01-M05           (rss_source, demo_rss_source)
+#   requests         — M05               (job board RSS fetching)
+#   websocket-client — M09-M10           (BlueSky Jetstream live stream)
+#   Pillow           — M07-M08           (image loading in ImageFolderSource)
+#   numpy            — M07-M08           (image analysis: sharpness, exposure)
+#   scipy            — M07-M08           (Laplacian variance for sharpness)
+#   pytest           — all modules       (test suite)
+#   pytest-cov       — all modules       (coverage reports)
+#   pytest-timeout   — all modules       (prevent hung tests)
+
+# ── Core AI ───────────────────────────────────────────────────────────────────
+anthropic>=0.39.0
+
+# ── Environment / credentials ─────────────────────────────────────────────────
+python-dotenv>=1.0.0
+
+# ── Data sources ──────────────────────────────────────────────────────────────
+feedparser>=6.0.11
+requests>=2.31.0
+websocket-client>=1.6.0
+
+# ── Image processing (M07, M08) ───────────────────────────────────────────────
+Pillow>=10.0.0
+numpy>=1.24.0
+scipy>=1.11.0
+
+# ── Testing ───────────────────────────────────────────────────────────────────
 pytest>=7.0.0
 pytest-cov>=4.0.0
-pytest-timeout>=2.1.0anthropic>=0.39.0
+pytest-timeout>=2.1.0
