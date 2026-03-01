@@ -1,0 +1,25 @@
+# railway.toml
+#
+# Place this file in the DisSysLab ROOT directory (not inside module_10/).
+#
+# Claude generated this file from the prompt:
+#   "Create a railway.toml for a Python app in a monorepo. The Dockerfile
+#    is at examples/module_09/Dockerfile. Run it as a cron job every
+#    10 minutes. The start command is: python3 -m examples.module_10.app"
+#
+# Railway reads this file automatically when you connect your repo.
+# The README explains what each line does.
+
+[build]
+# Tell Railway where to find the Dockerfile.
+# Without this, Railway looks in the repo root and won't find it.
+dockerfilePath = "examples/module_09/Dockerfile"
+
+[deploy]
+# The command Railway runs when the cron fires.
+startCommand = "python3 -m examples.module_10.app"
+
+# Run every 10 minutes.
+# Format: minute hour day-of-month month day-of-week
+# */10 = "every 10 minutes"
+cronSchedule = "*/10 * * * *"
