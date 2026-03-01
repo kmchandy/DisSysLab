@@ -1,6 +1,4 @@
-<!--- examples/module_09/app.py -->
-
-# Module 09: Docker Container
+# Module 09: Container Edition
 
 *The same app. A new envelope. Runs anywhere.*
 
@@ -244,6 +242,29 @@ The `timeout=120` in `app.py` should prevent this, but if it happens,
 press `Ctrl+C`. Then check that `MAX_POSTS = 20` is set in `app.py`.
 
 ---
+---
+
+## Running the Tests
+
+**Python logic tests** — no Docker required, runs in seconds:
+
+```bash
+pytest examples/module_09/test_module_09.py -v
+```
+
+**Docker tests** — requires Docker Desktop to be running.
+Make the script executable once, then run it:
+
+```bash
+chmod +x examples/module_09/test_docker.sh
+bash examples/module_09/test_docker.sh
+```
+
+The Docker tests build the image, run the container, check that sentiment
+labels appear in the output, and verify the container exits cleanly. They
+take about 60–90 seconds the first time (Docker downloads the base image).
+Subsequent runs are much faster because Docker caches the layers.
+
 
 ## Next Steps
 
