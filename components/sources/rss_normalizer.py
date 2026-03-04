@@ -154,6 +154,10 @@ class RSSNormalizer:
         if not title:
             title = text[:80]
 
+        # Hard guarantee: text must be non-empty after all fallbacks
+        if not text.strip():
+            return None
+
         # ── url ───────────────────────────────────────────────────────────
         url = entry.get("link", feed_url).strip()
 
@@ -207,97 +211,109 @@ class RSSNormalizer:
 
 # ── Convenience factory functions ─────────────────────────────────────────────
 
-def hacker_news(max_articles: int = 20) -> RSSNormalizer:
+def hacker_news(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
         urls=["https://hnrss.org/newest"],
         source_name="hacker_news",
         max_articles=max_articles,
+        poll_interval=poll_interval,
     )
 
 
-def mit_tech_review(max_articles: int = 10) -> RSSNormalizer:
+def mit_tech_review(max_articles: int = 10, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
         urls=["https://www.technologyreview.com/feed/"],
         source_name="mit_tech_review",
         max_articles=max_articles,
+        poll_interval=poll_interval,
     )
 
 
-def techcrunch(max_articles: int = 10) -> RSSNormalizer:
+def techcrunch(max_articles: int = 10, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
         urls=["https://techcrunch.com/feed/"],
         source_name="techcrunch",
         max_articles=max_articles,
+        poll_interval=poll_interval,
     )
 
 
-def venturebeat_ai(max_articles: int = 10) -> RSSNormalizer:
+def venturebeat_ai(max_articles: int = 10, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
         urls=["https://venturebeat.com/category/ai/feed/"],
         source_name="venturebeat_ai",
         max_articles=max_articles,
+        poll_interval=poll_interval,
     )
 
 
-def al_jazeera(max_articles: int = 20) -> RSSNormalizer:
+def al_jazeera(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
         urls=["https://www.aljazeera.com/xml/rss/all.xml"],
         source_name="al_jazeera",
         max_articles=max_articles,
+        poll_interval=poll_interval,
     )
 
 
-def npr_news(max_articles: int = 10) -> RSSNormalizer:
+def npr_news(max_articles: int = 10, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
         urls=["https://feeds.npr.org/1001/rss.xml"],
         source_name="npr_news",
         max_articles=max_articles,
+        poll_interval=poll_interval,
     )
 
 
-def bbc_world(max_articles: int = 20) -> RSSNormalizer:
+def bbc_world(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
         urls=["https://feeds.bbci.co.uk/news/world/rss.xml"],
         source_name="bbc_world",
         max_articles=max_articles,
+        poll_interval=poll_interval,
     )
 
 
-def bbc_tech(max_articles: int = 20) -> RSSNormalizer:
+def bbc_tech(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
         urls=["https://feeds.bbci.co.uk/news/technology/rss.xml"],
         source_name="bbc_tech",
         max_articles=max_articles,
+        poll_interval=poll_interval,
     )
 
 
-def nasa_news(max_articles: int = 10) -> RSSNormalizer:
+def nasa_news(max_articles: int = 10, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
         urls=["https://www.nasa.gov/rss/dyn/breaking_news.rss"],
         source_name="nasa",
         max_articles=max_articles,
+        poll_interval=poll_interval,
     )
 
 
-def python_jobs(max_articles: int = 20) -> RSSNormalizer:
+def python_jobs(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
         urls=["https://www.python.org/jobs/feed/rss/"],
         source_name="python_jobs",
         max_articles=max_articles,
+        poll_interval=poll_interval,
     )
 
 
-def remoteok(max_articles: int = 20) -> RSSNormalizer:
+def remoteok(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
         urls=["https://remoteok.com/rss"],
         source_name="remoteok",
         max_articles=max_articles,
+        poll_interval=poll_interval,
     )
 
 
-def we_work_remotely(max_articles: int = 20) -> RSSNormalizer:
+def we_work_remotely(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
         urls=["https://weworkremotely.com/remote-jobs.rss"],
         source_name="we_work_remotely",
         max_articles=max_articles,
+        poll_interval=poll_interval,
     )

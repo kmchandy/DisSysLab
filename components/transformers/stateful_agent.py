@@ -1,4 +1,4 @@
-# components/transforms/stateful_agent.py
+# components/transformers/stateful_agent.py
 
 """
 StatefulAgent: Accumulates article dicts and emits a batch on a clock tick.
@@ -6,7 +6,7 @@ StatefulAgent: Accumulates article dicts and emits a batch on a clock tick.
 This is a fixed, non-tailorable component used in every gallery pipeline.
 It sits between the transform pipeline and the report writer:
 
-    transforms → StatefulAgent → ReportWriter → text sink
+    transformers → StatefulAgent → ReportWriter → text sink
 
 The StatefulAgent:
   - Receives article dicts from the pipeline (standard five-key format)
@@ -19,7 +19,7 @@ Clock ticks are sent by a ClockSource — a separate Source node wired
 into the StatefulAgent alongside the article stream.
 
 Usage:
-    from components.transforms.stateful_agent import StatefulAgent
+    from components.transformers.stateful_agent import StatefulAgent
     from components.sources.clock_source import ClockSource
     from dsl.blocks import Source, Transform, Sink
 

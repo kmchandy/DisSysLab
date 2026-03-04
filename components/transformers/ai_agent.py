@@ -3,17 +3,13 @@
 """
 Real AI Agent - Uses Claude API for analysis
 
-This module provides real AI transforms using Anthropic's Claude API.
-Compare with demo_ai_agent.py to see the difference between demo and real.
-
 Usage:
-    from components.transformers.prompts import SENTIMENT_ANALYZER
     from components.transformers.ai_agent import ai_agent
-    
-    analyzer = ai_agent(SENTIMENT_ANALYZER)
+
+    analyzer = ai_agent("Analyze the sentiment. Return JSON: {sentiment, score}")
     result = analyzer("I love this!")
-    # Returns: {"text": "I love this!", "sentiment": "POSITIVE", "score": 0.9, ...}
-    
+    # Returns raw string from Claude — parse with json.loads() if you need JSON
+
 Requirements:
     - ANTHROPIC_API_KEY environment variable
     - anthropic package: pip install anthropic
@@ -21,39 +17,44 @@ Requirements:
 """
 
 import os
-import json
 from anthropic import Anthropic
 
 
 def ai_agent(prompt: str):
     """
-    Creates a real AI transform function from a prompt.
+    Creates an AI transform function from a prompt string.
 
-    This calls Claude API for actual AI analysis using the provided prompt.
-    Returns the same JSON format as demo_ai_agent, but with real AI intelligence.
+    Calls the Claude API with the given system prompt and returns whatever
+    Claude returns as a plain string. The prompt controls the output format —
+    ask for JSON and Claude returns JSON; ask for plain text and Claude
+    returns plain text. The calling code decides what to do with the result.
 
     Args:
-        prompt: Prompt constant from prompts.py (e.g. SENTIMENT_ANALYZER)
+        prompt: System prompt describing the task and desired output format.
 
     Returns:
-        Callable that takes text and returns enriched JSON dict
+        Callable: fn(text: str) -> str
+            Takes input text, returns Claude's response as a string.
 
     Raises:
-        ValueError: If ANTHROPIC_API_KEY not found in environment
+        ValueError: If ANTHROPIC_API_KEY not found in environment.
 
-    Example:
-        >>> from components.transformers.prompts import SENTIMENT_ANALYZER
-        >>> from components.transformers.ai_agent import ai_agent
-        >>> 
-        >>> analyzer = ai_agent(SENTIMENT_ANALYZER)
-        >>> result = analyzer("I love this framework!")
-        >>> print(result)
-        {'text': 'I love this framework!', 
-         'sentiment': 'POSITIVE', 
-         'score': 0.92, 
-         'reasoning': 'Enthusiastic language with strong positive emotion'}
+    Example — JSON output:
+        >>> agent = ai_agent(
+        ...     "Analyze sentiment. Return JSON: {"sentiment": "POSITIVE"|"NEGATIVE"|"NEUTRAL", "score": -1.0 to 1.0}"
+        ... )
+        >>> import json
+        >>> result = json.loads(agent("I love this framework!"))
+        >>> result["sentiment"]
+        'POSITIVE'
+
+    Example — plain text output:
+        >>> reporter = ai_agent(
+        ...     "Summarize these articles as a short daily digest. Return plain text, not JSON."
+        ... )
+        >>> summary = reporter(json.dumps(batch))
+        >>> print(summary)
     """
-    # Check for API key
     api_key = os.environ.get("ANTHROPIC_API_KEY")
     if not api_key:
         raise ValueError(
@@ -67,130 +68,82 @@ def ai_agent(prompt: str):
             "For learning, use demo_ai_agent instead (no cost, no API key needed)."
         )
 
-    # Create Anthropic client (reused across calls)
     client = Anthropic(api_key=api_key)
-
-    # Track usage for cost awareness
     call_count = 0
     total_cost = 0.0
 
-    def analyze(text: str) -> dict:
+    def analyze(text: str) -> str:
         """
-        Analyzes text using Claude API.
+        Send text to Claude and return the response as a string.
 
         Args:
-            text: Text to analyze
+            text: Input text to analyze.
 
         Returns:
-            Dict with original text plus AI analysis fields
+            Claude's response as a plain string.
+            If the prompt asked for JSON, parse with json.loads().
+            If the prompt asked for plain text, use it directly.
         """
         nonlocal call_count, total_cost
 
-        # Guard: skip empty text rather than sending invalid request to API
         if not text or not text.strip():
-            return {"text": text, "error": "empty input", "skipped": True}
+            return ""
 
-        try:
-            # Call Claude API
-            message = client.messages.create(
-                model="claude-sonnet-4-20250514",
-                max_tokens=1024,
-                temperature=1.0,
-                system=prompt + "\n\nReturn ONLY valid JSON, no other text.",
-                messages=[
-                    {"role": "user", "content": text}
-                ]
-            )
+        message = client.messages.create(
+            model="claude-sonnet-4-5",
+            max_tokens=1024,
+            temperature=1.0,
+            system=prompt,
+            messages=[
+                {"role": "user", "content": text}
+            ]
+        )
 
-            # Track usage
-            call_count += 1
-            input_tokens = message.usage.input_tokens
-            output_tokens = message.usage.output_tokens
+        call_count += 1
+        input_tokens = message.usage.input_tokens
+        output_tokens = message.usage.output_tokens
+        total_cost += (input_tokens / 1_000_000 * 3.00) + \
+                      (output_tokens / 1_000_000 * 15.00)
 
-            # Estimate cost (Claude Sonnet 4 pricing)
-            cost = (input_tokens / 1_000_000 * 3.00) + \
-                (output_tokens / 1_000_000 * 15.00)
-            total_cost += cost
-
-            # Extract response text
-            response_text = message.content[0].text
-
-            # Handle markdown code blocks
-            if response_text.strip().startswith("```"):
-                lines = response_text.strip().split("\n")
-                json_lines = [
-                    l for l in lines if not l.strip().startswith("```")]
-                response_text = "\n".join(json_lines)
-
-            # Parse the JSON
-            try:
-                result = json.loads(response_text)
-            except json.JSONDecodeError as e:
-                print(f"\n[AI Error] Claude returned invalid JSON:")
-                print(f"Response: {response_text}")
-                print(f"Error: {e}\n")
-                raise
-
-            # Add original text to result (enrich the message)
-            result["text"] = text
-
-            return result
-
-        except json.JSONDecodeError:
-            raise
-
-        except Exception as e:
-            print(f"\n[AI Error] API call failed: {e}")
-            print(f"This might be due to:")
-            print(f"  - Invalid API key")
-            print(f"  - Network issues")
-            print(f"  - Rate limiting")
-            print(f"  - Insufficient credits\n")
-            raise
+        response_text = message.content[0].text.strip()
+        if response_text.startswith("```"):
+            import re
+            response_text = re.sub(r"^```[a-z]*\n?", "", response_text)
+            response_text = re.sub(r"\n?```$",        "", response_text)
+        response_text = response_text.strip()
+        # Take only the first line that starts with { — ignore any trailing
+        # explanation or extra JSON objects Claude appended
+        import re
+        match = re.search(r'\{[^}]+\}', response_text, re.DOTALL)
+        if match:
+            response_text = match.group(0)
+        if not response_text:
+            print(
+                f"[ai_agent] Warning: empty response from Claude for input: {text[:80]!r}")
+        return response_text
 
     return analyze
 
 
-def print_usage_info():
-    """Print information about API usage and costs."""
-    print("\n" + "=" * 70)
-    print("REAL AI USAGE INFORMATION")
-    print("=" * 70)
-    print("""
-Using real AI (Claude API) costs money:
-- Input:  ~$3.00 per million tokens (~750K words)
-- Output: ~$15.00 per million tokens (~750K words)
-
-Typical costs per message:
-- Short message (1 sentence):  $0.0005 - $0.001
-- Medium message (paragraph):  $0.001 - $0.002
-- Long message (page):         $0.002 - $0.005
-
-For learning and testing, use demo_ai_agent instead (FREE)!
-    """)
-    print("=" * 70 + "\n")
-
-
 if __name__ == "__main__":
-    print_usage_info()
-
     try:
-        from components.transformers.prompts import SENTIMENT_ANALYZER
-
-        print("Testing real AI agent...")
+        print("Testing ai_agent...")
         print("-" * 70)
 
-        analyzer = ai_agent(SENTIMENT_ANALYZER)
-        result = analyzer("This framework is amazing!")
+        agent = ai_agent("""
+            Analyze the sentiment of this text.
+            Return JSON: {"sentiment": "POSITIVE" | "NEGATIVE" | "NEUTRAL",
+                          "score": -1.0 to 1.0}
+        """)
 
-        print(f"Input: This framework is amazing!")
-        print(f"Output: {result}")
+        import json
+        result = json.loads(agent("This framework is amazing!"))
+        print(f"Input:     This framework is amazing!")
+        print(f"Sentiment: {result['sentiment']}  score: {result['score']}")
         print("-" * 70)
-        print("✓ Real AI is working!")
+        print("✓ ai_agent is working!")
 
     except ValueError as e:
         print(f"\n❌ Cannot test: {e}")
-    except ImportError:
-        print("\n❌ Cannot import prompts.py - make sure it exists")
     except Exception as e:
         print(f"\n❌ Test failed: {e}")
