@@ -1,4 +1,3 @@
-# gallery/CLAUDE_CONTEXT.md
 # DisSysLab Gallery — Context for Claude
 
 You are generating a complete, runnable DisSysLab gallery application.
@@ -11,7 +10,6 @@ The framework handles all threading, synchronization, and shutdown automatically
 ## The Standard Article Dict
 
 Every article flowing through a gallery pipeline has exactly these five keys:
-
 ```python
 {
     "source":    str,   # feed name, e.g. "hacker_news"
@@ -48,7 +46,6 @@ sink = Sink(fn=my_function, name="sink_name")
 ---
 
 ## Network Wiring
-
 ```python
 from dsl import network
 from dsl.blocks import Source, Transform, Sink
@@ -60,11 +57,8 @@ g = network([
 ])
 
 if __name__ == "__main__":
-    g.run_network(timeout=None)   # timeout=None is required for persistent apps
+    g.run_network()
 ```
-
-**Always use `timeout=None`** — the default timeout of 30 seconds will kill a
-persistent polling app before it does anything useful.
 
 **Fanin** — multiple sources merge into one node:
 ```python
@@ -90,7 +84,6 @@ g = network([
 
 `RSSNormalizer` fetches RSS feeds and produces standard article dicts directly.
 Use it instead of `RSSSource` — it handles normalisation automatically.
-
 ```python
 from components.sources.rss_normalizer import RSSNormalizer
 from dsl.blocks import Source
@@ -129,7 +122,7 @@ from components.sources.rss_normalizer import (
     python_jobs, remoteok, we_work_remotely,
 )
 
-feed   = hacker_news(max_articles=20, poll_interval=3600)
+feed   = hacker_news(max_articles=20)
 source = Source(fn=feed.run, name="hacker_news")
 ```
 
@@ -137,31 +130,25 @@ source = Source(fn=feed.run, name="hacker_news")
 
 ## AI Transforms: ai_agent
 
-`ai_agent` calls the Claude API and returns Claude's response as a plain string.
-The prompt controls the output format. The transform function decides what to do
-with the string — parse it as JSON or use it directly as text.
-
+`ai_agent` calls the Claude API to analyze text. It takes a prompt string and
+returns a callable. Call it with the article text and parse the response.
 ```python
 from components.transformers.ai_agent import ai_agent
 
 # Requires: export ANTHROPIC_API_KEY='your-key'
-agent = ai_agent("Your instruction here.")
-result = agent(some_text)   # returns a plain string
+agent = ai_agent("""Your prompt here. Return JSON only, no explanation: {"key": value}""")
 ```
 
 **The standard transform pattern — add one key per transform:**
-
 ```python
 import json
 
 sentiment_agent = ai_agent("""
-Analyze the sentiment of this article.
-Return JSON only, no explanation, no nested JSON: {"sentiment": "POSITIVE" | "NEGATIVE" | "NEUTRAL", "score": -1.0 to 1.0}
+    Analyze the sentiment of the article text.
+    Return JSON only, no explanation: {"sentiment": "POSITIVE" | "NEGATIVE" | "NEUTRAL", "score": -1.0 to 1.0}
 """)
 
 def analyze_sentiment(article):
-    if not article.get("text", "").strip():
-        return None
     result = json.loads(sentiment_agent(article["text"]))
     article["sentiment"] = result["sentiment"]
     article["score"]     = result["score"]
@@ -171,48 +158,42 @@ transform = Transform(fn=analyze_sentiment, name="sentiment")
 ```
 
 **Filter pattern — return None to drop the article:**
-
 ```python
 relevance_agent = ai_agent("""
-Does this article discuss climate change or extreme weather?
-Return JSON only, no explanation, no nested JSON: {"relevant": true or false}
+    Does this article mention Python programming?
+    Return JSON only, no explanation: {"relevant": true or false}
 """)
 
-def filter_relevant(article):
-    if not article.get("text", "").strip():
-        return None
-    raw = relevance_agent(article["text"])
-    if not raw.strip():
-        return None
-    result = json.loads(raw)
+def keep_python_articles(article):
+    result = json.loads(relevance_agent(article["text"]))
     if not result["relevant"]:
-        return None
+        return None        # drop — not about Python
     return article
 
-transform = Transform(fn=filter_relevant, name="climate_filter")
+transform = Transform(fn=keep_python_articles, name="python_filter")
 ```
 
-**Report writer pattern — plain text output, no JSON parsing needed:**
-
+**Report writer pattern — agent returns plain text, not JSON:**
 ```python
 reporter_agent = ai_agent("""
-You receive a JSON batch of articles grouped by source in by_source.
-Write a concise daily digest. Return plain text, not JSON.
+    You receive a JSON batch of articles grouped by source in by_source.
+    Write a concise daily digest. Plain text, not JSON.
 """)
 
 def write_report(batch):
-    return {"report": reporter_agent(json.dumps(batch, indent=2))}
+    import json
+    summary = reporter_agent(json.dumps(batch, indent=2))
+    return {"report": summary}
 
 report_node = Transform(fn=write_report, name="report_writer")
 ```
 
 **Prompt writing conventions:**
 
-- For JSON output: `"Return JSON only, no explanation, no nested JSON: {key: value, key: value}"`
-- For text output: `"Return plain text, not JSON."`
-- Name each key explicitly: `{"sentiment": ...}` not just `{"result": ...}`
-- Keep each transform to one concern — one new key per transform.
-- The filter pattern always checks for empty text before calling the agent.
+- Always end JSON prompts with: `Return JSON only, no explanation: {"key": value}`
+- For filters: `"only keep articles that ..."` or `"discard articles that ..."`
+- Keep each transform to one concern — one key added per transform.
+- For report writers: say `"Return plain text, not JSON"` to prevent JSON wrapping.
 
 ---
 
@@ -224,17 +205,19 @@ For periodic batch reports (e.g. daily summaries), use `StatefulAgent` and `Cloc
 emits one batch dict organised by source. Wire it using fanin alongside your article pipeline.
 
 `ClockSource` emits periodic tick messages. Use `ClockSource.daily()` for daily reports.
-
 ```python
 from components.transformers.stateful_agent import StatefulAgent
 from components.sources.clock_source import ClockSource
 from dsl.blocks import Source, Transform
 
-batcher      = StatefulAgent(max_articles=200, clear_on_tick=True)
-clock        = ClockSource.daily()   # also: .hourly(), .weekly(), or ClockSource(interval_seconds=N)
+batcher = StatefulAgent(
+    max_articles=200,    # keep at most 200 articles in memory
+    clear_on_tick=True,  # clear after each batch (articles since last tick only)
+)
+clock   = ClockSource.daily()   # also: .hourly(), .weekly(), or ClockSource(interval_seconds=N)
 
-batcher_node = Transform(fn=batcher.run, name="batcher")
-clock_source = Source(fn=clock.run,      name="clock")
+batcher_node = Transform(fn=batcher.run,  name="batcher")
+clock_source = Source(fn=clock.run,       name="clock")
 ```
 
 **Batch dict emitted on each tick:**
@@ -255,49 +238,44 @@ clock_source = Source(fn=clock.run,      name="clock")
 
 ## Streaming Display
 
+For real-time streaming output, use a simple print sink:
 ```python
 def display(article):
-    print(f"[{article['source']:>15}] {article['title']}")
-    print(f"         {article['url']}")
-    print()
+    print(f"[{article['source']:>18}] {article['title'][:70]}")
 
 display_sink = Sink(fn=display, name="display")
 ```
-
-Add icons, sentiment, impact or other enriched fields as needed.
 
 ---
 
 ## Complete Network Pattern
 
 Every gallery app follows this structure:
-
 ```
 RSSNormalizer(s) → Transform(s) → ┬→ display_sink          (streaming)
                                    └→ StatefulAgent          (batch)
                                         ↑
                                    ClockSource
-
+                                        
                    StatefulAgent → report_writer → report_sink
 ```
 
 In code:
-
 ```python
 g = network([
-    # Sources (fanin if multiple)
-    (source1,      first_transform),
-    (source2,      first_transform),
+    # Sources
+    (source1,       transform1),
+    (source2,       transform1),   # fanin if multiple sources
 
     # Pipeline
-    (first_transform,  second_transform),
-    (second_transform, third_transform),
+    (transform1,    transform2),
+    (transform2,    transform3),   # add as many transforms as needed
 
     # Fanout to streaming and batch
-    (third_transform, display_sink),
-    (third_transform, batcher_node),
+    (transform3,    display_sink),
+    (transform3,    batcher_node),
 
-    # Clock feeds batcher (fanin)
+    # Clock feeds into batcher (fanin)
     (clock_source,  batcher_node),
 
     # Batch reporting
@@ -311,19 +289,16 @@ g = network([
 ## Code Generation Rules
 
 1. Always include all imports at the top.
-2. Import `ai_agent` from `components.transformers.ai_agent` — not ClaudeAgent.
-3. Import `StatefulAgent` from `components.transformers.stateful_agent`.
-4. Import `ClockSource` from `components.sources.clock_source`.
-5. Always use `g.run_network(timeout=None)` — never bare `g.run_network()`.
-6. Always name every node with a descriptive `name=` parameter.
-7. Add a header comment with the app name and ASCII topology diagram.
-8. One `ai_agent` per transform concern — one new key per transform.
-9. Always use the convenience factory functions for sources (e.g. `hacker_news()`).
-10. Always include a streaming display sink AND a batch report sink.
-11. The batch report prompt must reference `by_source` and say `"Return plain text, not JSON."`.
-12. Every filter function must guard against empty text before calling the agent.
-13. Every JSON-returning transform must call `json.loads()` on the agent result.
-14. Print a startup message before calling `run_network()`.
+2. Always wrap `g.run_network()` in `if __name__ == "__main__":`.
+3. Always name every node with a descriptive `name=` parameter.
+4. Add a header comment with the app name and ASCII topology diagram.
+5. One `ai_agent` per transform concern — one new key per transform.
+6. Always use the convenience factory functions for sources (e.g. `hacker_news()`).
+7. Always include a streaming display sink AND a batch report sink.
+8. The batch report prompt should reference `by_source` explicitly.
+9. Print a startup message showing what the app does before calling `run_network()`.
+10. Always end JSON prompts with `Return JSON only, no explanation:` to prevent
+    Claude appending explanations that break `json.loads()`.
 
 ---
 
@@ -343,10 +318,9 @@ PROCESSING:
   - impact: rate the potential impact of this development (high, medium, low)
 
 REPORT:
-  - Stream each article showing source, title, sentiment icon, impact icon, and URL
+  - Stream each article to console showing source, title, sentiment, and impact
   - Daily digest: for each source, list articles grouped by impact level
 ```
-
 ```python
 # ============================================================
 # AI/ML Research Tracker
@@ -358,27 +332,23 @@ REPORT:
 #   techcrunch      ┼→ ai_filter → sentiment → impact → ┬→ display
 #   venturebeat_ai ─┘                                    └→ batcher → report
 #                                              clock ────┘
-#
-# Usage:
-#   export ANTHROPIC_API_KEY='your-key'
-#   python -m gallery.ai_ml_research.app
 # ============================================================
 
 import json
 from dsl import network
 from dsl.blocks import Source, Transform, Sink
 from components.sources.rss_normalizer import (
-    hacker_news, mit_tech_review, techcrunch, venturebeat_ai,
+    hacker_news, mit_tech_review, techcrunch, venturebeat_ai
 )
 from components.transformers.ai_agent import ai_agent
 from components.transformers.stateful_agent import StatefulAgent
 from components.sources.clock_source import ClockSource
 
 # ── Sources ──────────────────────────────────────────────────
-hn_feed  = hacker_news(max_articles=20,     poll_interval=3600)
-mit_feed = mit_tech_review(max_articles=10, poll_interval=3600)
-tc_feed  = techcrunch(max_articles=10,      poll_interval=3600)
-vb_feed  = venturebeat_ai(max_articles=10,  poll_interval=3600)
+hn_feed   = hacker_news(max_articles=20,     poll_interval=3600)
+mit_feed  = mit_tech_review(max_articles=10, poll_interval=3600)
+tc_feed   = techcrunch(max_articles=10,      poll_interval=3600)
+vb_feed   = venturebeat_ai(max_articles=10,  poll_interval=3600)
 
 hn_source  = Source(fn=hn_feed.run,  name="hacker_news")
 mit_source = Source(fn=mit_feed.run, name="mit_tech_review")
@@ -387,35 +357,32 @@ vb_source  = Source(fn=vb_feed.run,  name="venturebeat_ai")
 
 # ── AI Agents ─────────────────────────────────────────────────
 relevance_agent = ai_agent("""
-Does this article discuss artificial intelligence, machine learning, or LLMs?
-Return JSON only, no explanation, no nested JSON: {"relevant": true or false}
+    Does this article discuss artificial intelligence, machine learning, or LLMs?
+    Return JSON only, no explanation: {"relevant": true or false}
 """)
 
 sentiment_agent = ai_agent("""
-Is this AI/ML article positive, negative, or neutral about progress in the field?
-Return JSON only, no explanation, no nested JSON: {"sentiment": "POSITIVE" | "NEGATIVE" | "NEUTRAL", "score": -1.0 to 1.0}
+    Is this AI/ML article positive, negative, or neutral about progress in the field?
+    Return JSON only, no explanation: {"sentiment": "POSITIVE" | "NEGATIVE" | "NEUTRAL", "score": -1.0 to 1.0}
 """)
 
 impact_agent = ai_agent("""
-Rate the potential impact of this AI/ML development on the field.
-Return JSON only, no explanation, no nested JSON: {"impact": "HIGH" | "MEDIUM" | "LOW", "reason": "one sentence"}
+    Rate the potential impact of this AI/ML development on the field.
+    Return JSON only, no explanation: {"impact": "HIGH" | "MEDIUM" | "LOW", "reason": "one sentence"}
 """)
 
 reporter_agent = ai_agent("""
-You receive a JSON batch of AI/ML articles grouped by source in by_source.
-Write a concise daily digest. For each source, list articles grouped by
-impact level (HIGH first). Include title and sentiment for each.
-Return plain text, not JSON.
+    You receive a JSON batch of AI/ML articles grouped by source in by_source.
+    Write a concise daily digest. For each source, list articles grouped by
+    impact level (HIGH first). Include title and sentiment for each.
+    Return plain text, not JSON.
 """)
 
 # ── Transform Functions ───────────────────────────────────────
 def filter_ai_articles(article):
     if not article.get("text", "").strip():
         return None
-    raw = relevance_agent(article["text"])
-    if not raw.strip():
-        return None
-    result = json.loads(raw)
+    result = json.loads(relevance_agent(article["text"]))
     if not result["relevant"]:
         return None
     return article
@@ -437,9 +404,7 @@ def display(article):
     stars = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}
     icon  = icons.get(article["sentiment"], "?")
     star  = stars.get(article["impact"], "?")
-    print(f"{icon}{star} [{article['source']:>15}] {article['title']}")
-    print(f"         {article['url']}")
-    print()
+    print(f"{icon}{star} [{article['source']:>15}] {article['title'][:65]}")
 
 def write_report(batch):
     return {"report": reporter_agent(json.dumps(batch, indent=2))}
@@ -452,8 +417,8 @@ def print_report(msg):
     print("=" * 70 + "\n")
 
 # ── Batch Reporting ───────────────────────────────────────────
-batcher      = StatefulAgent(max_articles=200, clear_on_tick=True)
-clock        = ClockSource.daily()
+batcher     = StatefulAgent(max_articles=200, clear_on_tick=True)
+clock       = ClockSource.daily()
 
 # ── Build Nodes ───────────────────────────────────────────────
 ai_filter    = Transform(fn=filter_ai_articles, name="ai_filter")
@@ -467,16 +432,16 @@ report_sink  = Sink(fn=print_report,            name="report_sink")
 
 # ── Network ───────────────────────────────────────────────────
 g = network([
-    (hn_source,  ai_filter),
-    (mit_source, ai_filter),
-    (tc_source,  ai_filter),
-    (vb_source,  ai_filter),
+    (hn_source,   ai_filter),
+    (mit_source,  ai_filter),
+    (tc_source,   ai_filter),
+    (vb_source,   ai_filter),
 
-    (ai_filter, sentiment),
-    (sentiment, impact),
+    (ai_filter,   sentiment),
+    (sentiment,   impact),
 
-    (impact, display_sink),
-    (impact, batcher_node),
+    (impact,      display_sink),
+    (impact,      batcher_node),
 
     (clock_source, batcher_node),
     (batcher_node, report_node),
@@ -486,7 +451,8 @@ g = network([
 if __name__ == "__main__":
     print("\n🤖 AI/ML Research Tracker")
     print("   Sources: Hacker News, MIT Tech Review, TechCrunch, VentureBeat AI")
-    print("   Streaming to console. Daily digest at midnight. Ctrl+C to stop.\n")
+    print("   Streaming articles to console. Daily digest at midnight.")
+    print("   Press Ctrl+C to stop.\n")
     g.run_network(timeout=None)
 ```
 
@@ -507,10 +473,9 @@ PROCESSING:
   - stance: does the article present a pro, anti, or neutral stance on the topic?
 
 REPORT:
-  - Stream each article showing source, title, stance icon, and URL
+  - Stream each article showing source, title, and stance
   - Daily digest: summarize coverage by source, noting any differences in framing
 ```
-
 ```python
 # ============================================================
 # Topic Tracker: MAGA / Immigration Policy
@@ -521,10 +486,6 @@ REPORT:
 #   npr_news    ┼→ topic_filter → sentiment → stance → ┬→ display
 #   bbc_world  ─┘                                      └→ batcher → report
 #                                           clock ─────┘
-#
-# Usage:
-#   export ANTHROPIC_API_KEY='your-key'
-#   python -m gallery.topic_tracker.app
 # ============================================================
 
 import json
@@ -546,35 +507,32 @@ bbc_source = Source(fn=bbc_feed.run, name="bbc_world")
 
 # ── AI Agents ─────────────────────────────────────────────────
 relevance_agent = ai_agent("""
-Does this article mention MAGA, immigration policy, or the US border?
-Return JSON only, no explanation, no nested JSON: {"relevant": true or false}
+    Does this article mention MAGA, immigration policy, or the US border?
+    Return JSON only, no explanation: {"relevant": true or false}
 """)
 
 sentiment_agent = ai_agent("""
-What is the overall tone of this article?
-Return JSON only, no explanation, no nested JSON: {"sentiment": "POSITIVE" | "NEGATIVE" | "NEUTRAL", "score": -1.0 to 1.0}
+    What is the overall tone of this article?
+    Return JSON only, no explanation: {"sentiment": "POSITIVE" | "NEGATIVE" | "NEUTRAL", "score": -1.0 to 1.0}
 """)
 
 stance_agent = ai_agent("""
-Does this article present a pro, anti, or neutral stance on MAGA or immigration restriction?
-Return JSON only, no explanation, no nested JSON: {"stance": "PRO" | "ANTI" | "NEUTRAL", "confidence": 0.0 to 1.0}
+    Does this article present a pro, anti, or neutral stance on MAGA or immigration restriction?
+    Return JSON only, no explanation: {"stance": "PRO" | "ANTI" | "NEUTRAL", "confidence": 0.0 to 1.0}
 """)
 
 reporter_agent = ai_agent("""
-You receive a JSON batch of news articles grouped by source in by_source.
-Write a daily summary of how each source covered MAGA and immigration policy today.
-Note differences in framing or stance across sources.
-Return plain text, not JSON.
+    You receive a JSON batch of news articles grouped by source in by_source.
+    Write a daily summary of how each source covered MAGA and immigration policy today.
+    Note differences in framing or stance across sources.
+    Return plain text, not JSON.
 """)
 
 # ── Transform Functions ───────────────────────────────────────
 def filter_relevant(article):
     if not article.get("text", "").strip():
         return None
-    raw = relevance_agent(article["text"])
-    if not raw.strip():
-        return None
-    result = json.loads(raw)
+    result = json.loads(relevance_agent(article["text"]))
     if not result["relevant"]:
         return None
     return article
@@ -587,16 +545,14 @@ def analyze_sentiment(article):
 
 def analyze_stance(article):
     result = json.loads(stance_agent(article["text"]))
-    article["stance"]      = result["stance"]
-    article["confidence"]  = result["confidence"]
+    article["stance"]     = result["stance"]
+    article["confidence"] = result["confidence"]
     return article
 
 def display(article):
     icons = {"PRO": "🔵", "ANTI": "🔴", "NEUTRAL": "⚪"}
     icon  = icons.get(article["stance"], "?")
-    print(f"{icon} [{article['source']:>12}] [{article['stance']:>7}] {article['title']}")
-    print(f"         {article['url']}")
-    print()
+    print(f"{icon} [{article['source']:>12}] [{article['stance']:>7}] {article['title'][:60]}")
 
 def write_report(batch):
     return {"report": reporter_agent(json.dumps(batch, indent=2))}
@@ -609,8 +565,8 @@ def print_report(msg):
     print("=" * 70 + "\n")
 
 # ── Batch Reporting ───────────────────────────────────────────
-batcher      = StatefulAgent(max_articles=200, clear_on_tick=True)
-clock        = ClockSource.daily()
+batcher = StatefulAgent(max_articles=200, clear_on_tick=True)
+clock   = ClockSource.daily()
 
 # ── Build Nodes ───────────────────────────────────────────────
 topic_filter = Transform(fn=filter_relevant,   name="topic_filter")
@@ -642,7 +598,8 @@ g = network([
 if __name__ == "__main__":
     print("\n🗞️  Topic Tracker: MAGA / Immigration Policy")
     print("   Sources: Al Jazeera, NPR News, BBC World")
-    print("   Streaming to console. Daily digest at midnight. Ctrl+C to stop.\n")
+    print("   Streaming matching articles to console. Daily digest at midnight.")
+    print("   Press Ctrl+C to stop.\n")
     g.run_network(timeout=None)
 ```
 
@@ -654,7 +611,7 @@ if __name__ == "__main__":
 ```
 SOURCES:
   - NASA
-  - BBC Tech
+  - BBC Tech (covers environment)
   - NPR News
 
 PROCESSING:
@@ -663,10 +620,9 @@ PROCESSING:
   - region: which world region is primarily affected?
 
 REPORT:
-  - Stream articles showing source, urgency icon, region, title, and URL
+  - Stream articles showing source, urgency, and region
   - Daily digest: list high-urgency articles first, then by region
 ```
-
 ```python
 # ============================================================
 # Climate and Environment Monitor
@@ -677,10 +633,6 @@ REPORT:
 #   bbc_tech  ┼→ climate_filter → urgency → region → ┬→ display
 #   npr_news ─┘                                       └→ batcher → report
 #                                         clock ──────┘
-#
-# Usage:
-#   export ANTHROPIC_API_KEY='your-key'
-#   python -m gallery.climate_monitor.app
 # ============================================================
 
 import json
@@ -702,35 +654,33 @@ npr_source  = Source(fn=npr_feed.run,  name="npr_news")
 
 # ── AI Agents ─────────────────────────────────────────────────
 relevance_agent = ai_agent("""
-Does this article discuss climate change, the environment, or extreme weather?
-Return JSON only, no explanation, no nested JSON: {"relevant": true or false}
+    Does this article discuss climate change, the environment, or extreme weather?
+    Return JSON only, no explanation: {"relevant": true or false}
 """)
 
 urgency_agent = ai_agent("""
-How urgent is the environmental issue described in this article?
-Return JSON only, no explanation, no nested JSON: {"urgency": "HIGH" | "MEDIUM" | "LOW", "reason": "one sentence"}
+    How urgent is the environmental issue described in this article?
+    Return JSON only, no explanation: {"urgency": "HIGH" | "MEDIUM" | "LOW", "reason": "one sentence"}
 """)
 
 region_agent = ai_agent("""
-Which world region is primarily discussed in this article?
-Return JSON only, no explanation, no nested JSON: {"region": "North America" | "Europe" | "Asia" | "Africa" | "South America" | "Arctic/Antarctic" | "Global" | "Other"}
+    Which world region is primarily discussed in this article?
+    Return JSON only, no explanation: {"region": "North America" | "Europe" | "Asia" | "Africa" |
+                  "South America" | "Arctic/Antarctic" | "Global" | "Other"}
 """)
 
 reporter_agent = ai_agent("""
-You receive a JSON batch of climate articles grouped by source in by_source.
-Write a daily climate digest. List HIGH urgency articles first, then MEDIUM, then LOW.
-For each article include the region affected and a one-sentence summary.
-Return plain text, not JSON.
+    You receive a JSON batch of climate articles grouped by source in by_source.
+    Write a daily climate digest. List HIGH urgency articles first, then MEDIUM,
+    then LOW. For each article include the region affected and a one-sentence summary.
+    Return plain text, not JSON.
 """)
 
 # ── Transform Functions ───────────────────────────────────────
 def filter_climate(article):
     if not article.get("text", "").strip():
         return None
-    raw = relevance_agent(article["text"])
-    if not raw.strip():
-        return None
-    result = json.loads(raw)
+    result = json.loads(relevance_agent(article["text"]))
     if not result["relevant"]:
         return None
     return article
@@ -749,9 +699,7 @@ def identify_region(article):
 def display(article):
     icons = {"HIGH": "🔴", "MEDIUM": "🟡", "LOW": "🟢"}
     icon  = icons.get(article["urgency"], "?")
-    print(f"{icon} [{article['source']:>9}] [{article['region']:>14}] {article['title']}")
-    print(f"         {article['url']}")
-    print()
+    print(f"{icon} [{article['source']:>9}] [{article['region']:>14}] {article['title'][:55]}")
 
 def write_report(batch):
     return {"report": reporter_agent(json.dumps(batch, indent=2))}
@@ -764,18 +712,18 @@ def print_report(msg):
     print("=" * 70 + "\n")
 
 # ── Batch Reporting ───────────────────────────────────────────
-batcher      = StatefulAgent(max_articles=200, clear_on_tick=True)
-clock        = ClockSource.daily()
+batcher = StatefulAgent(max_articles=200, clear_on_tick=True)
+clock   = ClockSource.daily()
 
 # ── Build Nodes ───────────────────────────────────────────────
 climate_filter = Transform(fn=filter_climate,  name="climate_filter")
-urgency        = Transform(fn=rate_urgency,    name="urgency")
-region         = Transform(fn=identify_region, name="region")
-display_sink   = Sink(fn=display,              name="display")
-batcher_node   = Transform(fn=batcher.run,     name="batcher")
-clock_source   = Source(fn=clock.run,          name="clock")
-report_node    = Transform(fn=write_report,    name="report_writer")
-report_sink    = Sink(fn=print_report,         name="report_sink")
+urgency        = Transform(fn=rate_urgency,     name="urgency")
+region         = Transform(fn=identify_region,  name="region")
+display_sink   = Sink(fn=display,               name="display")
+batcher_node   = Transform(fn=batcher.run,      name="batcher")
+clock_source   = Source(fn=clock.run,           name="clock")
+report_node    = Transform(fn=write_report,     name="report_writer")
+report_sink    = Sink(fn=print_report,          name="report_sink")
 
 # ── Network ───────────────────────────────────────────────────
 g = network([
@@ -797,7 +745,8 @@ g = network([
 if __name__ == "__main__":
     print("\n🌍 Climate and Environment Monitor")
     print("   Sources: NASA, BBC Tech, NPR News")
-    print("   Streaming to console. Daily digest at midnight. Ctrl+C to stop.\n")
+    print("   Streaming climate articles to console. Daily digest at midnight.")
+    print("   Press Ctrl+C to stop.\n")
     g.run_network(timeout=None)
 ```
 
@@ -818,10 +767,9 @@ PROCESSING:
   - language: which programming language is primarily discussed, if any?
 
 REPORT:
-  - Stream articles showing source, category, language, title, and URL
+  - Stream articles showing source, category, and language
   - Daily digest: group by category, then by language
 ```
-
 ```python
 # ============================================================
 # Open Source / Developer News
@@ -832,10 +780,6 @@ REPORT:
 #   techcrunch   ┼→ dev_filter → category → language → ┬→ display
 #   bbc_tech    ─┘                                      └→ batcher → report
 #                                           clock ───────┘
-#
-# Usage:
-#   export ANTHROPIC_API_KEY='your-key'
-#   python -m gallery.dev_news.app
 # ============================================================
 
 import json
@@ -857,35 +801,33 @@ bbc_source = Source(fn=bbc_feed.run, name="bbc_tech")
 
 # ── AI Agents ─────────────────────────────────────────────────
 relevance_agent = ai_agent("""
-Does this article discuss open source software, developer tools, or programming?
-Return JSON only, no explanation, no nested JSON: {"relevant": true or false}
+    Does this article discuss open source software, developer tools, or programming?
+    Return JSON only, no explanation: {"relevant": true or false}
 """)
 
 category_agent = ai_agent("""
-What category best describes this developer article?
-Return JSON only, no explanation, no nested JSON: {"category": "RELEASE" | "TUTORIAL" | "OPINION" | "NEWS" | "OTHER"}
+    What category best describes this developer article?
+    Return JSON only, no explanation: {"category": "RELEASE" | "TUTORIAL" | "OPINION" | "NEWS" | "OTHER"}
 """)
 
 language_agent = ai_agent("""
-Which programming language is primarily discussed in this article, if any?
-Return JSON only, no explanation, no nested JSON: {"language": "Python" | "JavaScript" | "Rust" | "Go" | "Java" | "C/C++" | "TypeScript" | "Other" | "None"}
+    Which programming language is primarily discussed in this article, if any?
+    Return JSON only, no explanation: {"language": "Python" | "JavaScript" | "Rust" | "Go" | "Java" |
+                  "C/C++" | "TypeScript" | "Other" | "None"}
 """)
 
 reporter_agent = ai_agent("""
-You receive a JSON batch of developer news articles grouped by source in by_source.
-Write a daily developer digest. Group articles by category (RELEASE first, then
-TUTORIAL, OPINION, NEWS). Within each category note the programming language.
-Return plain text, not JSON.
+    You receive a JSON batch of developer news articles grouped by source in by_source.
+    Write a daily developer digest. Group articles by category (RELEASE first, then
+    TUTORIAL, OPINION, NEWS). Within each category note the programming language.
+    Return plain text, not JSON.
 """)
 
 # ── Transform Functions ───────────────────────────────────────
 def filter_dev_articles(article):
     if not article.get("text", "").strip():
         return None
-    raw = relevance_agent(article["text"])
-    if not raw.strip():
-        return None
-    result = json.loads(raw)
+    result = json.loads(relevance_agent(article["text"]))
     if not result["relevant"]:
         return None
     return article
@@ -903,9 +845,7 @@ def identify_language(article):
 def display(article):
     cat  = article.get("category", "?")[:7]
     lang = article.get("language", "?")[:10]
-    print(f"🛠️  [{article['source']:>12}] [{cat:>7}] [{lang:>10}] {article['title']}")
-    print(f"         {article['url']}")
-    print()
+    print(f"🛠️  [{article['source']:>12}] [{cat:>7}] [{lang:>10}] {article['title'][:50]}")
 
 def write_report(batch):
     return {"report": reporter_agent(json.dumps(batch, indent=2))}
@@ -918,8 +858,8 @@ def print_report(msg):
     print("=" * 70 + "\n")
 
 # ── Batch Reporting ───────────────────────────────────────────
-batcher      = StatefulAgent(max_articles=200, clear_on_tick=True)
-clock        = ClockSource.daily()
+batcher = StatefulAgent(max_articles=200, clear_on_tick=True)
+clock   = ClockSource.daily()
 
 # ── Build Nodes ───────────────────────────────────────────────
 dev_filter   = Transform(fn=filter_dev_articles, name="dev_filter")
@@ -951,7 +891,8 @@ g = network([
 if __name__ == "__main__":
     print("\n🛠️  Open Source / Developer News")
     print("   Sources: Hacker News, TechCrunch, BBC Tech")
-    print("   Streaming to console. Daily digest at midnight. Ctrl+C to stop.\n")
+    print("   Streaming developer articles to console. Daily digest at midnight.")
+    print("   Press Ctrl+C to stop.\n")
     g.run_network(timeout=None)
 ```
 
@@ -972,10 +913,9 @@ PROCESSING:
   - remote: is this role fully remote, hybrid, or on-site?
 
 REPORT:
-  - Stream each posting showing source, seniority, remote status, title, and URL
+  - Stream each posting showing source, seniority, and remote status
   - Daily digest: list new postings grouped by seniority level
 ```
-
 ```python
 # ============================================================
 # Job Postings Monitor
@@ -986,10 +926,6 @@ REPORT:
 #   remoteok          ┼→ job_filter → seniority → remote → ┬→ display
 #   we_work_remotely ─┘                                     └→ batcher → report
 #                                               clock ───────┘
-#
-# Usage:
-#   export ANTHROPIC_API_KEY='your-key'
-#   python -m gallery.job_postings.app
 # ============================================================
 
 import json
@@ -1011,35 +947,32 @@ wwr_source = Source(fn=wwr_feed.run, name="we_work_remotely")
 
 # ── AI Agents ─────────────────────────────────────────────────
 relevance_agent = ai_agent("""
-Is this a job posting for a software engineering or data science role?
-Return JSON only, no explanation, no nested JSON: {"relevant": true or false}
+    Is this a job posting for a software engineering or data science role?
+    Return JSON only, no explanation: {"relevant": true or false}
 """)
 
 seniority_agent = ai_agent("""
-What seniority level is this job posting targeting?
-Return JSON only, no explanation, no nested JSON: {"seniority": "JUNIOR" | "MID" | "SENIOR" | "LEAD" | "ANY"}
+    What seniority level is this job posting targeting?
+    Return JSON only, no explanation: {"seniority": "JUNIOR" | "MID" | "SENIOR" | "LEAD" | "ANY"}
 """)
 
 remote_agent = ai_agent("""
-What is the remote work arrangement for this job posting?
-Return JSON only, no explanation, no nested JSON: {"remote": "REMOTE" | "HYBRID" | "ON-SITE" | "UNKNOWN"}
+    What is the remote work arrangement for this job posting?
+    Return JSON only, no explanation: {"remote": "REMOTE" | "HYBRID" | "ON-SITE" | "UNKNOWN"}
 """)
 
 reporter_agent = ai_agent("""
-You receive a JSON batch of job postings grouped by source in by_source.
-Write a daily jobs digest. Group postings by seniority (JUNIOR first, then
-MID, SENIOR, LEAD). For each posting include the source board and remote status.
-Return plain text, not JSON.
+    You receive a JSON batch of job postings grouped by source in by_source.
+    Write a daily jobs digest. Group postings by seniority (JUNIOR first, then
+    MID, SENIOR, LEAD). For each posting include the source board and remote status.
+    Return plain text, not JSON.
 """)
 
 # ── Transform Functions ───────────────────────────────────────
 def filter_jobs(article):
     if not article.get("text", "").strip():
         return None
-    raw = relevance_agent(article["text"])
-    if not raw.strip():
-        return None
-    result = json.loads(raw)
+    result = json.loads(relevance_agent(article["text"]))
     if not result["relevant"]:
         return None
     return article
@@ -1055,12 +988,10 @@ def classify_remote(article):
     return article
 
 def display(article):
+    sen    = article.get("seniority", "?")[:6]
     icons  = {"REMOTE": "🌐", "HYBRID": "🏠", "ON-SITE": "🏢", "UNKNOWN": "❓"}
     icon   = icons.get(article.get("remote", ""), "❓")
-    sen    = article.get("seniority", "?")
-    print(f"{icon} [{article['source']:>16}] [{sen:>6}] {article['title']}")
-    print(f"         {article['url']}")
-    print()
+    print(f"{icon} [{article['source']:>16}] [{sen:>6}] {article['title'][:55]}")
 
 def write_report(batch):
     return {"report": reporter_agent(json.dumps(batch, indent=2))}
@@ -1073,8 +1004,8 @@ def print_report(msg):
     print("=" * 70 + "\n")
 
 # ── Batch Reporting ───────────────────────────────────────────
-batcher      = StatefulAgent(max_articles=200, clear_on_tick=True)
-clock        = ClockSource.daily()
+batcher = StatefulAgent(max_articles=200, clear_on_tick=True)
+clock   = ClockSource.daily()
 
 # ── Build Nodes ───────────────────────────────────────────────
 job_filter   = Transform(fn=filter_jobs,        name="job_filter")
@@ -1106,7 +1037,8 @@ g = network([
 if __name__ == "__main__":
     print("\n💼 Job Postings Monitor")
     print("   Sources: Python.org Jobs, RemoteOK, We Work Remotely")
-    print("   Streaming to console. Daily digest at midnight. Ctrl+C to stop.\n")
+    print("   Streaming new postings to console. Daily digest at midnight.")
+    print("   Press Ctrl+C to stop.\n")
     g.run_network(timeout=None)
 ```
 
@@ -1115,7 +1047,6 @@ if __name__ == "__main__":
 ## How to Build Your Own App
 
 Fill in this spec and paste it to Claude along with this entire document:
-
 ```
 SOURCES:
   - [list the feed names from the verified feeds table above]

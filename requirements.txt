@@ -27,6 +27,7 @@ python-dotenv>=1.0.0
 feedparser>=6.0.11
 requests>=2.31.0
 websocket-client>=1.6.0
+beautifulsoup4>=4.12.0
 
 # ── Image processing (M07, M08) ───────────────────────────────────────────────
 Pillow>=10.0.0
