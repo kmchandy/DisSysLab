@@ -21,10 +21,34 @@ Tell Claude (or any AI assistant):
 
 Claude generates a complete working application. You run it. It works.
 
-**That's Module 1.** The rest of the course teaches you what just happened and how to build your own.
+**That's Module 01.** The rest of the course teaches you what just happened and how to build your own.
+
+## Five Live Apps You Can Run Right Now
+
+No setup beyond an API key. Each monitors real data sources continuously
+and delivers a daily AI-generated digest.
+
+| App | What it does | Customize |
+|-----|-------------|-----------|
+| 🤖 [AI/ML Research Tracker](gallery/ai_ml_research/) | Tracks AI developments across 4 tech sources | — |
+| 📰 [Topic Tracker](gallery/topic_tracker/) | Monitors 3 international outlets for your topics | `TOPICS` list |
+| 💼 [Job Postings Monitor](gallery/job_postings/) | Finds jobs matching your profile across 3 boards | `JOB_CRITERIA` paragraph |
+| 🛠️ [Developer News Tracker](gallery/developer_news/) | Filters dev news by your interests across 3 sources | `DEV_INTERESTS` list |
+| 🌍 [Climate Monitor](gallery/climate_monitor/) | Tracks climate news across NASA, BBC, NPR | `CLIMATE_TOPICS` list |
+```bash
+export ANTHROPIC_API_KEY='your-key'
+python -m gallery.topic_tracker.app
+```
+
+Streams matching articles to the console. Prints a digest once a day.
+`Ctrl+C` to stop. To personalize, edit the config variables at the top
+of `app.py` — no other code needs to change.
+
+See the [Gallery README](gallery/README.md) for details on all five apps.
+
+---
 
 ## Quick Example: What DisSysLab Code Looks Like
-
 ```python
 from dsl import network
 from dsl.blocks import Source, Transform, Sink
@@ -56,40 +80,49 @@ Both paths use the same framework and the same modules. Students work through th
 
 ## Learning Path
 
-### Module 1: Describe and Build
+### Module 01: Describe and Build
 *Your first distributed system in 10 minutes*
 
 Tell Claude what you want. It generates a working app. You run it. Then walk through the generated code to understand the three building blocks (Source, Transform, Sink), how messages flow through a pipeline, and how filtering works (return `None` to drop a message). Every example includes a mock version (runs instantly, no API keys) and a real version (swap one line to use live data and AI).
 
-### Module 2: Multiple Sources, Multiple Destinations
-*Build a real monitoring system*
+### Module 02: Filtering
+*Selective message processing*
 
-Pull from multiple RSS feeds, social media streams, or APIs into one processor (fanin). Send results to multiple destinations — file, email, dashboard (fanout). Your app goes from "process one stream" to "aggregate and distribute" in a single module.
+Return `None` from any Transform to drop a message. Build conditional pipelines that pass only the data you care about — invalid entries, spam, low-priority items filtered out cleanly with no special syntax.
 
-### Module 3: Smart Routing
-*Send the right data to the right place*
+### Module 03: Fanout
+*Broadcast to multiple destinations*
 
-Route messages based on content: positive sentiment one way, negative another. Split streams by category. Combine patterns into diamond networks and complex DAGs. Mock classifiers use keywords; real classifiers use AI prompts.
+Send one message to many destinations simultaneously — file, email, dashboard, database. Build monitoring systems that alert through multiple channels at once.
 
-### Module 4: AI Integration
-*The Prompt → JSON → Python pattern*
+### Module 04: Fanin
+*Merge multiple sources*
 
-Swap mock components for real AI. Learn how a prompt defines behavior, JSON structures the output, and a Python function interprets the result. Build AI-powered transforms for sentiment analysis, content moderation, topic classification, entity extraction — or anything you can describe in a prompt.
+Pull from multiple RSS feeds, social media streams, or APIs into one processor. Your app goes from "process one stream" to "aggregate from many" in a single module.
 
-### Module 5: Build Your Own App
-*From idea to working system*
+### Module 05: Split
+*Route messages by content*
 
-The systematic design process: draw your network, identify components, test each function independently, assemble incrementally, debug with network taps. Build the application you actually want — not a textbook exercise.
+Route messages based on content: positive sentiment one way, negative another. Split streams by category. Send the right data to the right place.
 
-### Module 6+: Gallery
-*Inspiration for what's possible*
+### Module 06: Merge Synch
+*Synchronize multiple streams*
 
-Domain-specific examples: image processing pipelines, audio analysis, scientific computing, numeric processing with NumPy and pandas. Each is a complete working application you can run, study, and adapt.
+Combine messages from multiple sources in lockstep — useful when you need paired data from different feeds before processing.
+
+### Module 07: Complex Patterns
+*Fork, join, diamond, general DAG*
+
+Combine the building blocks into sophisticated topologies. Any acyclic graph is expressible. Match your network shape to your problem.
+
+### Module 08: AI Agents
+*Build transformers from plain-English prompts*
+
+Swap mock components for real AI. Learn how a prompt defines behavior, JSON structures the output, and a Python function interprets the result. Build AI-powered transforms for sentiment analysis, content moderation, topic classification, entity extraction — or anything you can describe in a prompt. The gallery apps are all built on this pattern.
 
 ## Core Concepts
 
 DisSysLab has three layers:
-
 ```
 Layer 1: Python functions         (you write these — or Claude does)
 Layer 2: Network nodes            (Source, Transform, Sink)
@@ -112,7 +145,6 @@ You work in Layers 1 and 2. DisSysLab handles Layer 3.
 **Filtering:** Return `None` from any transform to drop a message. Simple, powerful, no special syntax.
 
 ## Installation
-
 ```bash
 git clone https://github.com/kmchandy/DisSysLab.git
 cd DisSysLab
@@ -125,7 +157,7 @@ pip install -r requirements.txt
 
 Verify it works:
 ```bash
-python3 -m examples.module_01.example
+python3 -m examples.module_01_basics.example
 ```
 
 ## What You Can Build
@@ -173,7 +205,6 @@ We welcome contributions in connectors (new data sources and sinks), AI prompts,
 MIT License — see [LICENSE](LICENSE) for details.
 
 ## Citation
-
 ```bibtex
 @software{dissyslab2025,
   title = {DisSysLab: Build Persistent Distributed Systems with Simple Python},
