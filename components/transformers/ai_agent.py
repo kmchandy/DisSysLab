@@ -8,7 +8,7 @@ Usage:
 
     analyzer = ai_agent("Analyze the sentiment. Return JSON: {sentiment, score}")
     result = analyzer("I love this!")
-    # Returns raw string from Claude — parse with json.loads() if you need JSON
+    # Returns dict if Claude returns JSON, string otherwise
 
 Requirements:
     - ANTHROPIC_API_KEY environment variable
@@ -17,6 +17,8 @@ Requirements:
 """
 
 import os
+import json
+import re
 from anthropic import Anthropic
 
 
@@ -24,17 +26,18 @@ def ai_agent(prompt: str):
     """
     Creates an AI transform function from a prompt string.
 
-    Calls the Claude API with the given system prompt and returns whatever
-    Claude returns as a plain string. The prompt controls the output format —
-    ask for JSON and Claude returns JSON; ask for plain text and Claude
-    returns plain text. The calling code decides what to do with the result.
+    Calls the Claude API with the given system prompt. If Claude returns
+    valid JSON, returns a parsed dict. If Claude returns plain text,
+    returns a string. The prompt controls the output format.
 
     Args:
         prompt: System prompt describing the task and desired output format.
 
     Returns:
-        Callable: fn(text: str) -> str
-            Takes input text, returns Claude's response as a string.
+        Callable: fn(msg) -> dict | str
+            Accepts a string or dict as input.
+            Returns a dict if Claude's response is valid JSON,
+            otherwise returns a plain string.
 
     Raises:
         ValueError: If ANTHROPIC_API_KEY not found in environment.
@@ -43,8 +46,7 @@ def ai_agent(prompt: str):
         >>> agent = ai_agent(
         ...     "Analyze sentiment. Return JSON: {"sentiment": "POSITIVE"|"NEGATIVE"|"NEUTRAL", "score": -1.0 to 1.0}"
         ... )
-        >>> import json
-        >>> result = json.loads(agent("I love this framework!"))
+        >>> result = agent("I love this framework!")
         >>> result["sentiment"]
         'POSITIVE'
 
@@ -52,7 +54,7 @@ def ai_agent(prompt: str):
         >>> reporter = ai_agent(
         ...     "Summarize these articles as a short daily digest. Return plain text, not JSON."
         ... )
-        >>> summary = reporter(json.dumps(batch))
+        >>> summary = reporter(batch)   # batch can be a dict or string
         >>> print(summary)
     """
     api_key = os.environ.get("ANTHROPIC_API_KEY")
@@ -72,22 +74,24 @@ def ai_agent(prompt: str):
     call_count = 0
     total_cost = 0.0
 
-    def analyze(text: str) -> str:
+    def analyze(msg) -> dict | str:
         """
-        Send text to Claude and return the response as a string.
+        Send msg to Claude and return the response.
 
         Args:
-            text: Input text to analyze.
+            msg: Input to analyze. Accepts a string or a dict.
+                 Dicts are serialized to JSON before sending to Claude.
 
         Returns:
-            Claude's response as a plain string.
-            If the prompt asked for JSON, parse with json.loads().
-            If the prompt asked for plain text, use it directly.
+            dict if Claude's response is valid JSON, str otherwise.
         """
         nonlocal call_count, total_cost
 
+        # Accept dict or string — serialize dict to JSON string for Claude
+        text = json.dumps(msg) if isinstance(msg, dict) else str(msg)
+
         if not text or not text.strip():
-            return ""
+            return {}
 
         message = client.messages.create(
             model="claude-sonnet-4-5",
@@ -106,21 +110,23 @@ def ai_agent(prompt: str):
                       (output_tokens / 1_000_000 * 15.00)
 
         response_text = message.content[0].text.strip()
+
+        # Strip markdown code fences if present
         if response_text.startswith("```"):
-            import re
             response_text = re.sub(r"^```[a-z]*\n?", "", response_text)
             response_text = re.sub(r"\n?```$",        "", response_text)
-        response_text = response_text.strip()
-        # Take only the first line that starts with { — ignore any trailing
-        # explanation or extra JSON objects Claude appended
-        import re
-        match = re.search(r'\{[^}]+\}', response_text, re.DOTALL)
-        if match:
-            response_text = match.group(0)
+            response_text = response_text.strip()
+
         if not response_text:
             print(
                 f"[ai_agent] Warning: empty response from Claude for input: {text[:80]!r}")
-        return response_text
+            return {}
+
+        # Try to parse as JSON — return dict if successful, string otherwise
+        try:
+            return json.loads(response_text)
+        except json.JSONDecodeError:
+            return response_text
 
     return analyze
 
@@ -136,8 +142,7 @@ if __name__ == "__main__":
                           "score": -1.0 to 1.0}
         """)
 
-        import json
-        result = json.loads(agent("This framework is amazing!"))
+        result = agent("This framework is amazing!")
         print(f"Input:     This framework is amazing!")
         print(f"Sentiment: {result['sentiment']}  score: {result['score']}")
         print("-" * 70)

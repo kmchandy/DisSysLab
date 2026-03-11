@@ -7,6 +7,86 @@
 
 ---
 
+## Get Started in Three Steps
+
+### Step 1 — Run a live app (no coding required)
+
+The `gallery/` directory has six apps you can run immediately. Each monitors
+real data sources, analyzes content with AI, and streams results to your terminal.
+
+| App | What it tracks |
+|-----|---------------|
+| `gallery/ai_ml_research/` | AI and ML news across four tech sources |
+| `gallery/topic_tracker/` | Any news topic across three global sources |
+| `gallery/job_postings/` | Software and data science job postings |
+| `gallery/developer_news/` | Open source and developer tool news |
+| `gallery/climate_monitor/` | Climate and environment news |
+| `gallery/arxiv_tracker/` | New research papers on arXiv |
+
+**Try it now — no API key needed:**
+
+```bash
+python3 -m gallery.ai_ml_research.demo
+```
+
+**Run a live app (requires an Anthropic API key):**
+
+```bash
+export ANTHROPIC_API_KEY='your-key-here'
+python3 -m gallery.ai_ml_research.app
+```
+
+Each app has a README explaining what it does and how to customize it.
+See [gallery/README.md](gallery/README.md) for the full overview.
+
+---
+
+### Step 2 — Build your own app
+
+To build an app that doesn't exist in the gallery, paste
+`gallery/CLAUDE_CONTEXT.md` into Claude along with a spec:
+
+```
+SOURCES:
+  - Hacker News
+  - TechCrunch
+
+PROCESSING:
+  - only keep articles about cybersecurity
+  - severity: how serious is the threat described (critical, high, medium, low)?
+
+REPORT:
+  - Stream articles showing source, severity, and title
+  - Daily digest: list critical and high severity articles first
+
+Build me a DisSysLab app from this spec.
+```
+
+Claude will generate a complete working app following the same pattern as
+the gallery apps.
+
+---
+
+### Step 3 — Learn how it works
+
+The `examples/` directory contains eight modules that teach the framework
+from first principles, starting with a single source → transform → sink
+pipeline and building up to full AI-powered agentic applications.
+
+| Module | Concept |
+|--------|---------|
+| Module 01 | Source, Transform, Sink — the three building blocks |
+| Module 02 | Filtering — dropping messages with `return None` |
+| Module 03 | Fanout — one source, multiple destinations |
+| Module 04 | Fanin — multiple sources, one destination |
+| Module 05 | Split — routing messages by content |
+| Module 06 | Merge — synchronizing streams |
+| Module 07 | Topologies — fork, join, diamond, DAG |
+| Module 08 | AI Agents — prompts as transforms |
+
+To extend an existing example with Claude's help, paste `CLAUDE_CONTEXT.md`
+into Claude along with the code you want to modify.
+
 ## What Is DisSysLab?
 
 DisSysLab lets you build AI-powered distributed systems that run forever — monitoring news, analyzing social media, filtering content, sending alerts — using ordinary Python.

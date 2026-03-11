@@ -128,6 +128,53 @@ source = Source(fn=feed.run, name="hacker_news")
 
 ---
 
+
+## Sources: ArxivScraper (for sites without RSS)
+
+For sites that don't offer RSS feeds, use `ArxivScraper` or `WebScraper`
+from `components.sources.web_scraper`. These produce the same standard
+five-key article dict as `RSSNormalizer`, so the rest of the pipeline
+is identical.
+
+**ArxivScraper** is purpose-built for arxiv.org listing pages:
+
+```python
+from components.sources.web_scraper import arxiv_cs_ai, arxiv_cs_lg, arxiv_cs_cl
+from dsl.blocks import Source
+
+feed   = arxiv_cs_ai(max_articles=20, poll_interval=3600)
+source = Source(fn=feed.run, name="arxiv_cs_ai")
+```
+
+**Available arXiv factory functions:**
+
+| Function | Subject | URL |
+|----------|---------|-----|
+| `arxiv_cs_ai()` | Artificial Intelligence | arxiv.org/list/cs.AI/recent |
+| `arxiv_cs_lg()` | Machine Learning | arxiv.org/list/cs.LG/recent |
+| `arxiv_cs_cl()` | Computation and Language | arxiv.org/list/cs.CL/recent |
+| `arxiv_cs_cv()` | Computer Vision | arxiv.org/list/cs.CV/recent |
+| `arxiv_cs_ro()` | Robotics | arxiv.org/list/cs.RO/recent |
+
+The `text` field in each paper dict contains: title + authors + subjects.
+This gives AI agents enough context to filter and classify papers accurately.
+
+arXiv updates once daily around 8pm Eastern. Use `poll_interval=3600`
+(hourly) — duplicate papers are filtered automatically by URL.
+
+**Note on the `TOPICS` pattern:** arXiv feeds are broad. Always include a
+filter agent that checks relevance against a user-defined topics list before
+running more expensive classify/impact agents. See `gallery/arxiv_tracker/app.py`
+for the full pattern.
+
+**WebScraper** is a generic scraper for other static HTML sites. Use it when
+a site has no RSS feed and is not arXiv. See `components/sources/web_scraper.py`
+for usage and available factory functions.
+
+
+---
+
+
 ## AI Transforms: ai_agent
 
 `ai_agent` calls the Claude API to analyze text. It takes a prompt string and

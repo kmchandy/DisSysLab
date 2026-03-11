@@ -18,6 +18,7 @@ from dsl.blocks.fanout import Broadcast
 from dsl.blocks.fanin import MergeAsynch
 from dsl.blocks.merge_synch import MergeSynch
 from dsl.blocks.split import Split
+from dsl.blocks.role import Role
 
 __all__ = [
     "Source",
@@ -27,4 +28,5 @@ __all__ = [
     "MergeAsynch",
     "MergeSynch",
     "Split",
+    "Role",
 ]
