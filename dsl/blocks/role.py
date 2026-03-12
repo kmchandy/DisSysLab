@@ -143,10 +143,7 @@ class Role(Agent):
             )
 
         if not statuses:
-            raise ValueError(
-                "Role requires at least one status. "
-                "Example: statuses=['interesting', 'boring']"
-            )
+            statuses = ["all"]
 
         if len(set(statuses)) != len(statuses):
             raise ValueError(
