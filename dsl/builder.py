@@ -93,7 +93,7 @@ def _build_registry(edges: list) -> Dict[str, 'Agent']:
             if agent is not None:
                 if agent.name in registry and registry[agent.name] is not agent:
                     raise ValueError(
-                        f"Two different agents share the name '{agent.name}'. "
+                        f"Duplicate agent name: '{agent.name}'\n"
                         f"Each agent must have a unique name."
                     )
                 registry[agent.name] = agent
