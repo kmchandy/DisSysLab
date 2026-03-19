@@ -4,9 +4,13 @@
 BlueSky Jetstream Source - Live streaming posts from BlueSky
 
 This is the REAL version that connects to BlueSky's Jetstream WebSocket.
-Same interface as demo_bluesky_jetstream.py - easy to swap!
+Posts are yielded one by one as they arrive — true real-time streaming.
 
-Compare with demo_bluesky_jetstream.py to see the demo → real pattern.
+Unlike the batch version, this source never pre-collects posts.
+Each post flows into the DisSysLab network the moment it arrives
+from the WebSocket connection.
+
+No authentication needed — Jetstream is public.
 """
 
 import json
@@ -17,56 +21,42 @@ class BlueSkyJetstreamSource:
     """
     Stream live posts from BlueSky via Jetstream WebSocket.
 
-    Same interface as DemoBlueSkyJetstream - just change the import!
+    This is a true streaming source — posts are yielded one by one
+    as they arrive from the WebSocket, not collected first.
+
+    DisSysLab's Source block handles generators automatically, so
+    each post flows into the network the moment it arrives.
 
     Args:
-        max_posts: Maximum posts to collect (default: 100, None for unlimited)
-        lifetime: Maximum seconds to stream (default: 60, None for unlimited)
-        filter_keywords: Optional list of keywords to filter by
-        wanted_collections: Tuple of collection types (default: app.bsky.feed.post)
-        min_text_length: Minimum post text length (default: 20)
-        max_text_length: Maximum post text length (default: 2000)
-        language: Language filter (default: "en")
-
-    Returns:
-        Dict for each post as it arrives in real-time
-
-    Setup:
-        No authentication needed! Jetstream is public.
-        Just needs internet connection.
+        max_posts:    Stop after this many posts (None = run forever)
+        lifetime:     Stop after this many seconds (None = run forever)
+        filter_keywords: Only yield posts containing these keywords
+        wanted_collections: BlueSky collection types to subscribe to
+        min_text_length: Skip posts shorter than this
+        max_text_length: Skip posts longer than this
+        language:     Only yield posts in this language (e.g. "en")
 
     Example:
         >>> from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
-        >>> source = BlueSkyJetstreamSource(max_posts=50, lifetime=30)
-        >>> while True:
-        ...     post = source.run()
-        ...     if post is None:
-        ...         break
-        ...     print(f"[LIVE] @{post['author']}: {post['text'][:50]}...")
+        >>> from dsl.blocks import Source
+        >>>
+        >>> jetstream = BlueSkyJetstreamSource(
+        ...     max_posts=50,
+        ...     filter_keywords=["AI", "python"]
+        ... )
+        >>> source = Source(fn=jetstream.run, name="bluesky")
     """
 
     def __init__(
         self,
         max_posts=100,
-        lifetime=60,
+        lifetime=None,
         filter_keywords=None,
         wanted_collections=("app.bsky.feed.post",),
         min_text_length=20,
         max_text_length=2000,
         language="en"
     ):
-        """
-        Initialize Jetstream source.
-
-        Args:
-            max_posts: Maximum posts to collect (None for unlimited)
-            lifetime: Maximum seconds to stream (None for unlimited)
-            filter_keywords: Optional list of keywords to filter by
-            wanted_collections: Tuple of collection types
-            min_text_length: Minimum post text length
-            max_text_length: Maximum post text length
-            language: Language filter (e.g., "en")
-        """
         # Import here so demo version doesn't need the library
         try:
             import websocket
@@ -79,66 +69,125 @@ class BlueSkyJetstreamSource:
 
         self.max_posts = max_posts
         self.lifetime = lifetime
-        self.filter_keywords = [
-            k.lower() for k in filter_keywords] if filter_keywords else None
+        self.filter_keywords = (
+            [k.lower() for k in filter_keywords] if filter_keywords else None
+        )
         self.wanted_collections = wanted_collections
         self.min_text_length = min_text_length
         self.max_text_length = max_text_length
         self.language = language
 
-        self.posts_collected = 0
+        # Runtime state — reset each time run() is called
+        self.posts_yielded = 0
         self.start_time = None
-        self.n = 0
-        self.data = []
 
-        # Connect and collect posts
-        self._collect_posts()
+        # Build WebSocket URL once
+        self._jetstream_url = (
+            "wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections="
+            + ",".join(self.wanted_collections)
+        )
 
-        print(f"[BlueSkyJetstream] Collected {len(self.data)} posts")
+    def _should_stop(self):
+        """Check termination conditions."""
+        if self.max_posts and self.posts_yielded >= self.max_posts:
+            return True
+        if self.lifetime and self.start_time:
+            elapsed = (datetime.now(timezone.utc) -
+                       self.start_time).total_seconds()
+            if elapsed >= self.lifetime:
+                return True
+        return False
 
-    def _collect_posts(self):
-        """Connect to Jetstream and collect posts."""
+    def _process_event(self, event):
+        """
+        Convert a raw Jetstream event into a standard post dict.
+        Returns None if the event should be skipped.
+        """
+        try:
+            commit = event.get("commit", {})
+            record = commit.get("record", {})
+
+            text = record.get("text", "").strip()
+
+            # Length filter
+            if len(text) < self.min_text_length or len(text) > self.max_text_length:
+                return None
+
+            # Language filter
+            langs = record.get("langs", [])
+            if self.language and self.language not in langs:
+                return None
+
+            # Keyword filter
+            if self.filter_keywords:
+                text_lower = text.lower()
+                if not any(kw in text_lower for kw in self.filter_keywords):
+                    return None
+
+            # Extract hashtags
+            hashtags = [
+                word[1:].lower()
+                for word in text.split()
+                if word.startswith('#')
+            ]
+
+            # Author
+            did = event.get("did", "")
+            author = did.split(":")[-1] if did else "unknown"
+
+            # Wall clock timestamp — shows exactly when post arrived
+            now = datetime.now().strftime("%d %b %Y  %H:%M:%S")
+
+            return {
+                "text":           text,
+                "author":         author,
+                "author_display": author,
+                "timestamp":      now,
+                "source":         "bluesky",
+                "hashtags":       hashtags,
+                "language":       langs[0] if langs else "en",
+                "url":            f"https://bsky.app/profile/{author}",
+            }
+
+        except Exception:
+            return None
+
+    def run(self):
+        """
+        Generator that yields posts one by one as they arrive.
+
+        Each post is yielded the moment it comes off the WebSocket —
+        no pre-collection, no batching.
+
+        DisSysLab's Source block wraps this generator automatically.
+        """
         print(f"[BlueSkyJetstream] Connecting to Jetstream WebSocket...")
-        print(f"[BlueSkyJetstream] Max posts: {self.max_posts or 'unlimited'}")
-        print(f"[BlueSkyJetstream] Lifetime: {self.lifetime or 'unlimited'}s")
-
         if self.filter_keywords:
-            print(
-                f"[BlueSkyJetstream] Filtering by keywords: {self.filter_keywords}")
+            print(f"[BlueSkyJetstream] Filtering by: {self.filter_keywords}")
+        if self.max_posts:
+            print(f"[BlueSkyJetstream] Max posts: {self.max_posts}")
+        if self.lifetime:
+            print(f"[BlueSkyJetstream] Lifetime: {self.lifetime}s")
 
-        # Jetstream WebSocket URL
-        jetstream_url = "wss://jetstream2.us-east.bsky.network/subscribe?wantedCollections=" + \
-            ",".join(self.wanted_collections)
-
+        self.posts_yielded = 0
         self.start_time = datetime.now(timezone.utc)
 
         try:
-            ws = self.websocket.create_connection(jetstream_url)
-            print(f"[BlueSkyJetstream] Connected! Streaming posts...")
+            ws = self.websocket.create_connection(self._jetstream_url)
+            print(f"[BlueSkyJetstream] Connected! Posts flowing in real time...")
 
-            while True:
-                # Check if we should stop
-                if self._should_stop():
-                    break
-
-                # Receive message
+            while not self._should_stop():
                 try:
                     message = ws.recv()
                     if not message:
                         break
 
-                    # Parse JSON
                     event = json.loads(message)
-
-                    # Process post
                     post = self._process_event(event)
-                    if post:
-                        self.data.append(post)
-                        self.posts_collected += 1
 
-                        if self.posts_collected % 10 == 0:
-                            print(
-                                f"[BlueSkyJetstream] Collected {self.posts_collected} posts...")
+                    if post:
+                        self.posts_yielded += 1
+                        yield post
 
                 except self.websocket.WebSocketTimeoutException:
                     continue
@@ -146,140 +195,41 @@ class BlueSkyJetstreamSource:
                     continue
 
             ws.close()
+            print(
+                f"[BlueSkyJetstream] Done. Yielded {self.posts_yielded} posts.")
 
         except Exception as e:
             print(f"[BlueSkyJetstream] Error: {e}")
-            # Continue with whatever posts we collected
-
-    def _should_stop(self):
-        """Check if we should stop collecting."""
-        # Check max posts
-        if self.max_posts and self.posts_collected >= self.max_posts:
-            return True
-
-        # Check lifetime
-        if self.lifetime:
-            elapsed = (datetime.now(timezone.utc) -
-                       self.start_time).total_seconds()
-            if elapsed >= self.lifetime:
-                return True
-
-        return False
-
-    def _process_event(self, event):
-        """Process Jetstream event into our standard post format."""
-        try:
-            # Extract commit data
-            commit = event.get("commit", {})
-            record = commit.get("record", {})
-
-            # Get text
-            text = record.get("text", "").strip()
-
-            # Filter by text length
-            if len(text) < self.min_text_length or len(text) > self.max_text_length:
-                return None
-
-            # Filter by language
-            langs = record.get("langs", [])
-            if self.language and self.language not in langs:
-                return None
-
-            # Extract hashtags
-            hashtags = []
-            words = text.split()
-            hashtags = [word[1:].lower()
-                        for word in words if word.startswith('#')]
-
-            # Filter by keywords (if specified)
-            if self.filter_keywords:
-                text_lower = text.lower()
-                hashtags_lower = hashtags
-
-                found = False
-                for keyword in self.filter_keywords:
-                    if keyword in text_lower or keyword in hashtags_lower:
-                        found = True
-                        break
-
-                if not found:
-                    return None
-
-            # Get author info
-            did = event.get("did", "")
-
-            # Build standard post dict
-            return {
-                "text": text,
-                # Simplified author
-                "author": did.split(":")[-1] if did else "unknown",
-                "author_display": did.split(":")[-1] if did else "unknown",
-                "timestamp": commit.get("rev", ""),
-                "likes": 0,  # Not available in stream
-                "reposts": 0,  # Not available in stream
-                "replies": 0,  # Not available in stream
-                "url": f"https://bsky.app/...",  # Simplified
-                "hashtags": hashtags,
-                "language": langs[0] if langs else "en"
-            }
-
-        except Exception as e:
-            # Skip malformed posts
-            return None
-
-    def run(self):
-        """
-        Return next post from collected stream.
-
-        Returns None when stream ends.
-        """
-        v = self.data[self.n] if self.n < len(self.data) else None
-        self.n += 1
-        return v
 
 
-# Test when run directly
+# ── Test when run directly ────────────────────────────────────────────────────
+
 if __name__ == "__main__":
-    import sys
-
     print("BlueSky Jetstream Source - Test")
     print("=" * 60)
-
-    print("\n⚠️  This will connect to live BlueSky Jetstream")
-    print("Streaming posts for 10 seconds...")
+    print("Connecting to live Jetstream... (Ctrl+C to stop)")
     print("-" * 60)
 
     try:
-        # Stream for 10 seconds, max 20 posts
         source = BlueSkyJetstreamSource(
             max_posts=20,
-            lifetime=10,
-            # Filter to interesting posts
             filter_keywords=["python", "ai", "tech"]
         )
 
-        print("\nPosts collected from stream:")
-        print("-" * 60)
-
         count = 0
-        finished = False
+        for post in source.run():
+            count += 1
+            print(f"\n{count}. [{post['timestamp']}] @{post['author']}")
+            print(f"   {post['text'][:80]}")
+            if post['hashtags']:
+                print(f"   #{' #'.join(post['hashtags'][:5])}")
 
-        while not finished:
-            post = source.run()
-            if post:
-                count += 1
-                print(f"\n{count}. @{post['author']}")
-                print(f"   {post['text'][:80]}...")
-                print(f"   Hashtags: {post['hashtags']}")
-            finished = post is None
-
-        print("\n" + "=" * 60)
-        print(f"✓ Jetstream works! Collected {count} posts from live stream")
+        print(f"\n{'=' * 60}")
+        print(f"✓ Streamed {count} posts in real time.")
 
     except KeyboardInterrupt:
-        print("\n\nStopped by user")
-
+        print("\nStopped by user.")
     except Exception as e:
         print(f"\n✗ Error: {e}")
-        print("\nMake sure you have internet connection.")
+        print("Make sure you have internet connection.")
         print("Install websocket-client: pip install websocket-client")

@@ -1,300 +1,263 @@
-# DisSysLab
+# DSL — Build Your Own Office of AI Agents
 
-**Build persistent distributed systems by describing what you want.**
+**Claude answers when you ask. What if Claude worked for you all the time — even when you're not there?**
 
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+DSL lets you build an office of AI agents that runs continuously, 24 hours a day.
+You describe each agent's job in plain English. You specify who talks to whom.
+One command starts your office. Your agents work while you sleep.
 
----
-
-## Get Started in Three Steps
-
-### Step 1 — Run a live app (no coding required)
-
-The `gallery/` directory has six apps you can run immediately. Each monitors
-real data sources, analyzes content with AI, and streams results to your terminal.
-
-| App | What it tracks |
-|-----|---------------|
-| `gallery/ai_ml_research/` | AI and ML news across four tech sources |
-| `gallery/topic_tracker/` | Any news topic across three global sources |
-| `gallery/job_postings/` | Software and data science job postings |
-| `gallery/developer_news/` | Open source and developer tool news |
-| `gallery/climate_monitor/` | Climate and environment news |
-| `gallery/arxiv_tracker/` | New research papers on arXiv |
-
-**Try it now — no API key needed:**
-
-```bash
-python3 -m gallery.ai_ml_research.demo
-```
-
-**Run a live app (requires an Anthropic API key):**
-
-```bash
-export ANTHROPIC_API_KEY='your-key-here'
-python3 -m gallery.ai_ml_research.app
-```
-
-Each app has a README explaining what it does and how to customize it.
-See [gallery/README.md](gallery/README.md) for the full overview.
+This is how you build an office that creates your Situation Room — scanning live
+news and social media, filtering for what matters, filing briefings in real time.
+You didn't write any code. You wrote two plain English files.
 
 ---
 
-### Step 2 — Build your own app
-
-To build an app that doesn't exist in the gallery, paste
-`gallery/CLAUDE_CONTEXT.md` into Claude along with a spec:
-
-```
-SOURCES:
-  - Hacker News
-  - TechCrunch
-
-PROCESSING:
-  - only keep articles about cybersecurity
-  - severity: how serious is the threat described (critical, high, medium, low)?
-
-REPORT:
-  - Stream articles showing source, severity, and title
-  - Daily digest: list critical and high severity articles first
-
-Build me a DisSysLab app from this spec.
-```
-
-Claude will generate a complete working app following the same pattern as
-the gallery apps.
+![Situation Room](gallery/org_situation_room/screenshot.png)
 
 ---
 
-### Step 3 — Learn how it works
+## What You Wrote
 
-The `examples/` directory contains eight modules that teach the framework
-from first principles, starting with a single source → transform → sink
-pipeline and building up to full AI-powered agentic applications.
+Two plain English files. Nothing else.
 
-| Module | Concept |
-|--------|---------|
-| Module 01 | Source, Transform, Sink — the three building blocks |
-| Module 02 | Filtering — dropping messages with `return None` |
-| Module 03 | Fanout — one source, multiple destinations |
-| Module 04 | Fanin — multiple sources, one destination |
-| Module 05 | Split — routing messages by content |
-| Module 06 | Merge — synchronizing streams |
-| Module 07 | Topologies — fork, join, diamond, DAG |
-| Module 08 | AI Agents — prompts as transforms |
+**The job descriptions — what each agent does:**
 
-To extend an existing example with Claude's help, paste `CLAUDE_CONTEXT.md`
-into Claude along with the code you want to modify.
+```
+# Role: analyst
 
-## What Is DisSysLab?
+You are a news analyst who receives posts and articles and sends
+items to an editor or a discard.
 
-DisSysLab lets you build AI-powered distributed systems that run forever — monitoring news, analyzing social media, filtering content, sending alerts — using ordinary Python.
+Your job is to decide if each item is relevant to significant
+political developments or economic events — specifically involving
+topics such as Trump, Congress, Senate, elections, the Federal Reserve,
+tariffs, inflation, markets, Ukraine, Iran, trade policy, or the
+broader economy.
 
-You don't need to know anything about threads, processes, locks, or message passing. You don't even need to write most of the code. Describe what you want to Claude, and it generates a working DisSysLab application. Then learn how it works, customize it, and make it yours.
+Exclude celebrity gossip, sports, entertainment, and personal
+opinions with no broader political or economic significance.
 
-## The Fastest Way to Start
-
-Tell Claude (or any AI assistant):
-
-> "Using the DisSysLab framework, build me an app that monitors an RSS feed for articles about AI, filters out irrelevant ones, analyzes sentiment, and saves the results to a file. Use mock components so I can run it without API keys."
-
-Claude generates a complete working application. You run it. It works.
-
-**That's Module 01.** The rest of the course teaches you what just happened and how to build your own.
-
-## Five Live Apps You Can Run Right Now
-
-No setup beyond an API key. Each monitors real data sources continuously
-and delivers a daily AI-generated digest.
-
-| App | What it does | Customize |
-|-----|-------------|-----------|
-| 🤖 [AI/ML Research Tracker](gallery/ai_ml_research/) | Tracks AI developments across 4 tech sources | — |
-| 📰 [Topic Tracker](gallery/topic_tracker/) | Monitors 3 international outlets for your topics | `TOPICS` list |
-| 💼 [Job Postings Monitor](gallery/job_postings/) | Finds jobs matching your profile across 3 boards | `JOB_CRITERIA` paragraph |
-| 🛠️ [Developer News Tracker](gallery/developer_news/) | Filters dev news by your interests across 3 sources | `DEV_INTERESTS` list |
-| 🌍 [Climate Monitor](gallery/climate_monitor/) | Tracks climate news across NASA, BBC, NPR | `CLIMATE_TOPICS` list |
-```bash
-export ANTHROPIC_API_KEY='your-key'
-python -m gallery.topic_tracker.app
+If the item is relevant, send to editor.
+Otherwise send to discard.
 ```
 
-Streams matching articles to the console. Prints a digest once a day.
-`Ctrl+C` to stop. To personalize, edit the config variables at the top
-of `app.py` — no other code needs to change.
+```
+# Role: editor
 
-See the [Gallery README](gallery/README.md) for details on all five apps.
+You are a senior editor who receives posts and articles and sends
+items to a situation_room.
+
+Your job is to rate each item for its significance — CRITICAL, HIGH,
+MEDIUM, or LOW — and rewrite it as a crisp one-paragraph briefing note.
+Note whether the item came from social media or news. Preserve the
+source, url, timestamp, and author fields. Put your significance rating
+in a field called "significance" and your summary in the "text" field.
+
+Always send results to situation_room.
+```
+
+**The org chart — who connects to whom:**
+
+```
+Sources: bluesky(max_posts=None, lifetime=None),
+         al_jazeera(max_articles=10, poll_interval=600),
+         bbc_world(max_articles=10, poll_interval=600)
+Sinks: intelligence_display(max_items=8),
+       jsonl_recorder(path="situation_room.jsonl")
+
+Agents:
+Alex is an analyst.
+Morgan is an editor.
+
+Connections:
+bluesky's destination is Alex.
+al_jazeera's destination is Alex.
+bbc_world's destination is Alex.
+Alex's editor is Morgan.
+Alex's discard is jsonl_recorder.
+Morgan's situation_room are intelligence_display and jsonl_recorder.
+```
+
+That's it. The compiler reads these files, shows you the routing,
+asks "Does this look right?", and generates your office.
+
+```
+al_jazeera ─┐
+bbc_world   ─┤→  Alex  →  Morgan  ─┬→  Situation Room display
+bluesky     ─┘                      └→  situation_room.jsonl
+```
 
 ---
 
-## Quick Example: What DisSysLab Code Looks Like
-```python
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
+## Quick Start
 
-# Three ordinary Python functions
-rss_feed = Source(fn=mock_rss.run, name="news")
-analyze  = Transform(fn=sentiment_analyzer, name="sentiment")
-save     = Sink(fn=file_writer.run, name="archive")
+**Step 1 — Clone and install:**
 
-# Connect them into a network
-g = network([
-    (rss_feed, analyze),
-    (analyze, save)
-])
-
-# Run — nodes execute concurrently, messages flow automatically
-g.run_network()
-```
-
-Every DisSysLab app follows this pattern: wrap Python functions into nodes, connect nodes into a network, run. The framework handles concurrency, message passing, and clean shutdown.
-
-## Who Is This For?
-
-**Students** learning distributed systems. You'll build real applications from the first module — news monitors, social media analyzers, content filters — and learn the underlying concepts by understanding what you've built.
-
-**Hobbyists and developers** who want persistent monitoring and automation systems without infrastructure complexity. Describe what you want, generate it, run it.
-
-Both paths use the same framework and the same modules. Students work through the full sequence. Hobbyists skip to what they need.
-
-## Learning Path
-
-### Module 01: Describe and Build
-*Your first distributed system in 10 minutes*
-
-Tell Claude what you want. It generates a working app. You run it. Then walk through the generated code to understand the three building blocks (Source, Transform, Sink), how messages flow through a pipeline, and how filtering works (return `None` to drop a message). Every example includes a mock version (runs instantly, no API keys) and a real version (swap one line to use live data and AI).
-
-### Module 02: Filtering
-*Selective message processing*
-
-Return `None` from any Transform to drop a message. Build conditional pipelines that pass only the data you care about — invalid entries, spam, low-priority items filtered out cleanly with no special syntax.
-
-### Module 03: Fanout
-*Broadcast to multiple destinations*
-
-Send one message to many destinations simultaneously — file, email, dashboard, database. Build monitoring systems that alert through multiple channels at once.
-
-### Module 04: Fanin
-*Merge multiple sources*
-
-Pull from multiple RSS feeds, social media streams, or APIs into one processor. Your app goes from "process one stream" to "aggregate from many" in a single module.
-
-### Module 05: Split
-*Route messages by content*
-
-Route messages based on content: positive sentiment one way, negative another. Split streams by category. Send the right data to the right place.
-
-### Module 06: Merge Synch
-*Synchronize multiple streams*
-
-Combine messages from multiple sources in lockstep — useful when you need paired data from different feeds before processing.
-
-### Module 07: Complex Patterns
-*Fork, join, diamond, general DAG*
-
-Combine the building blocks into sophisticated topologies. Any acyclic graph is expressible. Match your network shape to your problem.
-
-### Module 08: AI Agents
-*Build transformers from plain-English prompts*
-
-Swap mock components for real AI. Learn how a prompt defines behavior, JSON structures the output, and a Python function interprets the result. Build AI-powered transforms for sentiment analysis, content moderation, topic classification, entity extraction — or anything you can describe in a prompt. The gallery apps are all built on this pattern.
-
-## Core Concepts
-
-DisSysLab has three layers:
-```
-Layer 1: Python functions         (you write these — or Claude does)
-Layer 2: Network nodes            (Source, Transform, Sink)
-Layer 3: Distributed execution    (concurrent threads, message queues)
-```
-
-You work in Layers 1 and 2. DisSysLab handles Layer 3.
-
-**Four node types:**
-
-- **Source** — generates data (RSS feeds, APIs, sensors, databases)
-- **Transform** — processes data (filter, analyze, enrich, classify)
-- **Sink** — consumes data (save to file, send email, post to webhook)
-- **Agent** — general node with multiple inputs and outputs (advanced)
-
-**Network topologies:** pipeline, fanin, fanout, split, diamond, trees, arbitrary DAGs. Any acyclic graph.
-
-**Mock and real:** Every component has a mock version (no API keys, instant results) and a real version (live data, AI analysis). Swap with one line change.
-
-**Filtering:** Return `None` from any transform to drop a message. Simple, powerful, no special syntax.
-
-## Installation
 ```bash
-git clone https://github.com/kmchandy/DisSysLab.git
-cd DisSysLab
-
-python3 -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
+git clone https://github.com/your-org/DSL.git
+cd DSL
 pip install -r requirements.txt
+export ANTHROPIC_API_KEY='your-key'
 ```
 
-Verify it works:
+**Step 2 — Compile your office:**
+
 ```bash
-python3 -m examples.module_01_basics.example
+python3 office_compiler.py gallery/org_situation_room/
 ```
 
-## What You Can Build
+The compiler shows you what it understood and asks for confirmation.
+If anything looks wrong, edit your files and rerun — no Python required.
 
-**Monitoring and alerts** — track social media mentions, watch for job opportunities, detect anomalies in data streams, monitor competitor activity.
+**Step 3 — Start your office:**
 
-**Content aggregation** — multi-source RSS readers with AI summaries, research paper monitors, market intelligence gathering, news digests filtered by topic and sentiment.
-
-**AI pipelines** — sentiment tracking, content moderation, language translation chains, multi-agent analysis, automated summarization.
-
-**Automation** — email categorization, scheduled report generation, multi-step workflows, data fusion from multiple APIs.
-
-## Key Features
-
-**No concurrency knowledge required.** Write ordinary Python functions. The framework handles threads, queues, message passing, and shutdown.
-
-**AI-native.** Prompts are first-class components. Mock AI for learning, real AI for production. 40+ pre-built prompts included.
-
-**Any topology.** Not just pipelines — fanin, fanout, split, diamond, trees, arbitrary DAGs. Match your network shape to your problem.
-
-**Mock-first.** Every example runs without API keys or credentials. Add real data sources and AI when you're ready.
-
-**Persistent.** Networks run continuously — monitoring, analyzing, alerting — until you stop them.
-
-## Philosophy
-
-**Excitement first.** Build something real before learning how it works. Motivation drives understanding, not the other way around.
-
-**AI from the start.** Every module shows mock (keyword-based) and real (AI-powered) versions side by side. AI isn't an advanced topic — it's the point.
-
-**Real applications, not toy examples.** You build news monitors, sentiment analyzers, content filters — systems you'd actually use.
-
-**Describe, generate, understand.** Tell Claude what you want. Get working code. Then learn what it does and how to customize it.
-
-## For Instructors
-
-Teaching materials, course guides, and pedagogy notes are in the [for_instructors/](for_instructors/) directory.
-
-## Contributing
-
-We welcome contributions in connectors (new data sources and sinks), AI prompts, example applications, documentation, and course modules. See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
-
-## License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
-## Citation
-```bibtex
-@software{dissyslab2025,
-  title = {DisSysLab: Build Persistent Distributed Systems with Simple Python},
-  author = {Chandy, K. Mani},
-  year = {2025},
-  url = {https://github.com/kmchandy/DisSysLab}
-}
+```bash
+python3 -m gallery.org_situation_room.app
 ```
 
-## Support
+Your Situation Room starts immediately. Alex scans incoming posts and
+articles. Morgan writes briefings. The display updates in real time —
+BlueSky posts arrive seconds apart, RSS articles arrive as they're
+published. Your office runs until you stop it.
 
-- **Issues:** [GitHub Issues](https://github.com/kmchandy/DisSysLab/issues)
-- **Discussions:** [GitHub Discussions](https://github.com/kmchandy/DisSysLab/discussions)
+---
+
+## Build Your Own Office
+
+Change the topics. Change the agents. Change the sources.
+The office is yours.
+
+**To build your own:**
+
+1. Create a new directory: `gallery/org_your_idea/`
+2. Write a role file for each type of agent in `roles/`
+3. Write an org chart in `office.md`
+4. Run: `python3 office_compiler.py gallery/org_your_idea/`
+
+**Some ideas:**
+
+- A research assistant that monitors arXiv for papers in your field,
+  filters for relevance, and summarizes findings into a daily digest
+- A competitive intelligence office that scans tech news, flags
+  mentions of your competitors, and rates their significance
+- A job scout that monitors job boards, filters for your skills,
+  and ranks postings by fit
+- A policy tracker that monitors government sources and flags
+  regulatory changes relevant to your industry
+- A personal finance monitor that tracks market news and flags
+  developments relevant to your portfolio
+
+---
+
+## Going Further
+
+Once your first office is running, the possibilities expand naturally.
+
+**Multiple agents in the same role.** You can have two analysts —
+Alex focused on politics, Jordan focused on economics — both feeding
+the same editor. Just add agents to your office spec.
+
+**Networks of offices.** A legal office feeds a CEO office. An
+intelligence office feeds a strategy office. In DSL, an office can
+itself be an agent in a larger office. The infrastructure is already
+there.
+
+**Agent personas.** Your editor is measured and balanced. What if
+she were pessimistic? What if your analyst only flagged stories
+involving specific countries? Agent behavior is entirely determined
+by the job description — change the description, change the behavior.
+No code changes required.
+
+---
+
+## Available Sources
+
+```
+bluesky          — live social media stream, no auth needed
+al_jazeera       — Al Jazeera world news
+bbc_world        — BBC world news
+bbc_tech         — BBC technology news
+npr_news         — NPR news
+hacker_news      — Hacker News
+techcrunch       — TechCrunch
+mit_tech_review  — MIT Technology Review
+venturebeat_ai   — VentureBeat AI
+nasa_news        — NASA news
+python_jobs      — Python job listings
+```
+
+## Available Sinks
+
+```
+intelligence_display(max_items=N)  — live color-coded dashboard
+console_printer                    — plain text to console
+jsonl_recorder(path="file.jsonl")  — save to JSON Lines file
+```
+
+---
+
+## Gallery
+
+| Office | What it does |
+|--------|-------------|
+| [Situation Room](gallery/org_situation_room/) | Live politics & economics monitor — BlueSky + RSS |
+| [Intelligence Briefing](gallery/org_intelligence_briefing/) | World news briefing, significant events only |
+| [News Filter](gallery/org_news_filter/) | Filters articles by geography |
+| [News Chain](gallery/org_news_chain/) | Two-agent editorial chain |
+
+---
+
+## How It Works
+
+DSL compiles your plain English files into a Python distributed system.
+Each agent runs in its own thread. Messages flow through queues.
+The framework handles all concurrency, synchronization, and shutdown.
+
+```
+Your plain English files
+        ↓
+office_compiler.py  (uses Claude to parse your descriptions)
+        ↓
+app.py  (generated — complete runnable Python)
+        ↓
+Concurrent agents processing live data, running forever
+```
+
+Unlike tools that re-run a pipeline on a schedule, DSL agents are
+always running — waiting for the next message, processing it
+immediately, passing it on. BlueSky posts arrive seconds apart.
+RSS articles arrive the moment they're published. Your office
+responds in real time.
+
+---
+
+## For the Curious: How DSL Is Implemented
+
+Interested in how this works under the hood? DSL is also a complete
+Python framework for building distributed systems — sources, transforms,
+splits, sinks, fanin, fanout, message queues, concurrent threads.
+
+The module sequence takes you from generating your first app with Claude
+to building the framework primitives from scratch:
+
+| Module | Topic |
+|--------|-------|
+| M1 | Describe and Build — generate your first app with Claude |
+| M2 | Multiple Sources and Destinations — fanin and fanout |
+| M3 | Smart Routing — filter and split messages |
+| M4 | Build Your Own — write agents from scratch |
+
+Start here: [`examples/module_01_describe_and_build/README.md`](examples/module_01_describe_and_build/README.md)
+
+---
+
+## Requirements
+
+- Python 3.10+
+- Anthropic API key ([get one here](https://console.anthropic.com))
+- `pip install -r requirements.txt`
+
+---
+
+*DSL is an open research project exploring Claude's ability to specify,
+compile, and run persistent distributed systems from natural language.*
