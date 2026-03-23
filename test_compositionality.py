@@ -9,10 +9,11 @@ Outer network:
     source → pipeline.input
     pipeline.output → sink
 """
-
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
 from dsl.composed_agent import composed_agent
+from dsl.blocks import Source, Transform, Sink
+from dsl import network
+import sys
+sys.path.insert(0, "/home/claude")
 
 
 # ── Inner agents ──────────────────────────────────────────────────────────────
@@ -43,8 +44,8 @@ pipeline.network = [
 ]
 
 print("✓ composed_agent created and wired")
-print(f"  inner network blocks: {list(pipeline.network.blocks.keys())}")
-print(f"  inner connections:    {pipeline.network.connections}")
+print(f"  inner network blocks: {list(pipeline.blocks.keys())}")
+print(f"  inner connections:    {pipeline.connections}")
 
 
 # ── Outer source and sink ─────────────────────────────────────────────────────

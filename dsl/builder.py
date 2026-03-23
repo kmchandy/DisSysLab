@@ -80,24 +80,9 @@ def _preprocess_edges(edges):
 
 def _parse_from_node(node, edge_index):
     from dsl.core import Agent
-    from dsl.composed_agent import BoundaryPort
+    from dsl.network import Network
 
-    if isinstance(node, BoundaryPort):
-        # BoundaryPort on left = composed_agent's output port
-        if node.direction != "out":
-            raise ValueError(
-                f"Edge {edge_index}: '{node.port_name}' is an input port "
-                f"and cannot be the source of an edge."
-            )
-        inner = object.__getattribute__(node.owner, '_inner')
-        if inner is None:
-            raise ValueError(
-                f"Edge {edge_index}: ComposedAgent '{node.owner.name}' has no "
-                f".network assigned yet."
-            )
-        return inner, node.port_name
-
-    elif isinstance(node, PortReference):
+    if isinstance(node, PortReference):
         agent = node.agent
         port = node.port_name
         if port not in agent.outports:
@@ -115,33 +100,27 @@ def _parse_from_node(node, edge_index):
             )
         return node, port
 
+    elif isinstance(node, Network):
+        # ComposedAgent used as bare object — use its single outport
+        if len(node.outports) != 1:
+            raise ValueError(
+                f"Edge {edge_index}: '{node.name}' has multiple outputs {node.outports}. "
+                f"Use dot notation: {node.name}.port_name"
+            )
+        return node, node.outports[0]
+
     else:
         raise TypeError(
-            f"Edge {edge_index}: from-node must be Agent, PortReference, or BoundaryPort, "
+            f"Edge {edge_index}: from-node must be Agent or PortReference, "
             f"got {type(node).__name__}"
         )
 
 
 def _parse_to_node(node, edge_index):
     from dsl.core import Agent
-    from dsl.composed_agent import BoundaryPort
+    from dsl.network import Network
 
-    if isinstance(node, BoundaryPort):
-        # BoundaryPort on right = composed_agent's input port
-        if node.direction != "in":
-            raise ValueError(
-                f"Edge {edge_index}: '{node.port_name}' is an output port "
-                f"and cannot be the destination of an edge."
-            )
-        inner = object.__getattribute__(node.owner, '_inner')
-        if inner is None:
-            raise ValueError(
-                f"Edge {edge_index}: ComposedAgent '{node.owner.name}' has no "
-                f".network assigned yet."
-            )
-        return inner, node.port_name
-
-    elif isinstance(node, PortReference):
+    if isinstance(node, PortReference):
         agent = node.agent
         port = node.port_name
         if port not in agent.inports:
@@ -159,9 +138,18 @@ def _parse_to_node(node, edge_index):
             )
         return node, port
 
+    elif isinstance(node, Network):
+        # ComposedAgent used as bare object — use its single inport
+        if len(node.inports) != 1:
+            raise ValueError(
+                f"Edge {edge_index}: '{node.name}' has multiple inputs {node.inports}. "
+                f"Use dot notation: {node.name}.port_name"
+            )
+        return node, node.inports[0]
+
     else:
         raise TypeError(
-            f"Edge {edge_index}: to-node must be Agent, PortReference, or BoundaryPort, "
+            f"Edge {edge_index}: to-node must be Agent or PortReference, "
             f"got {type(node).__name__}"
         )
 

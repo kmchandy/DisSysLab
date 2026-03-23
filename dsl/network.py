@@ -491,6 +491,8 @@ class Network:
             changed = False
 
             for conn in self.unresolved_connections[:]:
+                if conn not in self.unresolved_connections:
+                    continue
                 fb, fp, tb, tp = conn
 
                 # Pattern 1: External-out collapse
