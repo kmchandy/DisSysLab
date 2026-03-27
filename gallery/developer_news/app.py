@@ -14,6 +14,7 @@
 # ============================================================
 
 import json
+import re
 from dsl import network
 from dsl.blocks import Source, Transform, Sink
 from components.sources.rss_normalizer import (
@@ -37,7 +38,7 @@ INTERESTS_STR = ", ".join(f'"{t}"' for t in DEV_INTERESTS)
 # ── Sources ───────────────────────────────────────────────────
 hn_feed = hacker_news(max_articles=20, poll_interval=3600)
 tc_feed = techcrunch(max_articles=15,  poll_interval=3600)
-bbc_feed = bbc_tech(max_articles=15,   poll_interval=3600)
+bbc_feed = bbc_tech(max_articles=15,    poll_interval=3600)
 
 hn_source = Source(fn=hn_feed.run,  name="hacker_news")
 tc_source = Source(fn=tc_feed.run,  name="techcrunch")
@@ -63,26 +64,33 @@ and note any stories covered by multiple sources.
 Return plain text, not JSON.
 """)
 
+# ── Helper ────────────────────────────────────────────────────
+
+
+def _parse_json(raw):
+    """Extract JSON from Claude response, tolerating extra text or pre-parsed dict."""
+    if isinstance(raw, dict):
+        return raw
+    match = re.search(r'\{.*?\}', raw, re.DOTALL)
+    return json.loads(match.group()) if match else {}
+
 # ── Transform Functions ───────────────────────────────────────
 
 
 def filter_dev_news(article):
     if not article.get("text", "").strip():
         return None
-    raw = relevance_agent(article["text"])
-    if not raw.strip():
+    result = _parse_json(relevance_agent(article["text"]))
+    if not result.get("relevant"):
         return None
-    result = json.loads(raw)
-    if not result["relevant"]:
-        return None
-    article["category"] = result["category"]
+    article["category"] = result.get("category", "")
     return article
 
 
 def analyze_sentiment(article):
-    result = json.loads(sentiment_agent(article["text"]))
-    article["sentiment"] = result["sentiment"]
-    article["score"] = result["score"]
+    result = _parse_json(sentiment_agent(article["text"]))
+    article["sentiment"] = result.get("sentiment", "NEUTRAL")
+    article["score"] = result.get("score", 0.0)
     return article
 
 

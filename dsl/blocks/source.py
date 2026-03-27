@@ -3,8 +3,9 @@
 Source Agent: Repeatedly calls a function to generate messages.
 
 Sources have no inputs and generate data by calling fn() repeatedly until
-it returns None. This pattern supports stateful data generation via instance
-methods.
+it returns None. When exhausted, the source sends a termination message to
+os_agent with its final sent counts. Termination is detected by os_agent —
+sources do not send STOP signals.
 """
 
 from __future__ import annotations
@@ -33,94 +34,24 @@ class Source(Agent):
     Generator functions are also accepted — Source wraps them automatically
     so that each call to fn() advances the generator by one step.
 
-    **Message Flow:**
-    1. Calls fn() repeatedly
-    2. Sends returned messages to "out_" port
-    3. When fn() returns None, sends STOP and terminates
+    **Termination:**
+    When fn() returns None, the source sends a termination message to
+    os_agent containing its final sent counts, then returns from run().
+    os_agent uses this message to detect when all sources are done.
 
     **Optional Rate Limiting:**
     The interval parameter adds a delay between messages:
     - interval=0 (default): emit as fast as possible
     - interval=1.0: emit one message per second
-    - Useful for simulating real-time streams
-
-    **Error Handling:**
-    - Exceptions during fn() are caught and logged
-    - STOP signal is sent to downstream agents
-    - Pipeline terminates gracefully
-
-    **Examples:**
-
-    Simple list source:
-        >>> class ListSource:
-        ...     def __init__(self, items):
-        ...         self.items = items
-        ...         self.index = 0
-        ...
-        ...     def run(self):
-        ...         if self.index >= len(self.items):
-        ...             return None  # Exhausted
-        ...         item = self.items[self.index]
-        ...         self.index += 1
-        ...         return {"value": item}
-        >>>
-        >>> data = ListSource([1, 2, 3])
-        >>> source = Source(fn=data.run, name="numbers")
-
-    Generator source (e.g. RSSSource):
-        >>> rss = RSSSource(urls=["https://hnrss.org/newest"], max_articles=5)
-        >>> source = Source(fn=rss.run, name="news")
-        >>> # No wrapper needed — Source handles generators automatically
-
-    Counter source:
-        >>> class CounterSource:
-        ...     def __init__(self, max_count):
-        ...         self.count = 0
-        ...         self.max_count = max_count
-        ...
-        ...     def run(self):
-        ...         if self.count >= self.max_count:
-        ...             return None
-        ...         result = {"count": self.count}
-        ...         self.count += 1
-        ...         return result
-        >>>
-        >>> counter = CounterSource(max_count=5)
-        >>> source = Source(fn=counter.run, name="counter")
-
-    With rate limiting:
-        >>> data = ListSource([1, 2, 3])
-        >>> source = Source(fn=data.run, interval=1.0, name="slow_src")
-
-    Using a lambda:
-        >>> items = iter([1, 2, 3])
-        >>> source = Source(fn=lambda: next(items, None), name="iter_src")
     """
 
     def __init__(
         self,
         *,
         fn: Callable[[], Optional[Any]],
-        name: str,
+        name: Optional[str] = None,
         interval: float = 0
     ):
-        """
-        Initialize a Source agent.
-
-        Args:
-            fn: Callable that returns messages or None when exhausted.
-                Should have signature: fn() -> Optional[message]
-                Generator functions are also accepted.
-            name: Unique name for this agent (REQUIRED)
-            interval: Optional delay in seconds between messages (default: 0)
-
-        Raises:
-            ValueError: If name is empty
-            TypeError: If fn is not callable
-        """
-        if not name:
-            raise ValueError("Source agent requires a name")
-
         if not callable(fn):
             raise TypeError(
                 "Source fn must be callable with signature: fn() -> Optional[message]"
@@ -129,8 +60,6 @@ class Source(Agent):
         super().__init__(name=name, inports=[], outports=["out_"])
 
         # If fn is a generator function, wrap it so each call returns one item.
-        # This allows RSSSource and other generators to work with Source directly
-        # without any wrapper in application code.
         if inspect.isgeneratorfunction(fn):
             _gen = fn()
             def fn(): return next(_gen, None)
@@ -143,35 +72,43 @@ class Source(Agent):
         """Default output port for edge syntax."""
         return "out_"
 
+    def _send_termination(self) -> None:
+        """
+        Send final sent counts to os_agent.
+        Called when source is exhausted or encounters an error.
+        """
+        self.send_os({
+            "agent":    self.name,
+            "sent":     dict(self.sent),
+            "received": {},
+        })
+
     def run(self) -> None:
         """
         Main processing loop for the Source agent.
 
         Repeatedly calls self._fn() to get messages and emits them.
-        Stops when fn() returns None or an exception occurs.
+        When fn() returns None or an exception occurs, sends termination
+        message to os_agent and returns.
         """
         try:
             while True:
-                # Get next message from function
                 msg = self._fn()
 
                 # None means the source is exhausted
                 if msg is None:
-                    self.broadcast_stop()
+                    self._send_termination()
                     return
 
-                # Send the message downstream
                 self.send(msg, "out_")
 
-                # Optional rate limiting
                 if self._interval > 0:
                     time.sleep(self._interval)
 
         except Exception as e:
-            # Log error and terminate gracefully
             print(f"[Source '{self.name}'] Error in fn: {e}")
             print(traceback.format_exc())
-            self.broadcast_stop()
+            self._send_termination()
 
     def __repr__(self) -> str:
         fn_name = getattr(self._fn, "__name__", repr(self._fn))

@@ -82,9 +82,9 @@ SOURCE_REGISTRY = {
     "nasa_news":       {"type": "rss"},
     "python_jobs":     {"type": "rss"},
     "bluesky": {
-        "type":    "bluesky",
-        "import":  "from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource",
-        "class":   "BlueSkyJetstreamSource",
+        "type":   "bluesky",
+        "import": "from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource",
+        "class":  "BlueSkyJetstreamSource",
     },
 }
 
@@ -92,6 +92,12 @@ SOURCE_REGISTRY = {
 # ── Sink Registry ─────────────────────────────────────────────────────────────
 
 SINK_REGISTRY = {
+    "discard": {
+        "import": "from components.sinks.discard import Discard",
+        "class":  "Discard",
+        "args":   "none",
+        "call":   "run",
+    },
     "jsonl_recorder": {
         "import": "from components.sinks.sink_jsonl_recorder import JSONLRecorder",
         "class":  "JSONLRecorder",

@@ -3,6 +3,8 @@
 Inputs: article_in
 Outputs: article_out
 
+Sinks: discard
+
 Agents:
 Jordan is an editor.
 Riley is a rewriter.

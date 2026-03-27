@@ -14,6 +14,7 @@
 # ============================================================
 
 import json
+import re
 from dsl import network
 from dsl.blocks import Source, Transform, Sink
 from components.sources.rss_normalizer import (
@@ -58,19 +59,26 @@ Highlight the top 3 most promising postings at the top.
 Return plain text, not JSON.
 """)
 
+# ── Helper ────────────────────────────────────────────────────
+
+
+def _parse_json(raw):
+    """Extract JSON from Claude response, tolerating extra text or pre-parsed dict."""
+    if isinstance(raw, dict):
+        return raw
+    match = re.search(r'\{.*?\}', raw, re.DOTALL)
+    return json.loads(match.group()) if match else {}
+
 # ── Transform Functions ───────────────────────────────────────
 
 
 def filter_jobs(article):
     if not article.get("text", "").strip():
         return None
-    raw = relevance_agent(article["text"])
-    if not raw.strip():
+    result = _parse_json(relevance_agent(article["text"]))
+    if not result.get("relevant"):
         return None
-    result = json.loads(raw)
-    if not result["relevant"]:
-        return None
-    article["reason"] = result["reason"]
+    article["reason"] = result.get("reason", "")
     return article
 
 

@@ -3,22 +3,35 @@
 Core building blocks for the DSL distributed systems framework.
 
 This module provides:
-- STOP: Sentinel for end-of-stream signaling
+- OS message classes for termination detection
 - Agent: Abstract base class for all network nodes
 - ExceptionThread: Thread that captures exceptions for debugging
 """
 
 from __future__ import annotations
-from abc import ABC, abstractmethod
+from queue import SimpleQueue
 from threading import Thread
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Optional, List, Dict, Tuple, Union, Any, Protocol
+from collections import deque
+from abc import ABC, abstractmethod
 import sys
 import multiprocessing
+
 
 # ============================================================================
 # Type Definitions
 # ============================================================================
 
+# Connection tuple: (from_block, from_port, to_block, to_port)
+Connection = Tuple[str, str, str, str]
+
+# Type alias for blocks (Agent or Network)
+Block = Union["Agent", "Network"]
+
+
+# ============================================================================
+# Protocol for Queue-like Objects
+# ============================================================================
 
 class QueueLike(Protocol):
     """Protocol for queue-like objects that support get() and put()."""
@@ -28,17 +41,27 @@ class QueueLike(Protocol):
 
 
 # ============================================================================
-# STOP Sentinel
+# OS Message Classes
 # ============================================================================
 
-class _Stop:
-    """Sentinel object for end-of-stream signaling."""
-
-    def __repr__(self) -> str:
-        return "STOP"
+class _OsMessage:
+    """Base class for all OS messages. Never counted in sent/received."""
+    pass
 
 
-STOP = _Stop()
+class _GiveMeCounts(_OsMessage):
+    """Sent by os_agent to request current sent/received counts from a client."""
+    pass
+
+
+class _Shutdown(_OsMessage):
+    """Sent by os_agent to tell a client agent to terminate."""
+    pass
+
+
+class _ShutdownSignal(Exception):
+    """Raised inside recv() when _Shutdown is received. Unwinds run() cleanly."""
+    pass
 
 
 # ============================================================================
@@ -60,17 +83,15 @@ class ExceptionThread(Thread):
             self.exception = e
             self.exc_info = sys.exc_info()
 
+
 # ============================================================================
 # Exception-Capturing Process
 # ============================================================================
 
-
 def _process_worker(target, exc_queue):
     """
     Top-level worker function for ExceptionProcess.
-
-    Must be module-level (not a lambda or nested function)
-    so multiprocessing can pickle it on all platforms.
+    Must be module-level so multiprocessing can pickle it.
     """
     try:
         target()
@@ -102,68 +123,70 @@ class ExceptionProcess(multiprocessing.Process):
         if not self._exc_queue.empty():
             self.exception, self.traceback_str = self._exc_queue.get_nowait()
 
+
 # ============================================================================
 # Agent Base Class
 # ============================================================================
 
-
 class Agent(ABC):
     """
-    Base class for all agents in the network.
+    Base class for all nodes in a flow-based programming network.
 
-    **Name Assignment:**
-    The `name` parameter is REQUIRED and must be provided in __init__.
+    An Agent is a processing unit that:
+    - Receives messages on input ports (inports)
+    - Processes messages in its run() method
+    - Sends messages on output ports (outports)
+    - Runs in its own thread when the network executes
+
+    **Lifecycle:**
+    1. __init__(): Define ports, initialize state
+    2. startup(): One-time initialization before run() (optional override)
+    3. run(): Main processing loop (MUST override - abstract method)
+    4. shutdown(): Cleanup after run() completes (optional override)
+
+    **Termination:**
+    Termination is detected by os_agent, which polls agents periodically
+    via _GiveMeCounts messages and declares termination by sending _Shutdown.
+    Agents do not need to handle termination explicitly — recv() handles
+    OS messages transparently.
+
+    **Message Passing:**
+    - recv(inport): Blocking read, intercepts OS messages transparently
+    - send(msg, outport): Non-blocking write, counts client messages
+    - send_os(msg): Sends directly to os_agent's queue (framework use only)
+    - None messages are automatically filtered (not sent downstream)
     """
 
     def __init__(
         self,
         *,
-        name: str,
+        name: Optional[str] = None,
         inports: Optional[List[str]] = None,
-        outports: Optional[List[str]] = None
+        outports: Optional[List[str]] = None,
     ):
-        """Initialize an Agent with required name and optional ports."""
-        # Validate name (REQUIRED parameter)
-        if not name:
-            raise ValueError("Agent name is required and cannot be empty")
-        if not isinstance(name, str):
-            raise TypeError(
-                f"Agent name must be string, got {type(name).__name__}")
-
-        self.name = name
-
-        # Avoid mutable default trap
+        # Avoid mutable-default traps
         self.inports: List[str] = list(inports) if inports is not None else []
         self.outports: List[str] = list(
             outports) if outports is not None else []
 
-        # Validate all port names are strings
-        for port in self.inports + self.outports:
-            if not isinstance(port, str):
-                raise TypeError(
-                    f"Port names must be strings, got {type(port).__name__}: {port!r}"
-                )
-
-        # Check uniqueness across all ports
-        all_ports = self.inports + self.outports
-        if len(set(all_ports)) != len(all_ports):
-            seen = set()
-            duplicates = set()
-            for port in all_ports:
-                if port in seen:
-                    duplicates.add(port)
-                seen.add(port)
-
-            raise ValueError(
-                f"Port names must be unique within agent '{name}'. "
-                f"Duplicate port name(s): {sorted(duplicates)}"
-            )
-
-        # Queue dictionaries - wired by Network during compilation
+        # Queue dictionaries - wired during Network.compile()
         self.in_q: Dict[str, Optional[QueueLike]] = {
             p: None for p in self.inports}
         self.out_q: Dict[str, Optional[QueueLike]] = {
             p: None for p in self.outports}
+
+        # Name — optional at construction, assigned by Network during compilation
+        # After flattening, updated to full path (e.g. "root::spam_filter")
+        self.name: Optional[str] = name
+
+        # Message counters — maintained by send() and recv()
+        # OS messages (_OsMessage) are never counted
+        self.sent:     Dict[str, int] = {p: 0 for p in self.outports}
+        self.received: Dict[str, int] = {p: 0 for p in self.inports}
+
+        # Queue to os_agent — injected by network.py during _create_os_agent()
+        # Always set before threads start, never None at runtime
+        self.os_q: Optional[QueueLike] = None
 
     # ========== Lifecycle Methods ==========
 
@@ -180,10 +203,24 @@ class Agent(ABC):
         """Cleanup after run() completes."""
         pass
 
+    def start(self) -> None:
+        """
+        Framework entry point — called by threads in network.py.
+        Calls run() and catches _ShutdownSignal for clean exit.
+        Do not override this method.
+        """
+        try:
+            self.run()
+        except _ShutdownSignal:
+            pass  # clean exit — os_agent declared termination
+
     # ========== Message Passing ==========
 
     def send(self, msg: Any, outport: str) -> None:
-        """Send a message to an output port."""
+        """
+        Send a message to an output port.
+        Counts client messages. OS messages and None are not counted.
+        """
         if outport not in self.outports:
             raise ValueError(
                 f"Port '{outport}' is not a valid outport of agent '{self.name}'. "
@@ -196,14 +233,25 @@ class Agent(ABC):
                 f"Outport '{outport}' of agent '{self.name}' is not connected."
             )
 
-        # Filter out None messages
         if msg is None:
             return
 
         q.put(msg)
 
+        # Count only client messages
+        if not isinstance(msg, _OsMessage):
+            self.sent[outport] += 1
+
     def recv(self, inport: str) -> Any:
-        """Receive a message from an input port (blocking)."""
+        """
+        Receive a message from an input port (blocking).
+
+        Transparently intercepts OS messages:
+        - _GiveMeCounts: responds with current counts via send_os()
+        - _Shutdown: raises _ShutdownSignal to unwind run()
+
+        Client messages are counted and returned to the caller.
+        """
         if inport not in self.inports:
             raise ValueError(
                 f"Port '{inport}' is not a valid inport of agent '{self.name}'. "
@@ -216,12 +264,34 @@ class Agent(ABC):
                 f"Inport '{inport}' of agent '{self.name}' is not connected."
             )
 
-        return q.get()
+        while True:
+            msg = q.get()
 
-    def broadcast_stop(self) -> None:
-        """Send STOP signal to all downstream agents via all outports."""
-        for outport in self.outports:
-            self.send(STOP, outport)
+            if isinstance(msg, _GiveMeCounts):
+                # Respond with current counts — framework handles this
+                self.send_os({
+                    "agent":    self.name,
+                    "sent":     dict(self.sent),
+                    "received": dict(self.received),
+                })
+
+            elif isinstance(msg, _Shutdown):
+                # Unwind run() cleanly
+                raise _ShutdownSignal()
+
+            else:
+                # Client message — count and return
+                self.received[inport] += 1
+                return msg
+
+    def send_os(self, msg: Any) -> None:
+        """
+        Send a message directly to os_agent's input queue.
+        Used by recv() to respond to _GiveMeCounts.
+        Framework use only — not for client code.
+        """
+        if self.os_q is not None:
+            self.os_q.put(msg)
 
     # ========== Default Port Properties ==========
 

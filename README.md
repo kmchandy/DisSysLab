@@ -1,24 +1,42 @@
 # DSL — Build Your Own Office of AI Agents
 
-**Claude answers when you ask. What if Claude worked for you all the time — even when you're not there?**
+**AI tools answer when you ask. What if a network of AI agents worked for you all the time?**
 
-DSL lets you build an office of AI agents that runs continuously, 24 hours a day.
-You describe each agent's job in plain English. You specify who talks to whom.
-One command starts your office. Your agents work while you sleep.
-
-This is how you build an office that creates your Situation Room — scanning live
-news and social media, filtering for what matters, filing briefings in real time.
-You didn't write any code. You wrote two plain English files.
+DSL lets you build an office of AI agents that runs continuously and never stops
+until you tell it to.
+Your agents monitor sources, analyze data, control devices, and store results for you, all
+the time.
 
 ---
 
 ![Situation Room](gallery/org_situation_room/screenshot.png)
 
+*A Situation Room scanning live news and social media in real time.
+You didn't write any code. You wrote two plain English documents.*
+
 ---
 
-## What You Wrote
+## Get Started in 2 Minutes
 
-Two plain English files. Nothing else.
+```bash
+git clone https://github.com/your-org/DSL.git
+cd DSL
+pip install -r requirements.txt
+export ANTHROPIC_API_KEY='your-key'
+
+python3 office_compiler.py gallery/org_intelligence_briefing/
+```
+
+The compiler reads your plain English files, shows you the routing,
+asks "Does this look right?", and starts your office.
+
+---
+
+## Two Paths Forward
+
+### Path A — Describe your office in plain English: Job Descriptions and Org Chart
+
+You write job descriptions and an org chart. No programming required.
 
 **The job descriptions — what each agent does:**
 
@@ -78,176 +96,28 @@ Alex's discard is jsonl_recorder.
 Morgan's situation_room are intelligence_display and jsonl_recorder.
 ```
 
-That's it. The compiler reads these files, shows you the routing,
-asks "Does this look right?", and generates your office.
-
-```
-al_jazeera ─┐
-bbc_world   ─┤→  Alex  →  Morgan  ─┬→  Situation Room display
-bluesky     ─┘                      └→  situation_room.jsonl
-```
-
----
-
-## Quick Start
-
-**Step 1 — Clone and install:**
-
-```bash
-git clone https://github.com/your-org/DSL.git
-cd DSL
-pip install -r requirements.txt
-export ANTHROPIC_API_KEY='your-key'
-```
-
-**Step 2 — Compile your office:**
-
-```bash
-python3 office_compiler.py gallery/org_situation_room/
-```
-
-The compiler shows you what it understood and asks for confirmation.
-If anything looks wrong, edit your files and rerun — no Python required.
-
-**Step 3 — Start your office:**
-
-```bash
-python3 -m gallery.org_situation_room.app
-```
-
-Your Situation Room starts immediately. Alex scans incoming posts and
-articles. Morgan writes briefings. The display updates in real time —
-BlueSky posts arrive seconds apart, RSS articles arrive as they're
-published. Your office runs until you stop it.
-
----
-
-## Build Your Own Office
-
-Change the topics. Change the agents. Change the sources.
+That's it. Change the topics, change the agents, change the sources.
 The office is yours.
 
-**To build your own:**
+**Offices can contain offices.** An office is
+a building block which you can put into a network with other offices
+— a news office feeding a strategy office, a research
+office feeding an editorial office. Each office is a black box: the
+organization only knows what goes in and what comes out. You can build
+organizations of arbitrary complexity, one office at a time, reusing
+offices across different networks.
 
-1. Create a new directory: `gallery/org_your_idea/`
-2. Write a role file for each type of agent in `roles/`
-3. Write an org chart in `office.md`
-4. Run: `python3 office_compiler.py gallery/org_your_idea/`
-
-**Some ideas:**
-
-- A research assistant that monitors arXiv for papers in your field,
-  filters for relevance, and summarizes findings into a daily digest
-- A competitive intelligence office that scans tech news, flags
-  mentions of your competitors, and rates their significance
-- A job scout that monitors job boards, filters for your skills,
-  and ranks postings by fit
-- A policy tracker that monitors government sources and flags
-  regulatory changes relevant to your industry
-- A personal finance monitor that tracks market news and flags
-  developments relevant to your portfolio
+**→ [Go to the gallery](gallery/) to run an existing office and build your own.**
 
 ---
 
-## Going Further
+### Path B — Learn how distributed systems work
 
-Once your first office is running, the possibilities expand naturally.
-
-**Multiple agents in the same role.** You can have two analysts —
-Alex focused on politics, Jordan focused on economics — both feeding
-the same editor. Just add agents to your office spec.
-
-**Networks of offices.** A legal office feeds a CEO office. An
-intelligence office feeds a strategy office. In DSL, an office can
-itself be an agent in a larger office. The infrastructure is already
-there.
-
-**Agent personas.** Your editor is measured and balanced. What if
-she were pessimistic? What if your analyst only flagged stories
-involving specific countries? Agent behavior is entirely determined
-by the job description — change the description, change the behavior.
-No code changes required.
-
----
-
-## Available Sources
-
-```
-bluesky          — live social media stream, no auth needed
-al_jazeera       — Al Jazeera world news
-bbc_world        — BBC world news
-bbc_tech         — BBC technology news
-npr_news         — NPR news
-hacker_news      — Hacker News
-techcrunch       — TechCrunch
-mit_tech_review  — MIT Technology Review
-venturebeat_ai   — VentureBeat AI
-nasa_news        — NASA news
-python_jobs      — Python job listings
-```
-
-## Available Sinks
-
-```
-intelligence_display(max_items=N)  — live color-coded dashboard
-console_printer                    — plain text to console
-jsonl_recorder(path="file.jsonl")  — save to JSON Lines file
-```
-
----
-
-## Gallery
-
-| Office | What it does |
-|--------|-------------|
-| [Situation Room](gallery/org_situation_room/) | Live politics & economics monitor — BlueSky + RSS |
-| [Intelligence Briefing](gallery/org_intelligence_briefing/) | World news briefing, significant events only |
-| [News Filter](gallery/org_news_filter/) | Filters articles by geography |
-| [News Chain](gallery/org_news_chain/) | Two-agent editorial chain |
-
----
-
-## How It Works
-
-DSL compiles your plain English files into a Python distributed system.
-Each agent runs in its own thread. Messages flow through queues.
-The framework handles all concurrency, synchronization, and shutdown.
-
-```
-Your plain English files
-        ↓
-office_compiler.py  (uses Claude to parse your descriptions)
-        ↓
-app.py  (generated — complete runnable Python)
-        ↓
-Concurrent agents processing live data, running forever
-```
-
-Unlike tools that re-run a pipeline on a schedule, DSL agents are
-always running — waiting for the next message, processing it
-immediately, passing it on. BlueSky posts arrive seconds apart.
-RSS articles arrive the moment they're published. Your office
-responds in real time.
-
----
-
-## For the Curious: How DSL Is Implemented
-
-Interested in how this works under the hood? DSL is also a complete
-Python framework for building distributed systems — sources, transforms,
-splits, sinks, fanin, fanout, message queues, concurrent threads.
-
-The module sequence takes you from generating your first app with Claude
-to building the framework primitives from scratch:
-
-| Module | Topic |
-|--------|-------|
-| M1 | Describe and Build — generate your first app with Claude |
-| M2 | Multiple Sources and Destinations — fanin and fanout |
-| M3 | Smart Routing — filter and split messages |
-| M4 | Build Your Own — write agents from scratch |
-
-Start here: [`examples/module_01_describe_and_build/README.md`](examples/module_01_describe_and_build/README.md)
+**Interested in how DSL works under the hood?** 
+DSL is also a  Python framework for building distributed systems —
+concurrent agents, message queues, routing, and termination detection.
+See [`examples/`](../examples/) for a module sequence that takes you 
+from your first network to building distributed systems from scratch.
 
 ---
 
@@ -259,5 +129,5 @@ Start here: [`examples/module_01_describe_and_build/README.md`](examples/module_
 
 ---
 
-*DSL is an open research project exploring Claude's ability to specify,
-compile, and run persistent distributed systems from natural language.*
+*DSL is an open research project exploring natural language interfaces
+to persistent distributed systems.*

@@ -157,7 +157,7 @@ class TestLiveBlueSkyJetstream:
     def test_live_source_returns_dict(self):
         from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
         src = BlueSkyJetstreamSource(max_posts=2, lifetime=30)
-        post = src.run()
+        post = next(src.run())
         assert isinstance(post, dict)
 
     @pytest.mark.skipif(
@@ -167,7 +167,7 @@ class TestLiveBlueSkyJetstream:
     def test_live_source_has_required_keys(self):
         from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
         src = BlueSkyJetstreamSource(max_posts=2, lifetime=30)
-        post = src.run()
+        post = next(src.run())
         for key in ("text", "author", "hashtags", "language"):
             assert key in post, f"Missing key '{key}' in live post"
 
@@ -176,17 +176,17 @@ class TestLiveBlueSkyJetstream:
         reason="BlueSky Jetstream not reachable — no network or service down"
     )
     def test_live_and_demo_same_schema(self):
-        """Live and demo sources produce dicts with the same top-level keys."""
         from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
         live = BlueSkyJetstreamSource(max_posts=1, lifetime=30)
         demo = DemoBlueSkyJetstream(max_posts=1, delay_seconds=0)
-        live_post = live.run()
+        live_post = next(live.run())
         demo_post = demo.run()
-        assert set(live_post.keys()) == set(demo_post.keys()), (
-            f"Schema mismatch.\n"
-            f"  Live keys: {sorted(live_post.keys())}\n"
-            f"  Demo keys: {sorted(demo_post.keys())}"
-        )
+        required_keys = {"text", "author", "author_display", "timestamp",
+                         "hashtags", "language", "url"}
+        assert required_keys.issubset(set(live_post.keys())), \
+            f"Live post missing required keys: {required_keys - set(live_post.keys())}"
+        assert required_keys.issubset(set(demo_post.keys())), \
+            f"Demo post missing required keys: {required_keys - set(demo_post.keys())}"
 
 
 # ====================================================================

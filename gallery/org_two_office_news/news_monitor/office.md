@@ -3,6 +3,8 @@
 Inputs: article_in
 Outputs: article_out
 
+Sinks: discard
+
 Agents:
 Alex is a correspondent.
 Morgan is an analyst.

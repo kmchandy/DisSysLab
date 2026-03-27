@@ -3,16 +3,15 @@
 Split Agent: Routes messages to different outputs based on function.
 
 Split agents use a router function to determine which output port(s)
-should receive each message. The router returns a list of N messages
-(one per output), with None values indicating that output should not
-receive the message.
+should receive each message. Termination is signaled by os_agent via
+_Shutdown, handled transparently by recv().
 """
 
 from __future__ import annotations
 from typing import Callable, Any, Optional, List
 import traceback
 
-from dsl.core import Agent, STOP
+from dsl.core import Agent
 
 
 class Split(Agent):
@@ -33,59 +32,9 @@ class Split(Agent):
     - None values filtered (not sent to that output)
     - Signature: fn(msg) -> List[Optional[msg]]
 
-    **Capabilities:**
-    This pattern supports:
-    - Routing: [msg, None, None] → only out_0
-    - Multicast: [msg, msg, None] → both out_0 and out_1
-    - Transform: [enriched_msg, None, None] → modified message to out_0
-    - Filter: [None, None, None] → drop message completely
-
-    **Message Flow:**
-    - Receives message from "in_"
-    - Calls fn(msg) to get list of N messages
-    - Sends each non-None message to corresponding output
-    - Forwards STOP to all outputs and terminates
-
-    **Error Handling:**
-    - Validates fn returns list of correct length
-    - Catches exceptions in routing logic
-    - Broadcasts STOP on errors
-
-    **Examples:**
-
-    Even/odd routing:
-        >>> class EvenOddRouter:
-        ...     def route(self, msg):
-        ...         if msg % 2 == 0:
-        ...             return [msg, None]  # Even → out_0
-        ...         else:
-        ...             return [None, msg]  # Odd → out_1
-        >>> router = EvenOddRouter()
-        >>> split = Split(fn=router.route, num_outputs=2, name="even_odd")
-
-    Range-based routing:
-        >>> class RangeRouter:
-        ...     def route(self, msg):
-        ...         if msg < 0:
-        ...             return [msg, None, None]  # Negative
-        ...         elif msg < 100:
-        ...             return [None, msg, None]  # Mid-range
-        ...         else:
-        ...             return [None, None, msg]  # Large
-        >>> router = RangeRouter()
-        >>> split = Split(fn=router.route, num_outputs=3, name="range")
-
-    Multicast (send to multiple outputs):
-        >>> class MulticastRouter:
-        ...     def route(self, msg):
-        ...         if msg > 100:
-        ...             return [msg, msg, msg]  # All outputs
-        ...         elif msg > 50:
-        ...             return [msg, msg, None]  # Two outputs
-        ...         else:
-        ...             return [msg, None, None]  # One output
-        >>> router = MulticastRouter()
-        >>> split = Split(fn=router.route, num_outputs=3, name="multi")
+    **Termination:**
+    Termination is detected by os_agent and signaled via _Shutdown,
+    which recv() handles transparently by raising _ShutdownSignal.
     """
 
     def __init__(
@@ -93,26 +42,8 @@ class Split(Agent):
         *,
         fn: Callable[[Any], List[Optional[Any]]],
         num_outputs: int,
-        name: str
+        name: Optional[str] = None
     ):
-        """
-        Initialize Split agent.
-
-        Args:
-            fn: Callable that routes messages.
-                Signature: fn(msg) -> List[Optional[msg]]
-                Must return list of num_outputs messages
-            num_outputs: Number of output ports to create
-            name: Unique name for this agent (REQUIRED)
-
-        Raises:
-            ValueError: If name is empty
-            TypeError: If fn is not callable
-            ValueError: If num_outputs < 2
-        """
-        if not name:
-            raise ValueError("Split agent requires a name")
-
         if not callable(fn):
             raise TypeError(
                 f"Split fn must be callable, got {type(fn).__name__}"
@@ -123,9 +54,7 @@ class Split(Agent):
                 f"Split requires at least 2 outputs, got {num_outputs}"
             )
 
-        # Create output ports: out_0, out_1, ..., out_{n-1}
         outports = [f"out_{i}" for i in range(num_outputs)]
-
         super().__init__(name=name, inports=["in_"], outports=outports)
         self._fn = fn
         self.num_outputs = num_outputs
@@ -144,22 +73,15 @@ class Split(Agent):
         """
         Route messages to outputs based on fn.
 
-        Calls fn(msg) to get list of messages, sends each to corresponding output.
+        recv() intercepts _Shutdown and raises _ShutdownSignal,
+        which unwinds this loop cleanly.
         """
         while True:
-            # Receive message
             msg = self.recv("in_")
 
-            # Check for termination
-            if msg is STOP:
-                self.broadcast_stop()
-                return
-
             try:
-                # Get routing decisions
                 results = self._fn(msg)
 
-                # Validate results
                 if not isinstance(results, (list, tuple)):
                     raise TypeError(
                         f"Split fn must return a list of {self.num_outputs} messages. "
@@ -172,15 +94,12 @@ class Split(Agent):
                         f"Got {len(results)} messages: {results!r}"
                     )
 
-                # Send to each output
-                # (None values filtered automatically by send())
                 for i, out_msg in enumerate(results):
                     self.send(out_msg, f"out_{i}")
 
             except Exception as e:
                 print(f"[Split '{self.name}'] Error in fn: {e}")
                 print(traceback.format_exc())
-                self.broadcast_stop()
                 return
 
     def __repr__(self) -> str:

@@ -17,6 +17,7 @@
 # ============================================================
 
 import json
+import re
 from dsl import network
 from dsl.blocks import Source, Transform, Sink
 from components.sources.web_scraper import arxiv_cs_ai, arxiv_cs_lg, arxiv_cs_cl
@@ -81,29 +82,40 @@ reporter_agent = ai_agent(f"""
     Return plain text, not JSON.
 """)
 
+# ── Helper ────────────────────────────────────────────────────
+
+
+def _parse_json(raw):
+    """Extract JSON from Claude response, tolerating extra text or pre-parsed dict."""
+    if isinstance(raw, dict):
+        return raw
+    match = re.search(r'\{.*?\}', raw, re.DOTALL)
+    return json.loads(match.group()) if match else {}
+
+
 # ── Transform Functions ───────────────────────────────────────
 
 
 def filter_relevant(paper):
     if not paper.get("text", "").strip():
         return None
-    result = json.loads(relevance_agent(paper["text"]))
-    if not result["relevant"]:
+    result = _parse_json(relevance_agent(paper["text"]))
+    if not result.get("relevant"):
         return None
     return paper
 
 
 def classify_paper(paper):
-    result = json.loads(classify_agent(paper["text"]))
-    paper["type"] = result["type"]
-    paper["topic"] = result["topic"]
+    result = _parse_json(classify_agent(paper["text"]))
+    paper["type"] = result.get("type", "OTHER")
+    paper["topic"] = result.get("topic", "")
     return paper
 
 
 def rate_impact(paper):
-    result = json.loads(impact_agent(paper["text"]))
-    paper["impact"] = result["impact"]
-    paper["reason"] = result["reason"]
+    result = _parse_json(impact_agent(paper["text"]))
+    paper["impact"] = result.get("impact", "LOW")
+    paper["reason"] = result.get("reason", "")
     return paper
 
 
@@ -122,14 +134,12 @@ def display(paper):
     source = paper["source"].replace("arxiv_", "").upper()
     topic = paper.get("topic", "")
 
-    # Extract authors from the structured text field
     authors = ""
     for line in paper.get("text", "").splitlines():
         if line.startswith("Authors:"):
             authors = line.replace("Authors:", "").strip()
             break
     if len(authors) > 80:
-        # Truncate at last comma before limit and add ellipsis
         truncated = authors[:80].rsplit(",", 1)[0]
         authors = truncated + "..."
 

@@ -15,6 +15,7 @@
 # ============================================================
 
 import json
+import re
 from dsl import network
 from dsl.blocks import Source, Transform, Sink
 from components.sources.rss_normalizer import (
@@ -58,33 +59,39 @@ impact level (HIGH first). Include title and sentiment for each.
 Return plain text, not JSON.
 """)
 
+# ── Helper ────────────────────────────────────────────────────
+
+
+def _parse_json(raw):
+    """Extract JSON from Claude response, tolerating extra text or pre-parsed dict."""
+    if isinstance(raw, dict):
+        return raw
+    match = re.search(r'\{.*?\}', raw, re.DOTALL)
+    return json.loads(match.group()) if match else {}
+
 # ── Transform Functions ───────────────────────────────────────
 
 
 def filter_ai_articles(article):
     if not article.get("text", "").strip():
         return None
-    raw = relevance_agent(article["text"])
-    # print(f"[DEBUG] {repr(raw)}")
-    if not raw.strip():
-        return None
-    result = json.loads(raw)
-    if not result["relevant"]:
+    result = _parse_json(relevance_agent(article["text"]))
+    if not result.get("relevant"):
         return None
     return article
 
 
 def analyze_sentiment(article):
-    result = json.loads(sentiment_agent(article["text"]))
-    article["sentiment"] = result["sentiment"]
-    article["score"] = result["score"]
+    result = _parse_json(sentiment_agent(article["text"]))
+    article["sentiment"] = result.get("sentiment", "NEUTRAL")
+    article["score"] = result.get("score", 0.0)
     return article
 
 
 def rate_impact(article):
-    result = json.loads(impact_agent(article["text"]))
-    article["impact"] = result["impact"]
-    article["reason"] = result["reason"]
+    result = _parse_json(impact_agent(article["text"]))
+    article["impact"] = result.get("impact", "LOW")
+    article["reason"] = result.get("reason", "")
     return article
 
 

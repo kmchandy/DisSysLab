@@ -14,6 +14,7 @@
 # ============================================================
 
 import json
+import re
 from dsl import network
 from dsl.blocks import Source, Transform, Sink
 from components.sources.rss_normalizer import (
@@ -64,26 +65,33 @@ Highlight any stories covered by multiple sources.
 Return plain text, not JSON.
 """)
 
+# ── Helper ────────────────────────────────────────────────────
+
+
+def _parse_json(raw):
+    """Extract JSON from Claude response, tolerating extra text or pre-parsed dict."""
+    if isinstance(raw, dict):
+        return raw
+    match = re.search(r'\{.*?\}', raw, re.DOTALL)
+    return json.loads(match.group()) if match else {}
+
 # ── Transform Functions ───────────────────────────────────────
 
 
 def filter_climate_news(article):
     if not article.get("text", "").strip():
         return None
-    raw = relevance_agent(article["text"])
-    if not raw.strip():
+    result = _parse_json(relevance_agent(article["text"]))
+    if not result.get("relevant"):
         return None
-    result = json.loads(raw)
-    if not result["relevant"]:
-        return None
-    article["topic"] = result["topic"]
+    article["topic"] = result.get("topic", "")
     return article
 
 
 def analyze_sentiment(article):
-    result = json.loads(sentiment_agent(article["text"]))
-    article["sentiment"] = result["sentiment"]
-    article["score"] = result["score"]
+    result = _parse_json(sentiment_agent(article["text"]))
+    article["sentiment"] = result.get("sentiment", "NEUTRAL")
+    article["score"] = result.get("score", 0.0)
     return article
 
 
