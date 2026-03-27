@@ -109,6 +109,8 @@ config/secrets/
 student_work/
 my_projects/
 
+for_instructors/
+
 # Example outputs  
 examples/**/output/
 examples/**/results/
