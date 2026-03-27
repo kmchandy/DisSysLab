@@ -19,7 +19,7 @@ You didn't write any code. You wrote two plain English documents.*
 ## Get Started in 2 Minutes
 
 ```bash
-git clone https://github.com/your-org/DSL.git
+git clone https://github.com/kmchandy/DisSysLab.git
 cd DSL
 pip install -r requirements.txt
 export ANTHROPIC_API_KEY='your-key'
