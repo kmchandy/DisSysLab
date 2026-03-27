@@ -125,4 +125,4 @@ distributed system — two specialized agents coordinating through messages,
 running continuously on your laptop.
 
 The next example adds live social media streaming:
-[Situation Room](../org_situation_room/).
+[Situation Room](../org_situation_room/README.md).

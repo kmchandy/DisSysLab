@@ -138,4 +138,4 @@ being archived. This feedback loop is a common pattern in distributed
 systems — iterative refinement with a termination condition.
 
 The next example shows how to wire two offices together as a larger network:
-[Two-Office News Network](../org_two_office_news/).
+[Two-Office News Network](../org_two_office_news/README.md).

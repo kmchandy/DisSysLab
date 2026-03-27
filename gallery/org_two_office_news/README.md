@@ -17,14 +17,6 @@ articles for significance. news_editor routes by topic and rewrites as
 briefing notes. Each was built and tested independently. The network
 connects them without knowing their internals.
 
-This example shows how to wire two offices together into a larger network.
-Each office is a black box — it has inputs and outputs, but the network
-only knows what goes in and what comes out. Nothing about what happens inside.
-
-The news_monitor office filters articles for significance.
-The news_editor office routes by topic and rewrites as briefing notes.
-Together they form a two-stage editorial pipeline.
-
 ```
 al_jazeera ─┐
 bbc_world  ─┼→  news_monitor  →  news_editor  →  intelligence_display
@@ -37,7 +29,8 @@ npr_news   ─┘
 
 This file connects the two offices. It describes sources, sinks,
 and how offices connect to each other — nothing about what happens inside
-each office.
+each office. In practice, the component offices may come from a library
+built by someone else. Your job is to specify how they connect.
 
 ```
 # Network: two_office_news
@@ -58,15 +51,6 @@ news_editor's article_out is intelligence_display.
 ```
 
 ---
-When you build the two-office network you will probably
-have defined the component offices -- news_monitor and news_editor --
-earlier. These office specifications and implementations may
-be in a library that someone else constructed. Your job is
-to specify the flow of information between component offices.
-
-To complete this example, we next describe the specifications of
-the component offices as well.
-
 
 ## Inside news_monitor
 

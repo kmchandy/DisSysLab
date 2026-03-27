@@ -132,4 +132,4 @@ This is a persistent distributed system — five concurrent agents
 coordinating through messages, running until you stop it.
 
 The next example introduces a feedback loop between agents:
-[News Editorial](../org_news_editorial/).
+[News Editorial](../org_news_editorial/README.md).

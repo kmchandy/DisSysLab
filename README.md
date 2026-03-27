@@ -107,7 +107,7 @@ organization only knows what goes in and what comes out. You can build
 organizations of arbitrary complexity, one office at a time, reusing
 offices across different networks.
 
-**→ [Go to the gallery](gallery/) to run an existing office and build your own.**
+**→ [Go to the gallery](gallery/README.md) to run an existing office and build your own.**
 
 ---
 
@@ -116,7 +116,7 @@ offices across different networks.
 **Interested in how DSL works under the hood?** 
 DSL is also a  Python framework for building distributed systems —
 concurrent agents, message queues, routing, and termination detection.
-See [`examples/`](../examples/) for a module sequence that takes you 
+See [`examples/`](examples/README.md) for a module sequence that takes you 
 from your first network to building distributed systems from scratch.
 
 ---
