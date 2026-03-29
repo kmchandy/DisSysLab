@@ -1,6 +1,13 @@
 # DSL — Build Your Own Office of AI Agents
 
+# DSL — Build Your Own Office of AI Agents
+
 **AI tools answer when you ask. What if a network of AI agents worked for you all the time?**
+
+## 🎓 New to DisSysLab? Start here
+[Take the 5-minute micro-course](https://kmchandy.github.io/DisSysLab/microcourse.html)
+
+---
 
 DSL lets you build an office of AI agents that runs continuously and never stops
 until you tell it to.
