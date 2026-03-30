@@ -1,7 +1,5 @@
 # DSL — Build Your Own Office of AI Agents
 
-# DSL — Build Your Own Office of AI Agents
-
 **AI tools answer when you ask. What if a network of AI agents worked for you all the time?**
 
 ## 🎓 New to DisSysLab? Start here
