@@ -4,7 +4,8 @@
 
 ## 🎓 New to DisSysLab? Start here
 [Take the 5-minute micro-course](https://kmchandy.github.io/DisSysLab/microcourse.html)
-Read [Getting started](https://kmchandy.github.io/DisSysLab/GETTING_STARTED.md)
+
+Then read [Getting started](https://kmchandy.github.io/DisSysLab/GETTING_STARTED.md)
 
 ---
 
