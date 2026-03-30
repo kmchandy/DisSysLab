@@ -3,7 +3,7 @@
 **AI tools answer when you ask. What if a network of AI agents worked for you all the time?**
 
 ## 🎓 New to DisSysLab? Start here
-[Take the 5-minute micro-course](https://kmchandy.github.io/DisSysLab/microcourse.html)
+[Take the 5-minute micro-course](https://kmchandy.github.io/DisSysLab/office_microcourse.html)
 
 Then read [Getting started](https://kmchandy.github.io/DisSysLab/GETTING_STARTED.md)
 
