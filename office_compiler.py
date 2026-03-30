@@ -4,7 +4,7 @@
 # A closed office has no Inputs/Outputs — it is a complete, runnable network.
 #
 # Usage:
-#   python3 office_compiler.py gallery/org_intelligence_briefing/
+#   python3 office_compiler.py gallery/office_name/
 #
 # For open offices (composable black boxes), use make_office.py instead.
 
@@ -25,6 +25,7 @@ from office_utils import (
     parse_office,
     validate,
     show_routing_table,
+    generate_app,
 )
 
 
@@ -169,12 +170,7 @@ if __name__ == "__main__":
 
     office_dir = sys.argv[1]
 
-    print()
-    print("Parsing roles...")
     roles = parse_roles(office_dir)
-
-    print()
-    print("Parsing office...")
     office = parse_office(office_dir)
 
     if office["inputs"] or office["outputs"]:
@@ -184,15 +180,13 @@ if __name__ == "__main__":
         print(f"  python3 make_office.py {office_dir}")
         sys.exit(1)
 
-    print()
-    print("Validating...")
     errors = validate(roles, office)
     if errors:
+        print()
         print("Errors found:")
         for e in errors:
             print(f"  ✗ {e}")
         sys.exit(1)
-    print("  ✓ All checks passed.")
 
     show_routing_table(roles, office)
 
@@ -203,6 +197,17 @@ if __name__ == "__main__":
         sys.exit(0)
 
     print()
-    print("Running...")
+    print("🚀 Your office is starting up...")
+    print()
+    agent_names = ", ".join(
+        f"{a['name']} ({a['role']})" for a in office["agents"]
+    )
+    source_names = ", ".join(s["name"] for s in office["sources"])
+    print(f"   Agents:  {agent_names}")
+    print(f"   Sources: {source_names}")
+    generate_app(roles, office, office_dir)
+    print()
+    print("   Press Ctrl+C to stop.")
+    print("━" * 60)
     print()
     build_and_run(roles, office, office_dir)
