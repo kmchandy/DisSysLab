@@ -75,6 +75,12 @@ def filter_spam(text):
 def check_relevance(text):
     """Check if this posting matches the target role."""
     result = relevance_checker(text)
+    if isinstance(result, str):
+        import json
+        try:
+            result = json.loads(result)
+        except json.JSONDecodeError:
+            return {"text": text, "match": "NONE", "confidence": 0.0, "reason": result}
     return {
         "text":       text,
         "match":      result.get("match", "NONE"),
