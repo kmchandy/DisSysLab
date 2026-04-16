@@ -28,7 +28,7 @@ Ask the user these questions. You do not need all answers before starting —
 make reasonable defaults and confirm them:
 
 - **What topic or domain?** (news, finance, sports, research, security, etc.)
-- **What sources?** Where does data come from? (social media, RSS feeds, sensors, files)
+- **What sources?** Where does data come from? (social media, RSS feeds, websites, email, calendar)
 - **What should agents do?** Filter, classify, summarize, rewrite, alert?
 - **Where should results go?** Live display, file, email alert, or all of the above?
 
@@ -169,10 +169,29 @@ Connections:
 | `bbc_world` | `max_articles=10, poll_interval=600` | BBC World RSS news feed |
 | `hacker_news` | `max_articles=10, poll_interval=600` | Hacker News RSS feed |
 | `npr_news` | `max_articles=10, poll_interval=600` | NPR News RSS feed |
+| `web` | `url="https://...", poll_interval=300` | Fetch any web page |
+| `search` | `query="...", poll_interval=3600` | Web search results |
+| `gmail` | `poll_interval=60, max_emails=10, unread_only=True` | Poll Gmail inbox for new emails |
+| `calendar` | `url="https://...", poll_interval=300, days_ahead=7` | Upcoming events from any ICS calendar |
 
 Use `max_posts=None, lifetime=None` for a source that runs forever.
 Use `max_articles=10` for a source that fetches 10 articles and stops.
 Use `poll_interval=600` to re-poll every 600 seconds (10 minutes).
+
+For `web`, use `poll_interval=300` to re-fetch the page every 5 minutes.
+The page content is returned as readable text that agents can analyze.
+
+For `search`, use `poll_interval=3600` to re-search every hour.
+
+For `gmail`, requires `GMAIL_USER` and `GMAIL_APP_PASSWORD` environment variables.
+Tell the user to set these before running their office.
+
+For `calendar`, pass the secret ICS URL from Google Calendar settings.
+Requires `pip install icalendar` for best results.
+
+**Note:** The `web` and `search` sources require Node.js. If the user hasn't
+installed it, tell them to run `brew install node` (Mac) or
+`sudo apt install nodejs` (Linux).
 
 ### Available sinks
 
@@ -180,7 +199,10 @@ Use `poll_interval=600` to re-poll every 600 seconds (10 minutes).
 |------|------------|--------------|
 | `intelligence_display` | `max_items=8` | Live scrolling dashboard in the terminal |
 | `jsonl_recorder` | `path="output.jsonl"` | Saves every message to a JSONL file |
-| `console_display` | _(none)_ | Prints each message to the terminal |
+| `console_printer` | _(none)_ | Prints each message to the terminal |
+| `gmail_sink` | `to="you@example.com", subject="Alert"` | Send email via Gmail |
+
+For `gmail_sink`, requires `GMAIL_USER` and `GMAIL_APP_PASSWORD` environment variables.
 
 ### Connection syntax rules
 
@@ -200,10 +222,12 @@ Morgan's situation_room are intelligence_display and jsonl_recorder.
 ```
 bluesky's destination is Alex.
 al_jazeera's destination is Alex.
+web's destination is Alex.
+gmail's destination is Alex.
+calendar's destination is Alex.
 ```
 
-**To discard unwanted messages, connect to the jsonl_recorder or omit the connection.**
-Use "discard" as a port name to drop messages silently:
+**To discard unwanted messages, use "discard" as a port name:**
 ```
 Alex's discard is jsonl_recorder.
 ```
@@ -228,6 +252,55 @@ bbc_world's destination is Alex.
 Alex's editor is Morgan.
 Alex's discard is jsonl_recorder.
 Morgan's situation_room are intelligence_display and jsonl_recorder.
+```
+
+### Example office file — Web Monitor
+
+```
+Sources: web(url="https://www.anthropic.com/news", poll_interval=300, max_items=3)
+Sinks: console_printer,
+       jsonl_recorder(path="web_monitor.jsonl")
+
+Agents:
+Alex is an analyst.
+
+Connections:
+web's destination is Alex.
+Alex's summary is console_printer.
+Alex's discard is jsonl_recorder.
+```
+
+### Example office file — Email Assistant
+
+```
+Sources: gmail(poll_interval=60, max_emails=5, unread_only=True)
+Sinks: console_printer,
+       gmail_sink(to="you@gmail.com", subject="Email Summary")
+
+Agents:
+Alex is an analyst.
+
+Connections:
+gmail's destination is Alex.
+Alex's summary are console_printer and gmail_sink.
+Alex's discard is jsonl_recorder.
+```
+
+### Example office file — Calendar Briefing
+
+```
+Sources: calendar(url="https://calendar.google.com/calendar/ical/.../basic.ics",
+                  poll_interval=300, days_ahead=3)
+Sinks: console_printer,
+       jsonl_recorder(path="calendar_briefing.jsonl")
+
+Agents:
+Alex is an analyst.
+
+Connections:
+calendar's destination is Alex.
+Alex's briefing is console_printer.
+Alex's discard is jsonl_recorder.
 ```
 
 ---
@@ -262,6 +335,47 @@ Show these when the user wants to go beyond the default:
 **Change the topic** — just edit the analyst role file:
 > "Change 'politics, economics, science' to 'Premier League football,
 > transfer news, and match results' and your office becomes a sports desk."
+
+**Monitor any website** — use the `web` source:
+> ```
+> Sources: web(url="https://any-website.com", poll_interval=300)
+>
+> Connections:
+> web's destination is Alex.
+> ```
+
+**Monitor your Gmail inbox:**
+> ```
+> Sources: gmail(poll_interval=60, unread_only=True)
+>
+> Connections:
+> gmail's destination is Alex.
+> ```
+> Requires: `export GMAIL_USER='you@gmail.com'` and `export GMAIL_APP_PASSWORD='...'`
+
+**Get a daily calendar briefing:**
+> ```
+> Sources: calendar(url="your-ics-url", poll_interval=300, days_ahead=1)
+>
+> Connections:
+> calendar's destination is Alex.
+> ```
+
+**Send email alerts** — use `gmail_sink`:
+> ```
+> Sinks: gmail_sink(to="you@gmail.com", subject="DisSysLab Alert")
+>
+> Connections:
+> Alex's alert is gmail_sink.
+> ```
+
+**Search the web on a schedule** — use the `search` source:
+> ```
+> Sources: search(query="AI regulation news", poll_interval=3600)
+>
+> Connections:
+> search's destination is Alex.
+> ```
 
 **Add an agent** — add one line to the Agents section and one to Connections:
 > ```

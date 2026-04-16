@@ -26,6 +26,7 @@ from office_utils import (
     validate,
     show_routing_table,
     generate_app,
+    expand_shortcut,
 )
 
 
@@ -123,13 +124,23 @@ def build_and_run(roles, office, office_dir):
         name = source["name"]
         args = source["args"]
         reg = SOURCE_REGISTRY[name]
+
         if reg["type"] == "rss":
             import components.sources.rss_normalizer as rss_normalizer
             factory = getattr(rss_normalizer, name)
             obj = factory(**args)
-        elif reg["type"] == "bluesky":
+
+        elif reg["type"] == "mcp_shortcut":
+            # Expand shortcut into full MCPSource kwargs
+            kwargs = expand_shortcut(name, args)
             cls = _import_class(reg["import"], reg["class"])
-            obj = cls(**args)
+            obj = cls(**kwargs)
+
+        else:
+            # handles bluesky, mcp, and any future source types
+            cls = _import_class(reg["import"], reg["class"])
+            obj = cls(**args) if args else cls()
+
         source_nodes[name] = Source(fn=obj.run, name=name)
 
     # ── Edges ─────────────────────────────────────────────────────────────────
@@ -158,7 +169,7 @@ def build_and_run(roles, office, office_dir):
 
     # ── Run ───────────────────────────────────────────────────────────────────
     g = network(edges)
-    g.run_network()
+    g.run_network(timeout=None)
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────

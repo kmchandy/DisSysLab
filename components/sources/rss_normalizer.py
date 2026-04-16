@@ -317,3 +317,12 @@ def we_work_remotely(max_articles: int = 20, poll_interval: Optional[int] = None
         max_articles=max_articles,
         poll_interval=poll_interval,
     )
+
+
+def reddit(subreddit: str, max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
+    return RSSNormalizer(
+        urls=[f"https://www.reddit.com/r/{subreddit}.rss"],
+        source_name=f"reddit_{subreddit}",
+        max_articles=max_articles,
+        poll_interval=poll_interval,
+    )

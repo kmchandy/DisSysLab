@@ -69,8 +69,23 @@ Return JSON only, no explanation, no nested JSON:
 
 
 # ── Source Registry ───────────────────────────────────────────────────────────
+#
+# Three entry types:
+#
+#   type: "rss"            — handled by rss_normalizer; name is the factory fn
+#   type: "mcp"            — full MCPSource; user passes server/tool/args directly
+#   type: "mcp_shortcut"   — named shortcut that expands to MCPSource
+#                            user writes: web(url="...", poll_interval=300)
+#                            compiler expands to:
+#                              MCPSource(server=<server>, tool=<tool>,
+#                                        args={<arg_map key>: user_value, ...},
+#                                        poll_interval=<poll_interval>)
+#                            arg_map: maps user arg names → MCPSource args keys
+#                            passthrough: args passed directly to MCPSource
+#                                         (not wrapped in args={})
 
 SOURCE_REGISTRY = {
+    # ── RSS sources ───────────────────────────────────────────────────────────
     "al_jazeera":      {"type": "rss"},
     "bbc_world":       {"type": "rss"},
     "bbc_tech":        {"type": "rss"},
@@ -81,12 +96,87 @@ SOURCE_REGISTRY = {
     "venturebeat_ai":  {"type": "rss"},
     "nasa_news":       {"type": "rss"},
     "python_jobs":     {"type": "rss"},
+
+    # ── BlueSky streaming ─────────────────────────────────────────────────────
     "bluesky": {
         "type":   "bluesky",
         "import": "from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource",
         "class":  "BlueSkyJetstreamSource",
     },
+
+    # ── Full MCP source (advanced users) ──────────────────────────────────────
+    "mcp_source": {
+        "type":   "mcp",
+        "import": "from components.sources.mcp_source import MCPSource",
+        "class":  "MCPSource",
+    },
+
+    # ── MCP shortcuts (Path A users) ──────────────────────────────────────────
+    # web(url="https://...", poll_interval=300)
+    "web": {
+        "type":       "mcp_shortcut",
+        "import":     "from components.sources.mcp_source import MCPSource",
+        "class":      "MCPSource",
+        "server":     "fetch",
+        "tool":       "fetch",
+        "arg_map":    {"url": "url"},        # user arg → mcp args dict key
+        "passthrough": ["poll_interval", "max_items"],
+    },
+
+    # search(query="AI news today", poll_interval=3600)
+    "search": {
+        "type":       "mcp_shortcut",
+        "import":     "from components.sources.mcp_source import MCPSource",
+        "class":      "MCPSource",
+        "server":     "brave_search",
+        "tool":       "brave_web_search",
+        "arg_map":    {"query": "query"},
+        "passthrough": ["poll_interval", "max_items"],
+    },
+    "gmail": {
+        "type":   "gmail",
+        "import": "from components.sources.gmail_source import GmailSource",
+        "class":  "GmailSource",
+    },
+    "calendar": {
+        "type":   "calendar",
+        "import": "from components.sources.calendar_source import CalendarSource",
+        "class":  "CalendarSource",
+    },
 }
+
+
+# ── Shortcut expansion ────────────────────────────────────────────────────────
+
+def expand_shortcut(name, user_args):
+    """
+    Expand an mcp_shortcut registry entry into MCPSource constructor kwargs.
+
+    Returns a dict suitable for: MCPSource(**kwargs)
+
+    For example, web(url="https://example.com", poll_interval=300) expands to:
+        MCPSource(server="fetch", tool="fetch",
+                  args={"url": "https://example.com"},
+                  poll_interval=300)
+    """
+    reg = SOURCE_REGISTRY[name]
+    mcp_args = {}
+    passthrough_kwargs = {}
+
+    for user_key, user_val in user_args.items():
+        if user_key in reg.get("passthrough", []):
+            passthrough_kwargs[user_key] = user_val
+        elif user_key in reg.get("arg_map", {}):
+            mapped_key = reg["arg_map"][user_key]
+            if mapped_key is not None:
+                mcp_args[mapped_key] = user_val
+
+    return {
+        "server": reg["server"],
+        "tool":   reg["tool"],
+        "args":   mcp_args,
+        **passthrough_kwargs,
+    }
 
 
 # ── Sink Registry ─────────────────────────────────────────────────────────────
@@ -113,6 +203,18 @@ SINK_REGISTRY = {
     "intelligence_display": {
         "import": "from components.sinks.intelligence_display import IntelligenceDisplay",
         "class":  "IntelligenceDisplay",
+        "args":   "named",
+        "call":   "run",
+    },
+    "mcp_sink": {
+        "import": "from components.sinks.mcp_sink import MCPSink",
+        "class":  "MCPSink",
+        "args":   "named",
+        "call":   "run",
+    },
+    "gmail_sink": {
+        "import": "from components.sinks.gmail_sink import GmailSink",
+        "class":  "GmailSink",
         "args":   "named",
         "call":   "run",
     },
@@ -250,8 +352,8 @@ def show_routing_table(roles, office):
             print(f"  {sender:<16}  [{dest}]  →  {to}")
     print()
 
-# ── Code Generation ───────────────────────────────────────────────────────────
 
+# ── Code Generation ───────────────────────────────────────────────────────────
 
 def generate_app(roles, office, office_dir):
     """
@@ -361,9 +463,7 @@ def generate_app(roles, office, office_dir):
         cls = reg["class"]
         if args:
             arg_str = ", ".join(f"{k}={repr(v)}" for k, v in args.items())
-            lines.append(
-                f"_{sname} = {cls}({arg_str})"
-            )
+            lines.append(f"_{sname} = {cls}({arg_str})")
         else:
             lines.append(f"_{sname} = {cls}()")
         lines.append(
@@ -376,19 +476,30 @@ def generate_app(roles, office, office_dir):
         sname = source["name"]
         args = source["args"]
         reg = SOURCE_REGISTRY[sname]
+
         if reg["type"] == "rss":
             if args:
                 arg_str = ", ".join(f"{k}={repr(v)}" for k, v in args.items())
                 lines.append(f"_{sname} = rss_normalizer.{sname}({arg_str})")
             else:
                 lines.append(f"_{sname} = rss_normalizer.{sname}()")
+
+        elif reg["type"] == "mcp_shortcut":
+            # Expand shortcut into full MCPSource kwargs
+            kwargs = expand_shortcut(sname, args)
+            cls = reg["class"]
+            arg_str = ", ".join(f"{k}={repr(v)}" for k, v in kwargs.items())
+            lines.append(f"_{sname} = {cls}({arg_str})")
+
         else:
+            # mcp, bluesky, and any future types
             cls = reg["class"]
             if args:
                 arg_str = ", ".join(f"{k}={repr(v)}" for k, v in args.items())
                 lines.append(f"_{sname} = {cls}({arg_str})")
             else:
                 lines.append(f"_{sname} = {cls}()")
+
         lines.append(
             f"{sname} = Source(fn=_{sname}.run, name={repr(sname)})"
         )

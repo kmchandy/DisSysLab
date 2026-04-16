@@ -1,6 +1,6 @@
 # DisSysLab — Context for Claude
 
-You are helping a hobbyist build a custom DisSysLab application from scratch.
+You are helping a person to use natural language to build a custom DisSysLab application from scratch.
 DisSysLab is a Python framework for building persistent streaming applications.
 Ordinary Python functions are wrapped into concurrent nodes connected by message queues.
 The framework handles all threading, synchronization, and shutdown automatically.

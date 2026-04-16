@@ -577,7 +577,7 @@ class Network:
             msgs = "; ".join(f"{n}: {repr(e)}" for n, e in errors)
             raise RuntimeError(f"Shutdown failed for agent(s): {msgs}")
 
-    def run_network(self, timeout: Optional[float] = 30.0) -> None:
+    def run_network(self, timeout: Optional[float] = 300.0) -> None:
         """
         Compile (if needed), startup, run, and shutdown the network.
 
