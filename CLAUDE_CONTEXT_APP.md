@@ -319,14 +319,8 @@ components for real ones when you are ready.
 
 ---
 
-## Want the Full Gallery Pattern?
+## Want More Examples?
 
-If you want to build an app that monitors RSS feeds continuously and
-generates a daily digest — like the five gallery apps — use the gallery
-seed document instead:
-```
-DisSysLab/gallery/CLAUDE_CONTEXT.md
-```
-
-That document covers `RSSNormalizer`, `StatefulAgent`, `ClockSource`,
-and the full gather-scatter pattern with five complete examples.
+Browse `gallery/` for complete working apps — RSS monitors, email
+assistants, research trackers, and more. Each folder has a README
+explaining what it does and how to run it.
