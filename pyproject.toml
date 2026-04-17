@@ -1,43 +1,72 @@
 [project]
-name = "dsl"
-version = "0.1.0"
-description = "Educational framework for distributed applications"
+name = "dissyslab"
+version = "1.0.0"
+description = "DisSysLab — build continuous offices of AI agents in plain English."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "K. Mani Chandy", email = "kmchandy@gmail.com" }]
+keywords = [
+  "distributed-systems",
+  "agents",
+  "ai",
+  "education",
+  "claude",
+  "anthropic",
+  "llm",
+  "dataflow",
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Education",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Education",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: System :: Distributed Computing",
+]
 
-# Core dependencies (matches requirements.txt)
+# Core dependencies: everything needed to run the built-in components.
+# Image deps (Pillow, numpy, scipy) are in core because several gallery
+# offices use them (M07, M08), and students should get a working install
+# out of the box. Tests live under dev.
 dependencies = [
-  "rich>=13.7.0",
+  "anthropic>=0.39.0",
+  "python-dotenv>=1.0.0",
+  "feedparser>=6.0.11",
   "requests>=2.31.0",
-  "beautifulsoup4>=4.12.2",
-  "lxml>=4.9.3",
-  "websockets>=12.0",
-  "tqdm>=4.66.0"
+  "websocket-client>=1.6.0",
+  "beautifulsoup4>=4.12.0",
+  "Pillow>=10.0.0",
+  "numpy>=1.24.0",
+  "scipy>=1.11.0",
 ]
 
 [project.optional-dependencies]
-# Install only when needed
-openai = ["openai>=1.3.7"]
-numeric = ["numpy>=1.24", "scipy>=1.11"]
-plots = ["matplotlib>=3.8"]
-audio = ["soundfile>=0.12"]
-rss = ["feedparser>=6.0.11"]
-
 dev = [
   "pytest>=8.0.0",
-  "pytest-cov>=4.0.0",      # Added for coverage
-  "pytest-timeout>=2.1.0",  # Added for timeouts
+  "pytest-cov>=4.0.0",
+  "pytest-timeout>=2.1.0",
   "ruff>=0.6.9",
   "black>=24.8.0",
   "build>=1.2.1",
-  "twine>=5.1.1"
+  "twine>=5.1.1",
 ]
+
+[project.scripts]
+dsl = "dissyslab.cli:main"
 
 [project.urls]
 Homepage = "https://github.com/kmchandy/DisSysLab"
 Source = "https://github.com/kmchandy/DisSysLab"
+Documentation = "https://github.com/kmchandy/DisSysLab#readme"
+Issues = "https://github.com/kmchandy/DisSysLab/issues"
 
 [build-system]
 requires = ["setuptools>=69.0", "wheel"]
@@ -45,28 +74,36 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["dsl*"]
-exclude = ["tests*"]  # Changed: tests is at root level, not in dsl
+include = ["dissyslab*"]
+exclude = ["tests*", "examples*", "gallery*", "dev*", "site*", "micro_course*"]
 
+# Narrow package-data: ship only data files that the runtime actually reads.
+# We deliberately exclude **/*.md so internal design docs don't ship inside
+# the wheel.
 [tool.setuptools.package-data]
-"dsl" = ["py.typed", "**/*.json", "**/*.yaml", "**/*.yml", "**/*.txt", "**/*.md"]
+"dissyslab" = [
+  "py.typed",
+  "**/*.json",
+  "**/*.yaml",
+  "**/*.yml",
+  "**/*.txt",
+]
 
 [tool.pytest.ini_options]
 minversion = "8.0"
-testpaths = ["tests"]  # ✅ Changed: tests at root level
-addopts = "-v --tb=short --strict-markers"  # Added more useful defaults
+testpaths = ["tests"]
+addopts = "-v --tb=short --strict-markers"
 markers = [
-    "unit: Unit tests",
-    "integration: Integration tests",
-    "slow: Slow running tests"
+  "unit: Unit tests",
+  "integration: Integration tests",
+  "slow: Slow running tests",
 ]
 
-# Optional tooling config 
 [tool.ruff]
 line-length = 100
-target-version = "py38"
-lint.select = ["E","F","I","UP","B"]
+target-version = "py39"
+lint.select = ["E", "F", "I", "UP", "B"]
 
 [tool.black]
 line-length = 100
-target-version = ["py38"]
+target-version = ["py39"]

@@ -79,7 +79,7 @@ Instead, **monitor specific edges** where you suspect problems.
 
 ✅ **Do this:** Add a logger node to monitor specific connections
 ```python
-from dsl.blocks import Transform
+from dissyslab.blocks import Transform
 
 def create_logger(log_file="debug.log", max_messages=100, label=""):
     """
@@ -287,8 +287,8 @@ network([(source, sink)])  # Data flows forward
 
 **Solution:**
 ```python
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
 ```
 
 ---
@@ -424,12 +424,12 @@ print(f"Results: {sink.items}")
 **Solution:**
 ```python
 # Check what's available
-import components.sources
+import dissyslab.components.sources
 print(dir(components.sources))
 
 # Check file exists
 import os
-print(os.path.exists("components/sources/my_source.py"))
+print(os.path.exists("dissyslab/components/sources/my_source.py"))
 ```
 
 ---

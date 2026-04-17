@@ -18,12 +18,12 @@
 
 import json
 import re
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from components.sources.web_scraper import arxiv_cs_ai, arxiv_cs_lg, arxiv_cs_cl
-from components.transformers.ai_agent import ai_agent
-from components.transformers.stateful_agent import StatefulAgent
-from components.sources.clock_source import ClockSource
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab.components.sources.web_scraper import arxiv_cs_ai, arxiv_cs_lg, arxiv_cs_cl
+from dissyslab.components.transformers.ai_agent import ai_agent
+from dissyslab.components.transformers.stateful_agent import StatefulAgent
+from dissyslab.components.sources.clock_source import ClockSource
 
 # ── Configuration ─────────────────────────────────────────────
 # Edit this list to focus on papers that interest you.

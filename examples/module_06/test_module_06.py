@@ -13,11 +13,11 @@ import pytest
 import numpy as np
 
 
-from components.sources.cartpole_source import CartPoleSource
-from components.transformers.reward_analyzer import RewardAnalyzer
-from components.transformers.policy_analyzer import PolicyAnalyzer
-from components.transformers.learning_curve_analyzer import LearningCurveAnalyzer
-from components.sinks.rl_dashboard import RLDashboard
+from dissyslab.components.sources.cartpole_source import CartPoleSource
+from dissyslab.components.transformers.reward_analyzer import RewardAnalyzer
+from dissyslab.components.transformers.policy_analyzer import PolicyAnalyzer
+from dissyslab.components.transformers.learning_curve_analyzer import LearningCurveAnalyzer
+from dissyslab.components.sinks.rl_dashboard import RLDashboard
 
 
 # ── Shared fixtures ───────────────────────────────────────────────────────────
@@ -296,9 +296,9 @@ class TestModule06Network:
 
     def test_network_runs_and_produces_output(self, tmp_path):
         """Network runs without error and archives all checkpoints."""
-        from dsl import network
-        from dsl.blocks import Source, Transform, Sink, MergeSynch
-        from components.sinks import JSONLRecorder
+        from dissyslab import network
+        from dissyslab.blocks import Source, Transform, Sink, MergeSynch
+        from dissyslab.components.sinks import JSONLRecorder
         import json
 
         archive_path = str(tmp_path / "test_rl_log.jsonl")
@@ -360,8 +360,8 @@ class TestModule06Network:
 
     def test_merge_synch_collects_all_three(self, tmp_path):
         """MergeSynch output is always a list of exactly 3 items."""
-        from dsl import network
-        from dsl.blocks import Source, Transform, Sink, MergeSynch
+        from dissyslab import network
+        from dissyslab.blocks import Source, Transform, Sink, MergeSynch
 
         cart = CartPoleSource(total_episodes=50, checkpoint_every=50, seed=0)
         reward_an = RewardAnalyzer()

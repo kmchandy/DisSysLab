@@ -83,7 +83,7 @@ Morgan's archivist are intelligence_display and jsonl_recorder.
 ## Run it
 
 ```bash
-python3 office_compiler.py gallery/org_intelligence_briefing/
+dsl run gallery/org_intelligence_briefing/
 ```
 
 The compiler shows you the routing and asks "Does this look right?"

@@ -59,7 +59,7 @@ Felix's discard is jsonl_recorder.
 ## Run it
 
 ```bash
-python3 office_compiler.py gallery/org_news_filter/
+dsl run gallery/org_news_filter/
 ```
 
 The compiler shows you the routing and asks "Does this look right?"

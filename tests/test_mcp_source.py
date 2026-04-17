@@ -6,9 +6,9 @@
 # Run with:
 #   python3 tests/test_mcp_source.py
 
-from dsl import network
-from dsl.blocks import Source, Sink
-from components.sources.mcp_source import MCPSource
+from dissyslab import network
+from dissyslab.blocks import Source, Sink
+from dissyslab.components.sources.mcp_source import MCPSource
 
 
 def display(msg):

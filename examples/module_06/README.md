@@ -276,11 +276,11 @@ Test each component independently before running the full network:
 
 ```bash
 # Each file has a __main__ block showing its behavior
-python3 components/sources/cartpole_source.py          # 1000 ep training, shows learning curve
-python3 components/transformers/reward_analyzer.py     # analyzes sample checkpoints
-python3 components/transformers/policy_analyzer.py     # shows training phases
-python3 components/transformers/learning_curve_analyzer.py  # fits trend to sample data
-python3 components/sinks/rl_dashboard.py               # shows formatted output
+python3 dissyslab/components/sources/cartpole_source.py          # 1000 ep training, shows learning curve
+python3 dissyslab/components/transformers/reward_analyzer.py     # analyzes sample checkpoints
+python3 dissyslab/components/transformers/policy_analyzer.py     # shows training phases
+python3 dissyslab/components/transformers/learning_curve_analyzer.py  # fits trend to sample data
+python3 dissyslab/components/sinks/rl_dashboard.py               # shows formatted output
 ```
 
 | File | What it does |

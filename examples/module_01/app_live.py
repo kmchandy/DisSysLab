@@ -18,11 +18,11 @@ call to Claude. That's distributed systems behavior: your pipeline is now
 talking to an AI running on a server somewhere in the world.
 """
 
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from components.sources.demo_rss_source import DemoRSSSource
-from components.transformers.prompts import SPAM_DETECTOR, SENTIMENT_ANALYZER
-from components.transformers.ai_agent import ai_agent             # ← CHANGED
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab.components.sources.demo_rss_source import DemoRSSSource
+from dissyslab.components.transformers.prompts import SPAM_DETECTOR, SENTIMENT_ANALYZER
+from dissyslab.components.transformers.ai_agent import ai_agent             # ← CHANGED
 
 
 # ── Data source ───────────────────────────────────────────────────────────────

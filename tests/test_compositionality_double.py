@@ -11,9 +11,9 @@ Expected:
     "  Hello World  " → lower → bang → strip → prefix
     = "hello world !" stripped = "hello world !" → ">>> hello world !"
 """
-from dsl.composed_agent import composed_agent
-from dsl.blocks import Source, Transform, Sink
-from dsl import network
+from dissyslab.composed_agent import composed_agent
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab import network
 import sys
 sys.path.insert(0, "/home/claude")
 

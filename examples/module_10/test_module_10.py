@@ -22,11 +22,11 @@ Run from the DisSysLab root directory:
 import os
 import pytest
 
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from components.sources.demo_bluesky_jetstream import DemoBlueSkyJetstream
-from components.transformers.prompts import SENTIMENT_ANALYZER
-from components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab.components.sources.demo_bluesky_jetstream import DemoBlueSkyJetstream
+from dissyslab.components.transformers.prompts import SENTIMENT_ANALYZER
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
 
 
 # ── Helpers ────────────────────────────────────────────────────────────────────

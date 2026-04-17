@@ -17,11 +17,11 @@ Run from the DisSysLab root directory:
 # Hacker News Sentiment Monitor
 # Topology: hacker_news → spam_filter → sentiment → display
 
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from components.sources.demo_rss_source import DemoRSSSource
-from components.transformers.prompts import SPAM_DETECTOR, SENTIMENT_ANALYZER
-from components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab.components.sources.demo_rss_source import DemoRSSSource
+from dissyslab.components.transformers.prompts import SPAM_DETECTOR, SENTIMENT_ANALYZER
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
 
 rss = DemoRSSSource(feed_name="hacker_news")
 

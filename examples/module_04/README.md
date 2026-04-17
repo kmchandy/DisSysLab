@@ -130,12 +130,12 @@ Open `app.py`. Every section maps directly to the design above.
 ### Imports
 
 ```python
-from dsl import network
-from dsl.blocks import Source, Transform, Sink, Split
-from components.sources.demo_rss_source import DemoRSSSource
-from components.transformers.prompts import SPAM_DETECTOR, SENTIMENT_ANALYZER
-from components.transformers.demo_ai_agent import demo_ai_agent
-from components.sinks import DemoEmailAlerter, JSONLRecorder
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink, Split
+from dissyslab.components.sources.demo_rss_source import DemoRSSSource
+from dissyslab.components.transformers.prompts import SPAM_DETECTOR, SENTIMENT_ANALYZER
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab.components.sinks import DemoEmailAlerter, JSONLRecorder
 ```
 
 ### Components — one per box in the drawing

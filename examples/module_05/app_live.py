@@ -24,12 +24,12 @@ max_articles=5 per feed keeps API costs low during testing.
 Remove the limit or increase it once you're happy with the results.
 """
 
-from dsl import network
-from dsl.blocks import Source, Transform, Sink, Split
-from components.sources.rss_source import RSSSource
-from components.transformers.prompts import SPAM_DETECTOR, JOB_DETECTOR
-from components.transformers.ai_agent import ai_agent
-from components.sinks import JSONLRecorder
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink, Split
+from dissyslab.components.sources.rss_source import RSSSource
+from dissyslab.components.transformers.prompts import SPAM_DETECTOR, JOB_DETECTOR
+from dissyslab.components.transformers.ai_agent import ai_agent
+from dissyslab.components.sinks import JSONLRecorder
 
 
 # ── Real RSS feeds ────────────────────────────────────────────────────────────

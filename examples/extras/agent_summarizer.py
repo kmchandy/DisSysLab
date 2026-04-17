@@ -1,7 +1,7 @@
-from dsl import network
-from components.sources import ListSource
-from dsl.blocks import Source, Sink, Transform
-from dsl.extensions.agent_openai import AgentOpenAI
+from dissyslab import network
+from dissyslab.components.sources import ListSource
+from dissyslab.blocks import Source, Sink, Transform
+from dissyslab.extensions.agent_openai import AgentOpenAI
 
 list_of_text = [
 

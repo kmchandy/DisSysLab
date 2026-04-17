@@ -9,14 +9,14 @@ as threads, processes, locks, or message passing.
 
 """
 
-from dsl import network
-from dsl.blocks import Source, Transform, Sink, MergeSynch
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink, MergeSynch
 
 # Import components from the components library
-from components.sources.mock_rss_source import MOCK_FEEDS_2
-from components.sources import MockRSSSource
-from components.transformers import MockAISpamFilter, MockAISentimentAnalyzer, MockAINonUrgentFilter
-from components.sinks import MockEmailAlerter, JSONLRecorder
+from dissyslab.components.sources.mock_rss_source import MOCK_FEEDS_2
+from dissyslab.components.sources import MockRSSSource
+from dissyslab.components.transformers import MockAISpamFilter, MockAISentimentAnalyzer, MockAINonUrgentFilter
+from dissyslab.components.sinks import MockEmailAlerter, JSONLRecorder
 
 # ============================================================================
 # Create Source Nodes: construction

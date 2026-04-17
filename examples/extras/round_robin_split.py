@@ -10,10 +10,10 @@ Expected distribution:
 - file_2.txt: 2, 5, 8
 """
 
-from dsl.blocks import Source, Split, Sink
-from dsl import network
-from components.sinks.sink_simple_file import FileLineWriter
-from components.sources.natural_numbers_source import NaturalNumberGenerator
+from dissyslab.blocks import Source, Split, Sink
+from dissyslab import network
+from dissyslab.components.sinks.sink_simple_file import FileLineWriter
+from dissyslab.components.sources.natural_numbers_source import NaturalNumberGenerator
 
 
 class RoundRobinRouter:

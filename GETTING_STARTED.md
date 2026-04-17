@@ -46,8 +46,11 @@ and outputs. DSL handles threading, message passing, and shutdown.
 ```bash
 git clone https://github.com/kmchandy/DisSysLab.git
 cd DisSysLab
-pip install -r requirements.txt
+pip install -e .
 ```
+
+`pip install -e .` installs DisSysLab in editable mode and puts the
+`dsl` command on your PATH, so you can run offices from anywhere.
 
 Get an Anthropic API key at
 [console.anthropic.com](https://console.anthropic.com), then either:
@@ -58,6 +61,9 @@ export ANTHROPIC_API_KEY='your-key'
 
 or copy `.env.example` to `.env` and fill in the key there.
 
+Run `dsl doctor` to sanity-check your environment (Python version,
+dependencies, and whether `ANTHROPIC_API_KEY` is set).
+
 ---
 
 ## Run your first office
@@ -65,13 +71,13 @@ or copy `.env.example` to `.env` and fill in the key there.
 Try a gallery example:
 
 ```bash
-python3 office_compiler.py gallery/org_intelligence_briefing/
+dsl run gallery/org_intelligence_briefing/
 ```
 
 Or run the office Claude wrote for you:
 
 ```bash
-python3 office_compiler.py path/to/my_office/
+dsl run path/to/my_office/
 ```
 
 Press `Ctrl+C` to stop.

@@ -18,9 +18,9 @@ Run from DisSysLab root:
 """
 
 import pytest
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from dsl.blocks.role import Role
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab.blocks.role import Role
 
 
 # =====================================================================

@@ -16,14 +16,14 @@
 
 import json
 import re
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from components.sources.rss_normalizer import (
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab.components.sources.rss_normalizer import (
     hacker_news, mit_tech_review, techcrunch, venturebeat_ai,
 )
-from components.transformers.ai_agent import ai_agent
-from components.transformers.stateful_agent import StatefulAgent
-from components.sources.clock_source import ClockSource
+from dissyslab.components.transformers.ai_agent import ai_agent
+from dissyslab.components.transformers.stateful_agent import StatefulAgent
+from dissyslab.components.sources.clock_source import ClockSource
 
 # ── Sources ──────────────────────────────────────────────────
 hn_feed = hacker_news(max_articles=20,     poll_interval=3600)

@@ -22,11 +22,11 @@ Run from the DisSysLab root directory:
 #           ml_jobs      ─┘                                  → out_0 → display
 #                                                            → out_1 → discard
 
-from dsl import network
-from dsl.blocks import Source, Transform, Sink, Split
-from components.transformers.prompts import SPAM_DETECTOR
-from components.transformers.demo_ai_agent import demo_ai_agent
-from components.sinks import JSONLRecorder
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink, Split
+from dissyslab.components.transformers.prompts import SPAM_DETECTOR
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab.components.sinks import JSONLRecorder
 from examples.module_05.demo_job_source import DEMO_JOB_FEEDS
 
 

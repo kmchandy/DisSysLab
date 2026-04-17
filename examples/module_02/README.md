@@ -96,12 +96,12 @@ node sends to **two downstream sinks** (fanout).
 ### Step 1: Imports
 
 ```python
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from components.sources.demo_rss_source import DemoRSSSource
-from components.transformers.prompts import SENTIMENT_ANALYZER
-from components.transformers.demo_ai_agent import demo_ai_agent
-from components.sinks import DemoEmailAlerter, JSONLRecorder
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab.components.sources.demo_rss_source import DemoRSSSource
+from dissyslab.components.transformers.prompts import SENTIMENT_ANALYZER
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab.components.sinks import DemoEmailAlerter, JSONLRecorder
 ```
 
 `JSONLRecorder` saves every message to a file in JSON Lines format —

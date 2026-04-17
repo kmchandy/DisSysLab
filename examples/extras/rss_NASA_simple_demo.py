@@ -20,10 +20,10 @@
 import time
 # dsl.connectors has connectors to different sources of data and sinks
 # including consoles.
-from dsl.connectors.rss_in import RSS_In
+from dissyslab.connectors.rss_in import RSS_In
 # kv_live_sink receives dicts and prints key-value pairs in a live-updating table.
-from dsl.connectors.live_kv_console import kv_live_sink
-from dsl import network
+from dissyslab.connectors.live_kv_console import kv_live_sink
+from dissyslab import network
 
 
 # -------------------------------

@@ -23,19 +23,21 @@ You didn't write any code. You wrote two plain English documents.*
 
 ---
 
-## Get Started in 2 Minutes
+## Get Started in 3 Commands
 
 ```bash
-git clone https://github.com/kmchandy/DisSysLab.git
-cd DSL
-pip install -r requirements.txt
+git clone https://github.com/kmchandy/DisSysLab.git && cd DisSysLab
+pip install -e .
 export ANTHROPIC_API_KEY='your-key'
 
-python3 office_compiler.py gallery/org_intelligence_briefing/
+dsl run gallery/org_intelligence_briefing/
 ```
 
-The compiler reads your plain English files, shows you the routing,
-asks "Does this look right?", and starts your office.
+`pip install -e .` installs DisSysLab in editable mode and puts the
+`dsl` command on your PATH. `dsl run` reads your plain English files,
+shows you the routing, asks "Does this look right?", and starts your
+office. Run `dsl doctor` first if you want to check your setup, or
+`dsl gallery` to browse the offices that ship with the repo.
 
 ---
 
@@ -130,9 +132,9 @@ from your first network to building distributed systems from scratch.
 
 ## Requirements
 
-- Python 3.10+
+- Python 3.9+
 - Anthropic API key ([get one here](https://console.anthropic.com))
-- `pip install -r requirements.txt`
+- Install with `pip install -e .` from this repo (or `pip install -r requirements.txt` if you only want the dependencies without the `dsl` command)
 
 ---
 

@@ -1,9 +1,9 @@
 """Tests for dsl.network module - Network compilation and nested networks."""
 
 import pytest
-from dsl import network
-from dsl.network import Network
-from dsl.blocks import Source, Transform, Sink, Broadcast, MergeAsynch, Split
+from dissyslab import network
+from dissyslab.network import Network
+from dissyslab.blocks import Source, Transform, Sink, Broadcast, MergeAsynch, Split
 
 
 class TestNetworkValidation:

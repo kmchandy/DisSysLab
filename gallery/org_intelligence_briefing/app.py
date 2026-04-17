@@ -14,13 +14,13 @@
 import json
 import re
 
-from dsl import network
-from dsl.blocks import Source, Sink
-from dsl.blocks.role import Role
-from components.transformers.ai_agent import ai_agent
-from components.sources.rss_normalizer import al_jazeera, bbc_world, npr_news
-from components.sinks.intelligence_display import IntelligenceDisplay
-from components.sinks.sink_jsonl_recorder import JSONLRecorder
+from dissyslab import network
+from dissyslab.blocks import Source, Sink
+from dissyslab.blocks.role import Role
+from dissyslab.components.transformers.ai_agent import ai_agent
+from dissyslab.components.sources.rss_normalizer import al_jazeera, bbc_world, npr_news
+from dissyslab.components.sinks.intelligence_display import IntelligenceDisplay
+from dissyslab.components.sinks.sink_jsonl_recorder import JSONLRecorder
 
 
 # ── Logging ──────────────────────────────────────────────────────────

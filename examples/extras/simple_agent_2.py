@@ -14,10 +14,10 @@ Key Concepts:
 - Port reference syntax: agent.port_name
 """
 
-from dsl import network
-from dsl.core import Agent, STOP
-from dsl.blocks import Source, Sink
-from components.sources.list_source import ListSource
+from dissyslab import network
+from dissyslab.core import Agent, STOP
+from dissyslab.blocks import Source, Sink
+from dissyslab.components.sources.list_source import ListSource
 
 
 class Adder(Agent):

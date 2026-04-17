@@ -546,8 +546,8 @@ print(f"\n✓ Source works! Got {count} items")
 Add ONE transform.
 
 ```python
-from dsl import network
-from dsl.blocks import Source, Transform
+from dissyslab import network
+from dissyslab.blocks import Source, Transform
 
 # Source (already tested)
 source = MySource()
@@ -578,7 +578,7 @@ g.run_network()
 Add remaining transforms and sink.
 
 ```python
-from dsl.blocks import Sink
+from dissyslab.blocks import Sink
 
 # Add more transforms
 transform1_node = Transform(fn=transform1, name="step1")
@@ -756,7 +756,7 @@ FANOUT: 1 formatter → 2 sinks
 #### **Layer 1: Test Source**
 
 ```python
-from components.sources.rss_source import RSSSource
+from dissyslab.components.sources.rss_source import RSSSource
 
 # Test RSS source
 rss = RSSSource(url="https://techcrunch.com/feed/")
@@ -775,8 +775,8 @@ print(f"✓ Got {count} articles from TechCrunch")
 #### **Layer 2: Add Filter**
 
 ```python
-from dsl import network
-from dsl.blocks import Source, Transform
+from dissyslab import network
+from dissyslab.blocks import Source, Transform
 
 source = RSSSource(url="https://techcrunch.com/feed/")
 source_node = Source(fn=source.run, name="rss")
@@ -807,9 +807,9 @@ print("✓ Filter works!")
 **Now add the second source (fanin) and second sink (fanout):**
 
 ```python
-from dsl.blocks import Sink
-from components.sinks.email_sender import EmailSender
-from components.sinks.file_writer import FileWriter
+from dissyslab.blocks import Sink
+from dissyslab.components.sinks.email_sender import EmailSender
+from dissyslab.components.sinks.file_writer import FileWriter
 
 # TWO SOURCES (fanin)
 source1 = RSSSource(url="https://techcrunch.com/feed/")

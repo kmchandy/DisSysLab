@@ -21,14 +21,14 @@ Run from the DisSysLab root directory:
 
 import json
 import pytest
-from components.sources.demo_rss_source import DemoRSSSource, DEMO_FEEDS
-from components.transformers.prompts import (
+from dissyslab.components.sources.demo_rss_source import DemoRSSSource, DEMO_FEEDS
+from dissyslab.components.transformers.prompts import (
     SPAM_DETECTOR, SENTIMENT_ANALYZER, TOPIC_CLASSIFIER
 )
-from components.transformers.demo_ai_agent import demo_ai_agent
-from components.sinks import DemoEmailAlerter, JSONLRecorder
-from dsl import network
-from dsl.blocks import Source, Transform, Sink, Split
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab.components.sinks import DemoEmailAlerter, JSONLRecorder
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink, Split
 
 
 # ============================================================================

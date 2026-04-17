@@ -55,7 +55,7 @@ connect_blocks_to_form_networks.py
 
 '''
 
-from dsl.core import Agent
+from dissyslab.core import Agent
 import time
 
 # =================

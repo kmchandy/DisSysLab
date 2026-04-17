@@ -1,7 +1,7 @@
 # examples.NASA_RSS_counts
 
 from __future__ import annotations
-from dsl.ops.transforms.term_frequency import docfreq_cooccurrence_from_messages
+from dissyslab.ops.transforms.term_frequency import docfreq_cooccurrence_from_messages
 
 # Example 1 (NASA-style)
 

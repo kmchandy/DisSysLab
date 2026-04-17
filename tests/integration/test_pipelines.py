@@ -1,8 +1,8 @@
 """Integration tests for complete pipelines."""
 
 import pytest
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
 
 
 class TestSimplePipelines:

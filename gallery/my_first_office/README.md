@@ -16,7 +16,7 @@ my_first_office/
 ## Run it
 
 ```bash
-python3 office_compiler.py gallery/my_first_office/
+dsl run gallery/my_first_office/
 ```
 
 The compiler shows you the routing and asks "Does this look right?"

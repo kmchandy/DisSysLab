@@ -1,6 +1,6 @@
 # /examples/numpy_pi_demo.py
 
-from dsl import network
+from dissyslab import network
 import matplotlib.pyplot as plt
 from typing import Iterator, Any, Dict, Optional
 import numpy as np
