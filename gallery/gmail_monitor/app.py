@@ -5,14 +5,14 @@
 # Edit your role or office files and recompile to regenerate.
 
 import json
-from dsl import network
-from dsl.blocks import Source, Sink
-from dsl.blocks.role import Role
-from components.transformers.ai_agent import ai_agent
+from dissyslab import network
+from dissyslab.blocks import Source, Sink
+from dissyslab.blocks.role import Role
+from dissyslab.components.transformers.ai_agent import ai_agent
 
-from components.sinks.console_display import ConsoleDisplay
-from components.sinks.sink_jsonl_recorder import JSONLRecorder
-from components.sources.gmail_source import GmailSource
+from dissyslab.components.sinks.console_display import ConsoleDisplay
+from dissyslab.components.sinks.sink_jsonl_recorder import JSONLRecorder
+from dissyslab.components.sources.gmail_source import GmailSource
 
 
 # ── Role functions ───────────────────────────────────────

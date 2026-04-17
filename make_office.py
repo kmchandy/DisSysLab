@@ -16,7 +16,7 @@ import json
 from pathlib import Path
 from string import Template
 
-from office_utils import (
+from dissyslab.office.utils import (
     SOURCE_REGISTRY,
     SINK_REGISTRY,
     parse_roles,
@@ -37,10 +37,10 @@ APP_TEMPLATE = Template('''\
 
 import json
 
-from dsl.composed_agent import composed_agent
-from dsl.blocks import Sink
-from dsl.blocks.role import Role
-from components.transformers.ai_agent import ai_agent
+from dissyslab.composed_agent import composed_agent
+from dissyslab.blocks import Sink
+from dissyslab.blocks.role import Role
+from dissyslab.components.transformers.ai_agent import ai_agent
 $extra_imports
 
 $sink_block

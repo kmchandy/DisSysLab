@@ -7,8 +7,8 @@ This component reads RSS feeds and yields articles as messages.
 No authentication required - perfect for teaching!
 
 Usage:
-    from components.sources.rss_source import RSSSource
-    from dsl.blocks import Source
+    from dissyslab.components.sources.rss_source import RSSSource
+    from dissyslab.blocks import Source
 
     rss = RSSSource(urls=["https://www.python.org/jobs/feed/rss/"], max_articles=5)
     source = Source(fn=rss.run, name="python_jobs")

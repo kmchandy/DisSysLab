@@ -8,8 +8,8 @@ one from each analyzer — and prints a clean per-photo summary with
 a quality verdict.
 
 Usage:
-    from components.sinks.photo_dashboard import PhotoDashboard
-    from dsl.blocks import Sink
+    from dissyslab.components.sinks.photo_dashboard import PhotoDashboard
+    from dissyslab.blocks import Sink
 
     dashboard = PhotoDashboard()
     sink = Sink(fn=dashboard.run, name="dashboard")

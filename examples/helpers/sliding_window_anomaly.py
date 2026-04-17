@@ -5,8 +5,8 @@ from collections import deque
 import math
 from typing import Optional, Dict, Any
 from pathlib import Path
-from dsl import network
-from dsl.connectors.replay_csv_in import ReplayCSV_In
+from dissyslab import network
+from dissyslab.connectors.replay_csv_in import ReplayCSV_In
 
 
 # -------------------------------------------------------------------------

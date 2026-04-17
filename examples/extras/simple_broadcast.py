@@ -1,8 +1,8 @@
 # dsl.examples.graph_pipeline
 
-from dsl import network
-from components.sources import ListSource
-from dsl.blocks import Source, Sink, Transform
+from dissyslab import network
+from dissyslab.components.sources import ListSource
+from dissyslab.blocks import Source, Sink, Transform
 
 # ==============================================================================
 # STEP 1: Write Ordinary Python Functions Independent of DSL

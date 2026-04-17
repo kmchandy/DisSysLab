@@ -10,9 +10,9 @@ This example demonstrates the basic pattern for building distributed systems:
 Data flow: ["hello", "world"] → UPPERCASE → ADD "!!" → results
 """
 
-from dsl import network
-from components.sources import ListSource
-from dsl.blocks import Source, Sink, Transform
+from dissyslab import network
+from dissyslab.components.sources import ListSource
+from dissyslab.blocks import Source, Sink, Transform
 
 # ==============================================================================
 # STEP 1: Write Ordinary Python Functions and objects Independent of DSL

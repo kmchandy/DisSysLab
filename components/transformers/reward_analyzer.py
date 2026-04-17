@@ -8,8 +8,8 @@ last checkpoint window and determines whether performance is improving,
 plateauing, or declining relative to the previous checkpoint.
 
 Usage:
-    from components.transformers.reward_analyzer import RewardAnalyzer
-    from dsl.blocks import Transform
+    from dissyslab.components.transformers.reward_analyzer import RewardAnalyzer
+    from dissyslab.blocks import Transform
 
     analyzer = RewardAnalyzer()
     node = Transform(fn=analyzer.run, name="reward_analyzer")

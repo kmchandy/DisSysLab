@@ -2,8 +2,8 @@
 
 import pytest
 
-from dsl.builder import network, PortReference
-from dsl.blocks import Source, Transform, Sink, Split
+from dissyslab.builder import network, PortReference
+from dissyslab.blocks import Source, Transform, Sink, Split
 
 
 class TestPortReference:

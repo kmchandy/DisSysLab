@@ -1,8 +1,8 @@
 """Integration tests for fanout and fanin patterns."""
 
 import pytest
-from dsl import network
-from dsl.blocks import Source, Sink, Split
+from dissyslab import network
+from dissyslab.blocks import Source, Sink, Split
 
 
 class TestFanoutPattern:

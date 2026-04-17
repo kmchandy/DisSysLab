@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import List, Tuple, Union, Dict, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from dsl.core import Agent
+    from dissyslab.core import Agent
 
-from dsl.network import Network
+from dissyslab.network import Network
 
 
 class PortReference:
@@ -21,7 +21,7 @@ class PortReference:
 
 
 def _build_registry(edges):
-    from dsl.core import Agent
+    from dissyslab.core import Agent
     registry = {}
     for edge in edges:
         for node in edge:
@@ -39,7 +39,7 @@ def _build_registry(edges):
 
 def _resolve_status_to_port(agent, status, edge_index):
     try:
-        from dsl.blocks.role import Role
+        from dissyslab.blocks.role import Role
         if isinstance(agent, Role):
             if status not in agent._status_to_port:
                 raise ValueError(
@@ -57,7 +57,7 @@ def _resolve_status_to_port(agent, status, edge_index):
 
 
 def _preprocess_edges(edges):
-    from dsl.core import Agent
+    from dissyslab.core import Agent
     registry = _build_registry(edges)
     processed = []
     for i, edge in enumerate(edges):
@@ -79,8 +79,8 @@ def _preprocess_edges(edges):
 
 
 def _parse_from_node(node, edge_index):
-    from dsl.core import Agent
-    from dsl.network import Network
+    from dissyslab.core import Agent
+    from dissyslab.network import Network
 
     if isinstance(node, PortReference):
         agent = node.agent
@@ -117,8 +117,8 @@ def _parse_from_node(node, edge_index):
 
 
 def _parse_to_node(node, edge_index):
-    from dsl.core import Agent
-    from dsl.network import Network
+    from dissyslab.core import Agent
+    from dissyslab.network import Network
 
     if isinstance(node, PortReference):
         agent = node.agent

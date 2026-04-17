@@ -10,8 +10,8 @@ analyzers each examine a different aspect of this snapshot simultaneously.
 This is the source for Module 06: RL Agent Analyzer.
 
 Usage:
-    from components.sources.cartpole_source import CartPoleSource
-    from dsl.blocks import Source
+    from dissyslab.components.sources.cartpole_source import CartPoleSource
+    from dissyslab.blocks import Source
 
     cart = CartPoleSource(total_episodes=1000, checkpoint_every=50)
     source = Source(fn=cart.run, name="cartpole")

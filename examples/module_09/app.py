@@ -20,10 +20,10 @@ Run in a container (after module_09 README):
     docker run dissyslab-monitor
 """
 
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from components.transformers.prompts import SENTIMENT_ANALYZER
-from components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab.components.transformers.prompts import SENTIMENT_ANALYZER
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
 
 # ── Configuration ─────────────────────────────────────────────────────────────
 MAX_POSTS = 20   # Fixed limit — the network stops cleanly after this many posts
@@ -34,13 +34,13 @@ print("  Connecting to BlueSky Jetstream...")
 print()
 
 try:
-    from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
+    from dissyslab.components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
     _src = BlueSkyJetstreamSource(max_posts=MAX_POSTS, lifetime=60)
     source_fn = _src.run
     print("  ✓ Connected to live BlueSky stream")
 except Exception as e:
     print(f"  ⚠️  BlueSky unavailable ({type(e).__name__}) — using demo posts")
-    from components.sources.demo_bluesky_jetstream import DemoBlueSkyJetstream
+    from dissyslab.components.sources.demo_bluesky_jetstream import DemoBlueSkyJetstream
     _src = DemoBlueSkyJetstream(max_posts=MAX_POSTS, delay_seconds=0)
     source_fn = _src.run
 

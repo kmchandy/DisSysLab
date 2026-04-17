@@ -6,11 +6,11 @@
 
 import json
 
-from dsl.composed_agent import composed_agent
-from dsl.blocks import Sink
-from dsl.blocks.role import Role
-from components.transformers.ai_agent import ai_agent
-from components.sinks.discard import Discard
+from dissyslab.composed_agent import composed_agent
+from dissyslab.blocks import Sink
+from dissyslab.blocks.role import Role
+from dissyslab.components.transformers.ai_agent import ai_agent
+from dissyslab.components.sinks.discard import Discard
 
 # ── Sinks ────────────────────────────────────────────────────────────
 

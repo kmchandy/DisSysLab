@@ -4,7 +4,7 @@
 Demo Job Source — produces fake job postings for Module 05.
 
 Usage:
-    from components.sources.demo_job_source import DemoJobSource
+    from dissyslab.components.sources.demo_job_source import DemoJobSource
     from examples.module_05.demo_job_source import DEMO_JOB_FEEDS
 
     src = DemoJobSource(feed_name="python_jobs")

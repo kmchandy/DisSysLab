@@ -25,12 +25,12 @@ Run from the DisSysLab root directory:
 
 import json
 import pytest
-from components.sources.demo_job_source import DemoJobSource
-from components.transformers.prompts import SPAM_DETECTOR, JOB_DETECTOR, SALARY_EXTRACTOR
-from components.transformers.demo_ai_agent import demo_ai_agent
-from components.sinks import JSONLRecorder
-from dsl import network
-from dsl.blocks import Source, Transform, Sink, Split
+from dissyslab.components.sources.demo_job_source import DemoJobSource
+from dissyslab.components.transformers.prompts import SPAM_DETECTOR, JOB_DETECTOR, SALARY_EXTRACTOR
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab.components.sinks import JSONLRecorder
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink, Split
 from examples.module_05.demo_job_source import DEMO_JOB_FEEDS
 
 

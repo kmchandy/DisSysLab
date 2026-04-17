@@ -1,9 +1,9 @@
 # examples.jetstream_demo
-from dsl.extensions.agent_openai import AgentOpenAI
-from dsl.extensions.add_fields import add_fields
-from dsl import network
-from dsl.connectors.jetstream_in import Jetstream_In
-from dsl.connectors.filter_post import FilterPost
+from dissyslab.extensions.agent_openai import AgentOpenAI
+from dissyslab.extensions.add_fields import add_fields
+from dissyslab import network
+from dissyslab.connectors.jetstream_in import Jetstream_In
+from dissyslab.connectors.filter_post import FilterPost
 import json
 
 # --------------------------------------------------------

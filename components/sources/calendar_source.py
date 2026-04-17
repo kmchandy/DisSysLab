@@ -18,8 +18,8 @@ Example office.md:
                       poll_interval=300, days_ahead=7)
 
 Example Python:
-    from components.sources.calendar_source import CalendarSource
-    from dsl.blocks import Source
+    from dissyslab.components.sources.calendar_source import CalendarSource
+    from dissyslab.blocks import Source
 
     source = CalendarSource(
         url="https://calendar.google.com/calendar/ical/...",

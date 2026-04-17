@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Optional
 import threading
 
-from dsl.core import Agent, _ShutdownSignal
+from dissyslab.core import Agent, _ShutdownSignal
 
 
 class MergeAsynch(Agent):

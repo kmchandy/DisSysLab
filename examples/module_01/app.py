@@ -16,11 +16,11 @@ To use real Claude AI instead of demo components, see app_live.py.
 The only change is two import lines — everything else stays the same.
 """
 
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from components.sources.demo_rss_source import DemoRSSSource
-from components.transformers.prompts import SPAM_DETECTOR, SENTIMENT_ANALYZER
-from components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab.components.sources.demo_rss_source import DemoRSSSource
+from dissyslab.components.transformers.prompts import SPAM_DETECTOR, SENTIMENT_ANALYZER
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
 
 
 # ── Data source ───────────────────────────────────────────────────────────────

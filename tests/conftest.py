@@ -2,7 +2,7 @@
 
 import pytest
 from queue import SimpleQueue
-from dsl.blocks import Source, Transform, Sink, Split, Broadcast, MergeAsynch
+from dissyslab.blocks import Source, Transform, Sink, Split, Broadcast, MergeAsynch
 
 
 @pytest.fixture

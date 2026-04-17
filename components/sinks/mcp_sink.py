@@ -22,8 +22,8 @@ Example office.md (remote HTTP server):
                      auth_env_var="SLACK_TOKEN")
 
 Example Python:
-    from components.sinks.mcp_sink import MCPSink
-    from dsl.blocks import Sink
+    from dissyslab.components.sinks.mcp_sink import MCPSink
+    from dissyslab.blocks import Sink
 
     sink = MCPSink(
         server="filesystem",

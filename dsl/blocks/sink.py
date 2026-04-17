@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Any, Callable, Optional, Dict
 import traceback
 
-from dsl.core import Agent
+from dissyslab.core import Agent
 
 
 class Sink(Agent):

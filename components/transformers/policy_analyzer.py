@@ -8,8 +8,8 @@ to determine what the agent has learned about action preferences, and tracks
 the exploration rate (epsilon) to show the explore → exploit transition.
 
 Usage:
-    from components.transformers.policy_analyzer import PolicyAnalyzer
-    from dsl.blocks import Transform
+    from dissyslab.components.transformers.policy_analyzer import PolicyAnalyzer
+    from dissyslab.blocks import Transform
 
     analyzer = PolicyAnalyzer()
     node = Transform(fn=analyzer.run, name="policy_analyzer")

@@ -19,12 +19,12 @@ Run from the DisSysLab root directory:
 #                          ├→ sentiment → display
 #           tech_news    ─┘           └→ my_results.jsonl
 
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from components.sources.demo_rss_source import DemoRSSSource
-from components.transformers.prompts import SENTIMENT_ANALYZER
-from components.transformers.demo_ai_agent import demo_ai_agent
-from components.sinks import JSONLRecorder
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab.components.sources.demo_rss_source import DemoRSSSource
+from dissyslab.components.transformers.prompts import SENTIMENT_ANALYZER
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab.components.sinks import JSONLRecorder
 
 hn = DemoRSSSource(feed_name="hacker_news")
 tech = DemoRSSSource(feed_name="tech_news")

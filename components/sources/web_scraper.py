@@ -19,8 +19,8 @@ WebScraper — generic CSS-selector scraper for simple static HTML sites
 ─────────────────────────────────────────────────────────────────────────────
 
 Usage:
-    from components.sources.web_scraper import WebScraper
-    from dsl.blocks import Source
+    from dissyslab.components.sources.web_scraper import WebScraper
+    from dissyslab.blocks import Source
 
     scraper = WebScraper(
         url="https://example.com/news",
@@ -44,8 +44,8 @@ Use ArxivScraper (or its convenience factory functions) instead of WebScraper
 for any arxiv.org/list/* URL.
 
 Usage:
-    from components.sources.web_scraper import arxiv_cs_ai
-    from dsl.blocks import Source
+    from dissyslab.components.sources.web_scraper import arxiv_cs_ai
+    from dissyslab.blocks import Source
 
     feed   = arxiv_cs_ai(max_articles=20, poll_interval=3600)
     source = Source(fn=feed.run, name="arxiv_cs_ai")

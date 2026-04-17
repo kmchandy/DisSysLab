@@ -4,7 +4,7 @@
 Real AI Agent - Uses Claude API for analysis
 
 Usage:
-    from components.transformers.ai_agent import ai_agent
+    from dissyslab.components.transformers.ai_agent import ai_agent
 
     analyzer = ai_agent("Analyze the sentiment. Return JSON: {sentiment, score}")
     result = analyzer("I love this!")

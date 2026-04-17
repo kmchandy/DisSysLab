@@ -4,7 +4,7 @@
 Demo Salary Extractor — regex-based salary extraction from job postings.
 
 Usage:
-    from components.transformers.demo_salary import extract_salary
+    from dissyslab.components.transformers.demo_salary import extract_salary
 
     result = extract_salary("Senior Python Engineer at Stripe — Remote, $180k-$220k")
     # Returns:

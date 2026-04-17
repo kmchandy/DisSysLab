@@ -11,8 +11,8 @@ score and verdict.
 One of three parallel analyzers in Module 07: Photo Quality Scorer.
 
 Usage:
-    from components.transformers.exposure_analyzer import ExposureAnalyzer
-    from dsl.blocks import Transform
+    from dissyslab.components.transformers.exposure_analyzer import ExposureAnalyzer
+    from dissyslab.blocks import Transform
 
     analyzer = ExposureAnalyzer()
     node = Transform(fn=analyzer.run, name="exposure")

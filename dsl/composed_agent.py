@@ -28,7 +28,7 @@ Usage:
 
 from __future__ import annotations
 from typing import List, Optional
-from dsl.network import Network
+from dissyslab.network import Network
 
 
 class ComposedAgent(Network):
@@ -74,7 +74,7 @@ class ComposedAgent(Network):
             pipeline.input   → PortReference(pipeline, "input")
             pipeline.output  → PortReference(pipeline, "output")
         """
-        from dsl.builder import PortReference
+        from dissyslab.builder import PortReference
 
         inports = object.__getattribute__(self, 'inports')
         outports = object.__getattribute__(self, 'outports')
@@ -107,7 +107,7 @@ class ComposedAgent(Network):
             (transform_1,     transform_2)     # agent → agent
             (transform_2,     pipeline.output) # agent → PortReference
         """
-        from dsl.builder import PortReference, _parse_from_node, _parse_to_node, _add_agent_to_blocks
+        from dissyslab.builder import PortReference, _parse_from_node, _parse_to_node, _add_agent_to_blocks
 
         if not isinstance(edges, list):
             raise TypeError(

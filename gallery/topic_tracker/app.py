@@ -15,14 +15,14 @@
 
 import json
 import re
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from components.sources.rss_normalizer import (
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab.components.sources.rss_normalizer import (
     al_jazeera, npr_news, bbc_world,
 )
-from components.transformers.ai_agent import ai_agent
-from components.transformers.stateful_agent import StatefulAgent
-from components.sources.clock_source import ClockSource
+from dissyslab.components.transformers.ai_agent import ai_agent
+from dissyslab.components.transformers.stateful_agent import StatefulAgent
+from dissyslab.components.sources.clock_source import ClockSource
 
 # ── Configure Your Topics ─────────────────────────────────────
 TOPICS = [

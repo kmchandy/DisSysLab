@@ -309,7 +309,7 @@ class Agent(ABC):
 
     def __getattr__(self, name: str) -> 'PortReference':
         """Enable dot notation for ports: agent.port_name"""
-        from dsl.builder import PortReference
+        from dissyslab.builder import PortReference
 
         if name in self.inports or name in self.outports:
             return PortReference(agent=self, port_name=name)

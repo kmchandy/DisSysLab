@@ -15,7 +15,7 @@ from __future__ import annotations
 from typing import Callable, Any, Optional, List, Tuple
 import traceback
 
-from dsl.core import Agent
+from dissyslab.core import Agent
 
 
 class Role(Agent):

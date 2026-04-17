@@ -15,8 +15,8 @@ Each tick message:
     {"type": "tick", "timestamp": "<ISO string>"}
 
 Usage:
-    from components.sources.clock_source import ClockSource
-    from dsl.blocks import Source
+    from dissyslab.components.sources.clock_source import ClockSource
+    from dissyslab.blocks import Source
 
     clock  = ClockSource(interval_seconds=86400)   # fire once a day
     source = Source(fn=clock.run, name="clock")

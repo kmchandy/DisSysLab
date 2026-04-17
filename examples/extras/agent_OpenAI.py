@@ -1,5 +1,5 @@
-from dsl import Graph
-from dsl.extensions.agent_openai import AgentOpenAI
+from dissyslab import Graph
+from dissyslab.extensions.agent_openai import AgentOpenAI
 
 
 def from_list_with_key(items, key):

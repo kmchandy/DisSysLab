@@ -7,8 +7,8 @@ Receives the merged output from MergeSynch — a list of three dicts,
 one from each analyzer — and prints a clean per-checkpoint summary.
 
 Usage:
-    from components.sinks.rl_dashboard import RLDashboard
-    from dsl.blocks import Sink
+    from dissyslab.components.sinks.rl_dashboard import RLDashboard
+    from dissyslab.blocks import Sink
 
     dashboard = RLDashboard()
     sink = Sink(fn=dashboard.run, name="dashboard")

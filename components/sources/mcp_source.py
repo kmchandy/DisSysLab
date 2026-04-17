@@ -23,8 +23,8 @@ Example office.md (remote HTTP server):
                          poll_interval=300)
 
 Example Python:
-    from components.sources.mcp_source import MCPSource
-    from dsl.blocks import Source
+    from dissyslab.components.sources.mcp_source import MCPSource
+    from dissyslab.blocks import Source
 
     source = MCPSource(
         server="fetch",

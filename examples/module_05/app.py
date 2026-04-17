@@ -19,12 +19,12 @@ Run from the DisSysLab root directory:
     python3 -m examples.module_05.app
 """
 
-from dsl import network
-from dsl.blocks import Source, Transform, Sink, Split
-from components.sources.demo_job_source import DemoJobSource
-from components.transformers.prompts import SPAM_DETECTOR, JOB_DETECTOR
-from components.transformers.demo_ai_agent import demo_ai_agent
-from components.sinks import JSONLRecorder
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink, Split
+from dissyslab.components.sources.demo_job_source import DemoJobSource
+from dissyslab.components.transformers.prompts import SPAM_DETECTOR, JOB_DETECTOR
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab.components.sinks import JSONLRecorder
 
 
 # ── Data sources ──────────────────────────────────────────────────────────────

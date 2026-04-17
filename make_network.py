@@ -15,7 +15,7 @@ import re
 from pathlib import Path
 from anthropic import Anthropic
 
-from office_utils import (
+from dissyslab.office.utils import (
     SOURCE_REGISTRY,
     SINK_REGISTRY,
 )

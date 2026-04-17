@@ -9,8 +9,8 @@ This example shows how to create custom agents by subclassing Agent:
 Data flow: ["hello", "world", ...] → ALTERNATE CASE → print
 """
 
-from dsl import network, Agent
-from dsl.core import STOP
+from dissyslab import network, Agent
+from dissyslab.core import STOP
 
 
 # ==============================================================================

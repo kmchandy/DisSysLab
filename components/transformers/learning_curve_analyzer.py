@@ -12,8 +12,8 @@ This is the only stateful analyzer — it needs history across multiple
 checkpoints to fit a meaningful trend line.
 
 Usage:
-    from components.transformers.learning_curve_analyzer import LearningCurveAnalyzer
-    from dsl.blocks import Transform
+    from dissyslab.components.transformers.learning_curve_analyzer import LearningCurveAnalyzer
+    from dissyslab.blocks import Transform
 
     analyzer = LearningCurveAnalyzer()
     node = Transform(fn=analyzer.run, name="curve_analyzer")

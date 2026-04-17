@@ -9,10 +9,10 @@
 #   news_editor.article_out  →  intelligence_display
 
 
-from dsl import network
-from dsl.blocks import Source, Sink
-from components.sources.rss_normalizer import al_jazeera, bbc_world, npr_news
-from components.sinks.intelligence_display import IntelligenceDisplay
+from dissyslab import network
+from dissyslab.blocks import Source, Sink
+from dissyslab.components.sources.rss_normalizer import al_jazeera, bbc_world, npr_news
+from dissyslab.components.sinks.intelligence_display import IntelligenceDisplay
 
 from gallery.org_two_office_news.news_monitor.app import news_monitor
 from gallery.org_two_office_news.news_editor.app import news_editor

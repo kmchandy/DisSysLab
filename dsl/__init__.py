@@ -5,9 +5,9 @@ DisSysLab - Distributed Systems Teaching Framework
 Public API exports.
 """
 
-from dsl.core import Agent, ExceptionThread
-from dsl.network import Network
-from dsl.builder import network, PortReference
+from dissyslab.core import Agent, ExceptionThread
+from dissyslab.network import Network
+from dissyslab.builder import network, PortReference
 
 __all__ = [
     # Core

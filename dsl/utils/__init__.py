@@ -11,8 +11,8 @@ Available utilities:
 - get_openai_key: Get OpenAI API key
 """
 
-from dsl.utils.visualize import visualize, draw
-from dsl.utils.get_credentials import (
+from dissyslab.utils.visualize import visualize, draw
+from dissyslab.utils.get_credentials import (
     get_anthropic_client,
     get_openai_client,
     get_anthropic_key,

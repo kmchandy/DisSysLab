@@ -11,8 +11,8 @@ edges → high variance. A blurry image has smooth gradients → low variance.
 One of three parallel analyzers in Module 07: Photo Quality Scorer.
 
 Usage:
-    from components.transformers.sharpness_analyzer import SharpnessAnalyzer
-    from dsl.blocks import Transform
+    from dissyslab.components.transformers.sharpness_analyzer import SharpnessAnalyzer
+    from dissyslab.blocks import Transform
 
     analyzer = SharpnessAnalyzer()
     node = Transform(fn=analyzer.run, name="sharpness")

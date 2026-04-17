@@ -6,9 +6,9 @@ Prompt Library for AI-Powered Transforms
 Simple constants for easy import and use with IDE autocomplete.
 
 Usage:
-    from components.transformers.prompts import SENTIMENT_ANALYZER
-    from components.transformers.ai_agent import AI_function
-    from dsl.blocks import Transform
+    from dissyslab.components.transformers.prompts import SENTIMENT_ANALYZER
+    from dissyslab.components.transformers.ai_agent import AI_function
+    from dissyslab.blocks import Transform
     
     # Use a prompt constant
     analyzer = Transform(
@@ -499,9 +499,9 @@ if __name__ == "__main__":
 ╚════════════════════════════════════════════════════════════════════════════╝
 
 USAGE:
-    from components.transformers.prompts import SENTIMENT_ANALYZER
-    from components.transformers.ai_agent import AI_function
-    from dsl.blocks import Transform
+    from dissyslab.components.transformers.prompts import SENTIMENT_ANALYZER
+    from dissyslab.components.transformers.ai_agent import AI_function
+    from dissyslab.blocks import Transform
     
     analyzer = Transform(fn=AI_function(SENTIMENT_ANALYZER), name="sentiment")
 

@@ -13,16 +13,16 @@ This example demonstrates using real AI services (Claude) in a distributed netwo
 
 Data flow: RSS feeds → spam filter → sentiment + urgency → email/archive
 """
-from components.sinks import MockEmailAlerter, JSONLRecorder
-from components.transformers.claude_agent import (
+from dissyslab.components.sinks import MockEmailAlerter, JSONLRecorder
+from dissyslab.components.transformers.claude_agent import (
     create_spam_detector,
     create_sentiment_analyzer,
     create_urgency_detector
 )
-from components.sources import MockRSSSource
-from components.sources.mock_rss_source import MOCK_FEEDS
-from dsl.blocks import Source, Transform, Sink
-from dsl import network
+from dissyslab.components.sources import MockRSSSource
+from dissyslab.components.sources.mock_rss_source import MOCK_FEEDS
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab import network
 from dotenv import load_dotenv
 load_dotenv()
 

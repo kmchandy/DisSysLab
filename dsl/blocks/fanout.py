@@ -11,7 +11,7 @@ from __future__ import annotations
 from typing import Optional
 import copy
 
-from dsl.core import Agent
+from dissyslab.core import Agent
 
 
 class Broadcast(Agent):

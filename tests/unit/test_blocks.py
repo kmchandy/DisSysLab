@@ -7,8 +7,8 @@ Termination is handled by os_agent — no STOP signals needed.
 """
 
 import pytest
-from dsl import network
-from dsl.blocks import Source, Transform, Sink, Broadcast, MergeAsynch, Split
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink, Broadcast, MergeAsynch, Split
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────

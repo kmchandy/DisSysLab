@@ -12,7 +12,7 @@ by recv(). No explicit STOP handling needed.
 from __future__ import annotations
 from typing import Optional
 
-from dsl.core import Agent
+from dissyslab.core import Agent
 
 
 class MergeSynch(Agent):

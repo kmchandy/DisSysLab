@@ -7,8 +7,8 @@ This is the demo version of GmailAlerter. It has the exact same interface
 as GmailAlerter but prints to console instead of sending real emails.
 
 When you're ready to send real emails, swap the import:
-    from components.sinks.demo_email_alerter import DemoEmailAlerter  # demo
-    from components.sinks.gmail_alerter import GmailAlerter           # real
+    from dissyslab.components.sinks.demo_email_alerter import DemoEmailAlerter  # demo
+    from dissyslab.components.sinks.gmail_alerter import GmailAlerter           # real
 """
 
 from typing import Optional, Dict, Any

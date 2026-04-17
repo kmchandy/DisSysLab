@@ -27,14 +27,14 @@ import numpy as np
 import pytest
 from pathlib import Path
 
-from components.sources.image_folder_source import ImageFolderSource
-from components.transformers.sharpness_analyzer import SharpnessAnalyzer
-from components.transformers.exposure_analyzer import ExposureAnalyzer
-from components.transformers.composition_analyzer import CompositionAnalyzer
-from components.sinks.photo_dashboard import PhotoDashboard
-from components.sinks import JSONLRecorder
-from dsl import network
-from dsl.blocks import Source, Transform, Sink, MergeSynch
+from dissyslab.components.sources.image_folder_source import ImageFolderSource
+from dissyslab.components.transformers.sharpness_analyzer import SharpnessAnalyzer
+from dissyslab.components.transformers.exposure_analyzer import ExposureAnalyzer
+from dissyslab.components.transformers.composition_analyzer import CompositionAnalyzer
+from dissyslab.components.sinks.photo_dashboard import PhotoDashboard
+from dissyslab.components.sinks import JSONLRecorder
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink, MergeSynch
 
 DEMO_IMAGES = "examples/module_07/demo_images"
 

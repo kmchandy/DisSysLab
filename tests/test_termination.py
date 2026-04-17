@@ -11,8 +11,8 @@ and that all messages are delivered (counts match).
 """
 
 import pytest
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
 
 
 # ── Test 1: source → sink ─────────────────────────────────────────────────────

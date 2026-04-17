@@ -18,9 +18,9 @@ RSSNormalizer sits immediately after RSSSource in every gallery pipeline:
     RSSSource → RSSNormalizer → transforms → sinks
 
 Usage:
-    from components.sources.rss_source import RSSSource
-    from components.sources.rss_normalizer import RSSNormalizer
-    from dsl.blocks import Source, Transform
+    from dissyslab.components.sources.rss_source import RSSSource
+    from dissyslab.components.sources.rss_normalizer import RSSNormalizer
+    from dissyslab.blocks import Source, Transform
 
     rss        = RSSSource(urls=["https://hnrss.org/newest"], max_articles=20)
     normalizer = RSSNormalizer(source_name="hacker_news")

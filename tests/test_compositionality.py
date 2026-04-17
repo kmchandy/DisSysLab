@@ -9,9 +9,9 @@ Outer network:
     source → pipeline.input
     pipeline.output → sink
 """
-from dsl.composed_agent import composed_agent
-from dsl.blocks import Source, Transform, Sink
-from dsl import network
+from dissyslab.composed_agent import composed_agent
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab import network
 import sys
 sys.path.insert(0, "/home/claude")
 

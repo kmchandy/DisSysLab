@@ -34,7 +34,7 @@ from queue import SimpleQueue, Empty
 from typing import Dict, List, Tuple, Any, Set
 import time
 
-from dsl.core import _GiveMeCounts, _Shutdown
+from dissyslab.core import _GiveMeCounts, _Shutdown
 
 
 class OsAgent:

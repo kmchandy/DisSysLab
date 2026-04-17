@@ -17,8 +17,8 @@ Example office.md:
     Sinks: gmail_sink(to="you@example.com", subject="DisSysLab Alert")
 
 Example Python:
-    from components.sinks.gmail_sink import GmailSink
-    from dsl.blocks import Sink
+    from dissyslab.components.sinks.gmail_sink import GmailSink
+    from dissyslab.blocks import Sink
 
     sink = GmailSink(to="you@example.com", subject="DisSysLab Alert")
     node = Sink(fn=sink.run, name="email_alert")

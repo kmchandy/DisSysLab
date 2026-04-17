@@ -1,5 +1,5 @@
-from dsl import network
-from dsl.extensions.agent_openai import AgentOpenAI
+from dissyslab import network
+from dissyslab.extensions.agent_openai import AgentOpenAI
 
 # Define functions.
 

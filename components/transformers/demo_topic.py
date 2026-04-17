@@ -4,7 +4,7 @@
 Demo Topic Classifier — keyword-based topic classification.
 
 Usage:
-    from components.transformers.demo_topic import classify_topic
+    from dissyslab.components.transformers.demo_topic import classify_topic
 
     result = classify_topic("New Python framework released for web development")
     # Returns:

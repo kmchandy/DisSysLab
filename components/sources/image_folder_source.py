@@ -10,8 +10,8 @@ different aspect of the image simultaneously.
 This is the source for Module 07: Photo Quality Scorer.
 
 Usage:
-    from components.sources.image_folder_source import ImageFolderSource
-    from dsl.blocks import Source
+    from dissyslab.components.sources.image_folder_source import ImageFolderSource
+    from dissyslab.blocks import Source
 
     imgs = ImageFolderSource(folder="examples/module_07/demo_images")
     source = Source(fn=imgs.run, name="images")

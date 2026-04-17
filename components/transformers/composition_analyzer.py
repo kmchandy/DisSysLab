@@ -15,8 +15,8 @@ are located relative to the rule-of-thirds power points.
 One of three parallel analyzers in Module 07: Photo Quality Scorer.
 
 Usage:
-    from components.transformers.composition_analyzer import CompositionAnalyzer
-    from dsl.blocks import Transform
+    from dissyslab.components.transformers.composition_analyzer import CompositionAnalyzer
+    from dissyslab.blocks import Transform
 
     analyzer = CompositionAnalyzer()
     node = Transform(fn=analyzer.run, name="composition")

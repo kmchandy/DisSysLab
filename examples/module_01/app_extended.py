@@ -17,13 +17,13 @@ Run from the DisSysLab root directory:
     python3 -m examples.module_01_describe_and_build.app_extended
 """
 
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from components.sources.demo_rss_source import DemoRSSSource
-from components.transformers.prompts import (
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab.components.sources.demo_rss_source import DemoRSSSource
+from dissyslab.components.transformers.prompts import (
     SPAM_DETECTOR, SENTIMENT_ANALYZER, URGENCY_DETECTOR
 )
-from components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
 
 
 # ── Data source ───────────────────────────────────────────────────────────────

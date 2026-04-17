@@ -14,7 +14,7 @@ import traceback
 import time
 from typing import Any, Callable, Optional
 
-from dsl.core import Agent
+from dissyslab.core import Agent
 
 
 class Source(Agent):

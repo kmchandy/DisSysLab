@@ -17,11 +17,11 @@ import numpy as np
 from pathlib import Path
 from PIL import Image
 
-from components.sources.image_folder_source import ImageFolderSource
-from components.transformers.sharpness_analyzer import SharpnessAnalyzer
-from components.transformers.exposure_analyzer import ExposureAnalyzer
-from components.transformers.composition_analyzer import CompositionAnalyzer
-from components.sinks.photo_dashboard import PhotoDashboard, _quality_verdict
+from dissyslab.components.sources.image_folder_source import ImageFolderSource
+from dissyslab.components.transformers.sharpness_analyzer import SharpnessAnalyzer
+from dissyslab.components.transformers.exposure_analyzer import ExposureAnalyzer
+from dissyslab.components.transformers.composition_analyzer import CompositionAnalyzer
+from dissyslab.components.sinks.photo_dashboard import PhotoDashboard, _quality_verdict
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -333,9 +333,9 @@ class TestModule07Network:
 
     def test_network_processes_all_images(self, tmp_path):
         import json
-        from dsl import network
-        from dsl.blocks import Source, Transform, Sink, MergeSynch
-        from components.sinks import JSONLRecorder
+        from dissyslab import network
+        from dissyslab.blocks import Source, Transform, Sink, MergeSynch
+        from dissyslab.components.sinks import JSONLRecorder
 
         archive_path = str(tmp_path / "test_photo_scores.jsonl")
         imgs = ImageFolderSource(folder=str(DEMO_FOLDER))
@@ -397,8 +397,8 @@ class TestModule07Network:
 
     def test_merge_synch_emits_list_of_three(self, tmp_path):
         """MergeSynch always emits exactly 3 items per image."""
-        from dsl import network
-        from dsl.blocks import Source, Transform, Sink, MergeSynch
+        from dissyslab import network
+        from dissyslab.blocks import Source, Transform, Sink, MergeSynch
 
         imgs = ImageFolderSource(folder=str(DEMO_FOLDER), max_images=2)
         sharpness_an = SharpnessAnalyzer()

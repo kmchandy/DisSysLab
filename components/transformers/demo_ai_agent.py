@@ -7,21 +7,21 @@ This module provides demo versions of AI transforms for learning and testing.
 No API keys needed, no costs, instant results.
 
 Usage:
-    from components.transformers.prompts import SENTIMENT_ANALYZER
-    from components.transformers.demo_ai_agent import demo_ai_agent
+    from dissyslab.components.transformers.prompts import SENTIMENT_ANALYZER
+    from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
 
     analyzer = demo_ai_agent(SENTIMENT_ANALYZER)
     result = analyzer("I love this!")
     # Returns: {"sentiment": "POSITIVE", "score": 0.8, "reasoning": "..."}
 
 Swapping demo → real:
-    from components.transformers.ai_agent import ai_agent
+    from dissyslab.components.transformers.ai_agent import ai_agent
 
     analyzer = ai_agent(SENTIMENT_ANALYZER)
     # Same call, real AI instead of keyword matching
 """
 
-from components.transformers.prompts import (
+from dissyslab.components.transformers.prompts import (
     TOPIC_CLASSIFIER,
     SENTIMENT_ANALYZER,
     SPAM_DETECTOR,
@@ -31,12 +31,12 @@ from components.transformers.prompts import (
 )
 
 # Import demo implementations
-from components.transformers.demo_sentiment import analyze_sentiment
-from components.transformers.demo_spam import detect_spam
-from components.transformers.demo_urgency import detect_urgency
-from components.transformers.demo_jobs import check_job_relevance
-from components.transformers.demo_salary import extract_salary
-from components.transformers.demo_topic import classify_topic
+from dissyslab.components.transformers.demo_sentiment import analyze_sentiment
+from dissyslab.components.transformers.demo_spam import detect_spam
+from dissyslab.components.transformers.demo_urgency import detect_urgency
+from dissyslab.components.transformers.demo_jobs import check_job_relevance
+from dissyslab.components.transformers.demo_salary import extract_salary
+from dissyslab.components.transformers.demo_topic import classify_topic
 
 # Mapping from prompt constants to demo functions
 PROMPT_TO_FUNCTION = {

@@ -8,11 +8,11 @@ It has the exact same .run() interface as RSSSource, so swapping
 from demo to real is just changing the import and constructor.
 
 Demo version:
-    from components.sources.demo_rss_source import DemoRSSSource
+    from dissyslab.components.sources.demo_rss_source import DemoRSSSource
     rss = DemoRSSSource(feed_name="hacker_news")
 
 Real version:
-    from components.sources.rss_source import RSSSource
+    from dissyslab.components.sources.rss_source import RSSSource
     rss = RSSSource("https://news.ycombinator.com/rss")
 
 Both work the same way: call rss.run() to get the next article.

@@ -8,8 +8,8 @@
 # ============================================================
 
 import json
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
 from gallery.ai_ml_research.demo_data import (
     ARTICLES, RELEVANCE, SENTIMENT, IMPACT, REPORT, lookup
 )

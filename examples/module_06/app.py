@@ -28,14 +28,14 @@ Run from the DisSysLab root directory:
     python3 -m examples.module_06.app
 """
 
-from dsl import network
-from dsl.blocks import Source, Transform, Sink, MergeSynch
-from components.sources.cartpole_source import CartPoleSource
-from components.transformers.reward_analyzer import RewardAnalyzer
-from components.transformers.policy_analyzer import PolicyAnalyzer
-from components.transformers.learning_curve_analyzer import LearningCurveAnalyzer
-from components.sinks.rl_dashboard import RLDashboard
-from components.sinks import JSONLRecorder
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink, MergeSynch
+from dissyslab.components.sources.cartpole_source import CartPoleSource
+from dissyslab.components.transformers.reward_analyzer import RewardAnalyzer
+from dissyslab.components.transformers.policy_analyzer import PolicyAnalyzer
+from dissyslab.components.transformers.learning_curve_analyzer import LearningCurveAnalyzer
+from dissyslab.components.sinks.rl_dashboard import RLDashboard
+from dissyslab.components.sinks import JSONLRecorder
 
 
 # ── Source: Q-learning agent ──────────────────────────────────────────────────

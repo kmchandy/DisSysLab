@@ -17,8 +17,8 @@ Example office.md:
     Sources: gmail(poll_interval=60, max_emails=10, unread_only=True)
 
 Example Python:
-    from components.sources.gmail_source import GmailSource
-    from dsl.blocks import Source
+    from dissyslab.components.sources.gmail_source import GmailSource
+    from dissyslab.blocks import Source
 
     source = GmailSource(poll_interval=60, unread_only=True)
     node = Source(fn=source.run, name="gmail")

@@ -1,5 +1,5 @@
-from dsl import Graph
-from dsl.extensions.agent_openai import AgentOpenAI
+from dissyslab import Graph
+from dissyslab.extensions.agent_openai import AgentOpenAI
 
 
 class agent_with_key():

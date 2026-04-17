@@ -14,7 +14,7 @@ from typing import Optional, List, Dict, Tuple, Any, Union
 from queue import SimpleQueue
 from collections import deque
 import multiprocessing
-from dsl.core import Agent, ExceptionThread, ExceptionProcess
+from dissyslab.core import Agent, ExceptionThread, ExceptionProcess
 
 
 # ============================================================================
@@ -247,8 +247,8 @@ class Network:
 
     def _insert_fanout_fanin(self) -> None:
         """Insert Broadcast and Merge agents for multiple connections."""
-        from dsl.blocks.fanout import Broadcast
-        from dsl.blocks.fanin import MergeAsynch
+        from dissyslab.blocks.fanout import Broadcast
+        from dissyslab.blocks.fanin import MergeAsynch
 
         out_degree: Dict[Tuple[str, str], int] = {}
         in_degree: Dict[Tuple[str, str], int] = {}
@@ -384,7 +384,7 @@ class Network:
         First assigns each agent's name to its full flattened path
         so that status messages from agents match os_agent's keys.
         """
-        from dsl.os_agent import OsAgent
+        from dissyslab.os_agent import OsAgent
 
         # Assign full path names — must match self.agents keys
         # so that status messages from agents can be matched correctly
@@ -744,8 +744,8 @@ class Network:
                 print("  (none)")
 
             if verbose:
-                from dsl.blocks.fanout import Broadcast
-                from dsl.blocks.fanin import MergeAsynch
+                from dissyslab.blocks.fanout import Broadcast
+                from dissyslab.blocks.fanin import MergeAsynch
                 auto_inserted = {
                     name: agent for name, agent in self.blocks.items()
                     if isinstance(agent, (Broadcast, MergeAsynch))

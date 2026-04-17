@@ -19,9 +19,9 @@ Clock ticks are sent by a ClockSource — a separate Source node wired
 into the StatefulAgent alongside the article stream.
 
 Usage:
-    from components.transformers.stateful_agent import StatefulAgent
-    from components.sources.clock_source import ClockSource
-    from dsl.blocks import Source, Transform, Sink
+    from dissyslab.components.transformers.stateful_agent import StatefulAgent
+    from dissyslab.components.sources.clock_source import ClockSource
+    from dissyslab.blocks import Source, Transform, Sink
 
     # Article pipeline
     feed      = Source(fn=normalizer.run,   name="feed")

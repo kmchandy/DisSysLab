@@ -23,12 +23,12 @@ New concept vs Modules 01-02:
   Unlike fanout (which copies to all), Split sends each message to one place.
 """
 
-from dsl import network
-from dsl.blocks import Source, Transform, Sink, Split
-from components.sources.demo_rss_source import DemoRSSSource
-from components.transformers.prompts import SENTIMENT_ANALYZER
-from components.transformers.demo_ai_agent import demo_ai_agent
-from components.sinks import DemoEmailAlerter, JSONLRecorder
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink, Split
+from dissyslab.components.sources.demo_rss_source import DemoRSSSource
+from dissyslab.components.transformers.prompts import SENTIMENT_ANALYZER
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab.components.sinks import DemoEmailAlerter, JSONLRecorder
 
 
 # ── Data source ───────────────────────────────────────────────────────────────

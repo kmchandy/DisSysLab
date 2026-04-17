@@ -32,11 +32,11 @@ import io
 import sys
 import pytest
 
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from components.sources.demo_bluesky_jetstream import DemoBlueSkyJetstream
-from components.transformers.prompts import SENTIMENT_ANALYZER
-from components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab.components.sources.demo_bluesky_jetstream import DemoBlueSkyJetstream
+from dissyslab.components.transformers.prompts import SENTIMENT_ANALYZER
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
 
 
 # ── Shared fixture ─────────────────────────────────────────────────────────────
@@ -60,7 +60,7 @@ def make_post(text="Great news for Python developers!", author="test_user"):
 def live_bluesky_available():
     """Return True if BlueSkyJetstreamSource connects without error."""
     try:
-        from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
+        from dissyslab.components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
         BlueSkyJetstreamSource(max_posts=1, lifetime=10)
         return True
     except Exception:
@@ -155,7 +155,7 @@ class TestLiveBlueSkyJetstream:
         reason="BlueSky Jetstream not reachable — no network or service down"
     )
     def test_live_source_returns_dict(self):
-        from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
+        from dissyslab.components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
         src = BlueSkyJetstreamSource(max_posts=2, lifetime=30)
         post = next(src.run())
         assert isinstance(post, dict)
@@ -165,7 +165,7 @@ class TestLiveBlueSkyJetstream:
         reason="BlueSky Jetstream not reachable — no network or service down"
     )
     def test_live_source_has_required_keys(self):
-        from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
+        from dissyslab.components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
         src = BlueSkyJetstreamSource(max_posts=2, lifetime=30)
         post = next(src.run())
         for key in ("text", "author", "hashtags", "language"):
@@ -176,7 +176,7 @@ class TestLiveBlueSkyJetstream:
         reason="BlueSky Jetstream not reachable — no network or service down"
     )
     def test_live_and_demo_same_schema(self):
-        from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
+        from dissyslab.components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
         live = BlueSkyJetstreamSource(max_posts=1, lifetime=30)
         demo = DemoBlueSkyJetstream(max_posts=1, delay_seconds=0)
         live_post = next(live.run())

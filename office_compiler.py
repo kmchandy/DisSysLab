@@ -13,12 +13,12 @@ import json
 import importlib
 from pathlib import Path
 
-from dsl import network
-from dsl.blocks import Source, Sink
-from dsl.blocks.role import Role
-from components.transformers.ai_agent import ai_agent
+from dissyslab import network
+from dissyslab.blocks import Source, Sink
+from dissyslab.blocks.role import Role
+from dissyslab.components.transformers.ai_agent import ai_agent
 
-from office_utils import (
+from dissyslab.office.utils import (
     SOURCE_REGISTRY,
     SINK_REGISTRY,
     parse_roles,
@@ -126,7 +126,7 @@ def build_and_run(roles, office, office_dir):
         reg = SOURCE_REGISTRY[name]
 
         if reg["type"] == "rss":
-            import components.sources.rss_normalizer as rss_normalizer
+            import dissyslab.components.sources.rss_normalizer as rss_normalizer
             factory = getattr(rss_normalizer, name)
             obj = factory(**args)
 

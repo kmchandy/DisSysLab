@@ -1,4 +1,4 @@
-from components.sources.bluesky_source import BlueSkySource
+from dissyslab.components.sources.bluesky_source import BlueSkySource
 
 # Replace with your credentials
 source = BlueSkySource(

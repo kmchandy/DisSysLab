@@ -4,7 +4,7 @@
 Demo Jobs — keyword-based job relevance matching.
 
 Usage:
-    from components.transformers.demo_jobs import check_job_relevance
+    from dissyslab.components.transformers.demo_jobs import check_job_relevance
 
     result = check_job_relevance("Senior Python Engineer at Stripe — Remote, $180k")
     # Returns:

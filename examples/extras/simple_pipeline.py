@@ -9,9 +9,9 @@ This example demonstrates a data processing pipeline:
 Data flow: ["hello", "world"] → UPPERCASE → ADD "!!" → results
 """
 
-from dsl import network
-from components.sources import ListSource
-from dsl.blocks import Source, Sink, Transform
+from dissyslab import network
+from dissyslab.components.sources import ListSource
+from dissyslab.blocks import Source, Sink, Transform
 
 # ==============================================================================
 # STEP 1: Write Ordinary Python Functions

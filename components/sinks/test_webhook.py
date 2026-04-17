@@ -1,6 +1,6 @@
 # test_webhook.py - SAFE VERSION
 import os
-from components.sinks.webhook_sink import Webhook
+from dissyslab.components.sinks.webhook_sink import Webhook
 
 webhook_url = os.environ.get("SLACK_WEBHOOK_URL")
 

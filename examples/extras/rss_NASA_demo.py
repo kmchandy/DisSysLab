@@ -1,10 +1,10 @@
 # dsl.examples.rss_demo
 
 import time
-from dsl.connectors.rss_in import RSS_In
-from dsl import network
-from dsl.extensions.agent_openai import AgentOpenAI
-from dsl.extensions.add_fields import add_fields
+from dissyslab.connectors.rss_in import RSS_In
+from dissyslab import network
+from dissyslab.extensions.agent_openai import AgentOpenAI
+from dissyslab.extensions.add_fields import add_fields
 from .live_kv_console import kv_live_sink
 
 # Define functions.
