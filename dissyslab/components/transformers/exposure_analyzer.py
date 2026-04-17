@@ -1,4 +1,4 @@
-# components/transformers/exposure_analyzer.py
+# dissyslab/components/transformers/exposure_analyzer.py
 
 """
 ExposureAnalyzer: Measures whether a photo is well-exposed, too dark, or too bright.

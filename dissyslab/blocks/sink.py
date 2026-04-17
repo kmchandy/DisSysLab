@@ -1,4 +1,4 @@
-# dsl/blocks/sink.py
+# dissyslab/blocks/sink.py
 """
 Sink Agent: Consumes messages for side effects.
 

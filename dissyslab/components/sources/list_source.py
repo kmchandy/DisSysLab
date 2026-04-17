@@ -1,4 +1,4 @@
-# components/sources/list_source.py
+# dissyslab/components/sources/list_source.py
 
 """
 ListSource: Simple source that returns next item from a list.

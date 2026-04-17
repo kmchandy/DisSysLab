@@ -1,4 +1,4 @@
-# components/sinks/intelligence_display.py
+# dissyslab/components/sinks/intelligence_display.py
 
 """
 IntelligenceDisplay: Rich console sink for intelligence briefing offices.

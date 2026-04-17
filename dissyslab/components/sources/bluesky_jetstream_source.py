@@ -1,4 +1,4 @@
-# components/sources/bluesky_jetstream_source.py
+# dissyslab/components/sources/bluesky_jetstream_source.py
 
 """
 BlueSky Jetstream Source - Live streaming posts from BlueSky

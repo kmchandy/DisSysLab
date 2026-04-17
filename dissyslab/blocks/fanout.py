@@ -1,4 +1,4 @@
-# dsl/blocks/fanout.py
+# dissyslab/blocks/fanout.py
 """
 Broadcast Agent: Copies messages to multiple outputs (fanout).
 

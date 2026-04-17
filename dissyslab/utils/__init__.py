@@ -1,4 +1,4 @@
-# dsl/utils/__init__.py
+# dissyslab/utils/__init__.py
 """
 Utility functions for DisSysLab.
 

@@ -1,4 +1,4 @@
-# dsl/connectors/replay_csv_in.py
+# dissyslab/components/sinks/replay_csv_in.py
 from __future__ import annotations
 import csv
 import time

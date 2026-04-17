@@ -1,4 +1,4 @@
-# components/transformers/demo_sentiment.py
+# dissyslab/components/transformers/demo_sentiment.py
 
 """
 Demo Sentiment Analyzer - Simple keyword-based sentiment analysis

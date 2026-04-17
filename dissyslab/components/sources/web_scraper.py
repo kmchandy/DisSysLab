@@ -1,4 +1,4 @@
-# components/sources/web_scraper.py
+# dissyslab/components/sources/web_scraper.py
 
 """
 WebScraper and ArxivScraper: scrape web pages and produce standard article dicts.

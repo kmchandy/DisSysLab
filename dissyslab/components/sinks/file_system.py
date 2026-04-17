@@ -1,4 +1,4 @@
-# dsl/connectors/file_system.py
+# dissyslab/components/sinks/file_system.py
 from __future__ import annotations
 
 from pathlib import Path

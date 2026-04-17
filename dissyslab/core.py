@@ -1,4 +1,4 @@
-# dsl/core.py
+# dissyslab/core.py
 """
 Core building blocks for the DSL distributed systems framework.
 

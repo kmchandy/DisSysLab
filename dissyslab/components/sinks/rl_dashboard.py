@@ -1,4 +1,4 @@
-# components/sinks/rl_dashboard.py
+# dissyslab/components/sinks/rl_dashboard.py
 
 """
 RLDashboard: Displays merged RL analysis results to the terminal.

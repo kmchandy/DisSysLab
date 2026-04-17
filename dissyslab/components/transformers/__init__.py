@@ -1,4 +1,4 @@
-# components/transformers/__init__.py
+# dissyslab/components/transformers/__init__.py
 
 """
 Transformers: AI-powered processing nodes for networks.

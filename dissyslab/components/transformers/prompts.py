@@ -1,4 +1,4 @@
-# components/transformers/prompts.py
+# dissyslab/components/transformers/prompts.py
 
 """
 Prompt Library for AI-Powered Transforms

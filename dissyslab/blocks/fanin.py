@@ -1,4 +1,4 @@
-# dsl/blocks/fanin.py
+# dissyslab/blocks/fanin.py
 """
 Merge Agents: Combine multiple inputs into single output (fanin).
 

@@ -1,4 +1,4 @@
-# components/transformers/composition_analyzer.py
+# dissyslab/components/transformers/composition_analyzer.py
 
 """
 CompositionAnalyzer: Measures whether a photo follows the rule of thirds.

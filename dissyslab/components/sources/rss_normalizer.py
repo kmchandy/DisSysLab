@@ -1,4 +1,4 @@
-# components/sources/rss_normalizer.py
+# dissyslab/components/sources/rss_normalizer.py
 
 """
 RSSNormalizer: Converts RSSSource string output to the standard article dict.

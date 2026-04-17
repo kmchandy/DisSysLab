@@ -1,4 +1,4 @@
-# components/sinks/photo_dashboard.py
+# dissyslab/components/sinks/photo_dashboard.py
 
 """
 PhotoDashboard: Displays merged photo quality analysis to the terminal.

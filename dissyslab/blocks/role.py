@@ -1,4 +1,4 @@
-# dsl/blocks/role.py
+# dissyslab/blocks/role.py
 """
 Role Agent: Routes messages based on status strings.
 

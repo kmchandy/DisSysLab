@@ -1,7 +1,13 @@
 # DisSysLab requirements.txt
 #
-# Install everything:
-#     pip install -r requirements.txt
+# NOTE: pyproject.toml is the canonical source for dependencies.
+# This file is kept for convenience — useful if you want to install
+# into an existing environment without doing a package install.
+#
+# Preferred installs (in order):
+#     pipx install dissyslab                 # end users, after PyPI publish
+#     pip  install -e .[dev]                 # developers (this repo)
+#     pip  install -r requirements.txt       # legacy / CI without pyproject
 #
 # Modules that need each package:
 #

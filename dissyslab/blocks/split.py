@@ -1,4 +1,4 @@
-# dsl/blocks/split.py
+# dissyslab/blocks/split.py
 """
 Split Agent: Routes messages to different outputs based on function.
 

@@ -1,4 +1,4 @@
-# components/transformers/sharpness_analyzer.py
+# dissyslab/components/transformers/sharpness_analyzer.py
 
 """
 SharpnessAnalyzer: Measures how sharp or blurry a photo is.

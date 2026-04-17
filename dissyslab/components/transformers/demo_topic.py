@@ -1,4 +1,4 @@
-# components/transformers/demo_topic.py
+# dissyslab/components/transformers/demo_topic.py
 
 """
 Demo Topic Classifier — keyword-based topic classification.

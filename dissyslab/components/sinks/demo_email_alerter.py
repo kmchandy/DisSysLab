@@ -1,4 +1,4 @@
-# components/sinks/demo_email_alerter.py
+# dissyslab/components/sinks/demo_email_alerter.py
 
 """
 DemoEmailAlerter: Simulates email alerts by printing to console.

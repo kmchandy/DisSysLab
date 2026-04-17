@@ -1,4 +1,4 @@
-# components/transformers/demo_ai_agent.py
+# dissyslab/components/transformers/demo_ai_agent.py
 
 """
 Demo AI Agent - Simulates AI agent without API calls

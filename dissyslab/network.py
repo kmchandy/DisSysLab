@@ -1,4 +1,4 @@
-# dsl/network.py
+# dissyslab/network.py
 """
 Network class for building, validating, compiling, and executing distributed dataflow networks.
 

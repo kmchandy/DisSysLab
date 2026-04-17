@@ -1,4 +1,4 @@
-# components/sources/__init__.py
+# dissyslab/components/sources/__init__.py
 
 """
 Sources: Data stream origins for networks.

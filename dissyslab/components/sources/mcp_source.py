@@ -1,4 +1,4 @@
-# components/sources/mcp_source.py
+# dissyslab/components/sources/mcp_source.py
 """
 MCP Source — Poll any MCP server tool as a DisSysLab source.
 

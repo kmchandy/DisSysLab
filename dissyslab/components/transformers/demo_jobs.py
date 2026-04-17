@@ -1,4 +1,4 @@
-# components/transformers/demo_jobs.py
+# dissyslab/components/transformers/demo_jobs.py
 
 """
 Demo Jobs — keyword-based job relevance matching.

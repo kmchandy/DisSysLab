@@ -1,4 +1,4 @@
-# components/transformers/stateful_agent.py
+# dissyslab/components/transformers/stateful_agent.py
 
 """
 StatefulAgent: Accumulates article dicts and emits a batch on a clock tick.

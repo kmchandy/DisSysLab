@@ -1,4 +1,4 @@
-# components/sinks/webhook_sink.py
+# dissyslab/components/sinks/webhook_sink.py
 
 """
 Webhook - Send HTTP POST requests to webhook URLs

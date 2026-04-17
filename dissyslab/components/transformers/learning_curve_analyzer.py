@@ -1,4 +1,4 @@
-# components/transformers/learning_curve_analyzer.py
+# dissyslab/components/transformers/learning_curve_analyzer.py
 
 """
 LearningCurveAnalyzer: Fits a trend line to reward history across checkpoints.

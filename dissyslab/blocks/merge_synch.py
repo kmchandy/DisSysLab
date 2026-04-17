@@ -1,4 +1,4 @@
-# dsl/blocks/merge_synch.py
+# dissyslab/blocks/merge_synch.py
 """
 Merge Agents: Combine multiple inputs into single output.
 

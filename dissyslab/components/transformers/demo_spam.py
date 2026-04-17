@@ -1,4 +1,4 @@
-# components/transformers/demo_spam.py
+# dissyslab/components/transformers/demo_spam.py
 
 """
 Demo Spam Detector - Simple keyword-based spam detection

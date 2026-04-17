@@ -1,4 +1,4 @@
-# components/sources/image_folder_source.py
+# dissyslab/components/sources/image_folder_source.py
 
 """
 ImageFolderSource: Reads images from a folder and emits them one at a time.

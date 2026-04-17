@@ -1,4 +1,4 @@
-# dsl/__init__.py
+# dissyslab/__init__.py
 """
 DisSysLab - Distributed Systems Teaching Framework
 

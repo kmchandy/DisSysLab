@@ -1,4 +1,4 @@
-# components/transformers/reward_analyzer.py
+# dissyslab/components/transformers/reward_analyzer.py
 
 """
 RewardAnalyzer: Analyzes reward statistics from a CartPole training checkpoint.

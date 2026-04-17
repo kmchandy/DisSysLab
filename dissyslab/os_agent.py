@@ -1,4 +1,4 @@
-# dsl/os_agent.py
+# dissyslab/os_agent.py
 """
 OsAgent: Termination detector for DSL networks.
 

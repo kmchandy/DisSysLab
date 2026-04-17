@@ -1,4 +1,4 @@
-# components/sources/rss_source.py
+# dissyslab/components/sources/rss_source.py
 
 """
 RSSSource: Read and parse RSS/Atom feeds

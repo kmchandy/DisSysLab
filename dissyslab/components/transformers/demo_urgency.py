@@ -1,4 +1,4 @@
-# components/transformers/demo_urgency.py
+# dissyslab/components/transformers/demo_urgency.py
 
 """
 Demo Urgency Detector - Simple keyword-based urgency detection

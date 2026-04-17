@@ -1,4 +1,4 @@
-# dsl/builder.py
+# dissyslab/builder.py
 from __future__ import annotations
 from typing import List, Tuple, Union, Dict, TYPE_CHECKING
 

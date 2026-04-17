@@ -1,4 +1,4 @@
-# dsl/blocks/source.py
+# dissyslab/blocks/source.py
 """
 Source Agent: Repeatedly calls a function to generate messages.
 

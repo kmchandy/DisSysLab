@@ -1,4 +1,4 @@
-# components/sinks/mcp_sink.py
+# dissyslab/components/sinks/mcp_sink.py
 """
 MCP Sink — Send DisSysLab messages to any MCP server tool.
 

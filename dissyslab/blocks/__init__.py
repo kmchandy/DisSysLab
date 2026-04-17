@@ -1,4 +1,4 @@
-# dsl/blocks/__init__.py
+# dissyslab/blocks/__init__.py
 """
 Standard agent blocks for building distributed systems.
 

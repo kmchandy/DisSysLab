@@ -1,4 +1,4 @@
-# components/sources/clock_source.py
+# dissyslab/components/sources/clock_source.py
 
 """
 ClockSource: Emits periodic tick messages into a DisSysLab pipeline.

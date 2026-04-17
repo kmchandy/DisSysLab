@@ -1,4 +1,4 @@
-# components/__init__.py
+# dissyslab/components/__init__.py
 
 """
 Components: Reusable building blocks for distributed networks.

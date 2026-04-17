@@ -1,4 +1,4 @@
-# dsl/composed_agent.py
+# dissyslab/composed_agent.py
 """
 composed_agent: A reusable network component with a named interface.
 

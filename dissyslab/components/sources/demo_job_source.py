@@ -1,4 +1,4 @@
-# components/sources/demo_job_source.py
+# dissyslab/components/sources/demo_job_source.py
 
 """
 Demo Job Source — produces fake job postings for Module 05.

@@ -1,4 +1,4 @@
-# components/sources/cartpole_source.py
+# dissyslab/components/sources/cartpole_source.py
 
 """
 CartPoleSource: Q-learning agent that trains on CartPole and emits checkpoints.

@@ -1,4 +1,4 @@
-# components/sinks/sink_simple_file.py
+# dissyslab/components/sinks/sink_simple_file.py
 
 """Sink that writes each message as a line to a file."""
 

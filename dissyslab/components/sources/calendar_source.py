@@ -1,4 +1,4 @@
-# components/sources/calendar_source.py
+# dissyslab/components/sources/calendar_source.py
 """
 Calendar Source — Poll any public ICS calendar feed and yield upcoming events.
 

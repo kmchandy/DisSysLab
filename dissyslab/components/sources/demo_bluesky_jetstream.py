@@ -1,4 +1,4 @@
-# components/sources/demo_bluesky_jetstream.py
+# dissyslab/components/sources/demo_bluesky_jetstream.py
 
 """
 Demo BlueSky Jetstream - Simulate live streaming posts

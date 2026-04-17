@@ -1,4 +1,4 @@
-# components/transformers/policy_analyzer.py
+# dissyslab/components/transformers/policy_analyzer.py
 
 """
 PolicyAnalyzer: Analyzes the agent's policy from a CartPole training checkpoint.

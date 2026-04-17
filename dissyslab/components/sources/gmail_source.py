@@ -1,4 +1,4 @@
-# components/sources/gmail_source.py
+# dissyslab/components/sources/gmail_source.py
 """
 Gmail Source — Poll Gmail inbox via IMAP and yield new emails.
 

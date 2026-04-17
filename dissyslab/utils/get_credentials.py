@@ -1,4 +1,4 @@
-# dsl/utils/get_credentials.py
+# dissyslab/utils/get_credentials.py
 """
 Get API credentials for AI services (OpenAI, Anthropic) from environment variables or .env file.
 

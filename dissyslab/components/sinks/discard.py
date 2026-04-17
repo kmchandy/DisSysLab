@@ -1,4 +1,4 @@
-# components/sinks/discard.py
+# dissyslab/components/sinks/discard.py
 
 """
 Discard: Sink that silently drops every message it receives.

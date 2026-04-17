@@ -1,4 +1,4 @@
-# dsl/utils/visualize.py
+# dissyslab/utils/visualize.py
 
 """
 Network visualization utilities for debugging and teaching.

@@ -1,4 +1,4 @@
-# components/sinks/gmail_sink.py
+# dissyslab/components/sinks/gmail_sink.py
 """
 Email Sink — Send emails via SMTP using Gmail app password.
 

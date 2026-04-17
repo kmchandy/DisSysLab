@@ -1,4 +1,4 @@
-# components/sinks/console_sink.py
+# dissyslab/components/sinks/console_display.py
 
 """
 ConsoleSink: Simple sink that prints messages to console.

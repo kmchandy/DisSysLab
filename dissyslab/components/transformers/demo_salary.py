@@ -1,4 +1,4 @@
-# components/transformers/demo_salary.py
+# dissyslab/components/transformers/demo_salary.py
 
 """
 Demo Salary Extractor — regex-based salary extraction from job postings.

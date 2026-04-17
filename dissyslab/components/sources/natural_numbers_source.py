@@ -1,4 +1,4 @@
-# components/sources/natural_numbers_source.py
+# dissyslab/components/sources/natural_numbers_source.py
 
 """Source that generates natural numbers from 0 to max_count-1."""
 

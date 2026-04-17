@@ -1,4 +1,4 @@
-# dsl/connectors/sink_jsonl_recorder.py
+# dissyslab/components/sinks/sink_jsonl_recorder.py
 
 from __future__ import annotations
 import json

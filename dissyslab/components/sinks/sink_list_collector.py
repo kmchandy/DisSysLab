@@ -1,4 +1,4 @@
-# components/sinks/sink_list_collector.py
+# dissyslab/components/sinks/sink_list_collector.py
 
 """Sink that collects messages into a list."""
 

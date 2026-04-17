@@ -1,4 +1,4 @@
-# components/sources/file_source.py
+# dissyslab/components/sources/file_source.py
 
 """
 File Source - Read CSV/JSON files from filesystem

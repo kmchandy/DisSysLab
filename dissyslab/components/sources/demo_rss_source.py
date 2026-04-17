@@ -1,4 +1,4 @@
-# components/sources/demo_rss_source.py
+# dissyslab/components/sources/demo_rss_source.py
 
 """
 DemoRSSSource: Simulates RSS feeds with test data.
