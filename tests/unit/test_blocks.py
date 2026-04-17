@@ -83,9 +83,10 @@ class TestTransform:
 
     def test_transform_applies_function(self):
         sink, results = collect_sink()
+        transform = Transform(fn=lambda x: x * 2)
         g = network([
-            (make_source([5, 10]), Transform(fn=lambda x: x * 2)),
-            (Transform(fn=lambda x: x * 2), sink),
+            (make_source([5, 10]), transform),
+            (transform, sink),
         ])
         g.run_network(timeout=5)
         assert results == [10, 20]
