@@ -11,10 +11,21 @@
 
 :root {
   --ink:    #1a1a2e;
+  --paper:  #faf8f3;
   --orange: #ff6b35;
   --teal:   #00c9a7;
   --yellow: #ffd166;
   --purple: #7b5ea7;
+  --teal-deep:   #00947d;
+  --orange-deep: #d13d0e;
+  --yellow-deep: #b8860b;
+  --purple-deep: #5b3f87;
+  --text-body:   rgba(26,26,46,0.78);
+  --text-muted:  rgba(26,26,46,0.55);
+  --text-faint:  rgba(26,26,46,0.38);
+  --text-vfaint: rgba(26,26,46,0.22);
+  --surface-tint: rgba(26,26,46,0.04);
+  --surface-border: rgba(26,26,46,0.1);
   --font-display: 'Fraunces', Georgia, serif;
   --font-body:    'DM Sans', sans-serif;
   --font-mono:    'Courier New', monospace;
@@ -23,8 +34,9 @@
 html, body {
   height: 100%;
   font-family: var(--font-body);
-  background: var(--ink);
+  background: var(--paper);
   overflow: hidden;
+  color: var(--ink);
 }
 
 /* ── Slide shell ─────────────────────────────────────────────── */
@@ -41,8 +53,12 @@ html, body {
   transform: translateX(40px);
   overflow: hidden;
   padding: 32px 40px 80px;
-  background: var(--ink);
+  background: var(--paper);
+  color: var(--ink);
 }
+
+/* S2 keeps the dark "live app" aesthetic — it represents a running computer screen */
+#s2 { background: #12122a; color: rgba(255,255,255,0.9); }
 .slide.active    { opacity: 1; pointer-events: all; transform: translateX(0); }
 .slide.exit-left { opacity: 0; transform: translateX(-40px); }
 
@@ -73,19 +89,19 @@ html, body {
   font-family: var(--font-display);
   font-weight: 900;
   line-height: 1.05;
-  color: #fff;
+  color: var(--ink);
   text-align: center;
   margin-bottom: 16px;
 }
-.headline em { font-style: normal; color: var(--yellow); }
+.headline em { font-style: normal; color: var(--orange-deep); }
 
 /* ── Shared: body text ──────────────────────────────────────── */
 .body-text {
-  font-size: clamp(14px, 1.6vw, 17px);
+  font-size: clamp(16px, 1.8vw, 19px);
   line-height: 1.65;
-  color: rgba(255,255,255,0.65);
+  color: var(--text-body);
   text-align: center;
-  max-width: 580px;
+  max-width: 640px;
   margin-bottom: 28px;
 }
 
@@ -151,9 +167,9 @@ html, body {
   z-index: 100;
 }
 .nav-btn {
-  background: rgba(255,255,255,0.1);
-  border: 1px solid rgba(255,255,255,0.18);
-  color: #fff;
+  background: rgba(26,26,46,0.06);
+  border: 1px solid rgba(26,26,46,0.14);
+  color: var(--ink);
   font-family: var(--font-body);
   font-size: 13px;
   font-weight: 600;
@@ -163,15 +179,15 @@ html, body {
   transition: background 0.18s, transform 0.1s;
   letter-spacing: 0.02em;
 }
-.nav-btn:hover  { background: rgba(255,255,255,0.2); }
+.nav-btn:hover  { background: rgba(26,26,46,0.12); }
 .nav-btn:active { transform: scale(0.96); }
-.nav-btn.primary { background: var(--orange); border-color: var(--orange); }
+.nav-btn.primary { background: var(--orange); border-color: var(--orange); color: #fff; }
 .nav-btn.primary:hover { background: #ff8555; }
 
 .progress { display: flex; gap: 5px; align-items: center; }
 .prog-dot {
   width: 6px; height: 6px; border-radius: 50%;
-  background: rgba(255,255,255,0.22);
+  background: rgba(26,26,46,0.18);
   transition: background 0.2s, transform 0.2s;
 }
 .prog-dot.on { background: var(--orange); transform: scale(1.35); }
@@ -190,24 +206,24 @@ html, body {
 
 .s1-headline {
   font-family: var(--font-display);
-  font-size: clamp(42px, 7vw, 82px);
+  font-size: clamp(36px, 5.8vw, 66px);
   font-weight: 900;
   line-height: 1.05;
-  color: #fff;
+  color: var(--ink);
   text-align: center;
   margin-bottom: 20px;
 }
-.s1-headline em { font-style: normal; color: var(--yellow); }
+.s1-headline em { font-style: normal; color: var(--orange-deep); }
 
 .s1-body {
-  font-size: clamp(18px, 2.2vw, 24px);
-  color: rgba(255,255,255,0.75);
+  font-size: clamp(17px, 2vw, 22px);
+  color: var(--text-body);
   text-align: center;
   margin-bottom: 36px;
   font-weight: 500;
   line-height: 1.5;
 }
-.s1-body strong { color: #fff; }
+.s1-body strong { color: var(--ink); }
 
 .ticker-frame {
   width: min(520px, 88vw);
@@ -301,11 +317,11 @@ html, body {
 .s2b-mono { font-family: var(--font-mono); font-size: 12px; }
 .s2b-caption {
   font-size: 16px;
-  color: rgba(255,255,255,0.5);
+  color: var(--text-muted);
   text-align: center;
   font-style: italic;
 }
-.s2b-caption strong { color: #fff; font-style: normal; }
+.s2b-caption strong { color: var(--ink); font-style: normal; }
 
 /* ══════════════════════════════════════════════════════════════
    S2c — Two role cards
@@ -330,11 +346,11 @@ html, body {
 .s2c-para { font-size: 13px; line-height: 1.75; color: rgba(255,255,255,0.65); }
 .s2c-caption {
   font-size: 15px;
-  color: rgba(255,255,255,0.5);
+  color: var(--text-muted);
   text-align: center;
   font-style: italic;
 }
-.s2c-caption strong { color: #fff; font-style: normal; }
+.s2c-caption strong { color: var(--ink); font-style: normal; }
 
 /* ══════════════════════════════════════════════════════════════
    S3 — What is an office
@@ -343,18 +359,18 @@ html, body {
 
 .s3-punch {
   font-family: var(--font-display);
-  font-size: clamp(22px, 3.2vw, 38px);
+  font-size: clamp(20px, 2.8vw, 32px);
   font-weight: 700;
-  color: rgba(255,255,255,0.85);
+  color: var(--text-body);
   text-align: center;
   margin-bottom: 6px;
   letter-spacing: 0.01em;
 }
-.s3-punch span { color: #fff; font-weight: 900; }
+.s3-punch span { color: var(--ink); font-weight: 900; }
 
 .s3-dim {
-  font-size: 13px;
-  color: rgba(255,255,255,0.3);
+  font-size: 14px;
+  color: var(--text-faint);
   text-align: center;
   margin-bottom: 24px;
   font-style: italic;
@@ -370,16 +386,17 @@ html, body {
 }
 
 .s3-col { display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; }
-.s3-col-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.28); margin-bottom: 2px; }
+.s3-col-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 2px; }
 
 .s3-sources-col { width: 120px; }
 .s3-source-node {
   width: 112px; display: flex; align-items: center; gap: 7px;
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 10px; padding: 8px 10px; font-size: 12px; color: rgba(255,255,255,0.75);
+  background: #ffffff; border: 1px solid var(--surface-border);
+  border-radius: 10px; padding: 8px 10px; font-size: 12px; color: var(--text-body);
+  box-shadow: 0 1px 2px rgba(26,26,46,0.04);
   transition: border-color 0.3s, background 0.3s;
 }
-.s3-source-node.firing { border-color: var(--teal); background: rgba(0,201,167,0.08); }
+.s3-source-node.firing { border-color: var(--teal-deep); background: rgba(0,148,125,0.1); }
 .s3-src-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--teal); margin-left: auto; animation: pulse 1.6s ease infinite; }
 
 .s3-arrow-zone { width: 100px; height: 200px; position: relative; flex-shrink: 0; }
@@ -388,37 +405,39 @@ html, body {
 
 .s3-agents-col { width: 210px; }
 .s3-desk {
-  width: 200px; background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 12px;
+  width: 200px; background: #ffffff;
+  border: 1px solid var(--surface-border); border-radius: 12px; padding: 12px;
+  box-shadow: 0 1px 2px rgba(26,26,46,0.04);
   transition: border-color 0.3s, background 0.3s;
 }
-.s3-desk.active { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.09); }
+.s3-desk.active { border-color: rgba(26,26,46,0.3); background: #fffbf0; }
 .s3-desk-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
 .s3-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
 .av-analyst { background: linear-gradient(135deg, var(--purple), #a78bfa); }
 .av-editor  { background: linear-gradient(135deg, var(--teal), #34d399); }
 .s3-desk-info { flex: 1; }
-.s3-desk-name { font-size: 13px; font-weight: 600; color: #fff; }
-.s3-desk-role { font-size: 10px; color: rgba(255,255,255,0.35); }
-.s3-inbox { text-align: center; background: rgba(255,255,255,0.06); border-radius: 8px; padding: 4px 8px; min-width: 40px; }
-.s3-inbox-label { font-size: 8px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.1em; }
-.s3-inbox-count { font-size: 16px; font-weight: 700; color: #fff; line-height: 1.2; }
-.s3-desk-status { font-size: 10.5px; color: rgba(255,255,255,0.4); font-style: italic; min-height: 16px; transition: color 0.3s; }
-.s3-desk.active .s3-desk-status { color: var(--teal); font-style: normal; }
-.s3-agent-arrow { font-size: 20px; color: rgba(255,255,255,0.2); margin: 2px 0; }
+.s3-desk-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.s3-desk-role { font-size: 10px; color: var(--text-faint); }
+.s3-inbox { text-align: center; background: rgba(26,26,46,0.05); border-radius: 8px; padding: 4px 8px; min-width: 40px; }
+.s3-inbox-label { font-size: 8px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; }
+.s3-inbox-count { font-size: 16px; font-weight: 700; color: var(--ink); line-height: 1.2; }
+.s3-desk-status { font-size: 10.5px; color: var(--text-muted); font-style: italic; min-height: 16px; transition: color 0.3s; }
+.s3-desk.active .s3-desk-status { color: var(--teal-deep); font-style: normal; }
+.s3-agent-arrow { font-size: 20px; color: var(--text-vfaint); margin: 2px 0; }
 
 .s3-outputs-col { width: 120px; }
 .s3-sink-node {
   width: 112px; display: flex; align-items: center; gap: 7px;
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+  background: #ffffff; border: 1px solid var(--surface-border);
   border-radius: 10px; padding: 8px 10px; font-size: 14px;
+  box-shadow: 0 1px 2px rgba(26,26,46,0.04);
   transition: border-color 0.3s, background 0.3s;
 }
-.s3-sink-node.orange-border { border-color: rgba(255,107,53,0.3); }
-.s3-sink-node.purple-border { border-color: rgba(123,94,167,0.3); }
-.s3-sink-node.flash-orange  { border-color: var(--orange); background: rgba(255,107,53,0.1); }
-.s3-sink-node.flash-purple  { border-color: var(--purple); background: rgba(123,94,167,0.1); }
-.s3-sink-name { font-size: 11px; font-weight: 500; color: rgba(255,255,255,0.65); }
+.s3-sink-node.orange-border { border-color: rgba(255,107,53,0.45); }
+.s3-sink-node.purple-border { border-color: rgba(123,94,167,0.45); }
+.s3-sink-node.flash-orange  { border-color: var(--orange); background: rgba(255,107,53,0.12); }
+.s3-sink-node.flash-purple  { border-color: var(--purple); background: rgba(123,94,167,0.12); }
+.s3-sink-name { font-size: 11px; font-weight: 500; color: var(--text-body); }
 
 /* ══════════════════════════════════════════════════════════════
    S4 — Messages flow
@@ -428,27 +447,28 @@ html, body {
 .s4-diagram { display: flex; align-items: center; gap: 0; width: 100%; max-width: 820px; margin-bottom: 20px; }
 .s4-panel { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0 12px; }
 .s4-panel-label { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-.s4-divider { width: 1px; height: 220px; background: rgba(255,255,255,0.08); flex-shrink: 0; }
+.s4-divider { width: 1px; height: 220px; background: rgba(26,26,46,0.1); flex-shrink: 0; }
 .s4-fanin-layout, .s4-fanout-layout { display: flex; align-items: center; gap: 0; }
 .s4-sender-col, .s4-receiver-col { display: flex; flex-direction: column; gap: 10px; }
 .s4-agent-node {
   display: flex; align-items: center; gap: 6px;
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  background: #ffffff; border: 1px solid var(--surface-border);
   border-radius: 10px; padding: 7px 11px; font-size: 13px;
-  color: rgba(255,255,255,0.75); font-weight: 500;
+  color: var(--text-body); font-weight: 500;
+  box-shadow: 0 1px 2px rgba(26,26,46,0.04);
   transition: border-color 0.25s, background 0.25s; position: relative;
 }
 .s4-agent-node span { font-size: 11px; }
-.teal-node.flash   { border-color: var(--teal);   background: rgba(0,201,167,0.1); }
-.orange-node.flash { border-color: var(--orange); background: rgba(255,107,53,0.1); }
+.teal-node.flash   { border-color: var(--teal-deep);   background: rgba(0,148,125,0.12); }
+.orange-node.flash { border-color: var(--orange); background: rgba(255,107,53,0.12); }
 
 .receiver-node, .sender-node {
   width: 78px; flex-direction: column; justify-content: center;
   padding: 12px 8px; border-radius: 14px; text-align: center;
   position: relative; overflow: visible;
 }
-.receiver-node.pulse-active { background: rgba(0,201,167,0.1); }
-.sender-node.pulse-active   { background: rgba(255,107,53,0.1); }
+.receiver-node.pulse-active { background: rgba(0,148,125,0.12); }
+.sender-node.pulse-active   { background: rgba(255,107,53,0.12); }
 
 .s4-pulse-ring {
   position: absolute; inset: -4px; border-radius: 18px;
@@ -481,7 +501,7 @@ html, body {
   font-size: 14px; font-weight: 600;
 }
 .s5-label-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.s5-label-text { color: rgba(255,255,255,0.8); }
+.s5-label-text { color: var(--text-body); }
 
 /* ══════════════════════════════════════════════════════════════
    S6 — Full role
@@ -516,31 +536,32 @@ html, body {
 .s7-role-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.85); font-family: var(--font-mono); }
 .s7-role-tag { margin-left: auto; font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; background: rgba(255,209,102,0.15); color: var(--yellow); padding: 2px 8px; border-radius: 100px; }
 .s7-role-snippet { font-size: 12px; color: rgba(255,255,255,0.5); font-style: italic; }
-.s7-copies-label { font-size: 11px; color: rgba(255,255,255,0.25); letter-spacing: 0.05em; }
+.s7-copies-label { font-size: 11px; color: var(--text-faint); letter-spacing: 0.05em; }
 
 .s7-instances { display: flex; gap: 14px; width: 100%; justify-content: center; }
 .s7-office-card {
   flex: 1; max-width: 250px;
-  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  background: #ffffff; border: 1px solid var(--surface-border);
   border-radius: 14px; overflow: hidden;
+  box-shadow: 0 1px 3px rgba(26,26,46,0.05);
   transition: transform 0.3s, box-shadow 0.3s;
 }
-.s7-office-card.highlight { transform: translateY(-4px); box-shadow: 0 8px 32px rgba(0,0,0,0.4); }
-.s7-office-header { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-bottom: 1px solid rgba(255,255,255,0.06); font-size: 13px; }
-.s7-office-name { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8); }
+.s7-office-card.highlight { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(26,26,46,0.12); }
+.s7-office-header { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-bottom: 1px solid var(--surface-border); font-size: 13px; }
+.s7-office-name { font-size: 12px; font-weight: 600; color: var(--ink); }
 .s7-office-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
 .s7-agent-row { display: flex; }
 .s7-agent-chip {
   display: flex; align-items: center; gap: 8px;
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(26,26,46,0.04); border: 1px solid var(--surface-border);
   border-radius: 20px; padding: 5px 12px 5px 5px;
 }
 .s7-agent-av { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
-.s7-aname { font-size: 12px; font-weight: 600; color: #fff; line-height: 1.2; }
-.s7-arole { font-size: 10px; color: rgba(255,255,255,0.35); }
+.s7-aname { font-size: 12px; font-weight: 600; color: var(--ink); line-height: 1.2; }
+.s7-arole { font-size: 10px; color: var(--text-faint); }
 .s7-wire { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 2px 0; }
-.s7-wire-text { font-size: 9.5px; color: rgba(255,255,255,0.35); font-style: italic; text-align: center; }
-.s7-wire-line { width: 2px; height: 18px; border-radius: 1px; opacity: 0.4; }
+.s7-wire-text { font-size: 9.5px; color: var(--text-faint); font-style: italic; text-align: center; }
+.s7-wire-line { width: 2px; height: 18px; border-radius: 1px; opacity: 0.55; }
 .teal-wire   { background: var(--teal); }
 .orange-wire { background: var(--orange); }
 .purple-wire { background: var(--purple); }
@@ -747,9 +768,54 @@ html, body {
 .s12b-copy-btn {
   background: rgba(255,209,102,0.1); border: 1px solid rgba(255,209,102,0.25);
   color: var(--yellow); font-family: var(--font-body); font-size: 12px; font-weight: 600;
-  padding: 7px 14px; border-radius: 8px; cursor: pointer; transition: background 0.2s;
+  padding: 7px 14px; border-radius: 8px; cursor: pointer; transition: background 0.2s, border-color 0.2s;
 }
 .s12b-copy-btn:hover { background: rgba(255,209,102,0.18); }
+
+/* Expandable one-time setup card */
+.s12b-setup {
+  width: 100%; max-width: 900px; margin-bottom: 18px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 12px; overflow: hidden;
+}
+.s12b-setup[open] { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.18); }
+.s12b-setup-summary {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 18px; cursor: pointer; list-style: none;
+  font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.7);
+  transition: color 0.2s;
+}
+.s12b-setup-summary:hover { color: rgba(255,255,255,0.9); }
+.s12b-setup-summary::-webkit-details-marker { display: none; }
+.s12b-setup-icon { font-size: 15px; flex-shrink: 0; }
+.s12b-setup-label { flex: 1; }
+.s12b-setup-chevron {
+  font-size: 11px; color: rgba(255,255,255,0.4);
+  transition: transform 0.2s;
+}
+.s12b-setup[open] .s12b-setup-chevron { transform: rotate(90deg); }
+.s12b-setup-body {
+  padding: 4px 18px 16px; border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.s12b-setup-intro {
+  font-size: 12.5px; color: rgba(255,255,255,0.55);
+  line-height: 1.55; padding-top: 10px;
+}
+.s12b-setup-code, .s12b-run-code {
+  background: #0d0d1f; border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px; padding: 12px 14px;
+  font-family: var(--font-mono); font-size: 12px;
+  color: rgba(255,255,255,0.85); line-height: 1.65;
+  white-space: pre; overflow-x: auto; margin: 0;
+}
+.s12b-setup-note {
+  font-size: 11.5px; color: rgba(255,255,255,0.45);
+  line-height: 1.55; font-style: italic;
+}
+.s12b-setup-note a { color: var(--teal); text-decoration: none; border-bottom: 1px dotted var(--teal); }
+.s12b-setup-note a:hover { color: #34d399; }
+.s12b-run-code { font-size: 11.5px; }
 
 .s12b-closing {
   width: 100%; max-width: 900px;
@@ -981,9 +1047,9 @@ html, body {
           <div class="msg-dot dot-teal" id="fi-dot-b"></div>
           <div class="msg-dot dot-teal" id="fi-dot-c"></div>
         </div>
-        <div class="s4-agent-node receiver-node" id="fi-recv" style="border-color:rgba(0,201,167,0.4);">
+        <div class="s4-agent-node receiver-node" id="fi-recv" style="border-color:rgba(0,148,125,0.5);">
           <div style="font-size:22px;">🔍</div>
-          <div style="font-size:11px;font-weight:600;color:#fff;">Analyst</div>
+          <div style="font-size:11px;font-weight:600;color:var(--ink);">Analyst</div>
           <div class="s4-pulse-ring teal-ring" id="fi-ring"></div>
         </div>
       </div>
@@ -995,9 +1061,9 @@ html, body {
     <div class="s4-panel">
       <div class="s4-panel-label" style="color:var(--orange);">One → Many</div>
       <div class="s4-fanout-layout">
-        <div class="s4-agent-node sender-node" id="fo-send" style="border-color:rgba(255,107,53,0.4);">
+        <div class="s4-agent-node sender-node" id="fo-send" style="border-color:rgba(255,107,53,0.5);">
           <div style="font-size:22px;">✏️</div>
-          <div style="font-size:11px;font-weight:600;color:#fff;">Editor</div>
+          <div style="font-size:11px;font-weight:600;color:var(--ink);">Editor</div>
           <div class="s4-pulse-ring orange-ring" id="fo-ring"></div>
         </div>
         <div class="s4-az" id="az-fanout" style="width:90px;height:180px;position:relative;">
@@ -1048,16 +1114,16 @@ html, body {
 
     <div class="s5-labels">
       <div class="s5-label-row">
-        <div class="s5-label-dot" style="background:var(--yellow);"></div>
-        <div class="s5-label-text" style="color:var(--yellow);">Who they are</div>
+        <div class="s5-label-dot" style="background:var(--yellow-deep);"></div>
+        <div class="s5-label-text" style="color:var(--yellow-deep);">Who they are</div>
       </div>
       <div class="s5-label-row">
-        <div class="s5-label-dot" style="background:rgba(255,255,255,0.4);"></div>
-        <div class="s5-label-text" style="color:rgba(255,255,255,0.65);">What their job is</div>
+        <div class="s5-label-dot" style="background:rgba(26,26,46,0.35);"></div>
+        <div class="s5-label-text" style="color:var(--text-body);">What their job is</div>
       </div>
       <div class="s5-label-row">
-        <div class="s5-label-dot" style="background:var(--orange);"></div>
-        <div class="s5-label-text" style="color:var(--orange);">Where to send results</div>
+        <div class="s5-label-dot" style="background:var(--orange-deep);"></div>
+        <div class="s5-label-text" style="color:var(--orange-deep);">Where to send results</div>
       </div>
     </div>
   </div>
@@ -1304,7 +1370,8 @@ html, body {
   <div class="blob" style="width:300px;height:300px;background:var(--teal);bottom:-80px;left:-60px;opacity:0.12;"></div>
 
   <div class="badge">You've got this</div>
-  <h1 class="headline" style="font-size:clamp(26px,4.2vw,52px);margin-bottom:22px;">Three things.<br><em>That's all you write.</em></h1>
+  <h1 class="headline" style="font-size:clamp(26px,4.2vw,52px);margin-bottom:10px;">Three things.<br><em>That's all you write.</em></h1>
+  <p class="body-text" style="max-width:640px;margin-bottom:22px;">Sources and sinks — where data comes from, where results go — you pick from a library. No writing needed.</p>
 
   <div class="s11-cards">
     <div class="s11-card" id="s11c1">
@@ -1340,11 +1407,9 @@ html, body {
 
   <h1 class="s12a-headline">Your<br><em>turn.</em></h1>
 
-  <a class="s12a-link-btn"
-     href="https://github.com/kmchandy/DisSysLab"
-     target="_blank" rel="noopener noreferrer">
-    🚀 Start building →
-  </a>
+  <button class="s12a-link-btn" onclick="go(1)" style="border:none;cursor:pointer;">
+    🚀 Show me how →
+  </button>
 
   <p class="s12a-closing">
     Your first office will be simple.<br>
@@ -1358,28 +1423,46 @@ html, body {
   <div class="blob" style="width:260px;height:260px;background:var(--teal);bottom:-60px;left:-40px;opacity:0.11;"></div>
 
   <div class="badge">How to start</div>
-  <h1 class="headline" style="font-size:clamp(28px,4.5vw,54px);margin-bottom:20px;">Three steps.<br><em>Under five minutes.</em></h1>
+  <h1 class="headline" style="font-size:clamp(28px,4.5vw,54px);margin-bottom:14px;">Three steps.<br><em>Under five minutes.</em></h1>
+
+  <details class="s12b-setup">
+    <summary class="s12b-setup-summary">
+      <span class="s12b-setup-icon">⚙️</span>
+      <span class="s12b-setup-label">First time? One-time setup</span>
+      <span class="s12b-setup-chevron">▸</span>
+    </summary>
+    <div class="s12b-setup-body">
+      <p class="s12b-setup-intro">Run these once on your computer. Every office after this is just the three steps below.</p>
+      <pre class="s12b-setup-code">git clone https://github.com/kmchandy/DisSysLab.git
+cd DisSysLab
+pip install -r requirements.txt
+export ANTHROPIC_API_KEY='your-key'</pre>
+      <p class="s12b-setup-note">Get an API key at <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer">console.anthropic.com</a>. Each office run costs a few cents.</p>
+    </div>
+  </details>
 
   <div class="s12b-steps">
     <div class="s12b-step" id="s12bs1">
       <div class="s12b-step-num" style="background:rgba(0,201,167,0.15);color:var(--teal);border-color:rgba(0,201,167,0.3);">1</div>
       <div class="s12b-step-body">
-        <div class="s12b-step-title" style="color:var(--teal);">Get the context file</div>
-        <div class="s12b-step-desc">This teaches Claude the DisSysLab framework so it can write your app.</div>
-        <a class="s12b-link-btn" href="https://github.com/kmchandy/DisSysLab/blob/main/CLAUDE_CONTEXT_OFFICE.md" target="_blank" rel="noopener noreferrer">📄 Open CLAUDE_CONTEXT_OFFICE.md →</a>
-        <div class="s12b-step-hint">Click "Raw" on the GitHub page → copy all → paste into a new Claude conversation.</div>
+        <div class="s12b-step-title" style="color:var(--teal);">Give Claude the context</div>
+        <div class="s12b-step-desc">One click copies a short file that teaches Claude how DisSysLab offices work. Paste it as the first message in a new Claude conversation.</div>
+        <button class="s12b-copy-btn" onclick="copyContext()" style="background:rgba(0,201,167,0.12);border-color:rgba(0,201,167,0.3);color:var(--teal);">
+          <span id="ctx-label">📋 Copy context for Claude</span>
+        </button>
+        <div class="s12b-step-hint">No clipboard? <a href="https://raw.githubusercontent.com/kmchandy/DisSysLab/main/CLAUDE_CONTEXT_OFFICE.md" target="_blank" rel="noopener noreferrer" style="color:var(--teal);">Open the raw file</a> and copy it by hand.</div>
       </div>
     </div>
     <div class="s12b-step" id="s12bs2">
       <div class="s12b-step-num" style="background:rgba(255,209,102,0.15);color:var(--yellow);border-color:rgba(255,209,102,0.3);">2</div>
       <div class="s12b-step-body">
-        <div class="s12b-step-title" style="color:var(--yellow);">Describe your app</div>
-        <div class="s12b-step-desc">Tell Claude what you want using this template:</div>
-        <div class="s12b-template">
-          <div class="s12b-tmpl-line"><span class="s12b-tmpl-plain">I want to build a DisSysLab app that:</span></div>
-          <div class="s12b-tmpl-line s12b-tmpl-gap"><span class="s12b-tmpl-key">SOURCE:</span><span class="s12b-tmpl-val">monitor Hacker News RSS feed</span></div>
-          <div class="s12b-tmpl-line"><span class="s12b-tmpl-key">PROCESSING:</span><span class="s12b-tmpl-val">filter short articles, analyze sentiment</span></div>
-          <div class="s12b-tmpl-line"><span class="s12b-tmpl-key">OUTPUT:</span><span class="s12b-tmpl-val">print results to console</span></div>
+        <div class="s12b-step-title" style="color:var(--yellow);">Describe your office</div>
+        <div class="s12b-step-desc">Tell Claude what you want. Use the course vocabulary:</div>
+        <div class="s12b-template" id="s12b-template">
+          <div class="s12b-tmpl-line"><span class="s12b-tmpl-plain">I want to build an office where:</span></div>
+          <div class="s12b-tmpl-line s12b-tmpl-gap"><span class="s12b-tmpl-key">Sources:</span><span class="s12b-tmpl-val">Hacker News RSS and BBC World RSS</span></div>
+          <div class="s12b-tmpl-line"><span class="s12b-tmpl-key">Agents:</span><span class="s12b-tmpl-val">an analyst who filters for AI stories, an editor who writes briefings</span></div>
+          <div class="s12b-tmpl-line"><span class="s12b-tmpl-key">Outputs:</span><span class="s12b-tmpl-val">a live dashboard and a saved file</span></div>
         </div>
         <button class="s12b-copy-btn" onclick="copyTemplate()"><span id="copy-label">📋 Copy template</span></button>
       </div>
@@ -1387,8 +1470,16 @@ html, body {
     <div class="s12b-step" id="s12bs3">
       <div class="s12b-step-num" style="background:rgba(255,107,53,0.15);color:var(--orange);border-color:rgba(255,107,53,0.3);">3</div>
       <div class="s12b-step-body">
-        <div class="s12b-step-title" style="color:var(--orange);">Claude builds and runs it</div>
-        <div class="s12b-step-desc">Claude writes your complete app. The compiler runs it automatically. Your office starts running — and never stops.</div>
+        <div class="s12b-step-title" style="color:var(--orange);">Save the files, then run</div>
+        <div class="s12b-step-desc">Claude writes your role files and office file. Save them inside your DisSysLab folder like this:</div>
+        <pre class="s12b-run-code">my_office/
+  office.md
+  roles/
+    analyst.md
+    editor.md</pre>
+        <div class="s12b-step-desc">Then one command runs it:</div>
+        <pre class="s12b-run-code">python3 office_compiler.py my_office/</pre>
+        <div class="s12b-step-hint">The compiler shows you the routing, asks "does this look right?", and starts your office.</div>
       </div>
     </div>
   </div>
@@ -1410,9 +1501,9 @@ html, body {
 </nav>
 
 <script>
-const TOTAL = 14;
 let cur = 0;
 const slides = document.querySelectorAll('.slide');
+const TOTAL = slides.length;
 
 // Progress dots
 const prog = document.getElementById('progress');
@@ -1438,8 +1529,9 @@ function updateNav() {
   document.getElementById('prevBtn').style.visibility = cur === 0 ? 'hidden' : 'visible';
   const last = cur >= slides.length - 1;
   const btn = document.getElementById('nextBtn');
-  btn.textContent = last ? 'Start building →' : 'Next →';
-  btn.onclick = last ? () => window.open('https://github.com/kmchandy/DisSysLab','_blank') : () => go(1);
+  btn.style.visibility = last ? 'hidden' : 'visible';
+  btn.textContent = 'Next →';
+  btn.onclick = () => go(1);
   document.querySelectorAll('.prog-dot').forEach((d,i) => d.classList.toggle('on', i === cur));
 }
 
@@ -1632,10 +1724,29 @@ cycleS12b(); setInterval(cycleS12b,1800);
 
 // ── Copy template ──────────────────────────────────────────────────────
 function copyTemplate(){
-  const text='I want to build a DisSysLab app that:\n\nSOURCE: monitor Hacker News RSS feed\nPROCESSING: filter short articles, analyze sentiment\nOUTPUT: print results to console';
+  const text='I want to build an office where:\n\nSources: Hacker News RSS and BBC World RSS\nAgents: an analyst who filters for AI stories, an editor who writes briefings\nOutputs: a live dashboard and a saved file';
   navigator.clipboard.writeText(text).then(()=>{
     const l=document.getElementById('copy-label');if(l){l.textContent='✓ Copied!';setTimeout(()=>l.textContent='📋 Copy template',2000);}
   }).catch(()=>{const r=document.createRange();r.selectNode(document.getElementById('s12b-template'));window.getSelection().removeAllRanges();window.getSelection().addRange(r);});
+}
+
+// ── Copy context file (fetches raw markdown from GitHub) ──────────────
+async function copyContext(){
+  const url='https://raw.githubusercontent.com/kmchandy/DisSysLab/main/CLAUDE_CONTEXT_OFFICE.md';
+  const label=document.getElementById('ctx-label');
+  const reset=()=>{ if(label) setTimeout(()=>label.textContent='📋 Copy context for Claude',2500); };
+  try{
+    const res=await fetch(url,{cache:'no-store'});
+    if(!res.ok) throw new Error('fetch failed: '+res.status);
+    const text=await res.text();
+    await navigator.clipboard.writeText(text);
+    if(label) label.textContent='✓ Copied! Paste into Claude';
+    reset();
+  }catch(err){
+    window.open(url,'_blank','noopener,noreferrer');
+    if(label) label.textContent='Opened — select all & copy ↗';
+    reset();
+  }
 }
 </script>
 </body>
