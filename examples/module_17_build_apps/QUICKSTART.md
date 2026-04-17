@@ -163,8 +163,8 @@ class MySink:
 **A network connects sources, transforms, and sinks together.**
 
 ```python
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
 
 # ============================================
 # STEP 1: Create your components
@@ -240,8 +240,8 @@ Simple data processing pipeline:
 Read data → Filter → Transform → Save
 """
 
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
 import json
 
 
@@ -462,7 +462,7 @@ sink.finalize()
 - **Examples:** See `examples/module_09/` for complete working apps
 - **Templates:** See `TEMPLATES.md` for detailed templates with tests
 - **Debugging:** See `DEBUGGING.md` (Module 10) for troubleshooting
-- **Components:** See `components/sources/` and `components/sinks/` for real implementations
+- **Components:** See `dissyslab/components/sources/` and `dissyslab/components/sinks/` for real implementations
 
 ---
 
@@ -470,8 +470,8 @@ sink.finalize()
 
 ### **Read File → Process → Save File**
 ```python
-from components.sources.file_source import FileSource
-from components.sinks.file_writer import FileWriter
+from dissyslab.components.sources.file_source import FileSource
+from dissyslab.components.sinks.file_writer import FileWriter
 
 source = FileSource("input.csv")
 writer = FileWriter("output.json", format="json")
@@ -487,8 +487,8 @@ writer.finalize()
 
 ### **Stream Data → Filter → Alert**
 ```python
-from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
-from components.sinks.webhook_sink import Webhook
+from dissyslab.components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
+from dissyslab.components.sinks.webhook_sink import Webhook
 
 stream = BlueSkyJetstreamSource(max_posts=50)
 webhook = Webhook(url="https://hooks.slack.com/...")

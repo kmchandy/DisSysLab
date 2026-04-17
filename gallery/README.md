@@ -23,7 +23,7 @@ No programming required.
 **How to run any of these -- Example:**
 
 ```bash
-python3 office_compiler.py gallery/org_intelligence_briefing/
+dsl run gallery/org_intelligence_briefing/
 ```
 
 The compiler reads your English documents, shows you the routing,

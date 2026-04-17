@@ -324,7 +324,7 @@ examples/module_08/
 The image analyzers and dashboard are shared with Module 07:
 
 ```
-components/
+dissyslab/components/
 ├── sources/
 │   └── image_folder_source.py
 ├── transformers/

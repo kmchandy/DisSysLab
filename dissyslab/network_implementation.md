@@ -2,7 +2,7 @@
 
 ## File Purpose
 
-`dsl/network.py` contains the `Network` class for building, validating, compiling, and executing distributed dataflow networks.
+`dissyslab/network.py` contains the `Network` class for building, validating, compiling, and executing distributed dataflow networks.
 
 **Core Responsibilities:**
 1. Container for interconnected agents
@@ -33,7 +33,7 @@ from typing import Optional, List, Dict, Tuple, Any
 from queue import SimpleQueue
 from collections import deque
 
-from dsl.core import Agent, STOP, ExceptionThread
+from dissyslab.core import Agent, STOP, ExceptionThread
 ```
 
 **Note:** Network will need Broadcast/Merge for fanout/fanin insertion, but we'll import them lazily to avoid circular dependencies.
@@ -315,7 +315,7 @@ def _insert_fanout_fanin(self) -> None:
     
     Modifies self.connections and self.blocks in place.
     """
-    from dsl.blocks import Broadcast, MergeAsynch
+    from dissyslab.blocks import Broadcast, MergeAsynch
     
     # Step 1: Compute in-degree and out-degree for each (block, port)
     out_degree = {}  # (block, port) → count
@@ -1099,7 +1099,7 @@ def show_network(self, verbose: bool = False) -> None:
         
         # Verbose mode - show auto-inserted agents
         if verbose:
-            from dsl.blocks import Broadcast, MergeAsynch
+            from dissyslab.blocks import Broadcast, MergeAsynch
             
             auto_inserted = {}
             for name, agent in self.blocks.items():

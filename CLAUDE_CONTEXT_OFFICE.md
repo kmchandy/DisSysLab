@@ -320,7 +320,7 @@ Save your files in this structure:
 
 Then run:
 
-    python3 office_compiler.py my_office/
+    dsl run my_office/
 
 The compiler will show you the routing and ask "Does this look right?"
 Confirm and your office starts running.

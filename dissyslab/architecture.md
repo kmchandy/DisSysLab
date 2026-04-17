@@ -198,7 +198,7 @@ outer = network([
 ## File Organization
 
 ```
-dsl/
+dissyslab/
 ├── README.md                    # This file
 ├── __init__.py                  # Public API exports
 ├── core.py                      # Agent base class, STOP, message passing
@@ -222,8 +222,8 @@ dsl/
 ### Building Networks
 
 ```python
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
 
 # Create agents with REQUIRED names
 source = Source(fn=data_generator, name="twitter_feed")
@@ -245,7 +245,7 @@ g.run_network()
 ### Explicit Port Syntax
 
 ```python
-from dsl.blocks import Split
+from dissyslab.blocks import Split
 
 # Create splitter with multiple outputs
 splitter = Split(router=route_fn, num_outputs=3, name="classifier")

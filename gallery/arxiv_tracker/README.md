@@ -63,7 +63,7 @@ to decide which papers are relevant — no other code changes needed.
 To track different arXiv subject feeds, change the imports:
 
 ```python
-from components.sources.web_scraper import arxiv_cs_ai, arxiv_cs_cv, arxiv_cs_ro
+from dissyslab.components.sources.web_scraper import arxiv_cs_ai, arxiv_cs_cv, arxiv_cs_ro
 ```
 
 Available feeds: `arxiv_cs_ai`, `arxiv_cs_lg`, `arxiv_cs_cl`, `arxiv_cs_cv`, `arxiv_cs_ro`.

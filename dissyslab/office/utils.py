@@ -1,8 +1,10 @@
-# office_utils.py
+# dissyslab/office/utils.py
 #
-# Shared utilities for office_compiler.py and make_office.py.
-# Contains all parsing, validation, display, and component generation logic.
-# Neither tool should duplicate anything here.
+# Shared utilities for dissyslab.office.office_compiler and
+# dissyslab.office.make_office (the implementations behind
+# `dsl run` and `dsl build`). Contains all parsing, validation,
+# display, and component generation logic. Neither tool should
+# duplicate anything here.
 
 import json
 import re

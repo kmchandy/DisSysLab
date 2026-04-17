@@ -98,7 +98,7 @@ Anna's client is Susan.
 ## Run it
 
 ```bash
-python3 office_compiler.py gallery/org_news_editorial/
+dsl run gallery/org_news_editorial/
 ```
 
 The compiler shows you the routing and asks "Does this look right?"

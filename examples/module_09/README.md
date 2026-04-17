@@ -210,7 +210,7 @@ examples/module_09/
 The app uses components shared with earlier modules:
 
 ```
-components/
+dissyslab/components/
 ├── sources/
 │   ├── bluesky_jetstream_source.py   ← live BlueSky stream
 │   └── demo_bluesky_jetstream.py     ← demo fallback (no network needed)

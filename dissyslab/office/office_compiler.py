@@ -1,12 +1,17 @@
-# office_compiler.py
+# dissyslab/office/office_compiler.py
 #
 # Compiles and runs a closed office from plain English role and office files.
 # A closed office has no Inputs/Outputs — it is a complete, runnable network.
 #
-# Usage:
-#   python3 office_compiler.py gallery/office_name/
+# Usage (preferred):
+#   dsl run gallery/office_name/
 #
-# For open offices (composable black boxes), use make_office.py instead.
+# Equivalent invocations:
+#   python -m dissyslab.office.office_compiler gallery/office_name/
+#   python office_compiler.py gallery/office_name/   # deprecated root shim
+#
+# For open offices (composable black boxes), use `dsl build` instead
+# (delegates to dissyslab.office.make_office).
 
 import sys
 import json
@@ -176,7 +181,8 @@ def build_and_run(roles, office, office_dir):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 office_compiler.py gallery/office_name/")
+        print("Usage: dsl run <office_dir>")
+        print("   or: python -m dissyslab.office.office_compiler <office_dir>")
         sys.exit(1)
 
     office_dir = sys.argv[1]
@@ -187,8 +193,8 @@ if __name__ == "__main__":
     if office["inputs"] or office["outputs"]:
         print()
         print("Error: this is an open office (has Inputs/Outputs).")
-        print("Use make_office.py instead:")
-        print(f"  python3 make_office.py {office_dir}")
+        print("Use `dsl build` instead:")
+        print(f"  dsl build {office_dir}")
         sys.exit(1)
 
     errors = validate(roles, office)

@@ -1,4 +1,4 @@
-# make_office.py
+# dissyslab/office/make_office.py
 #
 # Compiles an open office into app.py — a Python file exporting
 # a composed_agent instance importable by larger networks.
@@ -6,10 +6,13 @@
 # An open office has Inputs and Outputs declared in office.md.
 # It is a composable black box, not a standalone runnable network.
 #
-# Usage:
-#   python3 make_office.py gallery/org_two_office_news/news_monitor/
+# Usage (preferred):
+#   dsl build gallery/org_two_office_news/news_monitor/
 #
-# For closed (runnable) offices, use office_compiler.py instead.
+# Equivalent:
+#   python -m dissyslab.office.make_office <office_dir>
+#
+# For closed (runnable) offices, use `dsl run` instead.
 
 import sys
 import json
@@ -249,7 +252,8 @@ def write_app(roles, office, office_dir):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 make_office.py gallery/office_name/")
+        print("Usage: dsl build <office_dir>")
+        print("   or: python -m dissyslab.office.make_office <office_dir>")
         sys.exit(1)
 
     office_dir = sys.argv[1]
@@ -265,8 +269,8 @@ if __name__ == "__main__":
     if not (office["inputs"] or office["outputs"]):
         print()
         print("Error: this is a closed office (no Inputs/Outputs).")
-        print("Use office_compiler.py instead:")
-        print(f"  python3 office_compiler.py {office_dir}")
+        print("Use `dsl run` instead:")
+        print(f"  dsl run {office_dir}")
         sys.exit(1)
 
     print()

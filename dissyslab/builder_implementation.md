@@ -2,7 +2,7 @@
 
 ## File Purpose
 
-`dsl/builder.py` provides the user-facing API for building networks:
+`dissyslab/builder.py` provides the user-facing API for building networks:
 - `network()` function: Main entry point for creating networks from edge lists
 - `PortReference` class: Enables dot notation for explicit port specification
 
@@ -34,10 +34,10 @@ from __future__ import annotations
 from typing import List, Tuple, Union, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from dsl.core import Agent
+    from dissyslab.core import Agent
 
 # Actual imports
-from dsl.network import Network
+from dissyslab.network import Network
 ```
 
 **Note:** We use `TYPE_CHECKING` to avoid circular import issues since Agent.__getattr__ imports PortReference.
@@ -260,7 +260,7 @@ def _parse_from_node(node, edge_index: int) -> Tuple['Agent', str]:
         ValueError: If Agent has no default outport
         ValueError: If port doesn't exist on agent
     """
-    from dsl.core import Agent
+    from dissyslab.core import Agent
     
     # Case 1: PortReference (explicit port)
     if isinstance(node, PortReference):
@@ -326,7 +326,7 @@ def _parse_to_node(node, edge_index: int) -> Tuple['Agent', str]:
         ValueError: If Agent has no default inport
         ValueError: If port doesn't exist on agent
     """
-    from dsl.core import Agent
+    from dissyslab.core import Agent
     
     # Case 1: PortReference (explicit port)
     if isinstance(node, PortReference):
@@ -647,11 +647,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from dsl.core import Agent
+    from dissyslab.core import Agent
 
 # In core.py Agent.__getattr__
 def __getattr__(self, name):
-    from dsl.builder import PortReference  # Lazy import
+    from dissyslab.builder import PortReference  # Lazy import
     ...
 ```
 

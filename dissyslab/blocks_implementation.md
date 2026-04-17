@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `dsl/blocks/` directory contains pre-built agent types that provide common patterns for building distributed systems. These agents are the building blocks students use to construct networks.
+The `dissyslab/blocks/` directory contains pre-built agent types that provide common patterns for building distributed systems. These agents are the building blocks students use to construct networks.
 
 **Available Agents:**
 - **Source**: Generates messages (no inputs → one output)
@@ -23,7 +23,7 @@ The `dsl/blocks/` directory contains pre-built agent types that provide common p
 ## Directory Structure
 
 ```
-dsl/blocks/
+dissyslab/blocks/
 ├── __init__.py          # Exports all agent types
 ├── source.py            # Source agent
 ├── transform.py         # Transform agent
@@ -183,7 +183,7 @@ from __future__ import annotations
 import traceback
 import time
 from typing import Any, Callable, Optional
-from dsl.core import Agent, STOP
+from dissyslab.core import Agent, STOP
 
 
 class Source(Agent):
@@ -422,7 +422,7 @@ transform = Transform(fn=counter.add_index)
 from __future__ import annotations
 import traceback
 from typing import Any, Callable, Optional, Dict
-from dsl.core import Agent, STOP
+from dissyslab.core import Agent, STOP
 
 
 class Transform(Agent):
@@ -710,7 +710,7 @@ sink = Sink(fn=collector.process)
 from __future__ import annotations
 import traceback
 from typing import Any, Callable, Dict, Optional
-from dsl.core import Agent, STOP
+from dissyslab.core import Agent, STOP
 
 
 class Sink(Agent):
@@ -964,7 +964,7 @@ split = Split(fn=router.route, num_outputs=3)
 from __future__ import annotations
 import traceback
 from typing import Any, Callable, List, Optional
-from dsl.core import Agent, STOP
+from dissyslab.core import Agent, STOP
 
 
 class Split(Agent):
@@ -1275,7 +1275,7 @@ g = network([
 ### Implementation
 
 ```python
-from dsl.core import Agent, STOP
+from dissyslab.core import Agent, STOP
 from typing import Optional, Any, Callable
 import copy
 
@@ -1481,7 +1481,7 @@ from __future__ import annotations
 from typing import Set
 import threading
 
-from dsl.core import Agent, STOP
+from dissyslab.core import Agent, STOP
 
 
 class MergeAsynch(Agent):
@@ -1724,7 +1724,7 @@ __all__ = [
 
 ## Directory Purpose
 
-`dsl/blocks/` contains pre-built agent types that students use to build networks:
+`dissyslab/blocks/` contains pre-built agent types that students use to build networks:
 - **Source**: Generates messages (no inputs, one output)
 - **Transform**: Processes messages (one input, one output)
 - **Sink**: Consumes messages (one input, no outputs)
@@ -1743,7 +1743,7 @@ __all__ = [
 ## File Organization
 
 ```
-dsl/blocks/
+dissyslab/blocks/
 ├── __init__.py          # Export all blocks
 ├── source.py            # Source agent
 ├── transform.py         # Transform agent
@@ -1860,7 +1860,7 @@ from __future__ import annotations
 import traceback
 import time
 from typing import Any, Callable, Optional
-from dsl.core import Agent, STOP
+from dissyslab.core import Agent, STOP
 
 
 class Source(Agent):
@@ -2093,7 +2093,7 @@ from __future__ import annotations
 from typing import Any, Callable, Optional, Dict
 import traceback
 
-from dsl.core import Agent, STOP
+from dissyslab.core import Agent, STOP
 
 
 class Transform(Agent):
@@ -2262,7 +2262,7 @@ from __future__ import annotations
 from typing import Any, Callable, Optional, Dict
 import traceback
 
-from dsl.core import Agent, STOP
+from dissyslab.core import Agent, STOP
 
 
 class Sink(Agent):
@@ -2410,7 +2410,7 @@ Copy input to multiple outputs (fanout pattern).
 from __future__ import annotations
 from typing import Optional
 
-from dsl.core import Agent, STOP
+from dissyslab.core import Agent, STOP
 
 
 class Broadcast(Agent):
@@ -2542,7 +2542,7 @@ from __future__ import annotations
 from typing import Optional, List
 from queue import Queue, Empty
 
-from dsl.core import Agent, STOP
+from dissyslab.core import Agent, STOP
 
 
 class MergeAsynch(Agent):
@@ -2792,7 +2792,7 @@ Route messages to different outputs based on function.
 from __future__ import annotations
 from typing import Callable, Any, Optional
 
-from dsl.core import Agent, STOP
+from dissyslab.core import Agent, STOP
 
 
 class Split(Agent):

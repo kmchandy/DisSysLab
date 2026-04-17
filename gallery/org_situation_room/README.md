@@ -91,7 +91,7 @@ Morgan's situation_room are intelligence_display and jsonl_recorder.
 ## Run it
 
 ```bash
-python3 office_compiler.py gallery/org_situation_room/
+dsl run gallery/org_situation_room/
 ```
 
 The compiler shows you the routing and asks "Does this look right?"

@@ -13,7 +13,7 @@ You write the logic. DisSysLab handles concurrency, message passing, and shutdow
 
 **Source** — generates messages, has no inputs.
 ```python
-from dsl.blocks import Source
+from dissyslab.blocks import Source
 
 source = Source(fn=my_generator, name="source_name")
 ```
@@ -22,7 +22,7 @@ functions are accepted directly — `Source` wraps them automatically.
 
 **Transform** — receives one message, returns one (or None to drop it).
 ```python
-from dsl.blocks import Transform
+from dissyslab.blocks import Transform
 
 transform = Transform(fn=my_function, name="transform_name")
 ```
@@ -30,7 +30,7 @@ Return `None` to drop the message — it will not reach downstream nodes.
 
 **Sink** — receives messages, produces no output.
 ```python
-from dsl.blocks import Sink
+from dissyslab.blocks import Sink
 
 sink = Sink(fn=my_function, name="sink_name")
 ```
@@ -39,8 +39,8 @@ sink = Sink(fn=my_function, name="sink_name")
 
 ## Wiring a Network
 ```python
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
 
 g = network([
     (source,    transform),
@@ -104,8 +104,8 @@ Here is the minimal pattern for a custom app. Fill in your own source,
 transform logic, and sink:
 ```python
 import json
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
 
 # ── Your data source ──────────────────────────────────────────
 def my_source():
@@ -150,7 +150,7 @@ if __name__ == "__main__":
 To add AI analysis to any pipeline, use `ai_agent`. It takes a prompt string
 and returns a callable. Call it with text, parse the JSON response.
 ```python
-from components.transformers.ai_agent import ai_agent
+from dissyslab.components.transformers.ai_agent import ai_agent
 import json
 
 # Requires: export ANTHROPIC_API_KEY='your-key'
@@ -196,7 +196,7 @@ app before spending API credits.
 
 **ListSource** — emits items from a Python list instead of a live feed:
 ```python
-from dsl.blocks import ListSource
+from dissyslab.blocks import ListSource
 
 items = [{"text": "Article one"}, {"text": "Article two"}]
 source = Source(fn=ListSource(items=items).run, name="source")
@@ -204,8 +204,8 @@ source = Source(fn=ListSource(items=items).run, name="source")
 
 **demo_ai_agent** — simulates AI responses with keyword matching, no API call:
 ```python
-from components.transformers.demo_ai_agent import demo_ai_agent
-from components.transformers.prompts import SENTIMENT_ANALYZER
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab.components.transformers.prompts import SENTIMENT_ANALYZER
 
 agent = demo_ai_agent(prompt=SENTIMENT_ANALYZER)
 
@@ -218,11 +218,11 @@ def analyze_sentiment(msg):
 **Swapping demo for real is one import change:**
 ```python
 # Demo:
-from components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
 agent = demo_ai_agent(prompt=SENTIMENT_ANALYZER)
 
 # Real:
-from components.transformers.ai_agent import ai_agent
+from dissyslab.components.transformers.ai_agent import ai_agent
 agent = ai_agent("""
     Analyze sentiment.
     Return JSON only, no explanation: {"sentiment": "POSITIVE" | "NEGATIVE" | "NEUTRAL", "score": -1.0 to 1.0}

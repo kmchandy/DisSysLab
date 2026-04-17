@@ -121,12 +121,12 @@ Open `app.py`. Every section maps directly to the design above.
 ### Imports
 
 ```python
-from dsl import network
-from dsl.blocks import Source, Transform, Sink, Split
-from components.sources.demo_job_source import DemoJobSource
-from components.transformers.prompts import SPAM_DETECTOR, JOB_DETECTOR
-from components.transformers.demo_ai_agent import demo_ai_agent
-from components.sinks import JSONLRecorder
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink, Split
+from dissyslab.components.sources.demo_job_source import DemoJobSource
+from dissyslab.components.transformers.prompts import SPAM_DETECTOR, JOB_DETECTOR
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab.components.sinks import JSONLRecorder
 ```
 
 ### Components — one per box in the drawing
@@ -143,7 +143,7 @@ recorder = JSONLRecorder(path="job_matches.jsonl", mode="w", flush_every=1)
 
 ### The key new idea: JOB_DETECTOR
 
-`JOB_DETECTOR` is a prompt in `components/transformers/prompts.py` that
+`JOB_DETECTOR` is a prompt in `dissyslab/components/transformers/prompts.py` that
 describes the target role in plain English:
 
 ```python
@@ -204,12 +204,12 @@ g = network([
 
 ```python
 # app.py uses:
-from components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
 spam_detector     = demo_ai_agent(SPAM_DETECTOR)
 relevance_checker = demo_ai_agent(JOB_DETECTOR)
 
 # app_live.py uses:
-from components.transformers.ai_agent import ai_agent
+from dissyslab.components.transformers.ai_agent import ai_agent
 spam_detector     = ai_agent(SPAM_DETECTOR)
 relevance_checker = ai_agent(JOB_DETECTOR)
 ```
@@ -227,12 +227,12 @@ python3 -m examples.module_05.app_live
 ## Part 4: Make It Yours (homework)
 
 The entire behavior of this monitor is controlled by one prompt: `JOB_DETECTOR`
-in `components/transformers/prompts.py`. To monitor for a different role,
+in `dissyslab/components/transformers/prompts.py`. To monitor for a different role,
 change that prompt. The network stays the same.
 
 ### Step 1: Edit JOB_DETECTOR
 
-Open `components/transformers/prompts.py` and find `JOB_DETECTOR`. Change
+Open `dissyslab/components/transformers/prompts.py` and find `JOB_DETECTOR`. Change
 the target role description to match what you're actually looking for:
 
 ```python

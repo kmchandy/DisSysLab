@@ -2,7 +2,7 @@
 
 ## File Purpose
 
-`dsl/core.py` contains the fundamental building blocks:
+`dissyslab/core.py` contains the fundamental building blocks:
 1. `STOP` - Sentinel for end-of-stream signaling
 2. `Agent` - Abstract base class for all network nodes
 3. Supporting infrastructure (ExceptionThread, type hints)
@@ -335,7 +335,7 @@ def __getattr__(self, name: str):
         AttributeError: If name is not a valid port
     """
     # Import here to avoid circular dependency
-    from dsl.builder import PortReference
+    from dissyslab.builder import PortReference
     
     # Check if it's a valid port
     if name in self.inports or name in self.outports:

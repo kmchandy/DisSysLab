@@ -191,14 +191,14 @@ Riley's output is article_out.
 Step 1 — compile each office into a black box:
 
 ```bash
-python3 make_office.py gallery/org_two_office_news/news_monitor/
-python3 make_office.py gallery/org_two_office_news/news_editor/
+dsl build gallery/org_two_office_news/news_monitor/
+dsl build gallery/org_two_office_news/news_editor/
 ```
 
 Step 2 — compile and run the network:
 
 ```bash
-python3 make_network.py gallery/org_two_office_news/
+python -m dissyslab.office.make_network gallery/org_two_office_news/
 python3 -m gallery.org_two_office_news.app
 ```
 

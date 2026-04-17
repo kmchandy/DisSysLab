@@ -325,8 +325,8 @@ Replace `SharpnessAnalyzer` with a Claude-powered analyzer:
 
 ```python
 # In app.py, add:
-from components.transformers.prompts import READABILITY_ANALYZER
-from components.transformers.ai_agent import ai_agent
+from dissyslab.components.transformers.prompts import READABILITY_ANALYZER
+from dissyslab.components.transformers.ai_agent import ai_agent
 
 # A custom prompt for photo sharpness
 PHOTO_SHARPNESS_PROMPT = """You are a professional photographer.
@@ -362,11 +362,11 @@ Test each component independently before running the full network:
 
 ```bash
 python3 examples/module_07/download_demo_images.py    # fetch 6 CC0 photos
-python3 components/sources/image_folder_source.py     # lists images found
-python3 components/transformers/sharpness_analyzer.py # sharpness on all 6
-python3 components/transformers/exposure_analyzer.py  # exposure on all 6
-python3 components/transformers/composition_analyzer.py # composition on all 6
-python3 components/sinks/photo_dashboard.py           # shows formatted output
+python3 dissyslab/components/sources/image_folder_source.py     # lists images found
+python3 dissyslab/components/transformers/sharpness_analyzer.py # sharpness on all 6
+python3 dissyslab/components/transformers/exposure_analyzer.py  # exposure on all 6
+python3 dissyslab/components/transformers/composition_analyzer.py # composition on all 6
+python3 dissyslab/components/sinks/photo_dashboard.py           # shows formatted output
 ```
 
 | File | What it does |

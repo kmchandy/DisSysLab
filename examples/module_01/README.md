@@ -105,11 +105,11 @@ through queues that DisSysLab manages automatically.
 ### Step 1: Imports
 
 ```python
-from dsl import network
-from dsl.blocks import Source, Transform, Sink
-from components.sources.demo_rss_source import DemoRSSSource
-from components.transformers.prompts import SPAM_DETECTOR, SENTIMENT_ANALYZER
-from components.transformers.demo_ai_agent import demo_ai_agent
+from dissyslab import network
+from dissyslab.blocks import Source, Transform, Sink
+from dissyslab.components.sources.demo_rss_source import DemoRSSSource
+from dissyslab.components.transformers.prompts import SPAM_DETECTOR, SENTIMENT_ANALYZER
+from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
 ```
 
 `Source`, `Transform`, and `Sink` are the three node types. Every DisSysLab
@@ -225,7 +225,7 @@ shows the exact change needed to use real Claude AI.
 
 ```python
 # app.py (demo)                              # app_live.py (real)
-from components.transformers                 from components.transformers
+from dissyslab.components.transformers                 from components.transformers
     .demo_ai_agent import demo_ai_agent          .ai_agent import ai_agent
 
 spam_detector = demo_ai_agent(...)           spam_detector = ai_agent(...)
