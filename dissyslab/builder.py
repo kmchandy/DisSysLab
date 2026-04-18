@@ -162,9 +162,44 @@ def _add_agent_to_blocks(blocks, obj):
         raise ValueError(f"Duplicate name: '{obj.name}'")
 
 
+def _auto_name_unnamed_agents(edges):
+    """Assign unique auto-names to any unnamed agents in the edge list.
+
+    Users can write `Source(fn=...)` without a name; the framework assigns
+    a stable auto-name like `_auto_source_1` so the registry, blocks dict,
+    and Network validation all see string names.
+    """
+    from dissyslab.core import Agent
+    from dissyslab.network import Network
+
+    seen: set = set()
+    counters: dict = {}
+
+    def maybe_name(obj) -> None:
+        if id(obj) in seen:
+            return
+        seen.add(id(obj))
+        if getattr(obj, "name", None) is None:
+            cls = type(obj).__name__.lower()
+            counters[cls] = counters.get(cls, 0) + 1
+            obj.name = f"_auto_{cls}_{counters[cls]}"
+
+    for edge in edges:
+        if not isinstance(edge, tuple):
+            continue
+        for node in edge:
+            if isinstance(node, PortReference):
+                maybe_name(node.agent)
+            elif isinstance(node, (Agent, Network)):
+                maybe_name(node)
+
+
 def network(edges):
     if not isinstance(edges, list):
         raise TypeError(f"edges must be a list, got {type(edges).__name__}")
+
+    # Auto-name any unnamed agents so the registry and Network.check() work.
+    _auto_name_unnamed_agents(edges)
 
     edges = _preprocess_edges(edges)
 

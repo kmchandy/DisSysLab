@@ -383,7 +383,8 @@ class TestNetworkCompilation:
 
         assert net.compiled
         assert len(net.agents) == 3
-        assert len(net.threads) == 3
+        # 3 client agents + 1 os_agent thread
+        assert len(net.threads) == 4
         assert len(net.queues) == 2  # One per inport (trans, sink)
 
     def test_network_assigns_agent_names(self):
@@ -439,7 +440,8 @@ class TestNetworkCompilation:
 
         net.compile()
 
-        assert len(net.threads) == 3
+        # 3 client agents + 1 os_agent thread
+        assert len(net.threads) == 4
         # Verify thread names
         thread_names = [t.name for t in net.threads]
         assert "test::src_thread" in thread_names
