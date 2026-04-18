@@ -118,3 +118,7 @@ examples/**/results/
 # Logs
 logs/
 dev/
+
+# Internal planning docs (not for public repo)
+ACTION_PLAN.md
+REFACTOR_PLAN.md
