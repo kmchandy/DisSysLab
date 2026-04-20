@@ -67,8 +67,12 @@ def _packaged_gallery() -> Path:
 
 
 def _one_line_description(office_dir: Path) -> str:
-    """Find a short one-line description for an office, or '' if none."""
-    for candidate in ("office.md", "README.md"):
+    """Find a short one-line description for an office, or '' if none.
+
+    Prefer README.md over office.md: README.md is meant to be human-facing,
+    while office.md starts with the `Sources:` block that the compiler reads.
+    """
+    for candidate in ("README.md", "office.md"):
         f = office_dir / candidate
         if not f.is_file():
             continue
