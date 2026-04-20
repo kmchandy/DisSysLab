@@ -77,9 +77,12 @@ where = ["."]
 include = ["dissyslab*"]
 exclude = ["tests*", "examples*", "gallery*", "dev*", "site*", "micro_course*"]
 
-# Narrow package-data: ship only data files that the runtime actually reads.
-# We deliberately exclude **/*.md so internal design docs don't ship inside
-# the wheel.
+# Package data shipped inside the wheel. The gallery/**/*.md and
+# gallery/**/*.py globs ensure every gallery office (office.md, README.md,
+# roles/*.md, app.py, etc.) travels with the wheel so `dsl list` and
+# `dsl init` can find and copy them. The globs are scoped to gallery/ so
+# internal design docs at the dissyslab package root (architecture.md,
+# core.md, etc.) do not ship.
 [tool.setuptools.package-data]
 "dissyslab" = [
   "py.typed",
@@ -87,6 +90,8 @@ exclude = ["tests*", "examples*", "gallery*", "dev*", "site*", "micro_course*"]
   "**/*.yaml",
   "**/*.yml",
   "**/*.txt",
+  "gallery/**/*.md",
+  "gallery/**/*.py",
 ]
 
 [tool.pytest.ini_options]

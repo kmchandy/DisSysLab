@@ -2,14 +2,15 @@
 """
 `dsl` — command-line entry point for DisSysLab.
 
-After `pipx install dissyslab`, users get a `dsl` command with
+After `pip install dissyslab`, users get a `dsl` command with
 subcommands aimed at first-year undergraduates:
 
-    dsl run <office_dir>       run a closed office end-to-end
-    dsl build <office_dir>     generate app.py for an open office
-    dsl gallery                list the offices shipped with the repo
-    dsl doctor                 sanity-check Python, deps, and API key
-    dsl --version              print the installed dissyslab version
+    dsl list                      list offices that ship with dissyslab
+    dsl init <office> <folder>    copy a gallery office into <folder>
+    dsl run <office_dir>          run a closed office end-to-end
+    dsl build <office_dir>        generate app.py for an open office
+    dsl doctor                    sanity-check Python, deps, and API key
+    dsl --version                 print the installed dissyslab version
 
 This module is intentionally small: it dispatches to the real
 implementation elsewhere in the package. New subcommands should be
@@ -23,6 +24,7 @@ import argparse
 import importlib
 import os
 import runpy
+import shutil
 import sys
 from pathlib import Path
 from typing import Callable
@@ -50,6 +52,34 @@ def _package_version() -> str:
     except Exception:
         # Running from a source checkout without an installed dist.
         return "unknown (source)"
+
+
+def _packaged_gallery() -> Path:
+    """Return a filesystem path to the gallery that ships inside the package.
+
+    Works for normal `pip install dissyslab` installs and for editable
+    (`pip install -e .`) installs alike, because importlib.resources
+    resolves to the real on-disk location in both cases.
+    """
+    from importlib.resources import files
+    trav = files("dissyslab") / "gallery"
+    return Path(str(trav))
+
+
+def _one_line_description(office_dir: Path) -> str:
+    """Find a short one-line description for an office, or '' if none."""
+    for candidate in ("office.md", "README.md"):
+        f = office_dir / candidate
+        if not f.is_file():
+            continue
+        try:
+            for line in f.read_text(encoding="utf-8").splitlines():
+                s = line.strip()
+                if s and not s.startswith("#"):
+                    return s[:80]
+        except OSError:
+            continue
+    return ""
 
 
 # ── Subcommand: run ───────────────────────────────────────────────────────────
@@ -95,47 +125,82 @@ def cmd_build(args: argparse.Namespace) -> int:
     return 0
 
 
-# ── Subcommand: gallery ───────────────────────────────────────────────────────
+# ── Subcommand: list ──────────────────────────────────────────────────────────
 
-def cmd_gallery(args: argparse.Namespace) -> int:
-    """List offices in the gallery/ directory of the current working dir."""
-    root = Path(args.root).resolve() if args.root else Path.cwd()
-    gallery_dir = root / "gallery"
-    if not gallery_dir.is_dir():
+def cmd_list(args: argparse.Namespace) -> int:
+    """List the gallery offices that ship with the installed dissyslab."""
+    gallery = _packaged_gallery()
+    if not gallery.is_dir():
         _eprint(
-            f"No 'gallery/' directory found under {root}.\n"
-            "Tip: run `dsl gallery` from the root of a DisSysLab checkout, "
-            "or pass --root <path>."
+            "Could not find the gallery that ships with dissyslab.\n"
+            "This is usually a packaging bug — please report it at\n"
+            "https://github.com/kmchandy/DisSysLab/issues."
         )
         return 2
 
     offices = sorted(
-        p for p in gallery_dir.iterdir()
-        if p.is_dir() and not p.name.startswith(".")
+        p for p in gallery.iterdir()
+        if p.is_dir()
+        and not p.name.startswith(".")
+        and not p.name.startswith("__")  # skip __pycache__
     )
     if not offices:
-        print(f"(no offices found under {gallery_dir})")
+        print("(no offices found — this dissyslab install may be incomplete)")
         return 0
 
-    print(f"Offices in {gallery_dir}:")
+    print("Offices shipped with dissyslab:")
+    print()
+    name_width = max(len(p.name) for p in offices)
     for p in offices:
-        # Prefer a one-line description from office.md if present.
-        hint = ""
-        for candidate in ("office.md", "README.md"):
-            f = p / candidate
-            if f.is_file():
-                try:
-                    first = next(
-                        (line.strip() for line in f.read_text(encoding="utf-8").splitlines()
-                         if line.strip() and not line.strip().startswith("#")),
-                        "",
-                    )
-                    if first:
-                        hint = f" — {first[:80]}"
-                        break
-                except OSError:
-                    pass
-        print(f"  {p.name}{hint}")
+        hint = _one_line_description(p)
+        hint_part = f"  {hint}" if hint else ""
+        print(f"  {p.name:<{name_width}}{hint_part}")
+    print()
+    print("To copy an office into your own folder:")
+    print("  dsl init <office_name> <folder>")
+    return 0
+
+
+# ── Subcommand: init ──────────────────────────────────────────────────────────
+
+def cmd_init(args: argparse.Namespace) -> int:
+    """Copy a gallery office into a new folder the user owns."""
+    gallery = _packaged_gallery()
+    source = gallery / args.office_name
+
+    if not source.is_dir():
+        _eprint(f"Error: no office named '{args.office_name}' in the gallery.")
+        _eprint("Run `dsl list` to see available offices.")
+        return 2
+
+    target = Path(args.target).resolve()
+    if target.exists():
+        _eprint(f"Error: target folder '{target}' already exists.")
+        _eprint("Refusing to overwrite. Choose a different folder name.")
+        return 2
+
+    try:
+        shutil.copytree(
+            source,
+            target,
+            ignore=shutil.ignore_patterns(
+                "__pycache__", "*.pyc", "__init__.py"
+            ),
+        )
+    except OSError as exc:
+        _eprint(f"Error copying office: {exc}")
+        return 1
+
+    print(f"Copied '{args.office_name}' to {target}")
+    print()
+    print("Next steps:")
+    print(f"  cd {target}")
+    print("  dsl run .")
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        print()
+        print("Tip: this office needs ANTHROPIC_API_KEY to run.")
+        print("     Put it in a .env file in your office folder, or export")
+        print("     it in your shell. Get a key at https://console.anthropic.com/")
     return 0
 
 
@@ -203,6 +268,22 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", metavar="<command>")
     sub.required = True
 
+    p_list = sub.add_parser(
+        "list", help="list offices that ship with dissyslab"
+    )
+    p_list.set_defaults(handler=cmd_list)
+
+    p_init = sub.add_parser(
+        "init", help="copy a gallery office into a new folder"
+    )
+    p_init.add_argument(
+        "office_name", help="name of the office (see `dsl list`)"
+    )
+    p_init.add_argument(
+        "target", help="folder to create (must not exist)"
+    )
+    p_init.set_defaults(handler=cmd_init)
+
     p_run = sub.add_parser("run", help="run a closed office")
     p_run.add_argument("office_dir", help="path to an office directory")
     p_run.set_defaults(handler=cmd_run)
@@ -210,14 +291,6 @@ def build_parser() -> argparse.ArgumentParser:
     p_build = sub.add_parser("build", help="generate app.py for an office")
     p_build.add_argument("office_dir", help="path to an office directory")
     p_build.set_defaults(handler=cmd_build)
-
-    p_gal = sub.add_parser("gallery", help="list offices under ./gallery")
-    p_gal.add_argument(
-        "--root",
-        default=None,
-        help="repo root containing a gallery/ directory (default: cwd)",
-    )
-    p_gal.set_defaults(handler=cmd_gallery)
 
     p_doc = sub.add_parser(
         "doctor",
