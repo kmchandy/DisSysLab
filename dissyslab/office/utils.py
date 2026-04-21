@@ -179,21 +179,35 @@ SOURCE_REGISTRY = {
     # ── BlueSky streaming ─────────────────────────────────────────────────────
     "bluesky": {
         "type":   "bluesky",
-        "import": "from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource",
+        "import": "from dissyslab.components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource",
         "class":  "BlueSkyJetstreamSource",
+    },
+
+    # ── Weather (first-class, no key) ─────────────────────────────────────────
+    "weather": {
+        "type":   "weather",
+        "import": "from dissyslab.components.sources.weather_source import WeatherSource",
+        "class":  "WeatherSource",
+    },
+
+    # ── Stocks (first-class, no key) ──────────────────────────────────────────
+    "stocks": {
+        "type":   "stocks",
+        "import": "from dissyslab.components.sources.stocks_source import StocksSource",
+        "class":  "StocksSource",
     },
 
     # ── Full MCP source (advanced users) ──────────────────────────────────────
     "mcp_source": {
         "type":   "mcp",
-        "import": "from components.sources.mcp_source import MCPSource",
+        "import": "from dissyslab.components.sources.mcp_source import MCPSource",
         "class":  "MCPSource",
     },
 
     # ── MCP shortcuts (Path A users) ──────────────────────────────────────────
     "web": {
         "type":        "mcp_shortcut",
-        "import":      "from components.sources.mcp_source import MCPSource",
+        "import":      "from dissyslab.components.sources.mcp_source import MCPSource",
         "class":       "MCPSource",
         "server":      "fetch",
         "tool":        "fetch",
@@ -202,7 +216,7 @@ SOURCE_REGISTRY = {
     },
     "search": {
         "type":        "mcp_shortcut",
-        "import":      "from components.sources.mcp_source import MCPSource",
+        "import":      "from dissyslab.components.sources.mcp_source import MCPSource",
         "class":       "MCPSource",
         "server":      "brave_search",
         "tool":        "brave_web_search",
@@ -213,12 +227,12 @@ SOURCE_REGISTRY = {
     # ── Gmail and Calendar ────────────────────────────────────────────────────
     "gmail": {
         "type":   "gmail",
-        "import": "from components.sources.gmail_source import GmailSource",
+        "import": "from dissyslab.components.sources.gmail_source import GmailSource",
         "class":  "GmailSource",
     },
     "calendar": {
         "type":   "calendar",
-        "import": "from components.sources.calendar_source import CalendarSource",
+        "import": "from dissyslab.components.sources.calendar_source import CalendarSource",
         "class":  "CalendarSource",
     },
 }
@@ -254,37 +268,37 @@ def expand_shortcut(name, user_args):
 
 SINK_REGISTRY = {
     "discard": {
-        "import": "from components.sinks.discard import Discard",
+        "import": "from dissyslab.components.sinks.discard import Discard",
         "class":  "Discard",
         "args":   "none",
         "call":   "run",
     },
     "jsonl_recorder": {
-        "import": "from components.sinks.sink_jsonl_recorder import JSONLRecorder",
+        "import": "from dissyslab.components.sinks.sink_jsonl_recorder import JSONLRecorder",
         "class":  "JSONLRecorder",
         "args":   "named",
         "call":   "run",
     },
     "console_printer": {
-        "import": "from components.sinks.console_display import ConsoleDisplay",
+        "import": "from dissyslab.components.sinks.console_display import ConsoleDisplay",
         "class":  "ConsoleDisplay",
         "args":   "none",
         "call":   "run",
     },
     "intelligence_display": {
-        "import": "from components.sinks.intelligence_display import IntelligenceDisplay",
+        "import": "from dissyslab.components.sinks.intelligence_display import IntelligenceDisplay",
         "class":  "IntelligenceDisplay",
         "args":   "named",
         "call":   "run",
     },
     "mcp_sink": {
-        "import": "from components.sinks.mcp_sink import MCPSink",
+        "import": "from dissyslab.components.sinks.mcp_sink import MCPSink",
         "class":  "MCPSink",
         "args":   "named",
         "call":   "run",
     },
     "gmail_sink": {
-        "import": "from components.sinks.gmail_sink import GmailSink",
+        "import": "from dissyslab.components.sinks.gmail_sink import GmailSink",
         "class":  "GmailSink",
         "args":   "named",
         "call":   "run",
@@ -748,10 +762,10 @@ def generate_app(roles, office, office_dir):
         f"# Edit your role or office files and recompile to regenerate.",
         f"",
         f"import json",
-        f"from dsl import network",
-        f"from dsl.blocks import Source, Sink",
-        f"from dsl.blocks.role import Role",
-        f"from components.transformers.ai_agent import ai_agent",
+        f"from dissyslab import network",
+        f"from dissyslab.blocks import Source, Sink",
+        f"from dissyslab.blocks.role import Role",
+        f"from dissyslab.components.transformers.ai_agent import ai_agent",
         f"",
     ]
 
@@ -768,7 +782,7 @@ def generate_app(roles, office, office_dir):
     for source in office["sources"]:
         reg = SOURCE_REGISTRY[source["name"]]
         if reg["type"] == "rss":
-            imp = "import components.sources.rss_normalizer as rss_normalizer"
+            imp = "import dissyslab.components.sources.rss_normalizer as rss_normalizer"
         else:
             imp = reg["import"]
         if imp not in seen_imports:
