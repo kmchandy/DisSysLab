@@ -57,8 +57,7 @@ html, body {
   color: var(--ink);
 }
 
-/* S2 keeps the dark "live app" aesthetic — it represents a running computer screen */
-#s2 { background: #12122a; color: rgba(255,255,255,0.9); }
+/* All slides share the paper background. Dark chrome lives inside containers (.paper, .term-window, .s2-feed-box) so the slide nav always has a consistent light context. */
 .slide.active    { opacity: 1; pointer-events: all; transform: translateX(0); }
 .slide.exit-left { opacity: 0; transform: translateX(-40px); }
 
@@ -74,11 +73,11 @@ html, body {
 .badge {
   background: var(--orange);
   color: #fff;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.15em;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  padding: 5px 14px;
+  padding: 8px 20px;
   border-radius: 100px;
   margin-bottom: 22px;
   flex-shrink: 0;
@@ -97,11 +96,12 @@ html, body {
 
 /* ── Shared: body text ──────────────────────────────────────── */
 .body-text {
-  font-size: clamp(16px, 1.8vw, 19px);
-  line-height: 1.65;
-  color: var(--text-body);
+  font-size: clamp(18px, 2vw, 22px);
+  line-height: 1.6;
+  color: var(--ink);
+  font-weight: 500;
   text-align: center;
-  max-width: 640px;
+  max-width: 680px;
   margin-bottom: 28px;
 }
 
@@ -150,8 +150,9 @@ html, body {
 
 /* ── Shared: live dot ───────────────────────────────────────── */
 .live-dot {
-  width: 6px; height: 6px; border-radius: 50%;
+  width: 9px; height: 9px; border-radius: 50%;
   background: var(--teal);
+  box-shadow: 0 0 10px rgba(0,201,167,0.6);
   animation: pulse 1.2s ease infinite;
 }
 
@@ -167,30 +168,31 @@ html, body {
   z-index: 100;
 }
 .nav-btn {
-  background: rgba(26,26,46,0.06);
-  border: 1px solid rgba(26,26,46,0.14);
+  background: #ffffff;
+  border: 1.5px solid rgba(26,26,46,0.18);
   color: var(--ink);
   font-family: var(--font-body);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  padding: 8px 20px;
+  padding: 9px 22px;
   border-radius: 100px;
   cursor: pointer;
-  transition: background 0.18s, transform 0.1s;
+  transition: background 0.18s, transform 0.1s, border-color 0.18s;
   letter-spacing: 0.02em;
+  box-shadow: 0 1px 2px rgba(26,26,46,0.05);
 }
-.nav-btn:hover  { background: rgba(26,26,46,0.12); }
+.nav-btn:hover  { background: rgba(26,26,46,0.05); border-color: rgba(26,26,46,0.3); }
 .nav-btn:active { transform: scale(0.96); }
-.nav-btn.primary { background: var(--orange); border-color: var(--orange); color: #fff; }
-.nav-btn.primary:hover { background: #ff8555; }
+.nav-btn.primary { background: var(--orange); border-color: var(--orange-deep); color: #fff; }
+.nav-btn.primary:hover { background: var(--orange-deep); border-color: var(--orange-deep); }
 
-.progress { display: flex; gap: 5px; align-items: center; }
+.progress { display: flex; gap: 6px; align-items: center; }
 .prog-dot {
-  width: 6px; height: 6px; border-radius: 50%;
-  background: rgba(26,26,46,0.18);
+  width: 7px; height: 7px; border-radius: 50%;
+  background: rgba(26,26,46,0.25);
   transition: background 0.2s, transform 0.2s;
 }
-.prog-dot.on { background: var(--orange); transform: scale(1.35); }
+.prog-dot.on { background: var(--orange); transform: scale(1.45); }
 
 /* ── Keyframes ──────────────────────────────────────────────── */
 @keyframes pulse    { 0%,100%{opacity:1} 50%{opacity:0.25} }
@@ -206,92 +208,110 @@ html, body {
 
 .s1-headline {
   font-family: var(--font-display);
-  font-size: clamp(36px, 5.8vw, 66px);
+  font-size: clamp(40px, 6.2vw, 68px);
   font-weight: 900;
-  line-height: 1.05;
+  line-height: 1.08;
   color: var(--ink);
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: 22px;
+  max-width: 900px;
 }
 .s1-headline em { font-style: normal; color: var(--orange-deep); }
 
 .s1-body {
-  font-size: clamp(17px, 2vw, 22px);
-  color: var(--text-body);
+  font-size: clamp(19px, 2.1vw, 23px);
+  color: var(--ink);
   text-align: center;
   margin-bottom: 36px;
   font-weight: 500;
   line-height: 1.5;
+  max-width: 640px;
 }
-.s1-body strong { color: var(--ink); }
+.s1-body strong { color: var(--ink); font-weight: 700; }
 
 .ticker-frame {
-  width: min(520px, 88vw);
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.12);
+  width: min(560px, 90vw);
+  background: #12122a;
+  border: 1px solid rgba(255,255,255,0.1);
   border-radius: 16px;
   overflow: hidden;
+  box-shadow: 0 18px 40px rgba(26,26,46,0.18);
 }
 .ticker-bar {
-  background: rgba(255,255,255,0.08);
-  padding: 9px 16px;
+  background: rgba(255,255,255,0.06);
+  padding: 10px 16px;
   display: flex;
   align-items: center;
   gap: 8px;
   border-bottom: 1px solid rgba(255,255,255,0.1);
 }
-.ticker-win-dot { width: 8px; height: 8px; border-radius: 50%; }
-.ticker-title { font-size: 11px; color: rgba(255,255,255,0.4); letter-spacing: 0.08em; text-transform: uppercase; margin-left: 4px; }
-.live-badge { margin-left: auto; display: flex; align-items: center; gap: 5px; font-size: 10px; color: var(--teal); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
-.ticker-items { padding: 10px 0; max-height: 120px; overflow: hidden; }
-.ticker-item { display: flex; align-items: center; gap: 12px; padding: 7px 16px; font-size: 12.5px; color: rgba(255,255,255,0.75); border-bottom: 1px solid rgba(255,255,255,0.05); animation: itemIn 0.4s ease; }
+.ticker-win-dot { width: 9px; height: 9px; border-radius: 50%; }
+.ticker-title { font-size: 12px; color: rgba(255,255,255,0.58); letter-spacing: 0.08em; text-transform: uppercase; margin-left: 4px; font-weight: 600; }
+.live-badge { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--teal); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.live-badge .live-dot { width: 8px; height: 8px; }
+.ticker-items { padding: 10px 0; max-height: 140px; overflow: hidden; }
+.ticker-item { display: flex; align-items: center; gap: 12px; padding: 8px 16px; font-size: 14px; color: rgba(255,255,255,0.88); border-bottom: 1px solid rgba(255,255,255,0.05); animation: itemIn 0.4s ease; }
 .ticker-item:last-child { border-bottom: none; }
-.tag { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 4px; flex-shrink: 0; letter-spacing: 0.05em; }
+.tag { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 4px; flex-shrink: 0; letter-spacing: 0.05em; }
 .tag-crit { background: #ff3b30; color: #fff; }
 .tag-high { background: var(--orange); color: #fff; }
 .tag-med  { background: var(--yellow); color: var(--ink); }
-.tag-low  { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.7); }
+.tag-low  { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8); }
 .ticker-text { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ══════════════════════════════════════════════════════════════
-   S2 — Situation Room live
+   S2 — Situation Room live  (dark feed container on paper slide)
 ══════════════════════════════════════════════════════════════ */
-#s2 { padding: 0; justify-content: flex-start; align-items: stretch; }
+#s2 { gap: 0; }
+
+.s2-caption-above {
+  font-size: clamp(17px, 1.9vw, 20px);
+  color: var(--ink);
+  font-weight: 500;
+  text-align: center;
+  max-width: 720px;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+.s2-caption-above strong { font-weight: 700; }
+
+.s2-feed-box {
+  width: min(900px, 94vw);
+  height: min(62vh, 520px);
+  background: #12122a;
+  border: 1px solid rgba(26,26,46,0.12);
+  border-radius: 14px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 48px rgba(26,26,46,0.22);
+}
 
 .s2-topbar {
   display: flex; align-items: center; gap: 12px;
-  padding: 14px 24px;
-  background: rgba(255,255,255,0.04);
-  border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 14px 22px;
+  background: rgba(255,255,255,0.05);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
   flex-shrink: 0;
 }
 .s2-title { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: #fff; }
-.s2-subtitle { font-size: 12px; color: rgba(255,255,255,0.4); margin-left: 4px; }
-.s2-live { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--teal); font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; }
-
-.s2-caption {
-  background: rgba(255,214,102,0.1);
-  border-bottom: 1px solid rgba(255,214,102,0.2);
-  padding: 9px 24px;
-  font-size: 13px;
-  color: var(--yellow);
-  text-align: center;
-  flex-shrink: 0;
-}
+.s2-subtitle { font-size: 13px; color: rgba(255,255,255,0.58); margin-left: 4px; }
+.s2-live { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--teal); font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+.s2-live .live-dot { width: 8px; height: 8px; }
 
 .s2-feed-wrap { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
-.s2-feed-header { padding: 12px 24px 8px; border-bottom: 1px solid rgba(255,255,255,0.06); flex-shrink: 0; }
-.s2-panel-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(255,255,255,0.3); }
+.s2-feed-header { padding: 12px 22px 8px; border-bottom: 1px solid rgba(255,255,255,0.08); flex-shrink: 0; }
+.s2-panel-label { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: rgba(255,255,255,0.6); }
 .s2-feed-items { flex: 1; overflow-y: auto; padding: 8px 0; }
 .s2-feed-items::-webkit-scrollbar { width: 4px; }
-.s2-feed-items::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+.s2-feed-items::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
 
-.feed-item { padding: 10px 24px; border-bottom: 1px solid rgba(255,255,255,0.04); animation: itemIn 0.35s ease; }
-.feed-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 5px; }
-.feed-source { font-size: 9px; color: rgba(255,255,255,0.3); text-transform: uppercase; letter-spacing: 0.1em; }
-.feed-time { font-size: 9px; color: rgba(255,255,255,0.2); margin-left: auto; }
-.feed-headline { font-size: 13px; color: rgba(255,255,255,0.85); line-height: 1.4; margin-bottom: 4px; }
-.feed-summary { font-size: 11px; color: rgba(255,255,255,0.38); line-height: 1.45; }
+.feed-item { padding: 12px 22px; border-bottom: 1px solid rgba(255,255,255,0.05); animation: itemIn 0.35s ease; }
+.feed-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 5px; }
+.feed-source { font-size: 11px; color: rgba(255,255,255,0.55); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 600; }
+.feed-time { font-size: 11px; color: rgba(255,255,255,0.4); margin-left: auto; }
+.feed-headline { font-size: 14.5px; color: rgba(255,255,255,0.95); line-height: 1.45; margin-bottom: 4px; }
+.feed-summary { font-size: 13px; color: rgba(255,255,255,0.62); line-height: 1.5; }
 
 /* ══════════════════════════════════════════════════════════════
    S2b — Here's all you wrote
@@ -316,12 +336,14 @@ html, body {
 .s2b-line { font-size: 13px; color: rgba(255,255,255,0.75); line-height: 1.7; padding: 1px 4px; }
 .s2b-mono { font-family: var(--font-mono); font-size: 12px; }
 .s2b-caption {
-  font-size: 16px;
-  color: var(--text-muted);
+  font-size: clamp(17px, 1.9vw, 20px);
+  color: var(--text-body);
   text-align: center;
   font-style: italic;
+  max-width: 600px;
+  line-height: 1.5;
 }
-.s2b-caption strong { color: var(--ink); font-style: normal; }
+.s2b-caption strong { color: var(--ink); font-style: normal; font-weight: 700; }
 
 /* ══════════════════════════════════════════════════════════════
    S2c — Two role cards
@@ -342,15 +364,17 @@ html, body {
   border-radius: 14px;
   overflow: hidden;
 }
-.s2c-body { padding: 16px 18px; }
-.s2c-para { font-size: 13px; line-height: 1.75; color: rgba(255,255,255,0.65); }
+.s2c-body { padding: 18px 20px; }
+.s2c-para { font-size: 15px; line-height: 1.75; color: rgba(255,255,255,0.88); }
 .s2c-caption {
-  font-size: 15px;
-  color: var(--text-muted);
+  font-size: clamp(16px, 1.8vw, 19px);
+  color: var(--text-body);
   text-align: center;
   font-style: italic;
+  max-width: 600px;
+  line-height: 1.5;
 }
-.s2c-caption strong { color: var(--ink); font-style: normal; }
+.s2c-caption strong { color: var(--ink); font-style: normal; font-weight: 700; }
 
 /* ══════════════════════════════════════════════════════════════
    S3 — What is an office
@@ -359,21 +383,23 @@ html, body {
 
 .s3-punch {
   font-family: var(--font-display);
-  font-size: clamp(20px, 2.8vw, 32px);
+  font-size: clamp(22px, 2.8vw, 32px);
   font-weight: 700;
-  color: var(--text-body);
+  color: var(--ink);
   text-align: center;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
   letter-spacing: 0.01em;
 }
 .s3-punch span { color: var(--ink); font-weight: 900; }
 
 .s3-dim {
-  font-size: 14px;
-  color: var(--text-faint);
+  font-size: clamp(17px, 1.9vw, 20px);
+  color: var(--text-body);
+  font-weight: 500;
   text-align: center;
   margin-bottom: 24px;
-  font-style: italic;
+  max-width: 640px;
+  line-height: 1.5;
 }
 
 .s3-office {
@@ -386,58 +412,58 @@ html, body {
 }
 
 .s3-col { display: flex; flex-direction: column; align-items: center; gap: 10px; flex-shrink: 0; }
-.s3-col-label { font-size: 9px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-faint); margin-bottom: 2px; }
+.s3-col-label { font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-body); margin-bottom: 4px; }
 
-.s3-sources-col { width: 120px; }
+.s3-sources-col { width: 124px; }
 .s3-source-node {
-  width: 112px; display: flex; align-items: center; gap: 7px;
-  background: #ffffff; border: 1px solid var(--surface-border);
-  border-radius: 10px; padding: 8px 10px; font-size: 12px; color: var(--text-body);
-  box-shadow: 0 1px 2px rgba(26,26,46,0.04);
+  width: 118px; display: flex; align-items: center; gap: 7px;
+  background: #ffffff; border: 1.5px solid rgba(26,26,46,0.14);
+  border-radius: 10px; padding: 9px 11px; font-size: 13px; color: var(--ink); font-weight: 500;
+  box-shadow: 0 1px 2px rgba(26,26,46,0.06);
   transition: border-color 0.3s, background 0.3s;
 }
-.s3-source-node.firing { border-color: var(--teal-deep); background: rgba(0,148,125,0.1); }
-.s3-src-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--teal); margin-left: auto; animation: pulse 1.6s ease infinite; }
+.s3-source-node.firing { border-color: var(--teal-deep); background: rgba(0,148,125,0.12); }
+.s3-src-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--teal-deep); margin-left: auto; animation: pulse 1.6s ease infinite; }
 
 .s3-arrow-zone { width: 100px; height: 200px; position: relative; flex-shrink: 0; }
 .s3-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.s3-path { fill: none; stroke-width: 1.5; stroke-dasharray: 4 4; }
+.s3-path { fill: none; stroke-width: 2.5; stroke-dasharray: 5 5; stroke-linecap: round; }
 
-.s3-agents-col { width: 210px; }
+.s3-agents-col { width: 220px; }
 .s3-desk {
-  width: 200px; background: #ffffff;
-  border: 1px solid var(--surface-border); border-radius: 12px; padding: 12px;
-  box-shadow: 0 1px 2px rgba(26,26,46,0.04);
+  width: 210px; background: #ffffff;
+  border: 1.5px solid rgba(26,26,46,0.14); border-radius: 12px; padding: 13px;
+  box-shadow: 0 1px 2px rgba(26,26,46,0.06);
   transition: border-color 0.3s, background 0.3s;
 }
-.s3-desk.active { border-color: rgba(26,26,46,0.3); background: #fffbf0; }
+.s3-desk.active { border-color: var(--orange-deep); background: #fffaf0; }
 .s3-desk-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
-.s3-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-.av-analyst { background: linear-gradient(135deg, var(--purple), #a78bfa); }
-.av-editor  { background: linear-gradient(135deg, var(--teal), #34d399); }
+.s3-avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.av-analyst { background: linear-gradient(135deg, var(--purple-deep), #a78bfa); }
+.av-editor  { background: linear-gradient(135deg, var(--teal-deep), #34d399); }
 .s3-desk-info { flex: 1; }
-.s3-desk-name { font-size: 13px; font-weight: 600; color: var(--ink); }
-.s3-desk-role { font-size: 10px; color: var(--text-faint); }
-.s3-inbox { text-align: center; background: rgba(26,26,46,0.05); border-radius: 8px; padding: 4px 8px; min-width: 40px; }
-.s3-inbox-label { font-size: 8px; color: var(--text-faint); text-transform: uppercase; letter-spacing: 0.1em; }
-.s3-inbox-count { font-size: 16px; font-weight: 700; color: var(--ink); line-height: 1.2; }
-.s3-desk-status { font-size: 10.5px; color: var(--text-muted); font-style: italic; min-height: 16px; transition: color 0.3s; }
-.s3-desk.active .s3-desk-status { color: var(--teal-deep); font-style: normal; }
-.s3-agent-arrow { font-size: 20px; color: var(--text-vfaint); margin: 2px 0; }
+.s3-desk-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+.s3-desk-role { font-size: 12px; color: var(--text-body); font-weight: 500; }
+.s3-inbox { text-align: center; background: rgba(26,26,46,0.07); border-radius: 8px; padding: 4px 9px; min-width: 42px; }
+.s3-inbox-label { font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; }
+.s3-inbox-count { font-size: 17px; font-weight: 700; color: var(--ink); line-height: 1.2; }
+.s3-desk-status { font-size: 12px; color: var(--text-body); font-style: italic; min-height: 16px; transition: color 0.3s; font-weight: 500; }
+.s3-desk.active .s3-desk-status { color: var(--orange-deep); font-style: normal; font-weight: 600; }
+.s3-agent-arrow { font-size: 22px; color: var(--text-muted); margin: 2px 0; font-weight: 700; }
 
-.s3-outputs-col { width: 120px; }
+.s3-outputs-col { width: 124px; }
 .s3-sink-node {
-  width: 112px; display: flex; align-items: center; gap: 7px;
-  background: #ffffff; border: 1px solid var(--surface-border);
-  border-radius: 10px; padding: 8px 10px; font-size: 14px;
-  box-shadow: 0 1px 2px rgba(26,26,46,0.04);
+  width: 118px; display: flex; align-items: center; gap: 7px;
+  background: #ffffff; border: 1.5px solid rgba(26,26,46,0.14);
+  border-radius: 10px; padding: 9px 11px; font-size: 15px;
+  box-shadow: 0 1px 2px rgba(26,26,46,0.06);
   transition: border-color 0.3s, background 0.3s;
 }
-.s3-sink-node.orange-border { border-color: rgba(255,107,53,0.45); }
-.s3-sink-node.purple-border { border-color: rgba(123,94,167,0.45); }
-.s3-sink-node.flash-orange  { border-color: var(--orange); background: rgba(255,107,53,0.12); }
-.s3-sink-node.flash-purple  { border-color: var(--purple); background: rgba(123,94,167,0.12); }
-.s3-sink-name { font-size: 11px; font-weight: 500; color: var(--text-body); }
+.s3-sink-node.orange-border { border-color: rgba(209,61,14,0.6); }
+.s3-sink-node.purple-border { border-color: rgba(91,63,135,0.6); }
+.s3-sink-node.flash-orange  { border-color: var(--orange-deep); background: rgba(255,107,53,0.15); }
+.s3-sink-node.flash-purple  { border-color: var(--purple-deep); background: rgba(123,94,167,0.15); }
+.s3-sink-name { font-size: 13px; font-weight: 600; color: var(--ink); }
 
 /* ══════════════════════════════════════════════════════════════
    S4 — Messages flow
@@ -445,22 +471,22 @@ html, body {
 #s4 { gap: 0; }
 
 .s4-diagram { display: flex; align-items: center; gap: 0; width: 100%; max-width: 820px; margin-bottom: 20px; }
-.s4-panel { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 0 12px; }
-.s4-panel-label { font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
-.s4-divider { width: 1px; height: 220px; background: rgba(26,26,46,0.1); flex-shrink: 0; }
+.s4-panel { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 0 12px; }
+.s4-panel-label { font-size: 15px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.s4-divider { width: 1px; height: 240px; background: rgba(26,26,46,0.15); flex-shrink: 0; }
 .s4-fanin-layout, .s4-fanout-layout { display: flex; align-items: center; gap: 0; }
 .s4-sender-col, .s4-receiver-col { display: flex; flex-direction: column; gap: 10px; }
 .s4-agent-node {
   display: flex; align-items: center; gap: 6px;
-  background: #ffffff; border: 1px solid var(--surface-border);
-  border-radius: 10px; padding: 7px 11px; font-size: 13px;
-  color: var(--text-body); font-weight: 500;
-  box-shadow: 0 1px 2px rgba(26,26,46,0.04);
+  background: #ffffff; border: 1.5px solid rgba(26,26,46,0.14);
+  border-radius: 10px; padding: 8px 13px; font-size: 14px;
+  color: var(--ink); font-weight: 600;
+  box-shadow: 0 1px 2px rgba(26,26,46,0.06);
   transition: border-color 0.25s, background 0.25s; position: relative;
 }
-.s4-agent-node span { font-size: 11px; }
+.s4-agent-node span { font-size: 13px; }
 .teal-node.flash   { border-color: var(--teal-deep);   background: rgba(0,148,125,0.12); }
-.orange-node.flash { border-color: var(--orange); background: rgba(255,107,53,0.12); }
+.orange-node.flash { border-color: var(--orange-deep); background: rgba(255,107,53,0.12); }
 
 .receiver-node, .sender-node {
   width: 78px; flex-direction: column; justify-content: center;
@@ -480,8 +506,8 @@ html, body {
 .s4-az { flex-shrink: 0; }
 
 .s4-concept-tag {
-  font-size: 13px; font-weight: 700; letter-spacing: 0.06em;
-  border: 1px solid; border-radius: 100px; padding: 5px 16px;
+  font-size: 15px; font-weight: 700; letter-spacing: 0.06em;
+  border: 1.5px solid; border-radius: 100px; padding: 6px 18px;
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -489,34 +515,34 @@ html, body {
 ══════════════════════════════════════════════════════════════ */
 #s5 { gap: 0; }
 
-.s5-layout { display: flex; align-items: center; gap: 36px; width: 100%; max-width: 760px; }
-.s5-paper { width: 320px; flex-shrink: 0; }
-.s5-paper-body { padding: 18px 20px; }
-.s5-line { font-size: 13.5px; line-height: 1.75; color: rgba(255,255,255,0.75); }
+.s5-layout { display: flex; align-items: center; gap: 36px; width: 100%; max-width: 780px; }
+.s5-paper { width: 340px; flex-shrink: 0; }
+.s5-paper-body { padding: 20px 22px; }
+.s5-line { font-size: 15px; line-height: 1.75; color: rgba(255,255,255,0.92); }
 .s5-gap  { margin-top: 10px; }
 
-.s5-labels { display: flex; flex-direction: column; gap: 14px; }
+.s5-labels { display: flex; flex-direction: column; gap: 16px; }
 .s5-label-row {
   display: flex; align-items: center; gap: 12px;
-  font-size: 14px; font-weight: 600;
+  font-size: 16px; font-weight: 700;
 }
-.s5-label-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
-.s5-label-text { color: var(--text-body); }
+.s5-label-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.s5-label-text { color: var(--ink); }
 
 /* ══════════════════════════════════════════════════════════════
    S6 — Full role
 ══════════════════════════════════════════════════════════════ */
 #s6 { gap: 0; }
 
-.s6-paper { width: min(560px, 90vw); }
-.s6-paper-body { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+.s6-paper { width: min(600px, 92vw); }
+.s6-paper-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 12px; }
 .s6-para {
-  font-size: 13.5px; line-height: 1.75; color: rgba(255,255,255,0.72); margin: 0;
-  padding: 10px 12px; border-radius: 8px;
-  border-left: 2px solid rgba(255,255,255,0.07);
+  font-size: 15px; line-height: 1.7; color: rgba(255,255,255,0.9); margin: 0;
+  padding: 12px 14px; border-radius: 8px;
+  border-left: 3px solid rgba(255,255,255,0.1);
   transition: border-color 0.3s, background 0.3s;
 }
-.s6-para.lit { border-left-color: var(--teal); background: rgba(0,201,167,0.05); }
+.s6-para.lit { border-left-color: var(--teal); background: rgba(0,201,167,0.08); }
 
 /* ══════════════════════════════════════════════════════════════
    S7 — Roles are reusable
@@ -533,10 +559,10 @@ html, body {
   min-width: 280px; box-shadow: 0 0 24px rgba(255,209,102,0.08);
 }
 .s7-role-header { display: flex; align-items: center; gap: 8px; }
-.s7-role-name { font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.85); font-family: var(--font-mono); }
-.s7-role-tag { margin-left: auto; font-size: 9px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; background: rgba(255,209,102,0.15); color: var(--yellow); padding: 2px 8px; border-radius: 100px; }
-.s7-role-snippet { font-size: 12px; color: rgba(255,255,255,0.5); font-style: italic; }
-.s7-copies-label { font-size: 11px; color: var(--text-faint); letter-spacing: 0.05em; }
+.s7-role-name { font-size: 14.5px; font-weight: 700; color: rgba(255,255,255,0.96); font-family: var(--font-mono); }
+.s7-role-tag { margin-left: auto; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; background: var(--yellow); color: var(--ink); padding: 3px 10px; border-radius: 100px; }
+.s7-role-snippet { font-size: 14px; color: rgba(255,255,255,0.82); font-style: italic; }
+.s7-copies-label { font-size: 14px; color: var(--text-body); font-weight: 500; letter-spacing: 0.02em; }
 
 .s7-instances { display: flex; gap: 14px; width: 100%; justify-content: center; }
 .s7-office-card {
@@ -547,33 +573,33 @@ html, body {
   transition: transform 0.3s, box-shadow 0.3s;
 }
 .s7-office-card.highlight { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(26,26,46,0.12); }
-.s7-office-header { display: flex; align-items: center; gap: 8px; padding: 9px 14px; border-bottom: 1px solid var(--surface-border); font-size: 13px; }
-.s7-office-name { font-size: 12px; font-weight: 600; color: var(--ink); }
-.s7-office-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.s7-office-header { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--surface-border); font-size: 14px; }
+.s7-office-name { font-size: 14px; font-weight: 700; color: var(--ink); }
+.s7-office-body { padding: 14px 14px; display: flex; flex-direction: column; gap: 6px; }
 .s7-agent-row { display: flex; }
 .s7-agent-chip {
   display: flex; align-items: center; gap: 8px;
-  background: rgba(26,26,46,0.04); border: 1px solid var(--surface-border);
-  border-radius: 20px; padding: 5px 12px 5px 5px;
+  background: rgba(26,26,46,0.04); border: 1.5px solid rgba(26,26,46,0.14);
+  border-radius: 20px; padding: 5px 14px 5px 5px;
 }
-.s7-agent-av { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
-.s7-aname { font-size: 12px; font-weight: 600; color: var(--ink); line-height: 1.2; }
-.s7-arole { font-size: 10px; color: var(--text-faint); }
+.s7-agent-av { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; flex-shrink: 0; }
+.s7-aname { font-size: 13.5px; font-weight: 700; color: var(--ink); line-height: 1.2; }
+.s7-arole { font-size: 12px; color: var(--text-body); font-weight: 500; }
 .s7-wire { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 2px 0; }
-.s7-wire-text { font-size: 9.5px; color: var(--text-faint); font-style: italic; text-align: center; }
-.s7-wire-line { width: 2px; height: 18px; border-radius: 1px; opacity: 0.55; }
+.s7-wire-text { font-size: 12px; color: var(--text-body); font-style: italic; text-align: center; font-weight: 500; }
+.s7-wire-line { width: 2.5px; height: 20px; border-radius: 1px; opacity: 0.85; }
 .teal-wire   { background: var(--teal); }
 .orange-wire { background: var(--orange); }
 .purple-wire { background: var(--purple); }
 
 .s7-library-callout {
-  display: flex; align-items: center; gap: 12px;
-  background: rgba(255,209,102,0.1); border: 1.5px solid rgba(255,209,102,0.3);
-  border-radius: 12px; padding: 12px 20px;
-  max-width: 500px; width: 100%;
+  display: flex; align-items: center; gap: 14px;
+  background: rgba(255,209,102,0.38); border: 1.5px solid var(--yellow-deep);
+  border-radius: 12px; padding: 14px 22px;
+  max-width: 560px; width: 100%;
 }
-.s7-library-icon { font-size: 20px; flex-shrink: 0; }
-.s7-library-text { font-size: 13px; color: var(--yellow); font-weight: 600; line-height: 1.45; }
+.s7-library-icon { font-size: 24px; flex-shrink: 0; }
+.s7-library-text { font-size: 15px; color: var(--ink); font-weight: 600; line-height: 1.5; }
 
 /* ══════════════════════════════════════════════════════════════
    S8 — Name your agents
@@ -582,46 +608,46 @@ html, body {
 
 .s8-declaration {
   background: #12122a; border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 14px; overflow: hidden; width: 320px;
+  border-radius: 14px; overflow: hidden; width: 360px;
 }
-.s8-decl-body { padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
+.s8-decl-body { padding: 22px 26px; display: flex; flex-direction: column; gap: 12px; }
 .s8-decl-line {
-  display: flex; align-items: baseline; gap: 6px; font-size: 15px;
-  padding: 8px 12px; border-radius: 8px;
-  border-left: 2px solid rgba(255,255,255,0.06);
+  display: flex; align-items: baseline; gap: 7px; font-size: 17px;
+  padding: 10px 14px; border-radius: 8px;
+  border-left: 3px solid rgba(255,255,255,0.1);
   transition: background 0.3s, border-color 0.3s;
 }
-.s8-decl-line.lit { background: rgba(255,255,255,0.05); border-left-color: rgba(255,255,255,0.25); }
+.s8-decl-line.lit { background: rgba(255,255,255,0.06); border-left-color: rgba(255,255,255,0.35); }
 .s8-decl-name { font-weight: 700; color: #fff; }
-.s8-decl-is   { color: rgba(255,255,255,0.35); font-size: 14px; }
-.s8-decl-role { font-weight: 600; font-size: 14px; }
-.s8-decl-footer { padding: 12px 24px; border-top: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02); }
-.s8-footer-note { font-size: 12px; color: rgba(255,255,255,0.3); font-style: italic; }
+.s8-decl-is   { color: rgba(255,255,255,0.55); font-size: 15px; }
+.s8-decl-role { font-weight: 700; font-size: 16px; }
+.s8-decl-footer { padding: 13px 26px; border-top: 1px solid rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+.s8-footer-note { font-size: 13px; color: rgba(255,255,255,0.55); font-style: italic; }
 
 /* ══════════════════════════════════════════════════════════════
    S9 — One line, that's a connection
 ══════════════════════════════════════════════════════════════ */
 #s9 { gap: 0; }
 
-.s9-wire-block { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 100%; max-width: 640px; margin-bottom: 20px; }
-.s9-wire-label { font-size: 9px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: rgba(255,255,255,0.28); }
+.s9-wire-block { display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%; max-width: 680px; margin-bottom: 22px; }
+.s9-wire-label { font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-body); }
 .s9-wire-line-card {
-  display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
-  background: #12122a; border: 1.5px solid rgba(255,255,255,0.12);
-  border-radius: 12px; padding: 14px 20px; font-size: 14px;
+  display: flex; align-items: center; flex-wrap: wrap; gap: 7px;
+  background: #12122a; border: 1.5px solid rgba(255,255,255,0.14);
+  border-radius: 12px; padding: 16px 22px; font-size: 16px;
   width: 100%; justify-content: center;
   animation: pulseGlow 3s ease infinite;
 }
-.s9-quote  { color: rgba(255,255,255,0.35); font-style: italic; }
-.s9-port   { font-weight: 700; border-radius: 4px; padding: 1px 6px; background: rgba(255,107,53,0.18); color: var(--orange); }
-.s9-dest   { font-weight: 700; border-radius: 4px; padding: 1px 6px; font-family: var(--font-mono); font-size: 12.5px; }
-.teal-dest   { background: rgba(0,201,167,0.15); color: var(--teal); }
-.purple-dest { background: rgba(123,94,167,0.2); color: #c4a8f5; }
+.s9-quote  { color: rgba(255,255,255,0.72); font-style: italic; }
+.s9-port   { font-weight: 700; border-radius: 4px; padding: 2px 8px; background: rgba(255,107,53,0.22); color: var(--orange); }
+.s9-dest   { font-weight: 700; border-radius: 4px; padding: 2px 8px; font-family: var(--font-mono); font-size: 14.5px; }
+.teal-dest   { background: rgba(0,201,167,0.18); color: var(--teal); }
+.purple-dest { background: rgba(123,94,167,0.24); color: #c4a8f5; }
 
-.s9-flow-zone { position: relative; width: min(520px,90vw); height: 160px; }
-.s9-flow-node { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.s9-fn-av { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 15px; }
-.s9-fn-name { font-size: 9.5px; font-weight: 600; color: rgba(255,255,255,0.5); font-family: var(--font-mono); white-space: nowrap; }
+.s9-flow-zone { position: relative; width: min(560px,92vw); height: 170px; }
+.s9-flow-node { position: absolute; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+.s9-fn-av { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+.s9-fn-name { font-size: 12px; font-weight: 700; color: var(--ink); font-family: var(--font-mono); white-space: nowrap; }
 .s9-sink-node { transform: translateY(-50%); }
 .s9-sink-node.flash-teal   { filter: drop-shadow(0 0 8px var(--teal)); }
 .s9-sink-node.flash-purple { filter: drop-shadow(0 0 8px var(--purple)); }
@@ -631,49 +657,50 @@ html, body {
 ══════════════════════════════════════════════════════════════ */
 #s10 { gap: 0; }
 
-.s10-paper { width: min(560px, 90vw); }
-.s10-body  { padding: 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+.s10-paper { width: min(620px, 92vw); }
+.s10-body  { padding: 18px 22px; display: flex; flex-direction: column; gap: 16px; }
 .s10-section { display: flex; flex-direction: column; gap: 4px; }
-.s10-section-label { font-size: 10px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-.s10-code-line { font-size: 12px; font-family: var(--font-mono); padding: 2px 6px; line-height: 1.7; }
+.s10-section-label { font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 5px; padding-bottom: 5px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.s10-code-line { font-size: 13.5px; font-family: var(--font-mono); padding: 2px 6px; line-height: 1.7; }
 .s10-key   { font-weight: 700; }
-.s10-paren { color: rgba(255,255,255,0.35); }
-.s10-prose-line { font-size: 12.5px; padding: 3px 6px; line-height: 1.7; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px; }
-.s10-agentname { font-weight: 700; color: rgba(255,255,255,0.9); font-family: var(--font-mono); font-size: 11.5px; }
-.s10-verb  { color: rgba(255,255,255,0.35); font-size: 12px; }
-.s10-arrow { color: rgba(255,255,255,0.35); font-size: 11.5px; }
-.s10-role  { font-weight: 600; font-size: 12px; }
-.s10-dest2 { font-weight: 600; color: rgba(255,255,255,0.75); font-size: 11.5px; }
+.s10-paren { color: rgba(255,255,255,0.55); }
+.s10-prose-line { font-size: 14px; padding: 3px 6px; line-height: 1.7; display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px; }
+.s10-agentname { font-weight: 700; color: #fff; font-family: var(--font-mono); font-size: 13px; }
+.s10-verb  { color: rgba(255,255,255,0.6); font-size: 13.5px; }
+.s10-arrow { color: rgba(255,255,255,0.6); font-size: 13px; }
+.s10-role  { font-weight: 700; font-size: 13.5px; }
+.s10-dest2 { font-weight: 700; color: rgba(255,255,255,0.92); font-size: 13px; }
 
 /* ══════════════════════════════════════════════════════════════
    S11 — Three things
 ══════════════════════════════════════════════════════════════ */
 #s11 { gap: 0; }
 
-.s11-cards { display: flex; gap: 16px; width: 100%; max-width: 820px; margin-bottom: 20px; }
+.s11-cards { display: flex; gap: 16px; width: 100%; max-width: 880px; margin-bottom: 22px; }
 .s11-card {
-  flex: 1; background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.09); border-radius: 16px;
-  padding: 22px 18px; display: flex; flex-direction: column; gap: 10px;
+  flex: 1; background: #ffffff;
+  border: 1.5px solid rgba(26,26,46,0.12); border-radius: 16px;
+  padding: 24px 20px; display: flex; flex-direction: column; gap: 12px;
   transition: transform 0.4s, box-shadow 0.4s, border-color 0.4s;
   position: relative; overflow: hidden;
+  box-shadow: 0 1px 3px rgba(26,26,46,0.05);
 }
-.s11-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; opacity: 0; transition: opacity 0.4s; }
-#s11c1::before { background: var(--teal); }
-#s11c2::before { background: var(--yellow); }
-#s11c3::before { background: var(--orange); }
+.s11-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; opacity: 0; transition: opacity 0.4s; }
+#s11c1::before { background: var(--teal-deep); }
+#s11c2::before { background: var(--yellow-deep); }
+#s11c3::before { background: var(--orange-deep); }
 .s11-card.glow { transform: translateY(-5px); }
-#s11c1.glow { box-shadow: 0 12px 40px rgba(0,201,167,0.2);   border-color: rgba(0,201,167,0.3); }
+#s11c1.glow { box-shadow: 0 12px 40px rgba(0,148,125,0.22);   border-color: var(--teal-deep); }
 #s11c1.glow::before { opacity: 1; }
-#s11c2.glow { box-shadow: 0 12px 40px rgba(255,209,102,0.2); border-color: rgba(255,209,102,0.3); }
+#s11c2.glow { box-shadow: 0 12px 40px rgba(184,134,11,0.22);  border-color: var(--yellow-deep); }
 #s11c2.glow::before { opacity: 1; }
-#s11c3.glow { box-shadow: 0 12px 40px rgba(255,107,53,0.2);  border-color: rgba(255,107,53,0.3); }
+#s11c3.glow { box-shadow: 0 12px 40px rgba(209,61,14,0.22);   border-color: var(--orange-deep); }
 #s11c3.glow::before { opacity: 1; }
 
-.s11-card-number { width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 800; font-family: var(--font-display); }
-.s11-card-icon  { font-size: 30px; }
-.s11-card-title { font-size: 22px; font-weight: 800; font-family: var(--font-display); line-height: 1.1; }
-.s11-card-example { font-size: 12px; color: rgba(255,255,255,0.4); font-style: italic; line-height: 1.5; background: rgba(255,255,255,0.04); border-radius: 8px; padding: 8px 10px; border-left: 2px solid rgba(255,255,255,0.1); }
+.s11-card-number { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; font-family: var(--font-display); }
+.s11-card-icon  { font-size: 32px; }
+.s11-card-title { font-size: 24px; font-weight: 800; font-family: var(--font-display); line-height: 1.1; }
+.s11-card-example { font-size: 14px; color: var(--ink); font-style: italic; line-height: 1.55; background: rgba(26,26,46,0.05); border-radius: 8px; padding: 10px 12px; border-left: 3px solid rgba(26,26,46,0.15); }
 
 .s11-affirm {
   width: 100%; max-width: 820px;
@@ -681,151 +708,250 @@ html, body {
 }
 .s11-affirm-title {
   font-family: var(--font-display);
-  font-size: clamp(28px, 4vw, 44px);
-  font-weight: 900; color: #fff; text-align: center;
+  font-size: clamp(30px, 4vw, 46px);
+  font-weight: 900; color: var(--ink); text-align: center;
 }
 
-/* ══════════════════════════════════════════════════════════════
-   S12a — Your turn
-══════════════════════════════════════════════════════════════ */
-#s12a { gap: 0; justify-content: center; }
+/* ═══════════════ NEW SLIDES — Path A install flow (S12–S18) ═══════════════ */
 
-.s12a-headline {
-  font-family: var(--font-display);
-  font-size: clamp(64px, 12vw, 120px);
-  font-weight: 900; color: #fff;
-  text-align: center; line-height: 1;
+/* Shared terminal window styling */
+.term-window {
+  width: 100%; max-width: 820px;
+  background: #0d0d1f;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 24px 48px rgba(0,0,0,0.25);
+  margin-bottom: 22px;
+}
+.term-chrome {
+  display: flex; align-items: center; gap: 7px;
+  padding: 9px 14px;
+  background: rgba(255,255,255,0.04);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.term-chrome .pd { width: 11px; height: 11px; border-radius: 50%; }
+.term-chrome-title {
+  margin-left: 10px; font-size: 11.5px; font-weight: 500;
+  color: rgba(255,255,255,0.48); letter-spacing: 0.02em;
+}
+.term-body {
+  padding: 18px 22px;
+  font-family: var(--font-mono);
+  font-size: 12.5px; line-height: 1.75;
+  color: rgba(255,255,255,0.88);
+  white-space: pre-wrap; word-break: break-word;
+  min-height: 60px; overflow-x: auto;
+}
+.term-prompt { color: #00c9a7; font-weight: 600; }
+.term-cmd    { color: rgba(255,255,255,0.96); }
+.term-out    { color: rgba(255,255,255,0.72); }
+.term-muted  { color: rgba(255,255,255,0.45); }
+.term-hot    { color: #ffd166; font-weight: 600; }
+.term-dim    { color: rgba(255,255,255,0.38); }
+.term-blink::after {
+  content: "▌"; color: #00c9a7; margin-left: 2px;
+  animation: term-blink 1.1s step-end infinite;
+}
+@keyframes term-blink { 50% { opacity: 0; } }
+
+.gif-placeholder {
+  margin-top: 8px;
+  font-size: 14px; color: var(--text-body); font-weight: 500;
+  text-align: center; font-style: italic;
+  padding: 8px 20px; background: rgba(26,26,46,0.05);
+  border: 1px dashed rgba(26,26,46,0.22);
+  border-radius: 100px; letter-spacing: 0.01em;
+  display: inline-block;
+}
+.gif-placeholder code { font-family: var(--font-mono); font-size: 13px; padding: 2px 6px; background: rgba(26,26,46,0.08); border-radius: 3px; color: var(--orange-deep); font-weight: 600; }
+
+/* S12 — Install */
+.s12-caption {
+  font-size: clamp(17px, 1.9vw, 20px); color: var(--ink); font-weight: 500;
+  max-width: 680px; text-align: center; line-height: 1.55;
+}
+.s12-pill {
+  font-family: var(--font-mono); font-size: 15px;
+  color: var(--orange-deep); background: rgba(26,26,46,0.06);
+  padding: 3px 9px; border-radius: 5px; font-weight: 600;
+  border: 1px solid rgba(26,26,46,0.1);
+}
+
+/* S13 — dsl list */
+.s13-gallery-name {
+  color: #00c9a7; font-weight: 600;
+  display: inline-block; min-width: 200px;
+}
+.s13-gallery-desc { color: rgba(255,255,255,0.62); }
+
+/* S14 — dsl init + folder tree */
+.s14-split {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 18px;
+  width: 100%; max-width: 960px; align-items: start;
   margin-bottom: 20px;
 }
-.s12a-headline em { font-style: normal; color: var(--orange); }
-
-.s12a-link-btn {
-  display: inline-flex; align-items: center; gap: 8px;
-  background: var(--orange); color: #fff;
-  border-radius: 100px; padding: 14px 32px;
-  font-size: 16px; font-weight: 700; text-decoration: none;
-  font-family: var(--font-body);
-  transition: background 0.2s, transform 0.1s;
-  margin-bottom: 24px;
+.s14-split .term-window { max-width: none; margin-bottom: 0; }
+.s14-caption {
+  font-size: clamp(17px, 1.9vw, 20px); color: var(--ink); font-weight: 500;
+  max-width: 680px; text-align: center; line-height: 1.55;
 }
-.s12a-link-btn:hover  { background: #ff8555; }
-.s12a-link-btn:active { transform: scale(0.97); }
+.s14-caption strong { color: var(--orange-deep); font-weight: 700; }
 
-.s12a-closing {
-  font-family: var(--font-display);
-  font-size: clamp(18px, 2.5vw, 26px);
-  font-weight: 700; color: rgba(255,255,255,0.55);
-  text-align: center; line-height: 1.4;
-}
-.s12a-closing em { font-style: normal; color: rgba(255,255,255,0.85); }
-
-/* ══════════════════════════════════════════════════════════════
-   S12b — Three steps
-══════════════════════════════════════════════════════════════ */
-#s12b { gap: 0; }
-
-.s12b-steps { display: flex; gap: 16px; width: 100%; max-width: 900px; margin-bottom: 20px; align-items: flex-start; }
-.s12b-step {
-  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 12px;
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 16px; padding: 18px 16px;
-  transition: transform 0.4s, box-shadow 0.4s, border-color 0.4s;
-}
-.s12b-step.glow-teal   { transform: translateY(-4px); border-color: rgba(0,201,167,0.35);   box-shadow: 0 10px 36px rgba(0,201,167,0.15); }
-.s12b-step.glow-yellow { transform: translateY(-4px); border-color: rgba(255,209,102,0.35); box-shadow: 0 10px 36px rgba(255,209,102,0.15); }
-.s12b-step.glow-orange { transform: translateY(-4px); border-color: rgba(255,107,53,0.35);  box-shadow: 0 10px 36px rgba(255,107,53,0.15); }
-
-.s12b-step-num {
-  width: 36px; height: 36px; border-radius: 10px; border: 1.5px solid;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 18px; font-weight: 800; font-family: var(--font-display); flex-shrink: 0;
-}
-.s12b-step-body { display: flex; flex-direction: column; gap: 8px; width: 100%; }
-.s12b-step-title { font-size: 15px; font-weight: 700; line-height: 1.2; }
-.s12b-step-desc  { font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.55; }
-
-.s12b-link-btn {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: rgba(0,201,167,0.12); border: 1px solid rgba(0,201,167,0.3);
-  color: var(--teal); border-radius: 8px; padding: 8px 14px;
-  font-size: 12.5px; font-weight: 600; text-decoration: none;
-  transition: background 0.2s; font-family: var(--font-body);
-}
-.s12b-link-btn:hover { background: rgba(0,201,167,0.2); }
-.s12b-step-hint { font-size: 10.5px; color: rgba(255,255,255,0.28); font-style: italic; }
-
-.s12b-template {
-  background: #0d0d1f; border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px; padding: 12px 14px;
-  display: flex; flex-direction: column; gap: 2px;
-}
-.s12b-tmpl-line { font-size: 12px; line-height: 1.7; display: flex; gap: 6px; flex-wrap: wrap; }
-.s12b-tmpl-gap  { margin-top: 4px; }
-.s12b-tmpl-plain { color: rgba(255,255,255,0.4); font-style: italic; }
-.s12b-tmpl-key   { color: var(--yellow); font-weight: 700; font-family: var(--font-mono); flex-shrink: 0; }
-.s12b-tmpl-val   { color: rgba(255,255,255,0.8); }
-
-.s12b-copy-btn {
-  background: rgba(255,209,102,0.1); border: 1px solid rgba(255,209,102,0.25);
-  color: var(--yellow); font-family: var(--font-body); font-size: 12px; font-weight: 600;
-  padding: 7px 14px; border-radius: 8px; cursor: pointer; transition: background 0.2s, border-color 0.2s;
-}
-.s12b-copy-btn:hover { background: rgba(255,209,102,0.18); }
-
-/* Expandable one-time setup card */
-.s12b-setup {
-  width: 100%; max-width: 900px; margin-bottom: 18px;
-  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1);
+/* S15 — API key (light) */
+.s15-file {
+  width: 100%; max-width: 620px;
+  background: #faf8f3; border: 1px solid rgba(26,26,46,0.12);
   border-radius: 12px; overflow: hidden;
+  box-shadow: 0 18px 36px rgba(26,26,46,0.08);
+  margin-bottom: 20px;
 }
-.s12b-setup[open] { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.18); }
-.s12b-setup-summary {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 18px; cursor: pointer; list-style: none;
-  font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.7);
-  transition: color 0.2s;
+.s15-file-head {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 16px;
+  background: rgba(26,26,46,0.04);
+  border-bottom: 1px solid rgba(26,26,46,0.08);
+  font-size: 12px; font-weight: 600; color: var(--text-muted);
+  font-family: var(--font-mono);
 }
-.s12b-setup-summary:hover { color: rgba(255,255,255,0.9); }
-.s12b-setup-summary::-webkit-details-marker { display: none; }
-.s12b-setup-icon { font-size: 15px; flex-shrink: 0; }
-.s12b-setup-label { flex: 1; }
-.s12b-setup-chevron {
-  font-size: 11px; color: rgba(255,255,255,0.4);
-  transition: transform 0.2s;
+.s15-file-head::before { content: "📄"; font-size: 13px; }
+.s15-file-body {
+  padding: 18px 22px;
+  font-family: var(--font-mono); font-size: 13px; line-height: 1.9;
+  color: var(--ink); white-space: pre-wrap; word-break: break-all;
 }
-.s12b-setup[open] .s12b-setup-chevron { transform: rotate(90deg); }
-.s12b-setup-body {
-  padding: 4px 18px 16px; border-top: 1px solid rgba(255,255,255,0.06);
-  display: flex; flex-direction: column; gap: 10px;
-}
-.s12b-setup-intro {
-  font-size: 12.5px; color: rgba(255,255,255,0.55);
-  line-height: 1.55; padding-top: 10px;
-}
-.s12b-setup-code, .s12b-run-code {
-  background: #0d0d1f; border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px; padding: 12px 14px;
-  font-family: var(--font-mono); font-size: 12px;
-  color: rgba(255,255,255,0.85); line-height: 1.65;
-  white-space: pre; overflow-x: auto; margin: 0;
-}
-.s12b-setup-note {
-  font-size: 11.5px; color: rgba(255,255,255,0.45);
-  line-height: 1.55; font-style: italic;
-}
-.s12b-setup-note a { color: var(--teal); text-decoration: none; border-bottom: 1px dotted var(--teal); }
-.s12b-setup-note a:hover { color: #34d399; }
-.s12b-run-code { font-size: 11.5px; }
+.s15-env-key     { color: var(--purple-deep); font-weight: 700; }
+.s15-env-eq      { color: var(--text-muted); margin: 0 3px; }
+.s15-env-val     { color: var(--orange-deep); }
+.s15-env-comment { color: var(--text-body); font-style: italic; }
 
-.s12b-closing {
-  width: 100%; max-width: 900px;
-  display: flex; align-items: center; gap: 14px;
-  background: linear-gradient(135deg, rgba(255,107,53,0.12) 0%, rgba(0,201,167,0.09) 100%);
-  border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; padding: 14px 20px;
+.s15-cards {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  width: 100%; max-width: 620px;
 }
-.s12b-closing-icon  { font-size: 26px; flex-shrink: 0; }
-.s12b-closing-title { font-family: var(--font-display); font-size: 17px; font-weight: 900; color: #fff; margin-bottom: 2px; }
-.s12b-closing-sub   { font-size: 12px; color: rgba(255,255,255,0.5); line-height: 1.5; }
+.s15-card {
+  background: rgba(26,26,46,0.04);
+  border: 1px solid rgba(26,26,46,0.12);
+  border-radius: 10px; padding: 16px 18px;
+}
+.s15-card-title { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
+.s15-card-body  { font-size: 15px; color: var(--ink); line-height: 1.55; }
+.s15-card-body a {
+  color: var(--teal-deep); text-decoration: none; font-weight: 600;
+  border-bottom: 1.5px solid var(--teal-deep);
+}
+
+/* S16 — dsl run streaming */
+.s16-feed-item { padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.s16-feed-item:last-of-type { border-bottom: 0; }
+.s16-feed-meta {
+  display: flex; gap: 10px; align-items: center;
+  font-size: 11px; color: rgba(255,255,255,0.48);
+  margin-bottom: 5px; font-family: var(--font-body);
+}
+.s16-feed-tag {
+  padding: 2px 8px; border-radius: 100px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em;
+}
+.s16-feed-tag.high { background: rgba(255,107,53,0.22); color: #ffa87a; }
+.s16-feed-tag.med  { background: rgba(255,209,102,0.22); color: #ffd166; }
+.s16-feed-tag.low  { background: rgba(0,201,167,0.2);    color: #4ed9bc; }
+.s16-feed-head { color: rgba(255,255,255,0.92); font-weight: 500; font-size: 13px; font-family: var(--font-body); line-height: 1.45; }
+.s16-feed-body { color: rgba(255,255,255,0.62); font-size: 12.5px; margin-top: 3px; font-family: var(--font-body); line-height: 1.5; }
+
+/* S17 — Customize (light) */
+.s17-lead {
+  max-width: 640px; text-align: center;
+  font-size: clamp(17px, 1.9vw, 20px); color: var(--ink); font-weight: 500;
+  margin-bottom: 26px; line-height: 1.55;
+}
+.s17-diff {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+  width: 100%; max-width: 940px;
+}
+.s17-side { display: flex; flex-direction: column; gap: 10px; }
+.s17-side-label {
+  font-size: 13px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-body);
+  padding-left: 4px;
+}
+.s17-file {
+  background: #faf8f3; border: 1px solid rgba(26,26,46,0.1);
+  border-radius: 10px; overflow: hidden;
+  box-shadow: 0 10px 24px rgba(26,26,46,0.06);
+}
+.s17-file-head {
+  padding: 9px 14px; background: rgba(26,26,46,0.05);
+  font-size: 13px; color: var(--text-body); font-weight: 600;
+  font-family: var(--font-mono);
+  border-bottom: 1px solid rgba(26,26,46,0.1);
+}
+.s17-file-body {
+  padding: 14px 16px;
+  font-family: var(--font-mono); font-size: 13.5px;
+  line-height: 1.7; color: var(--ink);
+}
+.s17-line { padding: 2px 6px; border-radius: 3px; margin: 1px 0; }
+.s17-line.del { background: rgba(255,107,53,0.12); color: var(--orange-deep); }
+.s17-line.add { background: rgba(0,201,167,0.12);  color: var(--teal-deep); }
+.s17-output {
+  background: #12122a; border-radius: 10px;
+  padding: 14px 18px;
+  font-family: var(--font-mono); font-size: 11.5px; line-height: 1.7;
+  color: rgba(255,255,255,0.78); min-height: 72px;
+}
+.s17-output-tag {
+  display: inline-block; padding: 2px 8px; border-radius: 100px;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.1em;
+  margin-right: 8px; font-family: var(--font-body);
+  background: rgba(255,209,102,0.22); color: #ffd166;
+}
+.s17-output-tag.orange { background: rgba(255,107,53,0.22); color: #ffa87a; }
+
+/* S18 — Final CTA */
+.s18-headline {
+  font-family: var(--font-display); font-weight: 900;
+  font-size: clamp(48px, 7vw, 78px);
+  line-height: 1.05; text-align: center; color: var(--ink);
+  margin-bottom: 20px;
+}
+.s18-headline em { font-style: normal; color: var(--orange-deep); }
+.s18-sub {
+  font-size: clamp(18px, 2vw, 22px);
+  color: var(--ink); max-width: 620px; font-weight: 500;
+  text-align: center; line-height: 1.5; margin-bottom: 32px;
+}
+.s18-ideas {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  width: 100%; max-width: 720px; margin-bottom: 28px;
+}
+.s18-idea {
+  background: rgba(26,26,46,0.04); border: 1.5px solid rgba(26,26,46,0.14);
+  border-radius: 10px; padding: 14px 18px;
+  display: flex; align-items: center; gap: 14px;
+  font-size: 15px; color: var(--ink);
+}
+.s18-idea-icon { font-size: 24px; flex-shrink: 0; }
+.s18-idea-text strong { font-weight: 700; display: block; font-size: 15px; }
+.s18-idea-text span { color: var(--text-body); font-size: 13.5px; display: block; margin-top: 2px; }
+.s18-links {
+  display: flex; gap: 12px; flex-wrap: wrap;
+  justify-content: center;
+}
+.s18-link {
+  padding: 10px 18px; border-radius: 100px;
+  font-size: 12.5px; font-weight: 600;
+  color: var(--ink); text-decoration: none;
+  background: transparent; border: 1px solid rgba(26,26,46,0.16);
+  transition: background 0.2s, border-color 0.2s;
+}
+.s18-link:hover { background: rgba(26,26,46,0.05); border-color: rgba(26,26,46,0.28); }
+.s18-link.primary { background: var(--orange); color: #fff; border-color: var(--orange); }
+.s18-link.primary:hover { background: var(--orange-deep); border-color: var(--orange-deep); }
+
+@media (max-width: 760px) {
+  .s14-split, .s17-diff, .s15-cards, .s18-ideas { grid-template-columns: 1fr; }
+}
 </style>
 </head>
 <body>
@@ -838,9 +964,9 @@ html, body {
 
   <div class="badge">DisSysLab · Micro-Course</div>
 
-  <h1 class="s1-headline">What if Claude worked<br>for you <em>24/7?</em></h1>
+  <h1 class="s1-headline">Build a team of <em>AI agents.</em><br>That never clocks out.</h1>
 
-  <p class="s1-body"><strong>Build a team of AI agents. They never stop.</strong></p>
+  <p class="s1-body">They watch your sources. They brief you. While you work, sleep, travel.</p>
 
   <div class="ticker-frame">
     <div class="ticker-bar">
@@ -860,18 +986,23 @@ html, body {
 
 <!-- ═══════════════ S2 — Situation Room live ═════════════════════════════ -->
 <section class="slide" id="s2">
-  <div class="s2-topbar">
-    <span style="font-size:16px;">🏛️</span>
-    <span class="s2-title">Situation Room</span>
-    <span class="s2-subtitle">— running on someone's laptop right now</span>
-    <span class="s2-live"><span class="live-dot"></span> Live</span>
-  </div>
-  <div class="s2-caption">
-    <strong>Describe a situation room in English.</strong> This is what you get.
-  </div>
-  <div class="s2-feed-wrap">
-    <div class="s2-feed-header"><div class="s2-panel-label">Briefings — newest first</div></div>
-    <div class="s2-feed-items" id="s2-feed"></div>
+  <div class="blob" style="width:340px;height:340px;background:var(--teal);top:-80px;left:-60px;opacity:0.1;"></div>
+  <div class="blob" style="width:280px;height:280px;background:var(--orange);bottom:-80px;right:-60px;opacity:0.11;"></div>
+
+  <div class="badge">A running situation room</div>
+  <p class="s2-caption-above"><strong>You describe it in English.</strong> This is what you get — live, on your laptop.</p>
+
+  <div class="s2-feed-box">
+    <div class="s2-topbar">
+      <span style="font-size:18px;">🏛️</span>
+      <span class="s2-title">Situation Room</span>
+      <span class="s2-subtitle">— running right now</span>
+      <span class="s2-live"><span class="live-dot"></span> Live</span>
+    </div>
+    <div class="s2-feed-wrap">
+      <div class="s2-feed-header"><div class="s2-panel-label">Briefings — newest first</div></div>
+      <div class="s2-feed-items" id="s2-feed"></div>
+    </div>
   </div>
 </section>
 
@@ -973,9 +1104,9 @@ html, body {
 
     <div class="s3-arrow-zone" id="az-left">
       <svg class="s3-svg" viewBox="0 0 100 200" preserveAspectRatio="none">
-        <path class="s3-path" d="M0,33 C50,33 50,100 100,100" stroke="rgba(0,201,167,0.3)"/>
-        <path class="s3-path" d="M0,100 C50,100 50,100 100,100" stroke="rgba(0,201,167,0.3)"/>
-        <path class="s3-path" d="M0,167 C50,167 50,100 100,100" stroke="rgba(0,201,167,0.3)"/>
+        <path class="s3-path" d="M0,33 C50,33 50,100 100,100" stroke="rgba(0,148,125,0.8)"/>
+        <path class="s3-path" d="M0,100 C50,100 50,100 100,100" stroke="rgba(0,148,125,0.8)"/>
+        <path class="s3-path" d="M0,167 C50,167 50,100 100,100" stroke="rgba(0,148,125,0.8)"/>
       </svg>
       <div class="msg-dot dot-teal" id="s3-ma1"></div>
       <div class="msg-dot dot-teal" id="s3-ma2"></div>
@@ -1005,8 +1136,8 @@ html, body {
 
     <div class="s3-arrow-zone" id="az-right">
       <svg class="s3-svg" viewBox="0 0 100 200" preserveAspectRatio="none">
-        <path class="s3-path" d="M0,100 C50,100 50,50 100,50"  stroke="rgba(255,107,53,0.35)"/>
-        <path class="s3-path" d="M0,100 C50,100 50,150 100,150" stroke="rgba(123,94,167,0.35)"/>
+        <path class="s3-path" d="M0,100 C50,100 50,50 100,50"  stroke="rgba(209,61,14,0.8)"/>
+        <path class="s3-path" d="M0,100 C50,100 50,150 100,150" stroke="rgba(91,63,135,0.8)"/>
       </svg>
       <div class="msg-dot dot-orange" id="s3-mb1"></div>
       <div class="msg-dot dot-purple" id="s3-mb2"></div>
@@ -1030,7 +1161,7 @@ html, body {
 
   <div class="s4-diagram">
     <div class="s4-panel">
-      <div class="s4-panel-label" style="color:var(--teal);">Many → One</div>
+      <div class="s4-panel-label" style="color:var(--teal-deep);">Many → One</div>
       <div class="s4-fanin-layout">
         <div class="s4-sender-col">
           <div class="s4-agent-node teal-node" id="fi-a">📰 <span>News</span></div>
@@ -1039,38 +1170,38 @@ html, body {
         </div>
         <div class="s4-az" id="az-fanin" style="width:90px;height:180px;position:relative;">
           <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 90 180" preserveAspectRatio="none">
-            <path d="M0,30 C45,30 45,90 90,90"  fill="none" stroke="rgba(0,201,167,0.25)" stroke-width="1.5" stroke-dasharray="4 4"/>
-            <path d="M0,90 C45,90 45,90 90,90"  fill="none" stroke="rgba(0,201,167,0.25)" stroke-width="1.5" stroke-dasharray="4 4"/>
-            <path d="M0,150 C45,150 45,90 90,90" fill="none" stroke="rgba(0,201,167,0.25)" stroke-width="1.5" stroke-dasharray="4 4"/>
+            <path d="M0,30 C45,30 45,90 90,90"  fill="none" stroke="rgba(0,148,125,0.75)" stroke-width="2.5" stroke-dasharray="5 5" stroke-linecap="round"/>
+            <path d="M0,90 C45,90 45,90 90,90"  fill="none" stroke="rgba(0,148,125,0.75)" stroke-width="2.5" stroke-dasharray="5 5" stroke-linecap="round"/>
+            <path d="M0,150 C45,150 45,90 90,90" fill="none" stroke="rgba(0,148,125,0.75)" stroke-width="2.5" stroke-dasharray="5 5" stroke-linecap="round"/>
           </svg>
           <div class="msg-dot dot-teal" id="fi-dot-a"></div>
           <div class="msg-dot dot-teal" id="fi-dot-b"></div>
           <div class="msg-dot dot-teal" id="fi-dot-c"></div>
         </div>
-        <div class="s4-agent-node receiver-node" id="fi-recv" style="border-color:rgba(0,148,125,0.5);">
+        <div class="s4-agent-node receiver-node" id="fi-recv" style="border-color:var(--teal-deep);">
           <div style="font-size:22px;">🔍</div>
-          <div style="font-size:11px;font-weight:600;color:var(--ink);">Analyst</div>
+          <div style="font-size:13px;font-weight:700;color:var(--ink);">Analyst</div>
           <div class="s4-pulse-ring teal-ring" id="fi-ring"></div>
         </div>
       </div>
-      <div class="s4-concept-tag" style="background:rgba(0,201,167,0.1);border-color:rgba(0,201,167,0.25);color:var(--teal);">Fanin</div>
+      <div class="s4-concept-tag" style="background:rgba(0,201,167,0.12);border-color:var(--teal-deep);color:var(--teal-deep);">Fanin</div>
     </div>
 
     <div class="s4-divider"></div>
 
     <div class="s4-panel">
-      <div class="s4-panel-label" style="color:var(--orange);">One → Many</div>
+      <div class="s4-panel-label" style="color:var(--orange-deep);">One → Many</div>
       <div class="s4-fanout-layout">
-        <div class="s4-agent-node sender-node" id="fo-send" style="border-color:rgba(255,107,53,0.5);">
+        <div class="s4-agent-node sender-node" id="fo-send" style="border-color:var(--orange-deep);">
           <div style="font-size:22px;">✏️</div>
-          <div style="font-size:11px;font-weight:600;color:var(--ink);">Editor</div>
+          <div style="font-size:13px;font-weight:700;color:var(--ink);">Editor</div>
           <div class="s4-pulse-ring orange-ring" id="fo-ring"></div>
         </div>
         <div class="s4-az" id="az-fanout" style="width:90px;height:180px;position:relative;">
           <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 90 180" preserveAspectRatio="none">
-            <path d="M0,90 C45,90 45,40 90,40"  fill="none" stroke="rgba(255,107,53,0.25)" stroke-width="1.5" stroke-dasharray="4 4"/>
-            <path d="M0,90 C45,90 45,90 90,90"  fill="none" stroke="rgba(255,107,53,0.25)" stroke-width="1.5" stroke-dasharray="4 4"/>
-            <path d="M0,90 C45,90 45,140 90,140" fill="none" stroke="rgba(255,107,53,0.25)" stroke-width="1.5" stroke-dasharray="4 4"/>
+            <path d="M0,90 C45,90 45,40 90,40"  fill="none" stroke="rgba(209,61,14,0.75)" stroke-width="2.5" stroke-dasharray="5 5" stroke-linecap="round"/>
+            <path d="M0,90 C45,90 45,90 90,90"  fill="none" stroke="rgba(209,61,14,0.75)" stroke-width="2.5" stroke-dasharray="5 5" stroke-linecap="round"/>
+            <path d="M0,90 C45,90 45,140 90,140" fill="none" stroke="rgba(209,61,14,0.75)" stroke-width="2.5" stroke-dasharray="5 5" stroke-linecap="round"/>
           </svg>
           <div class="msg-dot dot-orange" id="fo-dot-a"></div>
           <div class="msg-dot dot-orange" id="fo-dot-b"></div>
@@ -1082,7 +1213,7 @@ html, body {
           <div class="s4-agent-node orange-node" id="fo-r3">📧 <span>Alerts</span></div>
         </div>
       </div>
-      <div class="s4-concept-tag" style="background:rgba(255,107,53,0.1);border-color:rgba(255,107,53,0.25);color:var(--orange);">Fanout</div>
+      <div class="s4-concept-tag" style="background:rgba(255,107,53,0.12);border-color:var(--orange-deep);color:var(--orange-deep);">Fanout</div>
     </div>
   </div>
 </section>
@@ -1299,21 +1430,21 @@ html, body {
 
   <div class="s9-flow-zone" id="s9-flow">
     <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 200 160" preserveAspectRatio="none">
-      <path d="M0,80 C60,80 60,80 100,80"          fill="none" stroke="rgba(255,107,53,0.3)"  stroke-width="1.5" stroke-dasharray="4 4"/>
-      <path d="M100,80 C140,80 140,40 200,40"       fill="none" stroke="rgba(0,201,167,0.3)"   stroke-width="1.5" stroke-dasharray="4 4"/>
-      <path d="M100,80 C140,80 140,120 200,120"     fill="none" stroke="rgba(123,94,167,0.3)"  stroke-width="1.5" stroke-dasharray="4 4"/>
+      <path d="M0,80 C60,80 60,80 100,80"          fill="none" stroke="rgba(209,61,14,0.8)"  stroke-width="2.5" stroke-dasharray="5 5" stroke-linecap="round"/>
+      <path d="M100,80 C140,80 140,40 200,40"       fill="none" stroke="rgba(0,148,125,0.8)"  stroke-width="2.5" stroke-dasharray="5 5" stroke-linecap="round"/>
+      <path d="M100,80 C140,80 140,120 200,120"     fill="none" stroke="rgba(91,63,135,0.8)"  stroke-width="2.5" stroke-dasharray="5 5" stroke-linecap="round"/>
     </svg>
     <div class="s9-flow-node s9-morgan-node" style="left:0;top:50%;transform:translateY(-50%);">
-      <div class="s9-fn-av" style="background:linear-gradient(135deg,var(--teal),#34d399);">✏️</div>
+      <div class="s9-fn-av" style="background:linear-gradient(135deg,var(--teal-deep),#34d399);">✏️</div>
       <div class="s9-fn-name">Morgan</div>
     </div>
     <div class="s9-flow-node s9-sink-node" id="s9-sink-display" style="right:0;top:17%;">
-      <div class="s9-fn-av" style="background:rgba(0,201,167,0.2);font-size:12px;">📊</div>
-      <div class="s9-fn-name" style="color:var(--teal);">intelligence_display</div>
+      <div class="s9-fn-av" style="background:rgba(0,148,125,0.2);font-size:13px;">📊</div>
+      <div class="s9-fn-name" style="color:var(--teal-deep);">intelligence_display</div>
     </div>
     <div class="s9-flow-node s9-sink-node" id="s9-sink-jsonl" style="right:0;bottom:17%;">
-      <div class="s9-fn-av" style="background:rgba(123,94,167,0.2);font-size:12px;">💾</div>
-      <div class="s9-fn-name" style="color:var(--purple);">jsonl_recorder</div>
+      <div class="s9-fn-av" style="background:rgba(91,63,135,0.22);font-size:13px;">💾</div>
+      <div class="s9-fn-name" style="color:var(--purple-deep);">jsonl_recorder</div>
     </div>
     <div class="msg-dot dot-orange" id="s9d-left"></div>
     <div class="msg-dot dot-teal"   id="s9d-top"></div>
@@ -1375,21 +1506,21 @@ html, body {
 
   <div class="s11-cards">
     <div class="s11-card" id="s11c1">
-      <div class="s11-card-number" style="background:rgba(0,201,167,0.15);color:var(--teal);">1</div>
+      <div class="s11-card-number" style="background:rgba(0,148,125,0.15);color:var(--teal-deep);">1</div>
       <div class="s11-card-icon">📋</div>
-      <div class="s11-card-title" style="color:var(--teal);">Roles</div>
+      <div class="s11-card-title" style="color:var(--teal-deep);">Roles</div>
       <div class="s11-card-example">"You are a news analyst who receives posts and decides if they're relevant…"</div>
     </div>
     <div class="s11-card" id="s11c2">
-      <div class="s11-card-number" style="background:rgba(255,209,102,0.15);color:var(--yellow);">2</div>
+      <div class="s11-card-number" style="background:rgba(184,134,11,0.18);color:var(--yellow-deep);">2</div>
       <div class="s11-card-icon">👥</div>
-      <div class="s11-card-title" style="color:var(--yellow);">Agents</div>
+      <div class="s11-card-title" style="color:var(--yellow-deep);">Agents</div>
       <div class="s11-card-example">"Alex is an analyst.<br>Morgan is an editor."</div>
     </div>
     <div class="s11-card" id="s11c3">
-      <div class="s11-card-number" style="background:rgba(255,107,53,0.15);color:var(--orange);">3</div>
+      <div class="s11-card-number" style="background:rgba(209,61,14,0.15);color:var(--orange-deep);">3</div>
       <div class="s11-card-icon">🔗</div>
-      <div class="s11-card-title" style="color:var(--orange);">Connections</div>
+      <div class="s11-card-title" style="color:var(--orange-deep);">Connections</div>
       <div class="s11-card-example">"Alex's editor is Morgan."</div>
     </div>
   </div>
@@ -1399,99 +1530,238 @@ html, body {
   </div>
 </section>
 
-<!-- ═══════════════ S12a — Your turn ════════════════════════════════════ -->
-<section class="slide" id="s12a">
-  <div class="blob" style="width:500px;height:500px;background:var(--orange);top:-120px;right:-100px;opacity:0.14;"></div>
-  <div class="blob" style="width:360px;height:360px;background:var(--teal);bottom:-100px;left:-80px;opacity:0.13;"></div>
-  <div class="blob" style="width:200px;height:200px;background:var(--yellow);top:38%;left:28%;opacity:0.08;"></div>
+<!-- ═══════════════ S12 — Install ═══════════════════════════════════════ -->
+<section class="slide" id="s12">
+  <div class="blob" style="width:400px;height:400px;background:var(--orange);top:-120px;right:-80px;opacity:0.18;"></div>
+  <div class="blob" style="width:300px;height:300px;background:var(--teal);bottom:-80px;left:-60px;opacity:0.14;"></div>
 
-  <h1 class="s12a-headline">Your<br><em>turn.</em></h1>
+  <div class="badge">Your turn</div>
+  <h1 class="headline" style="font-size:clamp(30px,5vw,60px);margin-bottom:26px;">Install it.<br><em>Two minutes.</em></h1>
 
-  <button class="s12a-link-btn" onclick="go(1)" style="border:none;cursor:pointer;">
-    🚀 Show me how →
-  </button>
+  <div class="term-window">
+    <div class="term-chrome">
+      <div class="pd" style="background:#ff5f57;"></div>
+      <div class="pd" style="background:#ffbd2e;"></div>
+      <div class="pd" style="background:#28c840;"></div>
+      <span class="term-chrome-title">terminal</span>
+    </div>
+    <div class="term-body"><span class="term-prompt">$</span> <span class="term-cmd">python -m venv venv</span>
+<span class="term-prompt">$</span> <span class="term-cmd">source venv/bin/activate</span>
+<span class="term-prompt">$</span> <span class="term-cmd">pip install dissyslab</span>
+<span class="term-dim">Collecting dissyslab</span>
+<span class="term-dim">  Downloading dissyslab-1.1.1-py3-none-any.whl</span>
+<span class="term-dim">  ...</span>
+<span class="term-out">Successfully installed dissyslab-1.1.1 anthropic-0.39.0 ...</span>
 
-  <p class="s12a-closing">
-    Your first office will be simple.<br>
-    <em>That's perfect.</em>
+<span class="term-prompt">$</span> <span class="term-cmd">dsl --help</span>
+<span class="term-out">Usage: dsl [COMMAND]</span>
+<span class="term-out">Commands: list, init, run</span><span class="term-blink"></span></div>
+  </div>
+
+  <p class="s12-caption">
+    One <code class="s12-pill">pip install</code> and every office in the gallery is yours. Works on Mac, Linux, and Windows.
   </p>
 </section>
 
-<!-- ═══════════════ S12b — Three steps ══════════════════════════════════ -->
-<section class="slide" id="s12b">
-  <div class="blob" style="width:340px;height:340px;background:var(--purple);top:-80px;right:-60px;opacity:0.12;"></div>
-  <div class="blob" style="width:260px;height:260px;background:var(--teal);bottom:-60px;left:-40px;opacity:0.11;"></div>
+<!-- ═══════════════ S13 — Browse the gallery ═══════════════════════════ -->
+<section class="slide" id="s13">
+  <div class="blob" style="width:360px;height:360px;background:var(--yellow);top:-100px;left:-70px;opacity:0.12;"></div>
+  <div class="blob" style="width:300px;height:300px;background:var(--orange);bottom:-80px;right:-60px;opacity:0.14;"></div>
 
-  <div class="badge">How to start</div>
-  <h1 class="headline" style="font-size:clamp(28px,4.5vw,54px);margin-bottom:14px;">Three steps.<br><em>Under five minutes.</em></h1>
+  <div class="badge">Pick one</div>
+  <h1 class="headline" style="font-size:clamp(30px,5vw,60px);margin-bottom:24px;">See what's <em>already built.</em></h1>
 
-  <details class="s12b-setup">
-    <summary class="s12b-setup-summary">
-      <span class="s12b-setup-icon">⚙️</span>
-      <span class="s12b-setup-label">First time? One-time setup</span>
-      <span class="s12b-setup-chevron">▸</span>
-    </summary>
-    <div class="s12b-setup-body">
-      <p class="s12b-setup-intro">Run these once on your computer. Every office after this is just the three steps below.</p>
-      <pre class="s12b-setup-code">git clone https://github.com/kmchandy/DisSysLab.git
-cd DisSysLab
-pip install -r requirements.txt
-export ANTHROPIC_API_KEY='your-key'</pre>
-      <p class="s12b-setup-note">Get an API key at <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer">console.anthropic.com</a>. Each office run costs a few cents.</p>
+  <div class="term-window" style="max-width:860px;">
+    <div class="term-chrome">
+      <div class="pd" style="background:#ff5f57;"></div>
+      <div class="pd" style="background:#ffbd2e;"></div>
+      <div class="pd" style="background:#28c840;"></div>
+      <span class="term-chrome-title">terminal — dsl list</span>
     </div>
-  </details>
+    <div class="term-body"><span class="term-prompt">$</span> <span class="term-cmd">dsl list</span>
 
-  <div class="s12b-steps">
-    <div class="s12b-step" id="s12bs1">
-      <div class="s12b-step-num" style="background:rgba(0,201,167,0.15);color:var(--teal);border-color:rgba(0,201,167,0.3);">1</div>
-      <div class="s12b-step-body">
-        <div class="s12b-step-title" style="color:var(--teal);">Give Claude the context</div>
-        <div class="s12b-step-desc">One click copies a short file that teaches Claude how DisSysLab offices work. Paste it as the first message in a new Claude conversation.</div>
-        <button class="s12b-copy-btn" onclick="copyContext()" style="background:rgba(0,201,167,0.12);border-color:rgba(0,201,167,0.3);color:var(--teal);">
-          <span id="ctx-label">📋 Copy context for Claude</span>
-        </button>
-        <div class="s12b-step-hint">No clipboard? <a href="https://raw.githubusercontent.com/kmchandy/DisSysLab/main/CLAUDE_CONTEXT_OFFICE.md" target="_blank" rel="noopener noreferrer" style="color:var(--teal);">Open the raw file</a> and copy it by hand.</div>
+<span class="term-out">Available offices (use </span><span class="term-hot">dsl init &lt;name&gt; &lt;folder&gt;</span><span class="term-out"> to copy one):</span>
+
+  <span class="s13-gallery-name">calendar_briefing</span>   <span class="s13-gallery-desc">Daily briefing from your Google Calendar</span>
+  <span class="s13-gallery-name">gmail_monitor</span>       <span class="s13-gallery-desc">Watches Gmail and summarizes important threads</span>
+  <span class="s13-gallery-name">org_situation_room</span>  <span class="s13-gallery-desc">Live news feed with analyst + editor agents</span>
+  <span class="s13-gallery-name">stocks_monitor</span>      <span class="s13-gallery-desc">Tracks a ticker and writes short briefings</span>
+  <span class="s13-gallery-name">weather_monitor</span>     <span class="s13-gallery-desc">Pulls forecast and describes the day ahead</span>
+  <span class="s13-gallery-name">web_monitor</span>         <span class="s13-gallery-desc">Watches a URL for news-worthy changes</span>
+  <span class="s13-gallery-name">news_briefing</span>       <span class="s13-gallery-desc">RSS feeds → analyst → saved briefing</span>
+  <span class="s13-gallery-name">image_watermark</span>     <span class="s13-gallery-desc">Watermarks images dropped in a folder</span>
+  <span class="s13-gallery-name">sandbox</span>             <span class="s13-gallery-desc">Minimal office for experimenting</span><span class="term-blink"></span></div>
+  </div>
+
+  <span class="gif-placeholder">▶ GIF slot — capture <code>dsl list</code> live in a fresh venv</span>
+</section>
+
+<!-- ═══════════════ S14 — Copy one into your workspace ═══════════════════ -->
+<section class="slide" id="s14">
+  <div class="blob" style="width:340px;height:340px;background:var(--teal);top:-80px;right:-60px;opacity:0.14;"></div>
+  <div class="blob" style="width:260px;height:260px;background:var(--purple);bottom:-80px;left:-60px;opacity:0.16;"></div>
+
+  <div class="badge">Copy it</div>
+  <h1 class="headline" style="font-size:clamp(28px,4.5vw,56px);margin-bottom:24px;">Make a folder <em>that's yours.</em></h1>
+
+  <div class="s14-split">
+    <div class="term-window">
+      <div class="term-chrome">
+        <div class="pd" style="background:#ff5f57;"></div>
+        <div class="pd" style="background:#ffbd2e;"></div>
+        <div class="pd" style="background:#28c840;"></div>
+        <span class="term-chrome-title">terminal</span>
       </div>
+      <div class="term-body"><span class="term-prompt">$</span> <span class="term-cmd">dsl init weather_monitor my_weather</span>
+<span class="term-out">Copied </span><span class="term-hot">weather_monitor</span><span class="term-out"> → ./my_weather</span>
+<span class="term-out">Ready. Next: cd my_weather &amp;&amp; dsl run .</span>
+
+<span class="term-prompt">$</span> <span class="term-cmd">cd my_weather</span><span class="term-blink"></span></div>
     </div>
-    <div class="s12b-step" id="s12bs2">
-      <div class="s12b-step-num" style="background:rgba(255,209,102,0.15);color:var(--yellow);border-color:rgba(255,209,102,0.3);">2</div>
-      <div class="s12b-step-body">
-        <div class="s12b-step-title" style="color:var(--yellow);">Describe your office</div>
-        <div class="s12b-step-desc">Tell Claude what you want. Use the course vocabulary:</div>
-        <div class="s12b-template" id="s12b-template">
-          <div class="s12b-tmpl-line"><span class="s12b-tmpl-plain">I want to build an office where:</span></div>
-          <div class="s12b-tmpl-line s12b-tmpl-gap"><span class="s12b-tmpl-key">Sources:</span><span class="s12b-tmpl-val">Hacker News RSS and BBC World RSS</span></div>
-          <div class="s12b-tmpl-line"><span class="s12b-tmpl-key">Agents:</span><span class="s12b-tmpl-val">an analyst who filters for AI stories, an editor who writes briefings</span></div>
-          <div class="s12b-tmpl-line"><span class="s12b-tmpl-key">Outputs:</span><span class="s12b-tmpl-val">a live dashboard and a saved file</span></div>
-        </div>
-        <button class="s12b-copy-btn" onclick="copyTemplate()"><span id="copy-label">📋 Copy template</span></button>
+
+    <div class="term-window">
+      <div class="term-chrome">
+        <div class="pd" style="background:#ff5f57;"></div>
+        <div class="pd" style="background:#ffbd2e;"></div>
+        <div class="pd" style="background:#28c840;"></div>
+        <span class="term-chrome-title">my_weather/</span>
       </div>
-    </div>
-    <div class="s12b-step" id="s12bs3">
-      <div class="s12b-step-num" style="background:rgba(255,107,53,0.15);color:var(--orange);border-color:rgba(255,107,53,0.3);">3</div>
-      <div class="s12b-step-body">
-        <div class="s12b-step-title" style="color:var(--orange);">Save the files, then run</div>
-        <div class="s12b-step-desc">Claude writes your role files and office file. Save them inside your DisSysLab folder like this:</div>
-        <pre class="s12b-run-code">my_office/
-  office.md
-  roles/
-    analyst.md
-    editor.md</pre>
-        <div class="s12b-step-desc">Then one command runs it:</div>
-        <pre class="s12b-run-code">dsl run my_office/</pre>
-        <div class="s12b-step-hint">The compiler shows you the routing, asks "does this look right?", and starts your office.</div>
-      </div>
+      <div class="term-body"><span class="term-dim">my_weather/</span>
+<span class="term-dim">├──</span> <span class="term-cmd">office.md</span>          <span class="term-muted"># the wiring</span>
+<span class="term-dim">├──</span> <span class="term-cmd">README.md</span>          <span class="term-muted"># what it does</span>
+<span class="term-dim">└──</span> <span class="term-cmd">roles/</span>
+<span class="term-dim">    ├──</span> <span class="term-cmd">analyst.md</span>     <span class="term-muted"># job description</span>
+<span class="term-dim">    └──</span> <span class="term-cmd">editor.md</span>       <span class="term-muted"># job description</span></div>
     </div>
   </div>
 
-  <div class="s12b-closing">
-    <span class="s12b-closing-icon">✨</span>
-    <div>
-      <div class="s12b-closing-title">Your first office will be simple. That's perfect.</div>
-      <div class="s12b-closing-sub">Add more agents, more sources, more connections — one line at a time.</div>
+  <p class="s14-caption">This folder is <strong>yours</strong>. Edit any file. Run it when you want.</p>
+</section>
+
+<!-- ═══════════════ S15 — Add your API key ═══════════════════════════════ -->
+<section class="slide" id="s15">
+  <div class="blob" style="width:320px;height:320px;background:var(--yellow);top:-80px;right:-60px;opacity:0.11;"></div>
+  <div class="blob" style="width:280px;height:280px;background:var(--purple);bottom:-80px;left:-60px;opacity:0.12;"></div>
+
+  <div class="badge">One-time setup</div>
+  <h1 class="headline" style="font-size:clamp(28px,4.5vw,56px);margin-bottom:22px;">Add your <em>API key.</em></h1>
+
+  <div class="s15-file">
+    <div class="s15-file-head">my_weather / .env</div>
+    <div class="s15-file-body"><span class="s15-env-key">ANTHROPIC_API_KEY</span><span class="s15-env-eq">=</span><span class="s15-env-val">sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxx</span>
+
+<span class="s15-env-comment"># Paste yours on the line above — no quotes.</span></div>
+  </div>
+
+  <div class="s15-cards">
+    <div class="s15-card">
+      <div class="s15-card-title">Get a key (free trial)</div>
+      <div class="s15-card-body">Sign up at <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> and create an API key. A few test runs cost under $1.</div>
+    </div>
+    <div class="s15-card">
+      <div class="s15-card-title">Keep it private</div>
+      <div class="s15-card-body">The <strong>.env</strong> file is gitignored. Don't paste your key into shared chat, code, or screenshots.</div>
     </div>
   </div>
 </section>
+
+<!-- ═══════════════ S16 — Run it ═══════════════════════════════════════ -->
+<section class="slide" id="s16">
+  <div class="blob" style="width:380px;height:380px;background:var(--teal);top:-100px;left:-80px;opacity:0.15;"></div>
+  <div class="blob" style="width:300px;height:300px;background:var(--orange);bottom:-80px;right:-60px;opacity:0.14;"></div>
+
+  <div class="badge">Press play</div>
+  <h1 class="headline" style="font-size:clamp(30px,5vw,60px);margin-bottom:22px;">Run it.<br><em>Watch it work.</em></h1>
+
+  <div class="term-window" style="max-width:860px;">
+    <div class="term-chrome">
+      <div class="pd" style="background:#ff5f57;"></div>
+      <div class="pd" style="background:#ffbd2e;"></div>
+      <div class="pd" style="background:#28c840;"></div>
+      <span class="term-chrome-title">my_weather — dsl run .</span>
+    </div>
+    <div class="term-body"><span class="term-prompt">$</span> <span class="term-cmd">dsl run .</span>
+<span class="term-dim">Starting office: my_weather</span>
+<span class="term-dim">Compiled network: 2 agents, 1 source, 1 sink</span>
+<span class="term-dim">Running… press Ctrl+C to stop.</span>
+<div class="s16-feed-item">
+  <div class="s16-feed-meta"><span class="s16-feed-tag med">MEDIUM</span><span>forecast.openweather</span><span>07:02</span></div>
+  <div class="s16-feed-head">Clear skies, 58°F / 14°C. Warming through mid-70s by afternoon.</div>
+  <div class="s16-feed-body">Morgan: Pleasant day. Light jacket in the morning, short sleeves after noon.</div>
+</div>
+<div class="s16-feed-item">
+  <div class="s16-feed-meta"><span class="s16-feed-tag low">LOW</span><span>forecast.openweather</span><span>07:07</span></div>
+  <div class="s16-feed-head">No precipitation expected in the next 24 hours.</div>
+  <div class="s16-feed-body">Morgan: Dry day — good for outdoor plans. UV index 6 (high) from 11am–3pm.</div>
+</div>
+<div class="s16-feed-item">
+  <div class="s16-feed-meta"><span class="s16-feed-tag high">HIGH</span><span>forecast.openweather</span><span>07:12</span></div>
+  <div class="s16-feed-head">Wind gusts up to 32 mph expected tomorrow afternoon.</div>
+  <div class="s16-feed-body">Morgan: Secure loose outdoor items. Driving conditions may worsen near 3pm.</div>
+</div><span class="term-blink"></span></div>
+  </div>
+
+  <span class="gif-placeholder">▶ GIF slot — capture <code>dsl run .</code> streaming for 30 sec in a fresh venv</span>
+</section>
+
+<!-- ═══════════════ S17 — Customize ═══════════════════════════════════ -->
+<section class="slide" id="s17">
+  <div class="blob" style="width:320px;height:320px;background:var(--purple);top:-80px;right:-60px;opacity:0.12;"></div>
+  <div class="blob" style="width:280px;height:280px;background:var(--teal);bottom:-80px;left:-60px;opacity:0.12;"></div>
+
+  <div class="badge">Make it yours</div>
+  <h1 class="headline" style="font-size:clamp(28px,4.5vw,54px);margin-bottom:14px;">Change a <em>prompt.</em> Re-run.</h1>
+
+  <p class="s17-lead">Edit a role file in plain English. Run the office again. Watch the output change.</p>
+
+  <div class="s17-diff">
+    <div class="s17-side">
+      <div class="s17-side-label">Before — default role</div>
+      <div class="s17-file">
+        <div class="s17-file-head">roles/analyst.md</div>
+        <div class="s17-file-body"><div class="s17-line">You are a weather analyst.</div>
+<div class="s17-line del">Write a short, neutral forecast summary.</div>
+<div class="s17-line">Send to editor.</div></div>
+      </div>
+      <div class="s17-output"><span class="s17-output-tag">MEDIUM</span>Clear, 58°F. Warming to mid-70s.</div>
+    </div>
+
+    <div class="s17-side">
+      <div class="s17-side-label">After — you rewrote one line</div>
+      <div class="s17-file">
+        <div class="s17-file-head">roles/analyst.md</div>
+        <div class="s17-file-body"><div class="s17-line">You are a weather analyst.</div>
+<div class="s17-line add">Write a cheerful forecast a runner would appreciate.</div>
+<div class="s17-line">Send to editor.</div></div>
+      </div>
+      <div class="s17-output"><span class="s17-output-tag orange">HIGH</span>Perfect running weather — 58°F and clear. Cool start, warming by mile 3.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ S18 — You're ready ═══════════════════════════════ -->
+<section class="slide" id="s18">
+  <div class="blob" style="width:500px;height:500px;background:var(--orange);top:-120px;right:-100px;opacity:0.16;"></div>
+  <div class="blob" style="width:380px;height:380px;background:var(--teal);bottom:-100px;left:-80px;opacity:0.14;"></div>
+  <div class="blob" style="width:220px;height:220px;background:var(--yellow);top:40%;left:30%;opacity:0.09;"></div>
+
+  <h1 class="s18-headline">You're <em>ready.</em></h1>
+  <p class="s18-sub">Build something that actually works for you — an office that watches for exactly what you care about.</p>
+
+  <div class="s18-ideas">
+    <div class="s18-idea"><span class="s18-idea-icon">📈</span><div class="s18-idea-text"><strong>Stocks you own</strong><span>price swings + one-line take</span></div></div>
+    <div class="s18-idea"><span class="s18-idea-icon">🔬</span><div class="s18-idea-text"><strong>New research papers</strong><span>arXiv filtered to your topic</span></div></div>
+    <div class="s18-idea"><span class="s18-idea-icon">📬</span><div class="s18-idea-text"><strong>Important emails</strong><span>triage the inbox while you sleep</span></div></div>
+    <div class="s18-idea"><span class="s18-idea-icon">🌐</span><div class="s18-idea-text"><strong>A page you care about</strong><span>updates when something changes</span></div></div>
+  </div>
+
+  <div class="s18-links">
+    <a class="s18-link primary" href="https://pypi.org/project/dissyslab/" target="_blank" rel="noopener">📦 Install from PyPI</a>
+    <a class="s18-link" href="https://github.com/kmchandy/DisSysLab" target="_blank" rel="noopener">⭐ GitHub</a>
+    <a class="s18-link" href="https://github.com/kmchandy/DisSysLab#readme" target="_blank" rel="noopener">📖 Docs</a>
+  </div>
+</section>
+
 
 <!-- ═══════════════ NAV ══════════════════════════════════════════════════ -->
 <nav class="nav">
@@ -1713,41 +1983,7 @@ function cycleS11(){
 }
 cycleS11(); setInterval(cycleS11,1400);
 
-// ── S12b step cycle ────────────────────────────────────────────────────
-const s12bsteps=[{id:'s12bs1',cls:'glow-teal'},{id:'s12bs2',cls:'glow-yellow'},{id:'s12bs3',cls:'glow-orange'}]; let s12i=0;
-function cycleS12b(){
-  s12bsteps.forEach(s=>{const el=document.getElementById(s.id);if(el)el.classList.remove(s.cls);});
-  const s=s12bsteps[s12i]; const el=document.getElementById(s.id); if(el)el.classList.add(s.cls);
-  s12i=(s12i+1)%s12bsteps.length;
-}
-cycleS12b(); setInterval(cycleS12b,1800);
-
-// ── Copy template ──────────────────────────────────────────────────────
-function copyTemplate(){
-  const text='I want to build an office where:\n\nSources: Hacker News RSS and BBC World RSS\nAgents: an analyst who filters for AI stories, an editor who writes briefings\nOutputs: a live dashboard and a saved file';
-  navigator.clipboard.writeText(text).then(()=>{
-    const l=document.getElementById('copy-label');if(l){l.textContent='✓ Copied!';setTimeout(()=>l.textContent='📋 Copy template',2000);}
-  }).catch(()=>{const r=document.createRange();r.selectNode(document.getElementById('s12b-template'));window.getSelection().removeAllRanges();window.getSelection().addRange(r);});
-}
-
-// ── Copy context file (fetches raw markdown from GitHub) ──────────────
-async function copyContext(){
-  const url='https://raw.githubusercontent.com/kmchandy/DisSysLab/main/CLAUDE_CONTEXT_OFFICE.md';
-  const label=document.getElementById('ctx-label');
-  const reset=()=>{ if(label) setTimeout(()=>label.textContent='📋 Copy context for Claude',2500); };
-  try{
-    const res=await fetch(url,{cache:'no-store'});
-    if(!res.ok) throw new Error('fetch failed: '+res.status);
-    const text=await res.text();
-    await navigator.clipboard.writeText(text);
-    if(label) label.textContent='✓ Copied! Paste into Claude';
-    reset();
-  }catch(err){
-    window.open(url,'_blank','noopener,noreferrer');
-    if(label) label.textContent='Opened — select all & copy ↗';
-    reset();
-  }
-}
+// (No animations needed for new S12–S18; they're static/CSS-driven.)
 </script>
 </body>
 </html>
