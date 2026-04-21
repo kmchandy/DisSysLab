@@ -306,6 +306,18 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Load .env from the current working directory (or any ancestor) so that
+    # students who follow the micro-course and put ANTHROPIC_API_KEY into a
+    # .env file in their office folder actually get it picked up by `dsl run`.
+    # This has to happen before any subcommand runs, because ai_agent.py and
+    # friends read os.environ directly at call time. If no .env is found,
+    # load_dotenv() is a no-op.
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+    except ImportError:
+        pass
+
     parser = build_parser()
     args = parser.parse_args(argv)
     handler: Callable[[argparse.Namespace], int] = args.handler

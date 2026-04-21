@@ -12,7 +12,7 @@ from dissyslab.components.transformers.ai_agent import ai_agent
 
 from dissyslab.components.sinks.console_display import ConsoleDisplay
 from dissyslab.components.sinks.sink_jsonl_recorder import JSONLRecorder
-from dissyslab.components.sources.generated.stocks_source import StocksSource
+from dissyslab.components.sources.stocks_source import StocksSource
 
 
 # ── Role functions ───────────────────────────────────────
