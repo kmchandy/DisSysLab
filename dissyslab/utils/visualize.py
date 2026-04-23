@@ -230,7 +230,8 @@ from rich.tree import Tree
 from rich.text import Text
 from typing import Optional
 
-from dissyslab.core import Network, Agent
+from dissyslab.core import Agent
+from dissyslab.network import Network
 
 console = Console()
 

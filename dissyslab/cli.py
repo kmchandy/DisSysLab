@@ -151,9 +151,14 @@ def _explain_failure(command: str, exc: BaseException) -> str:
             f"  Fix: wait a minute and try again, or increase poll_interval\n"
             f"       in your office.md so the source polls less often."
         )
-    if "anthropic_api_key" in lower and (
-        "not set" in lower or "missing" in lower or "none" in lower
-    ):
+    # Two flavors of "no key": (1) our own code raising with the env-var
+    # name visible, (2) the Anthropic SDK's own "Could not resolve
+    # authentication method…" when the client is constructed with no key
+    # at all. The second is what a brand-new student hits first.
+    if (
+        "anthropic_api_key" in lower
+        and ("not set" in lower or "missing" in lower or "none" in lower)
+    ) or "could not resolve authentication method" in lower:
         return (
             f"{command} failed: ANTHROPIC_API_KEY isn't set.\n"
             f"  Fix: create a .env file in the office folder:\n"
