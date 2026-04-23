@@ -66,8 +66,8 @@ def demo_ai_agent(prompt: str):
         ValueError: If prompt is not recognized
 
     Example:
-        >>> from components.transformers.prompts import SENTIMENT_ANALYZER
-        >>> from components.transformers.demo_ai_agent import demo_ai_agent
+        >>> from dissyslab.components.transformers.prompts import SENTIMENT_ANALYZER
+        >>> from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent
         >>>
         >>> analyzer = demo_ai_agent(SENTIMENT_ANALYZER)
         >>> result = analyzer("I love this!")
@@ -104,8 +104,8 @@ def list_available_demos():
     print("  ✓ TOPIC_CLASSIFIER   - Topic classification")
     print("=" * 60)
     print("\nUsage:")
-    print("  from components.transformers.prompts import SENTIMENT_ANALYZER")
-    print("  from components.transformers.demo_ai_agent import demo_ai_agent")
+    print("  from dissyslab.components.transformers.prompts import SENTIMENT_ANALYZER")
+    print("  from dissyslab.components.transformers.demo_ai_agent import demo_ai_agent")
     print("  ")
     print("  analyzer = demo_ai_agent(SENTIMENT_ANALYZER)")
     print("  result = analyzer('Your text here')")

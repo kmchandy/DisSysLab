@@ -37,8 +37,8 @@ class BlueSkyJetstreamSource:
         language:     Only yield posts in this language (e.g. "en")
 
     Example:
-        >>> from components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
-        >>> from dsl.blocks import Source
+        >>> from dissyslab.components.sources.bluesky_jetstream_source import BlueSkyJetstreamSource
+        >>> from dissyslab.blocks import Source
         >>>
         >>> jetstream = BlueSkyJetstreamSource(
         ...     max_posts=50,

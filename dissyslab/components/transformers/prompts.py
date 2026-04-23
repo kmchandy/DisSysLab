@@ -556,7 +556,7 @@ AVAILABLE PROMPTS:
     • JOB_DETECTOR - Match job postings to target role
 ════════════════════════════════════════════════════════════════════════════
 
-💡 TIP: Type "from components.transformers.prompts import " in your IDE
+💡 TIP: Type "from dissyslab.components.transformers.prompts import " in your IDE
          and use autocomplete to see all available prompts!
 
 ════════════════════════════════════════════════════════════════════════════

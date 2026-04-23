@@ -16,20 +16,20 @@ using the rich library for colorized terminal output.
     pip install rich
 
 **Quick Start:**
-    >>> from dsl import network
-    >>> from dsl.utils.visualize import visualize
-    >>> 
+    >>> from dissyslab import network
+    >>> from dissyslab.utils.visualize import visualize
+    >>>
     >>> g = network([(source, transform), (transform, sink)])
     >>> visualize(g)
 
 **Complete Example with Output:**
 
 Student code:
-    >>> from dsl import network
-    >>> from dsl.blocks.source import Source
-    >>> from dsl.blocks.transform import Transform
-    >>> from dsl.blocks.sink import Sink
-    >>> from dsl.utils.visualize import visualize
+    >>> from dissyslab import network
+    >>> from dissyslab.blocks.source import Source
+    >>> from dissyslab.blocks.transform import Transform
+    >>> from dissyslab.blocks.sink import Sink
+    >>> from dissyslab.utils.visualize import visualize
     >>> 
     >>> # Create data source classes
     >>> class ListSource:
@@ -197,15 +197,15 @@ Show port names:
     >>> visualize(g, show_ports=True)
 
 Just show structure:
-    >>> from dsl.utils.visualize import print_network_hierarchy
+    >>> from dissyslab.utils.visualize import print_network_hierarchy
     >>> print_network_hierarchy(g, show_ports=True)
 
 Just show connections:
-    >>> from dsl.utils.visualize import print_connections
+    >>> from dissyslab.utils.visualize import print_connections
     >>> print_connections(g)
 
 Just show summary:
-    >>> from dsl.utils.visualize import print_summary
+    >>> from dissyslab.utils.visualize import print_summary
     >>> print_summary(g)
 
 Compile manually before visualizing:
@@ -444,8 +444,8 @@ def visualize(network: Network,
         show_summary: If True, show summary statistics
 
     Example:
-        >>> from dsl import network
-        >>> from dsl.utils.visualize import visualize
+        >>> from dissyslab import network
+        >>> from dissyslab.utils.visualize import visualize
         >>> 
         >>> g = network([
         ...     (twitter, clean),

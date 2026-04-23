@@ -33,7 +33,7 @@ class Webhook:
         Custom: Any HTTP endpoint
 
     Example:
-        >>> from components.sinks.webhook_sink import Webhook
+        >>> from dissyslab.components.sinks.webhook_sink import Webhook
         >>> webhook = Webhook(
         ...     url="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
         ... )

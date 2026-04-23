@@ -328,7 +328,7 @@ def _load_generated_components():
                 continue
             class_name = match.group(1)
             import_stmt = (
-                f"from components.{kind}s.generated.{name}_{kind} "
+                f"from dissyslab.components.{kind}s.generated.{name}_{kind} "
                 f"import {class_name}"
             )
             if kind == "source":
@@ -544,7 +544,7 @@ def generate_component(kind, name, args, _retry=False):
         return False
 
     import_stmt = (
-        f"from components.{kind}s.generated.{name}_{kind} import {class_name}"
+        f"from dissyslab.components.{kind}s.generated.{name}_{kind} import {class_name}"
     )
 
     if kind == "source":

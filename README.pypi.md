@@ -8,29 +8,33 @@ You describe the office in plain English. DisSysLab builds it.
 
 ![A DisSysLab office running](https://raw.githubusercontent.com/kmchandy/DisSysLab/main/dissyslab/gallery/org_situation_room/screenshot.png)
 
-## Install
+## Three steps to a running office
+
+**1. Install:**
 
 ```bash
 pip install dissyslab
-dsl doctor
 ```
 
-`dsl doctor` checks your Python, the dependencies, and whether your
-Anthropic API key is set. Get a key at https://console.anthropic.com.
+**2. Get an Anthropic API key** at https://console.anthropic.com and
+save it in a `.env` file. Full setup and troubleshooting in
+[`API_KEY_SETUP.md`](https://github.com/kmchandy/DisSysLab/blob/main/API_KEY_SETUP.md)
+— takes about 3 minutes.
 
-## Run your first office
+**3. Run your first office:**
 
 ```bash
-dsl list
-dsl init org_intelligence_briefing my_briefing
-cd my_briefing
-echo "ANTHROPIC_API_KEY=your-key-here" > .env
+dsl init weather_monitor my_weather
+cd my_weather
 dsl run .
 ```
 
-`dsl list` shows every office that ships with DisSysLab. `dsl init` copies
-one of them into a folder you own. From there, edit prompts, connect
-sources, rewire agents — the office is yours.
+Within a few seconds you'll see a one-sentence weather briefing
+streaming to the console. Press `Ctrl+C` to stop.
+
+`dsl list` shows every office that ships with DisSysLab. `dsl init`
+copies one of them into a folder you own. From there, edit prompts,
+swap sources, rewire agents — the office is yours.
 
 ## What is an office?
 

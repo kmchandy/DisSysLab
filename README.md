@@ -25,29 +25,47 @@ You didn't write any code. You wrote two plain English documents.*
 
 ## Path A — Run Offices of AI Agents
 
-Install from PyPI:
+Three steps from nothing to a running office.
+
+**1. Install:**
 
 ```bash
 pip install dissyslab
-dsl doctor
 ```
 
-`dsl doctor` checks your Python, the dependencies, and whether your
-Anthropic API key is set. Get a key at https://console.anthropic.com.
+**2. Get an Anthropic API key and save it in a `.env` file.** Takes
+about 3 minutes — follow [`API_KEY_SETUP.md`](API_KEY_SETUP.md) for
+the exact steps and common gotchas.
 
-### Run your first office
+**3. Run your first office:**
 
 ```bash
-dsl list
-dsl init org_intelligence_briefing my_briefing
-cd my_briefing
-echo "ANTHROPIC_API_KEY=your-key-here" > .env
+dsl init weather_monitor my_weather
+cd my_weather
 dsl run .
 ```
 
-`dsl list` shows every office that ships with DisSysLab. `dsl init` copies
-one of them into a folder you own. From there, edit prompts, connect
-sources, rewire agents — the office is yours.
+Within a few seconds you'll see a one-sentence weather briefing
+streaming to the console. Press `Ctrl+C` to stop.
+
+### What just happened
+
+`dsl init` copied the `weather_monitor` gallery office into a folder
+you own. `dsl run` started it: the `weather` source polls Open-Meteo,
+an AI analyst summarizes each reading in plain English, and the
+briefings stream to your terminal.
+
+From there, edit the prompts, swap sources, add sinks — the office
+is yours.
+
+### More offices
+
+```bash
+dsl list
+```
+
+shows every office that ships with DisSysLab. Try `stocks_monitor`,
+`org_situation_room`, or `my_first_office` next.
 
 ### What is an office?
 

@@ -28,7 +28,7 @@ class DemoBlueSkyJetstream:
         Dict for each post as it "arrives" (same structure as real Jetstream)
 
     Example:
-        >>> from components.sources.demo_bluesky_jetstream import DemoBlueSkyJetstream
+        >>> from dissyslab.components.sources.demo_bluesky_jetstream import DemoBlueSkyJetstream
         >>> source = DemoBlueSkyJetstream(max_posts=10, delay_seconds=1)
         >>> while True:
         ...     post = source.run()

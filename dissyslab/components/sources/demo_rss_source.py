@@ -101,8 +101,8 @@ class DemoRSSSource:
     Available feeds: "hacker_news", "tech_news", "reddit_python"
 
     Example:
-        >>> from components.sources.demo_rss_source import DemoRSSSource
-        >>> from dsl.blocks import Source
+        >>> from dissyslab.components.sources.demo_rss_source import DemoRSSSource
+        >>> from dissyslab.blocks import Source
         >>> rss = DemoRSSSource(feed_name="hacker_news", max_articles=5)
         >>> source = Source(fn=rss.run, name="news")
     """

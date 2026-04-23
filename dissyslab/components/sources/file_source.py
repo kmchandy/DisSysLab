@@ -29,7 +29,7 @@ class FileSource:
         Dict for each row/item (same as demo version)
         
     Example:
-        >>> from components.sources.file_source import FileSource
+        >>> from dissyslab.components.sources.file_source import FileSource
         >>> source = FileSource("data/customers.csv", format="csv")
         >>> while True:
         ...     customer = source.run()

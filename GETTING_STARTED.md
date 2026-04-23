@@ -52,17 +52,14 @@ pip install -e .
 `pip install -e .` installs DisSysLab in editable mode and puts the
 `dsl` command on your PATH, so you can run offices from anywhere.
 
-Get an Anthropic API key at
-[console.anthropic.com](https://console.anthropic.com), then either:
+Get an Anthropic API key and put it in a `.env` file — about three
+minutes start to finish. Follow [`API_KEY_SETUP.md`](API_KEY_SETUP.md)
+for the exact steps and common pitfalls (TextEdit corrupting `.env`,
+venv/PATH mismatches, and so on).
 
-```bash
-export ANTHROPIC_API_KEY='your-key'
-```
-
-or copy `.env.example` to `.env` and fill in the key there.
-
-Run `dsl doctor` to sanity-check your environment (Python version,
-dependencies, and whether `ANTHROPIC_API_KEY` is set).
+Run `dsl doctor` from your office folder to sanity-check everything —
+Python version, dependencies, `.env` format, and whether
+`ANTHROPIC_API_KEY` is loaded.
 
 ---
 

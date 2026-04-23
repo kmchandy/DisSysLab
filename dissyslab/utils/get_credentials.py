@@ -5,7 +5,7 @@ Get API credentials for AI services (OpenAI, Anthropic) from environment variabl
 This utility helps students configure API keys for building AI-powered distributed systems.
 
 Usage:
-    >>> from dsl.utils.get_credentials import get_anthropic_client, get_openai_client
+    >>> from dissyslab.utils.get_credentials import get_anthropic_client, get_openai_client
     >>> 
     >>> # For Claude AI
     >>> client = get_anthropic_client()
@@ -150,7 +150,7 @@ def get_openai_key() -> str:
 
 
 # Convenience: Load keys on module import (optional)
-# Students can use: from dsl.utils.get_credentials import ANTHROPIC_API_KEY
+# Students can use: from dissyslab.utils.get_credentials import ANTHROPIC_API_KEY
 try:
     ANTHROPIC_API_KEY = get_anthropic_key()
 except ValueError:

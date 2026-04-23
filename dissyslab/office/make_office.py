@@ -77,7 +77,7 @@ def _make_extra_imports(office):
     ]
     if rss_sources:
         lines.append(
-            "from components.sources.rss_normalizer import " +
+            "from dissyslab.components.sources.rss_normalizer import " +
             ", ".join(rss_sources)
         )
     for s in office["sources"]:

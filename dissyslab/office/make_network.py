@@ -208,12 +208,12 @@ def write_app(network, network_dir):
     ]
 
     lines += [
-        "from dsl import network",
-        "from dsl.blocks import Source, Sink",
+        "from dissyslab import network",
+        "from dissyslab.blocks import Source, Sink",
     ]
     if rss_sources:
         lines += [
-            "from components.sources.rss_normalizer import " +
+            "from dissyslab.components.sources.rss_normalizer import " +
             ", ".join(rss_sources)
         ]
     lines += bluesky_imports
