@@ -14,14 +14,16 @@ import sys
 import json
 import re
 from pathlib import Path
-from anthropic import Anthropic
 
+from dissyslab.backends import get_backend
 from dissyslab.office.utils import (
     SOURCE_REGISTRY,
     SINK_REGISTRY,
 )
 
-client = Anthropic()
+# Preserve the exact model snapshot that parse_network was using
+# before the Backend Protocol refactor.
+_BUILD_MODEL = "claude-sonnet-4-20250514"
 
 
 # ── Parser prompt ─────────────────────────────────────────────────────────────
@@ -67,16 +69,15 @@ For connections:
 # ── Parse ─────────────────────────────────────────────────────────────────────
 
 def parse_network(network_dir):
-    """Call Claude to extract structured JSON from network.md."""
+    """Call the model to extract structured JSON from network.md."""
     network_path = Path(network_dir) / "network.md"
     text = open(network_path).read()
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=1000,
+    raw = get_backend().complete(
         system=NETWORK_PARSER_PROMPT,
-        messages=[{"role": "user", "content": text}]
+        user=text,
+        max_tokens=1000,
+        model=_BUILD_MODEL,
     )
-    raw = response.content[0].text
     match = re.search(r'\{.*\}', raw, re.DOTALL)
     return json.loads(match.group())
 

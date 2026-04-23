@@ -9,9 +9,14 @@
 import json
 import re
 from pathlib import Path
-from anthropic import Anthropic
 
-client = Anthropic()
+from dissyslab.backends import get_backend
+
+# Compile-time prompts were originally sent to this exact model
+# snapshot. Preserved here so the refactor to the Backend Protocol
+# is behavior-neutral. Change only if all 5 callsites below have
+# been re-tested.
+_BUILD_MODEL = "claude-sonnet-4-20250514"
 
 
 # ── Prompts ───────────────────────────────────────────────────────────────────
@@ -381,28 +386,29 @@ def _call_claude_for_component(kind, name, args, hint):
         f"The factory function at the bottom must be named '{name}'."
     )
 
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=2000,
+    raw = get_backend().complete(
         system=system,
-        messages=[{"role": "user", "content": user_msg}]
+        user=user_msg,
+        max_tokens=2000,
+        model=_BUILD_MODEL,
     )
-    return _strip_markdown_fences(response.content[0].text)
+    return _strip_markdown_fences(raw)
 
 
 def _summarize_component(kind, name, code):
-    """Ask Claude to describe the generated component in plain English."""
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=200,
-        messages=[{"role": "user", "content": (
+    """Ask the model to describe the generated component in plain English."""
+    raw = get_backend().complete(
+        system="",
+        user=(
             f"Describe what this DisSysLab {kind} called '{name}' does "
             f"in 2-3 plain English sentences. No technical terms, no code. "
             f"Just what data it fetches or sends, how often, and what "
             f"information it returns or delivers.\n\n{code}"
-        )}]
+        ),
+        max_tokens=200,
+        model=_BUILD_MODEL,
     )
-    return response.content[0].text.strip()
+    return raw.strip()
 
 
 def _test_component(kind, name, code, args):
@@ -440,18 +446,19 @@ def _test_component(kind, name, code, args):
         gen = obj.run()
         sample = next(gen)
 
-        # Ask Claude to describe the sample in plain English
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=150,
-            messages=[{"role": "user", "content": (
+        # Ask the model to describe the sample in plain English
+        raw = get_backend().complete(
+            system="",
+            user=(
                 f"Describe this data sample in 2-3 plain English sentences "
                 f"as if explaining to a non-technical person what information "
                 f"their office will receive. No code, no field names.\n\n"
                 f"{json.dumps(sample, indent=2)}"
-            )}]
+            ),
+            max_tokens=150,
+            model=_BUILD_MODEL,
         )
-        return response.content[0].text.strip()
+        return raw.strip()
 
     except Exception as e:
         return f"Could not connect: {e}"
@@ -600,15 +607,14 @@ def generate_component(kind, name, args, _retry=False):
 # ── Parsing ───────────────────────────────────────────────────────────────────
 
 def parse_role(role_path):
-    """Call Claude to extract role_name and sends_to from one role file."""
+    """Call the model to extract role_name and sends_to from one role file."""
     text = open(role_path).read()
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=500,
+    raw = get_backend().complete(
         system=ROLE_PARSER_PROMPT,
-        messages=[{"role": "user", "content": text}]
+        user=text,
+        max_tokens=500,
+        model=_BUILD_MODEL,
     )
-    raw = response.content[0].text
     match = re.search(r'\{.*\}', raw, re.DOTALL)
     return json.loads(match.group())
 
@@ -625,16 +631,15 @@ def parse_roles(office_dir):
 
 
 def parse_office(office_dir):
-    """Call Claude to extract structured JSON from office.md."""
+    """Call the model to extract structured JSON from office.md."""
     office_path = Path(office_dir) / "office.md"
     text = open(office_path).read()
-    response = client.messages.create(
-        model="claude-sonnet-4-20250514",
-        max_tokens=1000,
+    raw = get_backend().complete(
         system=OFFICE_PARSER_PROMPT,
-        messages=[{"role": "user", "content": text}]
+        user=text,
+        max_tokens=1000,
+        model=_BUILD_MODEL,
     )
-    raw = response.content[0].text
     match = re.search(r'\{.*\}', raw, re.DOTALL)
     parsed = json.loads(match.group())
     parsed.setdefault("inputs", [])

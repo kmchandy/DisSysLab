@@ -1,34 +1,39 @@
 # dissyslab/components/transformers/ai_agent.py
 
 """
-Real AI Agent - Uses Claude API for analysis
+Real AI Agent - Uses the active DisSysLab backend for analysis.
 
 Usage:
     from dissyslab.components.transformers.ai_agent import ai_agent
 
     analyzer = ai_agent("Analyze the sentiment. Return JSON: {sentiment, score}")
     result = analyzer("I love this!")
-    # Returns dict if Claude returns JSON, string otherwise
+    # Returns dict if the model returns JSON, string otherwise
 
 Requirements:
-    - ANTHROPIC_API_KEY environment variable
+    - ANTHROPIC_API_KEY environment variable (for the default backend)
     - anthropic package: pip install anthropic
-    - Costs ~$0.001-0.003 per message
+
+The underlying model is selected by the active backend
+(`dissyslab.backends.get_backend()`). The default is Claude; students
+and other backends can be swapped in via the DSL_BACKEND env var
+without changing this file.
 """
 
-import os
 import json
 import re
-from anthropic import Anthropic
+
+from dissyslab.backends import get_backend
 
 
 def ai_agent(prompt: str):
     """
     Creates an AI transform function from a prompt string.
 
-    Calls the Claude API with the given system prompt. If Claude returns
-    valid JSON, returns a parsed dict. If Claude returns plain text,
-    returns a string. The prompt controls the output format.
+    Calls the active backend with the given system prompt. If the
+    model returns valid JSON, returns a parsed dict. If it returns
+    plain text, returns a string. The prompt controls the output
+    format.
 
     Args:
         prompt: System prompt describing the task and desired output format.
@@ -36,15 +41,16 @@ def ai_agent(prompt: str):
     Returns:
         Callable: fn(msg) -> dict | str
             Accepts a string or dict as input.
-            Returns a dict if Claude's response is valid JSON,
+            Returns a dict if the model's response is valid JSON,
             otherwise returns a plain string.
 
     Raises:
-        ValueError: If ANTHROPIC_API_KEY not found in environment.
+        ValueError: If the active backend cannot be initialized
+            (e.g. ANTHROPIC_API_KEY not set for the default backend).
 
     Example — JSON output:
         >>> agent = ai_agent(
-        ...     "Analyze sentiment. Return JSON: {"sentiment": "POSITIVE"|"NEGATIVE"|"NEUTRAL", "score": -1.0 to 1.0}"
+        ...     "Analyze sentiment. Return JSON: {\"sentiment\": \"POSITIVE\"|\"NEGATIVE\"|\"NEUTRAL\", \"score\": -1.0 to 1.0}"
         ... )
         >>> result = agent("I love this framework!")
         >>> result["sentiment"]
@@ -57,59 +63,33 @@ def ai_agent(prompt: str):
         >>> summary = reporter(batch)   # batch can be a dict or string
         >>> print(summary)
     """
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
-        raise ValueError(
-            "ANTHROPIC_API_KEY not found in environment.\n\n"
-            "To fix this:\n"
-            "1. Get an API key from: https://console.anthropic.com\n"
-            "2. Set environment variable: export ANTHROPIC_API_KEY='your-key-here'\n"
-            "3. Or add to your shell profile (~/.bashrc or ~/.zshrc):\n"
-            "   export ANTHROPIC_API_KEY='your-key-here'\n\n"
-            "Note: This will cost real money (~$0.001-0.003 per message).\n"
-            "For learning, use demo_ai_agent instead (no cost, no API key needed)."
-        )
-
-    client = Anthropic(api_key=api_key)
-    call_count = 0
-    total_cost = 0.0
+    backend = get_backend()
 
     def analyze(msg) -> dict | str:
         """
-        Send msg to Claude and return the response.
+        Send msg to the model and return the response.
 
         Args:
             msg: Input to analyze. Accepts a string or a dict.
-                 Dicts are serialized to JSON before sending to Claude.
+                 Dicts are serialized to JSON before sending.
 
         Returns:
-            dict if Claude's response is valid JSON, str otherwise.
+            dict if the model's response is valid JSON, str otherwise.
         """
-        nonlocal call_count, total_cost
-
-        # Accept dict or string — serialize dict to JSON string for Claude
+        # Accept dict or string — serialize dict to JSON string for the model
         text = json.dumps(msg) if isinstance(msg, dict) else str(msg)
 
         if not text or not text.strip():
             return {}
 
-        message = client.messages.create(
-            model="claude-sonnet-4-5",
+        raw = backend.complete(
+            system=prompt,
+            user=text,
             max_tokens=1024,
             temperature=1.0,
-            system=prompt,
-            messages=[
-                {"role": "user", "content": text}
-            ]
         )
 
-        call_count += 1
-        input_tokens = message.usage.input_tokens
-        output_tokens = message.usage.output_tokens
-        total_cost += (input_tokens / 1_000_000 * 3.00) + \
-                      (output_tokens / 1_000_000 * 15.00)
-
-        response_text = message.content[0].text.strip()
+        response_text = raw.strip()
 
         # Strip markdown code fences if present
         if response_text.startswith("```"):
@@ -119,7 +99,7 @@ def ai_agent(prompt: str):
 
         if not response_text:
             print(
-                f"[ai_agent] Warning: empty response from Claude for input: {text[:80]!r}")
+                f"[ai_agent] Warning: empty response from model for input: {text[:80]!r}")
             return {}
 
         # Try to parse as JSON — return dict if successful, string otherwise
