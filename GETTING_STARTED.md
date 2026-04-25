@@ -78,7 +78,7 @@ You should see a version number like `1.2.2` or higher. If you
 see **"command not found: dsl"**, your venv didn't activate.
 Re-run the `source .venv/bin/activate` line and try again.
 
-If you see a version number lower that `1.2.2` then 
+If you see a version number lower that `1.2.3` then 
 you have an older dsl earlier on your PATH that your shell is finding first. 
 Execute the following steps: (1) Flush the command shell's cache and (2)
 check which dsl is being used.
@@ -159,9 +159,9 @@ activated (from §1) and your API key exported (from §2). Then:
 
 1. Copy the my_first_office from the gallery into your local folder called **my_briefing**: 
    ```dsl init my_first_office my_briefing```
-2. Go to the office in your local folder ```my_briefing```.
+2. Go to the office in your local folder ```cd my_briefing```.
 3. Run a check: ``` dsl doctor```
-4. Run the new office called **my_briefing**
+4. Run the new office called **my_briefing**: ```dsl run . ```
 
 ```bash
 dsl init my_first_office my_briefing
@@ -233,15 +233,15 @@ my_briefing/
     └── analyst.md    ← what the agent does, in plain English
 ```
 
-Open `office.md` — it says (more or less):
+Open `office.md` — it says:
 
-> The source is `hacker_news`.
+> The source is `hacker_news`. The source has additional parameters such as the number of articles to be pulled on each poll of the site and the sleep time between polls.
 > The sink is `console_printer`.
-> Alex is an analyst.
+> Your office has an agent called Alex who is an analyst.
 > hacker_news goes to Alex. Alex's `briefing` mailbox goes to
 > the console.
 
-Open `roles/analyst.md` — it says (more or less):
+Open `roles/analyst.md` — it says:
 
 > You are a Hacker News analyst. For each story, write one
 > crisp sentence describing what it's about and why someone
