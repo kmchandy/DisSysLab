@@ -1,17 +1,20 @@
 # Situation Room
 
-This example adds live social media streaming to the two-agent pattern
-from Intelligence Briefing. BlueSky posts arrive seconds apart — the
-display updates in real time as events unfold.
+This example adds live social media streaming to a two-agent pattern.
+BlueSky posts arrive seconds apart — the display updates in real time
+as events unfold.
 
 Alex filters for significant political and economic developments.
-Morgan rewrites each one as a briefing note. The display shows the
-eight most recent items, refreshing as new ones arrive.
+Morgan rewrites each keeper as a briefing note. The display shows the
+eight most recent items, refreshing as new ones arrive. Items Alex
+discards are archived to a separate file so you can inspect later
+what got filtered out.
 
 ```
-bluesky    ─┐
-al_jazeera ─┼→  Alex  ─→  Morgan  ─→  intelligence_display (live, 8 items)
-bbc_world  ─┘       └→  situation_room.jsonl        └→  situation_room.jsonl
+bluesky    ─┐                            ┌→ intelligence_display (live, 8 items)
+al_jazeera ─┼→ Alex ─keep─→ Morgan ─briefing─┤
+bbc_world  ─┘     │                      └→ briefings.jsonl  (archive)
+                  └─discard─→ discards.jsonl (filtered-out items)
 ```
 
 Unlike apps that check for news every few minutes, BlueSky posts arrive
@@ -27,7 +30,7 @@ the moment they are published — seconds apart during breaking events.
 # Role: analyst
 
 You are a news analyst who receives posts and articles and sends
-items to an editor or a discard.
+items to either keep or discard.
 
 Your job is to decide if each item is relevant to significant
 political developments or economic events — specifically involving
@@ -38,7 +41,7 @@ broader economy.
 Exclude celebrity gossip, sports, entertainment, and personal
 opinions with no broader political or economic significance.
 
-If the item is relevant, send to editor.
+If the item is relevant, send to keep.
 Otherwise send to discard.
 ```
 
@@ -47,8 +50,8 @@ Otherwise send to discard.
 ```
 # Role: editor
 
-You are an editor who receives posts and articles and sends
-items to a situation_room.
+You are an editor who receives keepers from the analyst and sends
+crisp briefings.
 
 Your job is to rate each item you receive for its significance
 giving the item a significance rating of CRITICAL, HIGH, MEDIUM, or LOW.
@@ -59,7 +62,7 @@ source, url, timestamp, and author fields. Put your significance
 rating in a field called "significance" and your summary in the
 "text" field.
 
-Always send results to situation_room.
+Send to briefing.
 ```
 
 ---
@@ -71,7 +74,8 @@ Sources: bluesky(max_posts=None, lifetime=None),
          al_jazeera(max_articles=10, poll_interval=600),
          bbc_world(max_articles=10, poll_interval=600)
 Sinks: intelligence_display(max_items=8),
-       jsonl_recorder(path="situation_room.jsonl")
+       jsonl_recorder_discard(path="discards.jsonl"),
+       jsonl_recorder_briefing(path="briefings.jsonl")
 
 Agents:
 Alex is an analyst.
@@ -81,9 +85,9 @@ Connections:
 bluesky's destination is Alex.
 al_jazeera's destination is Alex.
 bbc_world's destination is Alex.
-Alex's editor is Morgan.
-Alex's discard is jsonl_recorder.
-Morgan's situation_room are intelligence_display and jsonl_recorder.
+Alex's keep is Morgan.
+Alex's discard is jsonl_recorder_discard.
+Morgan's briefing are intelligence_display and jsonl_recorder_briefing.
 ```
 
 ---
@@ -126,7 +130,8 @@ The more sources, the more complete your picture.
 Three sources run concurrently — BlueSky streaming continuously,
 two RSS feeds polling every ten minutes. Alex and Morgan each run
 in their own thread. Items flow through the network the moment they
-arrive. The display updates in real time.
+arrive. The display updates in real time. Alex's discards stream
+to one archive on disk; Morgan's briefings stream to another.
 
 This is a persistent distributed system — five concurrent agents
 coordinating through messages, running until you stop it.

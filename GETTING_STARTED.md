@@ -1,9 +1,12 @@
 # Getting Started with DisSysLab
 
 In the next **10 minutes** you will install DisSysLab, get an
-Anthropic API key, and run your first office of AI agents. You
-will edit one file, re-run, and see the behavior change. No
-Python programming is required.
+Anthropic API key, and run your first office of AI agents. 
+
+Then in the following **10** minutes you will build and run a more 
+complex office of agents;  modify the office as you wish;
+re-run the office; and see its behavior change. 
+No Python programming is required.
 
 If anything goes wrong along the way, skip to
 [**If something goes wrong**](#if-something-goes-wrong) at the
@@ -70,11 +73,11 @@ dsl --version
 ```
 
 ## Troubleshooting
-You should see a version number like `1.2.3` or higher. If you
+You should see a version number like `1.2.4` or higher. If you
 see **"command not found: dsl"**, your venv didn't activate.
 Re-run the `source .venv/bin/activate` line and try again.
 
-If you see a version number lower than `1.2.3` then 
+If you see a version number lower than `1.2.4` then 
 you have an older dsl earlier on your PATH that your shell is finding first. 
 Execute the following steps: (1) Flush the command shell's cache and (2)
 check which dsl is being used.
@@ -355,9 +358,24 @@ cd my_situation_room
 dsl run .
 ```
 
-The topology preview will be longer this time — three sources,
-two agents, two sinks (one of them the live display). Type
-**`yes`** to start. Bluesky posts arrive seconds apart during
+The topology preview will be longer this time. This office uses
+two agents: **Alex** (the analyst) and **Morgan** (the editor).
+Read the preview top to bottom:
+
+- The three sources all feed into Alex.
+- Alex reads each item and routes it to one of two mailboxes —
+  `keep` for items worth promoting, `discard` for items that
+  don't make the cut.
+- Alex's `keep` mailbox flows to Morgan, who rewrites each keeper
+  as a briefing.
+- Morgan's `briefing` mailbox fans **out** to two destinations at
+  once: the live `intelligence_display` (which shows the eight
+  most recent briefings) and a `briefings.jsonl` archive on disk.
+- Alex's discards don't disappear either — they go to a separate
+  `discards.jsonl` archive so you can inspect later what got
+  filtered out.
+
+Type **`yes`** to start. Bluesky posts arrive seconds apart during
 busy news cycles, so the display starts filling almost
 immediately. Press `Ctrl+C` when you've seen enough.
 
@@ -445,6 +463,30 @@ nothing, check `dsl doctor` and then the office's `README.md`
 — it will mention any extra setup (e.g. Gmail, calendar, or
 stock API keys) the source needs.
 
+### `unable to connect to API`
+
+Your computer can reach the internet but Anthropic's API is
+unreachable. Three possibilities:
+
+- A transient network blip. Wait a minute, then re-run.
+- A firewall (corporate network, public-WiFi captive portal,
+  VPN) is blocking outgoing HTTPS to `api.anthropic.com`. Try
+  a different network or disable the VPN.
+- Anthropic itself is having an incident. Check
+  [status.anthropic.com](https://status.anthropic.com).
+
+### `rate_limit_error` or `429 Too Many Requests`
+
+You're sending Anthropic more requests than your account
+allows. Free-tier accounts have low limits. Three options:
+
+- Wait a minute and re-run — limits reset on a rolling window.
+- Reduce traffic. Open `office.md` and increase
+  `poll_interval=600` (e.g. to `1800` for every 30 minutes), or
+  drop one of the sources.
+- Upgrade to a paid plan at
+  [console.anthropic.com](https://console.anthropic.com).
+
 ### Anything else
 
 Open an issue at
@@ -458,4 +500,4 @@ with:
 
 ---
 
-*Last reviewed for DisSysLab v1.2.3.*
+*Last reviewed for DisSysLab v1.2.4.*
