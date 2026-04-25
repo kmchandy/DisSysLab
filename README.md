@@ -1,5 +1,10 @@
 # DisSysLab — Build Your Own Office of AI Agents
 
+[![PyPI](https://img.shields.io/pypi/v/dissyslab)](https://pypi.org/project/dissyslab/)
+[![Python](https://img.shields.io/pypi/pyversions/dissyslab)](https://pypi.org/project/dissyslab/)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Downloads](https://img.shields.io/pypi/dm/dissyslab)](https://pypi.org/project/dissyslab/)
+
 **An AI chatbot answers when you ask. DisSysLab runs an office of AI
 agents that works for you continuously** — monitoring Hacker News,
 BlueSky, your inbox; filtering, analyzing, and delivering results around
