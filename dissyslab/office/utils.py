@@ -284,6 +284,35 @@ SINK_REGISTRY = {
         "args":   "named",
         "call":   "run",
     },
+    # Aliases that allow multiple JSONLRecorder instances in one office.
+    # Each alias creates a distinct sink instance sharing the same
+    # underlying class. Matches the SOURCE_REGISTRY convention where
+    # each RSS feed (bbc_world, al_jazeera, ...) is a distinct name
+    # sharing the same RSS implementation. Add more aliases as needed.
+    "jsonl_recorder_discard": {
+        "import": "from dissyslab.components.sinks.sink_jsonl_recorder import JSONLRecorder",
+        "class":  "JSONLRecorder",
+        "args":   "named",
+        "call":   "run",
+    },
+    "jsonl_recorder_briefing": {
+        "import": "from dissyslab.components.sinks.sink_jsonl_recorder import JSONLRecorder",
+        "class":  "JSONLRecorder",
+        "args":   "named",
+        "call":   "run",
+    },
+    "jsonl_recorder_archive": {
+        "import": "from dissyslab.components.sinks.sink_jsonl_recorder import JSONLRecorder",
+        "class":  "JSONLRecorder",
+        "args":   "named",
+        "call":   "run",
+    },
+    "jsonl_recorder_raw": {
+        "import": "from dissyslab.components.sinks.sink_jsonl_recorder import JSONLRecorder",
+        "class":  "JSONLRecorder",
+        "args":   "named",
+        "call":   "run",
+    },
     "console_printer": {
         "import": "from dissyslab.components.sinks.console_display import ConsoleDisplay",
         "class":  "ConsoleDisplay",

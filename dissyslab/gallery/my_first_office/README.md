@@ -1,16 +1,15 @@
 # My First Office
 
-This is your starter office. It monitors Hacker News, filters for
-interesting articles, and summarizes each one in a single sentence.
+This is your starter office. It watches Hacker News and writes a
+one-sentence briefing for each story to your console.
 
 ## What's in here
 
 ```
 my_first_office/
-    office.md          ← the org chart: sources, agents, connections
+    office.md          ← the org chart: source, agent, sink
     roles/
-        analyst.md     ← decides what's worth reading
-        editor.md      ← rewrites each article as one sentence
+        analyst.md     ← what the agent does, in plain English
 ```
 
 ## Run it
@@ -24,14 +23,12 @@ Type `yes` and your office starts.
 
 ## Make it yours
 
-**Change the topic** — edit `roles/analyst.md`. Replace "worth reading"
-with whatever you care about:
+**Change the focus** — edit `roles/analyst.md`. Rewrite Alex's job
+for whatever audience you care about:
 
-> "Your job is to decide if each item is about Python, machine learning,
-> or open source software."
-
-> "Your job is to decide if each item is about climate change,
-> renewable energy, or environmental policy."
+> "You are a Hacker News analyst. Your readers are first-year CS
+> students learning Python, AI, and data science. For each story,
+> write one sentence on why it matters to that audience."
 
 **Add a source** — edit `office.md`. Add a line to Sources and a
 line to Connections:
@@ -43,7 +40,7 @@ Sources: hacker_news(max_articles=10, poll_interval=600),
 Connections:
 hacker_news's destination is Alex.
 bbc_world's destination is Alex.        ← new line
-...
+Alex's briefing is console_printer.
 ```
 
 **Add live social media** — replace `hacker_news` with `bluesky`:
