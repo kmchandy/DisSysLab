@@ -53,18 +53,14 @@ DisSysLab and its dependencies isolated from the rest of your
 system, so nothing else can break it — and uninstalling later is
 just `rm -rf`.
 
-Here are example steps for installation. Executing the steps may take a minute or two.
-
-1. Make a folder called dsl_tutorial in your computer for your dsl work.
-2. Go to that folder.
-3. create a venv
-4. activate the venv (on Windows: .venv\Scripts\activate)
-5. install latest pip
-6. install dissyslab
-7. Verify that it worked
+The block below makes a folder, creates a virtual environment,
+installs DisSysLab into it, and confirms the install. On
+Windows, replace `source .venv/bin/activate` with
+`.venv\Scripts\activate`. The whole sequence takes about a
+minute.
 
 ```bash
-mkdir ~/dsl-tutorial 
+mkdir ~/dsl-tutorial
 cd ~/dsl-tutorial
 python3 -m venv .venv
 source .venv/bin/activate
@@ -74,7 +70,7 @@ dsl --version
 ```
 
 ## Troubleshooting
-You should see a version number like `1.2.2` or higher. If you
+You should see a version number like `1.2.3` or higher. If you
 see **"command not found: dsl"**, your venv didn't activate.
 Re-run the `source .venv/bin/activate` line and try again.
 
@@ -88,14 +84,26 @@ hash -r
 which dsl
 ```
 
-If the dsl is outside your .venv/bin/, then
- remove the stray install 
+If the `dsl` printed by `which` is *outside* your `.venv/bin/`,
+you have an older copy of DisSysLab installed elsewhere — a
+previous global install, another venv, or a pyenv copy. The
+`pip uninstall` command only removes the copy in the *active*
+environment, so to remove a stray you have to call the matching
+Python directly.
 
- ```bash
- deactivate
- pip uninstall dissyslab
- ``` 
- or reopen your terminal to pick up a clean PATH.
+If, for example, `which dsl` prints
+`/Library/Frameworks/Python.framework/Versions/3.12/bin/dsl`,
+the matching Python is at the same path with `dsl` replaced by
+`python3`. From any directory, run:
+
+```bash
+cd ~
+/Library/Frameworks/Python.framework/Versions/3.12/bin/python3 -m pip uninstall dissyslab
+```
+
+Re-run `which dsl` — it should now point inside your
+`.venv/bin/`. If multiple stray copies exist, repeat the
+process for each.
 
 ## Running dsl from now on
 
@@ -155,13 +163,10 @@ DisSysLab ships with a **gallery** of ready-to-run offices.
 one.
 
 Make sure you're still in `~/dsl-tutorial` with your venv
-activated (from §1) and your API key exported (from §2). Then:
-
-1. Copy the my_first_office from the gallery into your local folder called **my_briefing**: 
-   ```dsl init my_first_office my_briefing```
-2. Go to the office in your local folder ```cd my_briefing```.
-3. Run a check: ``` dsl doctor```
-4. Run the new office called **my_briefing**: ```dsl run . ```
+activated (from §1) and your API key exported (from §2). The
+block below copies `my_first_office` from the gallery into a
+local folder called `my_briefing`, runs a setup check, and
+launches the office.
 
 ```bash
 dsl init my_first_office my_briefing
@@ -170,7 +175,7 @@ dsl doctor
 dsl run .
 ```
 
-`dsl run` first prints the office's org chart and asks you to
+`dsl run` first prints the office's topology and asks you to
 confirm — something like:
 
 ```
@@ -191,7 +196,8 @@ the entire office.
 
 **Agents** are AI workers. "Alex is an analyst" means your
 office has an agent named Alex whose job description is
-`roles/analyst.md`. An agent has output mailboxes, or ports,
+`roles/analyst.md`. An agent has output **mailboxes**
+(sometimes called *ports* in distributed-systems literature)
 to which the agent sends messages. Alex has one mailbox:
 `briefing`. You'll see the mailbox name in the routing
 description, which specifies where messages go.
@@ -233,19 +239,38 @@ my_briefing/
     └── analyst.md    ← what the agent does, in plain English
 ```
 
-Open `office.md` — it says:
+Open `office.md`. The whole file is:
 
-> The source is `hacker_news`. The source has additional parameters such as the number of articles to be pulled on each poll of the site and the sleep time between polls.
-> The sink is `console_printer`.
-> Your office has an agent called Alex who is an analyst.
-> hacker_news goes to Alex. Alex's `briefing` mailbox goes to
-> the console.
+```
+# Office: my_first_office
 
-Open `roles/analyst.md` — it says:
+Sources: hacker_news(max_articles=10, poll_interval=600)
+Sinks: console_printer
 
-> You are a Hacker News analyst. For each story, write one
-> crisp sentence describing what it's about and why someone
-> learning software might care. Send to briefing.
+Agents:
+Alex is an analyst.
+
+Connections:
+hacker_news's destination is Alex.
+Alex's briefing is console_printer.
+```
+
+Read top to bottom: the office has one source (`hacker_news`,
+which pulls 10 articles per poll and waits 600 seconds between
+polls), one sink (`console_printer`), one agent (`Alex`, who is
+an analyst), and three connections describing what flows where.
+
+Open `roles/analyst.md`. The whole file is:
+
+```
+# Role: analyst
+
+You are a Hacker News analyst. For each story you receive, write
+one crisp sentence describing what it's about and why someone
+learning software might care.
+
+Send to briefing.
+```
 
 **That's it.** When you ran `dsl run .`, DisSysLab read those
 two files, started a **source** that polls Hacker News for
@@ -433,4 +458,4 @@ with:
 
 ---
 
-*Last reviewed for DisSysLab v1.2.2.*
+*Last reviewed for DisSysLab v1.2.3.*
