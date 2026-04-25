@@ -78,7 +78,7 @@ You should see a version number like `1.2.2` or higher. If you
 see **"command not found: dsl"**, your venv didn't activate.
 Re-run the `source .venv/bin/activate` line and try again.
 
-If you see a version number lower that `1.2.3` then 
+If you see a version number lower than `1.2.3` then 
 you have an older dsl earlier on your PATH that your shell is finding first. 
 Execute the following steps: (1) Flush the command shell's cache and (2)
 check which dsl is being used.
