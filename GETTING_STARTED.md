@@ -77,19 +77,28 @@ You should see a version number like `1.2.4` or higher. If you
 see **"command not found: dsl"**, your venv didn't activate.
 Re-run the `source .venv/bin/activate` line and try again.
 
-If you see a version number lower than `1.2.4` then 
-you have an older dsl earlier on your PATH that your shell is finding first. 
-Execute the following steps: (1) Flush the command shell's cache and (2)
-check which dsl is being used.
+If you see a version number lower than `1.2.4`, two situations
+are possible. Check `which dsl` first to tell them apart:
 
 ```bash
 hash -r
 which dsl
 ```
 
-If the `dsl` printed by `which` is *outside* your `.venv/bin/`,
-you have an older copy of DisSysLab installed elsewhere — a
-previous global install, another venv, or a pyenv copy. The
+**Case A — `which dsl` prints something *inside* your `.venv/bin/`.**
+The right binary is being run; pip simply has an older
+DisSysLab in this venv (and may have used a cached wheel
+instead of the latest). Force the upgrade and bypass the cache:
+
+```bash
+pip install --upgrade --no-cache-dir dissyslab
+dsl --version
+```
+
+**Case B — `which dsl` prints a path *outside* your `.venv/bin/`.**
+You have an older copy of DisSysLab installed somewhere else —
+a previous global install, another venv, or a pyenv copy —
+and your shell is finding it before the venv's copy. The
 `pip uninstall` command only removes the copy in the *active*
 environment, so to remove a stray you have to call the matching
 Python directly.
