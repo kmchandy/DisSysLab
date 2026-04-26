@@ -28,10 +28,12 @@ description into a running distributed system.
 News in real time. You didn't write any code — you wrote two short
 plain-English files describing what Alex does.*
 
-![A DisSysLab office running](dissyslab/gallery/org_situation_room/screenshot.png)
+![org_situation_room running live — Alex filtering BlueSky and news feeds, Morgan rewriting keepers as briefings](docs/dsl-demo.gif)
 
 *A second office — `org_situation_room` — scanning live news and social
-media, with two agents collaborating on what makes the cut.*
+media in real time. Alex filters for political and economic significance;
+Morgan rewrites each keeper as a briefing. Five concurrent agents, no
+code.*
 
 ---
 
@@ -76,6 +78,13 @@ pip install dissyslab
 
 (On Windows, replace `source .venv/bin/activate` with
 `.venv\Scripts\activate`.)
+
+**Already have DisSysLab installed?** Force the latest release
+and bypass pip's wheel cache:
+
+```bash
+pip install --upgrade --no-cache-dir dissyslab
+```
 
 ### 2. Set your Anthropic API key
 
