@@ -125,6 +125,6 @@ REFACTOR_PLAN.md
 demo/
 *.cast
 *.gif
-demo/
-*.cast
-*.gif
+
+# Exception: README-embedded demo GIFs in docs/ ARE tracked
+!docs/*.gif
