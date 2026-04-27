@@ -13,6 +13,24 @@ the clock until you tell it to stop.
 You describe the office in plain English. DisSysLab compiles your
 description into a running distributed system.
 
+![org_situation_room running live — Alex filtering BlueSky and news feeds, Morgan rewriting keepers as briefings](docs/dsl-demo.gif)
+
+*`org_situation_room` running live: five concurrent agents scanning
+news and social media. Alex filters for political and economic
+significance; Morgan rewrites each keeper as a briefing. No code —
+just two plain-English files describing what each agent does and how
+they connect.*
+
+### Try it in 60 seconds
+
+```bash
+pip install dissyslab
+export ANTHROPIC_API_KEY=sk-ant-...    # need a key? see Path A below
+dsl init my_first_office my_briefing && cd my_briefing && dsl run .
+```
+
+Within seconds, briefings start streaming to your terminal:
+
 ```
 [Alex]   ML release: a 7B model that runs on a Raspberry Pi 5 with
          usable latency — full weights and training code on GitHub.
@@ -28,12 +46,14 @@ description into a running distributed system.
 News in real time. You didn't write any code — you wrote two short
 plain-English files describing what Alex does.*
 
-![org_situation_room running live — Alex filtering BlueSky and news feeds, Morgan rewriting keepers as briefings](docs/dsl-demo.gif)
+### Two ways to start
 
-*A second office — `org_situation_room` — scanning live news and social
-media in real time. Alex filters for political and economic significance;
-Morgan rewrites each keeper as a briefing. Five concurrent agents, no
-code.*
+- **Run it now** — copy the three commands above. Full step-by-step
+  walkthrough with the API-key setup is in
+  [Path A](#path-a--run-offices-of-ai-agents) below.
+- **Watch first** — take the
+  [5-minute micro-course](https://kmchandy.github.io/DisSysLab/office_microcourse.html)
+  to see what you're building before you install.
 
 ---
 
