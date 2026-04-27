@@ -196,9 +196,9 @@ prints every office that ships with DisSysLab. Some highlights:
 | `my_first_office` | Single-agent Hacker News briefer (the one above) |
 | `org_situation_room` | Two-agent live news monitor — BlueSky + BBC + Al Jazeera, with a live-updating display of the eight most recent briefings |
 | `org_news_editorial` | Two-agent editorial chain — analyst feeds editor, with a feedback loop |
-| `arxiv_tracker` | Watches arXiv subject feeds and classifies new papers by type and impact |
-| `developer_news` | Tracks open-source releases, dev tools, and language news across multiple feeds |
-| `topic_tracker` | Drop-in topic monitor — change one line to follow any subject across three news sources |
+| `weather_monitor` | Single-agent weather briefer for a city you choose |
+| `stocks_monitor` | Single-agent ticker watcher with one-sentence price updates |
+| `org_two_office_news` | An office of offices — news_monitor feeds news_editor, sourced from three real RSS feeds |
 
 Each office is a folder with an `office.md` and `roles/*.md` you can
 read and edit. `dsl init <office_name> <local_folder>` copies one

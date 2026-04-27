@@ -33,35 +33,14 @@ asks "Does this look right?", and starts your office.
 
 ## If you prefer using Python
 
-You write Python to specify agents and their interconnections.
-You can use Claude or other AI tools in the agents.
+You can also write a network of agents directly in Python — useful when
+you want full control over agent behavior, custom transforms, or
+stateful logic that the English office grammar doesn't yet cover.
 
-
-This collection of examples illustrates only one kind of many
-kinds of dsl applications.
-These applications get data from sensors and other
-news sources; process the data continuously in a network of concurrent
-agents; and send results to device controllers, emails, calendars and store results in
-databases and files.
-
-| App | What it does |
-|-----|-------------|
-| [AI/ML Research Tracker](ai_ml_research/) | Monitors Hacker News, MIT Tech Review, TechCrunch, VentureBeat for AI/ML news |
-| [arXiv Tracker](arxiv_tracker/) | Monitors arXiv cs.AI, cs.LG, cs.CL for papers matching your topics |
-| [Climate Monitor](climate_news/) | Monitors NASA, BBC, NPR for climate and environment news |
-| [Developer News](developer_news/) | Monitors Hacker News, TechCrunch, BBC Tech for developer news |
-| [Job Postings](job_postings/) | Monitors Python.org, RemoteOK, We Work Remotely for matching jobs |
-| [Topic Tracker](topic_tracker/) | Monitors Al Jazeera, NPR, BBC World for topics you specify |
-
-**How to run any of these:**
-
-```bash
-export ANTHROPIC_API_KEY='your-key'
-python3 -m gallery.ai_ml_research.app
-```
-
-Each app runs continuously until you stop it with Ctrl+C.
-A daily digest is printed at midnight.
+A small collection of raw-Python example offices lives outside the
+shipped gallery, in [`examples/python_offices/`](../../examples/python_offices/).
+These are illustrative — read the source to see how to wire a non-trivial
+network — and not maintained as a smooth Path A user experience.
 
 ---
 

@@ -1,4 +1,4 @@
-# gallery/ai_ml_research/demo_data.py
+# examples/python_offices/ai_ml_research/demo_data.py
 """
 Prepackaged articles and AI responses for the demo.
 No network calls. No API key needed.
