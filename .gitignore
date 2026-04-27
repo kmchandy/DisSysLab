@@ -133,3 +133,7 @@ demo/
 
 # Exception: README-embedded demo GIFs in docs/ ARE tracked
 !docs/*.gif
+
+# Local office run outputs (repo root, from testing offices)
+/*.jsonl
+my_briefing/

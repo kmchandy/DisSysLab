@@ -1,0 +1,12 @@
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Backend local env (keys)
+backend/.env
+**/__pycache__/
+*.pyc
+
+# User-created offices (local only; not committed)
+user_offices/*
+!user_offices/.gitkeep
