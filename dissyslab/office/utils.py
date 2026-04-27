@@ -55,6 +55,46 @@ An office spec follows this format:
 
 For connections, normalize plural port names to singular (copywriters → copywriter).
 
+Each connection becomes a JSON object with three fields:
+  "from"      — the sender (a source, an input port, or an agent)
+  "from_port" — the sender's output port name as written in the
+                connection line
+  "to"        — a list of recipient names (agents, sinks, or output ports)
+
+The word "destination" appears in two distinct ways in the grammar — do
+not conflate them:
+
+1. As the LITERAL output port name of every source and input port. When
+   you see "<source>'s destination is <agent>." or
+   "<input>'s destination is <agent>.", set "from_port" to the literal
+   string "destination" and put the recipient in "to". Example:
+
+     "hacker_news's destination is Alex."
+       → {"from": "hacker_news", "from_port": "destination", "to": ["Alex"]}
+
+     "al_jazeera's destination is Felix."
+     "bbc_world's destination is Felix."
+       → {"from": "al_jazeera", "from_port": "destination", "to": ["Felix"]}
+       → {"from": "bbc_world",  "from_port": "destination", "to": ["Felix"]}
+
+   This is true even when several sources fan into the same agent. Each
+   connection line still has from_port == "destination". Never put the
+   recipient name in "from_port".
+
+2. As the WORD "destination" used to talk about recipients in English.
+   Ignore that meaning when extracting JSON — only the literal port name
+   from the "<sender>'s <port> is <recipient>." pattern goes in "from_port".
+
+For agent connections, "from_port" is the literal port name written in
+the line (e.g. "keep", "discard", "briefing"):
+
+     "Alex's keep is Morgan."
+       → {"from": "Alex", "from_port": "keep", "to": ["Morgan"]}
+
+     "Morgan's briefing are intelligence_display and jsonl_recorder."
+       → {"from": "Morgan", "from_port": "briefing",
+          "to": ["intelligence_display", "jsonl_recorder"]}
+
 Return JSON only, no explanation, no nested JSON:
 {
   "office_name": "name",
@@ -70,7 +110,7 @@ Return JSON only, no explanation, no nested JSON:
     {"name": "agent_name", "role": "role_name"}
   ],
   "connections": [
-    {"from": "name", "destination": "port_name", "to": ["name"]}
+    {"from": "name", "from_port": "port_name", "to": ["name"]}
   ]
 }"""
 
@@ -700,15 +740,15 @@ def validate(roles, office):
 
     for conn in office["connections"]:
         sender = conn["from"]
-        port = conn["destination"]
+        from_port = conn["from_port"]
         if sender in known_agents:
             agent = next(a for a in office["agents"] if a["name"] == sender)
             role_name = agent["role"]
             if role_name in roles:
                 valid_ports = roles[role_name]["sends_to"]
-                if port != "destination" and port not in valid_ports:
+                if from_port != "destination" and from_port not in valid_ports:
                     errors.append(
-                        f"Connection from '{sender}' uses port '{port}' "
+                        f"Connection from '{sender}' uses port '{from_port}' "
                         f"but role '{role_name}' declares: {valid_ports}"
                     )
         for dest in conn["to"]:
@@ -766,12 +806,12 @@ def show_routing_table(roles, office):
     print("Routing:")
     for conn in office["connections"]:
         sender = conn["from"]
-        dest = conn["destination"]
+        from_port = conn["from_port"]
         to = ", ".join(conn["to"])
-        if dest == "destination":
+        if from_port == "destination":
             print(f"  {sender:<16}  →  {to}")
         else:
-            print(f"  {sender:<16}  [{dest}]  →  {to}")
+            print(f"  {sender:<16}  [{from_port}]  →  {to}")
     print()
 
 
@@ -931,15 +971,15 @@ def generate_app(roles, office, office_dir):
     lines.append("edges = [")
     for conn in office["connections"]:
         sender = conn["from"]
-        dest_name = conn["destination"]
+        from_port = conn["from_port"]
         to_list = conn["to"]
-        if dest_name == "destination":
+        if from_port == "destination":
             lines.append(f"    ({sender}, {to_list[0]}),")
         else:
             rname = next(
                 a["role"] for a in office["agents"] if a["name"] == sender
             )
-            idx = port_index[rname][dest_name]
+            idx = port_index[rname][from_port]
             for to in to_list:
                 if to == "discard":
                     continue

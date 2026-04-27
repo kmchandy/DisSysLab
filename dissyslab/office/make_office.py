@@ -184,28 +184,28 @@ def _make_edge_block(roles, office, office_name):
     # Input port → first agent
     for conn in office["connections"]:
         sender = conn["from"]
-        if conn["destination"] == "destination" and sender in inputs:
+        if conn["from_port"] == "destination" and sender in inputs:
             lines.append(f"    ({office_name}.{sender}, {conn['to'][0]}),")
 
     # Agent → agent, sink, or output port
     for conn in office["connections"]:
         sender = conn["from"]
-        dest_name = conn["destination"]
-        if dest_name == "destination" or sender not in known_agents:
+        from_port = conn["from_port"]
+        if from_port == "destination" or sender not in known_agents:
             continue
         agent = next(a for a in office["agents"] if a["name"] == sender)
         role_name = agent["role"]
-        idx = port_index[role_name].get(dest_name)
+        idx = port_index[role_name].get(from_port)
         if idx is None:
             continue
         for to in conn["to"]:
             if to in known_outputs:
                 lines.append(
-                    f"    ({sender}.out_{idx}, {office_name}.{to}),  # {dest_name}"
+                    f"    ({sender}.out_{idx}, {office_name}.{to}),  # {from_port}"
                 )
             else:
                 lines.append(
-                    f"    ({sender}.out_{idx}, {to}),  # {dest_name}"
+                    f"    ({sender}.out_{idx}, {to}),  # {from_port}"
                 )
 
     return "\n".join(lines)

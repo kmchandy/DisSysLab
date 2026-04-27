@@ -30,7 +30,6 @@ from dissyslab.office.utils import (
     parse_office,
     validate,
     show_routing_table,
-    generate_app,
     expand_shortcut,
 )
 
@@ -149,28 +148,96 @@ def build_and_run(roles, office, office_dir):
         source_nodes[name] = Source(fn=obj.run, name=name)
 
     # ── Edges ─────────────────────────────────────────────────────────────────
+    #
+    # Connection grammar (per OFFICE_PARSER_PROMPT):
+    #   "<source>'s destination is <agent>."
+    #     → {"from": "<source>",  "from_port": "destination", "to": ["<agent>"]}
+    #     The literal string "destination" is the marker for the (only)
+    #     output port of every source. The recipient lives in `to[0]`.
+    #
+    #   "<agent>'s <port> is <agent-or-sink>."
+    #   "<agent>'s <port> are <a> and <b>."
+    #     → {"from": "<agent>", "from_port": "<port>", "to": [...]}
+    #     `from_port` names a declared output port of the agent's role.
+    #
+    # The runtime relies on this contract being honored. If the parser
+    # produces a different shape we raise a clear error rather than guess.
     edges = []
     for conn in office["connections"]:
         sender = conn["from"]
-        dest_name = conn["destination"]
-        to_list = conn["to"]
+        from_port = conn["from_port"]
+        to_list = conn["to"] or []
 
-        if dest_name == "destination":
-            # Source → first agent
-            edges.append((source_nodes[sender], agent_nodes[to_list[0]]))
-        else:
-            # Agent → agent or sink
-            sender_node = agent_nodes[sender]
-            role_name = next(
-                a["role"] for a in office["agents"] if a["name"] == sender
+        if from_port == "destination":
+            # Source → first agent. Sender MUST be a known source.
+            if sender not in source_nodes:
+                raise ValueError(
+                    f"Connection {{'from': '{sender}', 'from_port': "
+                    f"'destination', ...}} but '{sender}' is not a "
+                    f"declared source. Either add it under Sources in "
+                    f"office.md, or — if '{sender}' is an agent — give "
+                    f"it an explicit output port name (the literal "
+                    f"'destination' marker is reserved for sources)."
+                )
+            if not to_list:
+                raise ValueError(
+                    f"Source '{sender}' has no recipient in its "
+                    f"connection. Expected: \"{sender}'s destination "
+                    f"is <agent>.\""
+                )
+            recipient = to_list[0]
+            if recipient not in agent_nodes:
+                raise ValueError(
+                    f"Source '{sender}' connects to '{recipient}', "
+                    f"which is not a declared agent. Check the "
+                    f"Agents section of office.md."
+                )
+            edges.append((source_nodes[sender], agent_nodes[recipient]))
+            continue
+
+        # Agent → agent or sink. Sender must be a known agent; the parser
+        # is expected to put the literal port name in `from_port`.
+        if sender in source_nodes:
+            # Parser drift: a source edge but `from_port` isn't the
+            # literal marker "destination". The parser prompt is meant
+            # to prevent this; if it still happens, surface it loudly.
+            raise ValueError(
+                f"Parser produced an unexpected shape for source "
+                f"'{sender}': from_port='{from_port}', to={to_list}. "
+                f"Expected from_port='destination' (literal marker) "
+                f"with the recipient in `to`. This usually means the "
+                f"LLM-based parser misread "
+                f"\"{sender}'s destination is <agent>.\" Try rerunning, "
+                f"or simplify office.md."
             )
-            idx = port_index[role_name][dest_name]
-            port = getattr(sender_node, f"out_{idx}")
-            for to in to_list:
-                if to == "discard":
-                    continue
-                to_node = agent_nodes.get(to) or sink_nodes.get(to)
-                edges.append((port, to_node))
+        if sender not in agent_nodes:
+            raise ValueError(
+                f"Connection from unknown sender '{sender}'. Sender "
+                f"must be a Source or an Agent declared in office.md."
+            )
+        sender_node = agent_nodes[sender]
+        role_name = next(
+            a["role"] for a in office["agents"] if a["name"] == sender
+        )
+        if from_port not in port_index[role_name]:
+            raise ValueError(
+                f"Agent '{sender}' (role '{role_name}') has no output "
+                f"port named '{from_port}'. Valid ports: "
+                f"{list(port_index[role_name].keys())}."
+            )
+        idx = port_index[role_name][from_port]
+        port = getattr(sender_node, f"out_{idx}")
+        for to in to_list:
+            if to == "discard":
+                continue
+            to_node = agent_nodes.get(to) or sink_nodes.get(to)
+            if to_node is None:
+                raise ValueError(
+                    f"Agent '{sender}' connects to unknown destination "
+                    f"'{to}'. Must be an agent or sink declared in "
+                    f"office.md."
+                )
+            edges.append((port, to_node))
 
     # ── Run ───────────────────────────────────────────────────────────────────
     g = network(edges)
@@ -222,7 +289,11 @@ if __name__ == "__main__":
     source_names = ", ".join(s["name"] for s in office["sources"])
     print(f"   Agents:  {agent_names}")
     print(f"   Sources: {source_names}")
-    generate_app(roles, office, office_dir)
+    # NOTE: We deliberately do NOT call generate_app() here. The office is
+    # constructed and run in memory by build_and_run(); writing app.py to
+    # disk is the job of `dsl build` (which uses make_office.py). Calling
+    # generate_app() here would regenerate app.py inside every gallery
+    # office on every `dsl run`, undoing the pure-English gallery layout.
     print()
     print("   Press Ctrl+C to stop.")
     print("━" * 60)

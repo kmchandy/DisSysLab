@@ -26,6 +26,7 @@ import os
 import runpy
 import shutil
 import sys
+import traceback
 from pathlib import Path
 from typing import Callable
 
@@ -96,8 +97,26 @@ def _explain_failure(command: str, exc: BaseException) -> str:
     Path A users don't know what `ModuleNotFoundError` or a 401 from
     Anthropic means. This mapper trades a pristine Python traceback for
     a line the student can actually do something with. Unknown errors
-    fall through to the raw message so we never hide information.
+    fall through to a typed message + traceback so we never silently
+    hide information (an empty `str(exc)` used to mean the user saw
+    "dsl run failed:" with nothing after the colon).
+
+    Set DSL_DEBUG=1 to append the full Python traceback to *any* message
+    — useful when a friendly mapping fired but you want to see the raw
+    exception underneath (e.g. for filing an issue).
     """
+    message = _explain_failure_message(command, exc)
+    if os.environ.get("DSL_DEBUG"):
+        tb = "".join(
+            traceback.format_exception(type(exc), exc, exc.__traceback__)
+        )
+        if "Full traceback:" not in message:
+            message = f"{message}\n\nFull traceback:\n{tb}"
+    return message
+
+
+def _explain_failure_message(command: str, exc: BaseException) -> str:
+    """The actual exception → user-message mapper. See _explain_failure."""
     msg = str(exc)
 
     # Missing Python module — almost always a stale-generated app.py or
@@ -175,8 +194,20 @@ def _explain_failure(command: str, exc: BaseException) -> str:
             f"  If this is .env, see API_KEY_SETUP.md."
         )
 
-    # Fall-through: keep the raw exception so we never silently hide info.
-    return f"{command} failed: {exc}"
+    # Fall-through: unknown exception. Always show the type name (so the
+    # message is non-empty even when str(exc) is empty), plus the full
+    # traceback. The traceback is the most useful thing for debugging an
+    # unknown error and the most useful thing to paste into a bug report.
+    tb = "".join(
+        traceback.format_exception(type(exc), exc, exc.__traceback__)
+    )
+    summary = str(exc).strip()
+    head = (
+        f"{command} failed: {type(exc).__name__}: {summary}"
+        if summary
+        else f"{command} failed: {type(exc).__name__} (no message)."
+    )
+    return f"{head}\n\nFull traceback:\n{tb}"
 
 
 def cmd_run(args: argparse.Namespace) -> int:

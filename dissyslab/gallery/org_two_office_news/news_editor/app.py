@@ -2,7 +2,7 @@
 # Office: news_editor
 # Open office — import news_editor to use in a larger network.
 #
-#   from gallery.org_two_office_news.news_editor.app import news_editor
+#   from news_editor.app import news_editor
 
 import json
 

@@ -2,7 +2,7 @@
 # Office: news_monitor
 # Open office — import news_monitor to use in a larger network.
 #
-#   from gallery.org_two_office_news.news_monitor.app import news_monitor
+#   from news_monitor.app import news_monitor
 
 import json
 

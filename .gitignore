@@ -111,9 +111,14 @@ my_projects/
 
 for_instructors/
 
-# Example outputs  
+# Example outputs
 examples/**/output/
 examples/**/results/
+
+# Office runtime output. Gallery offices write JSONL via jsonl_recorder
+# sinks; this output should never be committed even if a developer runs
+# `dsl run` from inside the source tree.
+dissyslab/gallery/**/*.jsonl
 
 # Logs
 logs/
