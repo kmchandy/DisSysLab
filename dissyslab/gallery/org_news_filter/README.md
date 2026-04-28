@@ -1,71 +1,44 @@
 # News Filter
 
-This example shows the simplest possible office -- an office with one agent.
+The simplest possible office — a single agent named Felix who sorts
+incoming articles. Articles about the Americas go to the console;
+everything else goes to a file and is dropped from the live display.
 
-Felix reads every incoming article and makes one decision — is this
-article about the Americas? If yes, it goes to the console. If no,
-it goes to a file and is discarded from the live display. The 
-org chart -- the flow of information -- is shown below.
+## What it does
 
 ```
 al_jazeera ─┐
-             ├→  Felix  ─→  console  (articles about the Americas)
+             ├→  Felix  ─→  console            (articles about the Americas)
 bbc_world  ─┘          └→  filtered_output.jsonl  (everything else)
 ```
 
----
+- Polls Al Jazeera and BBC World for the latest articles
+- Felix (a filter) decides whether each article is about the Americas
+- Articles about the Americas go to your terminal; the rest go to
+  `filtered_output.jsonl` for later inspection
 
-## What Felix does: The Role
-
-An office may have many agents with the same role. 
-For example, an office may have many editors and many copywriters.
-We define a role by its job descriptions.
-Here is a job description for news filter.
-
+## Files in this office
 
 ```
-# Role: filter
-
-You are a content filter who receives news articles and sends
-articles to a keeper or a discard.
-
-Your job is to decide if each article is about the americas: canada, usa, brazil, ..
-If the article is about the americas, send to keeper.
-Otherwise send to discard.
+news_filter/
+    office.md          ← the org chart: sources, agent, sinks
+    roles/
+        filter.md      ← what Felix does, in plain English
 ```
 
----
+A `filtered_output.jsonl` file appears in the folder once you run
+the office; it holds the articles Felix discarded.
 
-## The org chart: Office staff and how they communicate
-Next we describe the agents in the office -- the  sources, processing agents and sinks. 
-Then we define their connections: who sends what information to whom.
-
-```
-Sources: al_jazeera(max_articles=2), bbc_world(max_articles=2)
-Sinks: console_printer, jsonl_recorder(path="filtered_output.jsonl")
-
-Agents:
-Felix is a filter.
-
-Connections:
-al_jazeera's destination is Felix.
-bbc_world's destination is Felix.
-Felix's keeper is console_printer.
-Felix's discard is jsonl_recorder.
-```
-
----
-
-## Run it
+## Try it
 
 ```bash
-dsl run gallery/org_news_filter/
+dsl init org_news_filter my_filter
+cd my_filter
+dsl run .
 ```
 
 The compiler shows you the routing and asks "Does this look right?"
 Say yes and your office starts.
-
----
 
 ## Make it yours
 
@@ -89,8 +62,52 @@ send it to a second agent that summarizes it, rates its significance,
 or translates it. That's the next example —
 [Intelligence Briefing](../org_intelligence_briefing/).
 
+---
 
-## You have built a distributed system
-Congratulations — Felix is running in his own thread, processing
-articles the moment they arrive. This is a distributed system running
-on your laptop. Later we will show you how to deploy it to the cloud.
+## The role
+
+Felix's job description, in plain English:
+
+```
+# Role: filter
+
+You are a content filter who receives news articles and sends
+articles to a keeper or a discard.
+
+Your job is to decide if each article is about the americas: canada, usa, brazil, ..
+If the article is about the americas, send to keeper.
+Otherwise send to discard.
+```
+
+An office may have many agents with the same role — for example,
+many editors and many copywriters. A role is defined once, in
+`roles/<role>.md`. Each agent in `office.md` is then declared with
+"X is a <role>".
+
+## The org chart
+
+The whole office, in one file:
+
+```
+# Office: news_filter
+
+Sources: al_jazeera(max_articles=2), bbc_world(max_articles=2)
+Sinks: console_printer, jsonl_recorder(path="filtered_output.jsonl")
+
+Agents:
+Felix is a filter.
+
+Connections:
+al_jazeera's destination is Felix.
+bbc_world's destination is Felix.
+Felix's keeper is console_printer.
+Felix's discard is jsonl_recorder.
+```
+
+## What you built
+
+Felix runs in his own thread, processing articles the moment they
+arrive. This is a distributed system running on your laptop — one
+agent, two sources streaming concurrently, two sinks recording the
+results. Later examples scale this up to multiple agents, feedback
+loops, and offices wired into networks.

@@ -10,6 +10,15 @@ announcements, product launches, research findings, or significant updates.
   item is worth flagging
 - Output streams to your terminal and to `web_monitor.jsonl`
 
+## Files in this office
+
+```
+web_monitor/
+    office.md          ← the org chart: source, agent, sink
+    roles/
+        analyst.md     ← what the agent does, in plain English
+```
+
 ## Try it
 
 ```bash

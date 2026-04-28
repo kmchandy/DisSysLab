@@ -9,6 +9,15 @@ a short briefing about what's on your plate.
 - An analyst agent reviews the events and writes a concise summary
 - Output streams to your terminal and to `calendar_briefing.jsonl`
 
+## Files in this office
+
+```
+calendar_briefing/
+    office.md          ← the org chart: source, agent, sink
+    roles/
+        analyst.md     ← what the agent does, in plain English
+```
+
 ## Try it
 
 ```bash

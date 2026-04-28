@@ -11,6 +11,15 @@ notifications go to the recycle bin.
   writes a one-sentence summary with the suggested action
 - Output streams to your terminal and to `gmail_monitor.jsonl`
 
+## Files in this office
+
+```
+gmail_monitor/
+    office.md          ← the org chart: source, agent, sink
+    roles/
+        analyst.md     ← what the agent does, in plain English
+```
+
 ## Try it
 
 ```bash

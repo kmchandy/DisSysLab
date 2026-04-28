@@ -9,13 +9,15 @@ the organization only knows what goes in and what comes out, nothing
 about the agents inside.
 
 This is how large organizations work in the real world. A CEO doesn't
-need to know every employee's job description — just what each department
-accepts and delivers. DSL works the same way.
+need to know every employee's job description — just what each
+department accepts and delivers. DSL works the same way.
 
-This example shows two offices wired together. news_monitor filters
-articles for significance. news_editor routes by topic and rewrites as
-briefing notes. Each was built and tested independently. The network
-connects them without knowing their internals.
+This example shows two offices wired together. `news_monitor` filters
+articles for significance. `news_editor` routes by topic and rewrites
+each article as a briefing note. Each office was built and tested
+independently. The network connects them without knowing their internals.
+
+## What it does
 
 ```
 al_jazeera ─┐
@@ -23,14 +25,78 @@ bbc_world  ─┼→  news_monitor  →  news_editor  →  intelligence_display
 npr_news   ─┘
 ```
 
+- Three RSS feeds stream articles into `news_monitor`
+- `news_monitor` (two agents inside) filters articles for significance
+  and adds context
+- `news_editor` (two agents inside) routes by topic and rewrites as
+  briefing notes
+- Briefings stream to a live display
+
+## Files in this office
+
+```
+org_two_office_news/
+    network.md                       ← the org chart at the network level
+    news_monitor/
+        office.md                    ← news_monitor's org chart
+        roles/
+            correspondent.md         ← what Alex does
+            analyst.md               ← what Morgan does
+    news_editor/
+        office.md                    ← news_editor's org chart
+        roles/
+            editor.md                ← what Jordan does
+            rewriter.md              ← what Riley does
+```
+
+The two sub-offices are themselves valid offices. You can compile and
+run either one on its own. After you run `dsl build` on each
+sub-office, an `app.py` appears alongside its `office.md` — that's the
+compiled output the network loads.
+
+## Try it
+
+> **Note.** Running a network of offices is currently easiest from a
+> cloned dissyslab repository. We are smoothing this for the pip-install
+> experience.
+
+Step 1 — compile each sub-office into a black box:
+
+```bash
+dsl build gallery/org_two_office_news/news_monitor/
+dsl build gallery/org_two_office_news/news_editor/
+```
+
+Step 2 — compile and run the network:
+
+```bash
+python -m dissyslab.office.make_network gallery/org_two_office_news/
+python3 -m gallery.org_two_office_news.app
+```
+
+## Make it yours
+
+**Swap one office for another.** The network only knows that
+`news_monitor` accepts `article_in` and produces `article_out`. You
+could replace `news_monitor` with a completely different office —
+one that filters by geography, by source credibility, or by keyword —
+without changing the network spec or `news_editor` at all.
+
+**Add a third office.** Wire a translation office after `news_editor`,
+or a summary office that batches briefings into a daily digest.
+
+**Build your own offices.** Write new role files, new office specs,
+compile each as a black box, and wire them together in a `network.md`.
+The pattern scales to any number of offices.
+
 ---
 
-## The Flow of Information between Offices
+## The network
 
-This file connects the two offices. It describes sources, sinks,
-and how offices connect to each other — nothing about what happens inside
-each office. In practice, the component offices may come from a library
-built by someone else. Your job is to specify how they connect.
+`network.md` describes sources, sinks, and how offices connect — and
+nothing about what happens inside each office. Component offices may
+even come from a library built by someone else. Your job is to specify
+how they connect.
 
 ```
 # Network: two_office_news
@@ -50,11 +116,9 @@ news_monitor's article_out is news_editor's article_in.
 news_editor's article_out is intelligence_display.
 ```
 
----
-
 ## Inside news_monitor
 
-news_monitor has two agents. Alex decides what's worth reporting.
+`news_monitor` has two agents. Alex decides what's worth reporting.
 Morgan assesses significance and adds context.
 
 ```
@@ -99,7 +163,7 @@ If significance is CRITICAL, HIGH, or MEDIUM, send to output.
 Otherwise send to discard.
 ```
 
-**news_monitor's org chart:**
+**`news_monitor`'s org chart:**
 
 ```
 Inputs: article_in
@@ -119,11 +183,9 @@ Morgan's output is article_out.
 Morgan's discard is discard.
 ```
 
----
-
 ## Inside news_editor
 
-news_editor has two agents. Jordan routes by topic. Riley rewrites
+`news_editor` has two agents. Jordan routes by topic. Riley rewrites
 as a briefing note.
 
 ```
@@ -165,7 +227,7 @@ Preserve the source, url, topic, and significance fields.
 Always send to output.
 ```
 
-**news_editor's org chart:**
+**`news_editor`'s org chart:**
 
 ```
 Inputs: article_in
@@ -183,43 +245,6 @@ Jordan's rewriter is Riley.
 Jordan's discard is discard.
 Riley's output is article_out.
 ```
-
----
-
-## Compile and run
-
-Step 1 — compile each office into a black box:
-
-```bash
-dsl build gallery/org_two_office_news/news_monitor/
-dsl build gallery/org_two_office_news/news_editor/
-```
-
-Step 2 — compile and run the network:
-
-```bash
-python -m dissyslab.office.make_network gallery/org_two_office_news/
-python3 -m gallery.org_two_office_news.app
-```
-
----
-
-## Make it yours
-
-**Swap one office for another.** The network only knows that
-news_monitor accepts `article_in` and produces `article_out`.
-You could replace news_monitor with a completely different office —
-one that filters by geography, or by source credibility, or by keyword —
-without changing the network spec or news_editor at all.
-
-**Add a third office.** Wire a translation office after news_editor,
-or a summary office that batches briefings into a daily digest.
-
-**Build your own offices.** Write new role files, new office specs,
-compile them with `make_office.py`, and wire them together in a
-`network.md`. The pattern scales to any number of offices.
-
----
 
 ## What you built
 

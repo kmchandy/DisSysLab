@@ -1,14 +1,11 @@
 # Situation Room
 
-This example adds live social media streaming to a two-agent pattern.
-BlueSky posts arrive seconds apart — the display updates in real time
-as events unfold.
+A two-agent live news monitor with a streaming social-media source.
+Alex filters BlueSky posts and RSS articles for political and
+economic significance; Morgan rewrites each keeper as a briefing note.
+The display refreshes in real time as new items arrive.
 
-Alex filters for significant political and economic developments.
-Morgan rewrites each keeper as a briefing note. The display shows the
-eight most recent items, refreshing as new ones arrive. Items Alex
-discards are archived to a separate file so you can inspect later
-what got filtered out.
+## What it does
 
 ```
 bluesky    ─┐                            ┌→ intelligence_display (live, 8 items)
@@ -17,8 +14,61 @@ bbc_world  ─┘     │                      └→ briefings.jsonl  (archive)
                   └─discard─→ discards.jsonl (filtered-out items)
 ```
 
-Unlike apps that check for news every few minutes, BlueSky posts arrive
+- BlueSky streams posts continuously; Al Jazeera and BBC World poll
+  every ten minutes
+- Alex (an analyst) decides whether each item is politically or
+  economically significant; the rest go to `discards.jsonl`
+- Morgan (an editor) rewrites each keeper as a briefing note with a
+  significance rating
+- Briefings stream to a live display showing the eight most recent
+  items, and to `briefings.jsonl` for the full archive
+
+Unlike apps that poll for news every few minutes, BlueSky posts arrive
 the moment they are published — seconds apart during breaking events.
+
+## Files in this office
+
+```
+situation_room/
+    office.md              ← the org chart: sources, agents, sinks
+    roles/
+        analyst.md         ← what Alex does, in plain English
+        editor.md          ← what Morgan does, in plain English
+```
+
+A `discards.jsonl` and `briefings.jsonl` appear in the folder once
+you run the office; they hold Alex's discards and Morgan's briefings.
+
+## Try it
+
+```bash
+dsl init org_situation_room my_situation_room
+cd my_situation_room
+dsl run .
+```
+
+The compiler shows you the routing and asks "Does this look right?"
+Say yes and your Situation Room starts. The display refreshes in
+place as new items arrive.
+
+## Make it yours
+
+**Track any topic.** Open `roles/analyst.md` and replace the political
+and economic topics with whatever you follow — a sports team, a
+company, a scientific field, a city:
+
+```
+Your job is to decide if each item is relevant to developments in
+artificial intelligence — new models, research breakthroughs, policy
+debates, or major product launches.
+```
+
+**Change the significance criteria.** Tell Morgan to rate items
+differently — by urgency, by geographic relevance, by potential impact
+on your field.
+
+**Add more sources.** Wire in additional RSS feeds alongside BlueSky.
+The more sources, the more complete your picture.
 
 ---
 
@@ -65,11 +115,13 @@ rating in a field called "significance" and your summary in the
 Send to briefing.
 ```
 
----
-
 ## The org chart
 
+The whole office, in one file:
+
 ```
+# Office: situation_room
+
 Sources: bluesky(max_posts=None, lifetime=None),
          al_jazeera(max_articles=10, poll_interval=600),
          bbc_world(max_articles=10, poll_interval=600)
@@ -89,41 +141,6 @@ Alex's keep is Morgan.
 Alex's discard is jsonl_recorder_discard.
 Morgan's briefing are intelligence_display and jsonl_recorder_briefing.
 ```
-
----
-
-## Run it
-
-```bash
-dsl run gallery/org_situation_room/
-```
-
-The compiler shows you the routing and asks "Does this look right?"
-Say yes and your Situation Room starts. The display refreshes in place
-as new items arrive.
-
----
-
-## Make it yours
-
-**Track any topic.** Open `roles/analyst.md` and replace the political
-and economic topics with whatever you follow — a sports team, a company,
-a scientific field, a city:
-
-```
-Your job is to decide if each item is relevant to developments in
-artificial intelligence — new models, research breakthroughs, policy
-debates, or major product launches.
-```
-
-**Change the significance criteria.** Tell Morgan to rate items
-differently — by urgency, by geographic relevance, by potential impact
-on your field.
-
-**Add more sources.** Wire in additional RSS feeds alongside BlueSky.
-The more sources, the more complete your picture.
-
----
 
 ## What you built
 
