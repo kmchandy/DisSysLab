@@ -70,8 +70,8 @@ def _packaged_gallery() -> Path:
 def _one_line_description(office_dir: Path) -> str:
     """Find a short one-line description for an office, or '' if none.
 
-    Prefer README.md over office.md: README.md is meant to be human-facing,
-    while office.md starts with the `Sources:` block that the compiler reads.
+    Returns the first non-blank, non-heading line of README.md (or
+    office.md as a fallback) that is not the `**Tags:**` line.
     """
     for candidate in ("README.md", "office.md"):
         f = office_dir / candidate
@@ -80,11 +80,81 @@ def _one_line_description(office_dir: Path) -> str:
         try:
             for line in f.read_text(encoding="utf-8").splitlines():
                 s = line.strip()
-                if s and not s.startswith("#"):
-                    return s[:80]
+                if not s:
+                    continue
+                if s.startswith("#"):
+                    continue
+                if s.startswith("**Tags:**"):
+                    continue
+                # Strip simple markdown bold markers so the terminal
+                # output reads naturally — e.g. `**Foo.**` → `Foo.`.
+                cleaned = s.replace("**", "")
+                return cleaned[:80]
         except OSError:
             continue
     return ""
+
+
+def _read_tags(office_dir: Path) -> list[str]:
+    """Read the `**Tags:**` line from an office's README.md.
+
+    Convention (see dev/PATH_A_FRICTION_SEQUENCE.md, item #34): every
+    gallery office has a single line of the form
+
+        **Tags:** tag1, tag2, tag3
+
+    just under the lead paragraph. Returns the tags in declared order
+    with whitespace stripped, or [] if the line is absent.
+    """
+    f = office_dir / "README.md"
+    if not f.is_file():
+        return []
+    try:
+        for line in f.read_text(encoding="utf-8").splitlines():
+            s = line.strip()
+            if s.startswith("**Tags:**"):
+                rest = s[len("**Tags:**"):].strip()
+                return [t.strip() for t in rest.split(",") if t.strip()]
+    except OSError:
+        return []
+    return []
+
+
+# Curriculum-ordered concept groups for `dsl list`. Each office's
+# group is determined by which concept tag it carries, scanned in the
+# order below; the first match wins. (`starter` outranks
+# `single-agent` so my_first_office lands under "Starter" rather
+# than alongside the polling monitors.)
+_CONCEPT_GROUPS: list[tuple[str, str]] = [
+    ("starter", "Starter"),
+    ("single-agent", "Single-agent monitors"),
+    ("filter", "One-agent filter"),
+    ("handoff", "Two-agent handoff"),
+    ("feedback-loop", "Two-agent feedback loop"),
+    ("live-stream", "Live streaming"),
+    ("network-of-offices", "Networks of offices"),
+]
+_FALLBACK_GROUP = "Other"
+
+
+def _group_for(tags: list[str]) -> str:
+    """Return the curriculum group label for an office's tags.
+
+    Priority is *most-specific concept wins* — `starter` outranks
+    `single-agent`, `live-stream` outranks `two-agent`, etc. The
+    priority order is encoded in `_CONCEPT_GROUPS`.
+    """
+    # `starter` is the only tag that should outrank `single-agent`.
+    # Otherwise prefer the most specific concept tag the office carries.
+    if "starter" in tags:
+        return dict(_CONCEPT_GROUPS)["starter"]
+    # Walk priority order in reverse so more-specific concepts win.
+    for tag, label in reversed(_CONCEPT_GROUPS):
+        if tag == "starter":
+            continue
+        if tag in tags:
+            return label
+    return _FALLBACK_GROUP
 
 
 # ── Subcommand: run ───────────────────────────────────────────────────────────
@@ -254,7 +324,13 @@ def cmd_build(args: argparse.Namespace) -> int:
 # ── Subcommand: list ──────────────────────────────────────────────────────────
 
 def cmd_list(args: argparse.Namespace) -> int:
-    """List the gallery offices that ship with the installed dissyslab."""
+    """List the gallery offices that ship with the installed dissyslab.
+
+    Output is grouped by curriculum concept (Starter → Single-agent
+    monitors → … → Networks of offices) so a student can find an
+    example by the question they're asking ("where's the simple
+    one?") rather than by alphabetical name.
+    """
     gallery = _packaged_gallery()
     if not gallery.is_dir():
         _eprint(
@@ -274,14 +350,44 @@ def cmd_list(args: argparse.Namespace) -> int:
         print("(no offices found — this dissyslab install may be incomplete)")
         return 0
 
+    # Bucket offices by curriculum group. Within a group, sort
+    # alphabetically by folder name.
+    buckets: dict[str, list[Path]] = {}
+    office_tags: dict[str, list[str]] = {}
+    for p in offices:
+        tags = _read_tags(p)
+        office_tags[p.name] = tags
+        buckets.setdefault(_group_for(tags), []).append(p)
+
+    # Print groups in curriculum order. Any group not in the
+    # curriculum (the `_FALLBACK_GROUP`) prints last.
+    group_order = [label for _, label in _CONCEPT_GROUPS]
+    if _FALLBACK_GROUP in buckets:
+        group_order.append(_FALLBACK_GROUP)
+
+    name_width = max(len(p.name) for p in offices)
+
     print("Offices shipped with dissyslab:")
     print()
-    name_width = max(len(p.name) for p in offices)
-    for p in offices:
-        hint = _one_line_description(p)
-        hint_part = f"  {hint}" if hint else ""
-        print(f"  {p.name:<{name_width}}{hint_part}")
-    print()
+    for group_label in group_order:
+        group = buckets.get(group_label)
+        if not group:
+            continue
+        print(f"  {group_label}")
+        for p in group:
+            hint = _one_line_description(p)
+            tags = office_tags[p.name]
+            tag_str = " ".join(f"[{t}]" for t in tags) if tags else ""
+            line1 = f"    {p.name:<{name_width}}"
+            if hint:
+                line1 += f"  {hint}"
+            print(line1)
+            if tag_str:
+                # Indent tags under the office name for scannability.
+                pad = " " * (4 + name_width + 2)
+                print(f"{pad}{tag_str}")
+        print()
+
     print("To copy an office into your own folder:")
     print("  dsl init <office_name> <folder>")
     return 0

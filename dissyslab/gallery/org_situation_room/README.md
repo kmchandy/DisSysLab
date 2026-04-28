@@ -5,6 +5,8 @@ Alex filters BlueSky posts and RSS articles for political and
 economic significance; Morgan rewrites each keeper as a briefing note.
 The display refreshes in real time as new items arrive.
 
+**Tags:** bluesky, rss, two-agent, live-stream
+
 ## What it does
 
 ```

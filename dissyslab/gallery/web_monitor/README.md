@@ -3,6 +3,8 @@
 Watches a web page for new content and summarizes anything newsworthy —
 announcements, product launches, research findings, or significant updates.
 
+**Tags:** web, single-agent, poll
+
 ## What it does
 
 - Polls a URL every five minutes for the latest items on the page

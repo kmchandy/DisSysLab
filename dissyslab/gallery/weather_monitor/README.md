@@ -4,6 +4,8 @@ Monitors the weather in a city you choose and delivers a short briefing
 every hour with practical advice — bring an umbrella, dress warmly, enjoy
 the sunshine.
 
+**Tags:** weather, single-agent, poll
+
 ## What it does
 
 - Polls an open weather service once an hour for current conditions

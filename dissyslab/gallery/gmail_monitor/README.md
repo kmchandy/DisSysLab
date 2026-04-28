@@ -4,6 +4,8 @@ Monitors your Gmail inbox for important emails and summarizes each one
 that needs your attention. Newsletters, promotions, and automated
 notifications go to the recycle bin.
 
+**Tags:** gmail, single-agent, poll
+
 ## What it does
 
 - Polls your inbox every minute for unread messages

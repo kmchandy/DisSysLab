@@ -17,6 +17,8 @@ articles for significance. `news_editor` routes by topic and rewrites
 each article as a briefing note. Each office was built and tested
 independently. The network connects them without knowing their internals.
 
+**Tags:** rss, network-of-offices
+
 ## What it does
 
 ```

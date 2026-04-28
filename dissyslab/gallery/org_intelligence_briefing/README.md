@@ -4,6 +4,8 @@ A two-agent office where work flows from one agent to the next.
 Alex screens articles for significance; only the significant ones
 reach Morgan, who rewrites each as a crisp briefing note.
 
+**Tags:** rss, two-agent, handoff
+
 ## What it does
 
 ```

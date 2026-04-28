@@ -4,6 +4,8 @@ Monitors a stock ticker's price and delivers one-sentence updates on
 whether it's rising, falling, or holding steady — with commentary about
 whether any action is warranted.
 
+**Tags:** stocks, single-agent, poll
+
 ## What it does
 
 - Polls a live price feed every five minutes for the ticker you choose

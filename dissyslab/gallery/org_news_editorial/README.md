@@ -6,6 +6,8 @@ Anna pushes the sentiment further, sends it back, and Susan scores
 again. After three passes, or once the sentiment is strong enough,
 Susan archives the article.
 
+**Tags:** rss, two-agent, feedback-loop
+
 ## What it does
 
 ```

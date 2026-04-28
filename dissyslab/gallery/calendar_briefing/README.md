@@ -3,6 +3,8 @@
 Monitors your calendar for upcoming events over the next week and delivers
 a short briefing about what's on your plate.
 
+**Tags:** calendar, single-agent, poll
+
 ## What it does
 
 - Polls your calendar every five minutes for events in the next 7 days

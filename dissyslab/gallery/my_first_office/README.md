@@ -3,6 +3,8 @@
 Your starter office. It watches Hacker News and writes a one-sentence
 briefing for each story to your console.
 
+**Tags:** hackernews, single-agent, starter
+
 ## What it does
 
 ```

@@ -4,6 +4,8 @@ The simplest possible office — a single agent named Felix who sorts
 incoming articles. Articles about the Americas go to the console;
 everything else goes to a file and is dropped from the live display.
 
+**Tags:** rss, single-agent, filter
+
 ## What it does
 
 ```
