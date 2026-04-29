@@ -1,6 +1,6 @@
 # Office: news_editorial
 
-Sources: al_jazeera(max_articles=1), bbc_world(max_articles=1)
+Sources: al_jazeera(max_articles=1), bbc_world(max_articles=1), npr_news(max_articles=1)
 Sinks: jsonl_recorder(path="editorial_output.jsonl"), console_printer
 
 Agents:
