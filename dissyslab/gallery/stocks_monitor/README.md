@@ -36,3 +36,5 @@ dsl run .
 - Rewrite the analyst in `roles/analyst.md` to focus on specific signals
   (moving averages, volatility, volume spikes)
 - Add a second agent that tracks multiple tickers and compares them
+- See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+  for the full list of sources and sinks you can swap in

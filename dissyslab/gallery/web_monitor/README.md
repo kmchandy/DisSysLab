@@ -37,3 +37,5 @@ dsl run .
   types (security advisories, release notes, price changes)
 - Add a second agent that deduplicates repeated items or tracks a list
   of pages in parallel
+- See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+  for the full list of sources and sinks you can swap in

@@ -76,6 +76,9 @@ Preserve the key facts but use simple words and short sentences.
 **Adjust the rewrite limit.** Change `rewrites < 3` in Susan's role
 to allow more or fewer passes before archiving.
 
+**More to swap in.** See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+for the full list of sources and sinks shipped with the framework.
+
 ---
 
 ## The roles

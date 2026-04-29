@@ -109,6 +109,13 @@ config/secrets/
 student_work/
 my_projects/
 
+# Scratch dirs created when running recipe examples (e.g.
+# `dsl init org_news_filter my_filter`).
+my_filter/
+my_feed/
+my_office/
+my_briefing/
+
 for_instructors/
 
 # Example outputs

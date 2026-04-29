@@ -72,6 +72,9 @@ on your field.
 **Add more sources.** Wire in additional RSS feeds alongside BlueSky.
 The more sources, the more complete your picture.
 
+**More to swap in.** See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+for the full list of sources and sinks shipped with the framework.
+
 ---
 
 ## The roles

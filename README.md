@@ -274,6 +274,7 @@ reusing offices across networks.
 - Walk through the [5-minute micro-course](https://kmchandy.github.io/DisSysLab/office_microcourse.html)
 - Browse every shipped office with `dsl list`
 - Read the office-by-office tour in [`dissyslab/gallery/README.md`](dissyslab/gallery/README.md)
+- Browse every source and sink in [`docs/SOURCES_AND_SINKS.md`](docs/SOURCES_AND_SINKS.md)
 
 ---
 

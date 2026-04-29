@@ -64,6 +64,17 @@ send it to a second agent that summarizes it, rates its significance,
 or translates it. That's the next example —
 [Intelligence Briefing](../org_intelligence_briefing/).
 
+**More to swap in.** See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+for the full list of sources and sinks shipped with the framework.
+
+**Recipes.**
+
+- [How to filter for a topic](https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/filter-for-a-topic.md)
+  — walks through this office's pattern step by step.
+- [How to send messages to the outside world](https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/send-messages-outside.md)
+  — uses this office's `console_printer` + `jsonl_recorder` pair
+  as the starting point.
+
 ---
 
 ## The role

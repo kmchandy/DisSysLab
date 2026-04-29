@@ -38,3 +38,5 @@ dsl run .
   "important" — work emails only, urgent threads, replies from specific
   people
 - Add a second agent that drafts replies for emails that need one
+- See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+  for the full list of sources and sinks you can swap in

@@ -87,6 +87,13 @@ time:
 python3 app.py
 ```
 
+**More to swap in.** See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+for the full list of sources and sinks shipped with the framework.
+
+**Recipe.** [How to add a new RSS source](https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/add-an-rss-source.md)
+walks through swapping the shipped feed for another one, or
+registering a brand-new feed by name.
+
 ---
 
 ## The role

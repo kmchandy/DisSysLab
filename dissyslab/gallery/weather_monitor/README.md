@@ -36,3 +36,5 @@ dsl run .
   poetic, sarcastic; your call
 - Add a second agent that reacts to the briefing (SMS, email, desktop
   notification)
+- See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+  for the full list of sources and sinks you can swap in

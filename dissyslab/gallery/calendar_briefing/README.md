@@ -34,3 +34,5 @@ dsl run .
 - Rewrite the analyst in `roles/analyst.md` to focus on particular kinds of
   events (meetings only, deadlines, social events)
 - Add a second agent that flags conflicts, double-bookings, or gaps
+- See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+  for the full list of sources and sinks you can swap in
