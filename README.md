@@ -269,12 +269,27 @@ the surrounding network sees only what flows in and what flows out.
 You build organizations of arbitrary complexity one office at a time,
 reusing offices across networks.
 
-### Next steps for Path A
+### Documentation
 
-- Walk through the [5-minute micro-course](https://kmchandy.github.io/DisSysLab/office_microcourse.html)
-- Browse every shipped office with `dsl list`
-- Read the office-by-office tour in [`dissyslab/gallery/README.md`](dissyslab/gallery/README.md)
-- Browse every source and sink in [`docs/SOURCES_AND_SINKS.md`](docs/SOURCES_AND_SINKS.md)
+- **5-minute micro-course** — [watch first](https://kmchandy.github.io/DisSysLab/office_microcourse.html)
+  to see what an office looks like before you install.
+- **Recipes** — copy-pasteable patterns:
+  [filter for a topic](docs/recipes/filter-for-a-topic.md),
+  [monitor your inbox](docs/recipes/monitor-your-inbox.md),
+  [receive webhooks](docs/recipes/receive-webhooks.md),
+  [chain offices](docs/recipes/chain-offices.md),
+  [send messages to email/Slack/files](docs/recipes/send-messages-outside.md),
+  [write a custom role](docs/recipes/write-a-custom-role.md), and
+  [more](docs/recipes/).
+- **Sources and sinks reference** — [docs/SOURCES_AND_SINKS.md](docs/SOURCES_AND_SINKS.md)
+  lists every component the framework ships with, with arguments and
+  setup instructions.
+- **Use a different LLM** (OpenAI, Gemini, Ollama, a local SLM) —
+  [docs/ADD_A_BACKEND.md](docs/ADD_A_BACKEND.md) walks through the
+  `DSL_BACKEND_MODULE` extension hook.
+- **Browse offices** — `dsl list` from the terminal, or the
+  [gallery README](dissyslab/gallery/README.md).
+- **Full docs index** — [docs/README.md](docs/README.md).
 
 ---
 
