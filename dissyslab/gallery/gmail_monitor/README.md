@@ -40,3 +40,8 @@ dsl run .
 - Add a second agent that drafts replies for emails that need one
 - See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
   for the full list of sources and sinks you can swap in
+
+**Recipe.** [How to monitor your inbox](https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/monitor-your-inbox.md)
+walks through the Gmail app-password setup and shows how to swap
+the analyst's criteria for "only meeting requests" or "only my
+advisor".

@@ -1,186 +1,199 @@
 # dissyslab/components/sinks/webhook_sink.py
-
 """
-Webhook - Send HTTP POST requests to webhook URLs
+Webhook Sink — POST each message to an arbitrary HTTP endpoint.
 
-This is the REAL version that sends actual HTTP requests.
-Same interface as demo_webhook.py - easy to swap!
+The general-purpose outbound webhook. Use it to forward messages
+to any HTTP service that accepts JSON POSTs — Discord, Zapier,
+Make, your own server, an inbound `webhook` source in another
+DisSysLab office, anything.
 
-Compare with demo_webhook.py to see the demo → real pattern.
+For Slack specifically, prefer the `slack_sink` — it knows how to
+format `subject` as a bold first line and `url` as an unfurled
+link. `webhook_sink` is the unopinionated fallback.
+
+Setup (one time):
+    Option A — env var (recommended):
+        export WEBHOOK_URL='https://example.com/incoming'
+
+    Option B — pass url= directly in office.md (fine for
+    non-secret URLs).
+
+Example office.md:
+    Sinks: webhook_sink                       # reads WEBHOOK_URL
+    Sinks: webhook_sink(url="http://localhost:8000/webhook")
+    Sinks: webhook_sink(webhook_url_env="ZAPIER_HOOK_URL")
+
+Example Python:
+    from dissyslab.components.sinks.webhook_sink import WebhookSink
+    from dissyslab.blocks import Sink
+
+    sink = WebhookSink(url="http://localhost:8000/webhook")
+    node = Sink(fn=sink.run, name="webhook_out")
 """
 
-import json
+import os
 import time
 
+import requests
 
-class Webhook:
+
+class WebhookSink:
     """
-    Send HTTP POST requests to webhook URLs.
+    POST each DisSysLab message to an HTTP endpoint as JSON.
 
-    Same interface as DemoWebhook - just change the import!
+    The URL can be supplied in three ways, in priority order:
+        1. `url=` constructor argument (explicit)
+        2. `webhook_url_env=` — name of an env var holding the URL
+        3. neither set → reads default env var `WEBHOOK_URL`
+
+    The full message dict is sent as the JSON body. If the message
+    is not a dict, it's wrapped as `{"data": str(msg)}`.
 
     Args:
-        url: Webhook URL to POST to
-        headers: Optional HTTP headers dict
-        timeout: Request timeout in seconds (default: 10)
-        retry_count: Number of retries on failure (default: 3)
-        retry_delay: Seconds between retries (default: 1)
-
-    Common Use Cases:
-        Slack: url="https://hooks.slack.com/services/..."
-        Discord: url="https://discord.com/api/webhooks/..."
-        Zapier: url="https://hooks.zapier.com/hooks/catch/..."
-        Custom: Any HTTP endpoint
-
-    Example:
-        >>> from dissyslab.components.sinks.webhook_sink import Webhook
-        >>> webhook = Webhook(
-        ...     url="https://hooks.slack.com/services/YOUR/WEBHOOK/URL"
-        ... )
-        >>> webhook.run({"text": "Hello from DisSysLab!"})
-        >>> webhook.finalize()
+        url:              Target URL. Overrides any env var.
+        webhook_url_env:  Env var holding the URL (default:
+                          `WEBHOOK_URL` when no explicit url is
+                          given). Use this when you want to keep
+                          URLs out of `office.md`.
+        headers:          Optional dict of HTTP headers. Defaults
+                          to `{"Content-Type": "application/json"}`.
+        timeout:          Per-request timeout in seconds (default 10).
+        retry_count:      Retries on failure (default 3).
+        retry_delay:      Base seconds between retries; grows
+                          linearly with attempt (default 1).
     """
 
     def __init__(
         self,
-        url,
-        headers=None,
-        timeout=10,
-        retry_count=3,
-        retry_delay=1
+        url: str = None,
+        webhook_url_env: str = None,
+        headers: dict = None,
+        timeout: float = 10.0,
+        retry_count: int = 3,
+        retry_delay: float = 1.0,
     ):
-        """
-        Initialize webhook.
+        # Resolve the URL with explicit > named env var > default env var.
+        if url is not None:
+            self.url = url
+            self.url_source = "url= argument"
+        elif webhook_url_env is not None:
+            self.url = os.environ.get(webhook_url_env)
+            self.url_source = f"env var {webhook_url_env}"
+            if not self.url:
+                raise ValueError(
+                    f"Webhook URL not found.\n"
+                    f"Set environment variable:\n"
+                    f"  export {webhook_url_env}='https://example.com/incoming'\n"
+                    f"or pass url= directly in office.md."
+                )
+        else:
+            self.url = os.environ.get("WEBHOOK_URL")
+            self.url_source = "env var WEBHOOK_URL"
+            if not self.url:
+                raise ValueError(
+                    "Webhook URL not found.\n"
+                    "Set the default environment variable:\n"
+                    "  export WEBHOOK_URL='https://example.com/incoming'\n"
+                    "or pass url= directly in office.md, or pass\n"
+                    "webhook_url_env= to point at a different env var."
+                )
 
-        Args:
-            url: Webhook URL to POST to
-            headers: Optional HTTP headers dict
-            timeout: Request timeout in seconds (default: 10)
-            retry_count: Number of retries on failure (default: 3)
-            retry_delay: Seconds between retries (default: 1)
-        """
-        # Import here so demo version doesn't need the library
-        try:
-            import requests
-            self.requests = requests
-        except ImportError:
-            raise ImportError(
-                "Webhook requires 'requests' library.\n"
-                "Install it with: pip install requests"
+        if not self.url.startswith(("http://", "https://")):
+            raise ValueError(
+                f"Webhook URL must start with http:// or https:// — got {self.url!r}"
             )
 
-        self.url = url
         self.headers = headers or {"Content-Type": "application/json"}
         self.timeout = timeout
-        self.retry_count = retry_count
-        self.retry_delay = retry_delay
-        self.post_count = 0
-        self.success_count = 0
-        self.failure_count = 0
+        self.retry_count = max(1, int(retry_count))
+        self.retry_delay = float(retry_delay)
 
-        # Validate URL
-        if not url.startswith("http"):
-            raise ValueError(f"Invalid webhook URL: {url}")
+        self.posts_sent = 0
+        self.posts_failed = 0
 
-        print(f"[Webhook] Configured for: {url}")
-
-    def run(self, item):
+    def run(self, msg):
         """
-        Send HTTP POST to webhook.
-
-        Args:
-            item: Dict or any object to POST
+        Called by DisSysLab for each incoming message.
+        POSTs the message as JSON, retries on transient failures.
+        Never raises — errors are printed and counted.
         """
-        # Convert item to JSON payload
-        if isinstance(item, dict):
-            payload = item
-        else:
-            payload = {"data": str(item)}
+        payload = msg if isinstance(msg, dict) else {"data": str(msg)}
 
-        # Send with retries
         for attempt in range(self.retry_count):
             try:
-                response = self.requests.post(
+                response = requests.post(
                     self.url,
                     json=payload,
                     headers=self.headers,
-                    timeout=self.timeout
+                    timeout=self.timeout,
                 )
-
-                # Check response
-                if response.status_code in [200, 201, 202, 204]:
-                    self.post_count += 1
-                    self.success_count += 1
+                if 200 <= response.status_code < 300:
+                    self.posts_sent += 1
                     print(
-                        f"[Webhook] POST #{self.post_count}: Success ({response.status_code})")
-                    return  # Success!
-                else:
-                    print(
-                        f"[Webhook] POST failed: {response.status_code} {response.text[:100]}")
-
-            except self.requests.exceptions.Timeout:
+                        f"[WebhookSink] POST #{self.posts_sent} → "
+                        f"{response.status_code}"
+                    )
+                    return
+                # Non-2xx is treated as a soft failure; retry.
                 print(
-                    f"[Webhook] Timeout (attempt {attempt + 1}/{self.retry_count})")
-
-            except self.requests.exceptions.ConnectionError as e:
-                print(f"[Webhook] Connection error: {e}")
-
+                    f"[WebhookSink] {response.status_code} from {self.url}: "
+                    f"{response.text[:200]}"
+                )
+            except requests.exceptions.Timeout:
+                print(
+                    f"[WebhookSink] Timeout "
+                    f"(attempt {attempt + 1}/{self.retry_count})"
+                )
+            except requests.exceptions.ConnectionError as e:
+                print(f"[WebhookSink] Connection error: {e}")
             except Exception as e:
-                print(f"[Webhook] Unexpected error: {e}")
+                print(f"[WebhookSink] Unexpected error: {e}")
 
-            # Retry with backoff
+            # Linear backoff before the next attempt.
             if attempt < self.retry_count - 1:
                 delay = self.retry_delay * (attempt + 1)
-                print(f"[Webhook] Retrying in {delay}s...")
                 time.sleep(delay)
 
-        # All retries failed
-        self.failure_count += 1
-        print(f"[Webhook] POST failed after {self.retry_count} attempts")
+        self.posts_failed += 1
+        print(f"[WebhookSink] POST failed after {self.retry_count} attempts")
 
     def finalize(self):
-        """Report summary."""
-        print(f"\n[Webhook] Summary:")
-        print(f"  Total POSTs: {self.post_count}")
-        print(f"  Successful: {self.success_count}")
-        print(f"  Failed: {self.failure_count}")
+        """
+        Back-compat no-op. The runtime never calls finalize() on
+        sinks; older example code (examples/module_17_build_apps)
+        used to call it manually. Kept so those scripts don't
+        AttributeError.
+        """
+        print(
+            f"[WebhookSink] sent={self.posts_sent} failed={self.posts_failed}"
+        )
 
 
-# Test when run directly
+# Back-compat alias for older code that imported the class as `Webhook`.
+# The constructor signature is compatible (url= still works), and
+# WebhookSink also exposes finalize() as a no-op for the same reason.
+Webhook = WebhookSink
+
+
+# ── Test when run directly ────────────────────────────────────────────────────
+
 if __name__ == "__main__":
-    import os
-    import sys
-
-    print("Webhook - Test")
+    print("WebhookSink — Test")
     print("=" * 60)
-
-    # Check for webhook URL
-    webhook_url = os.environ.get("WEBHOOK_URL")
-
-    if not webhook_url:
-        print("\n⚠️  Webhook URL not found in environment")
-        print("\nTo test this, set environment variable:")
-        print("  export WEBHOOK_URL='https://hooks.slack.com/services/...'")
-        print("\nOr edit this file and add URL here for testing.")
-        print("\nSee API_SETUP.md for Slack webhook setup instructions.")
-        sys.exit(0)
-
-    # Test: Send message
-    print("\nTest: Sending webhook POST")
+    print("Requires: WEBHOOK_URL env var (or pass url= directly)")
     print("-" * 60)
 
-    try:
-        webhook = Webhook(url=webhook_url)
+    sink = WebhookSink()  # uses WEBHOOK_URL
 
-        webhook.run({
-            "text": "🎉 Test message from DisSysLab webhook sink!"
-        })
+    sink.run({
+        "source":    "test",
+        "title":     "DisSysLab WebhookSink test",
+        "text":      "If you see this, the sink works.",
+        "url":       "https://github.com/kmchandy/DisSysLab",
+        "timestamp": "",
+    })
 
-        webhook.finalize()
-
-        print("\n" + "=" * 60)
-        print("✓ Webhook works! Check your Slack/Discord channel.")
-
-    except Exception as e:
-        print(f"\n✗ Error: {e}")
-        print("\nCheck API_SETUP.md for troubleshooting.")
+    print(
+        f"✓ Test complete. "
+        f"sent={sink.posts_sent} failed={sink.posts_failed}"
+    )

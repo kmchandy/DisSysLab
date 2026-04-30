@@ -26,6 +26,12 @@ one office.
 - **[How to send messages to the outside world](send-messages-outside.md)**
   — route an agent's mailbox to a file, the terminal, your inbox,
   or a chat channel: how an office acts on the world.
+- **[How to monitor your inbox](monitor-your-inbox.md)** — point an
+  office at your Gmail inbox and let an analyst surface only the
+  emails that matter.
+- **[How to receive webhooks](receive-webhooks.md)** — listen for
+  HTTP POSTs from another service (GitHub, Stripe, Zapier, another
+  office) and let an agent decide what to do with each one.
 
 ## Related references
 

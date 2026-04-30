@@ -264,6 +264,54 @@ def _explain_failure_message(command: str, exc: BaseException) -> str:
             f"  If this is .env, see API_KEY_SETUP.md."
         )
 
+    # Port-in-use from the webhook source (or any other socket-binding
+    # source). Students who Ctrl+C the listener and immediately re-run
+    # hit this constantly because the OS keeps the socket in TIME_WAIT.
+    if isinstance(exc, OSError) and (
+        "address already in use" in lower
+        or getattr(exc, "errno", None) in {48, 98}  # macOS, Linux
+    ):
+        return (
+            f"{command} failed: a port is already in use ({msg}).\n"
+            f"  Fix: another process is bound to that port.\n"
+            f"       - Wait ~30s if you just stopped the listener (TIME_WAIT).\n"
+            f"       - Or pick a different port in office.md, e.g.\n"
+            f"           Sources: webhook(port=9000)"
+        )
+
+    # Gmail IMAP authentication failure — almost always the student
+    # passed their real Google password instead of an app password,
+    # or 2-Step Verification isn't on yet.
+    if (
+        "imap" in lower
+        or "authenticationfailed" in lower.replace(" ", "")
+        or "application-specific password required" in lower
+    ) and (
+        "auth" in lower or "login" in lower or "password" in lower
+    ):
+        return (
+            f"{command} failed: Gmail rejected the login.\n"
+            f"  Fix: Gmail requires an *app password*, not your normal password.\n"
+            f"       1. myaccount.google.com → Security → 2-Step Verification (on)\n"
+            f"       2. Same page → App passwords → generate one for 'Mail'\n"
+            f"       3. export GMAIL_APP_PASSWORD='<the 16-char password>'"
+        )
+
+    # Missing-credential ValueErrors raised from a source/sink __init__.
+    # The message itself is already actionable (each component prints
+    # the env-var name and a sample export); we just want to strip the
+    # traceback so it's the first thing the student sees.
+    if isinstance(exc, ValueError) and (
+        "credentials not found" in lower
+        or "webhook url not found" in lower
+        or "slack webhook url" in lower
+        or ("environment variable" in lower and "not" in lower)
+    ):
+        # Indent the multi-line ValueError message so it reads as a block
+        # under the "Fix:" header without re-wrapping it.
+        body = "\n".join(f"  {line}" for line in msg.splitlines())
+        return f"{command} failed: missing credentials.\n{body}"
+
     # Fall-through: unknown exception. Always show the type name (so the
     # message is non-empty even when str(exc) is empty), plus the full
     # traceback. The traceback is the most useful thing for debugging an
@@ -591,6 +639,15 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     env_advice = _env_file_advice(env_status) if env_status not in ("ok", "absent") else []
 
     print()
+    print("Backend:")
+    active = os.environ.get("DSL_BACKEND", "anthropic")
+    bmod   = os.environ.get("DSL_BACKEND_MODULE")
+    print(f"  active: {active}"
+          + ("  (default)" if active == "anthropic" and not bmod else ""))
+    if bmod:
+        print(f"  DSL_BACKEND_MODULE: {bmod}")
+
+    print()
     print("Credentials:")
     key = os.environ.get("ANTHROPIC_API_KEY", "")
     if key:
@@ -612,11 +669,39 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         for line in env_advice:
             print(f"  {line}")
 
+    # Optional integration credentials. These are not required for `dsl
+    # run` to work in general — they're only needed by specific
+    # sources/sinks (gmail_source, slack_sink, webhook_sink). We print
+    # them so a student running `dsl doctor` can see at a glance which
+    # integrations are wired up. Never a failure, just an "info" line.
+    print()
+    print("Optional integrations (only needed by specific sinks/sources):")
+    optional_creds: list[tuple[str, str]] = [
+        ("GMAIL_USER",          "gmail_source: email address to read from"),
+        ("GMAIL_APP_PASSWORD",  "gmail_source / gmail_sink: 16-char app password"),
+        ("SLACK_WEBHOOK_URL",   "slack_sink: Incoming Webhook URL"),
+        ("WEBHOOK_URL",         "webhook_sink: outbound POST target"),
+    ]
+    for name, what in optional_creds:
+        val = os.environ.get(name, "")
+        if val:
+            # For URL-shaped secrets, show only the host so we never
+            # leak the secret token in the path.
+            if val.startswith(("http://", "https://")):
+                from urllib.parse import urlparse
+                host = urlparse(val).hostname or "(unparseable)"
+                detail = f"set ({host})"
+            else:
+                detail = f"set (len {len(val)})"
+            print(f"  [SET ] {name}: {detail}")
+        else:
+            print(f"  [    ] {name}: not set — {what}")
+
     print()
     if ok:
-        print("All checks passed.")
+        print("All required checks passed.")
         return 0
-    print("One or more checks failed. See above.")
+    print("One or more required checks failed. See above.")
     return 1
 
 
@@ -684,6 +769,24 @@ def main(argv: list[str] | None = None) -> int:
         load_dotenv()
     except ImportError:
         pass
+
+    # Optional backend registration hook. Set DSL_BACKEND_MODULE to an
+    # import path (e.g. "my_backends" or "my_app.backends") and we
+    # import it before any subcommand runs. The module's import-time
+    # side effect can call `register_backend()` to make a custom LLM
+    # available, after which `DSL_BACKEND=my-name dsl run ...` works
+    # without forking dissyslab. See docs/ADD_A_BACKEND.md.
+    backend_module = os.environ.get("DSL_BACKEND_MODULE")
+    if backend_module:
+        try:
+            importlib.import_module(backend_module)
+        except Exception as exc:  # noqa: BLE001
+            _eprint(
+                f"Warning: DSL_BACKEND_MODULE={backend_module!r} failed to "
+                f"import ({exc.__class__.__name__}: {exc}).\n"
+                f"  Continuing with the default backend. See "
+                f"docs/ADD_A_BACKEND.md for the registration pattern."
+            )
 
     parser = build_parser()
     args = parser.parse_args(argv)

@@ -280,6 +280,13 @@ SOURCE_REGISTRY = {
         "import": "from dissyslab.components.sources.calendar_source import CalendarSource",
         "class":  "CalendarSource",
     },
+
+    # ── HTTP webhook listener (push-style source) ─────────────────────────────
+    "webhook": {
+        "type":   "webhook",
+        "import": "from dissyslab.components.sources.webhook_source import WebhookSource",
+        "class":  "WebhookSource",
+    },
 }
 
 
@@ -374,6 +381,42 @@ SINK_REGISTRY = {
     "gmail_sink": {
         "import": "from dissyslab.components.sinks.gmail_sink import GmailSink",
         "class":  "GmailSink",
+        "args":   "named",
+        "call":   "run",
+    },
+    "slack_sink": {
+        "import": "from dissyslab.components.sinks.slack_sink import SlackSink",
+        "class":  "SlackSink",
+        "args":   "named",
+        "call":   "run",
+    },
+    # Aliases that allow multiple SlackSink instances in one office,
+    # one per channel. Each alias creates a distinct sink instance
+    # sharing the same underlying class. Matches the jsonl_recorder_*
+    # convention. Each alias should be paired with its own
+    # webhook_url_env argument (or the same env var if you want both
+    # to point at one channel).
+    "slack_sink_alerts": {
+        "import": "from dissyslab.components.sinks.slack_sink import SlackSink",
+        "class":  "SlackSink",
+        "args":   "named",
+        "call":   "run",
+    },
+    "slack_sink_briefing": {
+        "import": "from dissyslab.components.sinks.slack_sink import SlackSink",
+        "class":  "SlackSink",
+        "args":   "named",
+        "call":   "run",
+    },
+    "slack_sink_archive": {
+        "import": "from dissyslab.components.sinks.slack_sink import SlackSink",
+        "class":  "SlackSink",
+        "args":   "named",
+        "call":   "run",
+    },
+    "webhook_sink": {
+        "import": "from dissyslab.components.sinks.webhook_sink import WebhookSink",
+        "class":  "WebhookSink",
         "args":   "named",
         "call":   "run",
     },

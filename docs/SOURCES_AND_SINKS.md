@@ -163,7 +163,9 @@ Sources: search(query="AI policy", poll_interval=900)
 
 ### `gmail` — your Gmail inbox (credentialed)
 
-Polls Gmail via IMAP using a Gmail **app password** (not OAuth).
+Polls Gmail using a Gmail **app password** (not OAuth) — a
+16-character string you generate once in your Google account
+settings. No Google Cloud project, nothing else to configure.
 
 **Arguments:**
 - `poll_interval` *(int seconds, default `60`)*.
@@ -185,6 +187,28 @@ Polls Gmail via IMAP using a Gmail **app password** (not OAuth).
 ```
 Sources: gmail(poll_interval=60, unread_only=True)
 ```
+
+**Each message yielded:**
+```python
+{
+    "source":    "gmail",
+    "title":     "Re: PS3 office hours",   # email subject
+    "text":      "Hi Mani, I'll be...",    # body
+    "url":       "https://mail.google.com/mail/u/0/#search/rfc822msgid:...",
+    "timestamp": "Wed, 29 Apr 2026 14:21:32 -0700",
+    # Gmail-specific extras:
+    "subject":   "Re: PS3 office hours",
+    "sender":    "Sara Lin <sara@example.edu>",
+    "uid":       "1234",
+}
+```
+
+`title` and `url` match the standard DisSysLab message shape, so
+role files written for RSS feeds work unchanged on Gmail. The
+`subject`, `sender`, `uid` fields are Gmail-specific extras you
+can reference in roles or sinks that care about them.
+
+**Recipe.** [How to monitor your inbox](recipes/monitor-your-inbox.md).
 
 ### `calendar` — any public ICS calendar (credentialed)
 
@@ -209,6 +233,65 @@ export CALENDAR_ICS_URL='https://calendar.google.com/calendar/ical/.../basic.ics
 ```
 Sources: calendar(poll_interval=600, days_ahead=7)
 ```
+
+### `webhook` — listen for inbound HTTP POSTs (push-style)
+
+A push-style source. Spins up a stdlib HTTP listener; each
+incoming POST becomes one DisSysLab message. Useful for receiving
+notifications from third-party services (GitHub, Stripe, Zapier),
+forwarding the output of one office into another over HTTP, or
+poking your office from `curl` while you develop.
+
+**Arguments:**
+- `port` *(int, default `8000`)* — TCP port to listen on.
+- `path` *(str, default `"/webhook"`)* — URL path that triggers a
+  message. Other paths return 404.
+- `host` *(str, default `"127.0.0.1"`)* — interface to bind.
+  Default is localhost-only. Pass `host="0.0.0.0"` to accept
+  posts from other machines (read the security note below).
+
+**Setup:** none. The source uses Python's stdlib `http.server`.
+
+**Reachability for real third-party webhooks.** A localhost
+listener is not visible from the public internet. To receive
+webhooks from GitHub, Stripe, etc., use a tunnel:
+
+```bash
+# in one terminal
+ngrok http 8000
+# copy the https URL it prints, paste into the upstream service
+```
+
+`cloudflared`, `localtunnel`, and Tailscale Funnel work the same
+way.
+
+**Security:** anyone who can reach the listening port can inject
+messages — there is no authentication. Keep the default
+`host="127.0.0.1"` unless you've put the listener behind a
+reverse proxy that handles TLS and auth, or restricted the
+firewall to specific source IPs.
+
+**Example `office.md`:**
+```
+Sources: webhook                              # localhost:8000/webhook
+Sources: webhook(port=9000, path="/incoming")
+```
+
+**Each message yielded:**
+```python
+{
+    "source":    "webhook",
+    "title":     "...",                  # from JSON body's "title" or "subject"
+    "text":      "...",                  # from JSON body's "text", else raw body
+    "url":       "...",                  # from JSON body's "url", else ""
+    "timestamp": "2026-04-30T...",       # arrival time, ISO 8601 UTC
+    # plus any other keys from the JSON body, passed through
+}
+```
+
+If the body is JSON, every key in it is forwarded; the standard
+five keys are filled from the body when present, otherwise from
+sensible defaults. Non-JSON bodies become the `text`.
 
 ### `mcp_source` — any MCP server tool (advanced)
 
@@ -362,6 +445,85 @@ The message's `text` field becomes the email body.
 Sinks: gmail_sink(to="you@example.com", subject="Briefing")
 ```
 
+### `slack_sink` — post to a Slack channel (credentialed)
+
+Posts each incoming message to a Slack channel via an
+[Incoming Webhook](https://api.slack.com/messaging/webhooks). No
+OAuth, no bot install, no scopes — just one URL bound to one
+channel.
+
+**Arguments (all optional):**
+- `webhook_url_env` *(str, default `"SLACK_WEBHOOK_URL"`)* —
+  environment variable holding the webhook URL. Override this
+  when you have multiple webhooks for different channels.
+- `username` *(str, default `None`)* — display name for the post,
+  overrides the webhook's default.
+- `icon_emoji` *(str, default `None`)* — emoji shortcode (e.g.
+  `":robot_face:"`) used as the post avatar.
+- `timeout` *(float, default `5.0`)* — HTTP timeout in seconds.
+
+The message's `text` field becomes the post body. If `subject`
+is present it appears as a bold first line. If `url` is present
+it appears on its own line so Slack can unfurl it.
+
+**Setup (one-time):**
+1. Go to `api.slack.com/apps` → Create New App → From scratch.
+2. Pick a name and a workspace; click Create App.
+3. In the sidebar, click **Incoming Webhooks** and toggle it on.
+4. Click **Add New Webhook to Workspace**, pick the channel,
+   click Allow.
+5. Copy the webhook URL and export it:
+   ```bash
+   export SLACK_WEBHOOK_URL='https://hooks.slack.com/services/...'
+   ```
+
+**Example `office.md`:**
+```
+Sinks: slack_sink
+```
+
+**Posting to multiple channels.** A webhook URL is bound to one
+channel. To post to a second channel, create a second webhook and
+a second `slack_sink` instance with a different env var:
+
+```
+Sinks: slack_sink(webhook_url_env="SLACK_WEBHOOK_URL_ALERTS")
+```
+
+then `export SLACK_WEBHOOK_URL_ALERTS='...'` for the second URL.
+
+### `webhook_sink` — POST each message to an arbitrary HTTP endpoint
+
+The general-purpose outbound webhook. POSTs the message dict as
+JSON to a configured URL. Use it to forward to Discord, Zapier,
+Make, your own server, an inbound `webhook` source in another
+DisSysLab office, or any HTTP service that accepts JSON.
+
+For Slack specifically, prefer `slack_sink` — it formats the
+message nicely. `webhook_sink` is the unopinionated fallback.
+
+**Arguments:**
+- `url` *(str, optional)* — explicit target URL. Highest priority.
+- `webhook_url_env` *(str, default `None`)* — env var holding the
+  URL. Use this when you don't want the URL in `office.md`.
+- If neither is set, the sink reads `WEBHOOK_URL` from the
+  environment.
+- `headers` *(dict, default `{"Content-Type": "application/json"}`)*.
+- `timeout` *(float seconds, default `10`)*.
+- `retry_count` *(int, default `3`)* — retries with linear backoff.
+- `retry_delay` *(float seconds, default `1`)* — base delay; grows
+  with each attempt.
+
+**Example `office.md`:**
+```
+Sinks: webhook_sink                                   # reads WEBHOOK_URL
+Sinks: webhook_sink(url="http://localhost:8000/webhook")
+Sinks: webhook_sink(webhook_url_env="ZAPIER_HOOK_URL")
+```
+
+The full message dict is sent as the JSON body. Non-dict messages
+are wrapped as `{"data": str(msg)}`.
+
 ### `mcp_sink` — send messages to any MCP server tool (advanced)
 
 For each incoming message, merges the message fields with static
@@ -390,14 +552,11 @@ Sinks: mcp_sink(server="filesystem",
 The list above is everything that ships today. A few capabilities
 are planned:
 
-- **Slack sink** — post briefings to a channel
-- **First-class Gmail polish** — drop the IMAP layer
-- **HTTP webhook source/sink** — generic HTTP integration
+- **Slack Web API sink** — post to any channel with a bot token
+  (today's `slack_sink` is webhook-based and bound to one channel)
 
-Until those land, you can reach the same outcomes today through
-`mcp_sink` (Slack and HTTP are both supported via MCP servers) or
-through `gmail_sink` and `gmail` (which already work as
-documented above).
+Beyond that, you can also use `mcp_sink` and `mcp_source` to
+reach any service with an MCP server, or write your own.
 
 To add your own source or sink, write a Python class with a
 `run()` method (generator for sources, regular function for

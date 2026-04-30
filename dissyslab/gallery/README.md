@@ -19,6 +19,7 @@ No programming required.
 | [News Editorial](org_news_editorial/) | Two-agent editorial chain — analyst feeds editor |
 | [News Monitor](org_news_monitor/) | Filters incoming articles for significance |
 | [Two-Office News Network](org_two_office_news/) | News monitor + editorial office wired together |
+| [Webhook Listener](webhook_listener/) | Listens on `localhost:8000/webhook` for HTTP POSTs and routes them through an analyst |
 
 **How to run any of these -- Example:**
 

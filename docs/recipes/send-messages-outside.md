@@ -118,27 +118,107 @@ second — pair `gmail_sink` with a filter agent (see [How to filter
 for a topic](filter-for-a-topic.md)) or set a small
 `max_articles` while you're testing.
 
-## Send to Slack (today: via MCP; soon: first-class)
+## Send to Slack
 
-A first-class `slack_sink` is on the roadmap. Until it lands, the
-working path is `mcp_sink` plus a Slack MCP server.
+`slack_sink` posts each incoming message to a Slack channel via
+an [Incoming Webhook](https://api.slack.com/messaging/webhooks).
+No OAuth, no bot install — just one URL bound to one channel.
+
+**One-time setup:**
+
+1. Go to `api.slack.com/apps` → Create New App → From scratch.
+2. Pick a name and a workspace; click Create App.
+3. In the sidebar, click **Incoming Webhooks** and toggle it on.
+4. Click **Add New Webhook to Workspace**, pick the channel,
+   click Allow.
+5. Copy the webhook URL and export it in the shell where you'll
+   run `dsl run`:
+
+```bash
+export SLACK_WEBHOOK_URL='https://hooks.slack.com/services/...'
+```
+
+**In `office.md`:**
 
 ```
-Sinks: mcp_sink(server="slack",
-                tool="post_message",
-                args={"channel": "#briefings"})
+Sinks: slack_sink
 
 Connections:
-Alex's briefing is mcp_sink.
+Alex's briefing is slack_sink.
 ```
 
-This requires running the Slack MCP server alongside DisSysLab.
-The setup is more involved than file or Gmail; for most
-classroom use, file or email is the easier first stop.
+Every message Alex routes to `briefing` becomes a Slack post in
+the channel the webhook points at. If the message has a `subject`
+field, it appears as a bold first line. If it has a `url` field,
+Slack will unfurl a preview.
 
-When the first-class `slack_sink` ships, this recipe will be
-updated and the `mcp_sink` route will become a fallback for
-Slack users who need the full API surface.
+**Posting to multiple channels.** A webhook URL is bound to one
+channel at the time you create it. To post to a second channel,
+create a second webhook and use one of the shipped aliases —
+`slack_sink_alerts`, `slack_sink_briefing`, `slack_sink_archive` —
+each is a distinct sink instance sharing the same class:
+
+```
+Sinks: slack_sink_briefing(webhook_url_env="SLACK_WEBHOOK_URL_BRIEFING"),
+       slack_sink_alerts(webhook_url_env="SLACK_WEBHOOK_URL_ALERTS")
+
+Connections:
+Alex's briefing is slack_sink_briefing.
+Alex's urgent is slack_sink_alerts.
+```
+
+Then export both env vars in your shell. Add more aliases in
+`dissyslab/office/utils.py:SINK_REGISTRY` if you need them — they
+follow the same pattern as `jsonl_recorder_*`.
+
+## Send to a webhook
+
+`webhook_sink` POSTs each message as JSON to any HTTP endpoint —
+Discord, Zapier, Make, your own server, or a `webhook` source in
+another DisSysLab office. It's the unopinionated outbound HTTP
+sink; for Slack specifically, prefer `slack_sink` (it formats
+`subject` and `url` for nice rendering).
+
+**One-time setup.** Get the target URL from whatever service you
+want to post to (Discord channel webhook, Zapier "Catch Hook"
+URL, etc.) and export it in the shell where you'll run `dsl run`:
+
+```bash
+export WEBHOOK_URL='https://example.com/incoming'
+```
+
+**In `office.md`:**
+
+```
+Sinks: webhook_sink
+
+Connections:
+Alex's briefing is webhook_sink.
+```
+
+The full message dict goes out as the JSON body. The receiving
+service sees every field your agent produced (`source`, `title`,
+`text`, `url`, plus anything custom).
+
+**Multiple destinations.** Pass `webhook_url_env=` to point at a
+different env var, so each instance can target its own URL:
+
+```
+Sinks: webhook_sink(url="http://localhost:9000/incoming"),
+       webhook_sink(webhook_url_env="ZAPIER_HOOK_URL")
+```
+
+**Office-to-office.** A `webhook_sink` in office A and a `webhook`
+source in office B is the standard way to wire two offices across
+a process or machine boundary. See [How to receive
+webhooks](receive-webhooks.md).
+
+**Don't post too often.** Most webhook receivers rate-limit. A
+high-volume source plus an unfiltered office will trip those
+limits and get your URL blocked. Filter first, post second — pair
+`webhook_sink` with a filter agent (see [How to filter for a
+topic](filter-for-a-topic.md)) or set a small `max_articles`
+while testing.
 
 ## The pattern, in a sentence
 

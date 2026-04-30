@@ -28,6 +28,7 @@ import imaplib
 import email
 import os
 import time
+from collections import OrderedDict
 from email.header import decode_header
 from typing import Optional
 
@@ -40,15 +41,22 @@ class GmailSource:
         GMAIL_USER         — your Gmail address
         GMAIL_APP_PASSWORD — app password from Google account settings
 
-    Each email is yielded as a dict:
+    Each email is yielded as a dict matching the standard DisSysLab
+    message shape, plus Gmail-specific extras:
         {
             "source":    "gmail",
+            "title":     str,   # email subject (alias of "subject")
+            "text":      str,   # plain text body
+            "url":       str,   # Gmail web permalink (via Message-ID)
+            "timestamp": str,   # date string from email headers
+            # Gmail-specific extras:
             "subject":   str,
             "sender":    str,
-            "text":      str,   # plain text body
-            "timestamp": str,   # date string from email headers
-            "uid":       str,   # unique email ID
+            "uid":       str,   # IMAP UID
         }
+
+    Including the standard keys ("title", "url") means filter and
+    summarizer roles written for RSS feeds work unchanged on Gmail.
 
     Args:
         poll_interval: Seconds between inbox checks (default: 60)
@@ -58,6 +66,12 @@ class GmailSource:
         user_env:      Environment variable for Gmail address (default: GMAIL_USER)
         password_env:  Environment variable for app password (default: GMAIL_APP_PASSWORD)
     """
+
+    # Cap on remembered UIDs. A long-running office should not
+    # accumulate UIDs forever — once we hit this size, the oldest
+    # UID is evicted so the set stays small. 10k is large enough
+    # that no real inbox will revisit a UID before eviction.
+    _SEEN_UIDS_MAX = 10_000
 
     IMAP_SERVER = "imap.gmail.com"
     IMAP_PORT = 993
@@ -88,13 +102,26 @@ class GmailSource:
                 "Get an app password at: myaccount.google.com → Security → App passwords"
             )
 
-        self._seen_uids = set()
+        # OrderedDict gives O(1) `in`-checks AND O(1) eviction of the
+        # oldest entry via popitem(last=False). A plain set would grow
+        # without bound; a deque would make `in` O(n).
+        self._seen_uids: "OrderedDict[str, bool]" = OrderedDict()
 
     def _connect(self):
         """Connect to Gmail IMAP server and return a logged-in connection."""
         mail = imaplib.IMAP4_SSL(self.IMAP_SERVER, self.IMAP_PORT)
         mail.login(self.user, self.password)
         return mail
+
+    def _mark_seen(self, uid_str: str) -> None:
+        """
+        Record a UID as seen, evicting the oldest if we've hit the cap.
+        OrderedDict.popitem(last=False) removes the oldest insertion
+        in O(1).
+        """
+        self._seen_uids[uid_str] = True
+        if len(self._seen_uids) > self._SEEN_UIDS_MAX:
+            self._seen_uids.popitem(last=False)
 
     def _decode_header_value(self, value):
         """Decode email header value (handles encoded headers)."""
@@ -173,13 +200,30 @@ class GmailSource:
                 if not body:
                     body = subject
 
-                self._seen_uids.add(uid_str)
+                # Gmail web URL via Message-ID. Gmail's web search
+                # accepts rfc822msgid: queries, so the link opens
+                # the exact email. Falls back to inbox if the
+                # Message-ID header is missing or malformed.
+                msg_id_raw = msg.get("Message-ID") or msg.get("Message-Id") or ""
+                msg_id = msg_id_raw.strip().strip("<>").strip()
+                if msg_id:
+                    url = f"https://mail.google.com/mail/u/0/#search/rfc822msgid:{msg_id}"
+                else:
+                    url = "https://mail.google.com/mail/u/0/#inbox"
+
+                self._mark_seen(uid_str)
                 results.append({
                     "source":    "gmail",
+                    # Standard DisSysLab message keys — match what
+                    # RSS, BlueSky, weather, stocks emit so role
+                    # files written for one source work on Gmail.
+                    "title":     subject,
+                    "text":      body,
+                    "url":       url,
+                    "timestamp": timestamp,
+                    # Gmail-specific extras:
                     "subject":   subject,
                     "sender":    sender,
-                    "text":      body,
-                    "timestamp": timestamp,
                     "uid":       uid_str,
                 })
 
