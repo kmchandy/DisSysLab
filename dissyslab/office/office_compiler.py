@@ -15,7 +15,9 @@
 
 import sys
 import json
+import time
 import importlib
+from collections import defaultdict
 from pathlib import Path
 
 from dissyslab import network
@@ -43,15 +45,40 @@ def _import_class(import_stmt, class_name):
     return getattr(module, class_name)
 
 
-def _make_role_fn(role_name, agent_fn, valid_dests, default_dest):
+class _RunStats:
+    """
+    Lightweight per-run counters. Read at shutdown to print a summary.
+
+    Threading note: each Role and Sink runs on its own thread, so
+    increments race. We don't take a lock — these are advisory counts
+    for the end-of-run summary, not authoritative metrics. A missed
+    increment here and there is fine.
+    """
+
+    def __init__(self):
+        self.start_time = time.monotonic()
+        self.agent_calls = defaultdict(int)        # name → int
+        self.agent_errors = defaultdict(int)       # name → int
+        self.agent_routes = defaultdict(            # name → port → int
+            lambda: defaultdict(int)
+        )
+        self.sink_messages = defaultdict(int)      # name → int
+
+    def elapsed_seconds(self) -> float:
+        return time.monotonic() - self.start_time
+
+
+def _make_role_fn(role_name, agent_fn, valid_dests, default_dest, stats):
     """
     Build a role function that calls the AI agent and returns
     a list of (message, destination) pairs.
 
-    The closure captures role_name, agent_fn, and default_dest
-    so each role function is independent.
+    The closure captures role_name, agent_fn, default_dest, and stats
+    so each role function is independent and contributes to the
+    end-of-run summary.
     """
     def role_fn(msg):
+        stats.agent_calls[role_name] += 1
         text = json.dumps(msg) if isinstance(msg, dict) else str(msg)
         try:
             raw = agent_fn(text)
@@ -59,12 +86,96 @@ def _make_role_fn(role_name, agent_fn, valid_dests, default_dest):
             out = {**msg, **result}
             destination = result.get("send_to", default_dest)
             if isinstance(destination, list):
+                for dest in destination:
+                    stats.agent_routes[role_name][dest] += 1
                 return [(out, dest) for dest in destination]
+            stats.agent_routes[role_name][destination] += 1
             return [(out, destination)]
         except Exception as e:
+            stats.agent_errors[role_name] += 1
             print(f"[{role_name}] Error: {e}")
             return []
     return role_fn
+
+
+def _wrap_sink_fn(sink_name, fn, stats):
+    """Wrap a sink's call so each invocation bumps the per-sink counter."""
+    def wrapped(msg):
+        stats.sink_messages[sink_name] += 1
+        return fn(msg)
+    return wrapped
+
+
+def _format_duration(seconds: float) -> str:
+    """Pretty-print elapsed time as e.g. '1m 23s' or '14s'."""
+    seconds = max(0, int(seconds))
+    if seconds < 60:
+        return f"{seconds}s"
+    minutes, secs = divmod(seconds, 60)
+    if minutes < 60:
+        return f"{minutes}m {secs}s"
+    hours, mins = divmod(minutes, 60)
+    return f"{hours}h {mins}m {secs}s"
+
+
+def _print_run_summary(stats: _RunStats, *, interrupted: bool) -> None:
+    """
+    Print a one-paragraph summary of what the office did. Called from
+    the `finally` block in build_and_run() so it runs whether the office
+    exits cleanly or via Ctrl-C.
+
+    Goes to stderr so it doesn't pollute stdout if the user is piping
+    briefings to a file.
+    """
+    elapsed = _format_duration(stats.elapsed_seconds())
+    header = (
+        "Office stopped (Ctrl-C)"
+        if interrupted
+        else "Office stopped"
+    )
+    lines = [
+        "",
+        f"── {header} after {elapsed} ──",
+    ]
+
+    if stats.agent_calls:
+        lines.append("Agents:")
+        for name in sorted(stats.agent_calls):
+            calls = stats.agent_calls[name]
+            errs = stats.agent_errors.get(name, 0)
+            routes = stats.agent_routes.get(name, {})
+            err_part = f", {errs} error{'s' if errs != 1 else ''}" if errs else ""
+            route_part = ""
+            if routes:
+                pieces = ", ".join(
+                    f"{port}={count}" for port, count in sorted(routes.items())
+                )
+                route_part = f"  ({pieces})"
+            lines.append(
+                f"  {name}: {calls} call{'s' if calls != 1 else ''}"
+                f"{err_part}{route_part}"
+            )
+
+    if stats.sink_messages:
+        lines.append("Sinks:")
+        for name in sorted(stats.sink_messages):
+            count = stats.sink_messages[name]
+            lines.append(
+                f"  {name}: {count} message{'s' if count != 1 else ''}"
+            )
+
+    if not stats.agent_calls and not stats.sink_messages:
+        lines.append(
+            "No agent calls or sink writes recorded. "
+            "Check that the source produced messages and "
+            "that the connections in office.md are correct."
+        )
+
+    lines.append(
+        "Check your Anthropic usage at console.anthropic.com if you "
+        "left the office running for a while."
+    )
+    print("\n".join(lines), file=sys.stderr)
 
 
 # ── Build and run ─────────────────────────────────────────────────────────────
@@ -75,8 +186,13 @@ def build_and_run(roles, office, office_dir):
     wire them into a network, and run it.
 
     No files are written. No text is generated.
+
+    Records counters in a _RunStats object as the network runs, and
+    prints a summary of agent calls and sink messages on shutdown
+    (whether clean or via Ctrl-C).
     """
     office_path = Path(office_dir)
+    stats = _RunStats()
 
     # Port index: role_name → {destination_name → out_N index}
     port_index = {
@@ -84,8 +200,9 @@ def build_and_run(roles, office, office_dir):
         for role_name, role in roles.items()
     }
 
-    # ── Role functions ────────────────────────────────────────────────────────
-    role_fns = {}
+    # ── Role-level prompts (shared by all agents that play this role) ────────
+    role_prompts = {}            # role_name → compiled system prompt
+    role_dests = {}              # role_name → (valid_dests, default_dest)
     for role_name, role in roles.items():
         role_text = open(office_path / "roles" / f"{role_name}.md").read()
         valid_dests = role["sends_to"]
@@ -95,19 +212,24 @@ def build_and_run(roles, office, office_dir):
             f'{{"send_to": "<one of: {", ".join(valid_dests)}>", '
             f'"text": "<content>"}}'
         )
-        prompt = role_text.strip() + "\n" + contract
-        agent_fn = ai_agent(prompt)
-        role_fns[role_name] = _make_role_fn(
-            role_name, agent_fn, valid_dests, default_dest
-        )
+        role_prompts[role_name] = role_text.strip() + "\n" + contract
+        role_dests[role_name] = (valid_dests, default_dest)
 
     # ── Role nodes ────────────────────────────────────────────────────────────
+    # One wrapped role function per *agent* (not per role) so the run-stats
+    # counters can distinguish two agents that share a role (e.g. two
+    # `analyst`s named Alex and Sam).
     agent_nodes = {}
     for agent in office["agents"]:
         agent_name = agent["name"]
         role_name = agent["role"]
+        valid_dests, default_dest = role_dests[role_name]
+        agent_fn = ai_agent(role_prompts[role_name])
+        wrapped_fn = _make_role_fn(
+            agent_name, agent_fn, valid_dests, default_dest, stats
+        )
         agent_nodes[agent_name] = Role(
-            fn=role_fns[role_name],
+            fn=wrapped_fn,
             statuses=roles[role_name]["sends_to"],
             name=agent_name,
         )
@@ -120,7 +242,10 @@ def build_and_run(roles, office, office_dir):
         reg = SINK_REGISTRY[name]
         cls = _import_class(reg["import"], reg["class"])
         obj = cls(**args) if args else cls()
-        sink_nodes[name] = Sink(fn=getattr(obj, reg["call"]), name=name)
+        raw_fn = getattr(obj, reg["call"])
+        sink_nodes[name] = Sink(
+            fn=_wrap_sink_fn(name, raw_fn, stats), name=name
+        )
 
     # ── Source nodes ──────────────────────────────────────────────────────────
     source_nodes = {}
@@ -241,7 +366,21 @@ def build_and_run(roles, office, office_dir):
 
     # ── Run ───────────────────────────────────────────────────────────────────
     g = network(edges)
-    g.run_network(timeout=None)
+    interrupted = False
+    try:
+        g.run_network(timeout=None)
+    except KeyboardInterrupt:
+        # Clean Ctrl-C path. Re-raise after the summary so callers (the
+        # CLI, runpy) still see SystemExit-equivalent behavior.
+        interrupted = True
+    finally:
+        _print_run_summary(stats, interrupted=interrupted)
+    if interrupted:
+        # Surface as a normal exit code (130 = 128 + SIGINT) rather than
+        # letting the traceback bubble up, so the CLI's _explain_failure
+        # doesn't print a misleading "dsl run failed" banner over our
+        # summary.
+        sys.exit(130)
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
