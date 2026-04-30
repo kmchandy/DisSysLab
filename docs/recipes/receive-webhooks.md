@@ -135,6 +135,17 @@ The URL changes every time you restart ngrok unless you pay for a
 reserved domain. Fine for a class demo; less fine for a
 production handoff.
 
+If you'd rather not sign up for an ngrok account, Cloudflare's
+quick tunnels work the same way and need no login:
+
+```bash
+cloudflared tunnel --url http://localhost:8000
+```
+
+It prints a public `https://<random>.trycloudflare.com` URL that
+forwards to your listener. Same caveats — the URL is temporary, and
+anyone who learns it can POST.
+
 ## Two things to watch out for
 
 **Don't make personal stuff public.** A webhook URL is a

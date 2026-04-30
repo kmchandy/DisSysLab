@@ -24,8 +24,9 @@ they connect.*
 ### Try it in 60 seconds
 
 ```bash
+python3 -m venv .venv && source .venv/bin/activate    # Windows: .venv\Scripts\activate
 pip install dissyslab
-export ANTHROPIC_API_KEY=sk-ant-...    # need a key? see Path A below
+export ANTHROPIC_API_KEY=sk-ant-...                   # need a key? see Path A below
 dsl init my_first_office my_briefing && cd my_briefing && dsl run .
 ```
 
@@ -200,6 +201,13 @@ prints every office that ships with DisSysLab. Some highlights:
 | `stocks_monitor` | Single-agent ticker watcher with one-sentence price updates |
 | `org_two_office_news` | An office of offices — news_monitor feeds news_editor, sourced from three real RSS feeds |
 
+> **Heads-up on cost.** Offices run continuously until you stop them.
+> An office that polls live feeds will keep calling Claude — and
+> billing your Anthropic account — for as long as it's open. Press
+> `Ctrl+C` when you're done, and check your usage at
+> [console.anthropic.com](https://console.anthropic.com) if you've
+> left one running for a while.
+
 Each office is a folder with an `office.md` and `roles/*.md` you can
 read and edit. `dsl init <office_name> <local_folder>` copies one
 into a folder you own.
@@ -287,6 +295,9 @@ reusing offices across networks.
 - **Use a different LLM** (OpenAI, Gemini, Ollama, a local SLM) —
   [docs/ADD_A_BACKEND.md](docs/ADD_A_BACKEND.md) walks through the
   `DSL_BACKEND_MODULE` extension hook.
+- **Hit an error?** — run `dsl doctor`, then check
+  [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for the
+  remedy keyed on the error string.
 - **Browse offices** — `dsl list` from the terminal, or the
   [gallery README](dissyslab/gallery/README.md).
 - **Full docs index** — [docs/README.md](docs/README.md).

@@ -55,6 +55,9 @@ The full recipe index, including any recipes added later, is at
   Ollama, or any other model into DisSysLab without forking. Walks
   through the `DSL_BACKEND_MODULE` extension hook with worked
   examples.
+- **[Troubleshooting](TROUBLESHOOTING.md)** — common errors when
+  installing or running DisSysLab, keyed on the actual error
+  strings, with the remedy for each.
 
 ## Looking for something specific?
 
@@ -72,6 +75,8 @@ The full recipe index, including any recipes added later, is at
   [chain-offices.md](recipes/chain-offices.md).
 - **"How do I write a role from scratch?"** →
   [write-a-custom-role.md](recipes/write-a-custom-role.md).
+- **"I hit an error and don't know what it means."** →
+  [TROUBLESHOOTING.md](TROUBLESHOOTING.md), or run `dsl doctor`.
 
 If your question isn't covered here, open an issue on
 [GitHub](https://github.com/kmchandy/DisSysLab/issues) — that's the

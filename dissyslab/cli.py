@@ -711,8 +711,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="dsl",
         description=(
-            "DisSysLab — build continuous offices of AI agents in plain English.\n"
-            "See https://github.com/kmchandy/DisSysLab for docs."
+            "Build continuous offices of AI agents in plain English."
+        ),
+        epilog=(
+            "Common workflow:\n"
+            "  dsl init my_first_office briefing    # copy a gallery office\n"
+            "  cd briefing\n"
+            "  dsl run .                            # run it; Ctrl-C to stop\n"
+            "\n"
+            "Other commands:\n"
+            "  list      Show every office that ships with dissyslab\n"
+            "  doctor    Check your setup if something breaks\n"
+            "\n"
+            "Docs: https://github.com/kmchandy/DisSysLab"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -725,12 +736,32 @@ def build_parser() -> argparse.ArgumentParser:
     sub.required = True
 
     p_list = sub.add_parser(
-        "list", help="list offices that ship with dissyslab"
+        "list",
+        help="list offices that ship with dissyslab",
+        description=(
+            "List every office that ships with DisSysLab, with a one-line "
+            "summary of each. Pair with `dsl init <name> <folder>` to copy "
+            "one into a folder you own."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p_list.set_defaults(handler=cmd_list)
 
     p_init = sub.add_parser(
-        "init", help="copy a gallery office into a new folder"
+        "init",
+        help="copy a gallery office into a new folder",
+        description=(
+            "Copy a gallery office (see `dsl list`) into a new folder you "
+            "own. Use it as a starting point — open the office.md and "
+            "roles/*.md in your editor and customize."
+        ),
+        epilog=(
+            "Example:\n"
+            "  dsl init my_first_office briefing\n"
+            "  cd briefing\n"
+            "  dsl run ."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p_init.add_argument(
         "office_name", help="name of the office (see `dsl list`)"
@@ -740,17 +771,48 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_init.set_defaults(handler=cmd_init)
 
-    p_run = sub.add_parser("run", help="run a closed office")
+    p_run = sub.add_parser(
+        "run",
+        help="run a closed office",
+        description=(
+            "Run an office. The office_dir argument is the folder "
+            "containing office.md and roles/*.md. Press Ctrl+C to stop."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  dsl run .                  # run the office in the current folder\n"
+            "  dsl run path/to/briefing   # run an office elsewhere"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     p_run.add_argument("office_dir", help="path to an office directory")
     p_run.set_defaults(handler=cmd_run)
 
-    p_build = sub.add_parser("build", help="generate app.py for an office")
+    # `dsl build` is internals-facing — it generates app.py, which `dsl run`
+    # calls automatically. Path A users don't need it. Keep it visible but
+    # flag it as advanced so beginners know they can skip it.
+    p_build = sub.add_parser(
+        "build",
+        help="(advanced) generate app.py — most users don't need this",
+        description=(
+            "(advanced) Generate app.py for an office without running it. "
+            "Most users don't need this — `dsl run` builds and runs in one "
+            "step. Useful if you want to inspect the generated Python."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
     p_build.add_argument("office_dir", help="path to an office directory")
     p_build.set_defaults(handler=cmd_build)
 
     p_doc = sub.add_parser(
         "doctor",
-        help="check Python, dependencies, and API key",
+        help="check your setup if something breaks",
+        description=(
+            "Check your Python version, your dependencies, your Anthropic "
+            "API key, and any optional integrations (Gmail, Slack, webhook "
+            "URLs) you've configured. Run this first when something breaks."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p_doc.set_defaults(handler=cmd_doctor)
 

@@ -392,6 +392,13 @@ later.
 
 **Arguments:**
 - `path` *(str, default `"anomaly_stream.jsonl"`)* — output file.
+  A bare filename like `"briefings.jsonl"` is **relative to the
+  directory you ran `dsl run` from**, not the office folder. If
+  you ran `dsl run path/to/briefing` from your home directory, the
+  file lands in your home directory. Pass an absolute path
+  (`"/Users/you/briefings.jsonl"`) or a path under the office
+  folder (`"./briefings.jsonl"`) if you want it somewhere
+  predictable.
 - `mode` *(str, default `"w"`)* — `"w"` overwrites at start,
   `"a"` appends.
 - `flush_every` *(int, default `1`)* — flush after every N
@@ -401,6 +408,9 @@ later.
 ```
 Sinks: jsonl_recorder(path="briefings.jsonl")
 ```
+
+After the office runs, find the file with `ls -la *.jsonl` from
+the directory you launched `dsl run` from.
 
 ### `jsonl_recorder_*` — multiple JSONL files in one office
 
