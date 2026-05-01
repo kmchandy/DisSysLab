@@ -7,6 +7,8 @@ subcommands aimed at first-year undergraduates:
 
     dsl list                      list offices that ship with dissyslab
     dsl init <office> <folder>    copy a gallery office into <folder>
+    dsl new <folder>              build a new office by chatting with Claude
+    dsl edit <office_dir>         modify an existing office by chatting with Claude
     dsl run <office_dir>          run a closed office end-to-end
     dsl build <office_dir>        generate app.py for an open office
     dsl doctor                    sanity-check Python, deps, and API key
@@ -484,6 +486,22 @@ def cmd_init(args: argparse.Namespace) -> int:
     return 0
 
 
+# ── Subcommands: new / edit (chat with Claude) ────────────────────────────────
+
+def cmd_new(args: argparse.Namespace) -> int:
+    """Create a new office by chatting with Claude in plain English."""
+    from . import cli_chat
+    target = Path(args.target).resolve()
+    return cli_chat.chat_create(target, model=args.model)
+
+
+def cmd_edit(args: argparse.Namespace) -> int:
+    """Modify an existing office by chatting with Claude in plain English."""
+    from . import cli_chat
+    office_dir = Path(args.office_dir).resolve()
+    return cli_chat.chat_edit(office_dir, model=args.model)
+
+
 # ── Subcommand: doctor ────────────────────────────────────────────────────────
 
 # Common user mistakes: saving .env in TextEdit (becomes RTF), or pasting
@@ -719,6 +737,10 @@ def build_parser() -> argparse.ArgumentParser:
             "  cd briefing\n"
             "  dsl run .                            # run it; Ctrl-C to stop\n"
             "\n"
+            "Build with Claude (plain English):\n"
+            "  dsl new briefing                     # Claude writes a new office\n"
+            "  dsl edit briefing                    # Claude rewrites in place\n"
+            "\n"
             "Other commands:\n"
             "  list      Show every office that ships with dissyslab\n"
             "  doctor    Check your setup if something breaks\n"
@@ -770,6 +792,65 @@ def build_parser() -> argparse.ArgumentParser:
         "target", help="folder to create (must not exist)"
     )
     p_init.set_defaults(handler=cmd_init)
+
+    # `dsl new` — describe an office in plain English; Claude writes the files.
+    # `dsl edit` — same, for an existing office. Both stream Claude's response
+    # to the terminal and write office.md / roles/*.md automatically.
+    p_new = sub.add_parser(
+        "new",
+        help="create a new office by chatting with Claude",
+        description=(
+            "Create a new office by chatting with Claude in plain English. "
+            "Describe what you want — Claude may ask follow-up questions, "
+            "then write the office.md and roles/*.md files for you. The "
+            "target folder must not already exist."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  dsl new briefing\n"
+            "  dsl new sentiment_demo --model claude-opus-4-6\n"
+            "\n"
+            "Requires ANTHROPIC_API_KEY in your environment or a .env file."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_new.add_argument(
+        "target", help="folder to create (must not exist)"
+    )
+    p_new.add_argument(
+        "--model",
+        default="claude-sonnet-4-6",
+        help="Claude model to use (default: claude-sonnet-4-6)",
+    )
+    p_new.set_defaults(handler=cmd_new)
+
+    p_edit = sub.add_parser(
+        "edit",
+        help="modify an existing office by chatting with Claude",
+        description=(
+            "Modify an existing office by chatting with Claude in plain "
+            "English. Claude sees the current office.md and roles/*.md, "
+            "applies the change you describe, and rewrites the files in "
+            "place."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  dsl edit briefing\n"
+            "  dsl edit . --model claude-opus-4-6\n"
+            "\n"
+            "Requires ANTHROPIC_API_KEY in your environment or a .env file."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_edit.add_argument(
+        "office_dir", help="path to an existing office directory"
+    )
+    p_edit.add_argument(
+        "--model",
+        default="claude-sonnet-4-6",
+        help="Claude model to use (default: claude-sonnet-4-6)",
+    )
+    p_edit.set_defaults(handler=cmd_edit)
 
     p_run = sub.add_parser(
         "run",
