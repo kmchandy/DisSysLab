@@ -13,9 +13,11 @@
 # For open offices (composable black boxes), use `dsl build` instead
 # (delegates to dissyslab.office.make_office).
 
+import os
 import sys
 import json
 import time
+import signal
 import importlib
 from collections import defaultdict
 from pathlib import Path
@@ -365,22 +367,67 @@ def build_and_run(roles, office, office_dir):
             edges.append((port, to_node))
 
     # ── Run ───────────────────────────────────────────────────────────────────
+    #
+    # Shutdown is the tricky part. The agent threads are non-daemon
+    # (network.py creates them with daemon=False), so a plain sys.exit()
+    # won't actually terminate the process — Python waits forever for
+    # the threads. That used to leave users hitting Ctrl-C twice and
+    # never seeing the end-of-run summary because the second Ctrl-C
+    # killed the process before stderr flushed.
+    #
+    # Fix: install a SIGINT handler that runs synchronously when the
+    # user presses Ctrl-C, prints the summary, flushes stderr, and
+    # calls os._exit(130) to terminate the whole process immediately
+    # (kills all threads, no graceful drain). The handler-driven path
+    # is the primary one. The try/except KeyboardInterrupt below is a
+    # fallback in case the handler somehow doesn't fire (e.g. an
+    # exotic platform where signal.signal can't install a SIGINT
+    # handler from this thread).
     g = network(edges)
+    summary_printed = [False]
+
+    def _print_summary_once(interrupted: bool) -> None:
+        if summary_printed[0]:
+            return
+        summary_printed[0] = True
+        _print_run_summary(stats, interrupted=interrupted)
+        try:
+            sys.stderr.flush()
+        except Exception:
+            pass
+
+    def _sigint_handler(signum, frame):
+        _print_summary_once(interrupted=True)
+        # 130 = 128 + SIGINT, the conventional exit code for Ctrl-C.
+        # os._exit bypasses Python's non-daemon-thread wait so the
+        # shell prompt comes back immediately.
+        os._exit(130)
+
+    try:
+        prev_handler = signal.signal(signal.SIGINT, _sigint_handler)
+    except (ValueError, OSError):
+        # signal.signal can only run from the main thread; if we're
+        # somewhere odd, fall through to the KeyboardInterrupt path.
+        prev_handler = None
+
     interrupted = False
     try:
         g.run_network(timeout=None)
     except KeyboardInterrupt:
-        # Clean Ctrl-C path. Re-raise after the summary so callers (the
-        # CLI, runpy) still see SystemExit-equivalent behavior.
         interrupted = True
     finally:
-        _print_run_summary(stats, interrupted=interrupted)
+        if prev_handler is not None:
+            try:
+                signal.signal(signal.SIGINT, prev_handler)
+            except (ValueError, OSError):
+                pass
+        _print_summary_once(interrupted=interrupted)
+
     if interrupted:
-        # Surface as a normal exit code (130 = 128 + SIGINT) rather than
-        # letting the traceback bubble up, so the CLI's _explain_failure
-        # doesn't print a misleading "dsl run failed" banner over our
-        # summary.
-        sys.exit(130)
+        # Reached only if the SIGINT handler didn't fire and the
+        # KeyboardInterrupt fell through. Use os._exit so non-daemon
+        # threads don't keep the process alive.
+        os._exit(130)
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
