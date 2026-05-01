@@ -22,4 +22,4 @@ __all__ = [
     'PortReference',
 ]
 
-__version__ = '1.2.10'
+__version__ = '1.2.9'
