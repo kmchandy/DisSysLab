@@ -1,0 +1,426 @@
+"""Unit tests for ``office_v2.library``.
+
+Two layers, mirroring ``test_office_spec.py``:
+
+1. Type-level invariants on ``AgentRoleEntry`` and ``OfficeRoleEntry``.
+2. Behavioural tests for ``nl_role`` and ``load_roles_dir`` using a
+   stub backend so no real LLM is contacted.
+"""
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from dissyslab.backends import register_backend
+from dissyslab.blocks.role import Role
+from dissyslab.office_v2.library import (
+    AgentRoleEntry,
+    OfficeRoleEntry,
+    RoleEntry,
+    Library,
+    DEFAULT_AI,
+    _extract_send_to_ports,
+    load_roles_dir,
+    nl_role,
+)
+
+
+# ── A tiny stub backend the tests can drive deterministically ──────────
+
+
+class _StubBackend:
+    """Backend whose ``complete`` returns a fixed reply (or one from a queue).
+
+    Tests register an instance under a unique name with
+    ``register_backend`` and pass that name to ``nl_role(AI=...)``.
+    """
+
+    def __init__(self, reply):
+        # ``reply`` may be a single string (returned every call) or a
+        # callable taking the user prompt and returning a string.
+        self.reply = reply
+        self.calls = []
+
+    def complete(self, *, system, user, max_tokens=1024,
+                 temperature=1.0, model=None) -> str:
+        self.calls.append({"system": system, "user": user})
+        if callable(self.reply):
+            return self.reply(user)
+        return self.reply
+
+
+def _register_stub(name: str, reply) -> _StubBackend:
+    stub = _StubBackend(reply)
+    register_backend(name, lambda: stub)
+    return stub
+
+
+# ── AgentRoleEntry validation ──────────────────────────────────────────
+
+
+class TestAgentRoleEntry:
+    def test_minimal(self):
+        entry = AgentRoleEntry(
+            name="analyst",
+            in_ports=("in_",),
+            out_ports=("brief",),
+            factory=lambda: object(),
+        )
+        assert entry.name == "analyst"
+        assert entry.in_ports == ("in_",)
+        assert entry.out_ports == ("brief",)
+        assert entry.description == ""
+
+    def test_empty_name_allowed(self):
+        # Empty name is allowed because nl_role returns nameless
+        # entries and load_roles_dir fills them in.
+        entry = AgentRoleEntry(
+            name="",
+            in_ports=("in_",),
+            out_ports=("a",),
+            factory=lambda: object(),
+        )
+        assert entry.name == ""
+
+    def test_ports_coerced_to_tuple(self):
+        entry = AgentRoleEntry(
+            name="x",
+            in_ports=["in_"],
+            out_ports=["a", "b"],
+            factory=lambda: object(),
+        )
+        assert isinstance(entry.in_ports, tuple)
+        assert isinstance(entry.out_ports, tuple)
+
+    def test_callable(self):
+        sentinel = object()
+        entry = AgentRoleEntry(
+            name="x",
+            in_ports=("in_",),
+            out_ports=("a",),
+            factory=lambda: sentinel,
+        )
+        assert entry() is sentinel
+
+    def test_duplicate_out_ports_rejected(self):
+        with pytest.raises(ValueError, match="duplicate"):
+            AgentRoleEntry(
+                name="x",
+                in_ports=("in_",),
+                out_ports=("a", "a"),
+                factory=lambda: None,
+            )
+
+    def test_no_ports_at_all_rejected(self):
+        with pytest.raises(ValueError, match="no ports"):
+            AgentRoleEntry(
+                name="x",
+                in_ports=(),
+                out_ports=(),
+                factory=lambda: None,
+            )
+
+    def test_non_callable_factory_rejected(self):
+        with pytest.raises(TypeError, match="callable"):
+            AgentRoleEntry(
+                name="x",
+                in_ports=("in_",),
+                out_ports=("a",),
+                factory="not a function",  # type: ignore[arg-type]
+            )
+
+    def test_empty_port_string_rejected(self):
+        with pytest.raises(ValueError, match="non-empty"):
+            AgentRoleEntry(
+                name="x",
+                in_ports=("",),
+                out_ports=("a",),
+                factory=lambda: None,
+            )
+
+
+# ── OfficeRoleEntry validation ─────────────────────────────────────────
+
+
+class TestOfficeRoleEntry:
+    def test_minimal(self):
+        entry = OfficeRoleEntry(name="news_monitor", path="../news_monitor")
+        assert entry.name == "news_monitor"
+        assert entry.path == "../news_monitor"
+        assert entry.description == ""
+
+    def test_empty_path_rejected(self):
+        with pytest.raises(ValueError, match="empty path"):
+            OfficeRoleEntry(name="x", path="")
+
+
+# ── _extract_send_to_ports — moved from parser.py in Step 4 ────────────
+
+
+class TestExtractSendToPorts:
+    def test_simple(self):
+        assert _extract_send_to_ports("Always send to briefing.") == (
+            "briefing",
+        )
+
+    def test_two_lines(self):
+        text = "If X, send to keep.\nOtherwise send to discard."
+        assert _extract_send_to_ports(text) == ("keep", "discard")
+
+    def test_or_to_form(self):
+        text = "Send to keep or to discard."
+        assert _extract_send_to_ports(text) == ("keep", "discard")
+
+    def test_dedup_in_order(self):
+        text = "Send to A.\nLater send to A or to B."
+        assert _extract_send_to_ports(text) == ("A", "B")
+
+    def test_no_send_returns_empty(self):
+        text = "You are an analyst. Read carefully."
+        assert _extract_send_to_ports(text) == ()
+
+    def test_ignores_intro_about_sending(self):
+        # "responds by sending zero or more messages" should NOT
+        # contribute ports, because the line has no "send to".
+        text = (
+            "You respond by sending zero or more messages, each "
+            "addressed to a destination role."
+        )
+        assert _extract_send_to_ports(text) == ()
+
+
+# ── nl_role port extraction ────────────────────────────────────────────
+
+
+class TestNLRolePortExtraction:
+    def test_single_port(self):
+        entry = nl_role("You are a reporter. Always send to briefing.")
+        assert entry.out_ports == ("briefing",)
+        assert entry.in_ports == ("in_",)
+
+    def test_multiple_ports(self):
+        entry = nl_role("Triage incoming articles. Send to keep or to discard.")
+        assert entry.out_ports == ("keep", "discard")
+
+    def test_no_send_to_raises(self):
+        with pytest.raises(ValueError, match="no output ports"):
+            nl_role("You are a reporter.")
+
+    def test_empty_prompt_raises(self):
+        with pytest.raises(ValueError, match="non-empty"):
+            nl_role("")
+
+    def test_returns_agent_role_entry(self):
+        entry = nl_role("Send to summary.")
+        assert isinstance(entry, AgentRoleEntry)
+        # The factory should not have been invoked yet (lazy backend).
+        # No ANTHROPIC_API_KEY is required to construct the entry.
+
+
+# ── nl_role agent behaviour with a stub backend ────────────────────────
+
+
+class TestNLRoleAgentBehaviour:
+    def test_factory_returns_role_agent(self):
+        _register_stub("stub-trivial", json.dumps(
+            {"send_to": "out", "text": "ok"}))
+        entry = nl_role("Send to out.", AI="stub-trivial")
+        agent = entry()
+        assert isinstance(agent, Role)
+        assert agent.statuses == ["out"]
+
+    def test_routes_to_send_to(self):
+        _register_stub(
+            "stub-keep",
+            json.dumps({"send_to": "keep", "text": "interesting"}),
+        )
+        entry = nl_role(
+            "Triage emails. Send to keep or to discard.",
+            AI="stub-keep",
+        )
+        agent = entry()
+        # Drive role_fn directly to avoid threads/queues. role_fn is
+        # stored as agent._fn by the Role superclass.
+        results = agent._fn({"body": "hi"})
+        assert len(results) == 1
+        msg, status = results[0]
+        assert status == "keep"
+        assert msg["send_to"] == "keep"
+        assert msg["body"] == "hi"  # upstream metadata preserved
+
+    def test_default_destination_when_send_to_missing(self):
+        _register_stub("stub-no-key", json.dumps({"text": "no key here"}))
+        entry = nl_role("Send to first or to second.", AI="stub-no-key")
+        agent = entry()
+        results = agent._fn({"x": 1})
+        assert len(results) == 1
+        _msg, status = results[0]
+        assert status == "first"  # first declared port = default
+
+    def test_routes_to_list_of_destinations(self):
+        _register_stub(
+            "stub-list",
+            json.dumps({"send_to": ["first", "second"], "text": "fan out"}),
+        )
+        entry = nl_role("Send to first or to second.", AI="stub-list")
+        agent = entry()
+        results = agent._fn({"k": 1})
+        statuses = [s for _m, s in results]
+        assert statuses == ["first", "second"]
+
+    def test_plain_text_reply_routes_to_default(self):
+        _register_stub("stub-text", "Just plain text")
+        entry = nl_role("Always send to summary.", AI="stub-text")
+        agent = entry()
+        results = agent._fn({"k": 1})
+        assert len(results) == 1
+        msg, status = results[0]
+        assert status == "summary"
+        assert msg == "Just plain text"
+
+    def test_exception_in_backend_returns_empty_list(self):
+        def boom(_user):
+            raise RuntimeError("boom")
+
+        _register_stub("stub-boom", boom)
+        entry = nl_role("Send to anywhere.", AI="stub-boom")
+        agent = entry()
+        # Should swallow the error and return [] so the network does
+        # not crash on a single bad LLM call.
+        assert agent._fn({"k": 1}) == []
+
+    def test_string_input_is_serialised(self):
+        captured = {}
+
+        def reply(user):
+            captured["user"] = user
+            return json.dumps({"send_to": "out", "text": "ok"})
+
+        _register_stub("stub-str", reply)
+        entry = nl_role("Send to out.", AI="stub-str")
+        agent = entry()
+        agent._fn("hello")
+        assert captured["user"] == "hello"
+
+
+class TestNLRoleAIAlias:
+    def test_default_is_claude(self):
+        # DEFAULT_AI is the constant used when AI= is omitted.
+        assert DEFAULT_AI.lower() == "claude"
+
+    def test_claude_resolves_to_anthropic_lazily(self):
+        # We do not actually instantiate the anthropic backend here;
+        # we only assert nl_role does not eagerly resolve at build
+        # time. If it did, it would raise on missing API key.
+        entry = nl_role("Send to out.")  # default AI=Claude
+        assert isinstance(entry, AgentRoleEntry)
+        # The factory has not been called yet — backend not resolved.
+        # We do NOT call entry() because that would try anthropic.
+
+
+# ── load_roles_dir ─────────────────────────────────────────────────────
+
+
+class TestLoadRolesDir:
+    def test_missing_dir_returns_empty_mapping(self, tmp_path):
+        out = load_roles_dir(tmp_path / "does_not_exist")
+        assert out == {}
+
+    def test_empty_dir_returns_empty_mapping(self, tmp_path):
+        assert load_roles_dir(tmp_path) == {}
+
+    def test_loads_md_files(self, tmp_path):
+        (tmp_path / "analyst.md").write_text(
+            "You are an analyst. Send to brief.\n"
+        )
+        (tmp_path / "editor.md").write_text(
+            "You edit. Send to publish or to revise.\n"
+        )
+        out = load_roles_dir(tmp_path)
+        assert set(out) == {"analyst", "editor"}
+
+        analyst = out["analyst"]
+        assert isinstance(analyst, AgentRoleEntry)
+        assert analyst.name == "analyst"
+        assert analyst.out_ports == ("brief",)
+
+        editor = out["editor"]
+        assert editor.out_ports == ("publish", "revise")
+
+    def test_underscore_md_skipped(self, tmp_path):
+        (tmp_path / "_template.md").write_text("Send to anywhere.")
+        assert load_roles_dir(tmp_path) == {}
+
+    def test_loads_py_files(self, tmp_path):
+        (tmp_path / "rss.py").write_text(
+            "from dissyslab.office_v2.library import OfficeRoleEntry\n"
+            "role = OfficeRoleEntry(name='', path='./somewhere')\n"
+        )
+        out = load_roles_dir(tmp_path)
+        assert set(out) == {"rss"}
+        rss = out["rss"]
+        assert isinstance(rss, OfficeRoleEntry)
+        assert rss.name == "rss"  # filled in from the filename
+
+    def test_py_keeps_explicit_name(self, tmp_path):
+        (tmp_path / "x.py").write_text(
+            "from dissyslab.office_v2.library import OfficeRoleEntry\n"
+            "role = OfficeRoleEntry(name='custom', path='./p')\n"
+        )
+        out = load_roles_dir(tmp_path)
+        # The dict key follows the filename; the entry's own .name
+        # field is whatever the module set.
+        assert out["x"].name == "custom"
+
+    def test_py_missing_role_attribute(self, tmp_path):
+        (tmp_path / "broken.py").write_text("x = 1\n")
+        with pytest.raises(ValueError, match="no top-level 'role'"):
+            load_roles_dir(tmp_path)
+
+    def test_py_wrong_type_rejected(self, tmp_path):
+        (tmp_path / "wrong.py").write_text("role = 42\n")
+        with pytest.raises(TypeError, match="AgentRoleEntry or OfficeRoleEntry"):
+            load_roles_dir(tmp_path)
+
+    def test_underscore_py_skipped(self, tmp_path):
+        (tmp_path / "__init__.py").write_text("")
+        assert load_roles_dir(tmp_path) == {}
+
+    def test_duplicate_stem_md_md(self, tmp_path):
+        # Two .md files with the same stem can't co-exist; let's
+        # simulate via .md and .py with the same stem.
+        (tmp_path / "x.md").write_text("Send to out.")
+        (tmp_path / "x.py").write_text(
+            "from dissyslab.office_v2.library import OfficeRoleEntry\n"
+            "role = OfficeRoleEntry(name='x', path='./p')\n"
+        )
+        with pytest.raises(ValueError, match="duplicate"):
+            load_roles_dir(tmp_path)
+
+
+# ── Type aliases reachable & idiomatic ─────────────────────────────────
+
+
+class TestTypeAliases:
+    def test_role_entry_union_accepts_both(self):
+        # Static type-checker concerns aside, both kinds satisfy the
+        # runtime structural requirement: they are dataclasses with
+        # name + description.
+        a: RoleEntry = AgentRoleEntry(
+            name="x",
+            in_ports=("in_",),
+            out_ports=("a",),
+            factory=lambda: None,
+        )
+        b: RoleEntry = OfficeRoleEntry(name="y", path="./p")
+        for entry in (a, b):
+            assert hasattr(entry, "name")
+            assert hasattr(entry, "description")
+
+    def test_library_dict_works(self):
+        lib: Library = {
+            "x": OfficeRoleEntry(name="x", path="./p"),
+        }
+        assert lib["x"].path == "./p"
