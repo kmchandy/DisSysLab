@@ -1,11 +1,10 @@
 """
 Hand-written parser for office.md.
 
-This module replaces the LLM-driven parser in ``dissyslab.office.utils``
-with a small, deterministic, line-numbered parser. The grammar of an
+A small, deterministic, line-numbered parser. The grammar of an
 office description is small and regular enough that a hand-written
-parser is both shorter and stricter than the LLM version, and never
-flakes.
+parser is both shorter and stricter than an LLM-driven equivalent
+(the v1 approach this module replaces), and never flakes.
 
 Public entry point
 ==================

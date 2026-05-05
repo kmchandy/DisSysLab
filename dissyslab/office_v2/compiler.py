@@ -108,8 +108,9 @@ from dissyslab.office_v2.parser import parse_office_dir
 def _import_class(import_stmt: str, class_name: str):
     """Resolve ``import_stmt`` and return the named class.
 
-    Mirrors ``dissyslab.office.office_compiler._import_class`` so the
-    v2 compiler stays behaviour-compatible with the v1 registries.
+    Used to instantiate registry-backed source/sink classes whose
+    import path is stored as a string in
+    ``dissyslab.office.utils.SOURCE_REGISTRY`` / ``SINK_REGISTRY``.
     """
     import importlib
 

@@ -1,17 +1,15 @@
 # dissyslab/office/__init__.py
 """
-dissyslab.office - Office compilation utilities.
+dissyslab.office — source/sink registry catalogue.
 
-This subpackage contains the machinery that reads role and office
-description files and emits runnable app.py files:
+After the v2 cutover, this subpackage holds only
+``utils.SOURCE_REGISTRY`` / ``utils.SINK_REGISTRY`` and the
+``expand_shortcut`` helper. The compiler, codegen, and CLI for
+``dsl build`` / ``dsl run`` all live in ``dissyslab.office_v2``.
 
-  - utils           : shared helpers, registries, file parsing
-  - make_office     : generate app.py from an office description
-  - make_network    : generate the network wiring
-  - office_compiler : top-level driver used by `dsl build` and by the
-                      repo-root deprecation shim at office_compiler.py
-
-First-year students normally do not import from this subpackage
-directly; they run the CLI (`dsl build <office_dir>`) or the shim
-(`python office_compiler.py <office_dir>`).
+Long-run direction: the registry should migrate into a built-in
+role library; once that lands this subpackage goes away. Until
+then, ``dissyslab.office_v2.compiler._build_source`` and
+``_build_sink`` reach into ``utils`` to instantiate registry-backed
+components.
 """

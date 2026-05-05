@@ -62,19 +62,24 @@ compiled output the network loads.
 > cloned dissyslab repository. We are smoothing this for the pip-install
 > experience.
 
-Step 1 — compile each sub-office into a black box:
+Build the network — `dsl build` walks the parent office and its
+sub-offices in one pass:
 
 ```bash
-dsl build gallery/org_two_office_news/news_monitor/
-dsl build gallery/org_two_office_news/news_editor/
+dsl build dissyslab/gallery/org_two_office_news/
 ```
 
-Step 2 — compile and run the network:
+Run it:
 
 ```bash
-python -m dissyslab.office.make_network gallery/org_two_office_news/
-python3 -m gallery.org_two_office_news.app
+dsl run dissyslab/gallery/org_two_office_news/
 ```
+
+`dsl run` rebuilds automatically when any source file (an office.md
+or a roles_lib/ entry, in the parent or a sub-office) is newer than
+`build/run.py`. To inspect the generated wiring, open
+`dissyslab/gallery/org_two_office_news/build/run.py` — one
+`build_<office>()` function per office, in topological order.
 
 ## Make it yours
 

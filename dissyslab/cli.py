@@ -10,7 +10,7 @@ subcommands aimed at first-year undergraduates:
     dsl new <folder>              build a new office by chatting with Claude
     dsl edit <office_dir>         modify an existing office by chatting with Claude
     dsl run <office_dir>          run a closed office end-to-end
-    dsl build <office_dir>        generate app.py for an open office
+    dsl build <office_dir>        generate build/run.py for an office
     dsl doctor                    sanity-check Python, deps, and API key
     dsl --version                 print the installed dissyslab version
 
@@ -191,14 +191,14 @@ def _explain_failure_message(command: str, exc: BaseException) -> str:
     """The actual exception → user-message mapper. See _explain_failure."""
     msg = str(exc)
 
-    # Missing Python module — almost always a stale-generated app.py or
+    # Missing Python module — almost always a stale build/run.py or
     # a package the user forgot to install in this venv.
     if isinstance(exc, ModuleNotFoundError):
         name = exc.name or ""
         if name in {"components", "dsl"}:
             return (
-                f"{command} failed: the office's app.py uses the old "
-                f"'{name}' import path.\n"
+                f"{command} failed: the office's build/run.py uses an "
+                f"old '{name}' import path.\n"
                 f"  Fix: regenerate with  dsl build <office_dir>\n"
                 f"       or `dsl init` a fresh copy from the gallery."
             )
@@ -257,12 +257,12 @@ def _explain_failure_message(command: str, exc: BaseException) -> str:
             f"       See API_KEY_SETUP.md for the full walkthrough."
         )
 
-    # Common file-not-found during app startup (e.g. missing app.py).
+    # Common file-not-found during artifact startup (e.g. missing run.py).
     if isinstance(exc, FileNotFoundError):
         missing = getattr(exc, "filename", None) or "(unknown)"
         return (
             f"{command} failed: file not found: {missing}\n"
-            f"  If this is app.py, run `dsl build <office_dir>` first.\n"
+            f"  If this is build/run.py, run `dsl build <office_dir>` first.\n"
             f"  If this is .env, see API_KEY_SETUP.md."
         )
 
@@ -861,16 +861,19 @@ def build_parser() -> argparse.ArgumentParser:
     p_run.add_argument("office_dir", help="path to an office directory")
     p_run.set_defaults(handler=cmd_run)
 
-    # `dsl build` is internals-facing — it generates app.py, which `dsl run`
-    # calls automatically. Path A users don't need it. Keep it visible but
-    # flag it as advanced so beginners know they can skip it.
+    # `dsl build` emits the readable Python artifact at
+    # <office_dir>/build/run.py. `dsl run` calls it automatically when
+    # the artifact is missing or stale, but students often want to
+    # inspect the generated file to see exactly what was wired up.
     p_build = sub.add_parser(
         "build",
-        help="(advanced) generate app.py — most users don't need this",
+        help="generate build/run.py for an office (without running)",
         description=(
-            "(advanced) Generate app.py for an office without running it. "
-            "Most users don't need this — `dsl run` builds and runs in one "
-            "step. Useful if you want to inspect the generated Python."
+            "Generate <office_dir>/build/run.py for an office without "
+            "running it. The generated file is plain Python you can read "
+            "and run directly with `python <office_dir>/build/run.py`. "
+            "`dsl run` calls this automatically when the artifact is "
+            "missing or stale."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
