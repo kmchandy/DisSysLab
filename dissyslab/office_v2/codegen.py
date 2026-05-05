@@ -1,0 +1,498 @@
+"""
+Layer 6 — codegen: emit a readable ``run.py`` for an office tree.
+
+``compile_office`` (Layer 5) builds a runtime ``Network`` by walking
+parser output and a role library. Codegen does the same walk, but
+instead of building Python objects it writes Python *source*. The
+result is a single self-explanatory file students can open and
+trace, line-for-line, back to their ``office.md``.
+
+What gets emitted
+=================
+
+For an office tree rooted at ``<office_dir>`` we write
+``<office_dir>/build/run.py``. The file:
+
+* imports ``Network``, ``Source``, ``Sink``, and the source/sink
+  classes the office actually uses (one ``import`` per registry
+  entry, deduplicated);
+* defines a small ``_load_lib(office_dir)`` helper, then loads each
+  office's role library exactly once at module level into a
+  ``_ROLES_<OFFICE>`` mapping;
+* emits one ``build_<office>() -> Network`` function per office in
+  the tree, in topological order (children before parents);
+* if the top office is closed (no Inputs/Outputs), ends with
+  ``if __name__ == "__main__": build_<top>().run_network()``.
+
+The generated code mirrors what ``compile_office`` produces. It is
+the same ``Network`` either way; codegen exists so students can read
+the wiring as a Python module they own, not as a black-box object.
+
+Connection comments
+===================
+
+Each connection 4-tuple gets a side-of-line comment that bridges
+the runtime indexed port name back to the office.md vocabulary:
+
+    ("Alex", "out_0", "Morgan", "in_"),    # Alex's briefing → Morgan
+
+so a student can grep ``run.py`` for the same words they wrote.
+
+Path conventions
+================
+
+Library paths in the generated code are resolved relative to
+``__file__`` (the run.py itself) so the artifact is portable as long
+as the office tree stays intact around it. Sub-office paths follow
+the v2 idiom — relative to the parent office's directory.
+"""
+from __future__ import annotations
+
+import os
+import re
+import textwrap
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+from dissyslab.office_v2.compiler import (
+    CompileError,
+    _BlockTable,
+    _load_office_library,
+    _resolve_subpath,
+    _runtime_inport,
+    _runtime_outport,
+)
+from dissyslab.office_v2.library import (
+    AgentRoleEntry,
+    Library,
+    OfficeRoleEntry,
+)
+from dissyslab.office_v2.office_spec import (
+    ConnectionStmt,
+    Endpoint,
+    OfficeSpec,
+    RoleRef,
+    SinkSpec,
+    SourceSpec,
+)
+from dissyslab.office_v2.office_spec_constants import EXTERNAL
+from dissyslab.office_v2.parser import parse_office_dir
+
+
+# ── Tree of offices to emit ───────────────────────────────────────────
+
+
+@dataclass
+class _OfficeNode:
+    """One office in the dependency tree, with codegen metadata.
+
+    The codegen walk visits each office once even if it is referenced
+    multiple times by parents (the same sub-office can be embedded
+    twice). Children appear in source order; the topological emit
+    order ensures every child function is defined before any caller
+    references it.
+    """
+
+    name: str          # Python-safe identifier derived from spec.name
+    raw_name: str      # the original from office.md
+    spec: OfficeSpec
+    library: Library
+    office_dir: Path
+    table: _BlockTable
+    # children: list of (agent_name_in_parent, child_node)
+    children: List[Tuple[str, "_OfficeNode"]] = field(default_factory=list)
+
+
+def _sanitize(s: str) -> str:
+    """Coerce an office name into a Python-safe identifier suffix."""
+    s = re.sub(r"[^A-Za-z0-9_]", "_", s)
+    if not s or s[0].isdigit():
+        s = "_" + s
+    return s
+
+
+def _build_tree(
+    office_dir: Path,
+    library: Optional[Library] = None,
+    cache: Optional[Dict[Path, "_OfficeNode"]] = None,
+) -> _OfficeNode:
+    """Recursively gather codegen metadata for an office and its children.
+
+    Mirrors ``compile_office``'s walk but skips block instantiation —
+    we never call ``entry.factory()`` or open any source. The
+    resulting tree carries enough information (port shapes, sub-office
+    structure) for emission.
+    """
+    if cache is None:
+        cache = {}
+    office_dir = office_dir.resolve()
+    if office_dir in cache:
+        return cache[office_dir]
+
+    spec = parse_office_dir(office_dir)
+    if library is None:
+        library = _load_office_library(office_dir)
+
+    node = _OfficeNode(
+        name=_sanitize(spec.name),
+        raw_name=spec.name,
+        spec=spec,
+        library=library,
+        office_dir=office_dir,
+        table=_BlockTable(),
+    )
+    cache[office_dir] = node
+
+    for src in spec.sources:
+        node.table.sources[src.name] = None
+    for snk in spec.sinks:
+        node.table.sinks[snk.name] = None
+
+    for ref in spec.agents:
+        entry = library.get(ref.role_name)
+        if isinstance(entry, AgentRoleEntry):
+            node.table.role_agents[ref.agent_name] = entry.out_ports
+        elif isinstance(entry, OfficeRoleEntry):
+            child_dir = _resolve_subpath(office_dir, entry.path)
+            child = _build_tree(child_dir, library=None, cache=cache)
+            node.children.append((ref.agent_name, child))
+            node.table.subnetworks[ref.agent_name] = tuple(
+                child.spec.outputs
+            )
+        elif entry is None and ref.path is not None:
+            child_dir = _resolve_subpath(office_dir, ref.path)
+            child = _build_tree(child_dir, library=None, cache=cache)
+            node.children.append((ref.agent_name, child))
+            node.table.subnetworks[ref.agent_name] = tuple(
+                child.spec.outputs
+            )
+        elif entry is not None:
+            raise CompileError(
+                f"role {ref.role_name!r} in library is neither an "
+                f"AgentRoleEntry nor an OfficeRoleEntry "
+                f"(got {type(entry).__name__})"
+            )
+        else:
+            raise CompileError(
+                f"agent {ref.agent_name!r} uses role {ref.role_name!r}, "
+                f"but no such role is in the library and no inline "
+                f"path was provided"
+            )
+
+    return node
+
+
+def _topo_order(root: _OfficeNode) -> List[_OfficeNode]:
+    """Children-before-parents traversal, deduplicated by office_dir."""
+    out: List[_OfficeNode] = []
+    seen: set = set()
+
+    def visit(node: _OfficeNode) -> None:
+        if node.office_dir in seen:
+            return
+        seen.add(node.office_dir)
+        for _, child in node.children:
+            visit(child)
+        out.append(node)
+
+    visit(root)
+    return out
+
+
+# ── Emission helpers ──────────────────────────────────────────────────
+
+
+def _kwargs_repr(args: Dict[str, Any]) -> str:
+    """Render ``{a: 1, b: 'x'}`` as ``"a=1, b='x'"`` for code emission."""
+    return ", ".join(f"{k}={v!r}" for k, v in args.items())
+
+
+def _conn_comment(src: Endpoint, dest: Endpoint) -> str:
+    """Side-of-line comment bridging runtime ports back to office.md vocabulary."""
+    if src.name == EXTERNAL:
+        src_label = f"external '{src.port}'"
+    else:
+        src_label = f"{src.name}'s {src.port}"
+    if dest.name == EXTERNAL:
+        dest_label = f"external '{dest.port}'"
+    elif dest.port == "in_":
+        dest_label = dest.name
+    else:
+        dest_label = f"{dest.name}'s {dest.port}"
+    return f"{src_label} → {dest_label}"
+
+
+def _emit_source(
+    src: SourceSpec, indent: str
+) -> Tuple[List[str], Optional[str]]:
+    """Return (lines, import_stmt). ``import_stmt`` may be None for RSS."""
+    from dissyslab.office.utils import SOURCE_REGISTRY, expand_shortcut
+
+    reg = SOURCE_REGISTRY.get(src.name)
+    if reg is None:
+        return (
+            [
+                f"{indent}# WARNING: unknown source {src.name!r}; "
+                f"will fail at runtime"
+            ],
+            None,
+        )
+
+    args = dict(src.args)
+
+    if reg["type"] == "rss":
+        ctor = f"rss_normalizer.{src.name}({_kwargs_repr(args)})"
+        import_stmt = (
+            "import dissyslab.components.sources.rss_normalizer "
+            "as rss_normalizer"
+        )
+    elif reg["type"] == "mcp_shortcut":
+        kwargs = expand_shortcut(src.name, args)
+        ctor = f'{reg["class"]}({_kwargs_repr(kwargs)})'
+        import_stmt = reg["import"]
+    else:
+        ctor = f'{reg["class"]}({_kwargs_repr(args)})'
+        import_stmt = reg["import"]
+
+    lines = [
+        f"{indent}_{src.name} = {ctor}",
+        f"{indent}{src.name} = Source("
+        f"fn=_{src.name}.run, name={src.name!r})",
+    ]
+    return lines, import_stmt
+
+
+def _emit_sink(
+    snk: SinkSpec, indent: str
+) -> Tuple[List[str], Optional[str]]:
+    """Return (lines, import_stmt)."""
+    from dissyslab.office.utils import SINK_REGISTRY
+
+    reg = SINK_REGISTRY.get(snk.name)
+    if reg is None:
+        return (
+            [
+                f"{indent}# WARNING: unknown sink {snk.name!r}; "
+                f"will fail at runtime"
+            ],
+            None,
+        )
+
+    args = dict(snk.args)
+    ctor = f'{reg["class"]}({_kwargs_repr(args)})'
+    lines = [
+        f"{indent}_{snk.name} = {ctor}",
+        f"{indent}{snk.name} = Sink("
+        f"fn=_{snk.name}.{reg['call']}, name={snk.name!r})",
+    ]
+    return lines, reg["import"]
+
+
+def _emit_builder(node: _OfficeNode) -> str:
+    """Emit the source text of one ``build_<office>()`` function."""
+    lines: List[str] = []
+    lines.append(f"def build_{node.name}() -> Network:")
+    lines.append(
+        f'    """Build runtime Network for office {node.raw_name!r}."""'
+    )
+
+    # Sources first.
+    for src in node.spec.sources:
+        src_lines, _ = _emit_source(src, indent="    ")
+        lines.extend(src_lines)
+
+    # Sinks.
+    for snk in node.spec.sinks:
+        snk_lines, _ = _emit_sink(snk, indent="    ")
+        lines.extend(snk_lines)
+
+    if node.spec.sources or node.spec.sinks:
+        lines.append("")
+
+    # Network construction.
+    lines.append("    return Network(")
+    lines.append(f"        name={node.raw_name!r},")
+    lines.append("        blocks={")
+
+    roles_var = f"_ROLES_{node.name.upper()}"
+    for src in node.spec.sources:
+        lines.append(f'            "{src.name}": {src.name},')
+    for snk in node.spec.sinks:
+        lines.append(f'            "{snk.name}": {snk.name},')
+
+    for ref in node.spec.agents:
+        if ref.agent_name in node.table.subnetworks:
+            child = next(
+                c for n, c in node.children if n == ref.agent_name
+            )
+            lines.append(
+                f'            "{ref.agent_name}": build_{child.name}(),'
+            )
+        else:
+            lines.append(
+                f'            "{ref.agent_name}": '
+                f'{roles_var}[{ref.role_name!r}](),'
+            )
+
+    lines.append("        },")
+    lines.append("        connections=[")
+
+    for stmt in node.spec.connections:
+        from_port = _runtime_outport(
+            stmt.source.name, stmt.source.port, node.table
+        )
+        for dest in stmt.destinations:
+            to_port = _runtime_inport(
+                dest.name, dest.port, node.table
+            )
+            comment = _conn_comment(stmt.source, dest)
+            lines.append(
+                f"            ({stmt.source.name!r}, {from_port!r}, "
+                f"{dest.name!r}, {to_port!r}),    # {comment}"
+            )
+
+    lines.append("        ],")
+    if node.spec.inputs:
+        lines.append(f"        inports={list(node.spec.inputs)!r},")
+    if node.spec.outputs:
+        lines.append(f"        outports={list(node.spec.outputs)!r},")
+    lines.append("    )")
+    return "\n".join(lines)
+
+
+def _emit_imports(nodes: List[_OfficeNode]) -> str:
+    """Collate every import the generated code needs, deduplicated."""
+    base = [
+        "from pathlib import Path",
+        "",
+        "from dissyslab.network import Network",
+        "from dissyslab.blocks.source import Source",
+        "from dissyslab.blocks.sink import Sink",
+        "from dissyslab.office_v2 import load_roles_dir",
+        "",
+    ]
+
+    seen: set = set()
+    extra: List[str] = []
+    for node in nodes:
+        for src in node.spec.sources:
+            _, imp = _emit_source(src, indent="")
+            if imp and imp not in seen:
+                extra.append(imp)
+                seen.add(imp)
+        for snk in node.spec.sinks:
+            _, imp = _emit_sink(snk, indent="")
+            if imp and imp not in seen:
+                extra.append(imp)
+                seen.add(imp)
+
+    return "\n".join(base + extra)
+
+
+def _emit_library_loads(
+    nodes: List[_OfficeNode], top_dir: Path
+) -> str:
+    """Module-level ``_ROLES_<OFFICE>`` declarations, one per office."""
+    run_py_dir = top_dir / "build"
+    lines = [
+        "",
+        "_HERE = Path(__file__).resolve().parent",
+        "",
+        "",
+        "def _load_lib(office_dir: Path):",
+        '    """Load <office_dir>/roles_lib first, falling back to roles/.',
+        '',
+        '    Same convention as office_v2.compiler — primary wins on conflict.',
+        '    """',
+        "    primary = load_roles_dir(office_dir / 'roles_lib')",
+        "    legacy = load_roles_dir(office_dir / 'roles')",
+        "    return {**legacy, **primary}",
+        "",
+        "",
+    ]
+    for node in nodes:
+        var = f"_ROLES_{node.name.upper()}"
+        rel = os.path.relpath(node.office_dir, run_py_dir)
+        lines.append(f"{var} = _load_lib(_HERE / {rel!r})")
+    return "\n".join(lines)
+
+
+def _emit_main(root: _OfficeNode) -> str:
+    """If the root office is closed, emit the ``__main__`` runner block."""
+    if root.spec.is_open():
+        return ""
+    return (
+        "\n\n"
+        "if __name__ == \"__main__\":\n"
+        f"    build_{root.name}().run_network()\n"
+    )
+
+
+def _emit_header(root: _OfficeNode) -> str:
+    """Module docstring at the top of run.py."""
+    return (
+        f'"""run.py — generated by office_v2 codegen for '
+        f'office {root.raw_name!r}.\n\n'
+        f"Do not edit by hand. Re-run `dsl build` to regenerate.\n\n"
+        f"This file is plain Python: read it to see exactly which\n"
+        f"agents, sources, and sinks the office wires together, and\n"
+        f"how. Calling `build_{root.name}().run_network()` starts\n"
+        f"the system; that is also what the `__main__` block at the\n"
+        f"bottom does for closed offices.\n"
+        f'"""\n'
+    )
+
+
+# ── Public API ────────────────────────────────────────────────────────
+
+
+def render_run_py(
+    office_dir: Any, library: Optional[Library] = None
+) -> str:
+    """Build the source text of ``run.py`` for an office tree.
+
+    Returns the file contents as a string. ``emit_run_py`` writes
+    that string to disk; tests usually call ``render_run_py`` so
+    they can assert on the text without touching the filesystem.
+    """
+    office_dir = Path(office_dir).resolve()
+    root = _build_tree(office_dir, library)
+    nodes = _topo_order(root)
+
+    parts = [
+        _emit_header(root),
+        _emit_imports(nodes),
+        _emit_library_loads(nodes, office_dir),
+        "",
+        "",
+        "\n\n\n".join(_emit_builder(n) for n in nodes),
+        _emit_main(root),
+    ]
+    return "\n".join(parts)
+
+
+def emit_run_py(
+    office_dir: Any, library: Optional[Library] = None
+) -> Path:
+    """Render ``run.py`` and write it to ``<office_dir>/build/run.py``.
+
+    Returns the absolute path of the written file. Creates
+    ``<office_dir>/build/`` and a sibling ``__init__.py`` if needed.
+    """
+    office_dir = Path(office_dir).resolve()
+    text = render_run_py(office_dir, library)
+    out_dir = office_dir / "build"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "run.py"
+    out_path.write_text(text, encoding="utf-8")
+    init = out_dir / "__init__.py"
+    if not init.exists():
+        init.write_text("")
+    return out_path
+
+
+__all__ = [
+    "emit_run_py",
+    "render_run_py",
+]

@@ -14,6 +14,8 @@ Layers, built in order:
                                  nl_role, load_roles_dir               (done)
     5. Compiler                — OfficeSpec + Library ->
                                  dissyslab.network.Network             (done)
+    6. Codegen                 — emit <office>/build/run.py from a
+                                 compiled tree                         (done)
     6. (Runner is unchanged — see dissyslab.network)
     7. AgentImpl factory       — RoleEntry -> runtime Agent            (todo)
 
@@ -47,6 +49,10 @@ from dissyslab.office_v2.compiler import (
     CompileWarning,
     compile_office,
 )
+from dissyslab.office_v2.codegen import (
+    emit_run_py,
+    render_run_py,
+)
 
 __all__ = [
     "AgentRoleEntry",
@@ -67,7 +73,9 @@ __all__ = [
     "SinkSpec",
     "SourceSpec",
     "compile_office",
+    "emit_run_py",
     "load_roles_dir",
     "nl_role",
     "parse_office_dir",
+    "render_run_py",
 ]
