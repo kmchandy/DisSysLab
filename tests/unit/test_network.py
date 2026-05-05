@@ -68,7 +68,14 @@ class TestNetworkValidation:
 
 
 class TestFanoutFaninInsertion:
-    """Test automatic Broadcast and MergeAsynch insertion."""
+    """Test automatic Broadcast and MergeAsynch insertion.
+
+    Insertion now runs *after* flatten on the lifted edge list, so
+    these tests exercise it through the structural compile phase
+    (`_flatten_and_resolve`) and inspect `self.agents` —
+    Broadcast/MergeAsynch agents are added there directly with flat
+    names (``broadcast_0``, ``merge_0``, …).
+    """
 
     def test_network_inserts_broadcast_for_fanout(self):
         """Network auto-inserts Broadcast when one output connects to multiple inputs."""
@@ -84,20 +91,20 @@ class TestFanoutFaninInsertion:
             ]
         )
 
-        # Before compilation, should have original blocks
+        # Before structural compile, original blocks only
         assert len(net.blocks) == 3
+        assert net.agents == {}
 
-        # Trigger fanout/fanin insertion
-        net._insert_fanout_fanin()
+        # Run structural phase (flatten → insert → resolve → os_agent)
+        net._flatten_and_resolve()
 
-        # Should have inserted a broadcast
-        broadcast_blocks = [
-            b for b in net.blocks.values() if isinstance(b, Broadcast)]
-        assert len(broadcast_blocks) == 1
+        # A Broadcast should have been added to self.agents
+        broadcasts = [a for a in net.agents.values()
+                      if isinstance(a, Broadcast)]
+        assert len(broadcasts) == 1
 
-        # Original source should now connect to broadcast
-        # Broadcast should connect to both sinks
-        assert len(net.connections) == 3  # src→bc, bc→sink_a, bc→sink_b
+        # Final flat graph: src → bc, bc → sink_a, bc → sink_b
+        assert len(net.graph_connections) == 3
 
     def test_network_inserts_merge_for_fanin(self):
         """Network auto-inserts MergeAsynch when multiple outputs connect to one input."""
@@ -113,21 +120,17 @@ class TestFanoutFaninInsertion:
             ]
         )
 
-        # Before compilation, should have original blocks
         assert len(net.blocks) == 3
+        assert net.agents == {}
 
-        # Trigger fanout/fanin insertion
-        net._insert_fanout_fanin()
+        net._flatten_and_resolve()
 
-        # Should have inserted a merge
-        merge_blocks = [
-            b for b in net.blocks.values() if isinstance(b, MergeAsynch)]
-        assert len(merge_blocks) == 1
+        merges = [a for a in net.agents.values()
+                  if isinstance(a, MergeAsynch)]
+        assert len(merges) == 1
 
-        # Both sources should connect to merge
-        # Merge should connect to sink
-        # src_a→merge, src_b→merge, merge→sink
-        assert len(net.connections) == 3
+        # src_a → merge, src_b → merge, merge → sink
+        assert len(net.graph_connections) == 3
 
     def test_network_handles_multiple_fanout_fanin(self):
         """Network handles multiple fanout and fanin patterns in one network."""
@@ -154,16 +157,97 @@ class TestFanoutFaninInsertion:
             ]
         )
 
-        net._insert_fanout_fanin()
+        net._flatten_and_resolve()
 
-        # Should have inserted both merge and broadcast
-        merge_blocks = [
-            b for b in net.blocks.values() if isinstance(b, MergeAsynch)]
-        broadcast_blocks = [
-            b for b in net.blocks.values() if isinstance(b, Broadcast)]
+        merges = [a for a in net.agents.values()
+                  if isinstance(a, MergeAsynch)]
+        broadcasts = [a for a in net.agents.values()
+                      if isinstance(a, Broadcast)]
 
-        assert len(merge_blocks) == 1
-        assert len(broadcast_blocks) == 1
+        assert len(merges) == 1
+        assert len(broadcasts) == 1
+
+    def test_fanout_inside_nested_network(self):
+        """Fanout *inside* a sub-network should be handled.
+
+        Regression coverage for the ordering fix: prior to the
+        flatten-then-insert refactor, the old _insert_fanout_fanin
+        only ran on the top level's connections, so a fanout pattern
+        inside a sub-network was silently left in place. The flat
+        post-flatten edge list now exposes it and Broadcast is
+        inserted correctly.
+        """
+        # Inner network: external/in_ fans out to two leaves.
+        sink_a = Sink(fn=print, name="leaf_a")
+        sink_b = Sink(fn=print, name="leaf_b")
+        inner = Network(
+            name="inner",
+            inports=["in_"],
+            blocks={"leaf_a": sink_a, "leaf_b": sink_b},
+            connections=[
+                ("external", "in_", "leaf_a", "in_"),
+                ("external", "in_", "leaf_b", "in_"),
+            ],
+        )
+
+        source = Source(fn=lambda: None, name="src")
+        outer = Network(
+            name="outer",
+            blocks={"src": source, "inner": inner},
+            connections=[("src", "out_", "inner", "in_")],
+        )
+
+        outer._flatten_and_resolve()
+
+        broadcasts = [a for a in outer.agents.values()
+                      if isinstance(a, Broadcast)]
+        assert len(broadcasts) == 1, (
+            "Expected one Broadcast for fanout inside nested network"
+        )
+
+        # graph_connections: src → bc, bc → leaf_a, bc → leaf_b
+        assert len(outer.graph_connections) == 3
+        # Both leaves should be reached via the broadcast.
+        leaves_reached = {tb for (_, _, tb, _) in outer.graph_connections
+                          if tb.endswith("leaf_a") or tb.endswith("leaf_b")}
+        assert len(leaves_reached) == 2
+
+    def test_fanin_inside_nested_network(self):
+        """Fanin *inside* a sub-network should be handled.
+
+        Mirror of the fanout test above. Two leaves inside a
+        sub-network both write to its external/out_ port; the
+        flatten-then-insert pipeline must insert a MergeAsynch.
+        """
+        leaf_a = Source(fn=lambda: None, name="leaf_a")
+        leaf_b = Source(fn=lambda: None, name="leaf_b")
+        inner = Network(
+            name="inner",
+            outports=["out_"],
+            blocks={"leaf_a": leaf_a, "leaf_b": leaf_b},
+            connections=[
+                ("leaf_a", "out_", "external", "out_"),
+                ("leaf_b", "out_", "external", "out_"),
+            ],
+        )
+
+        sink = Sink(fn=print, name="sink")
+        outer = Network(
+            name="outer",
+            blocks={"inner": inner, "sink": sink},
+            connections=[("inner", "out_", "sink", "in_")],
+        )
+
+        outer._flatten_and_resolve()
+
+        merges = [a for a in outer.agents.values()
+                  if isinstance(a, MergeAsynch)]
+        assert len(merges) == 1, (
+            "Expected one MergeAsynch for fanin inside nested network"
+        )
+
+        # graph_connections: leaf_a → merge, leaf_b → merge, merge → sink
+        assert len(outer.graph_connections) == 3
 
 
 class TestNestedNetworks:

@@ -266,9 +266,48 @@ Network (spec)  ──compile()──>  Network (runtime)
 blocks + connections            agents + threads + queues
 ```
 
+`compile()` is split into two phases:
+
+```python
+def compile(self):
+    self._flatten_and_resolve()   # Phase 1: structural
+    self._wire_and_thread()       # Phase 2: runtime
+```
+
+**Phase 1 — `_flatten_and_resolve`** produces `self.agents` (flat dict
+of leaf agents, including auto-inserted Broadcast / MergeAsynch) and
+`self.graph_connections` (1-to-1 agent-to-agent edges). Steps:
+
+1. Flatten nested networks to leaf agents.
+2. Insert fanout/fanin in the flat lifted edge list.
+3. Resolve external port chains (collapse boundary edges).
+4. Create os_agent (needs full graph; no queues yet).
+
+**Phase 2 — `_wire_and_thread`** materializes the runtime: queues,
+os_agent monitoring queues, threads, and final compiled-state
+validation. Steps:
+
+5. Wire queues between leaf agents.
+6. Wire os_agent's monitoring queues.
+7. Create one thread per agent (plus os_agent thread).
+8. Validate compiled structure.
+
+After Phase 1, the network is fully described as a flat graph but no
+queues or threads exist — useful for visualization, debugging, or any
+tool that wants the static structure without a running runtime.
+
+> **Note on step ordering.** Fanout/fanin insertion runs *after*
+> flatten (step 2, not before flatten). Earlier versions inserted at
+> the top level only, so fanout/fanin patterns that lived inside an
+> open sub-office were silently left in place. Inserting on the flat
+> post-flatten edge list catches them anywhere in the hierarchy.
+> Synthetic Broadcast / MergeAsynch agents are added directly to
+> `self.agents` with flat names (`broadcast_0`, `merge_0`, …); resolve
+> then collapses external chains through them.
+
 ### Steps
 
-#### Step 0: Insert Fanout/Fanin (Pre-processing)
+#### Step 2: Insert Fanout/Fanin (after flatten)
 
 **Purpose**: Maintain 1-to-1 connection invariant
 
@@ -297,16 +336,18 @@ connections = [
 # Now all connections are 1-to-1
 ```
 
-**Algorithm**:
-1. Compute in-degree and out-degree for each (block, port) pair
-2. For each port with out-degree > 1: Insert Broadcast
-3. For each port with in-degree > 1: Insert Merge
-4. Rewrite connections to go through inserted agents
-5. Add inserted agents to blocks dictionary
+**Algorithm** (operates on `self.unresolved_connections` and
+`self.agents` — i.e. on the flat lifted edge list produced by Step 1):
+1. Compute out-degree for each (block, port) pair; for each port with
+   out-degree > 1 insert a Broadcast and rewrite the outgoing edges.
+2. Recompute in-degree (post-Broadcast); for each port with in-degree
+   > 1 insert a MergeAsynch and rewrite the incoming edges.
+3. Synthesised Broadcast / MergeAsynch agents are added to
+   `self.agents` directly with flat names (`broadcast_0`, `merge_0`, …).
 
 **Transparency**: Students don't see Broadcast/Merge unless debugging
 
-#### Step 1: Flatten Nested Networks
+#### Step 1: Flatten Nested Networks (runs before insert)
 
 **Purpose**: Expand nested networks into flat list of leaf agents
 
@@ -359,7 +400,7 @@ def flatten():
 - Two levels: `"root.component.agent_name"`
 - N levels: `"root.comp1.comp2...compN.agent_name"`
 
-#### Step 2: Lift Connections
+#### Step 1b: Lift Connections (part of flatten)
 
 **Purpose**: Convert relative names to full paths
 
@@ -382,7 +423,7 @@ def flatten():
 # Note: "external" → path (component's boundary)
 ```
 
-#### Step 3: Resolve External Connections (Fixpoint)
+#### Step 3: Resolve External Connections (Fixpoint, after insert)
 
 **Purpose**: Collapse chains through external boundaries
 
@@ -441,7 +482,7 @@ while changed:
 
 **Result**: Only direct agent→agent connections remain
 
-#### Step 4: Wire Queues
+#### Step 5: Wire Queues (Phase 2)
 
 **Purpose**: Create actual communication channels
 
@@ -466,7 +507,7 @@ for (from_name, from_port, to_name, to_port) in graph_connections:
 - Sending agents have references to receiving agents' queues
 - Messages flow through shared queues (thread-safe)
 
-#### Step 5: Create Threads
+#### Step 7: Create Threads (Phase 2)
 
 **Purpose**: Enable concurrent execution
 

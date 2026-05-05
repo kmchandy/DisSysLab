@@ -207,96 +207,130 @@ class Network:
         """
         Compile network into executable form.
 
-        Pipeline:
-        1. Insert fanout/fanin agents (maintain 1-to-1 invariant)
-        2. Flatten nested networks to leaf agents
-        3. Resolve external connections (collapse chains)
-        4. Create os_agent (needs full graph from steps 1-3)
-        5. Wire queues between agents
-        6. Create execution threads (client agents + os_agent)
-        7. Validate compiled structure
+        The pipeline is split into two phases:
+
+        Phase 1 — _flatten_and_resolve (structural):
+          1a. Flatten nested networks to leaf agents.
+          1b. Insert fanout/fanin agents in the flat lifted edge list.
+          1c. Resolve external port chains (collapse boundary edges).
+          1d. Create os_agent (needs full graph; no queues yet).
+
+        Phase 2 — _wire_and_thread (runtime):
+          2a. Wire communication queues between leaf agents.
+          2b. Wire os_agent's monitoring queues.
+          2c. Create one thread per agent (plus os_agent thread).
+          2d. Validate compiled structure.
+
+        After Phase 1, self.agents and self.graph_connections are
+        complete and inspectable — useful for visualization, debugging,
+        or any tool that wants the flat form without queues or threads.
         """
         if self.compiled:
             return
 
-        # Step 1: Maintain 1-to-1 invariant
-        self._insert_fanout_fanin()
-
-        # Step 2: Flatten to leaf agents
-        self._flatten_networks()
-
-        # Step 3: Resolve external port chains
-        self._resolve_external_connections()
-
-        # Step 4: Create os_agent (needs full graph from steps 1-3)
-        self._create_os_agent()
-
-        # Step 5: Wire communication channels
-        self._wire_queues()
-
-        # Step 6: Wire os_agent client queues (needs wired queues from step 5)
-        self._wire_os_agent_queues()
-
-        # Step 7: Create execution threads
-        self._create_threads()
-
-        # Step 7: Validate compilation succeeded
-        self._validate_compiled()
+        self._flatten_and_resolve()
+        self._wire_and_thread()
 
         self.compiled = True
 
+    def _flatten_and_resolve(self) -> None:
+        """
+        Phase 1: structural compile.
+
+        Produces:
+          - self.agents:            flat dict of leaf agents (including
+                                    auto-inserted Broadcast / MergeAsynch).
+          - self.graph_connections: 1-to-1 agent-to-agent edges.
+
+        No queues, no threads, no os_agent wiring — those are Phase 2.
+
+        Note: _insert_fanout_fanin runs *after* flatten so that
+        fanout/fanin anywhere in the office hierarchy is handled. The
+        previous ordering only saw top-level connections.
+        """
+        self._flatten_networks()
+        self._insert_fanout_fanin()
+        self._resolve_external_connections()
+        self._create_os_agent()
+
+    def _wire_and_thread(self) -> None:
+        """
+        Phase 2: runtime compile.
+
+        Wires queues between leaf agents, wires os_agent's monitoring
+        queues, creates one thread per agent, and validates the
+        compiled structure. Requires that Phase 1 has completed.
+        """
+        self._wire_queues()
+        self._wire_os_agent_queues()
+        self._create_threads()
+        self._validate_compiled()
+
     def _insert_fanout_fanin(self) -> None:
-        """Insert Broadcast and Merge agents for multiple connections."""
+        """
+        Insert Broadcast and Merge agents into the flat lifted edge
+        list to maintain the 1-to-1 connection invariant.
+
+        Operates on self.unresolved_connections (post-flatten) so that
+        fanout/fanin anywhere in the office hierarchy is handled, not
+        just at the top level. Inserted agents are added directly to
+        self.agents with flat names ("broadcast_0", "merge_0", …).
+
+        Two passes: fanout first (out-degree > 1), then fanin (in-degree
+        > 1). Counted on (block, port) coordinates which are already
+        path-prefixed by the flatten step.
+        """
         from dissyslab.blocks.fanout import Broadcast
         from dissyslab.blocks.fanin import MergeAsynch
 
+        # ── Fanout pass: out-degree > 1 ───────────────────────────
         out_degree: Dict[Tuple[str, str], int] = {}
-        in_degree: Dict[Tuple[str, str], int] = {}
-
-        for (fb, fp, tb, tp) in self.connections:
+        for (fb, fp, tb, tp) in self.unresolved_connections:
             out_degree[(fb, fp)] = out_degree.get((fb, fp), 0) + 1
-            in_degree[(tb, tp)] = in_degree.get((tb, tp), 0) + 1
 
         fanout_cases = [(b, p)
                         for (b, p), deg in out_degree.items() if deg > 1]
 
         broadcast_count = 0
         for (block, port) in fanout_cases:
-            outgoing = [c for c in self.connections if c[0]
-                        == block and c[1] == port]
+            outgoing = [c for c in self.unresolved_connections
+                        if c[0] == block and c[1] == port]
             num_outputs = len(outgoing)
             broadcast_name = f"broadcast_{broadcast_count}"
             broadcast = Broadcast(num_outputs=num_outputs, name=broadcast_name)
-            self.blocks[broadcast_name] = broadcast
+            self.agents[broadcast_name] = broadcast
             broadcast_count += 1
             for c in outgoing:
-                self.connections.remove(c)
-            self.connections.append((block, port, broadcast_name, "in_"))
+                self.unresolved_connections.remove(c)
+            self.unresolved_connections.append(
+                (block, port, broadcast_name, "in_"))
             for i, (_, _, dest_block, dest_port) in enumerate(outgoing):
-                self.connections.append(
+                self.unresolved_connections.append(
                     (broadcast_name, f"out_{i}", dest_block, dest_port))
 
-        in_degree = {}
-        for (fb, fp, tb, tp) in self.connections:
+        # ── Fanin pass: in-degree > 1 (recompute after fanout) ────
+        in_degree: Dict[Tuple[str, str], int] = {}
+        for (fb, fp, tb, tp) in self.unresolved_connections:
             in_degree[(tb, tp)] = in_degree.get((tb, tp), 0) + 1
 
         fanin_cases = [(b, p) for (b, p), deg in in_degree.items() if deg > 1]
 
         merge_count = 0
         for (block, port) in fanin_cases:
-            incoming = [c for c in self.connections if c[2]
-                        == block and c[3] == port]
+            incoming = [c for c in self.unresolved_connections
+                        if c[2] == block and c[3] == port]
             num_inputs = len(incoming)
             merge_name = f"merge_{merge_count}"
             merge = MergeAsynch(num_inputs=num_inputs, name=merge_name)
-            self.blocks[merge_name] = merge
+            self.agents[merge_name] = merge
             merge_count += 1
             for c in incoming:
-                self.connections.remove(c)
+                self.unresolved_connections.remove(c)
             for i, (src_block, src_port, _, _) in enumerate(incoming):
-                self.connections.append(
+                self.unresolved_connections.append(
                     (src_block, src_port, merge_name, f"in_{i}"))
-            self.connections.append((merge_name, "out_", block, port))
+            self.unresolved_connections.append(
+                (merge_name, "out_", block, port))
 
     def _flatten_networks(self) -> None:
         """Flatten nested networks to leaf agents."""
