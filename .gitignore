@@ -141,3 +141,5 @@ demo/
 # Exception: README-embedded demo GIFs in docs/ ARE tracked
 !docs/*.gif
 custom_app-for-nyasha.tar.gz
+
+build/
