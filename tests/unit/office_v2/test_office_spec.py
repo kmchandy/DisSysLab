@@ -8,12 +8,11 @@ from __future__ import annotations
 import pytest
 
 from dissyslab.office_v2 import (
-    AgentRef,
-    AgentSpec,
     ConnectionStmt,
     Endpoint,
     EXTERNAL,
     OfficeSpec,
+    RoleRef,
     SinkSpec,
     SourceSpec,
 )
@@ -66,31 +65,47 @@ class TestSinkSpec:
             SinkSpec(name=EXTERNAL)
 
 
-# ── AgentRef ───────────────────────────────────────────────────────────
+# ── RoleRef ────────────────────────────────────────────────────────────
 
 
-class TestAgentRef:
-    def test_minimal(self):
-        r = AgentRef(name="news_monitor", path="../news_monitor")
-        assert r.name == "news_monitor"
+class TestRoleRef:
+    def test_leaf_role(self):
+        r = RoleRef(agent_name="Susan", role_name="editor")
+        assert r.agent_name == "Susan"
+        assert r.role_name == "editor"
+        assert r.path is None
+        # Convenience alias for downstream code that used to read .name
+        assert r.name == "Susan"
+
+    def test_sub_office_with_path(self):
+        r = RoleRef(
+            agent_name="news_monitor",
+            role_name="news_monitor",
+            path="../news_monitor",
+        )
         assert r.path == "../news_monitor"
 
-    def test_empty_name_rejected(self):
+    def test_empty_agent_name_rejected(self):
         with pytest.raises(ValueError):
-            AgentRef(name="", path="some/path")
+            RoleRef(agent_name="", role_name="editor")
 
-    def test_external_name_rejected(self):
+    def test_external_agent_name_rejected(self):
         with pytest.raises(ValueError, match="reserved"):
-            AgentRef(name=EXTERNAL, path="some/path")
+            RoleRef(agent_name=EXTERNAL, role_name="editor")
+
+    def test_empty_role_name_rejected(self):
+        with pytest.raises(ValueError, match="empty role_name"):
+            RoleRef(agent_name="X", role_name="")
 
     def test_empty_path_rejected(self):
         with pytest.raises(ValueError, match="empty path"):
-            AgentRef(name="X", path="")
+            RoleRef(agent_name="X", role_name="r", path="")
 
     def test_hashable(self):
-        r1 = AgentRef(name="X", path="/a")
-        r2 = AgentRef(name="X", path="/a")
+        r1 = RoleRef(agent_name="X", role_name="r")
+        r2 = RoleRef(agent_name="X", role_name="r")
         assert hash(r1) == hash(r2)
+        assert {r1, r2} == {r1}
 
 
 # ── Endpoint ───────────────────────────────────────────────────────────
@@ -186,9 +201,7 @@ class TestOfficeSpec:
             sources=(SourceSpec(name="rss"),),
             sinks=(SinkSpec(name="printer"),),
             agents=(
-                AgentSpec(
-                    name="Alex", in_ports=("in_",), out_ports=("out_",)
-                ),
+                RoleRef(agent_name="Alex", role_name="analyst"),
             ),
         )
         assert spec.name == "demo"
@@ -201,9 +214,7 @@ class TestOfficeSpec:
             inputs=("feed",),
             outputs=("done",),
             agents=(
-                AgentSpec(
-                    name="A", in_ports=("in_",), out_ports=("out_",)
-                ),
+                RoleRef(agent_name="A", role_name="analyst"),
             ),
         )
         assert spec.is_open()
@@ -222,11 +233,7 @@ class TestOfficeSpec:
                 name="o",
                 sources=(SourceSpec(name="conflict"),),
                 agents=(
-                    AgentSpec(
-                        name="conflict",
-                        in_ports=("in_",),
-                        out_ports=("out_",),
-                    ),
+                    RoleRef(agent_name="conflict", role_name="analyst"),
                 ),
             )
 
@@ -238,38 +245,45 @@ class TestOfficeSpec:
                 sinks=(SinkSpec(name="x"),),
             )
 
-    def test_agents_can_mix_specs_and_refs(self):
+    def test_agents_uniform_role_refs(self):
         spec = OfficeSpec(
             name="o",
             agents=(
-                AgentSpec(
-                    name="Alex", in_ports=("in_",), out_ports=("out_",)
+                RoleRef(agent_name="Alex", role_name="analyst"),
+                RoleRef(
+                    agent_name="news_monitor",
+                    role_name="news_monitor",
+                    path="../news_monitor",
                 ),
-                AgentRef(name="news_monitor", path="../news_monitor"),
             ),
         )
         assert spec.agent_names() == ("Alex", "news_monitor")
-        refs = spec.agent_refs()
-        assert len(refs) == 1
-        assert refs[0].name == "news_monitor"
+        office_refs = spec.office_refs()
+        assert len(office_refs) == 1
+        assert office_refs[0].agent_name == "news_monitor"
+        assert office_refs[0].path == "../news_monitor"
 
-    def test_agents_must_be_spec_or_ref(self):
-        with pytest.raises(TypeError, match="AgentSpec or AgentRef"):
+    def test_agents_must_be_role_refs(self):
+        with pytest.raises(TypeError, match="RoleRef"):
             OfficeSpec(
                 name="o",
                 agents=("not-an-agent",),  # type: ignore[arg-type]
             )
 
-    def test_agentref_collides_with_source(self):
+    def test_role_ref_collides_with_source(self):
         with pytest.raises(ValueError, match="declared as both"):
             OfficeSpec(
                 name="o",
                 sources=(SourceSpec(name="dup"),),
-                agents=(AgentRef(name="dup", path="/p"),),
+                agents=(
+                    RoleRef(
+                        agent_name="dup", role_name="r", path="/p"
+                    ),
+                ),
             )
 
     def test_hashable(self):
-        a = AgentSpec(name="Alex", in_ports=("in_",), out_ports=("out_",))
+        a = RoleRef(agent_name="Alex", role_name="analyst")
         spec1 = OfficeSpec(name="o", agents=(a,))
         spec2 = OfficeSpec(name="o", agents=(a,))
         assert hash(spec1) == hash(spec2)
@@ -279,9 +293,7 @@ class TestOfficeSpec:
             name="o",
             inputs=["a"],
             agents=[
-                AgentSpec(
-                    name="A", in_ports=("in_",), out_ports=("out_",)
-                )
+                RoleRef(agent_name="A", role_name="analyst"),
             ],
         )
         assert isinstance(spec.inputs, tuple)

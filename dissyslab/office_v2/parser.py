@@ -1,5 +1,5 @@
 """
-Hand-written parser for office.md and roles/*.md.
+Hand-written parser for office.md.
 
 This module replaces the LLM-driven parser in ``dissyslab.office.utils``
 with a small, deterministic, line-numbered parser. The grammar of an
@@ -11,17 +11,19 @@ Public entry point
 ==================
 
 ``parse_office_dir(dir_path) -> OfficeSpec``
-    Reads ``office.md`` and ``roles/*.md`` from ``dir_path`` and
-    returns an ``OfficeSpec``. Raises ``ParseError`` (with file,
-    line number, and a snippet of the offending line) on bad input.
+    Reads ``office.md`` from ``dir_path`` and returns an
+    ``OfficeSpec``. Raises ``ParseError`` (with file, line number,
+    and a snippet of the offending line) on bad input.
 
-This parser does **no I/O outside the office's own directory**. In
-particular, when a sub-office is declared (``X is an office at
-<path>.``) the parser records an ``AgentRef`` and stops; it does
-NOT read the referenced office. Resolving sub-offices into full
-``AgentSpec``s is the linker's job, not the parser's. That keeps
-Layer 4 a pure grammar-level pass and lets students compile and
-reuse offices independently, like a library of packages.
+This parser reads **only** the office's own ``office.md`` — it does
+not open ``roles/*.md`` or any sub-office's ``office.md``. Role
+discovery (and port-shape extraction) is the role library's job
+(see ``office_v2.library.load_roles_dir``); sub-office recursion is
+the compiler's job (Layer 5). Each ``Agents:`` line — leaf or
+sub-office — produces a uniform ``RoleRef``; for the inline form
+``X is an office at <path>.`` the parser captures the path so
+Layer 5 can auto-register an ``OfficeRoleEntry``, but the parser
+itself never reads that path.
 
 Grammar (informally)
 ====================
@@ -68,21 +70,6 @@ to ``Endpoint("external", <output_name>)``. After this pass,
 boundary-touching connections are uniformly represented and the
 compiler does not need to special-case them.
 
-Strict role-port extraction (Q4.4 = strict)
-===========================================
-
-For each role file, we extract output port names by scanning for
-the phrase ``send to <name>`` (case-insensitive). Within a line
-that contains ``send to``, we capture every ``to <name>`` to
-catch the ``Send to keep or to discard.`` form.
-
-If a role file produces zero output ports we DO NOT fall back to
-an LLM. Instead we raise ``ParseError`` with a 2-line example of
-how to phrase a role to make ports explicit. Sink-style roles
-(roles with no destinations) are not currently expressible in this
-grammar; today they are always called sinks in office.md, not
-agents.
-
 Tolerance / forgiveness
 =======================
 
@@ -108,14 +95,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from dissyslab.office_v2.agent_spec import AgentSpec
-from dissyslab.office_v2.network import EXTERNAL
+from dissyslab.office_v2.office_spec_constants import EXTERNAL
 from dissyslab.office_v2.office_spec import (
-    AgentEntry,
-    AgentRef,
     ConnectionStmt,
     Endpoint,
     OfficeSpec,
+    RoleRef,
     SinkSpec,
     SourceSpec,
 )
@@ -478,7 +463,7 @@ def _parse_decl_section(
 
 
 _AGENT_LINE_RE = re.compile(
-    r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s+is\s+an?\s+(.+?)\s*$"
+    r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s+(?:is|are)\s+an?\s+(.+?)\s*$"
 )
 
 
@@ -510,7 +495,8 @@ def _parse_agents_section(
         if not m:
             # Try the legacy form: "name is path/with/slashes"
             m2 = re.match(
-                r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s+is\s+(.+?)\s*$", text
+                r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s+(?:is|are)\s+(.+?)\s*$",
+                text,
             )
             if not m2:
                 raise ParseError(
@@ -696,92 +682,6 @@ def _parse_connections_section(
     return stmts
 
 
-# ── Role files ─────────────────────────────────────────────────────────
-
-
-_SEND_TO_LINE_RE = re.compile(r"\bsend\s+to\b", re.IGNORECASE)
-_TO_NAME_RE = re.compile(r"\bto\s+([A-Za-z_][A-Za-z0-9_]*)\b")
-
-
-def _extract_send_to_ports(text: str) -> Tuple[str, ...]:
-    """Extract output port names from the body of a role file.
-
-    Strict pattern (Q4.4 = strict): a line that contains the phrase
-    ``send to`` is a port-naming line. Within such a line, every
-    ``to <identifier>`` match contributes a port name. This handles:
-
-    * ``Always send to briefing.``                 → ``("briefing",)``
-    * ``Send to keep or to discard.``              → ``("keep","discard")``
-    * ``If X, send to summary.``                   → ``("summary",)``
-
-    Duplicates are removed but order of first appearance is preserved
-    (Layer 5's compiler maps these to runtime ``out_0``, ``out_1``,
-    ..., so order matters).
-    """
-    seen: List[str] = []
-    seen_set: set[str] = set()
-    for raw in text.splitlines():
-        if not _SEND_TO_LINE_RE.search(raw):
-            continue
-        for m in _TO_NAME_RE.finditer(raw):
-            name = m.group(1)
-            if name in seen_set:
-                continue
-            seen_set.add(name)
-            seen.append(name)
-    return tuple(seen)
-
-
-def _parse_role_file(
-    role_path: Path,
-) -> Tuple[str, Tuple[str, ...]]:
-    """Parse one role .md file. Returns ``(role_name, out_ports)``.
-
-    The role name is taken from the ``# Role: <name>`` header. The
-    output port list is extracted by ``_extract_send_to_ports`` from
-    the rest of the file.
-
-    A role with zero extracted ports raises ``ParseError`` with a
-    short example. We do NOT fall back to an LLM here; the strict
-    grammar is the whole point of Layer 4.
-    """
-    text = role_path.read_text(encoding="utf-8")
-    lines = _enumerate_lines(text)
-    role_name: Optional[str] = None
-    body_lines: List[str] = []
-    saw_header = False
-    for line in lines:
-        s = line.stripped
-        if not saw_header and s.startswith("#"):
-            head = s.lstrip("#").strip()
-            label, name = _parse_doc_header(head, line, role_path)
-            if label == "role_header":
-                role_name = name
-                saw_header = True
-                continue
-        body_lines.append(line.text)
-
-    if role_name is None:
-        raise ParseError(
-            "missing '# Role: <name>' header",
-            path=role_path,
-            line_no=1,
-            snippet=lines[0].text if lines else "",
-        )
-
-    out_ports = _extract_send_to_ports("\n".join(body_lines))
-    if not out_ports:
-        raise ParseError(
-            f"role {role_name!r} declares no output ports — could not "
-            f"find 'send to <name>' in the body. Add at least one line "
-            f"like 'Send to <port>.' (the framework reads this to learn "
-            f"which destinations the role wires to.)",
-            path=role_path,
-            line_no=1,
-        )
-    return role_name, out_ports
-
-
 # ── Top-level entry point ──────────────────────────────────────────────
 
 
@@ -792,22 +692,20 @@ def parse_office_dir(office_dir: Path) -> OfficeSpec:
     ----------
     office_dir
         Path to a directory containing ``office.md`` (or, for
-        legacy support, ``network.md``) and a ``roles/`` subdirectory.
+        legacy support, ``network.md``).
 
     Returns
     -------
     OfficeSpec
-        A fully validated spec. Sub-offices appear in
-        ``spec.agents`` as ``AgentRef`` entries, carrying their
-        filesystem paths as written; the linker is responsible for
-        loading them.
+        A fully validated spec. Every entry in ``spec.agents`` is a
+        uniform ``RoleRef``; the role library decides whether each
+        one resolves to a leaf agent or a sub-office.
 
     Raises
     ------
     ParseError
-        On any syntactic problem in office.md or the role files.
-        The error carries the file, the line number, and a snippet
-        of the offending line.
+        On any syntactic problem in office.md. The error carries the
+        file, the line number, and a snippet of the offending line.
     FileNotFoundError
         If ``office_dir`` does not exist or has no ``office.md`` /
         ``network.md`` file.
@@ -885,54 +783,34 @@ def _build_office_spec(
         )
         sinks = tuple(SinkSpec(name=n, args=a) for n, a, _, _ in items)
 
-    # Agents — leaf agents and sub-offices share one section.
-    leaf_role_lookup: List[Tuple[str, str]] = []  # (agent_name, role_name)
-    sub_office_pairs: List[Tuple[str, str]] = []  # (agent_name, path_str)
+    # Agents — leaf agents and sub-offices share one section. Both
+    # become RoleRefs; only sub-office refs carry a path. The parser
+    # does NOT open any role file or sub-office directory — port
+    # shapes are the library's job, sub-office bodies are Layer 5's
+    # job.
+    agent_entries: List[RoleRef] = []
     if "agents" in seen_labels:
         leaves, subs = _parse_agents_section(
             seen_labels["agents"].body, md_path
         )
         for agent_name, role_name, _line in leaves:
-            leaf_role_lookup.append((agent_name, role_name))
-        for sub_name, sub_path, _line in subs:
-            sub_office_pairs.append((sub_name, sub_path))
-
-    # Resolve role files for leaf agents into AgentSpecs.
-    agent_entries: List[AgentEntry] = []
-    role_dir = office_dir / "roles"
-    role_cache: Dict[str, Tuple[str, ...]] = {}  # role_name -> out_ports
-    for agent_name, role_name in leaf_role_lookup:
-        if role_name not in role_cache:
-            role_path = role_dir / f"{role_name}.md"
-            if not role_path.exists():
-                raise ParseError(
-                    f"agent {agent_name!r} uses role {role_name!r} but "
-                    f"{role_path} does not exist",
-                    path=md_path,
-                )
-            _name, out_ports = _parse_role_file(role_path)
-            # We accept the role's filename as the role identity even
-            # if the # Role: header inside spelled it differently;
-            # the role file is the authoritative source for ports.
-            role_cache[role_name] = out_ports
-        out_ports = role_cache[role_name]
-        agent_entries.append(
-            AgentSpec(
-                name=agent_name,
-                in_ports=(IMPLICIT_INPORT,),
-                out_ports=out_ports,
-                body=None,
+            agent_entries.append(
+                RoleRef(agent_name=agent_name, role_name=role_name)
             )
-        )
+        for sub_name, sub_path, _line in subs:
+            # role_name = the trailing path component, so the library
+            # can register the sub-office under a stable identifier.
+            # Layer 5 reads `path` to recursively parse the office.
+            role_name = Path(sub_path).name or sub_path
+            agent_entries.append(
+                RoleRef(
+                    agent_name=sub_name,
+                    role_name=role_name,
+                    path=sub_path,
+                )
+            )
 
-    # Sub-offices: record an unresolved AgentRef. Layer 4 does no
-    # I/O outside the office's own directory; the linker reads the
-    # referenced office.md and replaces each AgentRef with a full
-    # AgentSpec at link time.
-    for sub_name, sub_path in sub_office_pairs:
-        agent_entries.append(AgentRef(name=sub_name, path=sub_path))
-
-    agents: Tuple[AgentEntry, ...] = tuple(agent_entries)
+    agents: Tuple[RoleRef, ...] = tuple(agent_entries)
 
     # Connections.
     connections: Tuple[ConnectionStmt, ...] = ()

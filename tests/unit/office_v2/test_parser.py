@@ -14,17 +14,15 @@ from pathlib import Path
 import pytest
 
 from dissyslab.office_v2 import (
-    AgentRef,
-    AgentSpec,
     Endpoint,
     EXTERNAL,
     IMPLICIT_INPORT,
     OfficeSpec,
     ParseError,
+    RoleRef,
     parse_office_dir,
 )
 from dissyslab.office_v2.parser import (
-    _extract_send_to_ports,
     _parse_decl,
     _parse_kw_args,
     _split_recipients,
@@ -131,39 +129,9 @@ class TestSplitRecipients:
         assert self._split("X AND Y") == ["X", "Y"]
 
 
-# ── _extract_send_to_ports ─────────────────────────────────────────────
-
-
-class TestExtractSendToPorts:
-    def test_simple(self):
-        assert _extract_send_to_ports("Always send to briefing.") == (
-            "briefing",
-        )
-
-    def test_two_lines(self):
-        text = "If X, send to keep.\nOtherwise send to discard."
-        assert _extract_send_to_ports(text) == ("keep", "discard")
-
-    def test_or_to_form(self):
-        text = "Send to keep or to discard."
-        assert _extract_send_to_ports(text) == ("keep", "discard")
-
-    def test_dedup_in_order(self):
-        text = "Send to A.\nLater send to A or to B."
-        assert _extract_send_to_ports(text) == ("A", "B")
-
-    def test_no_send_returns_empty(self):
-        text = "You are an analyst. Read carefully."
-        assert _extract_send_to_ports(text) == ()
-
-    def test_ignores_intro_about_sending(self):
-        # "responds by sending zero or more messages" should NOT
-        # contribute ports, because the line has no "send to".
-        text = (
-            "You respond by sending zero or more messages, each "
-            "addressed to a destination role."
-        )
-        assert _extract_send_to_ports(text) == ()
+# Note: ``_extract_send_to_ports`` lives in
+# ``dissyslab.office_v2.library`` (Step 4: parser stopped reading
+# ``roles/*.md``). Tests for it are in test_library.py.
 
 
 # ── parse_office_dir end-to-end on the gallery ─────────────────────────
@@ -195,9 +163,12 @@ class TestGalleryEndToEnd:
         assert [s.name for s in spec.sinks] == ["console_printer"]
         assert spec.agent_names() == ("Alex",)
         alex = spec.agents[0]
-        assert isinstance(alex, AgentSpec)
-        assert alex.in_ports == (IMPLICIT_INPORT,)
-        assert alex.out_ports == ("briefing",)
+        # Layer 4 emits a uniform RoleRef; the role's port shape lives
+        # in the library, not in the OfficeSpec.
+        assert isinstance(alex, RoleRef)
+        assert alex.agent_name == "Alex"
+        assert alex.role_name == "analyst"
+        assert alex.path is None
 
     def test_news_editorial_has_two_destinations(self):
         spec = parse_office_dir(GALLERY / "org_news_editorial")
@@ -253,18 +224,19 @@ class TestGalleryEndToEnd:
         ]
         assert phantom == []
 
-    def test_two_office_network_records_agent_refs(self):
+    def test_two_office_network_records_office_refs(self):
         spec = parse_office_dir(GALLERY / "org_two_office_news")
-        refs = spec.agent_refs()
-        ref_names = {r.name for r in refs}
+        refs = spec.office_refs()
+        ref_names = {r.agent_name for r in refs}
         assert ref_names == {"news_monitor", "news_editor"}
         # And those names also appear in agent_names() (sub-offices
         # are first-class agents — Q4.5).
         agent_names = set(spec.agent_names())
         assert {"news_monitor", "news_editor"}.issubset(agent_names)
-        # Each AgentRef carries a non-empty path string.
+        # Each ref is a RoleRef whose ``path`` is populated from the
+        # inline ``office at <path>`` syntax (transitional sugar).
         for r in refs:
-            assert isinstance(r, AgentRef)
+            assert isinstance(r, RoleRef)
             assert r.path
 
     def test_leaf_destination_gets_implicit_inport(self):
@@ -306,35 +278,16 @@ class TestParseErrors:
         with pytest.raises(ParseError, match="unexpected text"):
             parse_office_dir(tmp_path)
 
-    def test_role_with_no_send_to(self, tmp_path):
-        (tmp_path / "office.md").write_text(
-            "# Office: x\n\n"
-            "Sources: rss\n\n"
-            "Agents:\nAlex is an analyst.\n\n"
-            "Connections:\nrss's destination is Alex.\n"
-        )
-        roles = tmp_path / "roles"
-        roles.mkdir()
-        (roles / "analyst.md").write_text(
-            "# Role: analyst\n\nYou are an analyst. Look at things.\n"
-        )
-        with pytest.raises(ParseError, match="declares no output ports"):
-            parse_office_dir(tmp_path)
-
-    def test_agent_uses_missing_role(self, tmp_path):
-        (tmp_path / "office.md").write_text(
-            "# Office: x\n\n"
-            "Sources: rss\n\n"
-            "Agents:\nAlex is a ghost.\n"
-        )
-        (tmp_path / "roles").mkdir()
-        with pytest.raises(ParseError, match="ghost.*does not exist"):
-            parse_office_dir(tmp_path)
+    # NOTE: tests that the parser checks role-file existence or
+    # extracts ports from ``roles/*.md`` were removed in Step 4.
+    # The parser no longer touches role files — those concerns moved
+    # to the role library (see test_library.py for equivalent
+    # coverage of nl_role's port-extraction error and load_roles_dir
+    # behaviour).
 
     def test_bad_kw_arg(self, tmp_path):
         (tmp_path / "office.md").write_text(
             "# Office: x\n\nSources: rss(arg=undefined_identifier)\n"
         )
-        (tmp_path / "roles").mkdir()
         with pytest.raises(ParseError, match="Python literal"):
             parse_office_dir(tmp_path)

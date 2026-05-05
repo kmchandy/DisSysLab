@@ -8,17 +8,18 @@ sections the user wrote (``Sources``, ``Sinks``, ``Agents``,
 are kept in their shorthand form rather than being translated to
 flat edges.
 
-The compiler's job (Layer 5) is to turn an OfficeSpec into a Layer-2
-``Network``. That involves:
+The compiler's job (Layer 5) is to turn an OfficeSpec into a runtime
+``dissyslab.network.Network``. That involves:
 
-* materialising sources and sinks as AgentSpecs of the appropriate
-  shape (sources have one outport, sinks have one inport);
-* resolving each ``AgentRef`` to a full ``AgentSpec`` by reading
-  the referenced office's ``office.md`` (this is the **linker**);
-* translating each ConnectionStmt into one or more Edges, replacing
-  user-friendly outport names like ``"copywriter"`` with the
-  runtime's indexed names ``"out_0"`` / ``"out_1"`` / … in the
-  order the role declared them.
+* materialising sources and sinks as runtime agents from library
+  factories;
+* resolving each ``RoleRef`` against the role library — an
+  ``AgentRoleEntry`` becomes a leaf ``Agent``, an ``OfficeRoleEntry``
+  triggers recursive parsing of the referenced ``office.md``;
+* translating each ConnectionStmt into one or more 4-tuple edges,
+  replacing user-friendly outport names like ``"copywriter"`` with
+  the runtime's indexed names ``"out_0"`` / ``"out_1"`` / … in the
+  order the library entry declared them.
 
 That translation is intentionally out of scope here. Layer 4 stays
 at the grammar level.
@@ -47,13 +48,12 @@ The ``Agents:`` section can hold two kinds of entry:
 * ``Susan is an editor.``       — a leaf agent backed by a role.
 * ``X is an office at <path>.`` — a sub-office.
 
-In Layer 4 the two are represented by two types: ``AgentSpec``
-(leaf, with ports already extracted from the role file) and
-``AgentRef`` (sub-office, an unresolved reference to another
-office on disk). Both appear together in ``OfficeSpec.agents`` —
-they share an agent namespace because connection statements
-reference them by bare name. Layer 4 deliberately does **not**
-load the referenced office; that I/O happens at link time.
+In Layer 4 both are represented uniformly as ``RoleRef``: a pair
+of ``(agent_name, role_name)`` plus an optional ``path`` set only
+when the user wrote the inline ``office at <path>`` form. The
+library tells the compiler whether a given ``role_name`` resolves
+to a leaf agent or a sub-office; the parser does no I/O outside
+the office's own ``office.md``.
 
 Why so many small dataclasses?
 ==============================
@@ -63,8 +63,7 @@ The shape mirrors the structure of office.md:
 * ``OfficeSpec`` —  one per office.md
 * ``SourceSpec`` —  one per entry in the ``Sources:`` line
 * ``SinkSpec`` —  one per entry in the ``Sinks:`` line
-* ``AgentSpec`` —  one per leaf-agent line in ``Agents:`` (Layer 3)
-* ``AgentRef``  —  one per sub-office line in ``Agents:``
+* ``RoleRef``   —  one per line in ``Agents:`` (leaf or sub-office)
 * ``ConnectionStmt`` —  one per line in ``Connections:``
 * ``Endpoint``  —  one per end of a ConnectionStmt (source and
                     each destination)
@@ -96,10 +95,10 @@ Conventions
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Tuple, Union
+from typing import Any, Optional, Tuple
 
 from dissyslab.office_v2.agent_spec import AgentSpec
-from dissyslab.office_v2.network import EXTERNAL
+from dissyslab.office_v2.office_spec_constants import EXTERNAL
 
 
 # ── Source / Sink ──────────────────────────────────────────────────────
@@ -167,55 +166,79 @@ class SinkSpec:
                 )
 
 
-# ── AgentRef — unresolved reference to a sub-office ────────────────────
+# ── RoleRef — uniform reference to a role in the library ──────────────
 
 
 @dataclass(frozen=True)
-class AgentRef:
-    """A reference to an agent whose definition lives in another office.
+class RoleRef:
+    """A reference from an office.md to a role in the library.
 
-    Used for sub-offices: the user writes
-    ``X is an office at ../news_monitor.`` and Layer 4 records that
-    as ``AgentRef(name="X", path="../news_monitor")``.
-
-    Layer 4 does **not** load the referenced office — port shapes,
-    nested agents, and connections are all unknown at this stage.
-    Resolution is the linker's job: it reads the referenced
-    ``office.md`` and replaces the AgentRef with a full AgentSpec
-    whose body is the sub-office's compiled Network.
+    The parser produces one ``RoleRef`` per ``Agents:`` line. Both
+    leaf agents (``Susan is an editor.``) and sub-offices
+    (``news_monitor is an office at ../news_monitor.``) share this
+    type — the library decides what each reference resolves to.
 
     Parameters
     ----------
-    name
-        The local name the surrounding office uses to talk about
-        this sub-office (e.g. ``"news_monitor"``). Must be unique
-        within the surrounding office's agent namespace.
+    agent_name
+        The local name the surrounding office uses (e.g. ``"Susan"``,
+        ``"news_monitor"``). Unique within the office's agent
+        namespace; cannot be ``"external"``.
+    role_name
+        The role's identifier in the library (e.g. ``"editor"``,
+        ``"news_monitor"``). The library lookup tells the compiler
+        whether this is an ``AgentRoleEntry`` (leaf) or an
+        ``OfficeRoleEntry`` (sub-office).
     path
-        The filesystem path string exactly as the user wrote it,
-        relative to the office directory or absolute. The linker
-        is responsible for interpreting it.
+        Optional filesystem hint, only set when the user wrote
+        ``office at <path>`` inline in office.md. Layer 5 uses it as
+        a transitional sugar: if the library has no entry for
+        ``role_name`` and ``path`` is set, the compiler auto-registers
+        an ``OfficeRoleEntry`` on the fly. The long-run direction is
+        explicit library entries; in the meantime this keeps the
+        gallery's ``Offices:`` syntax working.
+
+    Notes
+    -----
+    Layer 4 (the parser) does **no** library lookup — it simply
+    records the name. Validation that the role exists is the
+    compiler's job at link time.
     """
 
-    name: str
-    path: str
+    agent_name: str
+    role_name: str
+    path: Optional[str] = None
 
     def __post_init__(self) -> None:
-        if not isinstance(self.name, str) or not self.name:
+        if not isinstance(self.agent_name, str) or not self.agent_name:
             raise ValueError(
-                f"AgentRef.name must be a non-empty string, got {self.name!r}"
+                f"RoleRef.agent_name must be a non-empty string, "
+                f"got {self.agent_name!r}"
             )
-        if self.name == EXTERNAL:
+        if self.agent_name == EXTERNAL:
             raise ValueError(
-                f"AgentRef.name cannot be {EXTERNAL!r} (reserved)"
+                f"RoleRef.agent_name cannot be {EXTERNAL!r} (reserved)"
             )
-        if not isinstance(self.path, str) or not self.path:
+        if not isinstance(self.role_name, str) or not self.role_name:
             raise ValueError(
-                f"AgentRef '{self.name}' has empty path"
+                f"RoleRef {self.agent_name!r} has empty role_name"
+            )
+        if self.path is not None and (
+            not isinstance(self.path, str) or not self.path
+        ):
+            raise ValueError(
+                f"RoleRef {self.agent_name!r} has empty path "
+                f"(use path=None to indicate no path)"
             )
 
-
-# Convenience type alias for the agents tuple.
-AgentEntry = Union[AgentSpec, AgentRef]
+    # Convenience accessor — many callers used to read AgentRef.name;
+    # keep a `name` property so error formatting and call-sites that
+    # iterate over OfficeSpec.agents still work without sprinkling
+    # ``.agent_name`` everywhere.
+    @property
+    def name(self) -> str:
+        """Alias for ``agent_name`` — the in-office identifier."""
+        return self.agent_name
 
 
 # ── Endpoint and connection statements ─────────────────────────────────
@@ -336,12 +359,11 @@ class OfficeSpec:
         World-facing outputs declared in the ``Sinks:`` section
         (printers, recorders, etc.). Independent of ``outputs``.
     agents
-        One entry per line in ``Agents:``. Each entry is either an
-        ``AgentSpec`` (leaf agent, with ports extracted from the
-        role file) or an ``AgentRef`` (sub-office, an unresolved
-        reference to another office on disk). The two share one
-        namespace because connection statements reference them by
-        bare name.
+        One entry per line in ``Agents:``. Every entry is a
+        uniform ``RoleRef``; whether it resolves to a leaf agent or
+        to a sub-office is decided at link time by the library
+        lookup. Connection statements reference these entries by
+        their ``agent_name``.
     connections
         ``ConnectionStmt``s in source order. Layer 5 translates
         them to ``Edge``s.
@@ -373,7 +395,7 @@ class OfficeSpec:
     outputs: Tuple[str, ...] = ()
     sources: Tuple[SourceSpec, ...] = ()
     sinks: Tuple[SinkSpec, ...] = ()
-    agents: Tuple[AgentEntry, ...] = ()
+    agents: Tuple[RoleRef, ...] = ()
     connections: Tuple[ConnectionStmt, ...] = ()
 
     def __post_init__(self) -> None:
@@ -406,12 +428,14 @@ class OfficeSpec:
                     f"OfficeSpec.{kind} has duplicates: {list(ports)}"
                 )
 
-        # Every entry in agents must be an AgentSpec or AgentRef.
+        # Every entry in agents must be a RoleRef. Layer 4's parser
+        # produces only RoleRefs; the runtime port shape is the
+        # library's job, not OfficeSpec's.
         for a in self.agents:
-            if not isinstance(a, (AgentSpec, AgentRef)):
+            if not isinstance(a, RoleRef):
                 raise TypeError(
-                    f"OfficeSpec.agents entries must be AgentSpec or "
-                    f"AgentRef, got {type(a).__name__}"
+                    f"OfficeSpec.agents entries must be RoleRef, "
+                    f"got {type(a).__name__}"
                 )
 
         # Cross-section name uniqueness — sources, sinks, and agents share
@@ -446,9 +470,15 @@ class OfficeSpec:
         return bool(self.inputs) or bool(self.outputs)
 
     def agent_names(self) -> Tuple[str, ...]:
-        """Names of declared agents (leaf or AgentRef), in source order."""
-        return tuple(a.name for a in self.agents)
+        """Names of declared agents in source order (the in-office names)."""
+        return tuple(a.agent_name for a in self.agents)
 
-    def agent_refs(self) -> Tuple[AgentRef, ...]:
-        """The unresolved sub-office references in this office, in source order."""
-        return tuple(a for a in self.agents if isinstance(a, AgentRef))
+    def office_refs(self) -> Tuple[RoleRef, ...]:
+        """RoleRefs that point at sub-offices on disk, in source order.
+
+        A RoleRef counts as an "office ref" iff its ``path`` was
+        captured from inline ``office at <path>`` syntax. RoleRefs
+        without a path are leaf-role references (resolved entirely
+        through the library).
+        """
+        return tuple(a for a in self.agents if a.path is not None)
