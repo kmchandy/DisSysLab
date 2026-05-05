@@ -55,7 +55,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from dissyslab.office_v2.compiler import (
+from dissyslab.office_v2._internals import (
     CompileError,
     _BlockTable,
     _load_office_library,

@@ -331,44 +331,36 @@ def _explain_failure_message(command: str, exc: BaseException) -> str:
 
 
 def cmd_run(args: argparse.Namespace) -> int:
-    """Validate and run a closed office in-process via office_compiler."""
+    """Build (if stale) and run a closed office via office_v2."""
     office_dir = _require_dir("office_dir", args.office_dir)
 
-    # Delegate to the existing office_compiler module, preserving its
-    # argv contract (argv[1] is the office directory).
-    sys.argv = ["dsl run", str(office_dir)]
+    from dissyslab.office_v2.cli_helpers import cli_run
+
     try:
-        runpy.run_module(
-            "dissyslab.office.office_compiler",
-            run_name="__main__",
-        )
+        return cli_run(office_dir)
     except SystemExit as e:
-        # office_compiler uses sys.exit for clean user-facing errors.
+        # The artifact's __main__ block may sys.exit for clean errors.
         return int(e.code or 0)
     except Exception as exc:  # noqa: BLE001
         _eprint(_explain_failure("dsl run", exc))
         return 1
-    return 0
 
 
 # ── Subcommand: build ─────────────────────────────────────────────────────────
 
 def cmd_build(args: argparse.Namespace) -> int:
-    """Generate app.py for an (open or closed) office using make_office."""
+    """Generate build/run.py for an office via office_v2 codegen."""
     office_dir = _require_dir("office_dir", args.office_dir)
 
-    sys.argv = ["dsl build", str(office_dir)]
+    from dissyslab.office_v2.cli_helpers import cli_build
+
     try:
-        runpy.run_module(
-            "dissyslab.office.make_office",
-            run_name="__main__",
-        )
+        return cli_build(office_dir)
     except SystemExit as e:
         return int(e.code or 0)
     except Exception as exc:  # noqa: BLE001
         _eprint(_explain_failure("dsl build", exc))
         return 1
-    return 0
 
 
 # ── Subcommand: list ──────────────────────────────────────────────────────────
