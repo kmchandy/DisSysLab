@@ -4,8 +4,8 @@ Sources: al_jazeera(max_articles=5), bbc_world(max_articles=5), npr_news(max_art
 Sinks: intelligence_display
 
 Offices:
-  news_monitor is gallery/org_two_office_news/news_monitor
-  news_editor is gallery/org_two_office_news/news_editor
+  news_monitor is news_monitor
+  news_editor is news_editor
 
 Connections:
 al_jazeera's destination is news_monitor's article_in.

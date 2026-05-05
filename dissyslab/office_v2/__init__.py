@@ -13,7 +13,7 @@ Layers, built in order:
     4b. Role library           — AgentRoleEntry / OfficeRoleEntry,
                                  nl_role, load_roles_dir               (done)
     5. Compiler                — OfficeSpec + Library ->
-                                 dissyslab.network.Network             (todo)
+                                 dissyslab.network.Network             (done)
     6. (Runner is unchanged — see dissyslab.network)
     7. AgentImpl factory       — RoleEntry -> runtime Agent            (todo)
 
@@ -42,10 +42,17 @@ from dissyslab.office_v2.library import (
     load_roles_dir,
     nl_role,
 )
+from dissyslab.office_v2.compiler import (
+    CompileError,
+    CompileWarning,
+    compile_office,
+)
 
 __all__ = [
     "AgentRoleEntry",
     "AgentSpec",
+    "CompileError",
+    "CompileWarning",
     "ConnectionStmt",
     "DEFAULT_AI",
     "Endpoint",
@@ -59,6 +66,7 @@ __all__ = [
     "RoleRef",
     "SinkSpec",
     "SourceSpec",
+    "compile_office",
     "load_roles_dir",
     "nl_role",
     "parse_office_dir",
