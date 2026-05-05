@@ -34,11 +34,13 @@ them as briefing notes.
 ```bash
 git clone https://github.com/kmchandy/DisSysLab.git
 cd DisSysLab
-dsl build dissyslab/gallery/org_two_office_news/news_monitor/
-dsl build dissyslab/gallery/org_two_office_news/news_editor/
-python -m dissyslab.office.make_network dissyslab/gallery/org_two_office_news/
-python3 -m dissyslab.gallery.org_two_office_news.app
+dsl run dissyslab/gallery/org_two_office_news/
 ```
+
+That single command parses the parent office and its two
+sub-offices, generates `dissyslab/gallery/org_two_office_news/build/run.py`,
+and starts the network. To inspect the generated wiring without
+running it, use `dsl build` instead of `dsl run`.
 
 Briefings stream to your terminal. Each one passed through four
 agents in two offices.
@@ -80,8 +82,8 @@ Sources: al_jazeera(max_articles=5), bbc_world(max_articles=5)
 Sinks: intelligence_display
 
 Offices:
-  news_monitor is gallery/org_two_office_news/news_monitor
-  news_editor is gallery/org_two_office_news/news_editor
+  news_monitor is news_monitor
+  news_editor is news_editor
 
 Connections:
 al_jazeera's destination is news_monitor's article_in.
@@ -104,35 +106,32 @@ by name, treating each one as a black box. The org chart at the
 network level shows how offices connect; the org chart inside
 each office is hidden from the network.
 
-## Build and run, step by step
+## Build and run
 
-Chained offices need an extra build step compared to a single
-office, because each sub-office is compiled independently first.
+A network of offices builds and runs the same way as a single
+office — `dsl build` walks the whole tree in one pass.
 
-**Step 1 — compile each sub-office.** This produces an `app.py`
-inside each office folder:
-
-```bash
-dsl build path/to/network/office_a/
-dsl build path/to/network/office_b/
-```
-
-**Step 2 — compile the network.** This stitches the sub-offices
-together and produces a top-level `app.py`:
+**Build only** (inspect the generated Python):
 
 ```bash
-python -m dissyslab.office.make_network path/to/network/
+dsl build path/to/network/
 ```
 
-**Step 3 — run the network.**
+This emits `path/to/network/build/run.py` with one
+`build_<office>()` function per office in the tree, ordered
+children-before-parents. Each sub-office is reachable as a nested
+`Network(...)` inside its parent's `blocks=` dict.
+
+**Build and run** (rebuilds automatically if any source file is
+newer than `build/run.py`):
 
 ```bash
-python3 -m path.to.network.app
+dsl run path/to/network/
 ```
 
-(Replace the slashes with dots, drop the trailing `/app.py`. So
-`gallery/org_two_office_news/` becomes
-`gallery.org_two_office_news.app`.)
+`dsl run` watches every `office.md` and every file in
+`roles_lib/` across the whole tree, so editing any of them
+triggers a fresh build on the next run.
 
 ## Variations
 
@@ -153,8 +152,8 @@ unaffected.
 
 ```
 Offices:
-  news_monitor is gallery/org_two_office_news/news_monitor
-  news_editor is gallery/org_two_office_news/news_editor
+  news_monitor is news_monitor
+  news_editor is news_editor
   translator is gallery/my_translator
 
 Connections:
