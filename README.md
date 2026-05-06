@@ -293,8 +293,12 @@ reusing offices across networks.
   lists every component the framework ships with, with arguments and
   setup instructions.
 - **Use a different LLM** (OpenAI, Gemini, Ollama, a local SLM) —
-  [docs/ADD_A_BACKEND.md](docs/ADD_A_BACKEND.md) walks through the
-  `DSL_BACKEND_MODULE` extension hook.
+  [docs/LANGUAGE_MODELS.md](docs/LANGUAGE_MODELS.md) walks through the
+  `DSL_BACKEND_MODULE` extension hook, mixing backends in one
+  office, and comparing models.
+- **Build your own office** —
+  [docs/BUILD_APPS.md](docs/BUILD_APPS.md) covers the design and
+  wiring path from idea to running app.
 - **Hit an error?** — run `dsl doctor`, then check
   [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for the
   remedy keyed on the error string.

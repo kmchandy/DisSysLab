@@ -11,7 +11,7 @@ Useful for:
 Not useful for:
   - Actually running offices — the analyst won't analyze anything,
     because the response is canned. Use a real backend (Anthropic,
-    OpenAI, Gemini, Ollama) for real work. See docs/ADD_A_BACKEND.md.
+    OpenAI, Gemini, Ollama) for real work. See docs/LANGUAGE_MODELS.md.
 
 To use:
     export DSL_BACKEND_MODULE=mock_backend

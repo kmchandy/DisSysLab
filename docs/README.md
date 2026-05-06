@@ -51,10 +51,12 @@ The full recipe index, including any recipes added later, is at
   framework ships with, with arguments, environment variables, and
   setup instructions. Look here when you want to know what the
   built-in `bbc_world`, `gmail_source`, `webhook_sink`, etc. accept.
-- **[Use a different LLM](ADD_A_BACKEND.md)** — plug OpenAI, Gemini,
-  Ollama, or any other model into DisSysLab without forking. Walks
-  through the `DSL_BACKEND_MODULE` extension hook with worked
-  examples.
+- **[Language models](LANGUAGE_MODELS.md)** — switch from Claude
+  (the default) to OpenAI, Gemini, Ollama, or another model; mix
+  backends inside one office; compare models on the same task.
+- **[Build apps](BUILD_APPS.md)** — design and wire your own
+  offices: org-chart shapes, prompt-writing tips, when to split
+  into sub-offices, and how to extend with custom Python roles.
 - **[Troubleshooting](TROUBLESHOOTING.md)** — common errors when
   installing or running DisSysLab, keyed on the actual error
   strings, with the remedy for each.
@@ -62,7 +64,9 @@ The full recipe index, including any recipes added later, is at
 ## Looking for something specific?
 
 - **"How do I use OpenAI / Gemini / Ollama / a local model?"** →
-  [ADD_A_BACKEND.md](ADD_A_BACKEND.md).
+  [LANGUAGE_MODELS.md](LANGUAGE_MODELS.md).
+- **"How do I build my own office?"** →
+  [BUILD_APPS.md](BUILD_APPS.md).
 - **"How do I send results to Slack / email / a file?"** →
   [send-messages-outside.md](recipes/send-messages-outside.md).
 - **"How do I read my Gmail?"** →

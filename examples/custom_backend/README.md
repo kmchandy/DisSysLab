@@ -1,7 +1,7 @@
 # Custom backend example
 
 Demonstrates how to plug a non-Anthropic LLM into DisSysLab without
-forking the package. See [`docs/ADD_A_BACKEND.md`](../../docs/ADD_A_BACKEND.md)
+forking the package. See [`docs/LANGUAGE_MODELS.md`](../../docs/LANGUAGE_MODELS.md)
 for the full walkthrough, including OpenAI, Gemini, and Ollama
 examples.
 

@@ -913,7 +913,7 @@ def main(argv: list[str] | None = None) -> int:
     # import it before any subcommand runs. The module's import-time
     # side effect can call `register_backend()` to make a custom LLM
     # available, after which `DSL_BACKEND=my-name dsl run ...` works
-    # without forking dissyslab. See docs/ADD_A_BACKEND.md.
+    # without forking dissyslab. See docs/LANGUAGE_MODELS.md.
     backend_module = os.environ.get("DSL_BACKEND_MODULE")
     if backend_module:
         try:
@@ -923,7 +923,7 @@ def main(argv: list[str] | None = None) -> int:
                 f"Warning: DSL_BACKEND_MODULE={backend_module!r} failed to "
                 f"import ({exc.__class__.__name__}: {exc}).\n"
                 f"  Continuing with the default backend. See "
-                f"docs/ADD_A_BACKEND.md for the registration pattern."
+                f"docs/LANGUAGE_MODELS.md for the registration pattern."
             )
 
     parser = build_parser()
