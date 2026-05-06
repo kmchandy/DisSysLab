@@ -73,7 +73,8 @@ def my_blog(max_articles=10, poll_interval=600):
     )
 ```
 
-Then declare an `app.py`-style office that uses it directly. The
+Then write the office directly in Python — construct your `Network`
+in code instead of using an `office.md`. The
 plain-English `office.md` syntax only knows the ten shipped names;
 once you've stepped outside the registry, you're writing the
 office in Python instead.
