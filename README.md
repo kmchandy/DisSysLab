@@ -306,16 +306,26 @@ reusing offices across networks.
 
 ## Path B — Learn How DSL Works
 
-Interested in how DisSysLab works under the hood? DSL is also a Python
+DSL is also a Python
 framework for building distributed systems — concurrent agents, message
-queues, routing, and termination detection.
+queues, routing, and termination detection. You can clone the repository;
+run an example; and then use the framework in Python as follows.
 
 ```bash
 git clone https://github.com/kmchandy/DisSysLab.git
 cd DisSysLab
+python3 -m venv ~/.venvs/dsl
+source ~/.venvs/dsl/bin/activate
 pip install -e '.[dev]'
 pytest
+echo "ANTHROPIC_API_KEY=<paste-your-key>" > .env
+dsl run dissyslab/gallery/my_first_office/
 ```
+
+The source ~/.venvs/dsl/bin/activate line activates the venv for the current shell only. 
+**When you open a new terminal you must re-run the activate command before running dsl.**
+If you use Windows then the activate command is .venv\Scripts\activate and the path 
+uses backslashes.
 
 See [`examples/`](examples/README.md) for a module sequence that takes
 you from your first network to building distributed systems from
@@ -343,5 +353,9 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-*DisSysLab is an open research project exploring natural-language
-interfaces to persistent distributed systems.*
+**DisSysLab is an open research and teaching project. It is a
+framework for building distributed systems using natural language.
+It allows you to explore, compare, and use different large and
+small language models in the same application. It is used in an introductory, 
+first= or second-year undergraduate course on distributed systems.**
+
