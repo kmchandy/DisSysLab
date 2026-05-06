@@ -327,9 +327,8 @@ The source ~/.venvs/dsl/bin/activate line activates the venv for the current she
 If you use Windows then the activate command is .venv\Scripts\activate and the path 
 uses backslashes.
 
-See [`examples/`](examples/README.md) for a module sequence that takes
-you from your first network to building distributed systems from
-scratch:
+See [`examples/`](examples/README.md) for a module sequence for using
+Python to building distributed systems:
 
 - `module_01` — your first Agent and Network
 - `module_02` — sources, transforms, sinks
@@ -337,8 +336,6 @@ scratch:
 - `module_04` — termination and the os_agent
 - ...
 
-Contributions welcome. Open an issue or a pull request on
-[GitHub](https://github.com/kmchandy/DisSysLab/issues).
 
 ---
 
