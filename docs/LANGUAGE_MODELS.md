@@ -337,20 +337,38 @@ Now in `office.md`:
 
 ```
 Agents:
-Alex is a correspondent_slm.   # uses Ollama
-Morgan is an analyst.          # uses the default (Claude)
+Alex is a correspondent_slm.   # uses Ollama (explicit AI="ollama" wins)
+Morgan is an analyst.          # uses whatever DSL_BACKEND says
 ```
 
-The library loader (Step 3 of v2) treats `*.py` files in
-`roles_lib/` as having a `role` attribute that is an
-`AgentRoleEntry`. The `AI` argument is captured at registration
-time and used whenever that role's agent runs.
+The library loader treats `*.py` files in `roles_lib/` as having a
+`role` attribute that is an `AgentRoleEntry`. The `AI` argument is
+captured at registration time and used whenever that role's agent
+runs.
 
 For this to work, the `ollama` backend must be registered. The
 cleanest way: keep `DSL_BACKEND_MODULE=my_ollama_backend` in your
-shell so the registration runs, but leave `DSL_BACKEND` *unset*
-or set to `anthropic`. The default backend stays Claude; only
-roles that explicitly opt into `AI="ollama"` go through Ollama.
+shell so the registration runs, then either leave `DSL_BACKEND`
+unset (the rest of the office uses Claude) or set it to whatever
+backend you want for the *non*-ollama roles.
+
+### Why .md role files follow DSL_BACKEND automatically
+
+Roles loaded from plain `.md` files in `roles/` or `roles_lib/`
+always call `nl_role(prompt)` with no `AI` argument. When `AI` is
+unset, the role defers the backend choice to run time and uses
+whichever backend `DSL_BACKEND` names (or anthropic if `DSL_BACKEND`
+is unset). That's what makes a single `export DSL_BACKEND=ollama`
+flip every gallery role to ollama with no `.py` overrides needed —
+useful when you want to run the whole office on a different model
+without touching its files.
+
+The two contrasting rules:
+
+| How the role was built | Backend at run time |
+| --- | --- |
+| `nl_role(prompt)` (no `AI`) — what `.md` files do | follows `DSL_BACKEND` (or anthropic if unset) |
+| `nl_role(prompt, AI="X")` — explicit `.py` files | locked to backend `X`, regardless of `DSL_BACKEND` |
 
 ---
 
