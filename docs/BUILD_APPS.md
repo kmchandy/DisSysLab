@@ -401,6 +401,19 @@ office or any sub-office) is newer than `build/run.py`. Editing
 a prompt and re-running picks up the change without you doing
 anything.
 
+The artifact at `build/run.py` is plain executable Python, so
+you can also run it directly without going through `dsl`:
+
+```bash
+python3 my_office/build/run.py
+```
+
+This is exactly what `dsl run` does internally once the build is
+up to date. The advantage of `dsl run` is the staleness check;
+the advantage of `python3 build/run.py` is that it makes the
+"this is just Python you can read and execute" point obvious to
+a student.
+
 ### When something goes wrong
 
 The most useful debugging trick: open `build/run.py` and read it.

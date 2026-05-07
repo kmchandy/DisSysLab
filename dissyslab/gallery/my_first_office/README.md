@@ -79,13 +79,18 @@ Sources: bluesky(max_posts=None, lifetime=None)
 
 BlueSky posts arrive seconds apart. Your office never sleeps.
 
-**Run without recompiling.** After the first `dsl run`, an `app.py`
-is saved in your office folder. From inside it, run directly next
-time:
+**Run without recompiling.** After the first `dsl run`, the
+generated artifact lives at `build/run.py`. You can run it
+directly without going through the `dsl` command:
 
 ```bash
-python3 app.py
+python3 build/run.py
 ```
+
+`dsl run` will rebuild `build/run.py` automatically when any
+source file (`office.md`, `roles_lib/*`, `roles/*`) is newer
+than the artifact, so editing a prompt and re-running picks
+up the change without you doing anything.
 
 **More to swap in.** See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
 for the full list of sources and sinks shipped with the framework.

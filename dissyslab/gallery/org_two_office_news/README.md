@@ -51,10 +51,12 @@ org_two_office_news/
             rewriter.md              ← what Riley does
 ```
 
-The two sub-offices are themselves valid offices. You can compile and
-run either one on its own. After you run `dsl build` on each
-sub-office, an `app.py` appears alongside its `office.md` — that's the
-compiled output the network loads.
+The two sub-offices are themselves valid offices. You can compile
+either one on its own with `dsl build`; the artifact appears at
+`<office>/build/run.py`. When you `dsl build` the parent office,
+the parent walks both sub-offices in one pass and emits a single
+top-level `build/run.py` that builds and connects all three
+networks (parent + two sub-offices) in topological order.
 
 ## Try it
 
