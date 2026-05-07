@@ -315,7 +315,10 @@ def _strip_code_fences(text: str) -> str:
     return text
 
 
-def nl_role(prompt: str, AI: str = DEFAULT_AI) -> AgentRoleEntry:
+def nl_role(
+    prompt: str,
+    AI: Optional[str] = None,
+) -> AgentRoleEntry:
     """Build an ``AgentRoleEntry`` from a natural-language prompt.
 
     The output ports are extracted from the prompt by the same
@@ -331,11 +334,19 @@ def nl_role(prompt: str, AI: str = DEFAULT_AI) -> AgentRoleEntry:
         least one ``send to <name>`` phrase so the framework knows
         which destination ports the role can pick from.
     AI
-        Human-readable name of the language-model backend.
-        ``"Claude"`` (the default) maps to the ``anthropic`` backend.
-        Other backend names work if registered via
-        ``dissyslab.backends.register_backend`` — handy for SLMs and
-        for stub backends in tests.
+        Human-readable name of the language-model backend to use for
+        this role. When ``None`` (the default) the role uses whichever
+        backend is active at run time — ``DSL_BACKEND`` env var if
+        set, otherwise the registered default (``anthropic``). When
+        given explicitly (``AI="ollama"``, ``AI="Claude"``, ...) the
+        role is locked to that backend regardless of ``DSL_BACKEND``.
+
+        This means: leave ``AI`` unset for roles that should follow
+        the office-wide setting (the common case), and pass an
+        explicit name only when you want one role to use a different
+        backend than the rest of the office. Office-md role files
+        loaded via ``load_roles_dir`` always leave ``AI`` unset, so
+        the entire office honors ``DSL_BACKEND``.
 
     Returns
     -------
@@ -367,7 +378,10 @@ def nl_role(prompt: str, AI: str = DEFAULT_AI) -> AgentRoleEntry:
             "<port>.' so the role's destinations are explicit."
         )
 
-    backend_name = _resolve_ai(AI)
+    # When AI is None, leave backend_name unset so the factory honors
+    # DSL_BACKEND at run time. When AI is given, lock that backend in
+    # for this role.
+    backend_name: Optional[str] = _resolve_ai(AI) if AI else None
     options = ", ".join(out_ports)
     full_prompt = prompt.strip() + _NL_CONTRACT.format(options=options)
     default_dest = out_ports[0]

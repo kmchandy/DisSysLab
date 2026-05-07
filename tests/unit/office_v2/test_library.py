@@ -306,17 +306,59 @@ class TestNLRoleAgentBehaviour:
 
 
 class TestNLRoleAIAlias:
-    def test_default_is_claude(self):
-        # DEFAULT_AI is the constant used when AI= is omitted.
+    def test_default_ai_constant(self):
+        # DEFAULT_AI is the constant that documents the canonical
+        # human-readable name for the default backend.
         assert DEFAULT_AI.lower() == "claude"
 
-    def test_claude_resolves_to_anthropic_lazily(self):
-        # We do not actually instantiate the anthropic backend here;
-        # we only assert nl_role does not eagerly resolve at build
-        # time. If it did, it would raise on missing API key.
-        entry = nl_role("Send to out.")  # default AI=Claude
+    def test_default_ai_does_not_eagerly_resolve(self):
+        # Constructing an entry with no AI argument should not require
+        # any API key — the backend is resolved lazily inside the
+        # factory, not at nl_role call time.
+        entry = nl_role("Send to out.")
         assert isinstance(entry, AgentRoleEntry)
         # The factory has not been called yet — backend not resolved.
+
+    def test_default_ai_honors_dsl_backend_env_var(self, monkeypatch):
+        """Roles built without an explicit AI follow DSL_BACKEND at run time.
+
+        This is what makes ``DSL_BACKEND=ollama`` actually flip every
+        gallery role to ollama — gallery .md files are loaded with no
+        AI argument, so each role's backend choice is deferred until
+        the agent runs.
+        """
+        stub = _register_stub(
+            "stub-runtime-default",
+            json.dumps({"send_to": "out", "text": "ok"}),
+        )
+        monkeypatch.setenv("DSL_BACKEND", "stub-runtime-default")
+        entry = nl_role("Send to out.")  # no AI → defer to runtime
+        agent = entry()
+        agent._fn({"x": 1})
+        assert stub.calls, (
+            "expected DSL_BACKEND to route the call to the stub backend"
+        )
+
+    def test_explicit_ai_overrides_dsl_backend(self, monkeypatch):
+        """An explicit AI argument locks that backend in regardless of DSL_BACKEND."""
+        explicit_stub = _register_stub(
+            "stub-explicit",
+            json.dumps({"send_to": "out", "text": "ok"}),
+        )
+        ignored_stub = _register_stub(
+            "stub-ignored",
+            json.dumps({"send_to": "out", "text": "should not be called"}),
+        )
+        monkeypatch.setenv("DSL_BACKEND", "stub-ignored")
+        entry = nl_role("Send to out.", AI="stub-explicit")
+        agent = entry()
+        agent._fn({"x": 1})
+        assert explicit_stub.calls, (
+            "expected the explicit AI argument to win over DSL_BACKEND"
+        )
+        assert not ignored_stub.calls, (
+            "DSL_BACKEND should be ignored when AI is given explicitly"
+        )
         # We do NOT call entry() because that would try anthropic.
 
 
