@@ -423,8 +423,16 @@ comments on each connection map runtime port names back to your
 `office.md` vocabulary:
 
 ```python
-('Alex', 'out_0', 'console_printer', 'in_'),    # Alex's briefing → console_printer
+('Alex', 'out_', 'console_printer', 'in_'),    # Alex's briefing → console_printer
 ```
+
+A note on the runtime port names: a role with **one** declared
+output uses the bare port `out_` (matching Source and Sink
+conventions); a role with **multiple** declared outputs uses
+indexed `out_0`, `out_1`, … in the order the role's `Send to`
+lines appeared. So a filter with `Send to keep` and
+`Send to discard` produces ports `out_0` (keep) and `out_1`
+(discard).
 
 If a message ends up somewhere unexpected, this file tells you
 exactly where. If it doesn't even get there, the problem is in

@@ -91,7 +91,8 @@ class TestRoleConstruction:
     def test_empty_statuses_defaults_to_all(self):
         role = Role(fn=lambda msg: [(msg, "all")], statuses=[], name="r")
         assert role.statuses == ["all"]
-        assert role.outports == ["out_0"]
+        # Single-status convention: outport is "out_" (not "out_0").
+        assert role.outports == ["out_"]
 
     def test_fn_must_be_callable(self):
         with pytest.raises(TypeError):
@@ -210,8 +211,9 @@ class TestRoleFunctionOutputs:
         role = Role(fn=fn, statuses=["done"], name="r")
         result = run_role(role, [{"text": "raw"}])
 
-        assert result["out_0"][0]["processed"] is True
-        assert result["out_0"][0]["text"] == "raw"
+        # Single-status role uses "out_" (not "out_0") per convention.
+        assert result["out_"][0]["processed"] is True
+        assert result["out_"][0]["text"] == "raw"
 
 
 # =====================================================================
@@ -333,9 +335,10 @@ class TestRoleInNetwork:
                             "signal"], name="filter")
         sink = Sink(fn=results.append, name="sink")
 
+        # Single-status role's outport is "out_" (not "out_0").
         g = network([
             (src, noise_filter),
-            (noise_filter.out_0, sink),
+            (noise_filter.out_, sink),
         ])
 
         g.run_network(timeout=5)

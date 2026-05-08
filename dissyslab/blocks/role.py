@@ -58,11 +58,18 @@ class Role(Agent):
                 f"Role statuses must be unique, got duplicates: {statuses}"
             )
 
-        self._status_to_port: dict = {
-            status: f"out_{i}" for i, status in enumerate(statuses)
-        }
-
-        outports = [f"out_{i}" for i in range(len(statuses))]
+        # Single-output convention: one status -> "out_"; multi -> indexed.
+        # This matches Source's single outport name and keeps the runtime
+        # port names consistent across the framework.
+        if len(statuses) == 1:
+            outports = ["out_"]
+            self._status_to_port: dict = {statuses[0]: "out_"}
+        else:
+            outports = [f"out_{i}" for i in range(len(statuses))]
+            self._status_to_port = {
+                status: f"out_{i}"
+                for i, status in enumerate(statuses)
+            }
 
         super().__init__(name=name, inports=["in_"], outports=outports)
         self._fn = fn

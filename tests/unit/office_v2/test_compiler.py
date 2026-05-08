@@ -165,8 +165,9 @@ class TestOpenOffice:
         assert net.inports == ["feed"]
         assert net.outports == ["report"]
         # External wiring on both sides survives translation.
+        # Single-status role's outport is "out_" (not "out_0").
         assert ("external", "feed", "Alex", "in_") in net.connections
-        assert ("Alex", "out_0", "external", "report") in net.connections
+        assert ("Alex", "out_", "external", "report") in net.connections
 
 
 # ── Sub-office recursion ──────────────────────────────────────────────

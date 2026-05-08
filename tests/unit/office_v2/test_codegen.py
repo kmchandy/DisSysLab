@@ -121,10 +121,11 @@ class TestConnectionComments:
             "('hacker_news', 'out_', 'Alex', 'in_'),    "
             "# hacker_news's destination → Alex"
         ) in text
-        # Role's "brief" semantic port translates to "out_0" with
-        # the original semantic name preserved in the comment.
+        # Role's "brief" semantic port translates to "out_" (single
+        # outport convention) with the original semantic name
+        # preserved in the comment.
         assert (
-            "('Alex', 'out_0', 'discard', 'in_'),    "
+            "('Alex', 'out_', 'discard', 'in_'),    "
             "# Alex's brief → discard"
         ) in text
 

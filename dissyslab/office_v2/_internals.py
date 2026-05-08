@@ -182,6 +182,10 @@ def _runtime_outport(
                 f"{semantic_port!r}; declared outports are: "
                 f"{list(ports)}"
             )
+        # Single-output convention: one declared outport → "out_".
+        # Matches Role's runtime port naming and Source/MergeSynch.
+        if len(ports) == 1:
+            return "out_"
         return f"out_{ports.index(semantic_port)}"
     if block_name in table.subnetworks:
         # Pass through; the sub-office's runtime Network exposes the
