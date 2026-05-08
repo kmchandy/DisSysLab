@@ -4,7 +4,8 @@ from dissyslab.backends import register_backend
 
 
 class OllamaBackend:
-    DEFAULT_MODEL = "llama3.2:3b"
+    # default model was "llama3.2:3b"
+    DEFAULT_MODEL = "qwen2.5:7b" 
 
     def __init__(self, host="http://localhost:11434",
                  model: Optional[str] = None) -> None:

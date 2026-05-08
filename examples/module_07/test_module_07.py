@@ -348,7 +348,9 @@ class TestModule07Network:
 
         def collect_and_archive(merged):
             results.append(merged)
-            sharp_r, expose_r, comp_r = merged
+            sharp_r  = merged["in_sharpness"]
+            expose_r = merged["in_exposure"]
+            comp_r   = merged["in_composition"]
             recorder.run({
                 "filename":       sharp_r["filename"],
                 "sharpness":      sharp_r["sharpness_score"],
@@ -361,16 +363,19 @@ class TestModule07Network:
         exposure_node = Transform(fn=exposure_an.run,     name="exposure")
         composition_node = Transform(
             fn=composition_an.run,  name="composition")
-        merge = MergeSynch(num_inputs=3,           name="merge")
+        merge = MergeSynch(
+            inports=["in_sharpness", "in_exposure", "in_composition"],
+            name="merge",
+        )
         sink = Sink(fn=collect_and_archive,       name="sink")
 
         g = network([
             (image_source,     sharpness_node),
             (image_source,     exposure_node),
             (image_source,     composition_node),
-            (sharpness_node,   merge.in_0),
-            (exposure_node,    merge.in_1),
-            (composition_node, merge.in_2),
+            (sharpness_node,   merge.in_sharpness),
+            (exposure_node,    merge.in_exposure),
+            (composition_node, merge.in_composition),
             (merge, sink),
         ])
 
@@ -379,12 +384,14 @@ class TestModule07Network:
         # Should have processed all 6 demo images
         assert len(results) == 6
 
-        # Each merged result should be a list of 3 dicts
+        # Each merged result should be a dict keyed by inport name.
         for merged in results:
-            assert len(merged) == 3
-            assert isinstance(merged[0], dict)
-            assert isinstance(merged[1], dict)
-            assert isinstance(merged[2], dict)
+            assert isinstance(merged, dict)
+            assert set(merged) == {
+                "in_sharpness", "in_exposure", "in_composition"
+            }
+            for v in merged.values():
+                assert isinstance(v, dict)
 
         # Archive file should have 6 lines
         with open(archive_path) as f:
@@ -395,8 +402,8 @@ class TestModule07Network:
         assert "exposure" in lines[0]
         assert "composition" in lines[0]
 
-    def test_merge_synch_emits_list_of_three(self, tmp_path):
-        """MergeSynch always emits exactly 3 items per image."""
+    def test_merge_synch_emits_dict_of_three(self, tmp_path):
+        """MergeSynch always emits a dict with exactly 3 keys per image."""
         from dissyslab import network
         from dissyslab.blocks import Source, Transform, Sink, MergeSynch
 
@@ -412,16 +419,19 @@ class TestModule07Network:
         exposure_node = Transform(fn=exposure_an.run,     name="exposure")
         composition_node = Transform(
             fn=composition_an.run,  name="composition")
-        merge = MergeSynch(num_inputs=3,           name="merge")
+        merge = MergeSynch(
+            inports=["in_sharpness", "in_exposure", "in_composition"],
+            name="merge",
+        )
         sink = Sink(fn=merged_outputs.append,     name="sink")
 
         g = network([
             (image_source,     sharpness_node),
             (image_source,     exposure_node),
             (image_source,     composition_node),
-            (sharpness_node,   merge.in_0),
-            (exposure_node,    merge.in_1),
-            (composition_node, merge.in_2),
+            (sharpness_node,   merge.in_sharpness),
+            (exposure_node,    merge.in_exposure),
+            (composition_node, merge.in_composition),
             (merge, sink),
         ])
 
@@ -429,6 +439,7 @@ class TestModule07Network:
 
         assert len(merged_outputs) == 2
         for merged in merged_outputs:
+            assert isinstance(merged, dict)
             assert len(merged) == 3
 
 

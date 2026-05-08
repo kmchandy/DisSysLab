@@ -66,15 +66,20 @@ recorder  = JSONLRecorder(
 )
 
 
-def archive_merged(merged: list) -> None:
+def archive_merged(merged: dict) -> None:
     """
-    Flatten merged list into a single dict for JSONL archiving.
+    Flatten merged dict into a single dict for JSONL archiving.
 
-    MergeSynch emits [sharpness_result, exposure_result, composition_result].
+    MergeSynch emits a dict keyed by inport name:
+        {"in_sharpness": sharpness_result,
+         "in_exposure":  exposure_result,
+         "in_composition": composition_result}
     This combines them into one flat dict so each line in the JSONL file
     contains the full picture for that photo.
     """
-    sharp_r, expose_r, comp_r = merged
+    sharp_r  = merged["in_sharpness"]
+    expose_r = merged["in_exposure"]
+    comp_r   = merged["in_composition"]
 
     # Compute combined verdict (same logic as PhotoDashboard)
     import numpy as np
@@ -114,7 +119,10 @@ image_source      = Source(fn=imgs.run,              name="images")
 sharpness_node    = Transform(fn=sharpness_an.run,   name="sharpness")
 exposure_node     = Transform(fn=exposure_an.run,    name="exposure")
 composition_node  = Transform(fn=composition_an.run, name="composition")
-merge             = MergeSynch(num_inputs=3,          name="merge_synch")
+merge             = MergeSynch(
+    inports=["in_sharpness", "in_exposure", "in_composition"],
+    name="merge_synch",
+)
 dashboard_sink    = Sink(fn=dashboard.run,            name="dashboard")
 archive_sink      = Sink(fn=archive_merged,           name="archive")
 
@@ -124,10 +132,10 @@ g = network([
     (image_source,     exposure_node),
     (image_source,     composition_node),
 
-    # Gather: three analyzers merge synchronously
-    (sharpness_node,   merge.in_0),
-    (exposure_node,    merge.in_1),
-    (composition_node, merge.in_2),
+    # Gather: three analyzers merge synchronously, keyed by named ports
+    (sharpness_node,   merge.in_sharpness),
+    (exposure_node,    merge.in_exposure),
+    (composition_node, merge.in_composition),
 
     # Output: dashboard + archive both receive the merged result
     (merge, dashboard_sink),

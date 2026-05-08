@@ -251,8 +251,10 @@ Try this prompt:
 > - `saturation_score`: normalized 0–1 score (higher = more vibrant)
 > - `verdict`: "vibrant" / "muted" / "greyscale"
 >
-> Update MergeSynch to num_inputs=4, add merge.in_3, and update
-> PhotoDashboard to unpack and display the fourth result.
+> Update MergeSynch's `inports=` list to add `"in_color_vibrancy"`,
+> add `merge.in_color_vibrancy` to the wiring, and update
+> PhotoDashboard to unpack and display the fourth result from
+> `merged["in_color_vibrancy"]`.
 
 ### Experiment: adjust the quality weights
 

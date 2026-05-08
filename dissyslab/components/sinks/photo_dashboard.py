@@ -3,9 +3,9 @@
 """
 PhotoDashboard: Displays merged photo quality analysis to the terminal.
 
-Receives the merged output from MergeSynch — a list of three dicts,
-one from each analyzer — and prints a clean per-photo summary with
-a quality verdict.
+Receives the merged output from MergeSynch — a dict keyed by inport
+name, with one dict per analyzer — and prints a clean per-photo
+summary with a quality verdict.
 
 Usage:
     from dissyslab.components.sinks.photo_dashboard import PhotoDashboard
@@ -14,8 +14,12 @@ Usage:
     dashboard = PhotoDashboard()
     sink = Sink(fn=dashboard.run, name="dashboard")
 
-The merged message format (list from MergeSynch):
-    [sharpness_result, exposure_result, composition_result]
+The merged message format (dict from MergeSynch):
+    {
+      "in_sharpness":   sharpness_result,
+      "in_exposure":    exposure_result,
+      "in_composition": composition_result,
+    }
 """
 
 import numpy as np
@@ -85,15 +89,18 @@ class PhotoDashboard:
         self._show_header = show_header
         self._verdicts    = []   # track summary for end
 
-    def run(self, merged: list) -> None:
+    def run(self, merged: dict) -> None:
         """
         Display one photo's merged analysis.
 
         Args:
-            merged: List of [sharpness_result, exposure_result, composition_result]
-                    from MergeSynch
+            merged: Dict from MergeSynch keyed by inport name:
+                    {"in_sharpness": ..., "in_exposure": ...,
+                     "in_composition": ...}
         """
-        sharpness_r, exposure_r, composition_r = merged
+        sharpness_r   = merged["in_sharpness"]
+        exposure_r    = merged["in_exposure"]
+        composition_r = merged["in_composition"]
 
         self._photo_count += 1
         filename = sharpness_r["filename"]
@@ -174,45 +181,60 @@ if __name__ == "__main__":
     dashboard = PhotoDashboard()
 
     test_merges = [
-        [
-            {"filename": "mountain_snow.jpg", "index": 1, "total": 3,
-             "laplacian_var": 7411.3, "sharpness_score": 0.741,
-             "verdict": "sharp", "note": "Well-focused, clear detail throughout"},
-            {"filename": "mountain_snow.jpg",
-             "mean_brightness": 0.436, "clipped_shadows": 0.003,
-             "clipped_highlights": 0.001, "exposure_score": 0.790,
-             "verdict": "good", "note": "Well exposed — mean brightness 0.44"},
-            {"filename": "mountain_snow.jpg",
-             "composition_score": 0.499, "center_bias": 0.612,
-             "thirds_coverage": 0.250, "verdict": "sparse",
-             "note": "Few strong compositional elements"},
-        ],
-        [
-            {"filename": "foggy_trees.jpg", "index": 2, "total": 3,
-             "laplacian_var": 87.7, "sharpness_score": 0.009,
-             "verdict": "blurry", "note": "Blurry — out of focus or motion blur"},
-            {"filename": "foggy_trees.jpg",
-             "mean_brightness": 0.458, "clipped_shadows": 0.000,
-             "clipped_highlights": 0.000, "exposure_score": 0.799,
-             "verdict": "good", "note": "Well exposed — mean brightness 0.46"},
-            {"filename": "foggy_trees.jpg",
-             "composition_score": 0.870, "center_bias": 0.498,
-             "thirds_coverage": 0.464, "verdict": "good",
-             "note": "Subject near rule-of-thirds points"},
-        ],
-        [
-            {"filename": "night_scene.jpg", "index": 3, "total": 3,
-             "laplacian_var": 403.4, "sharpness_score": 0.040,
-             "verdict": "soft", "note": "Slightly soft — some detail lost"},
-            {"filename": "night_scene.jpg",
-             "mean_brightness": 0.128, "clipped_shadows": 0.039,
-             "clipped_highlights": 0.000, "exposure_score": 0.338,
-             "verdict": "dark", "note": "Underexposed — mean brightness 0.13"},
-            {"filename": "night_scene.jpg",
-             "composition_score": 0.422, "center_bias": 0.521,
-             "thirds_coverage": 0.211, "verdict": "sparse",
-             "note": "Few strong compositional elements"},
-        ],
+        {
+            "in_sharpness": {
+                "filename": "mountain_snow.jpg", "index": 1, "total": 3,
+                "laplacian_var": 7411.3, "sharpness_score": 0.741,
+                "verdict": "sharp",
+                "note": "Well-focused, clear detail throughout"},
+            "in_exposure": {
+                "filename": "mountain_snow.jpg",
+                "mean_brightness": 0.436, "clipped_shadows": 0.003,
+                "clipped_highlights": 0.001, "exposure_score": 0.790,
+                "verdict": "good",
+                "note": "Well exposed — mean brightness 0.44"},
+            "in_composition": {
+                "filename": "mountain_snow.jpg",
+                "composition_score": 0.499, "center_bias": 0.612,
+                "thirds_coverage": 0.250, "verdict": "sparse",
+                "note": "Few strong compositional elements"},
+        },
+        {
+            "in_sharpness": {
+                "filename": "foggy_trees.jpg", "index": 2, "total": 3,
+                "laplacian_var": 87.7, "sharpness_score": 0.009,
+                "verdict": "blurry",
+                "note": "Blurry — out of focus or motion blur"},
+            "in_exposure": {
+                "filename": "foggy_trees.jpg",
+                "mean_brightness": 0.458, "clipped_shadows": 0.000,
+                "clipped_highlights": 0.000, "exposure_score": 0.799,
+                "verdict": "good",
+                "note": "Well exposed — mean brightness 0.46"},
+            "in_composition": {
+                "filename": "foggy_trees.jpg",
+                "composition_score": 0.870, "center_bias": 0.498,
+                "thirds_coverage": 0.464, "verdict": "good",
+                "note": "Subject near rule-of-thirds points"},
+        },
+        {
+            "in_sharpness": {
+                "filename": "night_scene.jpg", "index": 3, "total": 3,
+                "laplacian_var": 403.4, "sharpness_score": 0.040,
+                "verdict": "soft",
+                "note": "Slightly soft — some detail lost"},
+            "in_exposure": {
+                "filename": "night_scene.jpg",
+                "mean_brightness": 0.128, "clipped_shadows": 0.039,
+                "clipped_highlights": 0.000, "exposure_score": 0.338,
+                "verdict": "dark",
+                "note": "Underexposed — mean brightness 0.13"},
+            "in_composition": {
+                "filename": "night_scene.jpg",
+                "composition_score": 0.422, "center_bias": 0.521,
+                "thirds_coverage": 0.211, "verdict": "sparse",
+                "note": "Few strong compositional elements"},
+        },
     ]
 
     for merged in test_merges:

@@ -61,11 +61,12 @@ def clean_text(text):
 
 
 def print_msg(msg):
+    # MergeSynch emits a dict keyed by the inport names defined below.
     print(f"text")
-    print(f"{msg[0]}")
-    print(f"sentiment: {msg[1]['sentiment']}")
+    print(f"{msg['in_text']}")
+    print(f"sentiment: {msg['in_sentiment']['sentiment']}")
     print(f"reasoning")
-    print(f"{msg[1]['reasoning']}")
+    print(f"{msg['in_sentiment']['reasoning']}")
     print(f"{'-'*40}")
     print()
 
@@ -76,7 +77,9 @@ analyze_sentiment = Transform(
 clean = Transform(
     fn=clean_text, name="clean_text_transformer")
 merge_synch_text_and_sentiment = MergeSynch(
-    num_inputs=2, name="merge_text_and_sentiment")
+    inports=["in_text", "in_sentiment"],
+    name="merge_text_and_sentiment",
+)
 
 # ============================================================================
 # Create Sink Nodes. construction:
@@ -96,8 +99,8 @@ g = network([
     (Facebook_data_source, clean),
     (clean, discard_spam),
     (discard_spam, analyze_sentiment),
-    (discard_spam.out_, merge_synch_text_and_sentiment.in_0),
-    (analyze_sentiment.out_, merge_synch_text_and_sentiment.in_1),
+    (discard_spam.out_, merge_synch_text_and_sentiment.in_text),
+    (analyze_sentiment.out_, merge_synch_text_and_sentiment.in_sentiment),
     (merge_synch_text_and_sentiment, print_output),
 ])
 
