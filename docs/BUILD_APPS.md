@@ -23,6 +23,14 @@ The path through this guide:
 The same example office is used throughout so you can read each
 section in isolation.
 
+This guide covers the **by-hand path**: open an editor, type
+`office.md`, drop role files in `roles/`. That is the primary path
+DisSysLab is optimised for. There is also a *programmatic* path
+where you construct an office in Python and call `make_office` to
+write the folder for you. That's a separate doc:
+[`MAKE_OFFICE.md`](MAKE_OFFICE.md). Both paths produce identical
+folders; downstream tools don't care which one made them.
+
 ---
 
 ## 1. The shape of an app

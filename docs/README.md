@@ -57,6 +57,9 @@ The full recipe index, including any recipes added later, is at
 - **[Build apps](BUILD_APPS.md)** — design and wire your own
   offices: org-chart shapes, prompt-writing tips, when to split
   into sub-offices, and how to extend with custom Python roles.
+- **[Build offices programmatically](MAKE_OFFICE.md)** — the
+  Python API for tools that *generate* offices instead of
+  hand-writing them. Same artifact, different ingestion path.
 - **[Troubleshooting](TROUBLESHOOTING.md)** — common errors when
   installing or running DisSysLab, keyed on the actual error
   strings, with the remedy for each.
@@ -67,6 +70,8 @@ The full recipe index, including any recipes added later, is at
   [LANGUAGE_MODELS.md](LANGUAGE_MODELS.md).
 - **"How do I build my own office?"** →
   [BUILD_APPS.md](BUILD_APPS.md).
+- **"How do I build offices from Python code instead of by hand?"** →
+  [MAKE_OFFICE.md](MAKE_OFFICE.md).
 - **"How do I send results to Slack / email / a file?"** →
   [send-messages-outside.md](recipes/send-messages-outside.md).
 - **"How do I read my Gmail?"** →
