@@ -393,6 +393,10 @@ _NEEDS_LIVE_CREDS = {
     "calendar_briefing",   # GmailSource needs GMAIL_USER/GMAIL_APP_PASSWORD
     "gmail_monitor",       # same
     "org_situation_room",  # bluesky_jetstream needs websocket-client
+    "situation_room",      # capstone office; roles will resolve from
+                           # the framework's built-in library once that
+                           # ships. Re-include in the snapshot test
+                           # when Step E (built-in roles) lands.
 }
 
 

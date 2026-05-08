@@ -53,6 +53,7 @@ from dissyslab.office_v2.codegen import (
     emit_run_py,
     render_run_py,
 )
+from dissyslab.office_v2.make_office import make_office
 
 __all__ = [
     "AgentRoleEntry",
@@ -75,6 +76,7 @@ __all__ = [
     "compile_office",
     "emit_run_py",
     "load_roles_dir",
+    "make_office",
     "nl_role",
     "parse_office_dir",
     "render_run_py",
