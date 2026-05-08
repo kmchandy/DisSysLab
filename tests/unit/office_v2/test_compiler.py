@@ -429,14 +429,16 @@ class TestGalleryCompiles:
         _gallery_office_dirs(),
         ids=lambda p: p.name,
     )
-    def test_compiles(self, office_dir):
-        # The gallery's role files use real prompts; we let the real
-        # role library load (with lazy backend resolution) and stub
-        # only the backend used at run time. compile_office never
-        # actually calls the backend — entry.factory() is invoked,
-        # which constructs the Role agent with a closure that would
-        # call the backend on first message — but we never run the
-        # network, so the API key is never needed.
+    def test_compiles(self, office_dir, monkeypatch):
+        # Test wiring, not the developer's shell DSL_BACKEND. If the
+        # user has DSL_BACKEND=ollama (or any other backend not
+        # registered in pytest), nl_role's factory would try to
+        # resolve that backend at agent-instantiation time and fail.
+        # Force the default backend (anthropic) for this test —
+        # compile_office never actually calls the backend (we don't
+        # run the network), so no API key is needed.
+        monkeypatch.delenv("DSL_BACKEND", raising=False)
+
         net, warnings = compile_office(office_dir)
         assert isinstance(net, Network)
         # Empty or sugar-only warnings are acceptable; structural
