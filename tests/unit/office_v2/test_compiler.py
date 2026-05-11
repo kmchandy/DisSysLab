@@ -500,14 +500,24 @@ _NEEDS_LIVE_CREDS = {
 
 
 def _gallery_office_dirs():
+    """Yield every office directory anywhere under gallery/.
+
+    Walks top-level *and* the ``apps/`` / ``examples/`` split that v1
+    introduced. An "office directory" is one containing ``office.md``
+    or the legacy ``network.md``.
+    """
     out = []
-    for d in sorted(GALLERY.iterdir()):
-        if not d.is_dir():
-            continue
-        if d.name in _NEEDS_LIVE_CREDS:
-            continue
-        if (d / "office.md").exists() or (d / "network.md").exists():
-            out.append(d)
+    def _walk(root: Path) -> None:
+        for d in sorted(root.iterdir()):
+            if not d.is_dir():
+                continue
+            if d.name in _NEEDS_LIVE_CREDS:
+                continue
+            if (d / "office.md").exists() or (d / "network.md").exists():
+                out.append(d)
+            elif d.name in {"apps", "examples"}:
+                _walk(d)
+    _walk(GALLERY)
     return out
 
 

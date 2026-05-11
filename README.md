@@ -1,352 +1,265 @@
-# DisSysLab — Build Your Own Office of AI Agents
+# DisSysLab
 
 [![PyPI](https://img.shields.io/pypi/v/dissyslab)](https://pypi.org/project/dissyslab/)
 [![Python](https://img.shields.io/pypi/pyversions/dissyslab)](https://pypi.org/project/dissyslab/)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
-[![Downloads](https://img.shields.io/pypi/dm/dissyslab)](https://pypi.org/project/dissyslab/)
 
-**An AI chatbot answers when you ask. DisSysLab runs an office of AI
-agents that works for you continuously** — monitoring Hacker News,
-BlueSky, your inbox; filtering, analyzing, and delivering results around
-the clock until you tell it to stop.
+> **Free AI assistants that do your information work** — runs on
+> your laptop. No subscription. Your data never leaves your
+> computer.
 
-You describe the office in plain English. DisSysLab compiles your
-description into a running distributed system.
-
-![org_situation_room running live — Alex filtering BlueSky and news feeds, Morgan rewriting keepers as briefings](docs/dsl-demo.gif)
-
-*`org_situation_room` running live: five concurrent agents scanning
-news and social media. Alex filters for political and economic
-significance; Morgan rewrites each keeper as a briefing. No code —
-just two plain-English files describing what each agent does and how
-they connect.*
-
-### Try it in 60 seconds
-
-```bash
-python3 -m venv .venv && source .venv/bin/activate    # Windows: .venv\Scripts\activate
-pip install dissyslab
-export ANTHROPIC_API_KEY=sk-ant-...                   # need a key? see Path A below
-dsl init my_first_office my_briefing && cd my_briefing && dsl run .
-```
-
-Within seconds, briefings start streaming to your terminal:
-
-```
-[Alex]   ML release: a 7B model that runs on a Raspberry Pi 5 with
-         usable latency — full weights and training code on GitHub.
-
-[Alex]   New Python release: 3.13 ships with a no-GIL build behind
-         a flag. Big deal for compute-bound libraries.
-
-[Alex]   Skip: yet another startup announcing a Series B; nothing
-         technical here.
-```
-
-*Three briefings written by an AI agent named Alex, watching Hacker
-News in real time. You didn't write any code — you wrote two short
-plain-English files describing what Alex does.*
-
-### Two ways to start
-
-- **Run it now** — copy the three commands above. Full step-by-step
-  walkthrough with the API-key setup is in
-  [Path A](#path-a--run-offices-of-ai-agents) below.
-- **Watch first** — take the
-  [5-minute micro-course](https://kmchandy.github.io/DisSysLab/office_microcourse.html)
-  to see what you're building before you install.
+A morning intelligence digest. An inbox classifier. A competitor
+watcher. DisSysLab is a framework for building **offices of AI
+agents** that work for you continuously — described in plain
+English, running on free open-source language models.
 
 ---
 
-## Who this is for
+## Try it: your morning intelligence digest in ten minutes
 
-**Anyone who knows basic Python and can run `pip install`.** If
-you've used `python3` from a terminal and you have an Anthropic API
-key (or are willing to spend three minutes getting one), you can build
-offices of AI agents with DisSysLab.
+[`situation_room`](dissyslab/gallery/apps/situation_room/) is a
+working office. Three news feeds in. One markdown digest out:
+articles deduplicated, severity-classified, entity-extracted,
+topic-tagged, geolocated, written up as 2-4 sentence briefings,
+and reviewed by an editor agent. Free. Local. Private.
 
-The mission is to show the world how to build **offices** —
-distributed systems of cooperating agents — in natural language, with
-LLMs doing the heavy lifting. No frameworks to learn, no asyncio, no
-message queues to wire by hand. You write job descriptions and an org
-chart; DisSysLab handles threading, message passing, and shutdown.
+**One-line install** (macOS or Linux, requires Python 3.10+):
+
+```bash
+curl -sSf https://raw.githubusercontent.com/kmchandy/DisSysLab/main/install.sh | bash
+```
+
+What that does: installs [Ollama](https://ollama.com), pulls the
+Qwen3 model (~19 GB one-time download), installs DisSysLab into a
+venv. Twenty to forty minutes wall time, mostly waiting for the
+model to download.
+
+**Then run your first office:**
+
+```bash
+dsl run dissyslab/gallery/apps/situation_room/
+```
+
+After ~10 minutes of pipeline execution you have a digest like
+[this sample](dev/experiments/situation_room_sample_day_1.md):
+
+```markdown
+## [CRITICAL] Lebanon reports 39 killed in Israeli strikes
+
+*politics · Lebanon · middle_east*
+
+Lebanon reports that Israeli strikes killed 39 people. Fighting
+continues between Israel and Hezbollah despite a ceasefire deal
+announced last month.
+
+[bbc_world](https://www.bbc.com/news/...)
+```
+
+Twenty or so of these every morning. No subscription, no API key,
+no recurring cost.
 
 ---
 
-## Choose your path
+## Make it yours
 
-**I want to run offices of AI agents** (no need to understand the
-framework internals)
-→ jump to **[Path A — pip install](#path-a--run-offices-of-ai-agents)** below.
+`situation_room` is described in plain English in
+[`office.md`](dissyslab/gallery/apps/situation_room/office.md).
+Open it. Read it. You can change it.
 
-**I want to learn how distributed systems work, or contribute to DisSysLab**
-→ jump to **[Path B — git clone](#path-b--learn-how-dsl-works)** below.
+There's a staircase from Consumer → Builder. You're not on a step
+unless you want to be.
+
+**Tweak — 5 minutes, one parameter.** Bump article counts, swap
+a feed, or set a polling interval:
+
+```
+Sources: techcrunch(max_articles=10, poll_interval=600)
+```
+
+**Modify — 30 minutes, swap a component.** Replace the terminal
+display with a markdown file, add a topic filter agent, route one
+role to a stronger paid model:
+
+```
+Sinks: markdown_digest(path="~/digest.md")
+```
+
+**Build — a few hours, write new agents.** Describe a new role
+in plain English to filter for your industry, watch a competitor,
+or summarise whatever stream matters to you. See
+[`docs/BUILD_APPS.md`](docs/BUILD_APPS.md).
+
+A worked example of the third tier — overriding *one* role to use
+Claude while everything else stays free on Ollama — is at
+[`situation_room_pro`](dissyslab/gallery/apps/situation_room_pro/).
+One file's difference. Roughly $1/month vs $14/month vs $0/month,
+depending on how much quality you want where.
 
 ---
 
-## Path A — Run Offices of AI Agents
-
-**Ten minutes from `pip install` to a running office.** Three steps.
-
-### 1. Install
-
-```bash
-mkdir ~/dsl-tutorial && cd ~/dsl-tutorial
-python3 -m venv .venv
-source .venv/bin/activate
-pip install dissyslab
-```
-
-(On Windows, replace `source .venv/bin/activate` with
-`.venv\Scripts\activate`.)
-
-**Already have DisSysLab installed?** Force the latest release
-and bypass pip's wheel cache:
-
-```bash
-pip install --upgrade --no-cache-dir dissyslab
-```
-
-### 2. Set your Anthropic API key
-
-Get a key at [console.anthropic.com](https://console.anthropic.com)
-(Settings → API Keys → Create Key). Copy it to your clipboard, then:
-
-```bash
-export ANTHROPIC_API_KEY=$(pbpaste)
-```
-
-(`pbpaste` is Mac. On Linux use `xclip -selection clipboard -o` or
-`xsel -b`. In Windows PowerShell use `Get-Clipboard`.) To make it
-permanent, add the same `export` line to `~/.zshrc` or `~/.bashrc`.
-
-### 3. Run your first office
-
-```bash
-dsl init my_first_office my_briefing
-cd my_briefing
-dsl run .
-```
-
-Within a few seconds the compiler shows you the office's topology and
-asks for confirmation. Type `yes` and one-sentence Hacker News
-briefings start streaming to your terminal. Press `Ctrl+C` to stop.
-
-### Here's the file you just ran
-
-Two plain-English files, no Python. The org chart is `office.md`:
-
-```
-# Office: my_first_office
-
-Sources: hacker_news(max_articles=10, poll_interval=600)
-Sinks: console_printer
-
-Agents:
-Alex is an analyst.
-
-Connections:
-hacker_news's destination is Alex.
-Alex's briefing is console_printer.
-```
-
-The role description is `roles/analyst.md`:
-
-```
-# Role: analyst
-
-You are a Hacker News analyst. For each story you receive, write
-one crisp sentence describing what it's about and why someone
-learning software might care.
-
-Send to briefing.
-```
-
-That's the entire program. DisSysLab read those two files, started
-a Hacker News source thread, started Alex on his own thread with the
-plain-English job description as his prompt, and forwarded each
-briefing to your terminal.
-
-### Modify and re-run
-
-Open `roles/analyst.md` and change one line — give Alex a different
-audience, a different focus, a different style.
-
-```
-You are a Hacker News analyst. Your readers are first-year computer
-science students learning Python, AI, and data science. ...
-```
-
-Save. Run `dsl run .` again. Same office, completely different
-behavior. No rebuild, no code change. **That's the whole idea.**
-
-For a longer walkthrough — installing, setting the key, running both
-offices end-to-end with explanations of every step — see
-[`GETTING_STARTED.md`](GETTING_STARTED.md).
-
-### A tour of the gallery
-
-```bash
-dsl list
-```
-
-prints every office that ships with DisSysLab. Some highlights:
-
-| Office | What it does |
-|--------|--------------|
-| `my_first_office` | Single-agent Hacker News briefer (the one above) |
-| `org_situation_room` | Two-agent live news monitor — BlueSky + BBC + Al Jazeera, with a live-updating display of the eight most recent briefings |
-| `org_news_editorial` | Two-agent editorial chain — analyst feeds editor, with a feedback loop |
-| `weather_monitor` | Single-agent weather briefer for a city you choose |
-| `stocks_monitor` | Single-agent ticker watcher with one-sentence price updates |
-| `org_two_office_news` | An office of offices — news_monitor feeds news_editor, sourced from three real RSS feeds |
-
-> **Heads-up on cost.** Offices run continuously until you stop them.
-> An office that polls live feeds will keep calling Claude — and
-> billing your Anthropic account — for as long as it's open. Press
-> `Ctrl+C` when you're done, and check your usage at
-> [console.anthropic.com](https://console.anthropic.com) if you've
-> left one running for a while.
-
-Each office is a folder with an `office.md` and `roles/*.md` you can
-read and edit. `dsl init <office_name> <local_folder>` copies one
-into a folder you own.
-
-### What is an office?
+## What's an office?
 
 An office is a team of AI agents with **roles**, connected by an
 **org chart**. You write each role in plain English — the same way
-you'd describe a job to a new hire — and you write the org chart in
-plain English too.
+you'd describe a job to a new hire — and you write the org chart
+in plain English too. The framework compiles your description into
+a running concurrent pipeline.
 
-Here's a richer example, from `org_situation_room`. Alex filters live
-news for political and economic significance; Morgan rewrites
-keepers as briefings.
-
-**The job description — what each agent does:**
+Here's `situation_room`'s pipeline (excerpted from
+[`office.md`](dissyslab/gallery/apps/situation_room/office.md)):
 
 ```
-# Role: analyst
-
-You are a news analyst who receives posts and articles and sends
-items to either keep or discard.
-
-Your job is to decide if each item is relevant to significant
-political developments or economic events — Congress, elections,
-the Federal Reserve, tariffs, inflation, markets, trade policy,
-or the broader economy.
-
-Exclude celebrity gossip, sports, entertainment, and personal
-opinions with no broader political or economic significance.
-
-If the item is relevant, send to keep.
-Otherwise send to discard.
-```
-
-**The org chart — who connects to whom:**
-
-```
-Sources: bluesky(max_posts=None, lifetime=None),
-         al_jazeera(max_articles=10, poll_interval=600),
-         bbc_world(max_articles=10, poll_interval=600)
-Sinks: intelligence_display(max_items=8),
-       jsonl_recorder_discard(path="discards.jsonl"),
-       jsonl_recorder_briefing(path="briefings.jsonl")
+Sources: bbc_world(max_articles=5), npr_news(max_articles=5),
+         al_jazeera(max_articles=5)
+Sinks: intelligence_display, jsonl_recorder_briefing(...),
+       jsonl_recorder_discard(...)
 
 Agents:
-Alex is an analyst.
-Morgan is an editor.
+Sasha is a deduplicator(by="url").
+Eve is an entity_extractor.
+Sam is a severity_classifier.
+Tom is a topic_tagger.
+Greta is a geolocator.
+Sync is a synchronizer.
+Riley is a writer.
+Jordan is an evaluator.
 
 Connections:
-bluesky's destination is Alex.
-al_jazeera's destination is Alex.
-bbc_world's destination is Alex.
-Alex's keep is Morgan.
-Alex's discard is jsonl_recorder_discard.
-Morgan's briefing are intelligence_display and jsonl_recorder_briefing.
+bbc_world's destination is Sasha.
+npr_news's destination is Sasha.
+al_jazeera's destination is Sasha.
+
+Sasha's out is Eve, Sam, Tom, Greta.
+
+Eve's out is Sync's entities.
+Sam's out is Sync's severity.
+Tom's out is Sync's topic.
+Greta's out is Sync's location.
+
+Sync's out is Riley.
+Riley's out is Jordan.
+Jordan's publish is intelligence_display, jsonl_recorder_briefing.
+Jordan's revise is jsonl_recorder_discard.
 ```
 
-That's the entire program. Three sources stream concurrently; Alex
-and Morgan each run on their own thread; Alex's discards stream to
-one archive on disk while Morgan's briefings stream to another and
-also feed the live display. Change the topic, change the filter,
-change the sources — the office is yours.
-
-**Offices can contain offices.** Each office is a black box —
-the surrounding network sees only what flows in and what flows out.
-You build organizations of arbitrary complexity one office at a time,
-reusing offices across networks.
-
-### Documentation
-
-- **5-minute micro-course** — [watch first](https://kmchandy.github.io/DisSysLab/office_microcourse.html)
-  to see what an office looks like before you install.
-- **Recipes** — copy-pasteable patterns:
-  [filter for a topic](docs/recipes/filter-for-a-topic.md),
-  [monitor your inbox](docs/recipes/monitor-your-inbox.md),
-  [receive webhooks](docs/recipes/receive-webhooks.md),
-  [chain offices](docs/recipes/chain-offices.md),
-  [send messages to email/Slack/files](docs/recipes/send-messages-outside.md),
-  [write a custom role](docs/recipes/write-a-custom-role.md), and
-  [more](docs/recipes/).
-- **Sources and sinks reference** — [docs/SOURCES_AND_SINKS.md](docs/SOURCES_AND_SINKS.md)
-  lists every component the framework ships with, with arguments and
-  setup instructions.
-- **Use a different LLM** (OpenAI, Gemini, Ollama, a local SLM) —
-  [docs/LANGUAGE_MODELS.md](docs/LANGUAGE_MODELS.md) walks through the
-  `DSL_BACKEND_MODULE` extension hook, mixing backends in one
-  office, and comparing models.
-- **Build your own office** —
-  [docs/BUILD_APPS.md](docs/BUILD_APPS.md) covers the design and
-  wiring path from idea to running app.
-- **Hit an error?** — run `dsl doctor`, then check
-  [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for the
-  remedy keyed on the error string.
-- **Browse offices** — `dsl list` from the terminal, or the
-  [gallery README](dissyslab/gallery/README.md).
-- **Full docs index** — [docs/README.md](docs/README.md).
+Three RSS feeds fan into a deduplicator. Each unique article forks
+to four parallel agents that each add one piece of metadata. The
+synchronizer merges those branches. The writer produces a briefing.
+The evaluator routes it to display or rejection. Nine agents, one
+file.
 
 ---
 
-## Path B — Learn How DSL Works
+## Apps and examples
 
-DSL is also a Python
-framework for building distributed systems — concurrent agents, message
-queues, routing, and termination detection. You can clone the repository;
-run an example; and then use the framework in Python as follows.
+- **[`gallery/apps/`](dissyslab/gallery/apps/)** — Pat-facing
+  ready-to-run offices.
+  - [`situation_room`](dissyslab/gallery/apps/situation_room/) —
+    morning intelligence digest from three news feeds (the office
+    on this page).
+  - [`situation_room_pro`](dissyslab/gallery/apps/situation_room_pro/)
+    — same office with Claude as the writer for higher-quality
+    briefings, free local Qwen for everything else.
+
+- **[`gallery/examples/`](dissyslab/gallery/examples/)** — Builder
+  tech demos showing patterns (sub-offices, custom roles, custom
+  sinks). Useful when you start writing your own offices.
+
+`dsl list` from the terminal shows every office that ships with
+DisSysLab.
+
+---
+
+## Beyond the free path
+
+The default is free local AI via Ollama. The framework also
+supports paid hosted backends out of the box:
+
+- **Claude** via Anthropic — set `ANTHROPIC_API_KEY` and
+  `DSL_BACKEND=anthropic`.
+- **Open-weight models via OpenRouter** — set
+  `OPENROUTER_API_KEY` and `DSL_BACKEND=openrouter`. Useful for
+  testing larger SLMs without local hardware.
+- **OpenAI, Gemini, or your own model** — see
+  [`docs/LANGUAGE_MODELS.md`](docs/LANGUAGE_MODELS.md) for the
+  Backend Protocol (one method, ~30 lines to implement).
+
+You can also **mix backends inside one office**:
+`situation_room_pro` runs the writer on Claude and the four
+extractors on Qwen.
+
+---
+
+## Documentation
+
+For Consumers:
+
+- **[`situation_room/README.md`](dissyslab/gallery/apps/situation_room/README.md)**
+  — what the office does and how to make it yours (the three-tier
+  staircase).
+- **[Sample digest](dev/experiments/situation_room_sample_day_1.md)**
+  — what Pat sees on a typical morning.
+
+For Builders:
+
+- **[`docs/BUILD_APPS.md`](docs/BUILD_APPS.md)** — design and wire
+  your own office, from idea to running pipeline.
+- **[`docs/LANGUAGE_MODELS.md`](docs/LANGUAGE_MODELS.md)** —
+  switching, comparing, and mixing backends.
+- **[`docs/SOURCES_AND_SINKS.md`](docs/SOURCES_AND_SINKS.md)** —
+  every component the framework ships with.
+- **[`docs/recipes/`](docs/recipes/)** — short copy-pasteable
+  patterns for common tasks.
+- **[`docs/MAKE_OFFICE.md`](docs/MAKE_OFFICE.md)** — the
+  programmatic path: construct an office from Python.
+
+For framework developers:
+
+- **[`dev/PROMPTING_FOR_SLMS.md`](dev/PROMPTING_FOR_SLMS.md)** —
+  the role-decomposition pattern that makes SLMs reliable.
+- **[`dev/PLAN_free_ai_for_pat.md`](dev/PLAN_free_ai_for_pat.md)**
+  and **[`dev/PLAN_shipping_v1.md`](dev/PLAN_shipping_v1.md)** —
+  what we're building and why.
+
+---
+
+## Manual install (without the shell installer)
+
+If you'd rather not run a `curl | bash`:
 
 ```bash
-git clone https://github.com/kmchandy/DisSysLab.git
-cd DisSysLab
-python3 -m venv ~/.venvs/dsl
-source ~/.venvs/dsl/bin/activate
-pip install -e '.[dev]'
-pytest
-echo "ANTHROPIC_API_KEY=<paste-your-key>" > .env
-dsl run dissyslab/gallery/my_first_office/
+# 1. Install Ollama from https://ollama.com/download
+# 2. Pull the model
+ollama pull qwen3:30b
+
+# 3. Install DisSysLab
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install dissyslab
+
+# 4. Configure
+export DSL_BACKEND=ollama
+
+# 5. Run
+dsl run dissyslab/gallery/apps/situation_room/
 ```
 
-The source ~/.venvs/dsl/bin/activate line activates the venv for the current shell only. 
-**When you open a new terminal you must re-run the activate command before running dsl.**
-If you use Windows then the activate command is .venv\Scripts\activate and the path 
-uses backslashes.
-
-See [`examples/`](examples/README.md) for a module sequence for using
-Python to building distributed systems:
-
-- `module_01` — your first Agent and Network
-- `module_02` — sources, transforms, sinks
-- `module_03` — fan-out, fan-in, routing
-- `module_04` — termination and the os_agent
-- ...
-
+Same result. Read each step before running it.
 
 ---
 
 ## Requirements
 
-- Python 3.9 or newer
-- An Anthropic API key ([get one here](https://console.anthropic.com))
+- macOS or Linux. (Windows works for the core framework but the
+  shell installer assumes a Unix-like environment.)
+- Python 3.10 or newer.
+- Mac with 16 GB+ RAM, or comparable PC. The `qwen3:30b` model uses
+  ~12-14 GB at Q4 quantization; comfortable on a 32 GB Mac.
+- ~20 GB free disk for the model.
+- An Ollama install (the installer handles this) or a paid LLM API
+  key if you prefer the paid path.
+
+---
 
 ## License
 
@@ -354,9 +267,9 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-**DisSysLab is an open research and teaching project. It is a
-framework for building distributed systems using natural language.
-It allows you to explore, compare, and use different large and
-small language models in the same application. It is used in an introductory, 
-first= or second-year undergraduate course on distributed systems.**
-
+**DisSysLab is an open framework for describing continuous
+multi-agent AI systems in plain English. It runs free locally and
+mixes with paid hosted models when you want. The mission is to give
+Pat — small-business owner, journalist, analyst, NGO staff, anyone
+doing continuous information work — a system that pays its rent in
+attention rather than tokens.**
