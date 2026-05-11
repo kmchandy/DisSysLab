@@ -38,6 +38,7 @@ Note:
     it iterate entries directly, bypassing the string concatenation entirely.
 """
 
+import html
 import re
 from datetime import datetime, timezone
 from typing import Optional
@@ -107,6 +108,19 @@ class RSSNormalizer:
                 feed = feedparser.parse(url)
                 entries = feed.entries
 
+                # If the feed returned no entries, surface *why*. feedparser
+                # silently returns 0 entries when the request fails, the
+                # server returns garbage, or the XML doesn't parse — Pat
+                # otherwise sees just "0 entries" and can't tell whether
+                # the source is genuinely empty or fundamentally broken.
+                if not entries:
+                    detail = self._diagnose_empty_feed(feed)
+                    print(
+                        f"[{self.source_name}] 0 entries from {url} "
+                        f"— {detail}"
+                    )
+                    continue
+
                 if self.max_articles:
                     entries = entries[:self.max_articles]
 
@@ -128,6 +142,36 @@ class RSSNormalizer:
             except Exception as e:
                 print(f"[{self.source_name}] Error fetching {url}: {e}")
 
+    @staticmethod
+    def _diagnose_empty_feed(feed) -> str:
+        """Describe why a feedparser result has no entries.
+
+        feedparser swallows network failures, server errors, and parse
+        problems into an empty entries list with side-channel fields
+        set. This helper inspects those fields and returns a one-line
+        explanation Pat can act on.
+        """
+        status = getattr(feed, "status", None)
+        bozo = bool(getattr(feed, "bozo", False))
+        bozo_exc = getattr(feed, "bozo_exception", None)
+
+        # HTTP error first — most informative.
+        if status is not None and not (200 <= status < 300):
+            return f"HTTP {status} from server (possible rate limit or block)"
+
+        # Parse error (malformed XML, etc.)
+        if bozo:
+            exc_class = type(bozo_exc).__name__ if bozo_exc else "?"
+            return (
+                f"feed parse error ({exc_class}: {bozo_exc!s}); "
+                "the server's response may not be valid RSS/Atom"
+            )
+
+        # No HTTP error, no parse error, but no entries either.
+        if status is not None:
+            return f"HTTP {status} but feed body contained no entries"
+        return "feed returned no entries (network reachable, no error reported)"
+
     def _to_standard_dict(self, entry, feed_url: str) -> Optional[dict]:
         """
         Convert a feedparser entry to the standard five-key dict.
@@ -135,7 +179,9 @@ class RSSNormalizer:
         Returns None if the entry has no usable text.
         """
         # ── title ────────────────────────────────────────────────────────
-        title = entry.get("title", "").strip()
+        # Titles routinely arrive with numeric entities (&#039;, &#8217;).
+        # html.unescape handles all named + numeric entities at once.
+        title = html.unescape(entry.get("title", "")).strip()
 
         # ── text (description/summary, HTML stripped) ─────────────────────
         raw_text = (
@@ -179,14 +225,16 @@ class RSSNormalizer:
 
     @staticmethod
     def _strip_html(text: str) -> str:
-        """Remove HTML tags and decode common entities."""
+        """Remove HTML tags and decode all standard entities.
+
+        ``html.unescape`` decodes every named entity (``&amp;``, ``&lt;``,
+        ``&nbsp;``, ...) plus every numeric entity (``&#039;``,
+        ``&#8217;``, ``&#x2014;``, ...). A previous hand-rolled list
+        missed numeric entities, leading to literal ``&#039;`` strings
+        leaking into downstream agents' inputs.
+        """
         text = re.sub(r'<[^>]+>', ' ', text)
-        text = text.replace('&amp;',  '&')
-        text = text.replace('&lt;',   '<')
-        text = text.replace('&gt;',   '>')
-        text = text.replace('&nbsp;', ' ')
-        text = text.replace('&#39;',  "'")
-        text = text.replace('&quot;', '"')
+        text = html.unescape(text)
         text = re.sub(r'\s+', ' ', text).strip()
         return text
 
