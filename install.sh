@@ -8,6 +8,10 @@
 # Or download and run locally:
 #     bash install.sh
 #
+# Flags:
+#     --no-modify-rc   Don't touch your shell rc; print the export
+#                      lines and let you copy them yourself.
+#
 # What it does, in order:
 #   1. Check Python 3.10+ is on PATH.
 #   2. Install Ollama (homebrew on Mac, official installer on Linux).
@@ -15,11 +19,11 @@
 #   4. Pull qwen3:30b (the recommended local model, ~19 GB one-time).
 #   5. Create a Python venv at ~/.dissyslab/venv.
 #   6. pip install dissyslab into it.
-#   7. Print next-step instructions.
+#   7. Append PATH + DSL_BACKEND to your shell rc (~/.zshrc or
+#      ~/.bashrc, depending on $SHELL). A backup is written next to
+#      the rc file before any edit. Pass --no-modify-rc to skip.
 #
 # What it does NOT do:
-#   - Modify your shell rc files. (We print one export line for you
-#     to add manually so you can see what we'd change.)
 #   - Configure paid LLM backends. Default is free local Qwen via
 #     Ollama. To use Claude or another paid model later, see
 #     docs/LANGUAGE_MODELS.md.
@@ -29,6 +33,16 @@
 #
 
 set -euo pipefail
+
+# ── Parse flags ──────────────────────────────────────────────────────
+
+MODIFY_RC=1
+for arg in "$@"; do
+    case "$arg" in
+        --no-modify-rc) MODIFY_RC=0 ;;
+        *) ;;
+    esac
+done
 
 # ── Cosmetic helpers ─────────────────────────────────────────────────
 
@@ -55,7 +69,7 @@ echo
 
 # ── 1. Detect OS ─────────────────────────────────────────────────────
 
-header "Step 1/6: Detect OS"
+header "Step 1/7: Detect OS"
 
 OS="$(uname -s)"
 case "$OS" in
@@ -66,7 +80,7 @@ esac
 
 # ── 2. Check Python 3.10+ ────────────────────────────────────────────
 
-header "Step 2/6: Check Python 3.10+"
+header "Step 2/7: Check Python 3.10+"
 
 if ! command -v python3 >/dev/null 2>&1; then
     die "python3 not found. Install Python 3.10 or newer from https://www.python.org/downloads/ then re-run this installer."
@@ -82,7 +96,7 @@ green "Python $PYV is fine"
 
 # ── 3. Install Ollama ────────────────────────────────────────────────
 
-header "Step 3/6: Install Ollama (free local AI runtime)"
+header "Step 3/7: Install Ollama (free local AI runtime)"
 
 if command -v ollama >/dev/null 2>&1; then
     green "Ollama is already installed"
@@ -104,7 +118,7 @@ fi
 
 # ── 4. Start Ollama service ──────────────────────────────────────────
 
-header "Step 4/6: Verify Ollama is running"
+header "Step 4/7: Verify Ollama is running"
 
 if ! curl -sSf -o /dev/null http://127.0.0.1:11434/api/version 2>/dev/null; then
     yellow "Ollama service is not running. Starting it..."
@@ -134,7 +148,7 @@ fi
 
 # ── 5. Pull the recommended model ────────────────────────────────────
 
-header "Step 5/6: Pull Qwen3:30b model"
+header "Step 5/7: Pull Qwen3:30b model"
 
 if ollama list 2>/dev/null | grep -q '^qwen3:30b'; then
     green "qwen3:30b is already downloaded"
@@ -148,7 +162,7 @@ fi
 
 # ── 6. Install DisSysLab ─────────────────────────────────────────────
 
-header "Step 6/6: Install DisSysLab into a venv"
+header "Step 6/7: Install DisSysLab into a venv"
 
 DSL_HOME="${DSL_HOME:-$HOME/.dissyslab}"
 mkdir -p "$DSL_HOME"
@@ -162,30 +176,89 @@ fi
 
 green "DisSysLab installed at $DSL_HOME/venv"
 
+# ── 7. Update shell config ──────────────────────────────────────────
+
+header "Step 7/7: Update your shell config"
+
+# Detect the right rc file from $SHELL. Mac users mostly run zsh
+# (Apple's default since macOS 10.15); Linux users mostly run bash.
+# We deliberately do NOT fall through to .profile or .bash_profile
+# without confirmation — those interact with login-shell semantics
+# in ways that are easy to break.
+RC_FILE=""
+case "${SHELL:-}" in
+    */zsh)  RC_FILE="$HOME/.zshrc" ;;
+    */bash)
+        if [ "$PLATFORM" = "mac" ] && [ -f "$HOME/.bash_profile" ]; then
+            RC_FILE="$HOME/.bash_profile"
+        else
+            RC_FILE="$HOME/.bashrc"
+        fi
+        ;;
+    */fish) RC_FILE="$HOME/.config/fish/config.fish" ;;
+    *) RC_FILE="" ;;
+esac
+
+# Marker the installer uses to recognise its own block on re-runs.
+MARKER="# Added by DisSysLab installer"
+
+print_export_lines() {
+    bold "       export PATH=\"$DSL_HOME/venv/bin:\$PATH\""
+    bold "       export DSL_BACKEND=ollama"
+}
+
+print_manual_instructions() {
+    echo
+    yellow "Add this to your shell config and restart your terminal:"
+    echo
+    print_export_lines
+    echo
+}
+
+if [ "$MODIFY_RC" -eq 0 ]; then
+    yellow "Skipping shell config update (--no-modify-rc)."
+    print_manual_instructions
+elif [ -z "$RC_FILE" ]; then
+    yellow "Couldn't detect your shell from \$SHELL=${SHELL:-(unset)}."
+    print_manual_instructions
+elif [ -f "$RC_FILE" ] && grep -qF "$MARKER" "$RC_FILE"; then
+    green "Shell config already has DisSysLab lines — skipping ($RC_FILE)"
+elif [ "${RC_FILE##*/}" = "config.fish" ]; then
+    # fish uses a different export syntax; surface manual instructions
+    # rather than guess.
+    yellow "Detected fish shell — please add this to $RC_FILE:"
+    echo
+    bold "       set -gx PATH $DSL_HOME/venv/bin \$PATH"
+    bold "       set -gx DSL_BACKEND ollama"
+    echo
+else
+    # Back up first so a paranoid Pat can compare.
+    if [ -f "$RC_FILE" ]; then
+        cp "$RC_FILE" "$RC_FILE.dissyslab-backup"
+        yellow "Backed up $RC_FILE to $RC_FILE.dissyslab-backup"
+    fi
+    {
+        echo ""
+        echo "$MARKER"
+        echo "export PATH=\"$DSL_HOME/venv/bin:\$PATH\""
+        echo "export DSL_BACKEND=ollama"
+    } >> "$RC_FILE"
+    green "Appended PATH + DSL_BACKEND to $RC_FILE"
+fi
+
 # ── Done ─────────────────────────────────────────────────────────────
 
 header "All set"
 
 echo
-echo "Next steps:"
+echo "Open a new terminal (or run 'source $RC_FILE') so the PATH change"
+echo "takes effect, then try your first office:"
 echo
-echo "1. Add this to your shell config (~/.zshrc on Mac, ~/.bashrc on"
-echo "   Linux), then restart your terminal:"
+bold "       dsl run dissyslab/gallery/apps/periodic_brief/"
 echo
-bold "       export PATH=\"$DSL_HOME/venv/bin:\$PATH\""
-bold "       export DSL_BACKEND=ollama"
-echo
-echo "2. Run your first office — a morning intelligence digest from"
-echo "   BBC, NPR, and Al Jazeera:"
-echo
-bold "       dsl run \$DSL_HOME/situation_room"
-echo
-echo "   (or wherever you have a clone of the DisSysLab gallery; the"
-echo "   apps live at dissyslab/gallery/apps/.)"
-echo
-echo "3. Read"
+echo "Read the situation_room walkthrough to see what an office is and"
+echo "how to make one your own:"
 bold "       https://github.com/kmchandy/DisSysLab/blob/main/dissyslab/gallery/apps/situation_room/README.md"
-echo "   to see what you just installed and how to customise it."
 echo
 echo "Welcome to free AI."
 echo
