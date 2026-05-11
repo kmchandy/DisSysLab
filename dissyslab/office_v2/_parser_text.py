@@ -217,15 +217,19 @@ def _join_continuations(body: List[_Line]) -> List[_Line]:
 
 
 def _split_top_level(s: str, delim: str = ",") -> List[str]:
-    """Split ``s`` on ``delim`` ignoring delimiters inside parens or quotes.
+    """Split ``s`` on ``delim`` ignoring delimiters inside brackets/quotes.
 
-    Handles single and double quotes (no escape sequences inside —
-    we never need them for this grammar).
+    Tracks nesting depth for ``()``, ``[]``, and ``{}`` so a literal
+    list/dict/tuple can contain ``delim`` (typically ``,``) without
+    being split. Also handles single and double quotes (no escape
+    sequences inside — we never need them for this grammar).
     """
     parts: List[str] = []
     depth = 0
     in_quote: Optional[str] = None
     buf: List[str] = []
+    OPENERS = "([{"
+    CLOSERS = ")]}"
     for ch in s:
         if in_quote:
             buf.append(ch)
@@ -236,11 +240,11 @@ def _split_top_level(s: str, delim: str = ",") -> List[str]:
             in_quote = ch
             buf.append(ch)
             continue
-        if ch == "(":
+        if ch in OPENERS:
             depth += 1
             buf.append(ch)
             continue
-        if ch == ")":
+        if ch in CLOSERS:
             depth -= 1
             buf.append(ch)
             continue

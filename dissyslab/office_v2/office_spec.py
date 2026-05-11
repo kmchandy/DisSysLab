@@ -189,6 +189,13 @@ class RoleRef:
         ``"news_monitor"``). The library lookup tells the compiler
         whether this is an ``AgentRoleEntry`` (leaf) or an
         ``OfficeRoleEntry`` (sub-office).
+    args
+        Keyword arguments captured from office.md. Pat writes
+        ``Sasha is a deduplicator(by="url").`` and the parser records
+        ``args=(("by", "url"),)``. The compiler forwards them to the
+        role's constructor (LLM roles ignore args; ``fn_lib`` entries
+        seed initial state from them; sub-offices currently reject
+        them). The default ``()`` is the no-args case.
     path
         Optional filesystem hint, only set when the user wrote
         ``office at <path>`` inline in office.md. Layer 5 uses it as
@@ -207,9 +214,12 @@ class RoleRef:
 
     agent_name: str
     role_name: str
+    args: Tuple[Tuple[str, Any], ...] = ()
     path: Optional[str] = None
 
     def __post_init__(self) -> None:
+        # Coerce iterables to tuples so callers may pass lists.
+        object.__setattr__(self, "args", tuple(self.args))
         if not isinstance(self.agent_name, str) or not self.agent_name:
             raise ValueError(
                 f"RoleRef.agent_name must be a non-empty string, "

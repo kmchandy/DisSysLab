@@ -150,6 +150,183 @@ class TestSink:
         assert sink.default_inport == "in_"
 
 
+# ── Stateful blocks ───────────────────────────────────────────────────────────
+
+class TestStatefulTransform:
+    """Cover the ``state=`` kwarg on Transform.
+
+    Backward compat (state=None) is exercised by every other test in
+    this file. Here we focus on the new behaviours: state is passed
+    by keyword, mutations persist across calls, and two Transforms
+    built from the same template are independent (deepcopy at
+    construction).
+    """
+
+    def test_state_dict_is_passed_by_keyword(self):
+        """fn receives the live state dict as ``state=``."""
+        def counter(msg, state):
+            state["count"] += 1
+            return {"msg": msg, "count": state["count"]}
+
+        src = make_source(["a", "b", "c"])
+        t = Transform(fn=counter, state={"count": 0})
+        sink, results = collect_sink()
+        g = network([(src, t), (t, sink)])
+        g.run_network(timeout=5)
+
+        assert [r["count"] for r in results] == [1, 2, 3]
+        # State is mutable; the agent's live state reflects all calls.
+        assert t.state == {"count": 3}
+
+    def test_state_combines_with_params(self):
+        """fn receives both ``state=`` and the unpacked params."""
+        def dedup(msg, state, by):
+            key = msg[by]
+            if key in state["seen"]:
+                return None
+            state["seen"].add(key)
+            return msg
+
+        src = make_source([
+            {"url": "a"}, {"url": "b"}, {"url": "a"}, {"url": "c"},
+        ])
+        t = Transform(
+            fn=dedup,
+            params={"by": "url"},
+            state={"seen": set()},
+        )
+        sink, results = collect_sink()
+        g = network([(src, t), (t, sink)])
+        g.run_network(timeout=5)
+
+        assert [r["url"] for r in results] == ["a", "b", "c"]
+        assert t.state == {"seen": {"a", "b", "c"}}
+
+    def test_state_is_deepcopied_at_construction(self):
+        """Two Transforms built from the same dict are independent."""
+        def counter(msg, state):
+            state["count"] += 1
+            return state["count"]
+
+        template = {"count": 0}
+        t1 = Transform(fn=counter, state=template, name="t1")
+        t2 = Transform(fn=counter, state=template, name="t2")
+
+        # Mutating t1's state must not touch t2's, and the original
+        # template the caller passed in must remain at zero.
+        t1._state["count"] = 99
+        assert t2._state == {"count": 0}
+        assert template == {"count": 0}
+
+    def test_state_none_preserves_legacy_call_shape(self):
+        """When state=None, fn is called as fn(msg, **params) — no state arg."""
+        seen = []
+
+        def echo(msg, **kwargs):
+            seen.append(set(kwargs.keys()))
+            return msg
+
+        src = make_source([1])
+        t = Transform(fn=echo, params={"factor": 2})
+        sink, _ = collect_sink()
+        g = network([(src, t), (t, sink)])
+        g.run_network(timeout=5)
+
+        # state must NOT appear in kwargs when state= was not given.
+        assert seen == [{"factor"}]
+
+
+class TestStatefulSource:
+    """Cover the ``state=`` kwarg on Source."""
+
+    def test_state_dict_drives_emission(self):
+        """fn(state) mutates state to track its own progress."""
+        def emit_until(state, limit):
+            if state["i"] >= limit:
+                return None
+            state["i"] += 1
+            return state["i"]
+
+        src = Source(
+            fn=emit_until,
+            params={"limit": 3},
+            state={"i": 0},
+        )
+        sink, results = collect_sink()
+        g = network([(src, sink)])
+        g.run_network(timeout=5)
+
+        assert results == [1, 2, 3]
+        assert src.state == {"i": 3}
+
+    def test_state_is_deepcopied_at_construction(self):
+        def emit_one(state):
+            if state["done"]:
+                return None
+            state["done"] = True
+            return "x"
+
+        template = {"done": False}
+        s1 = Source(fn=emit_one, state=template)
+        s2 = Source(fn=emit_one, state=template)
+
+        s1._state["done"] = True
+        assert s2._state == {"done": False}
+        assert template == {"done": False}
+
+    def test_generator_with_state_is_rejected(self):
+        """Generator fn + state= is a usage error — clear message."""
+        def gen():
+            yield 1
+
+        with pytest.raises(TypeError, match="generator function"):
+            Source(fn=gen, state={"i": 0})
+
+
+class TestStatefulSink:
+    """Cover the ``state=`` kwarg on Sink."""
+
+    def test_state_dict_accumulates(self):
+        """fn(msg, state) mutates state across calls."""
+        def accumulate(msg, state):
+            state["total"] += msg
+
+        src = make_source([1, 2, 3, 4])
+        sink = Sink(fn=accumulate, state={"total": 0})
+        g = network([(src, sink)])
+        g.run_network(timeout=5)
+
+        assert sink.state == {"total": 10}
+
+    def test_state_combines_with_params(self):
+        def accumulate(msg, state, weight):
+            state["total"] += msg * weight
+
+        src = make_source([1, 2, 3])
+        sink = Sink(
+            fn=accumulate,
+            params={"weight": 2},
+            state={"total": 0},
+        )
+        g = network([(src, sink)])
+        g.run_network(timeout=5)
+
+        assert sink.state == {"total": 12}
+
+    def test_state_none_preserves_legacy_call_shape(self):
+        seen = []
+
+        def collect(msg, **kwargs):
+            seen.append(set(kwargs.keys()))
+
+        src = make_source([1])
+        sink = Sink(fn=collect, params={"label": "x"})
+        g = network([(src, sink)])
+        g.run_network(timeout=5)
+
+        assert seen == [{"label"}]
+
+
 # ── Broadcast ─────────────────────────────────────────────────────────────────
 
 class TestBroadcast:

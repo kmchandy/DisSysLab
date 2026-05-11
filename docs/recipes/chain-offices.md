@@ -129,9 +129,9 @@ newer than `build/run.py`):
 dsl run path/to/network/
 ```
 
-`dsl run` watches every `office.md` and every file in
-`roles_lib/` across the whole tree, so editing any of them
-triggers a fresh build on the next run.
+`dsl run` watches every `office.md` and every file in `roles/`
+across the whole tree, so editing any of them triggers a fresh
+build on the next run.
 
 ## Variations
 

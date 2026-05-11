@@ -31,11 +31,12 @@ V1 scope
 This first version writes ``office.md``. It does **not** write files
 into ``target_dir/roles/``: Pat (or the calling tool) is responsible
 for ensuring every role used in ``spec.agents`` resolves at compile
-time, either via the framework's built-in role library (when that
-ships) or via files Pat places in ``target_dir/roles/`` herself.
-``roles_lib`` is taken in the signature for completeness and forward
-compatibility — a future version will use it to copy office-local
-role files into the produced folder.
+time, either via the framework's built-in role library at
+``dissyslab/roles/`` or via files Pat places in ``target_dir/roles/``
+herself. The ``roles_lib`` parameter is taken in the signature for
+completeness and forward compatibility — a future version will use
+it to write any role not in the built-in library out to
+``target_dir/roles/`` so the resulting folder is self-contained.
 
 The function is the smallest useful inverse of the parser. It does
 not call an LLM, run a wizard, or attempt any verification. Pat
@@ -75,8 +76,10 @@ def make_office(
     spec
         The office description to materialise.
     roles_lib
-        Available roles. Reserved in v1 for forward compatibility;
-        not yet used to populate ``target_dir/roles/``.
+        Mapping of role-name → ``RoleEntry``. Reserved in v1 for
+        forward compatibility; a future version will use it to write
+        non-built-in roles out to ``target_dir/roles/`` so the folder
+        is self-contained.
     fn_lib
         Reserved.
     office_lib

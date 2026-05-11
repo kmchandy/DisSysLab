@@ -8,7 +8,7 @@ tests cover:
 * ``cli_build`` surfaces ParseError / CompileError as exit code 1
   with a friendly message on stderr.
 * ``is_build_stale`` returns True when the artifact is missing,
-  when an office.md is newer, or when a roles_lib file is newer.
+  when an office.md is newer, or when a roles file is newer.
   Returns False once the artifact is touched after every source.
 """
 from __future__ import annotations
@@ -35,7 +35,7 @@ def _write_office(office_dir: Path, body: str) -> None:
 
 
 def _write_role(office_dir: Path, role_name: str, prompt: str) -> None:
-    rl = office_dir / "roles_lib"
+    rl = office_dir / "roles"
     rl.mkdir(parents=True, exist_ok=True)
     (rl / f"{role_name}.md").write_text(prompt)
 
@@ -140,7 +140,7 @@ class TestIsBuildStale:
         cli_build(tmp_path, out=io.StringIO())
         _bump_mtime(_build_artifact_path(tmp_path))
         time.sleep(0.01)
-        _bump_mtime(tmp_path / "roles_lib" / "analyst.md")
+        _bump_mtime(tmp_path / "roles" / "analyst.md")
         assert is_build_stale(tmp_path) is True
 
     def test_sub_office_change_is_stale(self, tmp_path):
@@ -173,5 +173,5 @@ class TestIsBuildStale:
         # Edit a role file *inside the sub-office* — the parent's
         # artifact must be considered stale.
         time.sleep(0.01)
-        _bump_mtime(sub / "roles_lib" / "analyst.md")
+        _bump_mtime(sub / "roles" / "analyst.md")
         assert is_build_stale(tmp_path) is True

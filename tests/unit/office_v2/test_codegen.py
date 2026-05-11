@@ -33,7 +33,7 @@ def _write(office_dir: Path, body: str) -> None:
 
 
 def _write_role(office_dir: Path, role_name: str, prompt: str) -> None:
-    rl = office_dir / "roles_lib"
+    rl = office_dir / "roles"
     rl.mkdir(parents=True, exist_ok=True)
     (rl / f"{role_name}.md").write_text(prompt)
 
@@ -227,6 +227,73 @@ class TestSubOffices:
         # One _ROLES_<office> per office.
         assert "_ROLES_PARENT = _load_lib(_HERE / '..')" in text
         assert "_ROLES_CHILD" in text and "_load_lib(_HERE / '../child')" in text
+
+
+# ── fn_lib agents render as readable Transform construction ──────────
+
+
+class TestFnLibAgents:
+    """``Sasha is a deduplicator(by="url").`` should produce a tidy
+    ``Transform(fn=..., params=..., state=..., name=...)`` line in
+    the generated artifact, not a roles_lib factory call."""
+
+    def test_emitted_text_contains_transform_construction(self, tmp_path):
+        _write(tmp_path, (
+            "# Office: dedup_demo\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\nSasha is a deduplicator(by=\"url\").\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Sasha.\n"
+            "Sasha's out is discard.\n"
+        ))
+        text = render_run_py(tmp_path)
+
+        # The fn_lib import is present.
+        assert "from dissyslab.fn_lib import FN_LIB" in text
+        assert "from dissyslab.blocks.transform import Transform" in text
+
+        # Sasha is built as a Transform with all four kwargs.
+        # ``by`` is consumed only by ``fn`` (deduplicator's
+        # initial_state takes no args), so it appears once — in
+        # ``params=`` — and ``initial_state()`` is called bare.
+        assert "\"Sasha\": Transform(" in text
+        assert "fn=FN_LIB['deduplicator'].fn" in text
+        assert "params={'by': 'url'}" in text
+        assert "state=FN_LIB['deduplicator'].initial_state()" in text
+        assert "name='Sasha'" in text
+        # The duplication we explicitly fixed: ``by`` should NOT
+        # appear inside the initial_state(...) call.
+        assert "initial_state(by='url')" not in text
+
+    def test_emitted_text_compiles_to_bytecode(self, tmp_path):
+        _write(tmp_path, (
+            "# Office: dedup_demo\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\nSasha is a deduplicator.\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Sasha.\n"
+            "Sasha's out is discard.\n"
+        ))
+        text = render_run_py(tmp_path)
+        # If our renderer emits invalid Python, this raises SyntaxError.
+        compile(text, "<generated>", "exec")
+
+    def test_no_args_emits_no_kwargs_call(self, tmp_path):
+        _write(tmp_path, (
+            "# Office: dedup_demo\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\nSasha is a deduplicator.\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Sasha.\n"
+            "Sasha's out is discard.\n"
+        ))
+        text = render_run_py(tmp_path)
+        # No-args case: empty params dict, bare initial_state() call.
+        assert "params={}" in text
+        assert "FN_LIB['deduplicator'].initial_state()" in text
 
 
 # ── Render is deterministic ───────────────────────────────────────────

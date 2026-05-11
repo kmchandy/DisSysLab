@@ -1,19 +1,15 @@
 # Office: situation_room
 
-Inputs:
-Outputs:
-
-Sources: bbc_world(max_articles=5), npr_news(max_articles=5), al_jazeera(max_articles=5)
-Sinks: intelligence_display, discard
+Sources: bbc_world(max_articles=1), npr_news(max_articles=1), al_jazeera(max_articles=1)
+Sinks: intelligence_display, jsonl_recorder_briefing(path="briefings.jsonl"), jsonl_recorder_discard(path="rejected.jsonl")
 
 Agents:
-Sasha is a merger.
+Sasha is a deduplicator(by="url").
 Eve is an entity_extractor.
 Sam is a severity_classifier.
 Tom is a topic_tagger.
 Greta is a geolocator.
-Sync is a four_way_merger.
-Cole is a clusterer.
+Sync is a synchronizer.
 Riley is a writer.
 Jordan is an evaluator.
 
@@ -22,16 +18,14 @@ bbc_world's destination is Sasha.
 npr_news's destination is Sasha.
 al_jazeera's destination is Sasha.
 
-Sasha's out are Eve, Sam, Tom and Greta.
+Sasha's out is Eve, Sam, Tom, Greta.
 
-Eve's done is Sync's in_entity.
-Sam's done is Sync's in_severity.
-Tom's done is Sync's in_topic.
-Greta's done is Sync's in_geo.
+Eve's out is Sync's entities.
+Sam's out is Sync's severity.
+Tom's out is Sync's topic.
+Greta's out is Sync's location.
 
-Sync's out_ is Cole.
-Cole's brief is Riley.
-
-Riley's draft is Jordan.
-Jordan's approve is intelligence_display.
-Jordan's revise is Riley.
+Sync's out is Riley.
+Riley's out is Jordan.
+Jordan's publish is intelligence_display, jsonl_recorder_briefing.
+Jordan's revise is jsonl_recorder_discard.

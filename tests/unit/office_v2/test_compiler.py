@@ -58,8 +58,8 @@ def _write_office_md(office_dir: Path, body: str) -> None:
 
 
 def _write_role_md(office_dir: Path, role_name: str, prompt_body: str) -> None:
-    """Drop a prompt file into ``<office_dir>/roles_lib/`` for nl_role pickup."""
-    roles_dir = office_dir / "roles_lib"
+    """Drop a prompt file into ``<office_dir>/roles/`` for nl_role pickup."""
+    roles_dir = office_dir / "roles"
     roles_dir.mkdir(parents=True, exist_ok=True)
     (roles_dir / f"{role_name}.md").write_text(prompt_body)
 
@@ -195,11 +195,11 @@ class TestSubOffices:
     def test_explicit_office_role_entry(self, tmp_path):
         _register_stub("stub-sub-explicit", _stub_default_send_to("brief"))
         # Force the sub-office's library to use our stub backend:
-        # by writing a roles_lib/analyst.py with an explicit entry.
+        # by writing a roles/analyst.py with an explicit entry.
         sub = self._build_news_monitor(tmp_path)
         # Replace the .md with an explicit AI=stub binding via .py
-        (sub / "roles_lib" / "analyst.md").unlink()
-        (sub / "roles_lib" / "analyst.py").write_text(
+        (sub / "roles" / "analyst.md").unlink()
+        (sub / "roles" / "analyst.py").write_text(
             "from dissyslab.office_v2 import nl_role\n"
             "role = nl_role('You analyse. Send to brief.', "
             "AI='stub-sub-explicit')\n"
@@ -236,8 +236,8 @@ class TestSubOffices:
         sub = self._build_news_monitor(tmp_path)
         # Replace the .md with explicit AI=stub binding so the
         # sub-office's library uses our stub backend.
-        (sub / "roles_lib" / "analyst.md").unlink()
-        (sub / "roles_lib" / "analyst.py").write_text(
+        (sub / "roles" / "analyst.md").unlink()
+        (sub / "roles" / "analyst.py").write_text(
             "from dissyslab.office_v2 import nl_role\n"
             "role = nl_role('You analyse. Send to brief.', "
             "AI='stub-sugar')\n"
@@ -331,14 +331,14 @@ class TestLibraryScoping:
     def test_top_level_library_does_not_leak_into_sub(self, tmp_path):
         """Parent's library= override applies only to the parent office.
 
-        The sub-office must load its own roles_lib/. We construct a
+        The sub-office must load its own roles/. We construct a
         sub-office whose library would only resolve under its own
-        ``roles_lib/``, then pass the parent a library that omits
+        ``roles/``, then pass the parent a library that omits
         the sub-office's role. If the override leaked, the
         sub-office's compile would fail.
         """
         _register_stub("stub-iso", _stub_default_send_to("brief"))
-        # Sub-office with its own roles_lib analyst.py
+        # Sub-office with its own roles analyst.py
         sub = tmp_path / "child"
         _write_office_md(sub, (
             "# Office: child\n\n"
@@ -349,8 +349,8 @@ class TestLibraryScoping:
             "feed's destination is Morgan.\n"
             "Morgan's brief is out.\n"
         ))
-        (sub / "roles_lib").mkdir()
-        (sub / "roles_lib" / "analyst.py").write_text(
+        (sub / "roles").mkdir()
+        (sub / "roles" / "analyst.py").write_text(
             "from dissyslab.office_v2 import nl_role\n"
             "role = nl_role('Send to brief.', AI='stub-iso')\n"
         )
@@ -380,6 +380,109 @@ class TestLibraryScoping:
         assert "feeder" in net.blocks
 
 
+# ── fn_lib integration ────────────────────────────────────────────────
+
+
+class TestFnLibResolution:
+    """Compiler resolves ``Sasha is a deduplicator(by="url").`` to a
+    Transform built from FN_LIB."""
+
+    def test_fn_lib_role_compiles(self, tmp_path):
+        _write_office_md(tmp_path, (
+            "# Office: x\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\n"
+            "Sasha is a deduplicator(by=\"url\").\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Sasha.\n"
+            "Sasha's out is discard.\n"
+        ))
+        net, warnings = compile_office(tmp_path)
+        assert warnings == []
+        assert "Sasha" in net.blocks
+        sasha = net.blocks["Sasha"]
+        from dissyslab.blocks.transform import Transform
+        assert isinstance(sasha, Transform)
+        # State seeded from FN_LIB.deduplicator_initial_state() — bare,
+        # because ``by`` is consumed by ``fn`` (per-message), not by
+        # initial_state. The framework partitions kwargs by signature.
+        assert sasha.state == {"seen": set()}
+        # Params passed through.
+        assert sasha._params == {"by": "url"}
+
+    def test_fn_lib_default_args_when_none_given(self, tmp_path):
+        _write_office_md(tmp_path, (
+            "# Office: x\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\nSasha is a deduplicator.\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Sasha.\n"
+            "Sasha's out is discard.\n"
+        ))
+        net, warnings = compile_office(tmp_path)
+        assert warnings == []
+        sasha = net.blocks["Sasha"]
+        assert sasha._params == {}  # no args given
+        assert sasha.state == {"seen": set()}
+
+    def test_local_role_overrides_fn_lib(self, tmp_path):
+        """An office-local roles/deduplicator.md beats the fn_lib entry."""
+        _register_stub("stub-fn-override", _stub_default_send_to("out"))
+        _write_office_md(tmp_path, (
+            "# Office: x\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\nSasha is a deduplicator.\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Sasha.\n"
+            "Sasha's out is discard.\n"
+        ))
+        # Local override: an LLM-style role with the same name.
+        roles_dir = tmp_path / "roles"
+        roles_dir.mkdir()
+        (roles_dir / "deduplicator.py").write_text(
+            "from dissyslab.office_v2 import nl_role\n"
+            "role = nl_role('Drop spam. Send to out.', "
+            "AI='stub-fn-override')\n"
+        )
+
+        net, _ = compile_office(tmp_path)
+        from dissyslab.blocks.role import Role
+        # If the local role wins, Sasha is a Role (LLM-driven); if
+        # fn_lib won, Sasha would be a Transform.
+        assert isinstance(net.blocks["Sasha"], Role)
+
+    def test_unknown_role_lists_both_libraries(self, tmp_path):
+        _write_office_md(tmp_path, (
+            "# Office: x\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\nMystery is a no_such_thing.\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Mystery.\n"
+            "Mystery's out is discard.\n"
+        ))
+        with pytest.raises(CompileError, match="fn_lib keys"):
+            compile_office(tmp_path)
+
+    def test_bad_kwargs_to_fn_lib_role_reports_clearly(self, tmp_path):
+        """A kwarg neither callable accepts surfaces a clear CompileError."""
+        _write_office_md(tmp_path, (
+            "# Office: x\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\n"
+            "Sasha is a deduplicator(unknown_arg=1).\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Sasha.\n"
+            "Sasha's out is discard.\n"
+        ))
+        with pytest.raises(CompileError, match="unknown argument"):
+            compile_office(tmp_path)
+
+
 # ── Gallery snapshot ──────────────────────────────────────────────────
 
 
@@ -393,10 +496,6 @@ _NEEDS_LIVE_CREDS = {
     "calendar_briefing",   # GmailSource needs GMAIL_USER/GMAIL_APP_PASSWORD
     "gmail_monitor",       # same
     "org_situation_room",  # bluesky_jetstream needs websocket-client
-    "situation_room",      # capstone office; roles will resolve from
-                           # the framework's built-in library once that
-                           # ships. Re-include in the snapshot test
-                           # when Step E (built-in roles) lands.
 }
 
 

@@ -88,9 +88,9 @@ python3 build/run.py
 ```
 
 `dsl run` will rebuild `build/run.py` automatically when any
-source file (`office.md`, `roles_lib/*`, `roles/*`) is newer
-than the artifact, so editing a prompt and re-running picks
-up the change without you doing anything.
+source file (`office.md`, `roles/*`) is newer than the
+artifact, so editing a prompt and re-running picks up the
+change without you doing anything.
 
 **More to swap in.** See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
 for the full list of sources and sinks shipped with the framework.

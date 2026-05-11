@@ -14,8 +14,8 @@ decisions:
   semantic port names into runtime port names (``out_0`` / ``in_``).
 * ``_resolve_subpath`` — turn an inline ``office at <path>`` string
   into a real directory path.
-* ``_load_office_library`` — read ``<office>/roles_lib/`` (and
-  ``roles/`` as fallback) into a ``Library`` mapping.
+* ``_load_office_library`` — read ``<office>/roles/`` plus the
+  framework's built-in ``dissyslab/roles/`` into a ``Library`` mapping.
 
 Why a private module
 ====================
@@ -100,18 +100,39 @@ def _resolve_subpath(office_dir: Path, ref_path: str) -> Path:
 # ── Library loading ───────────────────────────────────────────────────
 
 
-def _load_office_library(office_dir: Path) -> Dict[str, Any]:
-    """Load roles from ``<office_dir>/roles_lib/`` then ``roles/``.
+def _builtin_roles_dir() -> Path:
+    """Return the framework's built-in role library directory.
 
-    ``roles_lib/`` is the v2 idiom; ``roles/`` is kept for backward
-    compatibility with the v1 gallery. When the same role name
-    appears in both directories, ``roles_lib/`` wins.
+    The directory ships inside the installed package at
+    ``dissyslab/roles/``. Resolved once per call (cheap) so test
+    harnesses can monkeypatch the package layout without us caching
+    a stale path.
     """
-    primary = load_roles_dir(office_dir / "roles_lib")
-    legacy = load_roles_dir(office_dir / "roles")
-    # ``primary`` keys win on conflict.
-    merged: Dict[str, Any] = dict(legacy)
-    merged.update(primary)
+    # _internals.py lives at dissyslab/office_v2/_internals.py;
+    # the built-in role library is two levels up + "roles".
+    return Path(__file__).resolve().parent.parent / "roles"
+
+
+def _load_office_library(office_dir: Path) -> Dict[str, Any]:
+    """Load roles for an office from local ``roles/`` then framework.
+
+    Two locations, searched in order:
+
+    1. ``<office_dir>/roles/`` — what Pat writes. The authoritative
+       source for this office. Files dropped here override built-ins
+       of the same name.
+    2. ``dissyslab/roles/`` — the framework's built-in library, used
+       as a fallback so any office can reference common roles
+       (``severity_classifier``, ``entity_extractor``, ...) without
+       copying them. Pat typically builds ``<office>/roles/`` by
+       inspecting these files and adapting the ones she wants to
+       customise.
+    """
+    builtin = load_roles_dir(_builtin_roles_dir())
+    local = load_roles_dir(office_dir / "roles")
+    # Local entries win over framework defaults.
+    merged: Dict[str, Any] = dict(builtin)
+    merged.update(local)
     return merged
 
 

@@ -17,8 +17,8 @@ Everything Layer 5 does fits in a single tree-walk:
 
 1. Build a ``blocks`` dict: one entry per source, sink, leaf agent,
    or sub-office. Sub-offices recurse via a fresh ``compile_office``
-   call on disk; their library is loaded from their own
-   ``roles_lib/``.
+   call on disk; their library is loaded from their own ``roles/``
+   plus the framework's built-in ``dissyslab/roles/``.
 2. Translate each ``ConnectionStmt`` into one or more 4-tuples,
    converting the user-written semantic outport names
    (``"briefing"``, ``"discard"``, …) into the runtime's indexed
@@ -49,9 +49,10 @@ Each office is its own library boundary. A parent office's
 ``compile_office(parent_dir, library=...)`` override applies only to
 the parent. When the compiler descends into a sub-office it makes a
 fresh ``compile_office(child_dir)`` call with no ``library=``
-argument, so the child loads its own ``roles_lib/`` (and its
-``roles/`` fallback). That keeps offices self-contained and lets
-the same office work both as a top-level program and as a sub-office.
+argument, so the child loads its own ``roles/`` (with the framework's
+built-in ``dissyslab/roles/`` as fallback). That keeps offices
+self-contained and lets the same office work both as a top-level
+program and as a sub-office.
 
 Inline ``office at <path>`` sugar
 ==================================
@@ -76,6 +77,8 @@ from dissyslab.core import Agent
 from dissyslab.network import Network
 from dissyslab.blocks.source import Source
 from dissyslab.blocks.sink import Sink
+from dissyslab.blocks.transform import Transform
+from dissyslab.fn_lib import FN_LIB, partition_kwargs
 
 from dissyslab.office_v2._internals import (
     CompileError,
@@ -220,10 +223,10 @@ def compile_office(
         (or, for v1 backward compatibility, ``network.md``).
     library
         Optional explicit role library. When ``None``, the compiler
-        loads roles from ``<office_dir>/roles_lib/`` and falls back
-        to ``<office_dir>/roles/``. The override applies to this
-        office only; sub-offices load their own libraries when the
-        compiler recurses.
+        loads roles from ``<office_dir>/roles/`` and falls back to
+        the framework's built-in ``dissyslab/roles/``. The override
+        applies to this office only; sub-offices load their own
+        libraries when the compiler recurses.
 
     Returns
     -------
@@ -336,6 +339,40 @@ def _resolve_role_ref(
             f"(got {type(entry).__name__})"
         )
 
+    # Not in roles_lib. Try fn_lib (framework-shipped Python
+    # transformers). Office-local roles win if both define the same
+    # name, because the roles_lib lookup happens first.
+    fn_entry = FN_LIB.get(ref.role_name)
+    if fn_entry is not None:
+        user_kwargs = dict(ref.args)
+        init_kwargs, fn_kwargs, unknown = partition_kwargs(
+            fn_entry, user_kwargs
+        )
+        if unknown:
+            raise CompileError(
+                f"agent {ref.agent_name!r}: unknown argument(s) "
+                f"{sorted(unknown)} for fn_lib role "
+                f"{ref.role_name!r}. Neither initial_state nor fn "
+                f"accepts these names."
+            )
+        try:
+            initial_state = fn_entry.initial_state(**init_kwargs)
+        except TypeError as exc:
+            raise CompileError(
+                f"agent {ref.agent_name!r}: bad arguments to fn_lib "
+                f"role {ref.role_name!r}: {exc}"
+            ) from exc
+        block = Transform(
+            fn=fn_entry.fn,
+            params=fn_kwargs,
+            state=initial_state,
+            name=ref.agent_name,
+        )
+        # Single semantic outport called "out". The runtime translates
+        # it to "out_" via the single-output convention; Pat writes
+        # ``Sasha's out is <dest>.`` in office.md.
+        return block, "role", ("out",)
+
     # Not in library. Inline-path sugar?
     if ref.path is not None:
         warnings.append(
@@ -344,7 +381,7 @@ def _resolve_role_ref(
                     f"agent {ref.agent_name!r} uses inline 'office at "
                     f"<path>' sugar — consider adding an explicit "
                     f"OfficeRoleEntry({ref.role_name!r}, "
-                    f"path={ref.path!r}) to roles_lib/"
+                    f"path={ref.path!r}) to roles/"
                 ),
                 location=str(office_dir),
             )
@@ -356,8 +393,10 @@ def _resolve_role_ref(
 
     raise CompileError(
         f"agent {ref.agent_name!r} uses role {ref.role_name!r}, but "
-        f"no such role is in the library and no inline path was "
-        f"provided. Library keys: {sorted(library.keys())}"
+        f"no such role is in the library, no inline path was "
+        f"provided, and no fn_lib entry of that name exists.\n"
+        f"  roles_lib keys: {sorted(library.keys())}\n"
+        f"  fn_lib keys:    {sorted(FN_LIB.keys())}"
     )
 
 

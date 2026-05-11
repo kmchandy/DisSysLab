@@ -291,3 +291,73 @@ class TestParseErrors:
         )
         with pytest.raises(ParseError, match="Python literal"):
             parse_office_dir(tmp_path)
+
+
+# ── Agent kwargs (fn_lib seam) ────────────────────────────────────────
+
+
+class TestAgentKwargs:
+    """Parser support for ``Sasha is a deduplicator(by="url").``.
+
+    The parser records args; the compiler is responsible for forwarding
+    them to fn_lib's initial-state factory. Layer 4 only checks that
+    the syntax parses.
+    """
+
+    def test_no_args_means_empty_tuple(self, tmp_path):
+        (tmp_path / "office.md").write_text(
+            "# Office: x\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\nAlex is an analyst.\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Alex.\n"
+            "Alex's briefing is discard.\n"
+        )
+        spec = parse_office_dir(tmp_path)
+        assert spec.agents[0].args == ()
+
+    def test_kwargs_preserved_in_role_ref(self, tmp_path):
+        (tmp_path / "office.md").write_text(
+            "# Office: x\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\nSasha is a deduplicator(by=\"url\").\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Sasha.\n"
+            "Sasha's out is discard.\n"
+        )
+        spec = parse_office_dir(tmp_path)
+        sasha = spec.agents[0]
+        assert sasha.role_name == "deduplicator"
+        assert sasha.args == (("by", "url"),)
+
+    def test_multiple_kwargs(self, tmp_path):
+        (tmp_path / "office.md").write_text(
+            "# Office: x\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\n"
+            "Felix is a keyword_filter(keywords=[\"ai\", \"ml\"], "
+            "case_sensitive=False).\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Felix.\n"
+            "Felix's out is discard.\n"
+        )
+        spec = parse_office_dir(tmp_path)
+        felix = spec.agents[0]
+        assert felix.role_name == "keyword_filter"
+        assert dict(felix.args) == {
+            "keywords": ["ai", "ml"],
+            "case_sensitive": False,
+        }
+
+    def test_bad_kw_arg_in_agent_line(self, tmp_path):
+        (tmp_path / "office.md").write_text(
+            "# Office: x\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\nSasha is a deduplicator(by=undefined_ident).\n"
+        )
+        with pytest.raises(ParseError, match="Python literal"):
+            parse_office_dir(tmp_path)

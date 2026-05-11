@@ -191,20 +191,24 @@ _AGENT_LINE_RE = re.compile(
 
 def _parse_agents_section(
     body: List[_Line], path: Optional[Path]
-) -> Tuple[List[Tuple[str, str, _Line]], List[Tuple[str, str, _Line]]]:
+) -> Tuple[
+    List[Tuple[str, str, Tuple[Tuple[str, Any], ...], _Line]],
+    List[Tuple[str, str, _Line]],
+]:
     """Split agent lines into (leaf_agents, sub_offices).
 
-    leaf_agents:  list of (agent_name, role_name, line)
+    leaf_agents:  list of (agent_name, role_name, args, line)
     sub_offices:  list of (agent_name, path_str,  line)
 
-    Two sentence forms are recognised:
+    Three sentence forms are recognised:
 
-    * ``Susan is an editor.``  (leaf agent)
-    * ``X is an office at <path>.`` (sub-office)
+    * ``Susan is an editor.``                 (leaf agent, no args)
+    * ``Sasha is a deduplicator(by="url").``  (leaf agent with kwargs)
+    * ``X is an office at <path>.``           (sub-office)
     * ``X is <name>``  (legacy network.md ``Offices:`` form, where
       <name> is itself a path; treated as a sub-office)
     """
-    leaves: List[Tuple[str, str, _Line]] = []
+    leaves: List[Tuple[str, str, Tuple[Tuple[str, Any], ...], _Line]] = []
     subs: List[Tuple[str, str, _Line]] = []
 
     for line in body:
@@ -243,17 +247,15 @@ def _parse_agents_section(
             subs.append((agent_name, sub_m.group(1).strip(), line))
             continue
 
-        # Plain role: "an editor", "a writer", etc. The article was
-        # consumed by the regex (\s+an?\s+), so ``rest`` is the role
-        # word(s). For now we accept a single identifier.
-        if not re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", rest):
-            raise ParseError(
-                f"expected a single-word role name, got {rest!r}",
-                path=path,
-                line_no=line.no,
-                snippet=line.text,
-            )
-        leaves.append((agent_name, rest, line))
+        # Plain role: ``role_name`` or ``role_name(k=v, k=v)``. The
+        # article was consumed by the regex (\s+an?\s+), so ``rest``
+        # is the role declaration. ``_parse_decl`` raises a ParseError
+        # with a descriptive message (e.g. "Python literal") that we
+        # surface as-is rather than re-wrapping.
+        role_name, args = _parse_decl(
+            rest, path=path, line_no=line.no, snippet=line.text
+        )
+        leaves.append((agent_name, role_name, args, line))
 
     return leaves, subs
 
@@ -515,9 +517,13 @@ def _build_office_spec(
         leaves, subs = _parse_agents_section(
             seen_labels["agents"].body, md_path
         )
-        for agent_name, role_name, _line in leaves:
+        for agent_name, role_name, agent_args, _line in leaves:
             agent_entries.append(
-                RoleRef(agent_name=agent_name, role_name=role_name)
+                RoleRef(
+                    agent_name=agent_name,
+                    role_name=role_name,
+                    args=agent_args,
+                )
             )
         for sub_name, sub_path, _line in subs:
             # role_name = the trailing path component, so the library

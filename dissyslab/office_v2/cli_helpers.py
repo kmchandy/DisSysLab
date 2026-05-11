@@ -56,7 +56,6 @@ def _office_tree_files(office_dir: Path) -> Iterator[Path]:
     deduplicated), yield:
 
     * its ``office.md`` (or legacy ``network.md``);
-    * every ``*.md`` and ``*.py`` in ``roles_lib/``;
     * every ``*.md`` and ``*.py`` in ``roles/``.
 
     Files starting with ``_`` (e.g. ``__init__.py``) are skipped —
@@ -69,17 +68,16 @@ def _office_tree_files(office_dir: Path) -> Iterator[Path]:
             md = node.office_dir / "network.md"
         if md.exists():
             yield md
-        for subdir in ("roles_lib", "roles"):
-            d = node.office_dir / subdir
-            if not d.is_dir():
+        d = node.office_dir / "roles"
+        if not d.is_dir():
+            continue
+        for f in sorted(d.iterdir()):
+            if not f.is_file():
                 continue
-            for f in sorted(d.iterdir()):
-                if not f.is_file():
-                    continue
-                if f.name.startswith("_"):
-                    continue
-                if f.suffix in (".md", ".py"):
-                    yield f
+            if f.name.startswith("_"):
+                continue
+            if f.suffix in (".md", ".py"):
+                yield f
 
 
 def _build_artifact_path(office_dir: Path) -> Path:

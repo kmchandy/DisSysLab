@@ -78,7 +78,7 @@ dsl run dissyslab/gallery/org_two_office_news/
 ```
 
 `dsl run` rebuilds automatically when any source file (an office.md
-or a roles_lib/ entry, in the parent or a sub-office) is newer than
+or a roles/ entry, in the parent or a sub-office) is newer than
 `build/run.py`. To inspect the generated wiring, open
 `dissyslab/gallery/org_two_office_news/build/run.py` — one
 `build_<office>()` function per office, in topological order.

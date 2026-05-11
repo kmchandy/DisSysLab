@@ -210,6 +210,12 @@ SINK_REGISTRY = {
         "args":   "named",
         "call":   "run",
     },
+    "markdown_digest": {
+        "import": "from dissyslab.components.sinks.markdown_digest import MarkdownDigest",
+        "class":  "MarkdownDigest",
+        "args":   "named",
+        "call":   "run",
+    },
     "mcp_sink": {
         "import": "from dissyslab.components.sinks.mcp_sink import MCPSink",
         "class":  "MCPSink",

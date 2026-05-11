@@ -55,6 +55,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+from dissyslab.fn_lib import FN_LIB, partition_kwargs
 from dissyslab.office_v2._internals import (
     CompileError,
     _BlockTable,
@@ -102,6 +103,14 @@ class _OfficeNode:
     table: _BlockTable
     # children: list of (agent_name_in_parent, child_node)
     children: List[Tuple[str, "_OfficeNode"]] = field(default_factory=list)
+    # Agents resolved from fn_lib (instead of roles_lib): maps
+    # agent_name → (role_name, init_kwargs, fn_kwargs). The emitter
+    # uses these to generate Transform construction lines, with
+    # ``init_kwargs`` going to ``initial_state(...)`` and
+    # ``fn_kwargs`` going into ``params=``.
+    fn_lib_agents: Dict[
+        str, Tuple[str, Dict[str, Any], Dict[str, Any]]
+    ] = field(default_factory=dict)
 
 
 def _sanitize(s: str) -> str:
@@ -173,11 +182,31 @@ def _build_tree(
                 f"AgentRoleEntry nor an OfficeRoleEntry "
                 f"(got {type(entry).__name__})"
             )
+        elif ref.role_name in FN_LIB:
+            # fn_lib role — single semantic outport "out", runtime "out_".
+            fn_entry = FN_LIB[ref.role_name]
+            init_kwargs, fn_kwargs, unknown = partition_kwargs(
+                fn_entry, dict(ref.args)
+            )
+            if unknown:
+                raise CompileError(
+                    f"agent {ref.agent_name!r}: unknown argument(s) "
+                    f"{sorted(unknown)} for fn_lib role "
+                    f"{ref.role_name!r}. Neither initial_state nor fn "
+                    f"accepts these names."
+                )
+            node.table.role_agents[ref.agent_name] = ("out",)
+            node.fn_lib_agents[ref.agent_name] = (
+                ref.role_name, init_kwargs, fn_kwargs
+            )
         else:
             raise CompileError(
                 f"agent {ref.agent_name!r} uses role {ref.role_name!r}, "
-                f"but no such role is in the library and no inline "
-                f"path was provided"
+                f"but no such role is in the library, no inline path "
+                f"was provided, and no fn_lib entry of that name "
+                f"exists.\n"
+                f"  roles_lib keys: {sorted(library.keys())}\n"
+                f"  fn_lib keys:    {sorted(FN_LIB.keys())}"
             )
 
     return node
@@ -329,6 +358,24 @@ def _emit_builder(node: _OfficeNode) -> str:
             lines.append(
                 f'            "{ref.agent_name}": build_{child.name}(),'
             )
+        elif ref.agent_name in node.fn_lib_agents:
+            role_name, init_kwargs, fn_kwargs = node.fn_lib_agents[
+                ref.agent_name
+            ]
+            fn_kwargs_repr = "{" + ", ".join(
+                f"{k!r}: {v!r}" for k, v in fn_kwargs.items()
+            ) + "}"
+            init_call_kwargs = _kwargs_repr(init_kwargs)
+            entry_ref = f"FN_LIB[{role_name!r}]"
+            lines.append(f'            "{ref.agent_name}": Transform(')
+            lines.append(f"                fn={entry_ref}.fn,")
+            lines.append(f"                params={fn_kwargs_repr},")
+            lines.append(
+                f"                state={entry_ref}.initial_state("
+                f"{init_call_kwargs}),"
+            )
+            lines.append(f"                name={ref.agent_name!r},")
+            lines.append("            ),")
         else:
             lines.append(
                 f'            "{ref.agent_name}": '
@@ -366,9 +413,12 @@ def _emit_imports(nodes: List[_OfficeNode]) -> str:
     base = [
         "from pathlib import Path",
         "",
+        "import dissyslab",
         "from dissyslab.network import Network",
         "from dissyslab.blocks.source import Source",
         "from dissyslab.blocks.sink import Sink",
+        "from dissyslab.blocks.transform import Transform",
+        "from dissyslab.fn_lib import FN_LIB",
         "from dissyslab.office_v2 import load_roles_dir",
         "",
     ]
@@ -398,16 +448,18 @@ def _emit_library_loads(
     lines = [
         "",
         "_HERE = Path(__file__).resolve().parent",
+        "_BUILTIN_ROLES = Path(dissyslab.__file__).resolve().parent / 'roles'",
         "",
         "",
         "def _load_lib(office_dir: Path):",
-        '    """Load <office_dir>/roles_lib first, falling back to roles/.',
+        '    """Load <office_dir>/roles plus the framework\'s built-in roles.',
         '',
-        '    Same convention as office_v2.compiler — primary wins on conflict.',
+        '    Same convention as office_v2.compiler — office-local entries',
+        '    win over built-ins of the same name.',
         '    """',
-        "    primary = load_roles_dir(office_dir / 'roles_lib')",
-        "    legacy = load_roles_dir(office_dir / 'roles')",
-        "    return {**legacy, **primary}",
+        "    builtin = load_roles_dir(_BUILTIN_ROLES)",
+        "    local = load_roles_dir(office_dir / 'roles')",
+        "    return {**builtin, **local}",
         "",
         "",
     ]

@@ -1,50 +1,104 @@
 # Language models in DisSysLab
 
-Every agent role in DisSysLab is, by default, a Claude prompt: when an
-agent receives a message, it sends the message to an LLM along with
-the role's prompt and routes the reply based on the LLM's `send_to`
-field. The LLM is hidden behind a one-method interface — a Backend —
-which means you can swap Claude for any other LLM (OpenAI, Gemini,
-local SLMs via Ollama, ...) without touching your office files.
+Every agent role in DisSysLab is, at its core, an LLM prompt:
+when an agent receives a message, it sends the message to an LLM
+along with the role's prompt and routes the reply based on the
+LLM's `send_to` field. The LLM is hidden behind a one-method
+interface — a Backend — so any model can plug in (Claude, OpenAI,
+Gemini, Ollama-served SLMs, OpenRouter-routed open models) without
+touching the office files.
 
-This guide covers four things:
+DisSysLab supports two value streams:
 
-1. **The default**: what runs out of the box.
-2. **Switching the backend** for a whole office (`DSL_BACKEND`).
-3. **Mixing backends inside one office** (one role on Claude, another
-   on a local SLM).
-4. **Comparing models** — running the same office under different
+- **Free, local, private.** Run open-weight SLMs on your laptop
+  via Ollama. Your data never leaves your machine. Recurring cost
+  is $0. Recommended for Pat — the framework's primary persona
+  (small-business owner, journalist, analyst, NGO staff, anyone
+  doing continuous information processing on a budget).
+- **Paid, hosted, fast.** Plug in Claude, OpenAI, Gemini, or
+  another commercial API for research, enterprise, or anyone who
+  doesn't optimise on cost. Same authoring affordances; just a
+  different backend.
+
+This guide covers:
+
+1. **The recommended default for v1**: Ollama + Qwen3.
+2. **Paid hosted alternatives**: Claude, OpenAI, Gemini.
+3. **Switching the backend** for a whole office (`DSL_BACKEND`).
+4. **Mixing backends inside one office** (one role on Claude,
+   another on a local SLM).
+5. **Comparing models** — running the same office under different
    backends and measuring the difference.
-
-If your goal is simply to use Claude, only section 1 applies. The
-rest is for when you start asking "what if I used a different model
-here?"
 
 ---
 
-## 1. The default — Claude
+## 1. Recommended default — Ollama + Qwen3
 
-A fresh `pip install dissyslab` ships configured to use Anthropic's
-Claude API. You set one environment variable:
+For most users, the right starting point is **Ollama serving
+Qwen3** as your local backend. It's free, private, and the role
+library is calibrated for it.
+
+```bash
+# 1. Install Ollama (https://ollama.com/download)
+# 2. Pull the recommended model
+ollama pull qwen3:30b
+
+# 3. Tell DisSysLab to use it
+export DSL_BACKEND=ollama
+export DSL_BACKEND_MODULE=path.to.your.ollama_backend
+# (see section 4 for the ~30-line Ollama backend module)
+```
+
+A fresh `pip install dissyslab` already includes the
+**OpenRouter** backend (`DSL_BACKEND=openrouter`) for users who
+want to test against open-weight models hosted somewhere other
+than their own laptop. OpenRouter is also where this project's
+empirical evaluation runs.
+
+The default model in the OpenRouter backend is
+`qwen/qwen3.5-35b-a3b` — a 35B-parameter Mixture-of-Experts model
+with 3B active parameters per token, the open-weight model that
+the role library was calibrated against.
+
+**Reasoning models need more `max_tokens`.** Qwen3.5-A3B,
+DeepSeek-V3, and similar models spend a substantial fraction of
+their token budget on internal chain-of-thought before producing
+the final JSON output. The framework's `nl_role` calls now
+default to `max_tokens=8192`; values below 4096 will cause
+intermittent empty responses on these models.
+
+---
+
+## 2. Paid hosted alternative — Claude (and OpenAI, Gemini)
+
+If you can budget for hosted API costs and want maximum
+quality/speed, point DisSysLab at Anthropic's Claude (or
+OpenAI/Gemini — see section 4).
 
 ```bash
 echo "ANTHROPIC_API_KEY=<your-key>" > .env
+export DSL_BACKEND=anthropic
 ```
 
-and `dsl run <office>` works. There is nothing else to configure.
-Every agent in every office calls Claude through the same backend.
-
-`dsl doctor` will show you the active backend:
+Then `dsl run <office>` uses Claude for every role. `dsl doctor`
+shows the active backend:
 
 ```
 Backend:
-  active: anthropic  (default)
+  active: anthropic
 ```
 
-The default model is `claude-sonnet-4-...` (set in
-`dissyslab/backends/anthropic_backend.py`). You can override it
-per-call by passing `model=...` into a role's `complete()` call, but
-in practice the default is what every gallery office uses.
+The default model is `claude-sonnet-4-5` (set in
+`dissyslab/backends/anthropic_backend.py`). You can override
+per-role with `nl_role(prompt, AI="claude")` or per-call by
+passing `model=...` into `complete()`.
+
+**Cost note for 24/7 offices.** A pipeline running 100
+articles/day through 5 roles is 500 LLM calls/day. At Claude
+Sonnet 4.5 pricing (~$3/M input, $15/M output) and ~2K tokens
+per call, that's roughly $0.45/day or ~$14/month per office.
+Running the same office on Ollama+Qwen3 is $0/month. Choose
+based on quality bar and budget.
 
 ---
 
@@ -318,10 +372,10 @@ argument names a registered backend; that role calls *that* backend
 regardless of `DSL_BACKEND`.
 
 To use this in an office, drop a Python role file into your
-office's `roles_lib/` folder:
+office's `roles/` folder:
 
 ```python
-# my_office/roles_lib/correspondent_slm.py
+# my_office/roles/correspondent_slm.py
 from dissyslab.office_v2 import nl_role
 
 role = nl_role(
@@ -341,7 +395,7 @@ Alex is a correspondent_slm.   # uses Ollama (explicit AI="ollama" wins)
 Morgan is an analyst.          # uses whatever DSL_BACKEND says
 ```
 
-The library loader treats `*.py` files in `roles_lib/` as having a
+The library loader treats `*.py` files in `roles/` as having a
 `role` attribute that is an `AgentRoleEntry`. The `AI` argument is
 captured at registration time and used whenever that role's agent
 runs.
@@ -354,8 +408,10 @@ backend you want for the *non*-ollama roles.
 
 ### Why .md role files follow DSL_BACKEND automatically
 
-Roles loaded from plain `.md` files in `roles/` or `roles_lib/`
-always call `nl_role(prompt)` with no `AI` argument. When `AI` is
+Roles loaded from plain `.md` files in `roles/` (whether the
+office's local `roles/` or the framework's built-in
+`dissyslab/roles/`) always call `nl_role(prompt)` with no `AI`
+argument. When `AI` is
 unset, the role defers the backend choice to run time and uses
 whichever backend `DSL_BACKEND` names (or anthropic if `DSL_BACKEND`
 is unset). That's what makes a single `export DSL_BACKEND=ollama`

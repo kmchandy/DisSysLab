@@ -21,16 +21,19 @@ other Mapping. ``RoleEntry = AgentRoleEntry | OfficeRoleEntry``.
 Two ways to build a library
 ===========================
 
-Pedagogical (Path A) — drop one ``*.md`` per role into ``roles_lib/``::
+Pedagogical (Path A) — drop one ``*.md`` per role into ``roles/``::
 
     my_office/
       office.md
-      roles_lib/
+      roles/
         analyst.md       # the prompt; "send to <name>" defines outports
         editor.md
 
-Then ``load_roles_dir("my_office/roles_lib")`` returns ``{"analyst":
-AgentRoleEntry(...), "editor": AgentRoleEntry(...)}``.
+Then ``load_roles_dir("my_office/roles")`` returns ``{"analyst":
+AgentRoleEntry(...), "editor": AgentRoleEntry(...)}``. The compiler
+also reads the framework's built-in ``dissyslab/roles/`` as a
+fallback, so an office only needs a ``roles/`` file for roles it
+defines or overrides.
 
 Programmatic (Path B) — build a dict in Python::
 
@@ -399,7 +402,14 @@ def nl_role(
             raw = backend.complete(
                 system=full_prompt,
                 user=text,
-                max_tokens=1024,
+                # 8192 chosen to accommodate reasoning-enabled SLMs
+                # (Qwen3.5-A3B, DeepSeek-V3, etc.) which spend a
+                # substantial fraction of their budget on internal
+                # chain-of-thought before producing the final JSON.
+                # 1024 was empirically too low (50% of calls returned
+                # empty content). 8192 yields 100% success rate on
+                # the situation_room corpus. Safe for Claude too.
+                max_tokens=8192,
                 temperature=1.0,
             )
             cleaned = _strip_code_fences(raw)
@@ -512,6 +522,9 @@ def load_roles_dir(roles_dir: Union[str, Path]) -> Dict[str, RoleEntry]:
 
     for md_path in sorted(path.glob("*.md")):
         if md_path.name.startswith("_"):
+            continue
+        # README.md is conventional documentation, not a role.
+        if md_path.stem.lower() == "readme":
             continue
         text = md_path.read_text(encoding="utf-8")
         entry = nl_role(text)

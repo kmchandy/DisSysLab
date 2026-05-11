@@ -3,11 +3,42 @@
 Transform Agent: Applies a function to transform messages.
 
 Transforms have one input and one output. They process each message by
-calling fn(msg, **params) and sending the result downstream. Termination
-is signaled by os_agent via _Shutdown, handled transparently by recv().
+calling fn(msg, **params) — or fn(msg, state=state, **params) when state
+is provided — and sending the result downstream. Termination is signaled
+by os_agent via _Shutdown, handled transparently by recv().
+
+Stateful transforms
+===================
+
+A Transform may carry mutable state. Pass an ``initial_state`` dict at
+construction; the runtime deep-copies it (so two Transforms built from
+the same template are independent) and passes the copy to ``fn`` as
+``state=`` on every call. ``fn`` mutates ``state`` in place; subsequent
+messages see the mutated state.
+
+Backward compatibility: when ``state`` is not provided, ``fn`` is
+called as ``fn(msg, **params)`` — the long-standing contract. Existing
+stateless transforms keep working unchanged.
+
+Example::
+
+    def deduplicator(msg, state, by="url"):
+        key = msg[by]
+        if key in state["seen"]:
+            return None             # drop duplicates
+        state["seen"].add(key)
+        return msg
+
+    sasha = Transform(
+        fn=deduplicator,
+        params={"by": "url"},
+        state={"seen": set()},
+        name="Sasha",
+    )
 """
 
 from __future__ import annotations
+from copy import deepcopy
 from typing import Any, Callable, Optional, Dict
 import traceback
 
@@ -19,7 +50,8 @@ class Transform(Agent):
     Transform agent: applies a function to each message.
 
     Single input, single output. Processes each message by calling
-    fn(msg, **params) and sending the result.
+    ``fn(msg, **params)`` — or ``fn(msg, state=state, **params)`` when
+    ``state`` is provided at construction — and sending the result.
 
     **Ports:**
     - Inports: ["in_"]
@@ -29,6 +61,16 @@ class Transform(Agent):
     Termination is detected by os_agent and signaled via _Shutdown,
     which recv() handles transparently by raising _ShutdownSignal.
     No explicit STOP handling needed.
+
+    **Stateless vs stateful:**
+    When ``state`` is ``None`` (the default), ``fn`` is called as
+    ``fn(msg, **params)``. When ``state`` is a dict, ``fn`` receives
+    that dict as the keyword argument ``state``; ``fn`` may mutate it
+    in place and the mutations persist across calls.
+
+    The ``state`` argument is deep-copied at construction so building
+    two Transforms from the same initial-state dict produces two
+    independent copies.
     """
 
     def __init__(
@@ -36,7 +78,8 @@ class Transform(Agent):
         *,
         fn: Callable[..., Optional[Any]],
         name: Optional[str] = None,
-        params: Optional[Dict[str, Any]] = None
+        params: Optional[Dict[str, Any]] = None,
+        state: Optional[Dict[str, Any]] = None,
     ):
         if not callable(fn):
             raise TypeError(
@@ -46,6 +89,12 @@ class Transform(Agent):
         super().__init__(name=name, inports=["in_"], outports=["out_"])
         self._fn = fn
         self._params = params or {}
+        # Deep-copy so two Transforms built from the same template are
+        # independent. ``None`` means "stateless" — preserves the
+        # original fn(msg, **params) contract.
+        self._state: Optional[Dict[str, Any]] = (
+            deepcopy(state) if state is not None else None
+        )
 
     @property
     def default_inport(self) -> str:
@@ -57,6 +106,15 @@ class Transform(Agent):
         """Default output port for edge syntax."""
         return "out_"
 
+    @property
+    def state(self) -> Optional[Dict[str, Any]]:
+        """The agent's mutable state (or ``None`` if stateless).
+
+        Exposed for inspection and checkpointing. Mutating the returned
+        dict mutates the agent's live state — handle with care.
+        """
+        return self._state
+
     def run(self) -> None:
         """
         Process messages until _Shutdown is received.
@@ -67,7 +125,12 @@ class Transform(Agent):
         while True:
             msg = self.recv("in_")
             try:
-                result = self._fn(msg, **self._params)
+                if self._state is None:
+                    result = self._fn(msg, **self._params)
+                else:
+                    result = self._fn(
+                        msg, state=self._state, **self._params
+                    )
             except Exception as e:
                 print(f"[Transform '{self.name}'] Error in fn: {e}")
                 print(traceback.format_exc())
