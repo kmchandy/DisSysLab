@@ -22,11 +22,13 @@ from typing import Callable, Dict, Optional
 
 from dissyslab.backends.base import Backend
 from dissyslab.backends.anthropic_backend import AnthropicBackend
+from dissyslab.backends.ollama_backend import OllamaBackend
 from dissyslab.backends.openrouter_backend import OpenRouterBackend
 
 __all__ = [
     "Backend",
     "AnthropicBackend",
+    "OllamaBackend",
     "OpenRouterBackend",
     "get_backend",
     "register_backend",
@@ -38,6 +40,7 @@ __all__ = [
 # environment or network — is deferred until first use.
 _REGISTRY: Dict[str, Callable[[], Backend]] = {
     "anthropic": lambda: AnthropicBackend(),
+    "ollama": lambda: OllamaBackend(),
     "openrouter": lambda: OpenRouterBackend(),
 }
 
