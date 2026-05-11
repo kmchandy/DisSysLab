@@ -250,9 +250,30 @@ fi
 
 header "All set"
 
-echo
-echo "Open a new terminal (or run 'source $RC_FILE') so the PATH change"
-echo "takes effect, then try your first office:"
+# A tiny banner emphasising the one step Pat is most likely to miss.
+# The PATH change in ~/.zshrc does NOT apply to the terminal that
+# just ran install.sh — only to terminals opened (or re-sourced)
+# afterwards. Pat tends to try `dsl run` immediately and bounce on
+# "command not found", so we shout this step.
+
+if [ "$MODIFY_RC" -eq 1 ] && [ -n "${RC_FILE:-}" ] && \
+   [ -f "$RC_FILE" ] && grep -qF "$MARKER" "$RC_FILE"; then
+    echo
+    yellow "──────────────────────────────────────────────────────────────"
+    yellow "  ONE MORE STEP — pick either (A) or (B):"
+    yellow ""
+    yellow "  (A) Run this in THIS terminal:"
+    bold   "        source $RC_FILE"
+    yellow ""
+    yellow "  (B) Or close this terminal and open a brand new one."
+    yellow ""
+    yellow "  Why: install.sh added PATH to $RC_FILE, but this"
+    yellow "  terminal won't see it until you do (A) or (B)."
+    yellow "──────────────────────────────────────────────────────────────"
+    echo
+fi
+
+echo "Then try your first office:"
 echo
 bold "       dsl run dissyslab/gallery/apps/periodic_brief/"
 echo

@@ -31,10 +31,16 @@ curl -sSf https://raw.githubusercontent.com/kmchandy/DisSysLab/main/install.sh |
 
 What that does: installs [Ollama](https://ollama.com), pulls the
 Qwen3 model (~19 GB one-time download), installs DisSysLab into a
-venv. Twenty to forty minutes wall time, mostly waiting for the
-model to download.
+venv, and adds `dsl` to your shell's PATH. Twenty to forty minutes
+wall time, mostly waiting for the model to download.
 
-**Then run your first office:**
+**Then: open a new terminal** (or run `source ~/.zshrc` on macOS /
+`source ~/.bashrc` on Linux) so the new `PATH` takes effect. This
+step is what makes the `dsl` command available — the installer
+adds it to your shell config, but the change only applies to
+shells started afterwards.
+
+**Now run your first office:**
 
 ```bash
 dsl run dissyslab/gallery/apps/situation_room/
