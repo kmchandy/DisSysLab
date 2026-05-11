@@ -138,12 +138,21 @@ class TestSplitRecipients:
 
 
 def _gallery_office_dirs():
+    """Yield every office directory anywhere under gallery/.
+
+    Recurses into the ``apps/`` and ``examples/`` split that v1
+    introduced.
+    """
     out = []
-    for d in sorted(GALLERY.iterdir()):
-        if not d.is_dir():
-            continue
-        if (d / "office.md").exists() or (d / "network.md").exists():
-            out.append(d)
+    def _walk(root: Path) -> None:
+        for d in sorted(root.iterdir()):
+            if not d.is_dir():
+                continue
+            if (d / "office.md").exists() or (d / "network.md").exists():
+                out.append(d)
+            elif d.name in {"apps", "examples"}:
+                _walk(d)
+    _walk(GALLERY)
     return out
 
 
@@ -157,7 +166,7 @@ class TestGalleryEndToEnd:
         assert spec.name  # non-empty
 
     def test_my_first_office_shape(self):
-        spec = parse_office_dir(GALLERY / "my_first_office")
+        spec = parse_office_dir(GALLERY / "examples" / "my_first_office")
         assert spec.name == "my_first_office"
         assert [s.name for s in spec.sources] == ["hacker_news"]
         assert [s.name for s in spec.sinks] == ["console_printer"]
@@ -171,7 +180,7 @@ class TestGalleryEndToEnd:
         assert alex.path is None
 
     def test_news_editorial_has_two_destinations(self):
-        spec = parse_office_dir(GALLERY / "org_news_editorial")
+        spec = parse_office_dir(GALLERY / "examples" / "org_news_editorial")
         # "Susan's archivist are jsonl_recorder and console_printer."
         archivist_stmt = [
             c
@@ -183,7 +192,7 @@ class TestGalleryEndToEnd:
 
     def test_open_office_external_inputs_normalised(self):
         spec = parse_office_dir(
-            GALLERY / "org_two_office_news" / "news_monitor"
+            GALLERY / "examples" / "org_two_office_news" / "news_monitor"
         )
         assert spec.is_open()
         # The connection 'article_in's destination is Alex.' should
@@ -201,7 +210,7 @@ class TestGalleryEndToEnd:
         # "article_out") rather than a phantom agent named
         # "article_out".
         spec = parse_office_dir(
-            GALLERY / "org_two_office_news" / "news_monitor"
+            GALLERY / "examples" / "org_two_office_news" / "news_monitor"
         )
         # Find the connection that sends to the "article_out" output.
         # The user wrote "Morgan's output is article_out." — after
@@ -225,7 +234,7 @@ class TestGalleryEndToEnd:
         assert phantom == []
 
     def test_two_office_network_records_office_refs(self):
-        spec = parse_office_dir(GALLERY / "org_two_office_news")
+        spec = parse_office_dir(GALLERY / "examples" / "org_two_office_news")
         refs = spec.office_refs()
         ref_names = {r.agent_name for r in refs}
         assert ref_names == {"news_monitor", "news_editor"}
@@ -242,7 +251,7 @@ class TestGalleryEndToEnd:
     def test_leaf_destination_gets_implicit_inport(self):
         # In my_first_office: "Alex's briefing is console_printer."
         # The destination should be Endpoint("console_printer", "in_").
-        spec = parse_office_dir(GALLERY / "my_first_office")
+        spec = parse_office_dir(GALLERY / "examples" / "my_first_office")
         alex_stmts = [
             c for c in spec.connections if c.source.name == "Alex"
         ]
@@ -275,8 +284,18 @@ class TestParseErrors:
         (tmp_path / "office.md").write_text(
             "# Office: x\n\nWhatever:\n  foo\n"
         )
-        with pytest.raises(ParseError, match="unexpected text"):
+        with pytest.raises(ParseError, match="Unknown section header"):
             parse_office_dir(tmp_path)
+
+    def test_unknown_section_suggests_close_match(self, tmp_path):
+        """``Source:`` (missing 's') hints at ``Sources:``."""
+        (tmp_path / "office.md").write_text(
+            "# Office: x\n\nSource: hacker_news\n"
+        )
+        with pytest.raises(ParseError) as exc:
+            parse_office_dir(tmp_path)
+        msg = str(exc.value)
+        assert "Did you mean 'Sources:'" in msg
 
     # NOTE: tests that the parser checks role-file existence or
     # extracts ports from ``roles/*.md`` were removed in Step 4.

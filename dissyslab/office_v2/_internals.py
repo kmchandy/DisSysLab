@@ -29,12 +29,41 @@ API still flows through ``compiler.py`` and the package
 """
 from __future__ import annotations
 
+import difflib
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Iterable, Tuple
 
 from dissyslab.office_v2.library import load_roles_dir
 from dissyslab.office_v2.office_spec_constants import EXTERNAL
+
+
+# ── "Did you mean?" helper ────────────────────────────────────────────
+
+
+def _suggest(
+    name: str,
+    candidates: Iterable[str],
+    *,
+    cutoff: float = 0.6,
+) -> str:
+    """Return a 'Did you mean X?' fragment, or '' if no close match.
+
+    Used to soften "unknown source/sink/role/section" errors so a Pat
+    typo like ``hackr_news`` produces ``Did you mean 'hacker_news'?``
+    next to the bare "unknown" complaint, rather than a wall-of-list
+    of every name in the registry.
+
+    The returned fragment has no leading space, no trailing punctuation,
+    and is safe to concatenate into a larger message — callers control
+    spacing.
+    """
+    matches = difflib.get_close_matches(
+        name, list(candidates), n=1, cutoff=cutoff
+    )
+    if not matches:
+        return ""
+    return f"Did you mean {matches[0]!r}?"
 
 
 # ── Errors and warnings ───────────────────────────────────────────────

@@ -292,7 +292,7 @@ class TestErrors:
             "Alex's brief is discard.\n"
         ))
         _register_stub("stub-err", _stub_default_send_to("brief"))
-        with pytest.raises(CompileError, match="unknown source"):
+        with pytest.raises(CompileError, match="[Uu]nknown source"):
             compile_office(
                 tmp_path,
                 library={
@@ -454,7 +454,8 @@ class TestFnLibResolution:
         # fn_lib won, Sasha would be a Transform.
         assert isinstance(net.blocks["Sasha"], Role)
 
-    def test_unknown_role_lists_both_libraries(self, tmp_path):
+    def test_unknown_role_lists_known_roles(self, tmp_path):
+        """Unknown role surfaces a Pat-shaped message listing valid names."""
         _write_office_md(tmp_path, (
             "# Office: x\n\n"
             "Sources: hacker_news\n"
@@ -464,7 +465,7 @@ class TestFnLibResolution:
             "hacker_news's destination is Mystery.\n"
             "Mystery's out is discard.\n"
         ))
-        with pytest.raises(CompileError, match="fn_lib keys"):
+        with pytest.raises(CompileError, match="Known roles"):
             compile_office(tmp_path)
 
     def test_bad_kwargs_to_fn_lib_role_reports_clearly(self, tmp_path):
@@ -481,6 +482,155 @@ class TestFnLibResolution:
         ))
         with pytest.raises(CompileError, match="unknown argument"):
             compile_office(tmp_path)
+
+
+# ── Pat-friendly error messages (#57) ─────────────────────────────────
+
+
+class TestPatFriendlyErrors:
+    """Error messages a first-time user can act on.
+
+    The compiler's hot paths for Pat typos: misspelled source/sink/
+    role names, bad kwargs on a source/sink, and connections that
+    reference an identifier no block in the office defines. Each
+    message should name the offender, suggest a near match when one
+    exists, and list the known options.
+    """
+
+    def test_unknown_source_suggests_close_match(self, tmp_path):
+        _write_office_md(tmp_path, (
+            "# Office: x\n\n"
+            "Sources: hackr_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\nAlex is an analyst.\n\n"
+            "Connections:\n"
+            "hackr_news's destination is Alex.\n"
+            "Alex's brief is discard.\n"
+        ))
+        _register_stub("stub-pf-src", _stub_default_send_to("brief"))
+        with pytest.raises(CompileError) as exc:
+            compile_office(
+                tmp_path,
+                library={
+                    "analyst": nl_role(
+                        "Send to brief.", AI="stub-pf-src"
+                    )
+                },
+            )
+        msg = str(exc.value)
+        assert "hackr_news" in msg
+        assert "Did you mean 'hacker_news'" in msg
+
+    def test_unknown_sink_suggests_close_match(self, tmp_path):
+        _write_office_md(tmp_path, (
+            "# Office: x\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discrd\n\n"
+            "Agents:\nAlex is an analyst.\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Alex.\n"
+            "Alex's brief is discrd.\n"
+        ))
+        _register_stub("stub-pf-snk", _stub_default_send_to("brief"))
+        with pytest.raises(CompileError) as exc:
+            compile_office(
+                tmp_path,
+                library={
+                    "analyst": nl_role(
+                        "Send to brief.", AI="stub-pf-snk"
+                    )
+                },
+            )
+        assert "Did you mean 'discard'" in str(exc.value)
+
+    def test_unknown_role_suggests_close_match(self, tmp_path):
+        _write_office_md(tmp_path, (
+            "# Office: x\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\nAlex is a wrighter.\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Alex.\n"
+            "Alex's out is discard.\n"
+        ))
+        with pytest.raises(CompileError) as exc:
+            compile_office(tmp_path)
+        # The built-in library ships a "writer" role; should be the
+        # closest match to "wrighter".
+        assert "Did you mean 'writer'" in str(exc.value)
+
+    def test_bad_kwarg_on_source_is_pat_friendly(self, tmp_path):
+        """A typo'd kwarg surfaces a CompileError, not a TypeError."""
+        _write_office_md(tmp_path, (
+            "# Office: x\n\n"
+            "Sources: hacker_news(max_artikles=5)\n"
+            "Sinks: discard\n\n"
+            "Agents:\nAlex is an analyst.\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Alex.\n"
+            "Alex's brief is discard.\n"
+        ))
+        _register_stub("stub-pf-kw", _stub_default_send_to("brief"))
+        with pytest.raises(CompileError) as exc:
+            compile_office(
+                tmp_path,
+                library={
+                    "analyst": nl_role(
+                        "Send to brief.", AI="stub-pf-kw"
+                    )
+                },
+            )
+        msg = str(exc.value)
+        assert "max_artikles" in msg
+        assert "Did you mean 'max_articles'" in msg
+
+    def test_connection_unknown_sender_is_pat_friendly(self, tmp_path):
+        _write_office_md(tmp_path, (
+            "# Office: x\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\nAlex is an analyst.\n\n"
+            "Connections:\n"
+            "hackr_news's destination is Alex.\n"
+            "Alex's brief is discard.\n"
+        ))
+        _register_stub("stub-pf-c1", _stub_default_send_to("brief"))
+        with pytest.raises(CompileError) as exc:
+            compile_office(
+                tmp_path,
+                library={
+                    "analyst": nl_role(
+                        "Send to brief.", AI="stub-pf-c1"
+                    )
+                },
+            )
+        msg = str(exc.value)
+        assert "hackr_news" in msg
+        assert "Did you mean 'hacker_news'" in msg
+
+    def test_connection_unknown_recipient_is_pat_friendly(self, tmp_path):
+        _write_office_md(tmp_path, (
+            "# Office: x\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\nAlex is an analyst.\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Alexx.\n"
+            "Alex's brief is discard.\n"
+        ))
+        _register_stub("stub-pf-c2", _stub_default_send_to("brief"))
+        with pytest.raises(CompileError) as exc:
+            compile_office(
+                tmp_path,
+                library={
+                    "analyst": nl_role(
+                        "Send to brief.", AI="stub-pf-c2"
+                    )
+                },
+            )
+        msg = str(exc.value)
+        assert "Alexx" in msg
+        assert "Did you mean 'Alex'" in msg
 
 
 # ── Gallery snapshot ──────────────────────────────────────────────────

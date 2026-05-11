@@ -134,7 +134,8 @@ def _split_sections(
         # Body-style header: "Sources:"
         m = re.match(r"^([A-Za-z_][A-Za-z0-9_ ]*?):\s*(.*)$", s)
         if m:
-            head = m.group(1).strip().lower()
+            head_raw = m.group(1).strip()
+            head = head_raw.lower()
             after = m.group(2)
             if head in _SECTION_HEADERS:
                 # Start a new section. Anything after the colon on
@@ -148,6 +149,42 @@ def _split_sections(
                 if after.strip():
                     current.body.append(_Line(no=line.no, text=after))
                 continue
+            # The line looks like a section header but the name is
+            # not one we recognise. If we are not already inside a
+            # section, this is almost certainly a typo (``Source:``
+            # for ``Sources:``). Surface a Pat-friendly diagnostic
+            # with a "Did you mean?" suggestion against the real
+            # section headers, rather than the generic
+            # "unexpected text outside any section".
+            if current is None:
+                import difflib
+                pat_facing = (
+                    "Office", "Inputs", "Outputs", "Sources", "Sinks",
+                    "Agents", "Connections",
+                )
+                matches = difflib.get_close_matches(
+                    head_raw.title(),
+                    list(pat_facing),
+                    n=1,
+                    cutoff=0.6,
+                )
+                parts = [
+                    f"Unknown section header {head_raw + ':'!r}."
+                ]
+                if matches:
+                    parts.append(
+                        f"Did you mean {matches[0] + ':'!r}?"
+                    )
+                parts.append(
+                    f"Valid section headers: "
+                    f"{', '.join(h + ':' for h in pat_facing)}."
+                )
+                raise ParseError(
+                    " ".join(parts),
+                    path=path,
+                    line_no=line.no,
+                    snippet=line.text,
+                )
 
         # If we get here, the line is body for the current section.
         if current is None:

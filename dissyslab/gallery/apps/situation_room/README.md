@@ -65,6 +65,138 @@ briefings are written.
 
 That's it. No API key, no recurring cost, no service to depend on.
 
+## What's actually in office.md
+
+The whole office fits on one page. Open
+[`office.md`](office.md) alongside this section — every line is
+explained below. If you can read this, you can write your own.
+
+**The header.** Every office starts with one line naming itself:
+
+```
+# Office: situation_room
+```
+
+That name is what `dsl run` is reporting when it starts. Nothing
+else depends on it.
+
+**Sources — where messages come from.**
+
+```
+Sources: bbc_world(max_articles=1), npr_news(max_articles=1), al_jazeera(max_articles=1)
+```
+
+A *source* is anything that produces messages: an RSS feed, a
+weather station, your Gmail inbox, an MCP server, a webhook
+listener. The framework ships a catalogue of named sources you
+just refer to by name — `bbc_world`, `npr_news`, `weather`,
+`gmail`, `stocks`, `hacker_news`, and more. The
+parentheses are arguments: `max_articles=1` means "fetch one
+article per run." Change it to 10 and the office processes ten.
+
+**Sinks — where messages end up.**
+
+```
+Sinks: intelligence_display, jsonl_recorder_briefing(path="briefings.jsonl"), jsonl_recorder_discard(path="rejected.jsonl")
+```
+
+A *sink* is the other end: a terminal printer, a markdown file
+writer, a Slack channel, a Gmail outbox. Same registry pattern as
+sources. This office uses three sinks — one for live terminal
+output, one to record kept briefings to disk as JSONL, one to
+record discarded ones. Recording both means you can audit later
+what the office decided to drop.
+
+**Agents — named characters with roles.**
+
+```
+Agents:
+Sasha is a deduplicator(by="url").
+Eve is an entity_extractor.
+Sam is a severity_classifier.
+Tom is a topic_tagger.
+Greta is a geolocator.
+Sync is a synchronizer.
+Riley is a writer.
+Jordan is an evaluator.
+```
+
+Each line names an *agent* and assigns it a *role*. ``Sasha is a
+deduplicator`` reads as plain English; under the hood it means
+"create a transformer agent named Sasha; its behaviour is
+whatever the `deduplicator` role does." Roles come from two
+places: the framework's built-in role library (in
+`dissyslab/roles/`) and this office's own `roles/` folder.
+`writer`, `entity_extractor`, `severity_classifier`,
+`topic_tagger`, `geolocator`, and `evaluator` are built in;
+`synchronizer` is custom to this office. The framework doesn't
+know what names are "right" — `Sasha`, `Eve`, `Riley` are just
+local labels you use in the wiring.
+
+**Connections — the wiring.**
+
+```
+bbc_world's destination is Sasha.
+npr_news's destination is Sasha.
+al_jazeera's destination is Sasha.
+```
+
+A connection sentence reads as English: *X's out goes to Y*. The
+default port on a source is called `destination`; the default
+port on an agent or sink is implicit. Three feeds all feeding one
+deduplicator means the framework automatically fans them in.
+
+```
+Sasha's out is Eve, Sam, Tom, Greta.
+```
+
+One source, four destinations. The framework automatically
+fans Sasha's output out to all four extractors. Each extractor
+sees every article and adds its own field (entities, severity,
+topic, location). This is parallel work — no extra Python, no
+threading code.
+
+```
+Eve's out is Sync's entities.
+Sam's out is Sync's severity.
+Tom's out is Sync's topic.
+Greta's out is Sync's location.
+```
+
+Now the four parallel streams merge back together. `Sync's
+entities` is a *named input port* on the Sync agent. The
+synchronizer waits until it has one of each (entities, severity,
+topic, location) for the same article and emits a single combined
+message. Named ports are how an agent tells you "I expect a few
+different kinds of input, here's what to call each one."
+
+```
+Sync's out is Riley.
+Riley's out is Jordan.
+```
+
+Standard pipe: synchroniser to writer to evaluator.
+
+```
+Jordan's publish is intelligence_display, jsonl_recorder_briefing.
+Jordan's revise is jsonl_recorder_discard.
+```
+
+Here's the interesting one. Jordan has two outports:
+`publish` and `revise`. The evaluator's prompt tells it to send
+each briefing to one or the other based on quality. The
+connections route both paths to different sinks. Routing decisions
+live in the role's prompt, not in glue code.
+
+**That's the whole framework.** Sources, sinks, agents, roles,
+connections. Eight lines of agents + ten lines of connections
+described a nine-agent pipeline with fan-out, fan-in,
+synchronization, and conditional routing — no Python required.
+The same vocabulary describes every office in the gallery.
+
+When you're ready to write your own, [`docs/BUILD_APPS.md`](../../../docs/BUILD_APPS.md)
+walks through it from scratch.
+
 ## Make it yours
 
 You don't need to use Situation Room as it ships. The office is

@@ -216,6 +216,12 @@ SINK_REGISTRY = {
         "args":   "named",
         "call":   "run",
     },
+    "periodic_brief_sink": {
+        "import": "from dissyslab.components.sinks.periodic_brief_sink import PeriodicBriefSink",
+        "class":  "PeriodicBriefSink",
+        "args":   "named",
+        "call":   "run",
+    },
     "mcp_sink": {
         "import": "from dissyslab.components.sinks.mcp_sink import MCPSink",
         "class":  "MCPSink",

@@ -127,6 +127,13 @@ examples/**/results/
 # `dsl run` from inside the source tree.
 dissyslab/gallery/**/*.jsonl
 
+# periodic_brief and similar offices write a markdown artifact to the
+# directory dsl was run from. If that happens to be the source tree,
+# don't commit it.
+/brief.md
+/morning_brief.md
+/your_brief.md
+
 # Logs
 logs/
 dev/

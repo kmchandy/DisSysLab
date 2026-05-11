@@ -70,6 +70,7 @@ form working while we transition to library-based discovery.
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -88,7 +89,9 @@ from dissyslab.office_v2._internals import (
     _resolve_subpath,
     _runtime_inport,
     _runtime_outport,
+    _suggest,
 )
+from dissyslab.office_v2.office_spec_constants import EXTERNAL
 from dissyslab.office_v2.library import (
     AgentRoleEntry,
     Library,
@@ -124,6 +127,70 @@ def _import_class(import_stmt: str, class_name: str):
     return getattr(module, class_name)
 
 
+_UNEXPECTED_KW_RE = re.compile(
+    r"unexpected keyword argument ['\"]([A-Za-z_][A-Za-z0-9_]*)['\"]"
+)
+
+
+def _accepted_kwargs(callable_obj) -> list:
+    """Return the list of keyword names ``callable_obj`` accepts.
+
+    Used to produce "Did you mean?" suggestions on a bad kwarg. Falls
+    back to an empty list if the signature cannot be introspected
+    (some C-implemented callables refuse).
+    """
+    import inspect
+    try:
+        sig = inspect.signature(callable_obj)
+    except (TypeError, ValueError):
+        return []
+    names = []
+    for p in sig.parameters.values():
+        if p.kind in (
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            inspect.Parameter.KEYWORD_ONLY,
+        ):
+            if p.name != "self":
+                names.append(p.name)
+    return names
+
+
+def _construct_or_pat_error(
+    callable_obj, args: dict, *, kind: str, name: str
+):
+    """Call ``callable_obj(**args)`` and translate TypeError to CompileError.
+
+    ``kind`` is ``"source"`` or ``"sink"``; ``name`` is the registry
+    entry name. On a bad kwarg, the message names the offending key,
+    offers a "Did you mean?" against the accepted parameters, and lists
+    the keyword names the constructor actually takes.
+    """
+    try:
+        return callable_obj(**args) if args else callable_obj()
+    except TypeError as exc:
+        msg = str(exc)
+        m = _UNEXPECTED_KW_RE.search(msg)
+        if m is None:
+            # Not a kwarg-name problem — surface the original message
+            # but framed for Pat.
+            raise CompileError(
+                f"Failed to build {kind} {name!r}: {exc}"
+            ) from exc
+        bad = m.group(1)
+        accepted = _accepted_kwargs(callable_obj)
+        hint = _suggest(bad, accepted)
+        parts = [
+            f"Argument {bad!r} is not valid for {kind} {name!r}."
+        ]
+        if hint:
+            parts.append(hint)
+        if accepted:
+            parts.append(
+                f"Valid arguments: {', '.join(accepted)}."
+            )
+        raise CompileError(" ".join(parts)) from exc
+
+
 def _build_source(spec: SourceSpec) -> Source:
     """Materialise a ``Source`` from a ``SourceSpec`` using SOURCE_REGISTRY.
 
@@ -142,22 +209,31 @@ def _build_source(spec: SourceSpec) -> Source:
     args = dict(spec.args)
     reg = SOURCE_REGISTRY.get(name)
     if reg is None:
-        raise CompileError(
-            f"unknown source {name!r}. Known sources: "
-            f"{sorted(SOURCE_REGISTRY.keys())}"
-        )
+        known = sorted(SOURCE_REGISTRY.keys())
+        hint = _suggest(name, known)
+        parts = [f"Unknown source {name!r}."]
+        if hint:
+            parts.append(hint)
+        parts.append(f"Known sources: {', '.join(known)}.")
+        raise CompileError(" ".join(parts))
 
     if reg["type"] == "rss":
         import dissyslab.components.sources.rss_normalizer as rss_normalizer
         factory = getattr(rss_normalizer, name)
-        obj = factory(**args)
+        obj = _construct_or_pat_error(
+            factory, args, kind="source", name=name
+        )
     elif reg["type"] == "mcp_shortcut":
         kwargs = expand_shortcut(name, args)
         cls = _import_class(reg["import"], reg["class"])
-        obj = cls(**kwargs)
+        obj = _construct_or_pat_error(
+            cls, kwargs, kind="source", name=name
+        )
     else:
         cls = _import_class(reg["import"], reg["class"])
-        obj = cls(**args) if args else cls()
+        obj = _construct_or_pat_error(
+            cls, args, kind="source", name=name
+        )
 
     return Source(fn=obj.run, name=name)
 
@@ -170,13 +246,16 @@ def _build_sink(spec: SinkSpec) -> Sink:
     args = dict(spec.args)
     reg = SINK_REGISTRY.get(name)
     if reg is None:
-        raise CompileError(
-            f"unknown sink {name!r}. Known sinks: "
-            f"{sorted(SINK_REGISTRY.keys())}"
-        )
+        known = sorted(SINK_REGISTRY.keys())
+        hint = _suggest(name, known)
+        parts = [f"Unknown sink {name!r}."]
+        if hint:
+            parts.append(hint)
+        parts.append(f"Known sinks: {', '.join(known)}.")
+        raise CompileError(" ".join(parts))
 
     cls = _import_class(reg["import"], reg["class"])
-    obj = cls(**args) if args else cls()
+    obj = _construct_or_pat_error(cls, args, kind="sink", name=name)
     return Sink(fn=getattr(obj, reg["call"]), name=name)
 
 
@@ -295,6 +374,7 @@ def _emit_network(
         else:  # subnetwork
             table.subnetworks[ref.agent_name] = ports
 
+    _validate_connection_endpoints(spec, blocks)
     connections = _translate_connections(spec, table)
 
     # Hand off to the runtime — its check() validates wiring.
@@ -305,6 +385,94 @@ def _emit_network(
         inports=list(spec.inputs),
         outports=list(spec.outputs),
     )
+
+
+def _validate_connection_endpoints(
+    spec: OfficeSpec, blocks: Dict[str, Union[Agent, Network]]
+) -> None:
+    """Pre-validate that every connection refers to a known block.
+
+    Without this pass, a typo like ``bbc_world's destination is sinky.``
+    reaches the runtime's ``Network.check()`` and surfaces as a
+    cryptic wiring complaint. Catching it here lets us emit a
+    Pat-shaped message that names the offending identifier and offers
+    a "Did you mean?" suggestion against the names actually declared
+    in this office.
+
+    External endpoints (Inputs/Outputs of an open office, represented
+    by the parser as ``Endpoint("external", <port>)``) are validated
+    against the office's declared ``inputs`` / ``outputs`` rather
+    than against ``blocks``.
+    """
+    known = set(blocks.keys())
+    inputs = set(spec.inputs)
+    outputs = set(spec.outputs)
+    for stmt in spec.connections:
+        src = stmt.source
+        if src.name == EXTERNAL:
+            if src.port not in inputs:
+                hint = _suggest(src.port, inputs)
+                parts = [
+                    f"Connection sender refers to external input "
+                    f"{src.port!r}, but no such input is declared "
+                    f"in the Inputs: section."
+                ]
+                if hint:
+                    parts.append(hint)
+                if inputs:
+                    parts.append(
+                        f"Declared inputs: {', '.join(sorted(inputs))}."
+                    )
+                raise CompileError(" ".join(parts))
+        else:
+            if src.name not in known:
+                hint = _suggest(src.name, known)
+                parts = [
+                    f"Connection refers to sender {src.name!r}, but "
+                    f"no source, sink, or agent of that name is "
+                    f"declared in this office."
+                ]
+                if hint:
+                    parts.append(hint)
+                if known:
+                    parts.append(
+                        f"Known names: {', '.join(sorted(known))}."
+                    )
+                raise CompileError(" ".join(parts))
+        for dest in stmt.destinations:
+            if dest.name == EXTERNAL:
+                if dest.port not in outputs:
+                    hint = _suggest(dest.port, outputs)
+                    parts = [
+                        f"Connection recipient refers to external "
+                        f"output {dest.port!r}, but no such output "
+                        f"is declared in the Outputs: section."
+                    ]
+                    if hint:
+                        parts.append(hint)
+                    if outputs:
+                        parts.append(
+                            f"Declared outputs: "
+                            f"{', '.join(sorted(outputs))}."
+                        )
+                    raise CompileError(" ".join(parts))
+            else:
+                if dest.name not in known:
+                    hint = _suggest(dest.name, known)
+                    parts = [
+                        f"Connection refers to recipient "
+                        f"{dest.name!r}, but no source, sink, or "
+                        f"agent of that name is declared in this "
+                        f"office."
+                    ]
+                    if hint:
+                        parts.append(hint)
+                    if known:
+                        parts.append(
+                            f"Known names: "
+                            f"{', '.join(sorted(known))}."
+                        )
+                    raise CompileError(" ".join(parts))
 
 
 def _resolve_role_ref(
@@ -391,13 +559,21 @@ def _resolve_role_ref(
         warnings.extend(child_warnings)
         return child_net, "subnetwork", tuple(child_net.outports)
 
-    raise CompileError(
-        f"agent {ref.agent_name!r} uses role {ref.role_name!r}, but "
-        f"no such role is in the library, no inline path was "
-        f"provided, and no fn_lib entry of that name exists.\n"
-        f"  roles_lib keys: {sorted(library.keys())}\n"
-        f"  fn_lib keys:    {sorted(FN_LIB.keys())}"
+    all_roles = sorted(set(library.keys()) | set(FN_LIB.keys()))
+    hint = _suggest(ref.role_name, all_roles)
+    parts = [
+        f"Agent {ref.agent_name!r} uses role {ref.role_name!r}, "
+        f"but no such role is defined.",
+    ]
+    if hint:
+        parts.append(hint)
+    parts.append(
+        f"To fix: add a prompt file at roles/{ref.role_name}.md "
+        f"(or an explicit OfficeRoleEntry), or correct the spelling."
     )
+    if all_roles:
+        parts.append(f"Known roles: {', '.join(all_roles)}.")
+    raise CompileError(" ".join(parts))
 
 
 __all__ = [
