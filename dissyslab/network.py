@@ -611,14 +611,24 @@ class Network:
             msgs = "; ".join(f"{n}: {repr(e)}" for n, e in errors)
             raise RuntimeError(f"Shutdown failed for agent(s): {msgs}")
 
-    def run_network(self, timeout: Optional[float] = 300.0) -> None:
+    def run_network(self, timeout: Optional[float] = None) -> None:
         """
         Compile (if needed), startup, run, and shutdown the network.
 
         Main entry point for executing a network.
         Termination is detected automatically by os_agent.
-        timeout is a safety net — under normal operation os_agent
-        declares termination before timeout is reached.
+
+        ``timeout`` is an optional safety net. The default is ``None``
+        (no timeout) because Pat-facing offices vary widely in run
+        time — periodic_brief finishes in ~30 s, situation_room takes
+        10-25 min on local Qwen, and polling sources are meant to run
+        forever until Ctrl-C. A fixed default short enough to be a
+        useful safety net for one workload is a guillotine for the
+        next. Callers who want a deadline (tests, CI, batch jobs)
+        should pass it explicitly: ``net.run_network(timeout=60)``.
+
+        Hung agents surface as "nothing is happening" — Pat presses
+        Ctrl-C, sees which thread had the input, and reports it.
         """
         if not self.compiled:
             self.compile()
