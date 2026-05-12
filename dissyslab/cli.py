@@ -69,6 +69,62 @@ def _packaged_gallery() -> Path:
     return Path(str(trav))
 
 
+# The gallery split (#115) put Pat-facing offices under gallery/apps/
+# and Builder demos under gallery/examples/. Older gallery offices
+# (pre-split) lived at gallery/<name>/ directly. Both styles need to
+# resolve so `dsl init` / `dsl run <name>` keep working.
+_GALLERY_SUBSECTIONS = ("apps", "examples", "")
+
+
+def _find_packaged_office(name: str) -> Path | None:
+    """Locate a packaged office by name across the gallery split.
+
+    Searches in priority order: gallery/apps/<name>, gallery/examples/<name>,
+    gallery/<name>. Returns the first directory that contains office.md
+    (or the legacy network.md). Returns None if nothing matches.
+    """
+    gallery = _packaged_gallery()
+    for sub in _GALLERY_SUBSECTIONS:
+        candidate = gallery / sub / name if sub else gallery / name
+        if candidate.is_dir() and (
+            (candidate / "office.md").is_file()
+            or (candidate / "network.md").is_file()
+        ):
+            return candidate
+    return None
+
+
+def _walk_packaged_offices() -> dict[str, list[Path]]:
+    """Walk the packaged gallery and bucket offices by section.
+
+    Returns a dict keyed by section name ('apps', 'examples', or '')
+    whose values are sorted lists of office directories in that
+    section. An "office directory" is one containing office.md
+    (or the legacy network.md). The empty-string key holds any
+    pre-split offices that still live directly under gallery/.
+    """
+    gallery = _packaged_gallery()
+    out: dict[str, list[Path]] = {sub: [] for sub in _GALLERY_SUBSECTIONS}
+    if not gallery.is_dir():
+        return out
+    for sub in _GALLERY_SUBSECTIONS:
+        root = gallery / sub if sub else gallery
+        if not root.is_dir():
+            continue
+        for child in sorted(root.iterdir()):
+            if not child.is_dir():
+                continue
+            if child.name.startswith(".") or child.name.startswith("__"):
+                continue
+            if child.name in _GALLERY_SUBSECTIONS and sub == "":
+                # Skip apps/ and examples/ themselves when listing the
+                # legacy root — they are not offices, they are sections.
+                continue
+            if (child / "office.md").is_file() or (child / "network.md").is_file():
+                out[sub].append(child)
+    return out
+
+
 def _one_line_description(office_dir: Path) -> str:
     """Find a short one-line description for an office, or '' if none.
 
@@ -330,9 +386,45 @@ def _explain_failure_message(command: str, exc: BaseException) -> str:
     return f"{head}\n\nFull traceback:\n{tb}"
 
 
+def _resolve_office_arg(arg: str, label: str) -> Path | None:
+    """Resolve an office argument to a directory.
+
+    Two forms are accepted:
+
+    * A path (relative or absolute) to a directory the user owns.
+      This wins if the path exists on disk, so Pat's local copy
+      always beats a packaged office of the same name.
+    * A bare office name (e.g. ``situation_room``) that resolves
+      to a packaged office in the gallery the wheel ships. This
+      is the form the README uses now that Pat doesn't have to
+      clone the repo.
+
+    Returns the resolved directory, or None if neither form works.
+    Emits a Pat-friendly error to stderr before returning None.
+    """
+    as_path = Path(arg)
+    if as_path.is_dir():
+        return as_path
+
+    # Only attempt name lookup when the argument is a bare identifier
+    # (no slashes, no extension). A typoed path like
+    # "dissyslab/gallery/wrong" should surface as "not a directory",
+    # not as "no office named '...gallery/wrong'".
+    if "/" not in arg and "\\" not in arg and not as_path.suffix:
+        found = _find_packaged_office(arg)
+        if found is not None:
+            return found
+
+    _eprint(f"Error: {label} '{arg}' is not a directory and not a packaged office name.")
+    _eprint("Run `dsl list` to see packaged office names, or check the path you typed.")
+    return None
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     """Build (if stale) and run a closed office via office_v2."""
-    office_dir = _require_dir("office_dir", args.office_dir)
+    office_dir = _resolve_office_arg(args.office_dir, "office_dir")
+    if office_dir is None:
+        return 2
 
     from dissyslab.office_v2.cli_helpers import cli_run
 
@@ -350,7 +442,9 @@ def cmd_run(args: argparse.Namespace) -> int:
 
 def cmd_build(args: argparse.Namespace) -> int:
     """Generate build/run.py for an office via office_v2 codegen."""
-    office_dir = _require_dir("office_dir", args.office_dir)
+    office_dir = _resolve_office_arg(args.office_dir, "office_dir")
+    if office_dir is None:
+        return 2
 
     from dissyslab.office_v2.cli_helpers import cli_build
 
@@ -365,13 +459,20 @@ def cmd_build(args: argparse.Namespace) -> int:
 
 # ── Subcommand: list ──────────────────────────────────────────────────────────
 
+_SECTION_HEADINGS = {
+    "apps": "Apps (for Pat — ready to run as a daily assistant)",
+    "examples": "Examples (for Builders — patterns to crib)",
+    "": "Other",
+}
+
+
 def cmd_list(args: argparse.Namespace) -> int:
     """List the gallery offices that ship with the installed dissyslab.
 
-    Output is grouped by curriculum concept (Starter → Single-agent
-    monitors → … → Networks of offices) so a student can find an
-    example by the question they're asking ("where's the simple
-    one?") rather than by alphabetical name.
+    Output is grouped by gallery section (apps vs. examples) so Pat
+    can immediately see which offices are intended as ready-to-run
+    AI assistants and which are smaller demos for Builders. Within
+    each section, offices are sorted alphabetically.
     """
     gallery = _packaged_gallery()
     if not gallery.is_dir():
@@ -382,56 +483,34 @@ def cmd_list(args: argparse.Namespace) -> int:
         )
         return 2
 
-    offices = sorted(
-        p for p in gallery.iterdir()
-        if p.is_dir()
-        and not p.name.startswith(".")
-        and not p.name.startswith("__")  # skip __pycache__
-    )
-    if not offices:
+    sections = _walk_packaged_offices()
+    all_offices = [p for offices in sections.values() for p in offices]
+    if not all_offices:
         print("(no offices found — this dissyslab install may be incomplete)")
         return 0
 
-    # Bucket offices by curriculum group. Within a group, sort
-    # alphabetically by folder name.
-    buckets: dict[str, list[Path]] = {}
-    office_tags: dict[str, list[str]] = {}
-    for p in offices:
-        tags = _read_tags(p)
-        office_tags[p.name] = tags
-        buckets.setdefault(_group_for(tags), []).append(p)
-
-    # Print groups in curriculum order. Any group not in the
-    # curriculum (the `_FALLBACK_GROUP`) prints last.
-    group_order = [label for _, label in _CONCEPT_GROUPS]
-    if _FALLBACK_GROUP in buckets:
-        group_order.append(_FALLBACK_GROUP)
-
-    name_width = max(len(p.name) for p in offices)
+    name_width = max(len(p.name) for p in all_offices)
 
     print("Offices shipped with dissyslab:")
     print()
-    for group_label in group_order:
-        group = buckets.get(group_label)
+    for sub in _GALLERY_SUBSECTIONS:
+        group = sections.get(sub) or []
         if not group:
             continue
-        print(f"  {group_label}")
+        print(f"  {_SECTION_HEADINGS[sub]}")
         for p in group:
             hint = _one_line_description(p)
-            tags = office_tags[p.name]
-            tag_str = " ".join(f"[{t}]" for t in tags) if tags else ""
             line1 = f"    {p.name:<{name_width}}"
             if hint:
                 line1 += f"  {hint}"
             print(line1)
-            if tag_str:
-                # Indent tags under the office name for scannability.
-                pad = " " * (4 + name_width + 2)
-                print(f"{pad}{tag_str}")
         print()
 
     print("To copy an office into your own folder:")
     print("  dsl init <office_name> <folder>")
+    print()
+    print("Or run a packaged office in place by name:")
+    print("  dsl run <office_name>")
     return 0
 
 
@@ -439,10 +518,9 @@ def cmd_list(args: argparse.Namespace) -> int:
 
 def cmd_init(args: argparse.Namespace) -> int:
     """Copy a gallery office into a new folder the user owns."""
-    gallery = _packaged_gallery()
-    source = gallery / args.office_name
+    source = _find_packaged_office(args.office_name)
 
-    if not source.is_dir():
+    if source is None:
         _eprint(f"Error: no office named '{args.office_name}' in the gallery.")
         _eprint("Run `dsl list` to see available offices.")
         return 2

@@ -43,8 +43,19 @@ shells started afterwards.
 **Now run your first office:**
 
 ```bash
-dsl run dissyslab/gallery/apps/situation_room/
+dsl run situation_room
 ```
+
+That runs the version packaged inside DisSysLab. To get your own
+copy you can edit (recommended once you've seen it work):
+
+```bash
+dsl init situation_room my_situation
+cd my_situation
+dsl run .
+```
+
+`dsl list` shows every office that ships with DisSysLab.
 
 After ~10 minutes of pipeline execution you have a digest like
 [this sample](dev/experiments/situation_room_sample_day_1.md):
