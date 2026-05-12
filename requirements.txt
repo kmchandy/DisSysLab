@@ -44,3 +44,6 @@ scipy>=1.11.0
 pytest>=7.0.0
 pytest-cov>=4.0.0
 pytest-timeout>=2.1.0
+
+# ── Optional: MCP `web` / `search` office sources ─────────────────────────────
+# pip install mcp mcp-server-fetch

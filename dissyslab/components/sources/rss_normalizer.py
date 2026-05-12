@@ -326,3 +326,31 @@ def reddit(subreddit: str, max_articles: int = 20, poll_interval: Optional[int] 
         max_articles=max_articles,
         poll_interval=poll_interval,
     )
+
+
+def rss_feed(
+    url: str,
+    source_name: Optional[str] = None,
+    max_articles: int = 20,
+    poll_interval: Optional[int] = None,
+) -> RSSNormalizer:
+    """
+    Poll any RSS or Atom URL (e.g. a third-party feed for a job board that has no native RSS).
+
+    Use ``source_name`` so messages are tagged distinctly in the office (defaults to a slug
+    derived from the URL host).
+    """
+    from urllib.parse import urlparse
+
+    if not url or not str(url).strip():
+        raise ValueError("rss_feed requires a non-empty url=...")
+
+    host = (urlparse(url).hostname or "rss_feed").replace(".", "_")
+    name = (source_name or host).strip() or "rss_feed"
+
+    return RSSNormalizer(
+        urls=[str(url).strip()],
+        source_name=name,
+        max_articles=max_articles,
+        poll_interval=poll_interval,
+    )

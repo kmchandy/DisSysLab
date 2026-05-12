@@ -154,9 +154,17 @@ class WebScraper:
                 article = self._to_standard_dict(element)
                 if article is None:
                     continue
-                if article["url"] in self._seen_urls:
+                # Many listing pages reuse the page URL when items have no
+                # per-item <a href>; dedupe on title+text instead of URL only.
+                dedupe_key = article["url"]
+                if not dedupe_key or dedupe_key == self.url:
+                    dedupe_key = (
+                        f"{self.url}::{article.get('title', '')}::"
+                        f"{article.get('text', '')[:200]}"
+                    )
+                if dedupe_key in self._seen_urls:
                     continue
-                self._seen_urls.add(article["url"])
+                self._seen_urls.add(dedupe_key)
                 yield article
 
         except Exception as e:
@@ -198,6 +206,37 @@ class WebScraper:
             "url":       url,
             "timestamp": timestamp,
         }
+
+
+def web_scraper(
+    url: str,
+    source_name: str = "web_scraper",
+    article_selector: str = "article",
+    title_selector: str = "h2",
+    link_selector: str = "a",
+    text_selector: str = "p",
+    date_selector: Optional[str] = None,
+    max_articles: Optional[int] = None,
+    poll_interval: Optional[int] = None,
+    headers: Optional[dict] = None,
+) -> WebScraper:
+    """
+    Generic factory for ``office.md``::
+
+        web_scraper(url="...", article_selector="...", ...)
+    """
+    return WebScraper(
+        url=url,
+        source_name=source_name,
+        article_selector=article_selector,
+        title_selector=title_selector,
+        link_selector=link_selector,
+        text_selector=text_selector,
+        date_selector=date_selector,
+        max_articles=max_articles,
+        poll_interval=poll_interval,
+        headers=headers,
+    )
 
 
 # ── WebScraper convenience factory functions ──────────────────────────────────

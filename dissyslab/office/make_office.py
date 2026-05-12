@@ -40,6 +40,7 @@ APP_TEMPLATE = Template('''\
 
 import json
 
+from dissyslab.office.utils import parse_agent_json_response
 from dissyslab.composed_agent import composed_agent
 from dissyslab.blocks import Sink
 from dissyslab.blocks.role import Role
@@ -133,7 +134,7 @@ def ${role_name}_fn(msg):
     text = json.dumps(msg) if isinstance(msg, dict) else str(msg)
     try:
         raw         = _${role_name}_ai(text)
-        result      = raw if isinstance(raw, dict) else json.loads(raw)
+        result      = parse_agent_json_response(raw, "$default_dest", $valid_dests_json)
         out         = {**msg, **result}
         destination = result.get("send_to", "$default_dest")
         if isinstance(destination, list):
@@ -149,6 +150,7 @@ def ${role_name}_fn(msg):
             fill=fill,
             prompt_json=json.dumps(prompt),
             default_dest=default_dest,
+            valid_dests_json=json.dumps(valid_dests),
         ))
     return "\n".join(blocks)
 

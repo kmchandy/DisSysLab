@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
+import { fileToAttachment, CHAT_ATTACHMENT_MAX_BYTES } from '../lib/chatAttachments'
 
 const styles = {
   overlay: {
@@ -33,6 +34,7 @@ const styles = {
     fontSize: '11px',
     color: 'var(--text-muted)',
     marginTop: '2px',
+    lineHeight: 1.45,
   },
   closeBtn: {
     background: 'transparent',
@@ -84,7 +86,55 @@ const styles = {
     padding: '12px 16px',
     borderTop: '1px solid var(--border)',
     display: 'flex',
+    flexDirection: 'column',
     gap: '8px',
+  },
+  inputToolbar: {
+    display: 'flex',
+    gap: '8px',
+    alignItems: 'flex-end',
+  },
+  attachBtn: {
+    background: 'var(--surface2)',
+    color: 'var(--text)',
+    border: '1px solid var(--border)',
+    padding: '8px 12px',
+    fontWeight: '600',
+    fontSize: '12px',
+    borderRadius: '8px',
+    flexShrink: 0,
+    cursor: 'pointer',
+  },
+  attachmentChips: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '6px',
+    fontSize: '11px',
+  },
+  chip: {
+    background: 'var(--surface2)',
+    border: '1px solid var(--border)',
+    borderRadius: '6px',
+    padding: '4px 8px',
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    maxWidth: '100%',
+  },
+  chipName: {
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    maxWidth: '200px',
+  },
+  chipRemove: {
+    background: 'transparent',
+    border: 'none',
+    color: 'var(--text-muted)',
+    cursor: 'pointer',
+    padding: '0 2px',
+    fontSize: '14px',
+    lineHeight: 1,
   },
   input: {
     flex: 1,
@@ -131,10 +181,12 @@ export default function ChatPanel({ onClose, onOfficeCreated }) {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: "Hi! I'll help you build a new office. Tell me:\n\n• What topic or domain? (news, finance, research…)\n• What sources? (RSS feeds, Bluesky, Gmail, calendar…)\n• What should your agents do? (filter, summarize, alert…)\n• Where should results go? (live display, file, email…)",
+      content:
+        "Hi! I'll help you build a new office. Tell me:\n\n• What topic or domain? (news, finance, research…)\n• What sources? (RSS feeds, Bluesky, Gmail, calendar…)\n• What should your agents do? (filter, summarize, alert…)\n• Where should results go? (live display, file, email…)\n\nYou can attach JPEG/PNG/GIF/WebP images or PDFs (e.g. photos of your wardrobe) — I'll use them as context when designing your agents.",
     },
   ])
   const [input, setInput] = useState('')
+  const [pendingAttachments, setPendingAttachments] = useState([])
   const [streaming, setStreaming] = useState(false)
   const [pendingFiles, setPendingFiles] = useState(null)
   const [officeName, setOfficeName] = useState('')
@@ -144,6 +196,7 @@ export default function ChatPanel({ onClose, onOfficeCreated }) {
   const [gmailPass, setGmailPass] = useState('')
   const bottomRef = useRef(null)
   const esRef = useRef(null)
+  const fileInputRef = useRef(null)
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -151,10 +204,22 @@ export default function ChatPanel({ onClose, onOfficeCreated }) {
 
   const sendMessage = async () => {
     const text = input.trim()
-    if (!text || streaming) return
+    if ((!text && pendingAttachments.length === 0) || streaming) return
     setInput('')
 
-    const newMessages = [...messages, { role: 'user', content: text }]
+    const attachmentsPayload = pendingAttachments.map(({ media_type, data, filename }) => ({
+      media_type,
+      data,
+      filename,
+    }))
+    setPendingAttachments([])
+
+    const userMessage = {
+      role: 'user',
+      content: text,
+      ...(attachmentsPayload.length > 0 ? { attachments: attachmentsPayload } : {}),
+    }
+    const newMessages = [...messages, userMessage]
     setMessages(newMessages)
     setStreaming(true)
 
@@ -168,14 +233,29 @@ export default function ChatPanel({ onClose, onOfficeCreated }) {
     }))
     es.close() // close immediately, we'll use fetch + ReadableStream instead
 
+    const serialize = (m) => {
+      const row = { role: m.role, content: m.content || '' }
+      if (m.attachments && m.attachments.length > 0) row.attachments = m.attachments
+      return row
+    }
+
     try {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: newMessages.map(m => ({ role: m.role, content: m.content })),
+          messages: newMessages.map(serialize),
         }),
       })
+
+      if (!res.ok) {
+        let detail = `Request failed (${res.status})`
+        try {
+          const errBody = await res.json()
+          if (errBody.detail) detail = typeof errBody.detail === 'string' ? errBody.detail : JSON.stringify(errBody.detail)
+        } catch (_) {}
+        throw new Error(detail)
+      }
 
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
@@ -241,7 +321,9 @@ export default function ChatPanel({ onClose, onOfficeCreated }) {
         setOfficeName(suggested)
         // Check if gmail_sink is used — prompt for credentials
         const officeText = Object.values(detectedFiles).join('\n')
-        setNeedsGmail(officeText.includes('gmail_sink') || officeText.includes('gmail_sink'))
+        setNeedsGmail(
+          officeText.includes('gmail_sink') || /\bgmail\s*\(/.test(officeText)
+        )
       }
     } catch (err) {
       setMessages(prev => {
@@ -306,13 +388,38 @@ export default function ChatPanel({ onClose, onOfficeCreated }) {
     }
   }
 
+  const onPickFiles = async (e) => {
+    const files = e.target.files
+    if (!files?.length) return
+    e.target.value = ''
+    const next = [...pendingAttachments]
+    for (const file of Array.from(files)) {
+      try {
+        const att = await fileToAttachment(file)
+        next.push({ ...att, id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}` })
+      } catch (err) {
+        alert(err.message || String(err))
+      }
+    }
+    setPendingAttachments(next)
+  }
+
+  const removeAttachment = (id) => {
+    setPendingAttachments((prev) => prev.filter((a) => a.id !== id))
+  }
+
+  const canSend = input.trim() || pendingAttachments.length > 0
+
   return (
     <div style={styles.overlay} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div style={styles.panel}>
         <div style={styles.header}>
           <div>
             <div style={styles.title}>New Office</div>
-            <div style={styles.subtitle}>Describe what you want — Claude will build it</div>
+            <div style={styles.subtitle}>
+              Describe what you want — Claude will build it. Attach images or PDFs (max{' '}
+              {CHAT_ATTACHMENT_MAX_BYTES / (1024 * 1024)} MB each) for extra context.
+            </div>
           </div>
           <button style={styles.closeBtn} onClick={onClose}>✕</button>
         </div>
@@ -326,7 +433,23 @@ export default function ChatPanel({ onClose, onOfficeCreated }) {
                 ...(m.role === 'user' ? styles.userBubble : styles.assistantBubble),
               }}
             >
-              {m.content || (m._streaming ? '…' : '')}
+              {m.role === 'user' && (
+                <>
+                  {m.content ? <span>{m.content}</span> : null}
+                  {m.attachments?.length > 0 && (
+                    <div
+                      style={{
+                        fontSize: '11px',
+                        opacity: 0.92,
+                        marginTop: m.content ? '8px' : 0,
+                      }}
+                    >
+                      📎 {m.attachments.map((a) => a.filename || a.media_type).join(', ')}
+                    </div>
+                  )}
+                </>
+              )}
+              {m.role === 'assistant' && (m.content || (m._streaming ? '…' : ''))}
             </div>
           ))}
 
@@ -388,18 +511,60 @@ export default function ChatPanel({ onClose, onOfficeCreated }) {
           </div>
         ) : (
           <div style={styles.inputRow}>
-            <textarea
-              style={styles.input}
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyDown={handleKey}
-              placeholder="Describe your office… (Enter to send, Shift+Enter for new line)"
-              disabled={streaming}
-              rows={2}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              accept="image/jpeg,image/png,image/gif,image/webp,.pdf,application/pdf"
+              style={{ display: 'none' }}
+              onChange={onPickFiles}
             />
-            <button style={styles.sendBtn} onClick={sendMessage} disabled={streaming || !input.trim()}>
-              {streaming ? '…' : 'Send'}
-            </button>
+            {pendingAttachments.length > 0 && (
+              <div style={styles.attachmentChips}>
+                {pendingAttachments.map((a) => (
+                  <span key={a.id} style={styles.chip}>
+                    <span style={styles.chipName} title={a.filename}>
+                      {a.filename || a.media_type}
+                    </span>
+                    <button
+                      type="button"
+                      style={styles.chipRemove}
+                      onClick={() => removeAttachment(a.id)}
+                      aria-label="Remove attachment"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div style={styles.inputToolbar}>
+              <textarea
+                style={styles.input}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={handleKey}
+                placeholder="Describe your office… (Enter to send, Shift+Enter for new line)"
+                disabled={streaming}
+                rows={2}
+              />
+              <button
+                type="button"
+                style={styles.attachBtn}
+                onClick={() => fileInputRef.current?.click()}
+                disabled={streaming}
+                title="Attach images or PDF"
+              >
+                📎
+              </button>
+              <button
+                style={styles.sendBtn}
+                onClick={sendMessage}
+                disabled={streaming || !canSend}
+              >
+                {streaming ? '…' : 'Send'}
+              </button>
+            </div>
           </div>
         )}
       </div>

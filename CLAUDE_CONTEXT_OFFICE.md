@@ -168,6 +168,10 @@ Connections:
 | `al_jazeera` | `max_articles=10, poll_interval=600` | Al Jazeera RSS news feed |
 | `bbc_world` | `max_articles=10, poll_interval=600` | BBC World RSS news feed |
 | `hacker_news` | `max_articles=10, poll_interval=600` | Hacker News RSS feed |
+| `python_jobs` | `max_articles=10, poll_interval=600` | Official Python.org jobs RSS |
+| `remoteok` | `max_articles=10, poll_interval=600` | RemoteOK remote jobs RSS |
+| `we_work_remotely` | `max_articles=10, poll_interval=600` | We Work Remotely jobs RSS |
+| `rss_feed` | `url="https://...", source_name="my_feed", max_articles=10, poll_interval=600` | Any RSS/Atom URL (use for feeds from RSS.app, company boards, etc.) |
 | `npr_news` | `max_articles=10, poll_interval=600` | NPR News RSS feed |
 | `web` | `url="https://...", poll_interval=300` | Fetch any web page |
 | `search` | `query="...", poll_interval=3600` | Web search results |
@@ -188,6 +192,11 @@ Tell the user to set these before running their office.
 
 For `calendar`, pass the secret ICS URL from Google Calendar settings.
 Requires `pip install icalendar` for best results.
+
+For `rss_feed`, `url` must be a full RSS or Atom feed URL. Boards like **Simplify** or **Jobright**
+do not publish a stable public RSS URL in DisSysLab's integration today — use `rss_feed` only if
+you have a feed URL (for example from RSS.app or an employer's public Atom feed). Combine
+`hacker_news`, `python_jobs`, `remoteok`, and `we_work_remotely` for broad job coverage without a custom URL.
 
 **Note:** The `web` and `search` sources require Node.js. If the user hasn't
 installed it, tell them to run `brew install node` (Mac) or

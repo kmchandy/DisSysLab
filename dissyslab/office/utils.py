@@ -9,8 +9,58 @@
 import json
 import re
 from pathlib import Path
+from typing import Any
 
 from dissyslab.backends import get_backend
+
+
+def parse_agent_json_response(raw: Any, default_dest: str, valid_dests: list[str]) -> dict:
+    """
+    Turn ai_agent() output into a dict with ``send_to`` and ``text``.
+
+    ai_agent returns a dict when the model emits valid JSON, otherwise a string.
+    Role wrappers used to call json.loads on every string, which crashes when
+    the model returns prose, markdown, or malformed JSON. This helper accepts
+    dicts, parses JSON strings, tries a ``{...}`` slice once, then falls back to
+    routing the raw string as ``text`` to ``default_dest``.
+    """
+    valid = tuple(valid_dests)
+
+    if isinstance(raw, dict):
+        result = dict(raw)
+    elif isinstance(raw, str):
+        s = raw.strip()
+        if not s:
+            return {"send_to": default_dest, "text": ""}
+        try:
+            result = json.loads(s)
+        except json.JSONDecodeError:
+            a, b = s.find("{"), s.rfind("}")
+            if a != -1 and b != -1 and b > a:
+                try:
+                    result = json.loads(s[a : b + 1])
+                except json.JSONDecodeError:
+                    result = {"send_to": default_dest, "text": s}
+            else:
+                result = {"send_to": default_dest, "text": s}
+    else:
+        result = {"send_to": default_dest, "text": str(raw)}
+
+    if not isinstance(result, dict):
+        return {"send_to": default_dest, "text": str(result)}
+
+    st = result.get("send_to", default_dest)
+    if isinstance(st, list):
+        st = [x for x in st if x in valid]
+        if not st:
+            st = default_dest
+    elif st not in valid:
+        st = default_dest
+
+    result["send_to"] = st
+    result.setdefault("text", "")
+    return result
+
 
 # Compile-time prompts were originally sent to this exact model
 # snapshot. Preserved here so the refactor to the Backend Protocol
@@ -220,6 +270,10 @@ SOURCE_REGISTRY = {
     "venturebeat_ai":  {"type": "rss"},
     "nasa_news":       {"type": "rss"},
     "python_jobs":     {"type": "rss"},
+    "remoteok":        {"type": "rss"},
+    "we_work_remotely": {"type": "rss"},
+    # Generic RSS/Atom — pass url= (and optional source_name=) for boards without a built-in source
+    "rss_feed":        {"type": "rss"},
 
     # ── BlueSky streaming ─────────────────────────────────────────────────────
     "bluesky": {
@@ -279,6 +333,20 @@ SOURCE_REGISTRY = {
         "type":   "calendar",
         "import": "from dissyslab.components.sources.calendar_source import CalendarSource",
         "class":  "CalendarSource",
+    },
+
+    # ── HTML/CSS scraper (requests + BeautifulSoup) ───────────────────────────
+    "web_scraper": {
+        "type":   "web_scraper",
+        "import": "from dissyslab.components.sources.web_scraper import WebScraper",
+        "class":  "WebScraper",
+    },
+
+    # ── WeatherAPI.com (JSON API; key from env WEATHERAPI_KEY by default) ─────
+    "weatherapi": {
+        "type":   "weatherapi",
+        "import": "from dissyslab.components.sources.weatherapi_source import WeatherAPISource",
+        "class":  "WeatherAPISource",
     },
 }
 
@@ -840,6 +908,7 @@ def generate_app(roles, office, office_dir):
         f"from dissyslab.blocks import Source, Sink",
         f"from dissyslab.blocks.role import Role",
         f"from dissyslab.components.transformers.ai_agent import ai_agent",
+        f"from dissyslab.office.utils import parse_agent_json_response",
         f"",
     ]
 
@@ -887,7 +956,7 @@ def generate_app(roles, office, office_dir):
             f"    text = json.dumps(msg) if isinstance(msg, dict) else str(msg)",
             f"    try:",
             f"        raw = _{role_name}_agent(text)",
-            f"        result = raw if isinstance(raw, dict) else json.loads(raw)",
+            f"        result = parse_agent_json_response(raw, {repr(default_dest)}, {repr(valid_dests)})",
             f"        out = {{**msg, **result}}",
             f"        destination = result.get('send_to', {repr(default_dest)})",
             f"        if isinstance(destination, list):",

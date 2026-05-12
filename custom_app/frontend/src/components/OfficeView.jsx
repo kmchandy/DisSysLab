@@ -61,8 +61,34 @@ const styles = {
   },
   meta: {
     padding: '12px 24px',
-    borderBottom: '1px solid var(--border)',
     background: 'var(--surface)',
+  },
+  body: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 0,
+    overflow: 'hidden',
+  },
+  resizeHandle: {
+    flexShrink: 0,
+    height: 8,
+    cursor: 'row-resize',
+    background: 'var(--surface2)',
+    borderTop: '1px solid var(--border)',
+    borderBottom: '1px solid var(--border)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    touchAction: 'none',
+    userSelect: 'none',
+  },
+  resizeGrip: {
+    width: 44,
+    height: 4,
+    borderRadius: 4,
+    background: 'var(--text-muted)',
+    opacity: 0.45,
   },
   officeCode: {
     fontFamily: 'var(--font-mono)',
@@ -71,13 +97,13 @@ const styles = {
     whiteSpace: 'pre-wrap',
     lineHeight: '1.7',
   },
-  terminal: {
-    flex: 1,
+  outputPane: {
     display: 'flex',
     flexDirection: 'column',
+    minHeight: 0,
     overflow: 'hidden',
     padding: '0 24px 24px',
-    marginTop: '16px',
+    paddingTop: '12px',
   },
   termLabel: {
     fontSize: '11px',
@@ -92,6 +118,7 @@ const styles = {
   },
   termBox: {
     flex: 1,
+    minHeight: 0,
     background: '#0a0c12',
     borderRadius: '8px',
     border: '1px solid var(--border)',
@@ -122,6 +149,8 @@ const styles = {
   },
 }
 
+const META_RATIO_STORAGE_KEY = 'dissyslab-office-meta-ratio'
+
 const cloneModalStyles = {
   overlay: {
     position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
@@ -139,10 +168,23 @@ const cloneModalStyles = {
   confirm: { background: 'var(--accent)', color: '#fff', fontWeight: '600', padding: '7px 14px' },
 }
 
+function readStoredMetaRatio() {
+  try {
+    const v = parseFloat(localStorage.getItem(META_RATIO_STORAGE_KEY))
+    if (!Number.isFinite(v) || v < 0.12 || v > 0.88) return 0.32
+    return v
+  } catch {
+    return 0.32
+  }
+}
+
 export default function OfficeView({ office, officeDetail, running, onRun, onStop, onEdit, onAIEdit, onClone, onDelete }) {
   const [lines, setLines] = useState([])
+  const [metaRatio, setMetaRatio] = useState(() => readStoredMetaRatio())
   const termRef = useRef(null)
   const esRef = useRef(null)
+  const bodyRef = useRef(null)
+  const dragStateRef = useRef({ active: false, startY: 0, startRatio: 0, bodyH: 0, lastRatio: 0.32 })
   const [showCloneModal, setShowCloneModal] = useState(false)
   const [cloneName, setCloneName] = useState('')
   const [cloneMode, setCloneMode] = useState('edit') // 'edit' | 'ai'
@@ -150,7 +192,10 @@ export default function OfficeView({ office, officeDetail, running, onRun, onSto
   const [gmailUser, setGmailUser] = useState('')
   const [gmailPass, setGmailPass] = useState('')
 
-  const needsGmail = officeDetail?.office_md?.includes('gmail_sink') ?? false
+  const officeMd = officeDetail?.office_md ?? ''
+  // Gmail sink and the gmail() inbox source both need GMAIL_USER + GMAIL_APP_PASSWORD.
+  const needsGmail =
+    officeMd.includes('gmail_sink') || /\bgmail\s*\(/.test(officeMd)
 
   const handleRunClick = useCallback(async () => {
     if (!needsGmail) { onRun(); return }
@@ -166,6 +211,15 @@ export default function OfficeView({ office, officeDetail, running, onRun, onSto
       onRun() // if check fails just try to run anyway
     }
   }, [needsGmail, onRun])
+
+  // Pre-fill address from gmail_sink(to="...") when opening the credentials modal.
+  useEffect(() => {
+    if (!showGmailModal) return
+    const m = officeMd.match(/gmail_sink\s*\(\s*[^)]*?\bto\s*=\s*["']([^"']+)["']/i)
+    if (m?.[1]) {
+      setGmailUser((prev) => (prev.trim() ? prev : m[1]))
+    }
+  }, [showGmailModal, officeMd])
 
   const handleGmailSubmit = useCallback(async () => {
     if (!gmailUser.trim() || !gmailPass.trim()) return
@@ -209,6 +263,58 @@ export default function OfficeView({ office, officeDetail, running, onRun, onSto
       termRef.current.scrollTop = termRef.current.scrollHeight
     }
   }, [lines])
+
+  const startResizeDrag = useCallback(
+    (e) => {
+      e.preventDefault()
+      if (dragStateRef.current.active) return
+      const body = bodyRef.current
+      if (!body) return
+      const rect = body.getBoundingClientRect()
+      const clientY = e.touches ? e.touches[0].clientY : e.clientY
+      dragStateRef.current = {
+        active: true,
+        startY: clientY,
+        startRatio: metaRatio,
+        bodyH: Math.max(rect.height, 120),
+        lastRatio: metaRatio,
+      }
+
+      const applyMove = (clientYNow) => {
+        const { startY, startRatio, bodyH } = dragStateRef.current
+        if (!dragStateRef.current.active || bodyH <= 0) return
+        const dy = clientYNow - startY
+        const nr = Math.min(0.88, Math.max(0.12, startRatio + dy / bodyH))
+        dragStateRef.current.lastRatio = nr
+        setMetaRatio(nr)
+      }
+
+      const onMouseMove = (ev) => applyMove(ev.clientY)
+      const onTouchMove = (ev) => {
+        ev.preventDefault()
+        if (ev.touches?.length) applyMove(ev.touches[0].clientY)
+      }
+      const endDrag = () => {
+        if (!dragStateRef.current.active) return
+        dragStateRef.current.active = false
+        window.removeEventListener('mousemove', onMouseMove)
+        window.removeEventListener('mouseup', endDrag)
+        window.removeEventListener('touchmove', onTouchMove)
+        window.removeEventListener('touchend', endDrag)
+        window.removeEventListener('touchcancel', endDrag)
+        try {
+          localStorage.setItem(META_RATIO_STORAGE_KEY, String(dragStateRef.current.lastRatio))
+        } catch (_) {}
+      }
+
+      window.addEventListener('mousemove', onMouseMove)
+      window.addEventListener('mouseup', endDrag)
+      window.addEventListener('touchmove', onTouchMove, { passive: false })
+      window.addEventListener('touchend', endDrag)
+      window.addEventListener('touchcancel', endDrag)
+    },
+    [metaRatio]
+  )
 
   if (!office) {
     return (
@@ -288,33 +394,84 @@ export default function OfficeView({ office, officeDetail, running, onRun, onSto
         </div>
       </div>
 
-      {officeDetail?.office_md && (
-        <div style={styles.meta}>
-          <pre style={styles.officeCode}>{officeDetail.office_md}</pre>
-        </div>
-      )}
-
-      <div style={styles.terminal}>
-        <div style={styles.termLabel}>
-          {running && <span style={styles.pulse} />}
-          Output
-          {running && <span style={{ color: 'var(--success)' }}>— running</span>}
-        </div>
-        <div style={styles.termBox} ref={termRef}>
-          {lines.length === 0 && !running && (
-            <span style={styles.placeholder}>
-              Press Run to start this office. Output will appear here.
-            </span>
-          )}
-          {lines.length === 0 && running && (
-            <span style={styles.placeholder}>Starting…</span>
-          )}
-          {lines.map((line, i) => (
-            <span key={i} style={{ ...styles.termLine, color: colorLine(line) }}>
-              {line + '\n'}
-            </span>
-          ))}
-        </div>
+      <div ref={bodyRef} style={styles.body}>
+        {officeDetail?.office_md ? (
+          <>
+            <div
+              style={{
+                ...styles.meta,
+                flex: `${metaRatio} 1 0`,
+                minHeight: 48,
+                overflow: 'auto',
+                borderBottom: '1px solid var(--border)',
+              }}
+            >
+              <pre style={styles.officeCode}>{officeDetail.office_md}</pre>
+            </div>
+            <div
+              role="separator"
+              aria-orientation="horizontal"
+              aria-label="Drag to resize office preview and output"
+              title="Drag to resize"
+              style={styles.resizeHandle}
+              onMouseDown={startResizeDrag}
+              onTouchStart={startResizeDrag}
+            >
+              <span style={styles.resizeGrip} />
+            </div>
+            <div
+              style={{
+                ...styles.outputPane,
+                flex: `${1 - metaRatio} 1 0`,
+                minHeight: 100,
+              }}
+            >
+              <div style={styles.termLabel}>
+                {running && <span style={styles.pulse} />}
+                Output
+                {running && <span style={{ color: 'var(--success)' }}>— running</span>}
+              </div>
+              <div style={styles.termBox} ref={termRef}>
+                {lines.length === 0 && !running && (
+                  <span style={styles.placeholder}>
+                    Press Run to start this office. Output will appear here.
+                  </span>
+                )}
+                {lines.length === 0 && running && (
+                  <span style={styles.placeholder}>Starting…</span>
+                )}
+                {lines.map((line, i) => (
+                  <span key={i} style={{ ...styles.termLine, color: colorLine(line) }}>
+                    {line + '\n'}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div style={{ ...styles.outputPane, flex: 1, minHeight: 0 }}>
+            <div style={styles.termLabel}>
+              {running && <span style={styles.pulse} />}
+              Output
+              {running && <span style={{ color: 'var(--success)' }}>— running</span>}
+            </div>
+            <div style={styles.termBox} ref={termRef}>
+              {lines.length === 0 && !running && (
+                <span style={styles.placeholder}>
+                  Press Run to start this office. Output will appear here.
+                </span>
+              )}
+              {lines.length === 0 && running && (
+                <span style={styles.placeholder}>Starting…</span>
+              )}
+              {lines.map((line, i) => (
+                <span key={i} style={{ ...styles.termLine, color: colorLine(line) }}>
+                  {line + '\n'}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {showGmailModal && (

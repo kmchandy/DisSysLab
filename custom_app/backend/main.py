@@ -4,21 +4,27 @@ Serves office management, live run streaming, and Claude-powered office creation
 """
 
 import asyncio
+import base64
 import os
+import queue
+import re
 import signal
 import subprocess
 import sys
+import threading
 from pathlib import Path
-from typing import AsyncGenerator
+from typing import Any, AsyncGenerator, Union
 
 import anthropic
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-load_dotenv()
+# Resolve .env next to this file so Gmail/API keys load even when uvicorn's cwd differs.
+BACKEND_DIR = Path(__file__).parent
+load_dotenv(BACKEND_DIR / ".env")
 
 app = FastAPI(title="DisSysLab Custom App")
 
@@ -30,7 +36,6 @@ app.add_middleware(
 )
 
 # Paths
-BACKEND_DIR = Path(__file__).parent
 CUSTOM_APP_DIR = BACKEND_DIR.parent
 DISSYSLAB_ROOT = CUSTOM_APP_DIR.parent
 GALLERY_DIR = DISSYSLAB_ROOT / "dissyslab" / "gallery"
@@ -41,6 +46,38 @@ USER_OFFICES_DIR.mkdir(exist_ok=True)
 
 # In-memory registry of running office subprocesses: {office_name: subprocess.Popen}
 _running: dict[str, subprocess.Popen] = {}
+
+# One Queue per running office: a daemon thread drains child stdout here; SSE reads the same queue.
+_office_output_queues: dict[str, queue.Queue[str | None]] = {}
+
+
+def _office_stdout_bridge(name: str, proc: subprocess.Popen, out_q: queue.Queue[str | None]) -> None:
+    """Sole reader of proc.stdout: enqueue each line, mirror to stderr, then sentinel."""
+    try:
+        if proc.stdout is None:
+            return
+        while True:
+            raw = proc.stdout.readline()
+            if raw == "":
+                break
+            line = raw.rstrip("\n")
+            print(f"[office:{name}] {line}", file=sys.stderr, flush=True)
+            out_q.put(line)
+    finally:
+        out_q.put(None)
+
+
+def _start_office_stdout_bridge(name: str, proc: subprocess.Popen) -> None:
+    """Start (or replace) the stdout bridge for this office. Only the bridge reads proc.stdout."""
+    _office_output_queues.pop(name, None)
+    out_q: queue.Queue[str | None] = queue.Queue()
+    _office_output_queues[name] = out_q
+    threading.Thread(
+        target=_office_stdout_bridge,
+        args=(name, proc, out_q),
+        name=f"office-stdout-{name}",
+        daemon=True,
+    ).start()
 
 
 # ---------------------------------------------------------------------------
@@ -264,6 +301,74 @@ def create_office(payload: CreateOfficePayload):
     return {"status": "created", "name": payload.name}
 
 
+def _nws_mapclick_forecast_digest(page_url: str) -> str:
+    """
+    Scrape NOAA 7-day tombstones from a MapClick forecast URL.
+    """
+    from urllib.request import Request, urlopen
+
+    from bs4 import BeautifulSoup
+
+    req = Request(
+        page_url,
+        headers={
+            "User-Agent": (
+                "Mozilla/5.0 (compatible; DisSysLabCustomApp/1.0; "
+                "+https://github.com/kmchandy/DisSysLab)"
+            )
+        },
+    )
+    try:
+        with urlopen(req, timeout=25) as resp:
+            html = resp.read().decode("utf-8", errors="replace")
+    except OSError:
+        return ""
+    soup = BeautifulSoup(html, "html.parser")
+    rows: list[tuple[str, str]] = []
+    for li in soup.select("li.forecast-tombstone")[:14]:
+        pn = li.select_one("p.period-name")
+        tc = li.select_one("div.tombstone-container")
+        period = pn.get_text(strip=True) if pn else ""
+        body = tc.get_text(" ", strip=True) if tc else ""
+        if period or body:
+            safe = body.replace("|", "/")[:220]
+            rows.append((period, safe))
+    if not rows:
+        return ""
+    lines = [
+        "**NOAA weather.gov** (MapClick scrape for Pasadena area). "
+        "If the system prompt footer mentions another provider, **ignore that** — "
+        "use **only** this table for quantitative forecast.",
+        "",
+        "| period | conditions |",
+        "|--------|--------------|",
+    ]
+    for period, safe in rows:
+        lines.append(f"| {period} | {safe} |")
+    return "\n".join(lines)
+
+
+def _forecast_digest_for_subprocess(office_dir: Path) -> str:
+    """
+    Prefetch NOAA HTML when office.md uses web_scraper on forecast.weather.gov.
+    Lets office_compiler append the digest to every role without changing core.
+    Skips when office uses weatherapi (compiler builds digest from JSON API).
+    """
+    md_path = office_dir / "office.md"
+    if not md_path.is_file():
+        return ""
+    raw = md_path.read_text()
+    if "weatherapi(" in raw:
+        return ""
+    if "web_scraper(" not in raw or "forecast.weather.gov" not in raw:
+        return ""
+    m = re.search(r'web_scraper\s*\(\s*url\s*=\s*"([^"]+)"', raw)
+    page_url = m.group(1) if m else ""
+    if not page_url or "forecast.weather.gov" not in page_url:
+        return ""
+    return _nws_mapclick_forecast_digest(page_url)
+
+
 # ---------------------------------------------------------------------------
 # Routes — Run / Stop / Stream output
 # ---------------------------------------------------------------------------
@@ -275,14 +380,22 @@ def run_office(name: str):
         if proc.poll() is None:
             raise HTTPException(status_code=409, detail=f"Office '{name}' is already running")
         del _running[name]
+        _office_output_queues.pop(name, None)
 
     try:
         office_dir = _find_office_dir(name)
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
+    # Pick up GMAIL_* / API keys written to .env while the server was running.
+    load_dotenv(BACKEND_DIR / ".env", override=False)
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
+    digest = _forecast_digest_for_subprocess(office_dir)
+    if digest:
+        env["OFFICE_WEATHERAPI_DIGEST"] = digest
+    else:
+        env.pop("OFFICE_WEATHERAPI_DIGEST", None)
     proc = subprocess.Popen(
         [sys.executable, "-u", "-m", "dissyslab.office.office_compiler", str(office_dir)],
         cwd=str(DISSYSLAB_ROOT),
@@ -302,6 +415,7 @@ def run_office(name: str):
     except Exception:
         pass
     _running[name] = proc
+    _start_office_stdout_bridge(name, proc)
     return {"status": "started", "pid": proc.pid}
 
 
@@ -321,26 +435,25 @@ def stop_office(name: str):
 
 @app.get("/api/offices/{name}/output")
 async def stream_output(name: str):
-    """SSE stream of a running office's stdout."""
+    """SSE stream of a running office's stdout (fed by a single stdout-draining thread)."""
 
     async def event_generator() -> AsyncGenerator[str, None]:
         proc = _running.get(name)
-        if not proc:
+        out_q = _office_output_queues.get(name)
+        if not proc or out_q is None:
             yield "data: [Office is not running]\n\n"
             return
 
         loop = asyncio.get_event_loop()
         while True:
-            line = await loop.run_in_executor(None, proc.stdout.readline)
-            if line:
-                safe = line.rstrip("\n").replace("\n", " ")
-                yield f"data: {safe}\n\n"
-            else:
-                if proc.poll() is not None:
-                    _running.pop(name, None)
-                    yield "data: [Process finished]\n\n"
-                    break
-                await asyncio.sleep(0.05)
+            line = await loop.run_in_executor(None, out_q.get)
+            if line is None:
+                _running.pop(name, None)
+                _office_output_queues.pop(name, None)
+                yield "data: [Process finished]\n\n"
+                break
+            safe = line.replace("\n", " ")
+            yield f"data: {safe}\n\n"
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -351,6 +464,7 @@ def office_status(name: str):
     if proc and proc.poll() is None:
         return {"running": True, "pid": proc.pid}
     _running.pop(name, None)
+    _office_output_queues.pop(name, None)
     return {"running": False}
 
 
@@ -367,7 +481,7 @@ ENV_FILE = Path(__file__).parent / ".env"
 
 def _write_env_file():
     """Persist watched env vars to .env so they survive backend restarts."""
-    watched = ["ANTHROPIC_API_KEY", "GMAIL_USER", "GMAIL_APP_PASSWORD"]
+    watched = ["ANTHROPIC_API_KEY", "GMAIL_USER", "GMAIL_APP_PASSWORD", "WEATHERAPI_KEY"]
     lines = []
     for key in watched:
         val = os.environ.get(key)
@@ -388,17 +502,121 @@ def set_env_vars(payload: EnvVarsPayload):
 @app.get("/api/env")
 def get_env_keys():
     """Return which credential keys are currently set (not their values)."""
-    watched = ["ANTHROPIC_API_KEY", "GMAIL_USER", "GMAIL_APP_PASSWORD"]
+    watched = ["ANTHROPIC_API_KEY", "GMAIL_USER", "GMAIL_APP_PASSWORD", "WEATHERAPI_KEY"]
     return {"set": {k: bool(os.environ.get(k)) for k in watched}}
+
+
+MAX_ATTACHMENT_BYTES = 28 * 1024 * 1024
+MAX_ATTACHMENTS_PER_MESSAGE = 12
+_ALLOWED_IMAGE_MEDIA = frozenset({"image/jpeg", "image/png", "image/gif", "image/webp"})
+
+
+class ChatAttachment(BaseModel):
+    """Single file from the UI: raw base64 (no data: URL prefix)."""
+
+    media_type: str
+    data: str
+    filename: str | None = None
 
 
 class ChatMessage(BaseModel):
     role: str
-    content: str
+    content: str = ""
+    attachments: list[ChatAttachment] = Field(default_factory=list)
 
 
 class ChatPayload(BaseModel):
     messages: list[ChatMessage]
+
+
+def _strip_data_url_b64(data: str) -> str:
+    s = (data or "").strip()
+    if s.startswith("data:"):
+        comma = s.find(",")
+        if comma != -1:
+            s = s[comma + 1 :]
+    return "".join(s.split())
+
+
+def _user_content_for_api(msg: ChatMessage) -> Union[str, list[dict[str, Any]]]:
+    """Anthropic `content`: string or list of content blocks (text, image, document)."""
+    text = (msg.content or "").strip()
+    atts = msg.attachments or []
+    if not atts:
+        return text if text else ""
+
+    if len(atts) > MAX_ATTACHMENTS_PER_MESSAGE:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Too many attachments (max {MAX_ATTACHMENTS_PER_MESSAGE} per message).",
+        )
+
+    blocks: list[dict[str, Any]] = []
+    if text:
+        blocks.append({"type": "text", "text": text})
+    else:
+        blocks.append(
+            {
+                "type": "text",
+                "text": (
+                    "The user attached images and/or PDFs with no separate text message. "
+                    "Use these files as context for their request."
+                ),
+            }
+        )
+
+    for i, a in enumerate(atts):
+        b64_clean = _strip_data_url_b64(a.data)
+        try:
+            raw = base64.b64decode(b64_clean, validate=False)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Attachment {i + 1}: invalid base64.") from e
+        if len(raw) > MAX_ATTACHMENT_BYTES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Attachment {i + 1}: too large (max {MAX_ATTACHMENT_BYTES // (1024 * 1024)} MB).",
+            )
+
+        mt = (a.media_type or "").strip().lower()
+        if mt in _ALLOWED_IMAGE_MEDIA:
+            blocks.append(
+                {
+                    "type": "image",
+                    "source": {"type": "base64", "media_type": mt, "data": b64_clean},
+                }
+            )
+        elif mt == "application/pdf":
+            doc: dict[str, Any] = {
+                "type": "document",
+                "source": {
+                    "type": "base64",
+                    "media_type": "application/pdf",
+                    "data": b64_clean,
+                },
+            }
+            if a.filename:
+                doc["title"] = a.filename[:256]
+            blocks.append(doc)
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Attachment {i + 1}: unsupported type {mt!r}. "
+                "Use image/jpeg, image/png, image/gif, image/webp, or application/pdf.",
+            )
+
+    return blocks
+
+
+def _anthropic_messages_from_payload(messages: list[ChatMessage]) -> list[dict[str, Any]]:
+    out: list[dict[str, Any]] = []
+    for m in messages:
+        if m.role == "assistant":
+            out.append({"role": "assistant", "content": m.content or ""})
+        elif m.role == "user":
+            out.append({"role": "user", "content": _user_content_for_api(m)})
+        else:
+            raise HTTPException(status_code=400, detail=f"Invalid message role: {m.role!r}")
+    return out
 
 
 def _office_context_prompt(office_dir: Path) -> str:
@@ -445,7 +663,14 @@ async def office_chat(name: str, payload: ChatPayload):
 
     base_context = CLAUDE_CONTEXT_PATH.read_text() if CLAUDE_CONTEXT_PATH.exists() else ""
     office_context = _office_context_prompt(office_dir)
-    system_prompt = base_context + "\n\n---\n\n## IMPORTANT — You are running inside a web UI\n\nDo NOT give terminal instructions. Output updated files using filename-in-fence format:\n\n```office.md\ncontent\n```\n\n```roles/analyst.md\ncontent\n```\n\n---\n\n" + office_context
+    system_prompt = base_context + "\n\n---\n\n## IMPORTANT — You are running inside a web UI\n\nDo NOT give terminal instructions. The user may attach images or PDFs as extra context — use them when updating files.\n\nOutput updated files using filename-in-fence format:\n\n```office.md\ncontent\n```\n\n```roles/analyst.md\ncontent\n```\n\n---\n\n" + office_context
+
+    try:
+        api_messages = _anthropic_messages_from_payload(payload.messages)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     client = anthropic.Anthropic(api_key=api_key)
 
@@ -456,7 +681,7 @@ async def office_chat(name: str, payload: ChatPayload):
                 model="claude-opus-4-5",
                 max_tokens=4096,
                 system=system_prompt,
-                messages=[{"role": m.role, "content": m.content} for m in payload.messages],
+                messages=api_messages,
             ) as stream:
                 for text in stream.text_stream:
                     full_response += text
@@ -522,7 +747,19 @@ When you are ready to output files, output ONLY the file contents in this exact 
 
 Use this format for EVERY file. Do not add "Save as" instructions, folder structures,
 or run commands. Just output the files in the format above and the UI will create them.
+
+The user may attach images (e.g. wardrobe or outfit photos) and/or PDF files as extra
+context in their messages. When present, use that visual and document context to infer
+requirements (sources, agent behavior, sinks) even if the user does not repeat those
+details in plain text.
 """
+
+    try:
+        api_messages = _anthropic_messages_from_payload(payload.messages)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
     client = anthropic.Anthropic(api_key=api_key)
 
@@ -533,7 +770,7 @@ or run commands. Just output the files in the format above and the UI will creat
                 model="claude-opus-4-5",
                 max_tokens=4096,
                 system=system_prompt,
-                messages=[{"role": m.role, "content": m.content} for m in payload.messages],
+                messages=api_messages,
             ) as stream:
                 for text in stream.text_stream:
                     full_response += text

@@ -15,6 +15,7 @@
 
 import sys
 import json
+import os
 import importlib
 from pathlib import Path
 
@@ -31,6 +32,7 @@ from dissyslab.office.utils import (
     validate,
     show_routing_table,
     expand_shortcut,
+    parse_agent_json_response,
 )
 
 
@@ -41,6 +43,66 @@ def _import_class(import_stmt, class_name):
     module_path = import_stmt.split("import")[0].replace("from ", "").strip()
     module = importlib.import_module(module_path)
     return getattr(module, class_name)
+
+
+def _weatherapi_table_digest(office: dict) -> str:
+    """
+    Fetch once from WeatherAPI.com and return a markdown table so every
+    Role system prompt can include the same numbers. Calendar messages do
+    not contain forecast fields; without this, agents only see ICS JSON.
+    """
+    spec = None
+    for src in office.get("sources") or []:
+        if src.get("name") == "weatherapi":
+            spec = src.get("args") or {}
+            break
+    if not spec:
+        return ""
+    env_var = spec.get("api_key_env", "WEATHERAPI_KEY")
+    key = os.environ.get(str(env_var), "")
+    if not key:
+        return ""
+    q = spec.get("q", "Pasadena")
+    raw_days = spec.get("days", 7)
+    try:
+        days = int(raw_days)
+    except (TypeError, ValueError):
+        days = 7
+    days = max(1, min(days, 14))
+    try:
+        from urllib.parse import urlencode
+        from urllib.request import urlopen
+
+        url = "https://api.weatherapi.com/v1/forecast.json?" + urlencode(
+            {
+                "key": key,
+                "q": str(q),
+                "days": days,
+                "aqi": "no",
+                "alerts": "no",
+            }
+        )
+        with urlopen(url, timeout=20) as resp:
+            data = json.loads(resp.read().decode())
+    except Exception:
+        return ""
+
+    forecast_days = (data.get("forecast") or {}).get("forecastday") or []
+    if not forecast_days:
+        return ""
+    lines = [
+        "| date | high °F | low °F | condition | rain % |",
+        "|------|---------|---------|-----------|--------|",
+    ]
+    for block in forecast_days:
+        date = block.get("date") or ""
+        d = block.get("day") or {}
+        desc = (d.get("condition") or {}).get("text") or ""
+        hi = d.get("maxtemp_f", "")
+        lo = d.get("mintemp_f", "")
+        rain = d.get("daily_chance_of_rain", "")
+        lines.append(f"| {date} | {hi} | {lo} | {desc} | {rain} |")
+    return "\n".join(lines)
 
 
 def _make_role_fn(role_name, agent_fn, valid_dests, default_dest):
@@ -55,7 +117,7 @@ def _make_role_fn(role_name, agent_fn, valid_dests, default_dest):
         text = json.dumps(msg) if isinstance(msg, dict) else str(msg)
         try:
             raw = agent_fn(text)
-            result = raw if isinstance(raw, dict) else json.loads(raw)
+            result = parse_agent_json_response(raw, default_dest, list(valid_dests))
             out = {**msg, **result}
             destination = result.get("send_to", default_dest)
             if isinstance(destination, list):
@@ -78,6 +140,10 @@ def build_and_run(roles, office, office_dir):
     """
     office_path = Path(office_dir)
 
+    digest = _weatherapi_table_digest(office)
+    if digest:
+        os.environ["OFFICE_WEATHERAPI_DIGEST"] = digest
+
     # Port index: role_name → {destination_name → out_N index}
     port_index = {
         role_name: {dest: i for i, dest in enumerate(role["sends_to"])}
@@ -96,6 +162,16 @@ def build_and_run(roles, office, office_dir):
             f'"text": "<content>"}}'
         )
         prompt = role_text.strip() + "\n" + contract
+        digest = os.environ.get("OFFICE_WEATHERAPI_DIGEST", "").strip()
+        if digest:
+            prompt += (
+                "\n\n---\nShared forecast context for this run (authoritative "
+                "numbers from WeatherAPI.com). Match each calendar event’s "
+                "**local calendar date** in **America/Los_Angeles** to the "
+                "**date** column below. **Do not** claim forecast or live data "
+                "is missing when this table is present.\n\n"
+                + digest
+            )
         agent_fn = ai_agent(prompt)
         role_fns[role_name] = _make_role_fn(
             role_name, agent_fn, valid_dests, default_dest
