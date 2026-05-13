@@ -130,6 +130,14 @@ def _split_sections(
                 sections.append(sec)
                 current = None
                 continue
+            # Any other ``#``-prefixed line is a comment. The grammar
+            # itself does not need them, but Pat-facing office files
+            # benefit from labels on the four edit slots (sources,
+            # parallel thinkers, writer, sinks). Skipping comments at
+            # the section-splitting level means they vanish before any
+            # section body is parsed, so per-section parsers do not
+            # need to know about them.
+            continue
 
         # Body-style header: "Sources:"
         m = re.match(r"^([A-Za-z_][A-Za-z0-9_ ]*?):\s*(.*)$", s)

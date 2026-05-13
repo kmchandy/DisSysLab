@@ -297,6 +297,33 @@ class TestParseErrors:
         msg = str(exc.value)
         assert "Did you mean 'Sources:'" in msg
 
+    def test_hash_comments_are_skipped(self, tmp_path):
+        """``#``-prefixed lines (not doc headers) are treated as comments.
+
+        Pat-facing offices annotate their four edit slots — sources,
+        parallel thinkers, writer, sinks — with comment lines. The
+        parser must silently ignore them at both top level and inside
+        section bodies.
+        """
+        (tmp_path / "office.md").write_text(
+            "# Office: comment_test\n"
+            "\n"
+            "# SOURCES — top-level comment above the first section.\n"
+            "Sources: hacker_news\n"
+            "\n"
+            "Agents:\n"
+            "# Inline comment inside the Agents section.\n"
+            "Alex is an analyst.\n"
+            "\n"
+            "Connections:\n"
+            "hacker_news's destination is Alex.\n"
+            "Alex's brief is hacker_news.\n"
+        )
+        spec = parse_office_dir(tmp_path)
+        assert spec.name == "comment_test"
+        assert [s.name for s in spec.sources] == ["hacker_news"]
+        assert [a.agent_name for a in spec.agents] == ["Alex"]
+
     # NOTE: tests that the parser checks role-file existence or
     # extracts ports from ``roles/*.md`` were removed in Step 4.
     # The parser no longer touches role files — those concerns moved
