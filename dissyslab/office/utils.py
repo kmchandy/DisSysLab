@@ -68,6 +68,16 @@ SOURCE_REGISTRY = {
         "class":  "WeatherSource",
     },
 
+    # ── WeatherAPI.com (multi-day forecast, requires API key) ─────────
+    # Use this when an office needs a 1–14 day forecast (one message
+    # per day) rather than current weather. Free tier available; set
+    # WEATHERAPI_KEY in your environment. Contributed by Nyasha.
+    "weatherapi": {
+        "type":   "weatherapi",
+        "import": "from dissyslab.components.sources.weatherapi_source import WeatherAPISource",
+        "class":  "WeatherAPISource",
+    },
+
     # ── Stocks (first-class, no key) ──────────────────────────────────
     "stocks": {
         "type":   "stocks",
