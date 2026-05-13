@@ -1,7 +1,8 @@
 # Situation Room
 
 > A continuously-running office that turns three world-news feeds
-> into a morning intelligence digest. Free, local, private.
+> into a morning intelligence digest. Pick your engine — free local
+> Qwen, hosted OpenRouter, Claude, or your own.
 
 ## What this office does
 
@@ -25,8 +26,12 @@ bbc_world, npr_news, al_jazeera  →  Sasha (dedup by URL)
                 └──── Greta (location) ──┘                       └─ revise  → discard
 ```
 
-Nine plain-English agents wired into a pipeline. No subscriptions.
-Your data never leaves your laptop.
+Nine plain-English agents wired into the sense → think → respond
+shape. Pick your engine: free local Qwen on Ollama (privacy, no
+recurring cost, slower) or hosted Qwen via OpenRouter (a few cents
+per run, finishes in minutes regardless of your laptop). See
+[`docs/PATTERN_sense_think_respond.md`](../../../../docs/PATTERN_sense_think_respond.md)
+for the pattern this office instantiates and how to remix it.
 
 ## Set it up in 10 minutes
 
@@ -63,7 +68,10 @@ carefully about each article. Subsequent runs reuse the model in
 memory and are faster. Output streams to your terminal as
 briefings are written.
 
-That's it. No API key, no recurring cost, no service to depend on.
+That's it. With Ollama you have no API key and no recurring cost, but
+expect a slow first run on local hardware. For faster turnaround on
+any laptop, set `DSL_BACKEND=openrouter` (a few cents per run) — see
+[`docs/LANGUAGE_MODELS.md`](../../../docs/LANGUAGE_MODELS.md).
 
 ## What's actually in office.md
 

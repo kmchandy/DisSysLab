@@ -64,7 +64,8 @@ die() {
 # ── 0. Banner ────────────────────────────────────────────────────────
 
 bold "DisSysLab installer"
-echo "Free AI assistants that do your information work — on your laptop."
+echo "Describe a continuous office of AI agents in plain English."
+echo "Sense → think → respond. Each agent uses the AI best suited to its job."
 echo
 
 # ── 1. Detect OS ─────────────────────────────────────────────────────
@@ -242,8 +243,14 @@ else
         echo "$MARKER"
         echo "export PATH=\"$DSL_HOME/venv/bin:\$PATH\""
         echo "export DSL_BACKEND=ollama"
+        # Tell Ollama to serve four inference requests in parallel.
+        # The default varies across Ollama versions; pinning it makes
+        # fan-out offices like situation_room behave consistently. The
+        # daemon picks this up at start time, not from arbitrary client
+        # shells — see the final banner for the restart command.
+        echo "export OLLAMA_NUM_PARALLEL=4"
     } >> "$RC_FILE"
-    green "Appended PATH + DSL_BACKEND to $RC_FILE"
+    green "Appended PATH + DSL_BACKEND + OLLAMA_NUM_PARALLEL to $RC_FILE"
 fi
 
 # ── Done ─────────────────────────────────────────────────────────────
@@ -275,11 +282,29 @@ fi
 
 echo "Then try your first office:"
 echo
-bold "       dsl run dissyslab/gallery/apps/periodic_brief/"
+bold "       dsl run periodic_brief         # fast, finishes in ~30 s"
+bold "       dsl run situation_room         # the headline, ~15–30 min on local Qwen"
 echo
-echo "Read the situation_room walkthrough to see what an office is and"
-echo "how to make one your own:"
+echo "Read the framework tour to see what an office is and how to make one your own:"
 bold "       https://github.com/kmchandy/DisSysLab/blob/main/dissyslab/gallery/apps/situation_room/README.md"
 echo
-echo "Welcome to free AI."
+
+# If we wired OLLAMA_NUM_PARALLEL above, tell the user to restart
+# Ollama so the daemon picks it up. Otherwise the export only
+# applies to client shells, which Ollama itself does not read.
+if [ "$MODIFY_RC" -eq 1 ] && [ "$PLATFORM" = "mac" ] && command -v brew >/dev/null 2>&1; then
+    echo "Tip: to make OLLAMA_NUM_PARALLEL=4 reach the Ollama daemon, restart it:"
+    bold "       brew services restart ollama"
+    echo "If situation_room feels slow even on OpenRouter, that step won't help —"
+    echo "the bottleneck is your laptop's local inference speed. See"
+    echo "docs/LANGUAGE_MODELS.md to point DSL_BACKEND at OpenRouter (~5 min setup,"
+    echo "~2–4 cents per run, no laptop required)."
+    echo
+elif [ "$MODIFY_RC" -eq 1 ] && [ "$PLATFORM" = "linux" ]; then
+    echo "Tip: to make OLLAMA_NUM_PARALLEL=4 reach the Ollama daemon:"
+    bold "       sudo systemctl restart ollama   # if Ollama runs under systemd"
+    echo
+fi
+
+echo "Welcome to DisSysLab — plain-English AI offices, your engine choice."
 echo
