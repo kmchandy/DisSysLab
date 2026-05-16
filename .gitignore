@@ -134,6 +134,22 @@ dissyslab/gallery/**/*.jsonl
 /morning_brief.md
 /your_brief.md
 
+# When `dsl run` is invoked from the repo root (typical during
+# development), gallery offices write their outputs there rather
+# than inside dissyslab/gallery/. The /*.jsonl glob is anchored to
+# the repo root, so it does NOT match tests/fixtures/*.jsonl or
+# any other nested JSONL we legitimately ship.
+/*.jsonl
+
+# periodic_brief now also produces a styled HTML brief, and
+# competitor_watch writes a markdown digest of the day.
+/brief.html
+/competitors.md
+
+# Personal scratch in examples/. Add specific names as Mani / Kamala
+# accumulate throwaway smoke-test scripts.
+examples/try.py
+
 # Logs
 logs/
 dev/

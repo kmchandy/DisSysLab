@@ -51,12 +51,18 @@ For a typical morning run (10-15 articles):
 | Sam (severity) | ~10 | Qwen (local) | $0 |
 | Tom (topic) | ~10 | Qwen (local) | $0 |
 | Greta (location) | ~10 | Qwen (local) | $0 |
-| Riley (writer) | ~10 | **Claude Sonnet 4.5** | **~$0.04** |
-| **Total** | ~50 | mixed | **~$0.04** |
+| Riley (writer) | ~10 | **Claude Sonnet** | a few cents |
+| **Total** | ~50 | mixed | a few cents |
 
-Running daily for a month: roughly $1.20. Compare to all-Claude
-at ~$14/month or all-local at $0. Pat picks the cost/quality
-point she wants.
+Running daily for a month: roughly pennies-to-low-dollars total —
+materially less than all-Claude (which is a few dollars to low tens
+of dollars per month) and more than all-local (which is $0 in API
+spend after the model download). Pat picks the cost/quality point
+she wants.
+
+> *Numbers above are rough estimates as of mid-2026. Anthropic and
+> other providers change their pricing — check the provider's
+> pricing page before relying on any specific figure here.*
 
 ## What makes this work
 

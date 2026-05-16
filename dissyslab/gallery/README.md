@@ -11,6 +11,16 @@ DisSysLab ships with two kinds of offices, organised two ways:
 The same framework runs everything in here — `dsl run <office_name>`
 from any directory.
 
+> **About cost safety.** Every office in this gallery stops after a
+> few polling cycles by default — long enough to see a real result,
+> short enough that you won't run up a bill by mistake. Each office's
+> `office.md` exposes the safety brakes as `max_articles=N` or
+> `max_readings=N`. Remove them only when you mean for an office to
+> run continuously.
+>
+> Any specific cost or runtime figures below are rough estimates,
+> likely to change as providers update their pricing.
+
 ---
 
 ## Apps that run on any laptop, no keys

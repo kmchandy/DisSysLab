@@ -97,15 +97,27 @@ an LLM editor.
 dsl run situation_room
 ```
 
-Speed and cost depends on the engine you picked at install time. You
-must verify these cost estimates -- they are only estimates and they
-are likely to have changed after this was written.
+Speed and cost depend on the engine you picked at install time:
 
 | Engine | Wall time per run | Cost per run |
 |---|---|---|
 | Ollama (local Qwen) | 15–30 min on a 32 GB Mac | $0 |
 | OpenRouter (Qwen-2.5-7B) | 1–5 min, any laptop | pennies |
-| Claude | 1–3 min, any laptop | 25–50¢ |
+| Claude | 1–3 min, any laptop | tens of cents |
+
+> *All cost and speed figures above are rough estimates and are
+> likely to change. Hosted-model providers update their prices
+> regularly — check the provider's pricing page before relying on
+> any specific number here. The framework is honest about which
+> backend you're using; the actual bill is between you and your
+> provider.*
+
+**About cost safety.** Every office in the gallery stops after a
+few polling cycles by default — long enough to see a real result,
+short enough that you won't accidentally rack up a bill. The
+`max_articles=N` and `max_readings=N` parameters in each office's
+`office.md` are the safety brakes. Remove them only when you mean
+for an office to run continuously (e.g. behind a cron).
 
 You should see a digest like
 [this sample](dev/experiments/situation_room_sample_day_1.md):

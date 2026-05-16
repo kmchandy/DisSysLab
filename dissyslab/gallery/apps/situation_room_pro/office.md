@@ -1,6 +1,6 @@
 # Office: situation_room_pro
 
-Sources: bbc_world(max_articles=1), npr_news(max_articles=1), al_jazeera(max_articles=1)
+Sources: bbc_world(max_articles=3), npr_news(max_articles=3), al_jazeera(max_articles=3)
 Sinks: intelligence_display, jsonl_recorder_briefing(path="briefings.jsonl")
 
 Agents:
