@@ -79,7 +79,32 @@ SOURCE_REGISTRY = {
     },
 
     # ── Stocks (first-class, no key) ──────────────────────────────────
+    # Use aliases when an office watches more than one ticker. Each
+    # alias is a distinct source instance backed by the same
+    # StocksSource class. Pair each alias with its own ticker:
+    #     stocks(ticker="AAPL"), stocks_2(ticker="NVDA"),
+    #     stocks_3(ticker="MSFT"), ...
     "stocks": {
+        "type":   "stocks",
+        "import": "from dissyslab.components.sources.stocks_source import StocksSource",
+        "class":  "StocksSource",
+    },
+    "stocks_2": {
+        "type":   "stocks",
+        "import": "from dissyslab.components.sources.stocks_source import StocksSource",
+        "class":  "StocksSource",
+    },
+    "stocks_3": {
+        "type":   "stocks",
+        "import": "from dissyslab.components.sources.stocks_source import StocksSource",
+        "class":  "StocksSource",
+    },
+    "stocks_4": {
+        "type":   "stocks",
+        "import": "from dissyslab.components.sources.stocks_source import StocksSource",
+        "class":  "StocksSource",
+    },
+    "stocks_5": {
         "type":   "stocks",
         "import": "from dissyslab.components.sources.stocks_source import StocksSource",
         "class":  "StocksSource",
@@ -129,6 +154,29 @@ SOURCE_REGISTRY = {
         "type":   "webhook",
         "import": "from dissyslab.components.sources.webhook_source import WebhookSource",
         "class":  "WebhookSource",
+    },
+
+    # ── Generic HTTP fetch + BeautifulSoup scrape ─────────────────────
+    # Different from `web` (which goes through an MCP server): runs
+    # in-process via requests + bs4. Use this when you want to watch
+    # an arbitrary URL whose page structure you know enough to give
+    # CSS selectors for. Several Pat-facing offices use this —
+    # competitor_watch, reading_list_processor.
+    "web_scraper": {
+        "type":   "web_scraper",
+        "import": "from dissyslab.components.sources.web_scraper import WebScraper",
+        "class":  "WebScraper",
+    },
+
+    # ── File / directory reader ───────────────────────────────────────
+    # Reads from a file or a directory of files and yields one message
+    # per item (line, record, or file, depending on format). Useful for
+    # any "watch a folder of saved URLs / papers / notes / receipts"
+    # workflow, and for replaying captured corpus data in tests.
+    "file_source": {
+        "type":   "file_source",
+        "import": "from dissyslab.components.sources.file_source import FileSource",
+        "class":  "FileSource",
     },
 }
 
@@ -229,6 +277,12 @@ SINK_REGISTRY = {
     "periodic_brief_sink": {
         "import": "from dissyslab.components.sinks.periodic_brief_sink import PeriodicBriefSink",
         "class":  "PeriodicBriefSink",
+        "args":   "named",
+        "call":   "run",
+    },
+    "periodic_brief_html_sink": {
+        "import": "from dissyslab.components.sinks.periodic_brief_html_sink import PeriodicBriefHtmlSink",
+        "class":  "PeriodicBriefHtmlSink",
         "args":   "named",
         "call":   "run",
     },

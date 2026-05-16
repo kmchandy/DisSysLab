@@ -643,8 +643,12 @@ GALLERY = Path(__file__).resolve().parents[3] / "dissyslab" / "gallery"
 # packages we do not require in CI. Skipped — the compiler still
 # parses them; we just cannot instantiate the source classes.
 _NEEDS_LIVE_CREDS = {
-    "calendar_briefing",   # GmailSource needs GMAIL_USER/GMAIL_APP_PASSWORD
-    "gmail_monitor",       # same
+    "calendar_briefing",   # legacy; calendar_briefing was removed
+    "gmail_monitor",       # GmailSource needs GMAIL_USER/GMAIL_APP_PASSWORD
+    "inbox_triage",        # same: gmail source
+    "ticket_router",       # slack_sink needs SLACK_ONCALL_WEBHOOK
+    "lead_qualifier",      # webhook_sink needs CRM_WEBHOOK_URL
+    "periodic_brief_pro",  # calendar + gmail credentials
     "org_situation_room",  # bluesky_jetstream needs websocket-client
 }
 

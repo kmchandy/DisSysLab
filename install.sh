@@ -11,22 +11,20 @@
 # Flags:
 #     --no-modify-rc   Don't touch your shell rc; print the export
 #                      lines and let you copy them yourself.
+#     --backend=NAME   Skip the interactive prompt and pick NAME.
+#                      One of: ollama, openrouter, claude.
 #
 # What it does, in order:
 #   1. Check Python 3.10+ is on PATH.
-#   2. Install Ollama (homebrew on Mac, official installer on Linux).
-#   3. Start the Ollama service if it isn't running.
-#   4. Pull qwen3:30b (the recommended local model, ~19 GB one-time).
-#   5. Create a Python venv at ~/.dissyslab/venv.
-#   6. pip install dissyslab into it.
-#   7. Append PATH + DSL_BACKEND to your shell rc (~/.zshrc or
-#      ~/.bashrc, depending on $SHELL). A backup is written next to
-#      the rc file before any edit. Pass --no-modify-rc to skip.
-#
-# What it does NOT do:
-#   - Configure paid LLM backends. Default is free local Qwen via
-#     Ollama. To use Claude or another paid model later, see
-#     docs/LANGUAGE_MODELS.md.
+#   2. Ask which AI backend you want (Ollama / OpenRouter / Claude).
+#   3. For Ollama: install it, start it, pull qwen3:30b (~19 GB).
+#      For OpenRouter / Claude: prompt for an API key (skippable).
+#   4. Create a Python venv at ~/.dissyslab/venv.
+#   5. pip install dissyslab into it.
+#   6. Append PATH + DSL_BACKEND (+ key + model) to your shell rc
+#      (~/.zshrc or ~/.bashrc, depending on $SHELL). A backup is
+#      written next to the rc file before any edit. Pass
+#      --no-modify-rc to skip.
 #
 # Tested on: macOS (Apple Silicon and Intel) and Ubuntu 22.04+.
 # Probably works on other Linuxes; ymmv.
@@ -37,9 +35,11 @@ set -euo pipefail
 # ── Parse flags ──────────────────────────────────────────────────────
 
 MODIFY_RC=1
+BACKEND_FLAG=""
 for arg in "$@"; do
     case "$arg" in
         --no-modify-rc) MODIFY_RC=0 ;;
+        --backend=*)    BACKEND_FLAG="${arg#--backend=}" ;;
         *) ;;
     esac
 done
@@ -61,6 +61,35 @@ die() {
     exit 1
 }
 
+# Read one line from the user's keyboard.
+#
+# `curl | bash` redirects stdin to the curl pipe, so plain `read` would
+# silently consume installer-script bytes. We always read from /dev/tty
+# instead, which is the controlling terminal regardless of how the
+# script was launched. If /dev/tty is unavailable (e.g. CI), we return
+# the empty string and the caller falls back to a default.
+prompt_user() {
+    local prompt_text="$1"
+    local default_value="${2:-}"
+    local reply=""
+    # `-r /dev/tty` is true even when /dev/tty exists but isn't actually
+    # connected to a terminal (e.g. headless CI). The reliable test is
+    # to try opening it for write and read inside an `if` block; if
+    # either fails we silently fall back to the default. Suppress
+    # stderr so the failing-open noise doesn't leak to the user.
+    if { printf "%s " "$prompt_text" > /dev/tty; } 2>/dev/null; then
+        if IFS= read -r reply < /dev/tty 2>/dev/null; then
+            :
+        else
+            reply=""
+        fi
+    fi
+    if [ -z "$reply" ]; then
+        reply="$default_value"
+    fi
+    printf '%s' "$reply"
+}
+
 # ── 0. Banner ────────────────────────────────────────────────────────
 
 bold "DisSysLab installer"
@@ -70,7 +99,7 @@ echo
 
 # ── 1. Detect OS ─────────────────────────────────────────────────────
 
-header "Step 1/7: Detect OS"
+header "Step 1/6: Detect OS"
 
 OS="$(uname -s)"
 case "$OS" in
@@ -81,7 +110,7 @@ esac
 
 # ── 2. Check Python 3.10+ ────────────────────────────────────────────
 
-header "Step 2/7: Check Python 3.10+"
+header "Step 2/6: Check Python 3.10+"
 
 if ! command -v python3 >/dev/null 2>&1; then
     die "python3 not found. Install Python 3.10 or newer from https://www.python.org/downloads/ then re-run this installer."
@@ -95,75 +124,150 @@ if [ "$PYMAJ" -lt 3 ] || { [ "$PYMAJ" -eq 3 ] && [ "$PYMIN" -lt 10 ]; }; then
 fi
 green "Python $PYV is fine"
 
-# ── 3. Install Ollama ────────────────────────────────────────────────
+# ── 3. Choose backend ────────────────────────────────────────────────
 
-header "Step 3/7: Install Ollama (free local AI runtime)"
+header "Step 3/6: Choose an AI backend"
 
-if command -v ollama >/dev/null 2>&1; then
-    green "Ollama is already installed"
+BACKEND=""
+API_KEY=""
+
+# Default model identifiers for each hosted option. Kept in lockstep
+# with dissyslab.backends.openrouter_backend.DEFAULT_MODEL and
+# dissyslab.backends.anthropic_backend.DEFAULT_MODEL so the rc-file
+# export agrees with the library's hardcoded fallback.
+OPENROUTER_DEFAULT_MODEL="qwen/qwen-2.5-7b-instruct"
+
+if [ -n "$BACKEND_FLAG" ]; then
+    BACKEND="$BACKEND_FLAG"
+    green "Backend selected via --backend=$BACKEND"
 else
-    if [ "$PLATFORM" = "mac" ]; then
-        if ! command -v brew >/dev/null 2>&1; then
-            die "Homebrew is not installed. The simplest install path on Mac is:
+    echo "DisSysLab can use three different AI engines. Pick one — you can"
+    echo "change later by editing your shell rc file."
+    echo
+    bold  "  1) Ollama (free, local, slow)"
+    echo  "     Runs entirely on your laptop. Downloads ~19 GB of model"
+    echo  "     weights one time. A typical office takes 15–60 min per run."
+    echo  "     No API key required."
+    echo
+    bold  "  2) OpenRouter (a few cents per run, fast, requires key)"
+    echo  "     Uses Qwen-2.5-7B hosted on OpenRouter. Office runs typically"
+    echo  "     finish in 1–5 minutes. Costs pennies per run. You'll need"
+    echo  "     to create an API key at https://openrouter.ai/keys."
+    echo
+    bold  "  3) Claude (more expensive, fastest, requires key)"
+    echo  "     Uses Anthropic's Claude. Highest-quality output, ~25–50¢ per"
+    echo  "     office run. You'll need a key from https://console.anthropic.com."
+    echo
+    while [ -z "$BACKEND" ]; do
+        CHOICE="$(prompt_user 'Enter 1, 2, or 3 [default: 1]:' '1')"
+        case "$CHOICE" in
+            1|ollama)     BACKEND="ollama" ;;
+            2|openrouter) BACKEND="openrouter" ;;
+            3|claude|anthropic) BACKEND="claude" ;;
+            *)
+                yellow "Please enter 1, 2, or 3."
+                ;;
+        esac
+    done
+    green "Backend: $BACKEND"
+fi
+
+# For the hosted backends, offer to capture an API key now. We let
+# Pat skip — sometimes she hasn't signed up yet and wants to come back
+# later. In that case we still write DSL_BACKEND so the framework
+# fails with a useful "key missing" message instead of silently
+# falling back to Ollama.
+if [ "$BACKEND" = "openrouter" ]; then
+    echo
+    echo "OpenRouter API key (starts with 'sk-or-v1-')."
+    echo "Leave blank to skip — you can export it later with:"
+    bold  "       export OPENROUTER_API_KEY='sk-or-v1-...'"
+    API_KEY="$(prompt_user 'Paste your OpenRouter key (or press Enter to skip):' '')"
+    if [ -n "$API_KEY" ]; then
+        green "OpenRouter key captured"
+    else
+        yellow "No key entered — DSL_BACKEND will be set, but you must export OPENROUTER_API_KEY before running any office."
+    fi
+elif [ "$BACKEND" = "claude" ]; then
+    echo
+    echo "Anthropic API key (starts with 'sk-ant-')."
+    echo "Leave blank to skip — you can export it later with:"
+    bold  "       export ANTHROPIC_API_KEY='sk-ant-...'"
+    API_KEY="$(prompt_user 'Paste your Anthropic key (or press Enter to skip):' '')"
+    if [ -n "$API_KEY" ]; then
+        green "Anthropic key captured"
+    else
+        yellow "No key entered — DSL_BACKEND will be set, but you must export ANTHROPIC_API_KEY before running any office."
+    fi
+fi
+
+# ── 4. Backend-specific install ──────────────────────────────────────
+
+header "Step 4/6: Install backend dependencies"
+
+if [ "$BACKEND" = "ollama" ]; then
+    # Ollama install
+    if command -v ollama >/dev/null 2>&1; then
+        green "Ollama is already installed"
+    else
+        if [ "$PLATFORM" = "mac" ]; then
+            if ! command -v brew >/dev/null 2>&1; then
+                die "Homebrew is not installed. The simplest install path on Mac is:
   /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"
 Run that, then re-run this installer. (Or install Ollama manually from https://ollama.com/download.)"
-        fi
-        bold "Installing Ollama via homebrew..."
-        brew install ollama
-    else
-        bold "Installing Ollama via the official Linux installer..."
-        curl -fsSL https://ollama.com/install.sh | sh
-    fi
-    green "Ollama installed"
-fi
-
-# ── 4. Start Ollama service ──────────────────────────────────────────
-
-header "Step 4/7: Verify Ollama is running"
-
-if ! curl -sSf -o /dev/null http://127.0.0.1:11434/api/version 2>/dev/null; then
-    yellow "Ollama service is not running. Starting it..."
-    if [ "$PLATFORM" = "mac" ]; then
-        # On Mac, the brew-installed ollama runs as a foreground command.
-        # Start it in the background; user can launch the app manually
-        # for persistence after this install.
-        ollama serve >/tmp/ollama.log 2>&1 &
-        sleep 2
-    else
-        # On Linux the official installer registers a systemd unit.
-        if command -v systemctl >/dev/null 2>&1; then
-            sudo systemctl start ollama || true
-            sleep 2
+            fi
+            bold "Installing Ollama via homebrew..."
+            brew install ollama
         else
+            bold "Installing Ollama via the official Linux installer..."
+            curl -fsSL https://ollama.com/install.sh | sh
+        fi
+        green "Ollama installed"
+    fi
+
+    # Start service
+    if ! curl -sSf -o /dev/null http://127.0.0.1:11434/api/version 2>/dev/null; then
+        yellow "Ollama service is not running. Starting it..."
+        if [ "$PLATFORM" = "mac" ]; then
             ollama serve >/tmp/ollama.log 2>&1 &
             sleep 2
+        else
+            if command -v systemctl >/dev/null 2>&1; then
+                sudo systemctl start ollama || true
+                sleep 2
+            else
+                ollama serve >/tmp/ollama.log 2>&1 &
+                sleep 2
+            fi
         fi
     fi
-fi
 
-if curl -sSf -o /dev/null http://127.0.0.1:11434/api/version 2>/dev/null; then
-    green "Ollama is responding on port 11434"
+    if curl -sSf -o /dev/null http://127.0.0.1:11434/api/version 2>/dev/null; then
+        green "Ollama is responding on port 11434"
+    else
+        die "Ollama service did not start. Try running 'ollama serve' in another terminal and re-run this installer."
+    fi
+
+    # Pull the model
+    if ollama list 2>/dev/null | grep -q '^qwen3:30b'; then
+        green "qwen3:30b is already downloaded"
+    else
+        yellow "Downloading qwen3:30b — about 19 GB, takes 20–40 minutes on a typical home connection."
+        yellow "This is a one-time cost. Pat gets free AI forever after this."
+        echo
+        ollama pull qwen3:30b
+        green "qwen3:30b downloaded"
+    fi
 else
-    die "Ollama service did not start. Try running 'ollama serve' in another terminal and re-run this installer."
-fi
-
-# ── 5. Pull the recommended model ────────────────────────────────────
-
-header "Step 5/7: Pull Qwen3:30b model"
-
-if ollama list 2>/dev/null | grep -q '^qwen3:30b'; then
-    green "qwen3:30b is already downloaded"
-else
-    yellow "Downloading qwen3:30b — about 19 GB, takes 20–40 minutes on a typical home connection."
-    yellow "This is a one-time cost. Pat gets free AI forever after this."
+    green "Skipping Ollama install — using $BACKEND. No ~19 GB download."
     echo
-    ollama pull qwen3:30b
-    green "qwen3:30b downloaded"
+    echo "(If you later want to add a free local fallback, install Ollama"
+    echo "from https://ollama.com/download and run 'ollama pull qwen3:30b'.)"
 fi
 
-# ── 6. Install DisSysLab ─────────────────────────────────────────────
+# ── 5. Install DisSysLab ─────────────────────────────────────────────
 
-header "Step 6/7: Install DisSysLab into a venv"
+header "Step 5/6: Install DisSysLab into a venv"
 
 DSL_HOME="${DSL_HOME:-$HOME/.dissyslab}"
 mkdir -p "$DSL_HOME"
@@ -177,9 +281,9 @@ fi
 
 green "DisSysLab installed at $DSL_HOME/venv"
 
-# ── 7. Update shell config ──────────────────────────────────────────
+# ── 6. Update shell config ──────────────────────────────────────────
 
-header "Step 7/7: Update your shell config"
+header "Step 6/6: Update your shell config"
 
 # Detect the right rc file from $SHELL. Mac users mostly run zsh
 # (Apple's default since macOS 10.15); Linux users mostly run bash.
@@ -203,16 +307,68 @@ esac
 # Marker the installer uses to recognise its own block on re-runs.
 MARKER="# Added by DisSysLab installer"
 
-print_export_lines() {
-    bold "       export PATH=\"$DSL_HOME/venv/bin:\$PATH\""
-    bold "       export DSL_BACKEND=ollama"
+# Build the list of export lines we want to append, depending on the
+# backend the user chose. The list is rendered identically for the
+# manual-instructions path and for the rc-file-append path so Pat
+# sees the same lines in both cases.
+build_export_lines_bash() {
+    echo "export PATH=\"$DSL_HOME/venv/bin:\$PATH\""
+    echo "export DSL_BACKEND=$BACKEND"
+    case "$BACKEND" in
+        ollama)
+            # The daemon picks up OLLAMA_NUM_PARALLEL at start time,
+            # not from arbitrary client shells. The final banner
+            # tells the user how to restart the daemon.
+            echo "export OLLAMA_NUM_PARALLEL=4"
+            ;;
+        openrouter)
+            echo "export OPENROUTER_MODEL=$OPENROUTER_DEFAULT_MODEL"
+            if [ -n "$API_KEY" ]; then
+                echo "export OPENROUTER_API_KEY='$API_KEY'"
+            fi
+            ;;
+        claude)
+            if [ -n "$API_KEY" ]; then
+                echo "export ANTHROPIC_API_KEY='$API_KEY'"
+            fi
+            ;;
+    esac
+}
+
+build_export_lines_fish() {
+    echo "set -gx PATH $DSL_HOME/venv/bin \$PATH"
+    echo "set -gx DSL_BACKEND $BACKEND"
+    case "$BACKEND" in
+        ollama)
+            echo "set -gx OLLAMA_NUM_PARALLEL 4"
+            ;;
+        openrouter)
+            echo "set -gx OPENROUTER_MODEL $OPENROUTER_DEFAULT_MODEL"
+            if [ -n "$API_KEY" ]; then
+                echo "set -gx OPENROUTER_API_KEY '$API_KEY'"
+            fi
+            ;;
+        claude)
+            if [ -n "$API_KEY" ]; then
+                echo "set -gx ANTHROPIC_API_KEY '$API_KEY'"
+            fi
+            ;;
+    esac
 }
 
 print_manual_instructions() {
     echo
-    yellow "Add this to your shell config and restart your terminal:"
+    yellow "Add these lines to your shell config and restart your terminal:"
     echo
-    print_export_lines
+    if [ "${RC_FILE##*/}" = "config.fish" ]; then
+        build_export_lines_fish | while IFS= read -r line; do
+            bold "       $line"
+        done
+    else
+        build_export_lines_bash | while IFS= read -r line; do
+            bold "       $line"
+        done
+    fi
     echo
 }
 
@@ -223,17 +379,11 @@ elif [ -z "$RC_FILE" ]; then
     yellow "Couldn't detect your shell from \$SHELL=${SHELL:-(unset)}."
     print_manual_instructions
 elif [ -f "$RC_FILE" ] && grep -qF "$MARKER" "$RC_FILE"; then
-    green "Shell config already has DisSysLab lines — skipping ($RC_FILE)"
+    yellow "Shell config already has a DisSysLab block — leaving it alone ($RC_FILE)."
+    echo
+    echo "If you want to switch backend, edit $RC_FILE manually or remove"
+    echo "the DisSysLab block and re-run this installer."
 elif [ "${RC_FILE##*/}" = "config.fish" ]; then
-    # fish uses a different export syntax; surface manual instructions
-    # rather than guess.
-    yellow "Detected fish shell — please add this to $RC_FILE:"
-    echo
-    bold "       set -gx PATH $DSL_HOME/venv/bin \$PATH"
-    bold "       set -gx DSL_BACKEND ollama"
-    echo
-else
-    # Back up first so a paranoid Pat can compare.
     if [ -f "$RC_FILE" ]; then
         cp "$RC_FILE" "$RC_FILE.dissyslab-backup"
         yellow "Backed up $RC_FILE to $RC_FILE.dissyslab-backup"
@@ -241,16 +391,20 @@ else
     {
         echo ""
         echo "$MARKER"
-        echo "export PATH=\"$DSL_HOME/venv/bin:\$PATH\""
-        echo "export DSL_BACKEND=ollama"
-        # Tell Ollama to serve four inference requests in parallel.
-        # The default varies across Ollama versions; pinning it makes
-        # fan-out offices like situation_room behave consistently. The
-        # daemon picks this up at start time, not from arbitrary client
-        # shells — see the final banner for the restart command.
-        echo "export OLLAMA_NUM_PARALLEL=4"
+        build_export_lines_fish
     } >> "$RC_FILE"
-    green "Appended PATH + DSL_BACKEND + OLLAMA_NUM_PARALLEL to $RC_FILE"
+    green "Appended DisSysLab block to $RC_FILE"
+else
+    if [ -f "$RC_FILE" ]; then
+        cp "$RC_FILE" "$RC_FILE.dissyslab-backup"
+        yellow "Backed up $RC_FILE to $RC_FILE.dissyslab-backup"
+    fi
+    {
+        echo ""
+        echo "$MARKER"
+        build_export_lines_bash
+    } >> "$RC_FILE"
+    green "Appended DisSysLab block to $RC_FILE"
 fi
 
 # ── Done ─────────────────────────────────────────────────────────────
@@ -282,27 +436,39 @@ fi
 
 echo "Then try your first office:"
 echo
-bold "       dsl run periodic_brief         # fast, finishes in ~30 s"
-bold "       dsl run situation_room         # the headline, ~15–30 min on local Qwen"
+if [ "$BACKEND" = "ollama" ]; then
+    bold "       dsl run periodic_brief         # fast, no LLM calls, ~10 s"
+    bold "       dsl run situation_room         # the headline, ~15–30 min on local Qwen"
+else
+    bold "       dsl run periodic_brief         # fast, no LLM calls, ~10 s"
+    bold "       dsl run situation_room         # the headline, ~1–5 min on $BACKEND"
+fi
 echo
 echo "Read the framework tour to see what an office is and how to make one your own:"
 bold "       https://github.com/kmchandy/DisSysLab/blob/main/dissyslab/gallery/apps/situation_room/README.md"
 echo
 
-# If we wired OLLAMA_NUM_PARALLEL above, tell the user to restart
-# Ollama so the daemon picks it up. Otherwise the export only
-# applies to client shells, which Ollama itself does not read.
-if [ "$MODIFY_RC" -eq 1 ] && [ "$PLATFORM" = "mac" ] && command -v brew >/dev/null 2>&1; then
+if [ "$BACKEND" = "ollama" ] && [ "$MODIFY_RC" -eq 1 ] && [ "$PLATFORM" = "mac" ] && command -v brew >/dev/null 2>&1; then
     echo "Tip: to make OLLAMA_NUM_PARALLEL=4 reach the Ollama daemon, restart it:"
     bold "       brew services restart ollama"
-    echo "If situation_room feels slow even on OpenRouter, that step won't help —"
-    echo "the bottleneck is your laptop's local inference speed. See"
-    echo "docs/LANGUAGE_MODELS.md to point DSL_BACKEND at OpenRouter (~5 min setup,"
-    echo "~2–4 cents per run, no laptop required)."
+    echo "If situation_room feels slow even after that, the bottleneck is your"
+    echo "laptop's local inference speed. Re-run this installer and pick (2)"
+    echo "OpenRouter for a much faster — and still cheap — path."
     echo
-elif [ "$MODIFY_RC" -eq 1 ] && [ "$PLATFORM" = "linux" ]; then
+elif [ "$BACKEND" = "ollama" ] && [ "$MODIFY_RC" -eq 1 ] && [ "$PLATFORM" = "linux" ]; then
     echo "Tip: to make OLLAMA_NUM_PARALLEL=4 reach the Ollama daemon:"
     bold "       sudo systemctl restart ollama   # if Ollama runs under systemd"
+    echo
+fi
+
+if [ "$BACKEND" != "ollama" ] && [ -z "$API_KEY" ]; then
+    echo
+    yellow "Reminder: you didn't paste an API key. Before you run an office,"
+    if [ "$BACKEND" = "openrouter" ]; then
+        yellow "export OPENROUTER_API_KEY in this terminal (or add it to $RC_FILE)."
+    else
+        yellow "export ANTHROPIC_API_KEY in this terminal (or add it to $RC_FILE)."
+    fi
     echo
 fi
 

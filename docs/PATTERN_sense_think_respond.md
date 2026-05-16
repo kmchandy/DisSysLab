@@ -1,78 +1,13 @@
-# The sense → think → respond pattern
+# The Sense → Think → Respond Pattern
 
-DisSysLab offices follow a small handful of shapes. The most useful
-one is **sense → think → respond**: the office watches a stream of
-inputs, thinks about each one (often in parallel), and writes a
-result somewhere. Most of what Pat builds — news monitoring, inbox
-triage, ticket routing, competitor watch, lead qualification, RFQ
-processing, alert filtering — instantiates this pattern with
-different sources, thinkers, and sinks.
+Some patterns of agent networks are used in a variety of applications.
+One pattern is **sense → think → respond**: agents moitor streams of
+data sources, a collection of parallel agents analyze the data in the streams,
+and other agents compose responses and send responses to consoles, devices and actuators.
+You build an app by merely filling four slots of the pattern.
 
-This page names the pattern, shows the four edit slots inside a
-working office, lists the gallery instances that already exist, and
-says where the pattern stops fitting.
 
----
-
-## The three verbs
-
-**Sense.** Where the office listens. RSS feeds, email, webhooks,
-social streams, file watchers, periodic API polls, calendar reads.
-A `Sources:` line in office.md names them; the framework ships a
-library of source components you refer to by name
-(`bbc_world`, `gmail`, `weather`, `webhook`, `mcp_source`, …).
-
-**Think.** What the office does with each item it sensed.
-Classifying, extracting structured fields, summarising, scoring,
-deciding, routing. Some thinkers run in *parallel* — every item
-gets four annotations at once. Others run in *sequence* — a writer
-composes a draft, an evaluator decides whether to publish. When
-the problem needs it, a thinker can route an item back to an
-earlier thinker, forming a *feedback loop*. The same plain-English
-grammar covers all three.
-
-**Respond.** Where the office writes. A markdown file Pat opens in
-the morning, a Slack channel, a Notion page, a JSONL archive, an
-outbound webhook, another office downstream. A `Sinks:` line in
-office.md names them; the framework ships a sink library too.
-
-The three verbs are general enough to cover one-way pipelines
-(*news → briefing*), branching responses (*publish vs. revise vs.
-discard*), and feedback loops (*writer ↔ editor*). Anything that
-fits the shape "sense the world, decide, write somewhere" fits
-the pattern.
-
----
-
-## The four edit slots
-
-Inside a working office that follows this pattern, you change one or
-more of just four things to make it yours:
-
-1. **Sources.** Different feeds. Add, remove, replace.
-2. **Parallel thinkers.** What annotations are extracted per item.
-   Add a sentiment thinker. Replace `geolocator` with
-   `customer_tier_classifier`. Drop `severity_classifier` if
-   irrelevant.
-3. **Writer.** The prompt that composes the output. Switch from
-   "intelligence briefing" to "support reply" to "executive
-   summary" to "competitor digest."
-4. **Sinks.** Where output lands.
-
-Everything else — the deduplicator, the synchronizer that fans the
-parallel thinkers back together, the evaluator that gates
-publish-worthiness, the wiring between them — is scaffolding. You
-rarely touch it.
-
-Open
-[`dissyslab/gallery/apps/situation_room/office.md`](../dissyslab/gallery/apps/situation_room/office.md)
-and you'll see the four slots labelled with `# SLOT N:` comments.
-That annotated office is your starting point for any office in the
-family.
-
----
-
-## A schematic
+## A Schematic of the Pattern
 
 ```
         ┌──────────┐ ┌──────────┐ ┌──────────┐
@@ -81,7 +16,7 @@ SENSE   │ source 1 │ │ source 2 │ │ source 3 │     (SLOT 1)
              └────────────┼────────────┘
                           ▼
                   ┌───────────────┐
-                  │ deduplicator  │   ← scaffolding
+                  │ deduplicator  │   ← Gate keeper for thinkers
                   └───────┬───────┘
                           │
         ┌─────────────────┼─────────────────┐
@@ -92,16 +27,14 @@ THINK   ┌──────────┐ ┌──────────�
              └────────────┼────────────┘
                           ▼
                   ┌───────────────┐
-                  │ synchronizer  │   ← scaffolding
+                  │ synchronizer  │   ← Merge streams
                   └───────┬───────┘
                           ▼
                   ┌───────────────┐
                   │    writer     │              (SLOT 3)
                   └───────┬───────┘
                           ▼
-                  ┌───────────────┐
-                  │   evaluator   │   ← scaffolding
-                  └───┬───────┬───┘
+                      ┬───────┬
                 publish     revise/discard
                       ▼          ▼
 RESPOND        ┌──────────┐ ┌──────────┐         (SLOT 4)
@@ -109,9 +42,73 @@ RESPOND        ┌──────────┐ ┌────────�
                └──────────┘ └──────────┘
 ```
 
-A feedback edge from the evaluator back to the writer turns the
-shape into a revise loop — same grammar, same office, one extra
-line in `Connections:`.
+
+
+## Example: Situation Room 
+```
+        ┌──────────┐ ┌──────────┐ ┌──────────┐
+SENSE   │ bbc_news │ │ npr_news │ │  al_jaz  │     (SLOT 1)
+        └────┬─────┘ └────┬─────┘ └────┬─────┘
+             └────────────┼────────────┘
+                          ▼
+                  ┌───────────────┐
+                  │ deduplicator  │   ← Gate keeper for thinkers
+                  └───────┬───────┘
+                          │
+        ┌─────────────────┼─────────────────┐
+        ▼                 ▼                 ▼
+THINK   ┌──────────┐ ┌──────────┐ ┌──────────┐
+        │ extract  | |determine | |  topic   |
+        |entities  │ │ urgency  │ | tagger   |   (SLOT 2)
+        └────┬─────┘ └────┬─────┘ └────┬─────┘
+             └────────────┼────────────┘
+                          ▼
+                  ┌───────────────┐
+                  │ synchronizer  │   ← Merge streams
+                  └───────┬───────┘
+                          ▼
+                  ┌───────────────┐
+                  │    writer     │              (SLOT 3)
+                  └───────┬───────┘
+                          ▼
+                      ┬───────┬
+                publish     revise/discard
+                      ▼          ▼
+RESPOND        ┌──────────┐ ┌──────────┐        
+               │ display  │ │ archiv   │          (Slot 4)
+               └──────────┘ └──────────┘
+```
+
+---
+
+## The four edit slots
+
+Inside a working office that follows this pattern, you change one or
+more of just four things to make it yours:
+
+1. **Sources and Sinks** Add, remove, modify sources that the office
+  monitors and the destinations of office outputs.
+2. **Parallel thinkers.** The operations executed in parallel per item.
+   For instance: determine sentiment. Replace `geolocator` with
+   `customer_tier_classifier`. Drop `severity_classifier`.
+3. **Writer.** The prompt that composes the output. Switch from
+   "intelligence briefing" to "support reply" to "executive
+   summary" to "competitor digest."
+
+The gate and the merge are the same in instances of this pattern.
+You don't modify them except to specify the names of the inboxes of
+the merge.
+
+Open
+[`dissyslab/gallery/apps/situation_room/office.md`](../dissyslab/gallery/apps/situation_room/office.md)
+and you'll see the four slots explained in situation_room/README.md's 'Make it yours' section. 
+
+
+labelled with `# SLOT N:` comments.
+That annotated office is your starting point for any office in the
+family.
+
+---
 
 ---
 
@@ -142,24 +139,23 @@ is a known-good starting point you can `dsl init` and edit.
 
 ---
 
-## How to remix
+## How to build offices in this family
 
 To build a new office in this family:
 
 1. Run `dsl list`; pick the closest gallery instance to your use case.
 2. `dsl init <office_name> my_office`.
 3. Open `my_office/office.md` in your editor.
-4. Find the four `# SLOT N:` comments.
-5. Edit each slot for your domain:
+4. Edit each slot for your domain:
    - SLOT 1 (sources): point at the feeds you want to watch.
    - SLOT 2 (parallel thinkers): swap or extend the extractors.
    - SLOT 3 (writer): edit `roles/writer.md` for the style of
      output you want.
    - SLOT 4 (sinks): pick where the output goes.
-6. `dsl run .`
+5. `dsl run .`
 
-The scaffolding (deduplicator, synchronizer, evaluator, the wiring
-between them) stays the same. The result is a new office, written
+The gate/deduplicator and synchronizer agents and the wiring
+between them stays the same. The result is a new office, written
 in plain English, that does what you need.
 
 ---

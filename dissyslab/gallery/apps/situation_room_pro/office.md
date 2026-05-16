@@ -1,7 +1,7 @@
 # Office: situation_room_pro
 
 Sources: bbc_world(max_articles=1), npr_news(max_articles=1), al_jazeera(max_articles=1)
-Sinks: intelligence_display, jsonl_recorder_briefing(path="briefings.jsonl"), jsonl_recorder_discard(path="rejected.jsonl")
+Sinks: intelligence_display, jsonl_recorder_briefing(path="briefings.jsonl")
 
 Agents:
 Sasha is a deduplicator(by="url").
@@ -11,7 +11,6 @@ Tom is a topic_tagger.
 Greta is a geolocator.
 Sync is a synchronizer.
 Riley is a writer.
-Jordan is an evaluator.
 
 Connections:
 bbc_world's destination is Sasha.
@@ -26,6 +25,4 @@ Tom's out is Sync's topic.
 Greta's out is Sync's location.
 
 Sync's out is Riley.
-Riley's out is Jordan.
-Jordan's publish is intelligence_display, jsonl_recorder_briefing.
-Jordan's revise is jsonl_recorder_discard.
+Riley's out is intelligence_display, jsonl_recorder_briefing.

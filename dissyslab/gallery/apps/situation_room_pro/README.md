@@ -18,8 +18,8 @@ moving them to Claude is small. The writer, generating prose, is
 the role that benefits most from a strong model.
 
 `situation_room_pro` makes exactly that one decision change:
-Riley uses Claude, the four extractors stay on Qwen, the
-synchronizer + evaluator + Sasha (deduplicator) run as before.
+Riley uses Claude, the four extractors stay on Qwen, and the
+synchronizer + Sasha (deduplicator) run as before.
 
 ## Setup
 
@@ -27,7 +27,7 @@ You need both backends configured:
 
 ```bash
 # Free local backend (default) — your office runs on this for
-# four out of six LLM-driven roles.
+# four out of five LLM-driven roles.
 ollama pull qwen3:30b
 export DSL_BACKEND=ollama
 
@@ -52,8 +52,7 @@ For a typical morning run (10-15 articles):
 | Tom (topic) | ~10 | Qwen (local) | $0 |
 | Greta (location) | ~10 | Qwen (local) | $0 |
 | Riley (writer) | ~10 | **Claude Sonnet 4.5** | **~$0.04** |
-| Jordan (evaluator) | ~10 | Qwen (local) | $0 |
-| **Total** | ~60 | mixed | **~$0.04** |
+| **Total** | ~50 | mixed | **~$0.04** |
 
 Running daily for a month: roughly $1.20. Compare to all-Claude
 at ~$14/month or all-local at $0. Pat picks the cost/quality

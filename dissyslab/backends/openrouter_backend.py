@@ -66,21 +66,25 @@ from typing import Any, Dict, Optional
 import requests
 
 
-DEFAULT_MODEL = "qwen/qwen3.5-35b-a3b"
+DEFAULT_MODEL = "qwen/qwen-2.5-7b-instruct"
 """Default model when neither ``OPENROUTER_MODEL`` nor the per-call
 ``model=`` kwarg is set.
 
-Why this one (as of 2026-05): Qwen3.5-35B-A3B is the Qwen team's
-current open-weight MoE — 35B total parameters, 3B active per token
-via routing, native vision-language hybrid with linear attention.
-Quality is comparable to the dense Qwen3.5-27B; inference cost per
-call is the much cheaper 3B-active path. Weights are openly
-published on HuggingFace, so Pat can run the same model locally
-once Ollama adds it (until then she runs the architecturally
-similar Qwen3-30B-A3B, available today as ``qwen3:30b`` on Ollama).
+Why this one (as of 2026-05): Qwen2.5-7B-Instruct is the sweet spot
+on OpenRouter for the s→t→r workloads in this framework. Empirically,
+a single-article-per-source situation_room run finishes in well under
+a minute, vs. the 5–6 minutes that the larger Qwen3.5-35B-A3B takes
+for the same workload. Quality on entity extraction, sentiment, and
+topic tagging is more than good enough for the gallery offices.
 
-Pricing on OpenRouter: $0.25 / M input tokens, $2 / M output
-tokens. Phase 1 experiments cost well under $5 total.
+If you need higher reasoning quality (e.g. for the writer role in
+periodic_brief_pro or situation_room_pro), override per-role by
+setting ``Riley uses claude-sonnet-4-5`` in office.md, or globally
+by exporting ``OPENROUTER_MODEL=anthropic/claude-sonnet-4-5``.
+
+Pricing on OpenRouter: roughly $0.05 / M input tokens, $0.10 / M
+output tokens for Qwen2.5-7B. A typical Phase 1 run is well under
+a penny.
 
 Override per-experiment with ``OPENROUTER_MODEL`` env var or the
 ``model=`` kwarg to ``complete()``."""
@@ -141,25 +145,24 @@ class OpenRouterBackend:
         *,
         system: str,
         user: str,
-        max_tokens: int = 8192,
+        max_tokens: int = 2048,
         temperature: float = 1.0,
         model: Optional[str] = None,
     ) -> str:
-        # NOTE: max_tokens default is 8192, not 1024 like the
-        # AnthropicBackend. Many open-weight models on OpenRouter
-        # (Qwen3.5-A3B, DeepSeek-V3, etc.) are reasoning-enabled by
-        # default and use a substantial fraction of max_tokens for
-        # internal chain-of-thought before producing the final
-        # completion.
+        # NOTE: max_tokens default is 2048. The previous default was
+        # 8192, calibrated for *reasoning-enabled* SLMs (Qwen3.5-A3B,
+        # DeepSeek-V3) that spend half their budget on internal
+        # chain-of-thought. The current default model
+        # (Qwen-2.5-7B-Instruct) does not reason and emits ~200–500
+        # tokens of JSON per role call; 8192 was wasted budget AND
+        # tripped provider-side validation on some OpenRouter
+        # providers (AtlasCloud returned HTTP 400 with that ceiling).
+        # 2048 stays inside every provider's cap with comfortable
+        # headroom.
         #
-        # Empirical calibration on Qwen3.5-35B-A3B over the
-        # situation_room corpus:
-        #   max_tokens=1024 → many calls return ``content=None``
-        #                     (reasoning ate the budget).
-        #   max_tokens=4096 → ~50% empty rate on complex roles
-        #                     (entity_extractor was 100% empty).
-        #   max_tokens=8192 → 25/25 returned valid JSON. The right
-        #                     default for current reasoning-heavy SLMs.
+        # If you point OPENROUTER_MODEL at a reasoning model, pass
+        # max_tokens=8192 at the call site or via a per-experiment
+        # override.
         """
         Send a single system + user prompt to OpenRouter and return
         the raw text of the assistant reply.

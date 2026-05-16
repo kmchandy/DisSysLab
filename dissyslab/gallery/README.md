@@ -1,49 +1,66 @@
 # Gallery
 
-DisSysLab ships with two kinds of offices, in two folders:
+DisSysLab ships with two kinds of offices, organised two ways:
 
-- **[`apps/`](apps/)** — Pat-facing offices you can pick, install, and
-  run as ready-to-use AI assistants. Each one has a README that
-  explains what it does, how to set it up in a few minutes, and how
-  to tweak / modify / build on it. Start here if you came for the
-  product.
+- **By audience:** [`apps/`](apps/) is Pat-facing; [`examples/`](examples/)
+  is Builder-facing tech demos.
+- **By setup cost:** apps fall into two tiers depending on whether
+  Pat needs to add API keys before they produce output. See the
+  two tables below.
 
-- **[`examples/`](examples/)** — Builder-facing tech demos. Smaller
-  offices that showcase one pattern each — a sub-office, a custom
-  role, a webhook listener, a multi-agent editorial chain. Useful
-  when you're writing your own office and want to crib a pattern.
-
-The same framework runs both. The split is documentation focus, not
-technical capability.
+The same framework runs everything in here — `dsl run <office_name>`
+from any directory.
 
 ---
 
-## Apps for Pat
+## Apps that run on any laptop, no keys
 
-| App | What it does | Audience |
+These apps make zero or at most one LLM call per cycle. Pat installs
+DisSysLab via the curl one-liner and runs them immediately. No API
+keys, no third-party signups. On a typical Mac with Ollama, you see
+output in seconds.
+
+| App | What it does | Why it's fast |
 |---|---|---|
-| [`apps/periodic_brief`](apps/periodic_brief/) | One markdown morning brief combining news + weather (and your calendar + email once you add credentials). The showpiece app for what multi-source AI orchestration can do. | Anyone who wakes up wanting to know what's going on. |
-| [`apps/situation_room`](apps/situation_room/) | Morning intelligence digest from BBC + NPR + Al Jazeera. Severity, topics, locations, entities, briefings, editorial review. | Journalists, analysts, NGO staff, researchers, policy folks. |
-| [`apps/situation_room_pro`](apps/situation_room_pro/) | Same office, but Riley (writer) runs on Claude while the four extractors stay on free Qwen. Demonstrates per-role backend mixing. | Anyone who'll pay a few cents/day for sharper briefings. |
-| [`apps/weather_monitor`](apps/weather_monitor/) | Hourly plain-English weather briefing for a city you pick. The simplest possible office. | Anyone going outside. |
-| [`apps/stocks_monitor`](apps/stocks_monitor/) | One-line read of a stock ticker's movement every few minutes. | Hobbyist investors. |
-| [`apps/calendar_briefing`](apps/calendar_briefing/) | Reads your Google Calendar and writes a one-line briefing per upcoming event. | Anyone with a calendar. |
+| [`periodic_brief`](apps/periodic_brief/) | Morning briefing combining BBC + NPR news, Pasadena weather, and stock tickers (AAPL, NVDA, MSFT) into one HTML page. | Zero LLM calls. Pure orchestration of public APIs into a styled brief. |
+| [`weather_monitor`](apps/weather_monitor/) | Hourly plain-English weather briefing for a city you pick. | One LLM call per reading; ~30 s on Ollama, instant on OpenRouter. |
+| [`stocks_monitor`](apps/stocks_monitor/) | One-line read of a stock ticker's movement every few minutes. | One LLM call per reading; same latency as weather_monitor. |
 
-Run any of them with:
+Start with `periodic_brief` — it's the cleanest demo of the
+framework's value (multi-source orchestration, structured output)
+without any LLM dependency to slow it down.
 
-```bash
-dsl run dissyslab/gallery/apps/<app_name>/
-```
+---
+
+## Apps that shine on a hosted backend
+
+These apps make many LLM calls per cycle and/or talk to APIs that
+need credentials (Google Calendar, Gmail, Slack, your CRM). On
+local Ollama they take 15–60 minutes per cycle. On OpenRouter with
+the default Qwen-2.5-7B model (`~5 minute setup, pennies per run`)
+they take 1–5 minutes — fast enough for an interactive demo.
+
+| App | What it does | Setup needed |
+|---|---|---|
+| [`periodic_brief_pro`](apps/periodic_brief_pro/) | Same idea as `periodic_brief` plus a sense → think → respond news pipeline (entity / topic / urgency tagging, then a writer composing per-article briefs), plus Google Calendar, plus Gmail. The richest single-page brief. | OpenRouter or Claude key; `CALENDAR_ICS_URL`; `GMAIL_USER` and `GMAIL_APP_PASSWORD`. |
+| [`situation_room`](apps/situation_room/) | Three news feeds → dedupe → four parallel thinkers (entity, severity, topic, geo) → synchronizer → writer → evaluator → terminal + JSONL archive. The framework's canonical s→t→r demo. | OpenRouter or Claude key recommended. |
+| [`situation_room_pro`](apps/situation_room_pro/) | Same office, Claude as the writer for top-quality briefings, open-weight Qwen (Ollama or OpenRouter) for the four extractors. Demonstrates per-role backend override. | Anthropic key, plus your usual `DSL_BACKEND` (Ollama or OpenRouter) for the cheaper roles. |
+| [`inbox_triage`](apps/inbox_triage/) | Watches Gmail; rates each unread email by urgency + sentiment, summarises it, drops a digest of keepers into Slack. | OpenRouter or Claude key; `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `SLACK_WEBHOOK_URL`. |
+| [`ticket_router`](apps/ticket_router/) | Listens on a webhook for support tickets; classifies severity + urgency + category; posts the keepers to an oncall Slack channel. | OpenRouter or Claude key; `SLACK_ONCALL_WEBHOOK`. |
+| [`competitor_watch`](apps/competitor_watch/) | Watches BBC Tech + TechCrunch + VentureBeat AI; annotates each article with entities + sentiment + topic; writes a daily markdown digest. | OpenRouter or Claude key. No third-party signups beyond that. |
+| [`lead_qualifier`](apps/lead_qualifier/) | Listens on a webhook for form submissions; summarises each lead + tags sentiment and urgency; forwards qualified leads to your CRM via outbound webhook. | OpenRouter or Claude key; `CRM_WEBHOOK_URL`. |
+| [`new_grad_jobs`](apps/new_grad_jobs/) | Watches Hacker News' Who's Hiring thread; screens postings for entry-level / new-grad fit; reformats matches as structured briefs. | OpenRouter or Claude key (hundreds of postings × 2 LLM calls). |
+
+Each app's own README documents which env vars to export and what
+to expect for runtime and cost.
 
 ---
 
 ## Examples for Builders
 
-The `examples/` folder is a library of patterns. Each office is small
-on purpose — one moving part at a time, so you can read the office.md
-and immediately see what's going on.
-
-Notable patterns:
+The [`examples/`](examples/) folder is a library of patterns. Each
+office is small on purpose — one moving part at a time, so you can
+read the office.md and immediately see what's going on.
 
 | Office | Pattern |
 |---|---|
@@ -63,8 +80,8 @@ Notable patterns:
 
 - **First-time setup** → [`../README.md`](../../README.md) (top-level
   README with the one-line installer).
+- **The pattern most Pat-facing offices follow** →
+  [`docs/PATTERN_sense_think_respond.md`](../../docs/PATTERN_sense_think_respond.md).
 - **Build your own office** → [`docs/BUILD_APPS.md`](../../docs/BUILD_APPS.md).
 - **Switch or mix backends** → [`docs/LANGUAGE_MODELS.md`](../../docs/LANGUAGE_MODELS.md).
 - **Sources and sinks reference** → [`docs/SOURCES_AND_SINKS.md`](../../docs/SOURCES_AND_SINKS.md).
-- **Why apps vs examples** → see the top of this file. Same framework;
-  different documentation audience.

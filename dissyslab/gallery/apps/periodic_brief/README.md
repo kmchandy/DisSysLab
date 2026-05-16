@@ -1,184 +1,133 @@
 # Periodic Brief
 
-> One markdown file each morning combining news, weather, your
-> calendar, and your email — free, runs on your laptop.
+> A single HTML page each morning combining news, weather, and
+> stock tickers. No keys, no LLM calls — runs in about ten
+> seconds on any laptop with DisSysLab installed.
 
-`periodic_brief` is the office that does what most people *wish*
-ChatGPT did: combine multiple things you care about into one
-cohesive briefing, on a schedule, automatically. Out of the box it
-mixes BBC + NPR news and your local weather. Add your Google
-Calendar and your unread email with two extra lines.
+`periodic_brief` is the simplest demonstration of what DisSysLab
+does: it orchestrates multiple sources into one structured
+artifact. News headlines from BBC and NPR, today's weather for a
+city of your choice, and today's quotes for a few stock tickers —
+all rendered into a single self-contained `brief.html` file you
+open in your browser, drag into Notion, or email to yourself.
 
-The showpiece for what an office of AI agents can do that a single
-chatbot prompt can't: orchestrate several different sources into
-one coherent artifact.
+Out of the box: zero LLM calls, zero credentials, zero waiting.
+When you want richer features (per-article analysis, calendar,
+Gmail), there's a `periodic_brief_pro` next door that adds those
+in exchange for an API key or two.
 
-## Set it up in 5 minutes
-
-The default config uses **only news + weather** — no credentials,
-no setup beyond DisSysLab itself:
+## Run it
 
 ```bash
-dsl run dissyslab/gallery/apps/periodic_brief/
+dsl run periodic_brief
+open brief.html
 ```
 
-After ~3-5 minutes (mostly news fetches), `brief.md`
-appears in your working directory.
+About ten seconds later, your browser opens a styled HTML brief
+with three sections: Markets (stock tickers), Weather (current
+conditions for the configured city), and News (recent headlines
+from BBC and NPR). The page has a `meta refresh` tag, so if you
+leave it open it reloads every minute as the office continues
+polling.
 
-For the full version with calendar and email, see *Tier 2* below.
+## What's in the office
 
-## What you'll see
+Open [`office.md`](office.md). It's about ten lines:
 
-A single markdown file like this:
+```
+Sources: bbc_world(max_articles=5), npr_news(max_articles=5),
+         weather(city="Pasadena", max_readings=1),
+         stocks(ticker="AAPL", max_readings=1),
+         stocks_2(ticker="NVDA", max_readings=1),
+         stocks_3(ticker="MSFT", max_readings=1)
+Sinks: periodic_brief_html_sink(path="brief.html")
 
-```markdown
-# Periodic brief — 2026-05-12
-
-## Weather
-
-Clear and 72°F in Pasadena, no rain expected.
-
-## World
-
-- UN Security Council to vote on Lebanon ceasefire today [bbc_world](https://www.bbc.com/news/...)
-- US inflation report due 8:30am ET [npr_news](https://www.npr.org/...)
-- New MacBook Pro M5 announced at WWDC [bbc_world](https://www.bbc.com/news/...)
-- Iran sends response to US peace proposals [bbc_world](https://www.bbc.com/news/...)
-- Cape Verde reaches first World Cup [npr_news](https://www.npr.org/...)
+Connections:
+bbc_world's destination is periodic_brief_html_sink.
+npr_news's destination is periodic_brief_html_sink.
+weather's destination is periodic_brief_html_sink.
+stocks's destination is periodic_brief_html_sink.
+stocks_2's destination is periodic_brief_html_sink.
+stocks_3's destination is periodic_brief_html_sink.
 ```
 
-Open it in any markdown viewer. Cron-schedule it for 6am and your
-morning briefing arrives before you do.
+Six sources, one sink. Every source emits messages with a
+recognisable `type` or `source` field; the HTML sink routes each
+into the right section of the page. There are *no agents* in this
+default config — that's why it's instant, no LLM dependency.
 
 ## Make it yours
 
-### Tier 1 — Tweak  *(5 minutes, one parameter)*
-
-Change the city, the number of articles, or add another news feed
-in [`office.md`](office.md):
+**Change the city.** Edit the `weather(...)` argument:
 
 ```
-Sources: bbc_world(max_articles=10), techcrunch(max_articles=5), weather(city="San Francisco", max_readings=1)
+weather(city="San Francisco", max_readings=1)
 ```
 
-Available news feeds: `bbc_world`, `bbc_tech`, `npr_news`,
-`al_jazeera`, `hacker_news`, `techcrunch`, `mit_tech_review`,
-`venturebeat_ai`, `nasa_news`, `python_jobs`. Pick the ones that
-match your information diet.
+Use the city's English name with proper spacing — Open-Meteo's
+geocoder is strict.
 
-### Tier 2 — Modify  *(30 minutes, add calendar + email)*
-
-The default brief skips calendar and email because they need
-credentials. To add them, edit `office.md`:
+**Change the stock tickers.** Replace `AAPL` / `NVDA` / `MSFT`:
 
 ```
-Sources:
-  bbc_world(max_articles=5),
-  npr_news(max_articles=5),
-  weather(city="Pasadena", max_readings=1),
-  calendar(days_ahead=1),
-  gmail(unread_only=True, max_emails=20)
-
-Sinks:
-  periodic_brief_sink(path="brief.md"),
-  discard
-
-Agents:
-  Mail is a mail_summariser.
-
-Connections:
-  bbc_world's destination is periodic_brief_sink.
-  npr_news's destination is periodic_brief_sink.
-  weather's destination is periodic_brief_sink.
-  calendar's destination is periodic_brief_sink.
-  gmail's destination is Mail.
-  Mail's keep is periodic_brief_sink.
-  Mail's discard is discard.
+stocks(ticker="TSLA", max_readings=1),
+stocks_2(ticker="META", max_readings=1),
+stocks_3(ticker="GOOGL", max_readings=1)
 ```
 
-Then set the credentials in your shell:
+For more than five tickers, ask in an issue — we ship
+`stocks` through `stocks_5` as aliases out of the box.
 
-```bash
-# Calendar — Google Calendar private ICS URL
-# (Settings → Integrate calendar → Secret address in iCal format)
-export CALENDAR_ICS_URL="https://calendar.google.com/calendar/ical/..."
+**Change the news feeds.** Replace `bbc_world` / `npr_news` with
+any combination from the built-in source library: `al_jazeera`,
+`techcrunch`, `mit_tech_review`, `venturebeat_ai`, `hacker_news`,
+`python_jobs`, `bbc_tech`, `nasa_news`.
 
-# Email — Gmail App Password (myaccount.google.com/apppasswords)
-export GMAIL_USER="you@gmail.com"
-export GMAIL_APP_PASSWORD="xxxx xxxx xxxx xxxx"
-```
-
-Re-run. Your brief now has four sections: Schedule, Weather, Email
-worth knowing about, World.
-
-The `Mail` agent runs an LLM-driven `mail_summariser` that decides
-which emails matter (skips newsletters, promos, automated
-notifications) and writes a one-line summary for each.
-
-### Tier 3 — Build  *(a few hours, write a new role or section)*
-
-**Add a stocks section.** Drop a ticker watch into the brief:
+**Change where the brief goes.** Drop the HTML sink, use markdown
+or terminal output:
 
 ```
-Sources: ... , stocks(ticker="AAPL"), stocks(ticker="MSFT")
-Connections:
-  ... existing
-  stocks's destination is periodic_brief_sink.
+Sinks: periodic_brief_sink(path="brief.md")   # markdown version
+# or
+Sinks: console_printer                         # terminal stream
 ```
-
-The `periodic_brief_sink` doesn't know about a "stocks" category
-yet — it'll route into "World." If you want a dedicated **##
-Stocks** section, edit the sink at
-[`dissyslab/components/sinks/periodic_brief_sink.py`](../../../components/sinks/periodic_brief_sink.py)
-and add a new bucket.
-
-**Use Claude for the writer.** Add a role override that wraps the
-framework's roles in `nl_role(prompt, AI="claude")` — see the
-[`situation_room_pro`](../situation_room_pro/) pattern.
-
-**Compose with sub-offices.** Have `situation_room` run as a
-sub-office that feeds enriched briefings into `periodic_brief`'s
-World section. See
-[`docs/BUILD_APPS.md`](../../../../docs/BUILD_APPS.md) for the
-sub-office pattern.
 
 ## What you should expect
 
-- **Quality**: news headlines pass through verbatim; weather is
-  one factual line; email summaries are filter-and-paraphrase done
-  by Qwen3 (or whichever model you've configured). Mail's
-  filtering is calibrated to skip newsletters and notification
-  emails — review the prompt in [`roles/mail_summariser.md`](roles/mail_summariser.md)
-  to adjust.
-- **Speed**: news + weather only — about 30 seconds. With calendar
-  + email — 1-3 minutes depending on email volume (each kept email
-  is one LLM call).
-- **Cost**: $0/month recurring on free local Qwen via Ollama. On
-  Claude: roughly $0.05 per run; ~$1.50/month if you run it every
-  morning.
-- **Privacy**: with Ollama, nothing leaves your machine. With a
-  paid backend, each kept email's text goes to that provider for
-  the mail_summariser's classification.
+- **Quality:** news headlines pass through verbatim; weather is a
+  factual one-liner from Open-Meteo; stock quotes come straight
+  from Stooq. Nothing here is AI-generated.
+- **Speed:** about 10 seconds end-to-end. Pat opens her laptop, runs
+  `dsl run periodic_brief`, the page is ready before her coffee.
+- **Cost:** $0. No API keys.
 
 ## Schedule it
 
-Put this in your crontab (`crontab -e`):
+For a daily brief at 6am, add this to your crontab (`crontab -e`):
 
 ```
-0 6 * * *  cd /Users/you/Documents/DisSysLab && DSL_BACKEND=ollama dsl run dissyslab/gallery/apps/periodic_brief/ > /tmp/dsl.log 2>&1
+0 6 * * *  cd /Users/you/Documents/DisSysLab && dsl run periodic_brief > /tmp/dsl.log 2>&1
 ```
 
-At 6am every day, the office runs; `brief.md` is updated;
-your morning coffee has reading material.
+At 6am every day, the brief regenerates. Open `brief.html` to
+read it. Optionally chain a `osascript` or `xdg-open` call after
+to open it for you.
+
+## Want more?
+
+[`periodic_brief_pro`](../periodic_brief_pro/) is the upgraded
+version. It adds a sense → think → respond news pipeline (each
+article gets entity / topic / urgency tagged, then a writer
+composes a brief per article), plus your Google Calendar, plus
+unread Gmail. The trade-off is setup time and inference cost —
+see that office's README for the keys you need and the runtime
+expectations.
 
 ## See also
 
-- [`office.md`](office.md) — the wiring (six lines).
-- [`roles/mail_summariser.md`](roles/mail_summariser.md) — the
-  filter-and-summarise role used when Gmail is enabled.
-- [`situation_room`](../situation_room/README.md) — the bigger
-  cousin: deeper news analysis (severity, entities, geo) on three
-  feeds, with editorial review.
-- [`weather_monitor`](../weather_monitor/README.md) — the
-  simplest possible office. Read this if you want to learn how a
-  one-source / one-agent / one-sink office is shaped.
+- [`office.md`](office.md) — the wiring (ten lines).
+- [`periodic_brief_pro`](../periodic_brief_pro/) — the LLM-enabled
+  upgrade.
+- [`docs/PATTERN_sense_think_respond.md`](../../../../docs/PATTERN_sense_think_respond.md)
+  — the design pattern that periodic_brief_pro instantiates for
+  its news pipeline.

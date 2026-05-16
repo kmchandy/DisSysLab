@@ -402,14 +402,22 @@ def nl_role(
             raw = backend.complete(
                 system=full_prompt,
                 user=text,
-                # 8192 chosen to accommodate reasoning-enabled SLMs
-                # (Qwen3.5-A3B, DeepSeek-V3, etc.) which spend a
-                # substantial fraction of their budget on internal
-                # chain-of-thought before producing the final JSON.
-                # 1024 was empirically too low (50% of calls returned
-                # empty content). 8192 yields 100% success rate on
-                # the situation_room corpus. Safe for Claude too.
-                max_tokens=8192,
+                # 2048 is plenty for role outputs (typically 200–500
+                # tokens of JSON). The previous default was 8192, sized
+                # for *reasoning-enabled* SLMs like Qwen3.5-A3B that
+                # spend a substantial fraction of their budget on
+                # internal chain-of-thought before emitting JSON. The
+                # current default model (Qwen-2.5-7B-Instruct) is a
+                # plain instruct model — no reasoning — so 8192 was
+                # both wasted budget and triggered provider-side
+                # validation failures on some OpenRouter providers
+                # (e.g. AtlasCloud returned HTTP 400). 2048 keeps
+                # headroom while staying inside every provider's cap.
+                #
+                # If you point OPENROUTER_MODEL at a reasoning model
+                # and start seeing empty completions, bump this here
+                # or override per-call via ``backend.complete(..., max_tokens=8192)``.
+                max_tokens=2048,
                 temperature=1.0,
             )
             cleaned = _strip_code_fences(raw)

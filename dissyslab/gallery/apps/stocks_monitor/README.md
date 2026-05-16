@@ -91,8 +91,8 @@ brief. That's a real multi-source office. See
 
 - **Quality**: factual price reads plus light commentary. Qwen3
   doesn't speculate beyond what's in the data.
-- **Speed**: ~10-30 seconds per briefing. Frequency depends on
-  `poll_interval`.
+- **Speed**: ~10-30 seconds per briefing on local Ollama; ~3-5
+  seconds on OpenRouter. Frequency depends on `poll_interval`.
 - **Cost**: $0/month recurring. The price source uses a free Yahoo
   Finance feed.
 - **Privacy**: only the ticker symbol leaves your machine.

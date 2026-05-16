@@ -9,27 +9,16 @@
 Every morning (or as often as you run it), Situation Room pulls
 articles from BBC World, NPR, and Al Jazeera. It deduplicates them,
 classifies severity, extracts named entities, tags topic and
-location, and writes a short briefing for each article. A reviewer
-agent decides which briefings are worth publishing. The published
+location, and writes a short briefing for each article. The
 briefings are rendered in your terminal as a clean intelligence
-digest — what you'd want to read over coffee at 8 a.m.
+digest — what you'd want to read over coffee at 8 a.m. — and
+archived as JSONL so you can re-read the day later.
 
-```
-bbc_world, npr_news, al_jazeera  →  Sasha (dedup by URL)
-                                        ↓
-                ┌──── Eve (entities) ────┐
-                │                        │
-                ├──── Sam (severity) ────┤
-   Sasha ──────┤                        ├─→ Sync (merge) → Riley (write) → Jordan (review)
-                ├──── Tom (topic)    ────┤                                       ↓
-                │                        │                       ┌─ publish → intelligence_display
-                └──── Greta (location) ──┘                       └─ revise  → discard
-```
-
-Nine plain-English agents wired into the sense → think → respond
+Eight plain-English agents wired into the sense → think → respond
 shape. Pick your engine: free local Qwen on Ollama (privacy, no
-recurring cost, slower) or hosted Qwen via OpenRouter (a few cents
-per run, finishes in minutes regardless of your laptop). See
+recurring cost, 15–30 min per run) or hosted Qwen-2.5-7B via
+OpenRouter (pennies per run, finishes in 1–5 minutes regardless of
+your laptop). See
 [`docs/PATTERN_sense_think_respond.md`](../../../../docs/PATTERN_sense_think_respond.md)
 for the pattern this office instantiates and how to remix it.
 
@@ -69,8 +58,10 @@ memory and are faster. Output streams to your terminal as
 briefings are written.
 
 That's it. With Ollama you have no API key and no recurring cost, but
-expect a slow first run on local hardware. For faster turnaround on
-any laptop, set `DSL_BACKEND=openrouter` (a few cents per run) — see
+expect a 15–30 min first run on local hardware. For faster turnaround
+on any laptop, set `DSL_BACKEND=openrouter` and
+`OPENROUTER_MODEL=qwen/qwen-2.5-7b-instruct` (pennies per run,
+~1–5 minutes) — see
 [`docs/LANGUAGE_MODELS.md`](../../../docs/LANGUAGE_MODELS.md).
 
 ## What's actually in office.md
@@ -105,15 +96,14 @@ article per run." Change it to 10 and the office processes ten.
 **Sinks — where messages end up.**
 
 ```
-Sinks: intelligence_display, jsonl_recorder_briefing(path="briefings.jsonl"), jsonl_recorder_discard(path="rejected.jsonl")
+Sinks: intelligence_display, jsonl_recorder_briefing(path="briefings.jsonl")
 ```
 
 A *sink* is the other end: a terminal printer, a markdown file
 writer, a Slack channel, a Gmail outbox. Same registry pattern as
-sources. This office uses three sinks — one for live terminal
-output, one to record kept briefings to disk as JSONL, one to
-record discarded ones. Recording both means you can audit later
-what the office decided to drop.
+sources. This office uses two sinks — one for live terminal
+output, one to record every briefing to disk as JSONL so you can
+re-read the day's intelligence later.
 
 **Agents — named characters with roles.**
 
@@ -126,7 +116,6 @@ Tom is a topic_tagger.
 Greta is a geolocator.
 Sync is a synchronizer.
 Riley is a writer.
-Jordan is an evaluator.
 ```
 
 Each line names an *agent* and assigns it a *role*. ``Sasha is a
@@ -136,10 +125,10 @@ whatever the `deduplicator` role does." Roles come from two
 places: the framework's built-in role library (in
 `dissyslab/roles/`) and this office's own `roles/` folder.
 `writer`, `entity_extractor`, `severity_classifier`,
-`topic_tagger`, `geolocator`, and `evaluator` are built in;
-`synchronizer` is custom to this office. The framework doesn't
-know what names are "right" — `Sasha`, `Eve`, `Riley` are just
-local labels you use in the wiring.
+`topic_tagger`, and `geolocator` are built in; `synchronizer` is
+custom to this office. The framework doesn't know what names are
+"right" — `Sasha`, `Eve`, `Riley` are just local labels you use in
+the wiring.
 
 **Connections — the wiring.**
 
@@ -180,27 +169,25 @@ different kinds of input, here's what to call each one."
 
 ```
 Sync's out is Riley.
-Riley's out is Jordan.
+Riley's out is intelligence_display, jsonl_recorder_briefing.
 ```
 
-Standard pipe: synchroniser to writer to evaluator.
-
-```
-Jordan's publish is intelligence_display, jsonl_recorder_briefing.
-Jordan's revise is jsonl_recorder_discard.
-```
-
-Here's the interesting one. Jordan has two outports:
-`publish` and `revise`. The evaluator's prompt tells it to send
-each briefing to one or the other based on quality. The
-connections route both paths to different sinks. Routing decisions
-live in the role's prompt, not in glue code.
+Standard pipe: synchroniser to writer, then the writer's output
+fans out to both sinks at once. Pat sees every briefing in the
+terminal *and* gets a JSONL archive on disk to re-read later. No
+editorial filter — you're the editor.
 
 **That's the whole framework.** Sources, sinks, agents, roles,
-connections. Eight lines of agents + ten lines of connections
-described a nine-agent pipeline with fan-out, fan-in,
-synchronization, and conditional routing — no Python required.
-The same vocabulary describes every office in the gallery.
+connections. Seven lines of agents + nine lines of connections
+described an eight-agent pipeline with fan-out, fan-in, and
+synchronization — no Python required. The same vocabulary
+describes every office in the gallery.
+
+> *Want an LLM-powered editor in the loop?* The role library ships
+> an `evaluator` that decides publish-vs-revise per briefing — see
+> the Tier-2 "filter with an evaluator" example below for the
+> wiring. It adds one LLM call per article; the default office
+> skips it so Pat sees raw output.
 
 When you're ready to write your own, [`docs/BUILD_APPS.md`](../../../docs/BUILD_APPS.md)
 walks through it from scratch.
@@ -268,16 +255,39 @@ framework's library. Still no new code; one or two edits to
 Change the `Sinks:` line to use `markdown_digest`:
 
 ```
-Sinks: markdown_digest(path="~/morning_digest.md"), discard
+Sinks: markdown_digest(path="~/morning_digest.md")
 ```
 
 And update the connection at the bottom:
 
 ```
-Jordan's publish is markdown_digest.
+Riley's out is markdown_digest.
 ```
 
 Now each run writes one markdown file you can open over coffee.
+
+*Add an LLM-powered editor that filters briefings before they hit the digest:*
+
+```
+Agents:
+...
+Riley is a writer.
+Jordan is an evaluator.   # new agent
+
+Sinks: markdown_digest(path="~/morning_digest.md"), jsonl_recorder_discard(path="rejected.jsonl")
+
+Connections:
+...
+Riley's out is Jordan.
+Jordan's publish is markdown_digest.
+Jordan's revise is jsonl_recorder_discard.
+```
+
+Jordan is an `evaluator` from the role library — it has two
+outports, `publish` and `revise`, and its prompt decides which
+each briefing earns. Routing decisions live in the role's prompt,
+not in glue code. The rejected briefings are still recorded so
+you can audit what got dropped.
 
 *Add a topic filter between Sasha and the extractors:*
 

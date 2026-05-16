@@ -72,8 +72,8 @@ parses Alex's output and routes accordingly.
 ### Tier 3 — Build  *(a few hours)*
 
 Combine weather with your calendar (see
-[`calendar_briefing`](../calendar_briefing/)) to get *"Wear a coat
-for your 9am client meeting downtown."* That's the kind of
+[`periodic_brief`](../periodic_brief/)) to get *"Wear a coat for
+your 9am client meeting downtown."* That's the kind of
 multi-source office DisSysLab is designed for. See
 [`docs/BUILD_APPS.md`](../../../../docs/BUILD_APPS.md).
 
@@ -81,8 +81,9 @@ multi-source office DisSysLab is designed for. See
 
 - **Quality**: clear, factual one-line summaries. Qwen3 reads the
   raw weather data and writes plain prose.
-- **Speed**: ~10-30 seconds per briefing. Once an hour means you
-  don't notice the latency.
+- **Speed**: ~10-30 seconds per briefing on local Ollama; ~3-5
+  seconds on OpenRouter. Once an hour means you don't notice the
+  latency either way.
 - **Cost**: $0/month recurring. The Open-Meteo API used by the
   `weather` source is free and key-less.
 - **Privacy**: the only data leaving your machine is the city name

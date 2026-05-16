@@ -92,7 +92,7 @@ if __name__ == "__main__":
     print("  (Using real Claude API — expect a few seconds per article)")
     print()
 
-    g.run_network(timeout=60)
+    g.run_network(timeout=120)
 
     print()
     print("═" * 60)
