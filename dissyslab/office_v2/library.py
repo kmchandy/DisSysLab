@@ -464,6 +464,133 @@ def nl_role(
     )
 
 
+# ── specialist_role ─────────────────────────────────────────────────────
+
+
+def specialist_role(
+    transform: Callable[[str], Dict[str, Any]],
+    *,
+    input_field: str = "text",
+    out_port: str = "out_",
+) -> AgentRoleEntry:
+    """Build an ``AgentRoleEntry`` that wraps a deterministic text → dict
+    transform.
+
+    Sibling of :func:`nl_role`. Where ``nl_role`` wraps an LLM behind a
+    natural-language prompt, ``specialist_role`` wraps any pre-trained
+    pipeline (HuggingFace classifier, spaCy NER, a hand-written
+    keyword classifier, etc.) behind a Python function that maps text
+    to an annotation dict.
+
+    The framework wires this role exactly like an ``nl_role``:
+    incoming message → role function → outgoing (message, status)
+    pairs. The annotation dict is shallow-merged into the upstream
+    message so downstream agents see both the original fields and the
+    new annotation.
+
+    Parameters
+    ----------
+    transform
+        Callable taking the article's text (a string) and returning a
+        flat dict of new fields to attach. Example::
+
+            def entity_transform(text: str) -> dict:
+                nlp = _load_spacy()
+                doc = nlp(text)
+                return {"entities": sorted({ent.text for ent in doc.ents})}
+
+        The transform is called once per incoming message. It should
+        be deterministic; the framework will not cache results across
+        runs. If the transform raises, the message is dropped (matches
+        ``nl_role`` behavior).
+    input_field
+        Key of the upstream message whose value is passed to
+        ``transform``. Defaults to ``"text"``, matching the corpus
+        format. If the upstream message is not a dict, the entire
+        message is stringified and passed in.
+    out_port
+        Name of the single outport this role emits on. Defaults to
+        ``"out_"`` matching framework convention for single-status
+        roles.
+
+    Returns
+    -------
+    AgentRoleEntry
+        With ``name=""`` (the loader fills it in), ``in_ports=("in_",)``,
+        ``out_ports=(out_port,)``, and a ``factory`` that builds a
+        :class:`dissyslab.blocks.role.Role` agent on demand.
+
+    Examples
+    --------
+    A spaCy-backed entity extractor::
+
+        _nlp = None
+        def _load():
+            global _nlp
+            if _nlp is None:
+                import spacy
+                _nlp = spacy.load("en_core_web_trf")
+            return _nlp
+
+        def transform(text):
+            doc = _load()(text)
+            return {"entities": sorted({e.text for e in doc.ents
+                                        if e.label_ in {"PERSON","ORG","GPE","LOC"}})}
+
+        role = specialist_role(transform)
+
+    Drop this file at ``my_office/roles/entity_extractor.py`` and the
+    office's `entity_extractor` role is now backed by spaCy rather
+    than an LLM. No office.md changes needed.
+    """
+    if not callable(transform):
+        raise TypeError(
+            f"specialist_role(transform=...) must be callable, "
+            f"got {type(transform).__name__}"
+        )
+
+    def factory() -> Agent:
+        def role_fn(msg: Any):
+            """Run ``transform`` on the message and route the merged result.
+
+            * If the upstream message is a dict, ``transform`` receives
+              ``msg[input_field]`` (defaults to ``msg["text"]``); the
+              returned dict is shallow-merged with ``msg`` so downstream
+              agents see both original fields and the new annotation.
+            * If the upstream message is not a dict, ``transform``
+              receives ``str(msg)`` and its return value goes downstream
+              unmerged.
+            * On exception, log and drop the message (return ``[]``),
+              matching ``nl_role`` behavior.
+            """
+            if isinstance(msg, dict):
+                text = str(msg.get(input_field, ""))
+            else:
+                text = str(msg) if msg is not None else ""
+            if not text.strip():
+                return [(msg, out_port)]
+            try:
+                annotation = transform(text)
+            except Exception as exc:
+                print(f"[specialist_role] error in transform: {exc}")
+                return []
+            if not isinstance(annotation, dict):
+                # A non-dict return is treated as the whole downstream
+                # payload, same as the nl_role plain-text case.
+                return [(annotation, out_port)]
+            out_msg = {**msg, **annotation} if isinstance(msg, dict) else annotation
+            return [(out_msg, out_port)]
+
+        return Role(fn=role_fn, statuses=[out_port])
+
+    return AgentRoleEntry(
+        name="",
+        in_ports=("in_",),
+        out_ports=(out_port,),
+        factory=factory,
+    )
+
+
 # ── load_roles_dir ─────────────────────────────────────────────────────
 
 

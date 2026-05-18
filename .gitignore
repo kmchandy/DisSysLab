@@ -153,6 +153,7 @@ examples/try.py
 # Logs
 logs/
 dev/
+!dev/experiments/specialist_agents/
 
 # Internal planning docs (not for public repo)
 ACTION_PLAN.md

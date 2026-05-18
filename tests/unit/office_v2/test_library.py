@@ -24,6 +24,7 @@ from dissyslab.office_v2.library import (
     _extract_send_to_ports,
     load_roles_dir,
     nl_role,
+    specialist_role,
 )
 
 
@@ -303,6 +304,118 @@ class TestNLRoleAgentBehaviour:
         agent = entry()
         agent._fn("hello")
         assert captured["user"] == "hello"
+
+
+class TestSpecialistRole:
+    """specialist_role wraps a deterministic text -> dict transform
+    into the same AgentRoleEntry shape that nl_role produces. Tests
+    here mirror TestNLRoleAgentBehaviour but with a plain Python
+    transform instead of a stub LLM backend."""
+
+    def test_factory_returns_role_agent(self):
+        entry = specialist_role(lambda text: {"k": len(text)})
+        agent = entry()
+        assert isinstance(agent, Role)
+        assert agent.statuses == ["out_"]
+        assert entry.in_ports == ("in_",)
+        assert entry.out_ports == ("out_",)
+
+    def test_merges_annotation_into_upstream_dict(self):
+        def transform(text):
+            return {"length": len(text), "upper": text.upper()}
+
+        entry = specialist_role(transform)
+        agent = entry()
+        results = agent._fn({"text": "hi", "url": "http://x"})
+        assert len(results) == 1
+        msg, status = results[0]
+        assert status == "out_"
+        # Upstream fields preserved
+        assert msg["url"] == "http://x"
+        # Annotation merged
+        assert msg["length"] == 2
+        assert msg["upper"] == "HI"
+
+    def test_reads_configurable_input_field(self):
+        captured = {}
+
+        def transform(text):
+            captured["text"] = text
+            return {"ok": True}
+
+        entry = specialist_role(transform, input_field="title")
+        agent = entry()
+        agent._fn({"title": "the title", "text": "the body"})
+        assert captured["text"] == "the title"
+
+    def test_non_dict_upstream_message_stringified(self):
+        captured = {}
+
+        def transform(text):
+            captured["text"] = text
+            return {"len": len(text)}
+
+        entry = specialist_role(transform)
+        agent = entry()
+        results = agent._fn(42)
+        assert captured["text"] == "42"
+        # Non-dict upstream messages don't merge; the annotation dict
+        # is returned directly.
+        msg, _status = results[0]
+        assert msg == {"len": 2}
+
+    def test_empty_text_skips_transform(self):
+        # specialist_role should not invoke the transform on an empty
+        # text payload. Useful for fields that are sometimes missing.
+        called = []
+
+        def transform(text):
+            called.append(text)
+            return {"ok": True}
+
+        entry = specialist_role(transform)
+        agent = entry()
+        results = agent._fn({"text": ""})
+        # Message passes through unchanged on out_ port
+        assert results == [({"text": ""}, "out_")]
+        assert called == []
+
+    def test_exception_in_transform_returns_empty_list(self):
+        def boom(_text):
+            raise RuntimeError("boom")
+
+        entry = specialist_role(boom)
+        agent = entry()
+        # Match nl_role's behavior: log and drop the message so a
+        # single bad call doesn't crash the network.
+        assert agent._fn({"text": "anything"}) == []
+
+    def test_non_dict_return_routed_directly(self):
+        # If the transform returns a non-dict (e.g. a plain string),
+        # it goes downstream as the whole payload, mirroring nl_role's
+        # plain-text-reply path.
+        entry = specialist_role(lambda text: text.upper())
+        agent = entry()
+        results = agent._fn({"text": "hello"})
+        msg, status = results[0]
+        assert msg == "HELLO"
+        assert status == "out_"
+
+    def test_custom_out_port(self):
+        entry = specialist_role(
+            lambda text: {"k": text},
+            out_port="annotated",
+        )
+        assert entry.out_ports == ("annotated",)
+        agent = entry()
+        assert agent.statuses == ["annotated"]
+        results = agent._fn({"text": "x"})
+        _msg, status = results[0]
+        assert status == "annotated"
+
+    def test_non_callable_transform_rejected(self):
+        with pytest.raises(TypeError, match="callable"):
+            specialist_role("not a function")  # type: ignore[arg-type]
 
 
 class TestNLRoleAIAlias:

@@ -141,6 +141,19 @@ tagging) and computation-shaped roles (arithmetic, deduplication,
 sorting), an LLM is overkill — slower, more expensive, and often
 *worse* than a purpose-built model.
 
+**What the contribution actually is.** The pitch is NOT "specialists
+match Claude on bare zero-shot." That would be a quality-comparison
+paper. The pitch is: *builders can compose offices where specialists
+do their bit, so Pat gets the benefits (cost, speed, privacy) without
+knowing anything about specialists.* Pat sees `dsl run my_office`. The
+office.md she runs references roles like `entity_extractor` and
+`severity_classifier` — exactly the names she'd use with all-LLM
+backends. What changes underneath is invisible to her: maybe Eve is
+spaCy NER, maybe Sam is BART-MNLI with a tailored hypothesis prompt
+and a keyword floor, maybe Riley is still Claude. Builders tune the
+specialist prompts as hard as they would tune an LLM prompt. Pat just
+runs the office.
+
 A typical situation_room run today is six LLM calls per article (four
 extractors + writer + the deduplicator, which is already a Python
 function). Replace the four extractors with specialized models:

@@ -43,6 +43,7 @@ from dissyslab.office_v2.library import (
     RoleEntry,
     load_roles_dir,
     nl_role,
+    specialist_role,
 )
 from dissyslab.office_v2.compiler import (
     CompileError,
@@ -80,4 +81,5 @@ __all__ = [
     "nl_role",
     "parse_office_dir",
     "render_run_py",
+    "specialist_role",
 ]
