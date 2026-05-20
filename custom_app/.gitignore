@@ -19,6 +19,8 @@ user_offices/*
 !user_offices/job_hunter/**
 !user_offices/wardrobe_assistant/
 !user_offices/wardrobe_assistant/**
+# Sample office: version DSL + roles only; keep photos local (large binaries).
+user_offices/wardrobe_assistant/media/**
 
 # dsl codegen output — do not commit (office un-ignores above would otherwise track it)
 user_offices/*/build/

@@ -23,6 +23,8 @@ custom_app/
 
 Keep **office definitions and role prompts** under `custom_app/user_offices/<name>/` so your pipeline stays app-scoped.
 
+The sample **`wardrobe_assistant`** office is tracked with `office.md` and `roles/` only; add images under `media/uploads/` on your machine (those files are **gitignored** so the repo stays small).
+
 The sidebar shows a **short description** for each office: from `README.md` (first non-heading line) if present, else optional YAML `description:` at the top of `office.md`, else a short line inferred from `Agents:` / `Sources:` in `office.md`.
 
 - **`calendar_stylist`** can use **`web_scraper`** on **NOAA `forecast.weather.gov` (MapClick)** or **`weatherapi`** on **WeatherAPI.com**. For **`weatherapi`**, set **`WEATHERAPI_KEY`**; the **office_v2** compiler prefetches JSON and appends a date table to every role’s prompt. For **`web_scraper`** with a `forecast.weather.gov` URL, the **custom app backend** prefetches the same HTML before **Run** and sets **`OFFICE_WEATHERAPI_DIGEST`** with a **period** table so agents match weekdays like the situation room (`dsl run` from the shell skips that prefetch unless you set that env yourself). Install backend deps so **`beautifulsoup4`** is available for the NOAA prefetch.
