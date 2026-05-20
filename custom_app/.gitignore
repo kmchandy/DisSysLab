@@ -1,0 +1,22 @@
+# Frontend
+frontend/node_modules/
+frontend/dist/
+
+# Backend local env (keys)
+backend/.env
+**/__pycache__/
+*.pyc
+
+# User-created offices: default is local-only; un-ignore specific offices you
+# intend to commit (see repo docs / maintainer guidance).
+user_offices/*
+!user_offices/.gitkeep
+!user_offices/calendar_stylist/
+!user_offices/calendar_stylist/**
+!user_offices/kalshi_market_watch/
+!user_offices/kalshi_market_watch/**
+!user_offices/job_hunter/
+!user_offices/job_hunter/**
+
+# dsl codegen output — do not commit (office un-ignores above would otherwise track it)
+user_offices/*/build/
