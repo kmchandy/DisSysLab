@@ -29,6 +29,11 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
+from dissyslab.components.sinks.message_coerce import (
+    coerce_sink_message,
+    normalize_multibullet_lines,
+)
+
 
 class GmailSink:
     """
@@ -86,12 +91,15 @@ class GmailSink:
         Args:
             msg: Dict message from upstream DisSysLab node
         """
+        msg = coerce_sink_message(msg)
         subject = msg.get("subject", self.subject)
         body = msg.get("text", str(msg))
 
         # Build a readable body if text is short or missing
         if not body:
             body = str(msg)
+        else:
+            body = normalize_multibullet_lines(str(body))
 
         try:
             message = MIMEMultipart()

@@ -3,8 +3,10 @@ DisSysLab Custom App — FastAPI backend
 Serves office management, live run streaming, and Claude-powered office creation.
 """
 
+import ast
 import asyncio
 import base64
+import json
 import os
 import queue
 import re
@@ -12,6 +14,7 @@ import signal
 import subprocess
 import sys
 import threading
+import uuid
 from pathlib import Path
 from typing import Any, AsyncGenerator, Union
 
@@ -19,7 +22,7 @@ import anthropic
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 # Resolve .env next to this file so Gmail/API keys load even when uvicorn's cwd differs.
@@ -121,6 +124,116 @@ def _find_gallery_office_dir(name: str) -> Path | None:
     return None
 
 
+def _yaml_description_from_office_md(content: str) -> str:
+    """Optional YAML front-matter: ``description: …``."""
+    t = content.lstrip("\ufeff")
+    if not t.startswith("---"):
+        return ""
+    end = t.find("\n---", 3)
+    if end == -1:
+        return ""
+    for line in t[3:end].splitlines():
+        stripped = line.strip()
+        if stripped.lower().startswith("description:"):
+            v = stripped.split(":", 1)[1].strip()
+            if len(v) >= 2 and v[0] == v[-1] and v[0] in "\"'":
+                v = v[1:-1]
+            return v.strip()
+    return ""
+
+
+def _prose_excerpt_from_office_md(content: str) -> str:
+    """First short paragraph after the title, skipping DSL blocks."""
+    dsl = (
+        "sources:",
+        "sinks:",
+        "agents:",
+        "connections:",
+        "tools:",
+        "schedule:",
+    )
+    lines = content.splitlines()
+    i = 0
+    while i < len(lines) and not lines[i].strip().startswith("#"):
+        i += 1
+    if i < len(lines):
+        i += 1
+    while i < len(lines) and not lines[i].strip():
+        i += 1
+    buf: list[str] = []
+    while i < len(lines):
+        s = lines[i].strip()
+        i += 1
+        if not s:
+            break
+        if s.lower().startswith(dsl):
+            break
+        if s.startswith("#"):
+            break
+        buf.append(s)
+    if not buf:
+        return ""
+    return " ".join(buf).strip()
+
+
+def _infer_office_summary_from_dsl(content: str) -> str:
+    """One-line summary from ``Agents:`` / ``Sources:`` when no README or prose."""
+    agents = re.findall(
+        r"^([A-Za-z][A-Za-z0-9_]*)\s+is\s+(?:a|an)\s+",
+        content,
+        re.MULTILINE,
+    )
+    low = content.lower()
+    src_block = ""
+    if "sources:" in low:
+        idx = low.index("sources:")
+        rest = content[idx + len("sources:") :]
+        for stop in ("Sinks:", "sinks:", "Agents:", "agents:"):
+            si = rest.find(stop)
+            if si != -1:
+                rest = rest[:si]
+                break
+        src_block = rest
+    sources: list[str] = []
+    for m in re.finditer(r"(?:^|[,\s])\s*([a-z][a-z0-9_]*)\s*\(", src_block, re.I | re.MULTILINE):
+        name = m.group(1)
+        if name in ("url", "http", "https", "max", "min", "path", "poll", "src"):
+            continue
+        if name not in sources:
+            sources.append(name)
+        if len(sources) >= 10:
+            break
+    bits: list[str] = []
+    if agents:
+        ag = ", ".join(agents[:8])
+        if len(agents) > 8:
+            ag += "…"
+        bits.append(f"Agents: {ag}")
+    if sources:
+        pretty = ", ".join(s.replace("_", " ") for s in sources[:8])
+        if len(sources) > 8:
+            pretty += "…"
+        bits.append(f"Sources: {pretty}")
+    if bits:
+        return " · ".join(bits)
+    return "DisSysLab office"
+
+
+def _description_from_office_md(office_md: Path) -> str:
+    """Sidebar blurb from ``office.md`` (front-matter, prose, or DSL inference)."""
+    try:
+        content = office_md.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    d = _yaml_description_from_office_md(content)
+    if d:
+        return d[:280]
+    d = _prose_excerpt_from_office_md(content)
+    if d:
+        return d[:280]
+    return _infer_office_summary_from_dsl(content)[:280]
+
+
 def _office_dirs() -> list[dict]:
     """Return list of office metadata dicts from gallery + user_offices."""
     offices = []
@@ -135,6 +248,10 @@ def _office_dirs() -> list[dict]:
                 if line and not line.startswith("#"):
                     description = line
                     break
+        if not description:
+            om = d / "office.md"
+            if om.is_file():
+                description = _description_from_office_md(om)
         offices.append({
             "name": d.name,
             "builtin": True,
@@ -158,6 +275,8 @@ def _office_dirs() -> list[dict]:
                     if line and not line.startswith("#"):
                         description = line
                         break
+            if not description:
+                description = _description_from_office_md(office_md)
             offices.append({
                 "name": d.name,
                 "builtin": False,
@@ -196,6 +315,167 @@ def _find_office_dir(name: str) -> Path:
     if candidate.exists() and (candidate / "office.md").exists():
         return candidate
     raise FileNotFoundError(f"Office '{name}' not found")
+
+
+# Rich output protocol: subprocess may print lines starting with this prefix
+# followed by JSON. The SSE stream turns those into ``event: block`` payloads.
+APP_OUTPUT_PREFIX = "__DSLAPP__:"
+
+
+def _safe_path_under(base: Path, *relative_parts: str) -> Path | None:
+    """Resolve ``base / parts`` only if the result stays under ``base``."""
+    try:
+        root = base.resolve()
+        cand = root.joinpath(*relative_parts).resolve()
+    except (OSError, ValueError):
+        return None
+    try:
+        cand.relative_to(root)
+    except ValueError:
+        return None
+    return cand
+
+
+def _looks_like_markdown_line(s: str) -> bool:
+    """Cheap heuristic: treat stdout line as markdown for the Activity panel."""
+    t = s.strip()
+    if len(t) < 2:
+        return False
+    if t.startswith(("#", "- ", "* ", "+ ", "> ", "•", "\u2022")):
+        return True
+    if t.startswith("```"):
+        return True
+    if "**" in t[:160] and ("**" in t[3:] or t.count("**") >= 2):
+        return True
+    if re.match(r"^\d+\.\s", t):
+        return True
+    return False
+
+
+def _unwrap_network_message_line(line: str) -> str:
+    """If ``line`` is ``[n] {'send_to': '…', 'text': '…'}``, return inner ``text`` only.
+
+    Agents often print one Python dict on a single stdout line; rich ``__DSLAPP__``
+    markers live inside the ``text`` field and must be split out separately.
+    """
+    raw = line.rstrip("\n\r")
+    m = re.match(r"^\s*\[\d+\]\s+", raw)
+    if not m:
+        return raw
+    tail = raw[m.end() :].strip()
+    if not (tail.startswith("{") and tail.endswith("}")):
+        return raw
+    try:
+        obj = ast.literal_eval(tail)
+    except (ValueError, SyntaxError, MemoryError):
+        return raw
+    if isinstance(obj, dict) and isinstance(obj.get("text"), str):
+        return obj["text"]
+    return raw
+
+
+def _find_next_dslapp_marker(s: str, start: int) -> tuple[int, int]:
+    """Return ``(index, prefix_len)`` for the next ``__DSLAPP__:`` or bare ``DSLAPP:``."""
+    n = len(s)
+    while start < n:
+        i = s.find("__DSLAPP__:", start)
+        j = s.find("DSLAPP:", start)
+        candidates: list[tuple[int, int]] = []
+        if i != -1:
+            candidates.append((i, len("__DSLAPP__:")))
+        if j != -1:
+            if j >= 2 and s[j - 2 : j] == "__":
+                start = j + 1
+                continue
+            candidates.append((j, len("DSLAPP:")))
+        if not candidates:
+            return -1, 0
+        return min(candidates, key=lambda x: x[0])
+    return -1, 0
+
+
+def _dslapp_object_to_sse(obj: dict[str, Any], raw_fallback: str) -> tuple[str, dict[str, Any]]:
+    """Map one parsed ``__DSLAPP__`` JSON object to an SSE event + payload."""
+    t = obj.get("t") or obj.get("type")
+    if t in ("markdown", "md"):
+        body = obj.get("body") or obj.get("text") or ""
+        return ("block", {"kind": "markdown", "body": str(body)})
+    if t == "image":
+        return (
+            "block",
+            {
+                "kind": "image",
+                "src": str(obj.get("src") or obj.get("url") or ""),
+                "alt": str(obj.get("alt") or ""),
+            },
+        )
+    if t == "log":
+        return ("log", {"text": str(obj.get("body") or obj.get("text") or raw_fallback)})
+    return ("block", {"kind": "json", "data": obj})
+
+
+def _iter_stdout_sse_events(line: str) -> list[tuple[str, dict[str, Any]]]:
+    """Split one stdout line into zero or more ``(event, payload)`` tuples for SSE.
+
+    Handles:
+    * whole-line ``__DSLAPP__:`` / ``DSLAPP:`` JSON;
+    * ``[idx] {'send_to': …, 'text': '…'}`` wrappers from the network runtime;
+    * multiple ``__DSLAPP__:`` blobs embedded in prose (images + markdown).
+    """
+    raw = line.rstrip("\n\r")
+    if not raw:
+        return [("log", {"text": ""})]
+
+    s = _unwrap_network_message_line(raw)
+    out: list[tuple[str, dict[str, Any]]] = []
+    cursor = 0
+    dec = json.JSONDecoder()
+
+    while True:
+        pos, plen = _find_next_dslapp_marker(s, cursor)
+        if pos < 0:
+            tail = s[cursor:]
+            if tail.strip():
+                out.append(("log", {"text": tail}))
+            break
+        head = s[cursor:pos]
+        if head.strip():
+            out.append(("log", {"text": head}))
+        j = pos + plen
+        while j < len(s) and s[j] in " \t":
+            j += 1
+        try:
+            obj, end = dec.raw_decode(s, j)
+        except json.JSONDecodeError:
+            out.append(
+                (
+                    "log",
+                    {
+                        "text": s[pos : pos + plen].strip()
+                        or "[Malformed __DSLAPP__ JSON — skipped]"
+                    },
+                )
+            )
+            cursor = pos + plen
+            continue
+        if isinstance(obj, dict):
+            out.append(_dslapp_object_to_sse(obj, s[pos:end]))
+        else:
+            out.append(("log", {"text": s[pos:end]}))
+        cursor = end
+
+    if not out:
+        out.append(("log", {"text": raw}))
+
+    if len(out) == 1 and out[0][0] == "log":
+        t = out[0][1].get("text", "")
+        if _looks_like_markdown_line(t):
+            return [("block", {"kind": "markdown", "body": t, "source": "heuristic"})]
+    return out
+
+
+def _format_sse(event: str, payload: dict[str, Any]) -> str:
+    return f"event: {event}\ndata: {json.dumps(payload, ensure_ascii=False)}\n\n"
 
 
 def _parse_claude_files(text: str) -> dict[str, str]:
@@ -270,6 +550,134 @@ def get_office(name: str):
         raise HTTPException(status_code=404, detail=str(e))
 
 
+class CreateOfficeMediaItem(BaseModel):
+    """Image or PDF from the create-office chat, persisted under ``media/uploads/``."""
+
+    media_type: str
+    data: str  # base64 (optional data: URL prefix — stripped like chat attachments)
+    filename: str | None = None
+
+
+class CreateOfficePayload(BaseModel):
+    name: str
+    office_md: str
+    roles: dict[str, str]
+    chat_media: list[CreateOfficeMediaItem] = Field(default_factory=list)
+
+
+def _guess_media_extension(filename: str | None, media_type: str) -> str:
+    if filename and "." in filename:
+        ext = Path(filename).suffix.lower()[:8]
+        if ext in (".jpg", ".jpeg", ".png", ".gif", ".webp", ".pdf"):
+            return ext
+    return {
+        "image/jpeg": ".jpg",
+        "image/jpg": ".jpg",
+        "image/png": ".png",
+        "image/gif": ".gif",
+        "image/webp": ".webp",
+        "application/pdf": ".pdf",
+    }.get(media_type.strip().lower(), ".bin")
+
+
+def _persist_office_chat_media(
+    office_dir: Path,
+    items: list[CreateOfficeMediaItem],
+    *,
+    sequential_names: bool = False,
+) -> list[str]:
+    """Write chat attachments into ``media/uploads/``. Returns relative paths ``media/uploads/...``.
+
+    When ``sequential_names`` is True (create-office batch), files are named
+    ``image_0.webp``, ``image_1.jpg``, … in list order so ``office.md`` / roles
+    can reference stable paths. Otherwise each file gets a short random prefix
+    (single-file uploads) to avoid collisions.
+    """
+    if not items:
+        return []
+    allowed = frozenset(
+        {"image/jpeg", "image/png", "image/gif", "image/webp", "application/pdf"}
+    )
+    uploads = office_dir / "media" / "uploads"
+    uploads.mkdir(parents=True, exist_ok=True)
+    saved: list[str] = []
+    for i, item in enumerate(items):
+        mt = item.media_type.strip().lower()
+        if mt not in allowed:
+            raise HTTPException(
+                status_code=400,
+                detail=f"chat_media[{i}]: unsupported type {mt!r}. "
+                "Use image/jpeg, image/png, image/gif, image/webp, or application/pdf.",
+            )
+        b64 = _strip_data_url_b64(item.data)
+        try:
+            raw = base64.b64decode(b64, validate=False)
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, detail=f"chat_media[{i}]: invalid base64"
+            ) from e
+        if len(raw) > MAX_ATTACHMENT_BYTES:
+            raise HTTPException(
+                status_code=400,
+                detail=f"chat_media[{i}]: file too large (max {MAX_ATTACHMENT_BYTES // (1024 * 1024)} MB).",
+            )
+        ext = _guess_media_extension(item.filename, mt)
+        if sequential_names:
+            if mt == "application/pdf":
+                fname = f"document_{i}{ext}"
+            else:
+                fname = f"image_{i}{ext}"
+        else:
+            base = (item.filename or "upload").replace("\\", "/").split("/")[-1]
+            stem = re.sub(r"[^a-zA-Z0-9._-]+", "_", base.rsplit(".", 1)[0])[:80] or "upload"
+            fname = f"{uuid.uuid4().hex[:10]}_{stem}{ext}"
+        out_path = uploads / fname
+        out_path.write_bytes(raw)
+        saved.append(f"media/uploads/{fname}")
+    return saved
+
+
+def _user_office_dir_for_media_write(name: str) -> Path:
+    """Only offices under ``user_offices/`` accept uploaded media."""
+    candidate = (USER_OFFICES_DIR / name).resolve()
+    if not candidate.is_dir() or not (candidate / "office.md").is_file():
+        raise HTTPException(status_code=404, detail=f"Custom office '{name}' not found")
+    try:
+        candidate.relative_to(USER_OFFICES_DIR.resolve())
+    except ValueError as e:
+        raise HTTPException(
+            status_code=403, detail="Media uploads are only allowed for Your Offices."
+        ) from e
+    return candidate
+
+
+@app.get("/api/offices/{name}/media/{resource_path:path}")
+def get_office_media(name: str, resource_path: str):
+    """Serve a file from ``<office>/media/`` (read-only)."""
+    try:
+        office_dir = _find_office_dir(name)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    media_root = (office_dir / "media").resolve()
+    if not media_root.is_dir():
+        raise HTTPException(status_code=404, detail="This office has no media/ folder yet.")
+    parts = [p for p in resource_path.split("/") if p and p != ".."]
+    safe = _safe_path_under(media_root, *parts)
+    if safe is None or not safe.is_file():
+        raise HTTPException(status_code=404, detail="Media file not found")
+    return FileResponse(safe)
+
+
+@app.post("/api/offices/{name}/media")
+def upload_office_media(name: str, payload: CreateOfficeMediaItem):
+    """Append one image/PDF into ``media/uploads/`` (custom offices only)."""
+    office_dir = _user_office_dir_for_media_write(name)
+    paths = _persist_office_chat_media(office_dir, [payload])
+    rel = paths[0]
+    tail = rel[len("media/") :] if rel.startswith("media/") else rel
+    return {"path": rel, "url": f"/api/offices/{name}/media/{tail}"}
+
+
 class SaveOfficePayload(BaseModel):
     office_md: str
     roles: dict[str, str]
@@ -289,12 +697,6 @@ def save_office(name: str, payload: SaveOfficePayload):
         (roles_dir / f"{role_name}.md").write_text(content)
 
     return {"status": "saved"}
-
-
-class CreateOfficePayload(BaseModel):
-    name: str
-    office_md: str
-    roles: dict[str, str]
 
 
 @app.delete("/api/offices/{name}")
@@ -334,8 +736,13 @@ def clone_office(name: str, payload: ClonePayload):
         dest_name = dest_dir.name
         counter += 1
 
-    shutil.copytree(source_dir, dest_dir,
-                    ignore=shutil.ignore_patterns("app.py", "__pycache__", "*.pyc"))
+    shutil.copytree(
+        source_dir,
+        dest_dir,
+        ignore=shutil.ignore_patterns(
+            "app.py", "__pycache__", "*.pyc", "build",
+        ),
+    )
     return {"status": "cloned", "name": dest_name}
 
 
@@ -351,6 +758,11 @@ def create_office(payload: CreateOfficePayload):
     roles_dir.mkdir()
     for role_name, content in payload.roles.items():
         (roles_dir / f"{role_name}.md").write_text(content)
+
+    if payload.chat_media:
+        _persist_office_chat_media(
+            office_dir, payload.chat_media, sequential_names=True
+        )
 
     return {"status": "created", "name": payload.name}
 
@@ -446,6 +858,8 @@ def run_office(name: str):
     load_dotenv(BACKEND_DIR / ".env", override=False)
     env = os.environ.copy()
     env["PYTHONUNBUFFERED"] = "1"
+    # Rich web Activity panel: sinks may emit ``__DSLAPP__:`` lines instead of terminal ANSI.
+    env["DISSYSLAB_APP_SSE"] = "1"
     # So ``python -m dissyslab.cli`` resolves the repo package without a global
     # ``pip install -e .`` (common in dev / conda).
     _root = str(DISSYSLAB_ROOT)
@@ -489,13 +903,21 @@ def stop_office(name: str):
 
 @app.get("/api/offices/{name}/output")
 async def stream_output(name: str):
-    """SSE stream of a running office's stdout (fed by a single stdout-draining thread)."""
+    """SSE stream of a running office's stdout.
+
+    Emits named events for the custom app UI:
+
+    * ``event: log`` — plain text line (JSON ``{"text": "..."}``).
+    * ``event: block`` — structured payload (markdown, image, …).
+
+    Offices may also print ``__DSLAPP__:{...json...}`` for explicit blocks.
+    """
 
     async def event_generator() -> AsyncGenerator[str, None]:
         proc = _running.get(name)
         out_q = _office_output_queues.get(name)
         if not proc or out_q is None:
-            yield "data: [Office is not running]\n\n"
+            yield _format_sse("log", {"text": "[Office is not running]"})
             return
 
         loop = asyncio.get_event_loop()
@@ -504,10 +926,10 @@ async def stream_output(name: str):
             if line is None:
                 _running.pop(name, None)
                 _office_output_queues.pop(name, None)
-                yield "data: [Process finished]\n\n"
+                yield _format_sse("log", {"text": "[Process finished]"})
                 break
-            safe = line.replace("\n", " ")
-            yield f"data: {safe}\n\n"
+            for ev, payload in _iter_stdout_sse_events(line):
+                yield _format_sse(ev, payload)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -717,7 +1139,7 @@ async def office_chat(name: str, payload: ChatPayload):
 
     base_context = CLAUDE_CONTEXT_PATH.read_text() if CLAUDE_CONTEXT_PATH.exists() else ""
     office_context = _office_context_prompt(office_dir)
-    system_prompt = base_context + "\n\n---\n\n## IMPORTANT — You are running inside a web UI\n\nDo NOT give terminal instructions. The user may attach images or PDFs as extra context — use them when updating files.\n\nOutput updated files using filename-in-fence format:\n\n```office.md\ncontent\n```\n\n```roles/analyst.md\ncontent\n```\n\n---\n\n" + office_context
+    system_prompt = base_context + "\n\n---\n\n## IMPORTANT — You are running inside a web UI\n\nDo NOT give terminal instructions. The user may attach images or PDFs as extra context — use them when updating files.\n\n### Rich output (optional)\n\nThe custom app can show structured output when roles or sinks print a line starting with ``__DSLAPP__:`` followed by JSON, e.g. ``{\\\"t\\\":\\\"markdown\\\",\\\"body\\\":\\\"## Title\\\\n...\\\"}`` or image blocks with ``src`` under ``/api/offices/<office_name>/media/...``.\n\n### Persisted uploads\n\nOn **Create office**, attachments are saved as ``media/uploads/image_0.<ext>``, ``image_1.<ext>``, … in chronological order across all user messages that had files (PDFs: ``document_0.pdf``, …). This office may already contain those paths—keep them when editing roles.\n\nOutput updated files using filename-in-fence format:\n\n```office.md\ncontent\n```\n\n```roles/analyst.md\ncontent\n```\n\n### console_input (web Run)\n\nWhen ``Sources:`` includes ``console_input``, always write ``console_input(default_message=\\\"...\\\")`` with one realistic sample user line. The custom app runs offices without interactive stdin; that string is used once so **Run** works.\n\n---\n\n" + office_context
 
     try:
         api_messages = _anthropic_messages_from_payload(payload.messages)
@@ -806,6 +1228,33 @@ The user may attach images (e.g. wardrobe or outfit photos) and/or PDF files as 
 context in their messages. When present, use that visual and document context to infer
 requirements (sources, agent behavior, sinks) even if the user does not repeat those
 details in plain text.
+
+### Persisted media (custom app)
+
+When the user clicks **Create office**, the UI sends **every image/PDF from every user
+message in the thread** (in order). The server writes them as ``media/uploads/image_0.webp``,
+``media/uploads/image_1.jpg``, … (``document_0.pdf`` for PDFs) so you can reference stable paths.
+
+In role prompts use those paths, e.g. ``![outfit](media/uploads/image_0.webp)`` or instruct the agent to
+print a structured line for the app output panel:
+
+``__DSLAPP__:{"t":"image","src":"/api/offices/<OFFICE_NAME>/media/uploads/image_0.webp","alt":"Outfit"}``
+
+(Use the actual office folder name for ``<OFFICE_NAME>`` from the ``# Office:`` line.)
+For long formatted briefings from Python, prefer ``__DSLAPP__:{"t":"markdown","body":"...escaped..."}``.
+Always use the double-underscore prefix ``__DSLAPP__:`` (not ``DSLAPP:``).
+
+### Sidebar description (recommended)
+
+The office list shows a short subtitle like built-in offices. Prefer one of:
+- YAML at the very top of ``office.md``: ``---`` then ``description: One line summary.`` then ``---``, then the usual ``# Office: …`` and DSL; or
+- A ``README.md`` next to ``office.md`` whose first non-``#`` line is that summary.
+
+If both are omitted, the app still derives a one-line hint from ``Agents:`` / ``Sources:`` in ``office.md``.
+
+### console_input (web Run)
+
+When ``Sources:`` includes ``console_input``, always write ``console_input(default_message=\\\"...\\\")`` with one realistic sample user line. The custom app runs offices without interactive stdin; that string is used once so **Run** works.
 """
 
     try:

@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
+import OfficeOutputFeed from './OfficeOutputFeed'
 
 const styles = {
   container: {
@@ -105,48 +106,6 @@ const styles = {
     padding: '0 24px 24px',
     paddingTop: '12px',
   },
-  termLabel: {
-    fontSize: '11px',
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: '0.08em',
-    color: 'var(--text-muted)',
-    marginBottom: '8px',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '8px',
-  },
-  termBox: {
-    flex: 1,
-    minHeight: 0,
-    background: '#0a0c12',
-    borderRadius: '8px',
-    border: '1px solid var(--border)',
-    overflowY: 'auto',
-    padding: '12px 14px',
-    fontFamily: 'var(--font-mono)',
-    fontSize: '12px',
-    lineHeight: '1.65',
-    color: '#c9d1d9',
-  },
-  termLine: {
-    display: 'block',
-    whiteSpace: 'pre-wrap',
-    wordBreak: 'break-all',
-  },
-  placeholder: {
-    color: 'var(--text-muted)',
-    fontStyle: 'italic',
-    fontSize: '12px',
-  },
-  pulse: {
-    display: 'inline-block',
-    width: '7px',
-    height: '7px',
-    borderRadius: '50%',
-    background: 'var(--success)',
-    animation: 'pulse 1.2s infinite',
-  },
 }
 
 const META_RATIO_STORAGE_KEY = 'dissyslab-office-meta-ratio'
@@ -179,10 +138,7 @@ function readStoredMetaRatio() {
 }
 
 export default function OfficeView({ office, officeDetail, running, onRun, onStop, onEdit, onAIEdit, onClone, onDelete }) {
-  const [lines, setLines] = useState([])
   const [metaRatio, setMetaRatio] = useState(() => readStoredMetaRatio())
-  const termRef = useRef(null)
-  const esRef = useRef(null)
   const bodyRef = useRef(null)
   const dragStateRef = useRef({ active: false, startY: 0, startRatio: 0, bodyH: 0, lastRatio: 0.32 })
   const [showCloneModal, setShowCloneModal] = useState(false)
@@ -231,38 +187,6 @@ export default function OfficeView({ office, officeDetail, running, onRun, onSto
     setShowGmailModal(false)
     onRun()
   }, [gmailUser, gmailPass, onRun])
-
-  useEffect(() => {
-    if (!office) return
-    setLines([])
-
-    if (esRef.current) {
-      esRef.current.close()
-      esRef.current = null
-    }
-
-    if (running) {
-      const es = new EventSource(`/api/offices/${office.name}/output`)
-      esRef.current = es
-      es.onmessage = (e) => {
-        setLines(prev => [...prev, e.data])
-      }
-      es.onerror = () => {
-        es.close()
-        esRef.current = null
-      }
-    }
-
-    return () => {
-      esRef.current?.close()
-    }
-  }, [office?.name, running])
-
-  useEffect(() => {
-    if (termRef.current) {
-      termRef.current.scrollTop = termRef.current.scrollHeight
-    }
-  }, [lines])
 
   const startResizeDrag = useCallback(
     (e) => {
@@ -330,20 +254,8 @@ export default function OfficeView({ office, officeDetail, running, onRun, onSto
     )
   }
 
-  const colorLine = (line) => {
-    if (line.includes('ERROR') || line.includes('Error') || line.includes('error')) return '#f87171'
-    if (line.includes('CRITICAL')) return '#f97316'
-    if (line.includes('HIGH')) return '#facc15'
-    if (line.includes('MEDIUM')) return '#60a5fa'
-    if (line.includes('✓') || line.includes('started') || line.includes('Fetching')) return '#4ade80'
-    if (line.includes('✗') || line.includes('failed') || line.includes('Timeout')) return '#f87171'
-    if (line.startsWith('//') || line.startsWith('#')) return '#94a3b8'
-    return '#c9d1d9'
-  }
-
   return (
     <div style={styles.container}>
-      <style>{`@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }`}</style>
 
       <div style={styles.header}>
         <div>
@@ -426,50 +338,12 @@ export default function OfficeView({ office, officeDetail, running, onRun, onSto
                 minHeight: 100,
               }}
             >
-              <div style={styles.termLabel}>
-                {running && <span style={styles.pulse} />}
-                Output
-                {running && <span style={{ color: 'var(--success)' }}>— running</span>}
-              </div>
-              <div style={styles.termBox} ref={termRef}>
-                {lines.length === 0 && !running && (
-                  <span style={styles.placeholder}>
-                    Press Run to start this office. Output will appear here.
-                  </span>
-                )}
-                {lines.length === 0 && running && (
-                  <span style={styles.placeholder}>Starting…</span>
-                )}
-                {lines.map((line, i) => (
-                  <span key={i} style={{ ...styles.termLine, color: colorLine(line) }}>
-                    {line + '\n'}
-                  </span>
-                ))}
-              </div>
+              <OfficeOutputFeed officeName={office.name} running={running} />
             </div>
           </>
         ) : (
           <div style={{ ...styles.outputPane, flex: 1, minHeight: 0 }}>
-            <div style={styles.termLabel}>
-              {running && <span style={styles.pulse} />}
-              Output
-              {running && <span style={{ color: 'var(--success)' }}>— running</span>}
-            </div>
-            <div style={styles.termBox} ref={termRef}>
-              {lines.length === 0 && !running && (
-                <span style={styles.placeholder}>
-                  Press Run to start this office. Output will appear here.
-                </span>
-              )}
-              {lines.length === 0 && running && (
-                <span style={styles.placeholder}>Starting…</span>
-              )}
-              {lines.map((line, i) => (
-                <span key={i} style={{ ...styles.termLine, color: colorLine(line) }}>
-                  {line + '\n'}
-                </span>
-              ))}
-            </div>
+            <OfficeOutputFeed officeName={office.name} running={running} />
           </div>
         )}
       </div>

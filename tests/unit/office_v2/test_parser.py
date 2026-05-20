@@ -324,6 +324,24 @@ class TestParseErrors:
         assert [s.name for s in spec.sources] == ["hacker_news"]
         assert [a.agent_name for a in spec.agents] == ["Alex"]
 
+    def test_yaml_front_matter_before_office_header(self, tmp_path):
+        """Optional ``---`` / ``---`` block (custom app sidebar) is ignored."""
+        (tmp_path / "office.md").write_text(
+            "---\n"
+            "description: Sidebar blurb for the app\n"
+            "---\n\n"
+            "# Office: wardrobe_yaml_fm\n\n"
+            "Sources: hacker_news(max_articles=10, poll_interval=600)\n"
+            "Sinks: console_printer\n\n"
+            "Agents:\n"
+            "Alex is an analyst.\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Alex.\n"
+            "Alex's briefing is console_printer.\n"
+        )
+        spec = parse_office_dir(tmp_path)
+        assert spec.name == "wardrobe_yaml_fm"
+
     # NOTE: tests that the parser checks role-file existence or
     # extracts ports from ``roles/*.md`` were removed in Step 4.
     # The parser no longer touches role files — those concerns moved

@@ -75,6 +75,7 @@ const styles = {
     maxWidth: '90%',
   },
   inputRow: {
+    position: 'relative',
     padding: '12px 16px',
     borderTop: '1px solid var(--border)',
     display: 'flex',
@@ -96,6 +97,10 @@ const styles = {
     borderRadius: '8px',
     flexShrink: 0,
     cursor: 'pointer',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    userSelect: 'none',
   },
   attachmentChips: {
     display: 'flex',
@@ -112,6 +117,14 @@ const styles = {
     alignItems: 'center',
     gap: '6px',
     maxWidth: '100%',
+  },
+  chipThumb: {
+    width: '26px',
+    height: '26px',
+    objectFit: 'cover',
+    borderRadius: '4px',
+    flexShrink: 0,
+    border: '1px solid var(--border)',
   },
   chipName: {
     overflow: 'hidden',
@@ -150,14 +163,18 @@ export default function AIEditPanel({ office, onClose, onSaved }) {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: `I have the current files for "${office.name}" loaded. Tell me what you'd like to change — I'll update the files automatically.\n\nYou can attach JPEG/PNG/GIF/WebP images or PDFs for reference (e.g. style guides or screenshots).\n\nExamples:\n• "Add a third agent that formats results as bullet points"\n• "Change the sources to only use BBC and NPR"\n• "Make the analyst stricter — only pass CRITICAL items"`,
+      content: `I have the current files for "${office.name}" loaded. Tell me what you'd like to change — I'll update the files automatically.\n\nYou can attach JPEG/PNG/GIF/WebP images or PDFs for reference (e.g. style guides or screenshots). After you pick files, wait until they show as chips above the box, then click Send — files go with that message only.\n\nExamples:\n• "Add a third agent that formats results as bullet points"\n• "Change the sources to only use BBC and NPR"\n• "Make the analyst stricter — only pass CRITICAL items"`,
     },
   ])
   const [input, setInput] = useState('')
   const [pendingAttachments, setPendingAttachments] = useState([])
+  const [attachmentBusy, setAttachmentBusy] = useState(false)
+  const [attachmentError, setAttachmentError] = useState('')
   const [streaming, setStreaming] = useState(false)
   const bottomRef = useRef(null)
-  const fileInputRef = useRef(null)
+
+  const attachAccept =
+    'image/jpeg,image/png,image/gif,image/webp,image/*,.pdf,application/pdf'
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -165,8 +182,9 @@ export default function AIEditPanel({ office, onClose, onSaved }) {
 
   const sendMessage = async () => {
     const text = input.trim()
-    if ((!text && pendingAttachments.length === 0) || streaming) return
+    if ((!text && pendingAttachments.length === 0) || streaming || attachmentBusy) return
     setInput('')
+    setAttachmentError('')
 
     const attachmentsPayload = pendingAttachments.map(({ media_type, data, filename }) => ({
       media_type,
@@ -269,7 +287,8 @@ export default function AIEditPanel({ office, onClose, onSaved }) {
       setMessages(prev => {
         const next = [...prev]
         const last = next[next.length - 1]
-        if (last._streaming) next[next.length - 1] = { role: 'assistant', content: '[Connection error]' }
+        const msg = err?.message ? `[Error: ${err.message}]` : '[Connection error]'
+        if (last._streaming) next[next.length - 1] = { role: 'assistant', content: msg }
         return next
       })
     } finally {
@@ -285,30 +304,42 @@ export default function AIEditPanel({ office, onClose, onSaved }) {
   }
 
   const onPickFiles = async (e) => {
-    const files = e.target.files
-    if (!files?.length) return
-    e.target.value = ''
-    const next = [...pendingAttachments]
-    for (const file of Array.from(files)) {
-      try {
-        const att = await fileToAttachment(file)
-        next.push({ ...att, id: `${Date.now()}-${Math.random().toString(36).slice(2, 9)}` })
-      } catch (err) {
-        alert(err.message || String(err))
+    const inputEl = e.target
+    const list = inputEl.files ? Array.from(inputEl.files) : []
+    inputEl.value = ''
+    if (!list.length) return
+    setAttachmentError('')
+    setAttachmentBusy(true)
+    try {
+      for (const file of list) {
+        try {
+          const att = await fileToAttachment(file)
+          const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+          const preview =
+            att.media_type.startsWith('image/') &&
+            ['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(att.media_type)
+              ? `data:${att.media_type};base64,${att.data}`
+              : null
+          setPendingAttachments((prev) => [...prev, { ...att, id, preview }])
+        } catch (err) {
+          setAttachmentError(err.message || String(err))
+        }
       }
+    } finally {
+      setAttachmentBusy(false)
     }
-    setPendingAttachments(next)
   }
 
   const removeAttachment = (id) => {
     setPendingAttachments((prev) => prev.filter((a) => a.id !== id))
   }
 
-  const canSend = input.trim() || pendingAttachments.length > 0
+  const canSend =
+    (input.trim() || pendingAttachments.length > 0) && !streaming && !attachmentBusy
 
   return (
     <div style={styles.overlay} onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div style={styles.panel}>
+      <div style={styles.panel} onClick={(e) => e.stopPropagation()}>
         <div style={styles.header}>
           <div>
             <div style={styles.title}>AI Customize — {office.name}</div>
@@ -359,25 +390,27 @@ export default function AIEditPanel({ office, onClose, onSaved }) {
         </div>
 
         <div style={styles.inputRow}>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            accept="image/jpeg,image/png,image/gif,image/webp,.pdf,application/pdf"
-            style={{ display: 'none' }}
-            onChange={onPickFiles}
-          />
+          {attachmentError ? (
+            <div style={{ fontSize: '12px', color: '#f87171', lineHeight: 1.45 }}>{attachmentError}</div>
+          ) : null}
+          {attachmentBusy && (
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Reading files…</div>
+          )}
           {pendingAttachments.length > 0 && (
             <div style={styles.attachmentChips}>
               {pendingAttachments.map((a) => (
                 <span key={a.id} style={styles.chip}>
+                  {a.preview ? <img src={a.preview} alt="" style={styles.chipThumb} /> : null}
                   <span style={styles.chipName} title={a.filename}>
                     {a.filename || a.media_type}
                   </span>
                   <button
                     type="button"
                     style={styles.chipRemove}
-                    onClick={() => removeAttachment(a.id)}
+                    onClick={() => {
+                      setAttachmentError('')
+                      removeAttachment(a.id)
+                    }}
                     aria-label="Remove attachment"
                   >
                     ×
@@ -396,21 +429,46 @@ export default function AIEditPanel({ office, onClose, onSaved }) {
               disabled={streaming}
               rows={2}
             />
-            <button
-              type="button"
-              style={styles.attachBtn}
-              onClick={() => fileInputRef.current?.click()}
-              disabled={streaming}
+            <label
+              style={{
+                ...styles.attachBtn,
+                position: 'relative',
+                overflow: 'hidden',
+                ...(streaming || attachmentBusy
+                  ? { opacity: 0.45, pointerEvents: 'none', cursor: 'not-allowed' }
+                  : {}),
+              }}
               title="Attach images or PDF"
             >
-              📎
-            </button>
+              <span style={{ pointerEvents: 'none', position: 'relative', zIndex: 0 }} aria-hidden>
+                📎
+              </span>
+              <input
+                type="file"
+                multiple
+                accept={attachAccept}
+                disabled={streaming || attachmentBusy}
+                aria-label="Attach images or PDF"
+                style={{
+                  position: 'absolute',
+                  left: 0,
+                  top: 0,
+                  width: '100%',
+                  height: '100%',
+                  opacity: 0,
+                  cursor: streaming || attachmentBusy ? 'not-allowed' : 'pointer',
+                  fontSize: 0,
+                  zIndex: 1,
+                }}
+                onChange={onPickFiles}
+              />
+            </label>
             <button
               style={styles.sendBtn}
               onClick={sendMessage}
-              disabled={streaming || !canSend}
+              disabled={streaming || attachmentBusy || !canSend}
             >
-              {streaming ? '…' : 'Send'}
+              {streaming || attachmentBusy ? '…' : 'Send'}
             </button>
           </div>
         </div>

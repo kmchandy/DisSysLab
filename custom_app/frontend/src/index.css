@@ -71,3 +71,49 @@ textarea:focus, input:focus {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Rich office output (react-markdown) */
+.office-md {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #e2e8f0;
+}
+.office-md h1, .office-md h2, .office-md h3, .office-md h4 {
+  font-weight: 700;
+  margin: 0.75em 0 0.35em;
+  color: #f1f5f9;
+}
+.office-md h1 { font-size: 1.25rem; }
+.office-md h2 { font-size: 1.1rem; }
+.office-md h3 { font-size: 1rem; }
+.office-md p { margin: 0.4em 0; }
+.office-md ul, .office-md ol {
+  margin: 0.35em 0 0.35em 1.1em;
+  padding-left: 0.2em;
+}
+.office-md li { margin: 0.2em 0; }
+.office-md strong { color: #fff; font-weight: 600; }
+.office-md em { color: #cbd5e1; }
+.office-md code {
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  background: rgba(0,0,0,0.35);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+.office-md pre {
+  margin: 0.5em 0;
+  padding: 10px 12px;
+  background: #0a0c12;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.office-md a { color: var(--accent); }
+.office-md blockquote {
+  margin: 0.5em 0;
+  padding-left: 10px;
+  border-left: 3px solid var(--accent);
+  color: var(--text-dim);
+}

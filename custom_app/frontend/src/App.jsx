@@ -32,13 +32,33 @@ export default function App() {
     try {
       const res = await fetch('/api/offices')
       const data = await res.json()
-      setOffices(data.offices)
+      const list = data.offices || []
+      setOffices(list)
+      return list
     } catch (e) {
       console.error('Failed to load offices', e)
+      return []
     }
   }, [])
 
   useEffect(() => { fetchOffices() }, [fetchOffices])
+
+  /** Keep sidebar metadata (description, builtin) in sync after office list reloads. */
+  useEffect(() => {
+    setSelected((prev) => {
+      if (!prev?.name) return prev
+      const o = offices.find((x) => x.name === prev.name)
+      if (!o) return prev
+      if (
+        o.description === prev.description &&
+        o.builtin === prev.builtin &&
+        o.path === prev.path
+      ) {
+        return prev
+      }
+      return o
+    })
+  }, [offices])
 
   const fetchOfficeDetail = useCallback(async (name) => {
     try {
@@ -105,9 +125,9 @@ export default function App() {
       })
       if (!res.ok) throw new Error(await res.text())
       const data = await res.json()
-      await fetchOffices()
-      const cloned = { name: data.name, builtin: false, description: '' }
-      setSelected(cloned)
+      const list = await fetchOffices()
+      const picked = list.find((o) => o.name === data.name)
+      setSelected(picked || { name: data.name, builtin: false, description: '' })
       fetchOfficeDetail(data.name)
       if (mode === 'ai') {
         setMode('view')
@@ -127,9 +147,9 @@ export default function App() {
 
   const handleOfficeCreated = useCallback((name) => {
     setShowChat(false)
-    fetchOffices().then(() => {
-      const newOffice = { name, builtin: false, description: '' }
-      setSelected(newOffice)
+    fetchOffices().then((list) => {
+      const picked = list.find((o) => o.name === name)
+      setSelected(picked || { name, builtin: false, description: '' })
       fetchOfficeDetail(name)
       setMode('view')
     })

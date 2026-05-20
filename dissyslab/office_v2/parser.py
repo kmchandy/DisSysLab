@@ -85,6 +85,10 @@ It is NOT permissive about:
 * Unknown sections — surfaced rather than ignored.
 * Missing required fields — surfaced.
 * Ambiguous syntax — surfaced.
+
+Optional YAML front matter (``---`` … ``---``) at the **very beginning** of the
+file (before ``# Office:``) is stripped before parsing — used by the custom app
+for sidebar ``description:`` metadata only.
 """
 from __future__ import annotations
 
@@ -104,6 +108,7 @@ from dissyslab.office_v2._parser_text import (
     _split_top_level,
     _strip_bullet,
     _strip_trailing_period,
+    strip_leading_yaml_front_matter,
 )
 from dissyslab.office_v2.office_spec_constants import EXTERNAL
 from dissyslab.office_v2.office_spec import (
@@ -447,6 +452,7 @@ def parse_office_dir(office_dir: Path) -> OfficeSpec:
         )
 
     text = md_path.read_text(encoding="utf-8")
+    text = strip_leading_yaml_front_matter(text)
     lines = _enumerate_lines(text)
     sections = _split_sections(lines, md_path)
 

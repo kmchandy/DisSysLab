@@ -173,6 +173,7 @@ Connections:
 | `search` | `query="...", poll_interval=3600` | Web search results |
 | `gmail` | `poll_interval=60, max_emails=10, unread_only=True` | Poll Gmail inbox for new emails |
 | `calendar` | `url="https://...", poll_interval=300, days_ahead=7` | Upcoming events from any ICS calendar |
+| `console_input` | `prompt="> "`, `default_message="..."` (optional) | One line from the terminal per step; in the **web Run** (no stdin), you **must** pass `default_message="..."` with a sample user request so the office still runs |
 
 Use `max_posts=None, lifetime=None` for a source that runs forever.
 Use `max_articles=10` for a source that fetches 10 articles and stops.
@@ -225,6 +226,7 @@ al_jazeera's destination is Alex.
 web's destination is Alex.
 gmail's destination is Alex.
 calendar's destination is Alex.
+console_input's destination is Alex.
 ```
 
 **To discard unwanted messages, use "discard" as a port name:**

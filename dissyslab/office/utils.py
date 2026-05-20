@@ -187,6 +187,15 @@ SOURCE_REGISTRY = {
         "import": "from dissyslab.components.sources.kalshi_source import KalshiSource",
         "class":  "KalshiSource",
     },
+
+    # ── Interactive stdin (one line per poll) ───────────────────────────────
+    # Pairs with ``console_printer``. For headless runs (custom app ``Run``),
+    # pass ``default_message="..."`` or set env ``OFFICE_CONSOLE_INPUT``.
+    "console_input": {
+        "type":   "console_input",
+        "import": "from dissyslab.components.sources.console_input_source import ConsoleInputSource",
+        "class":  "ConsoleInputSource",
+    },
 }
 
 
