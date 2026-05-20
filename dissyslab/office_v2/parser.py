@@ -263,16 +263,48 @@ def _parse_agents_section(
 # ── Connections ────────────────────────────────────────────────────────
 
 
+# Canonical connection shape:  "X's port is Y."  /  "X's port are Y, Z and W."
 _POSSESSIVE_RE = re.compile(
     r"""^\s*
-    ([A-Za-z_][A-Za-z0-9_]*)        # sender name
+    (?P<sender>[A-Za-z_][A-Za-z0-9_]*)        # sender name
     \s*'s\s+
-    ([A-Za-z_][A-Za-z0-9_]*)        # sender port
-    \s+(is|are)\s+
-    (.+?)                           # recipient list
+    (?P<port>[A-Za-z_][A-Za-z0-9_]*)          # sender port
+    \s+(?:is|are)\s+
+    (?P<recipients>.+?)                       # recipient list
     \s*$""",
     re.VERBOSE,
 )
+
+
+# Sentence-style connection shape:
+#   "X sends his out to Y."
+#   "X sends her output to Y, Z."
+#   "X sends their output to the editor."
+#   "X sends out to Y."
+# The pronoun (his/her/their/its) is optional. "output" is treated
+# as a natural-English alias for the canonical port name "out".
+# A leading "the" before the recipient is also consumed (single-
+# recipient case); per-recipient "the " stripping happens later in
+# _parse_destination for the multi-recipient case.
+_SENDS_RE = re.compile(
+    r"""^\s*
+    (?P<sender>[A-Za-z_][A-Za-z0-9_]*)        # sender name
+    \s+sends?\s+                              # "send" / "sends"
+    (?:(?:his|her|their|its)\s+)?             # optional pronoun
+    (?P<port>output|[A-Za-z_][A-Za-z0-9_]*)   # port name or "output"
+    \s+to\s+
+    (?:the\s+)?                               # optional "the"
+    (?P<recipients>.+?)                       # recipient list
+    \s*$""",
+    re.VERBOSE | re.IGNORECASE,
+)
+
+
+# Map English-flavoured port aliases to their canonical token. Today
+# the single alias is "output" -> "out" (the framework's conventional
+# single-status outport). Extend as the natural-language surface grows.
+def _normalize_port(port: str) -> str:
+    return "out" if port.lower() == "output" else port
 
 
 def _parse_destination(
@@ -298,6 +330,12 @@ def _parse_destination(
                               single inport.
     """
     text = text.strip()
+    # Tolerate a leading "the " in sentence-style connections —
+    # "X sends his output to the editor, the reviewer, and the archive."
+    # Strip per-recipient so this works for any recipient in the list,
+    # not just the first.
+    if text.lower().startswith("the "):
+        text = text[4:].strip()
     m = re.match(
         r"^([A-Za-z_][A-Za-z0-9_]*)\s*'s\s+([A-Za-z_][A-Za-z0-9_]*)\s*$",
         text,
@@ -367,19 +405,36 @@ def _parse_connections_section(
         text = text.strip()
         if not text:
             continue
+        # Try canonical possessive form first, then the sentence-style
+        # "X sends his out to Y" form. Both expose named groups
+        # (sender, port, recipients).
+        #
+        # Subtle: the "output" -> "out" alias is applied ONLY in the
+        # sentence-style match. In that context "output" is an English
+        # word — "the thing this agent emits" — and almost always
+        # means the conventional port name "out". In the canonical
+        # possessive form, the port name is taken literally: an office
+        # that legitimately declares a port named "output" (as the
+        # analyst role does in examples/org_two_office_news) must keep
+        # working.
         m = _POSSESSIVE_RE.match(text)
+        used_sends_form = False
+        if not m:
+            m = _SENDS_RE.match(text)
+            used_sends_form = True
         if not m:
             raise ParseError(
-                "expected '<sender>'s <port> is/are <recipient(s)>'",
+                "expected '<sender>'s <port> is/are <recipient(s)>' "
+                "or '<sender> sends [his|her|their|its] <port> to "
+                "<recipient(s)>'",
                 path=path,
                 line_no=line.no,
                 snippet=line.text,
             )
-        sender = m.group(1)
-        sender_port = m.group(2)
-        # m.group(3) is "is" or "are" — currently unused (recipients
-        # parser handles both singular and plural forms).
-        recipient_list = m.group(4)
+        sender = m.group("sender")
+        port_raw = m.group("port")
+        sender_port = _normalize_port(port_raw) if used_sends_form else port_raw
+        recipient_list = m.group("recipients")
 
         # Build the source Endpoint, normalising boundary inputs.
         if sender in inputs:

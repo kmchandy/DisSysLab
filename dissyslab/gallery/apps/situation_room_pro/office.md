@@ -9,7 +9,7 @@ Eve is an entity_extractor.
 Sam is a severity_classifier.
 Tom is a topic_tagger.
 Greta is a geolocator.
-Sync is a synchronizer.
+Sync is a synchronizer(inports=["entities", "severity", "topic", "location"]).
 Riley is a writer.
 
 Connections:

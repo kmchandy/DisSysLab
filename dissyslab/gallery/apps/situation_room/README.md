@@ -10,65 +10,41 @@ Every morning (or as often as you run it), Situation Room pulls
 articles from BBC World, NPR, and Al Jazeera. It deduplicates them,
 classifies severity, extracts named entities, tags topic and
 location, and writes a short briefing for each article. The
-briefings are rendered in your terminal as a clean intelligence
-digest — what you'd want to read over coffee at 8 a.m. — and
-archived as JSONL so you can re-read the day later.
-
-Eight plain-English agents wired into the sense → think → respond
-shape. Pick your engine: free local Qwen on Ollama (privacy, no
-recurring cost, 15–30 min per run) or hosted Qwen-2.5-7B via
-OpenRouter (pennies per run, finishes in 1–5 minutes regardless of
-your laptop). See
+briefings are rendered in your terminal as an intelligence
+digest and also archived as JSONL.
+The office instantiates the
+sense → think → respond pattern — see
 [`docs/PATTERN_sense_think_respond.md`](../../../../docs/PATTERN_sense_think_respond.md)
-for the pattern this office instantiates and how to remix it.
+for how to modify it.
 
-## Set it up in 10 minutes
+## Run it
 
-Three steps. Each takes about three minutes.
-
-**1. Install Ollama and pull a model.**
-
-[Download Ollama](https://ollama.com/download) for your operating
-system, then in a terminal:
+Install DisSysLab and pick an engine following the
+[top-level README](../../../../README.md) — one curl one-liner,
+one engine choice (Ollama, OpenRouter, or Claude). Then:
 
 ```bash
-ollama pull qwen3:30b
+dsl run situation_room
 ```
 
-This downloads a 19 GB open-weight model (Qwen3-30B-A3B) to your
-laptop. One-time download. You'll need ~32 GB of RAM and a recent
-Mac or PC.
+Wall time and cost depend on the engine you picked:
 
-**2. Install DisSysLab.**
+| Engine | Wall time per run | Cost per run |
+|---|---|---|
+| Ollama (local Qwen3) | 15–30 min on a 32 GB Mac | $0 |
+| OpenRouter (Qwen-2.5-7B) | 1–5 min, any laptop | pennies |
+| Claude | 1–3 min, any laptop | tens of cents |
 
-```bash
-pip install dissyslab
-export DSL_BACKEND=ollama
-```
+> *All numbers above are estimates and will drift as providers
+> update prices.*
 
-**3. Run the office.**
+First run is slowest because the engine cold-starts. Re-running
+the office reuses the loaded model and goes faster.
 
-```bash
-dsl run dissyslab/gallery/situation_room/
-```
+## What's in office.md
 
-The first run will take ~15–25 minutes — the model thinks
-carefully about each article. Subsequent runs reuse the model in
-memory and are faster. Output streams to your terminal as
-briefings are written.
-
-That's it. With Ollama you have no API key and no recurring cost, but
-expect a 15–30 min first run on local hardware. For faster turnaround
-on any laptop, set `DSL_BACKEND=openrouter` and
-`OPENROUTER_MODEL=qwen/qwen-2.5-7b-instruct` (pennies per run,
-~1–5 minutes) — see
-[`docs/LANGUAGE_MODELS.md`](../../../docs/LANGUAGE_MODELS.md).
-
-## What's actually in office.md
-
-The whole office fits on one page. Open
-[`office.md`](office.md) alongside this section — every line is
-explained below. If you can read this, you can write your own.
+Open [`office.md`](office.md) alongside this section — every line is
+explained below. 
 
 **The header.** Every office starts with one line naming itself:
 
@@ -76,8 +52,8 @@ explained below. If you can read this, you can write your own.
 # Office: situation_room
 ```
 
-That name is what `dsl run` is reporting when it starts. Nothing
-else depends on it.
+That name is what `dsl run` prints when it starts. Nothing else
+depends on it.
 
 **Sources — where messages come from.**
 
@@ -91,7 +67,8 @@ listener. The framework ships a catalogue of named sources you
 just refer to by name — `bbc_world`, `npr_news`, `weather`,
 `gmail`, `stocks`, `hacker_news`, and more. The
 parentheses are arguments: `max_articles=1` means "fetch one
-article per run." Change it to 10 and the office processes ten.
+article per run." Change it to 10 and the office processes 10 articles
+per run.
 
 **Sinks — where messages end up.**
 
@@ -99,11 +76,10 @@ article per run." Change it to 10 and the office processes ten.
 Sinks: intelligence_display, jsonl_recorder_briefing(path="briefings.jsonl")
 ```
 
-A *sink* is the other end: a terminal printer, a markdown file
+Results are sent to a sink: a terminal printer, a markdown file
 writer, a Slack channel, a Gmail outbox. Same registry pattern as
 sources. This office uses two sinks — one for live terminal
-output, one to record every briefing to disk as JSONL so you can
-re-read the day's intelligence later.
+output, one to record every briefing to disk as JSONL.
 
 **Agents — named characters with roles.**
 
@@ -119,13 +95,17 @@ Riley is a writer.
 ```
 
 Each line names an *agent* and assigns it a *role*. ``Sasha is a
-deduplicator`` reads as plain English; under the hood it means
-"create a transformer agent named Sasha; its behaviour is
-whatever the `deduplicator` role does." Roles come from two
-places: the framework's built-in role library (in
+deduplicator`` means that the behaviour of agent Sasha is
+specified by the `deduplicator` role." Each role is specified by
+a job description. Roles and their specifications are found in
+the framework's built-in role library (in
 `dissyslab/roles/`) and this office's own `roles/` folder.
+Extend the library of roles to fit the types of applications
+that you build and reuse role specs from your library.
+
 `writer`, `entity_extractor`, `severity_classifier`,
-`topic_tagger`, and `geolocator` are built in; `synchronizer` is
+`topic_tagger`, and `geolocator` are in the built role library.
+ `synchronizer` is
 custom to this office. The framework doesn't know what names are
 "right" — `Sasha`, `Eve`, `Riley` are just local labels you use in
 the wiring.
@@ -138,10 +118,12 @@ npr_news's destination is Sasha.
 al_jazeera's destination is Sasha.
 ```
 
-A connection sentence reads as English: *X's out goes to Y*. The
-default port on a source is called `destination`; the default
-port on an agent or sink is implicit. Three feeds all feeding one
-deduplicator means the framework automatically fans them in.
+Each line reads as English. The default outport of a source is
+called `destination`, so `bbc_world's destination is Sasha` says
+"send each article BBC produces to Sasha." On the receiving side,
+sinks and most agents have a default inport, so we just write
+`Sasha` rather than `Sasha's <port-name>`. Three feeds all feeding
+one deduplicator means the framework automatically fans them in.
 
 ```
 Sasha's out is Eve, Sam, Tom, Greta.
@@ -172,7 +154,7 @@ Sync's out is Riley.
 Riley's out is intelligence_display, jsonl_recorder_briefing.
 ```
 
-Standard pipe: synchroniser to writer, then the writer's output
+Standard pipe: synchronizer to writer, then the writer's output
 fans out to both sinks at once. Pat sees every briefing in the
 terminal *and* gets a JSONL archive on disk to re-read later. No
 editorial filter — you're the editor.
@@ -399,16 +381,13 @@ through this from scratch.
 ## What you should expect
 
 - **Quality**: classifications are reliable, summaries are
-  faithful paraphrases, no hallucinated entities (validated on a
-  21-article corpus — see `dev/experiments/`).
-- **Speed**: ~30 seconds per article on a typical Mac, because
-  Qwen3 thinks carefully before producing each output. Pat is
-  preparing for an 8 a.m. meeting, not a stock trade — slow is
-  fine.
-- **Cost**: $0/month recurring. One-time hardware cost is whatever
-  Mac (M-series, 32 GB+ RAM recommended) you already own or buy.
-- **Privacy**: nothing leaves your machine. Your AI usage doesn't
-  appear in anyone else's analytics.
+  faithful paraphrases, entities ground in the article text.
+- **Speed**: ~30 seconds per article on a typical Mac with Ollama.
+  Plenty for a morning digest; not enough for real-time alerts.
+- **Cost**: $0/month recurring on Ollama. Pennies per run on
+  OpenRouter. Tens of cents per run on Claude.
+- **Privacy on Ollama**: nothing leaves your machine. On hosted
+  backends, your prompts go to the provider.
 
 ## When this office isn't the right fit
 
@@ -425,10 +404,9 @@ through this from scratch.
 
 - [`office.md`](office.md) — the wiring.
 - [`roles/synchronizer.py`](roles/synchronizer.py) — the only
-  office-specific Python role; the four library-shipped roles
+  office-specific Python role; the five library-shipped roles
   (entity_extractor, severity_classifier, topic_tagger,
-  geolocator, writer, evaluator) come from
-  `dissyslab/roles/`.
+  geolocator, writer) come from `dissyslab/roles/`.
 - [`docs/BUILD_APPS.md`](../../../docs/BUILD_APPS.md) — how to
   build your own office.
 - [`docs/LANGUAGE_MODELS.md`](../../../docs/LANGUAGE_MODELS.md) —

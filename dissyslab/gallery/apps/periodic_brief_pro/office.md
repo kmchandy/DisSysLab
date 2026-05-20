@@ -1,12 +1,5 @@
 # Office: periodic_brief_pro
 
-# A hybrid office: news goes through a sense → think → respond
-# mini-pipeline (entity / topic / urgency tagging + a writer);
-# weather, stocks, calendar, and gmail bypass the thinking layer
-# and go directly to the sink. The grown-up version of
-# `periodic_brief`. Requires an OpenRouter or Claude key plus
-# Google Calendar and Gmail credentials.
-
 Sources: bbc_world(max_articles=5), npr_news(max_articles=5), weather(city="Pasadena", max_readings=1), stocks(ticker="AAPL", max_readings=1), stocks_2(ticker="NVDA", max_readings=1), stocks_3(ticker="MSFT", max_readings=1), calendar(days_ahead=1), gmail(unread_only=True, max_emails=20)
 Sinks: periodic_brief_html_sink(path="brief.html"), discard
 
@@ -16,12 +9,11 @@ Eve is an entity_extractor.
 Tom is a topic_tagger.
 Sam is an urgency_classifier.
 Felix is a relevance_filter.
-Sync is a synchronizer.
+Sync is a synchronizer(inports=["entity_extractor", "topic_tagger", "urgency_classifier"]).
 Riley is a summary_writer.
 Mail is a mail_summariser.
 
 Connections:
-# News pipeline: dedupe → 3 parallel thinkers → sync → filter → writer → sink
 bbc_world's destination is Sasha.
 npr_news's destination is Sasha.
 
@@ -36,12 +28,10 @@ Felix's keep is Riley.
 Felix's discard is discard.
 Riley's out is periodic_brief_html_sink.
 
-# Email pipeline: each email is filter-and-summarised before landing in the brief.
 gmail's destination is Mail.
 Mail's keep is periodic_brief_html_sink.
 Mail's discard is discard.
 
-# Bypass sources: weather, stocks, calendar go straight to the sink.
 weather's destination is periodic_brief_html_sink.
 stocks's destination is periodic_brief_html_sink.
 stocks_2's destination is periodic_brief_html_sink.

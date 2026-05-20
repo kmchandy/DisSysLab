@@ -56,6 +56,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from dissyslab.fn_lib import FN_LIB, partition_kwargs
+from dissyslab.office_v2.library import PARAMETERIZED_LIBRARY
 from dissyslab.office_v2._internals import (
     CompileError,
     _BlockTable,
@@ -110,6 +111,12 @@ class _OfficeNode:
     # ``fn_kwargs`` going into ``params=``.
     fn_lib_agents: Dict[
         str, Tuple[str, Dict[str, Any], Dict[str, Any]]
+    ] = field(default_factory=dict)
+    # Agents resolved from PARAMETERIZED_LIBRARY: maps
+    # agent_name → (role_name, kwargs). The emitter generates a
+    # ``PARAMETERIZED_LIBRARY[role](**kwargs)()`` call at runtime.
+    parameterized_agents: Dict[
+        str, Tuple[str, Dict[str, Any]]
     ] = field(default_factory=dict)
 
 
@@ -182,6 +189,29 @@ def _build_tree(
                 f"AgentRoleEntry nor an OfficeRoleEntry "
                 f"(got {type(entry).__name__})"
             )
+        elif ref.role_name in PARAMETERIZED_LIBRARY:
+            # Parameterized library role — port shape depends on the
+            # kwargs Pat wrote in office.md. We invoke the constructor
+            # now (purely to discover out_ports for downstream wiring
+            # validation) but record the kwargs for the emitter, which
+            # re-invokes at runtime inside build/run.py.
+            constructor = PARAMETERIZED_LIBRARY[ref.role_name]
+            user_kwargs = dict(ref.args)
+            try:
+                entry = constructor(**user_kwargs)
+            except TypeError as exc:
+                raise CompileError(
+                    f"agent {ref.agent_name!r}: bad arguments to "
+                    f"parameterized role {ref.role_name!r}: {exc}"
+                ) from exc
+            except ValueError as exc:
+                raise CompileError(
+                    f"agent {ref.agent_name!r}: {exc}"
+                ) from exc
+            node.table.role_agents[ref.agent_name] = entry.out_ports
+            node.parameterized_agents[ref.agent_name] = (
+                ref.role_name, user_kwargs
+            )
         elif ref.role_name in FN_LIB:
             # fn_lib role — single semantic outport "out", runtime "out_".
             fn_entry = FN_LIB[ref.role_name]
@@ -203,10 +233,11 @@ def _build_tree(
             raise CompileError(
                 f"agent {ref.agent_name!r} uses role {ref.role_name!r}, "
                 f"but no such role is in the library, no inline path "
-                f"was provided, and no fn_lib entry of that name "
-                f"exists.\n"
-                f"  roles_lib keys: {sorted(library.keys())}\n"
-                f"  fn_lib keys:    {sorted(FN_LIB.keys())}"
+                f"was provided, and no fn_lib or parameterized-library "
+                f"entry of that name exists.\n"
+                f"  roles_lib keys:              {sorted(library.keys())}\n"
+                f"  fn_lib keys:                 {sorted(FN_LIB.keys())}\n"
+                f"  PARAMETERIZED_LIBRARY keys:  {sorted(PARAMETERIZED_LIBRARY.keys())}"
             )
 
     return node
@@ -376,6 +407,22 @@ def _emit_builder(node: _OfficeNode) -> str:
             )
             lines.append(f"                name={ref.agent_name!r},")
             lines.append("            ),")
+        elif ref.agent_name in node.parameterized_agents:
+            role_name, user_kwargs = node.parameterized_agents[
+                ref.agent_name
+            ]
+            kwargs_repr = _kwargs_repr(user_kwargs)
+            # The runtime re-invokes the parameterized-library
+            # constructor with the same kwargs to obtain a fresh
+            # AgentRoleEntry, then calls it to get the Agent. Pat
+            # wrote the kwargs once in office.md; the framework
+            # uses them at compile time (for port validation) and
+            # at runtime (to build the agent).
+            lines.append(
+                f'            "{ref.agent_name}": '
+                f'PARAMETERIZED_LIBRARY[{role_name!r}]('
+                f'{kwargs_repr})(),'
+            )
         else:
             lines.append(
                 f'            "{ref.agent_name}": '
@@ -419,7 +466,10 @@ def _emit_imports(nodes: List[_OfficeNode]) -> str:
         "from dissyslab.blocks.sink import Sink",
         "from dissyslab.blocks.transform import Transform",
         "from dissyslab.fn_lib import FN_LIB",
-        "from dissyslab.office_v2 import load_roles_dir",
+        "from dissyslab.office_v2 import (",
+        "    PARAMETERIZED_LIBRARY,",
+        "    load_roles_dir,",
+        ")",
         "",
     ]
 

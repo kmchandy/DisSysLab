@@ -40,10 +40,12 @@ from dissyslab.office_v2.library import (
     DEFAULT_AI,
     Library,
     OfficeRoleEntry,
+    PARAMETERIZED_LIBRARY,
     RoleEntry,
     load_roles_dir,
     nl_role,
     specialist_role,
+    synchronizer_role,
 )
 from dissyslab.office_v2.compiler import (
     CompileError,
@@ -68,6 +70,7 @@ __all__ = [
     "IMPLICIT_INPORT",
     "Library",
     "OfficeRoleEntry",
+    "PARAMETERIZED_LIBRARY",
     "OfficeSpec",
     "ParseError",
     "RoleEntry",
@@ -82,4 +85,5 @@ __all__ = [
     "parse_office_dir",
     "render_run_py",
     "specialist_role",
+    "synchronizer_role",
 ]

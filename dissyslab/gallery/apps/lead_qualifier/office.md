@@ -1,8 +1,5 @@
 # Office: lead_qualifier
 
-# An instance of the sense → think → respond pattern; see
-# docs/PATTERN_sense_think_respond.md.
-
 Sources: webhook(port=8001, path='/leads')
 Sinks: webhook_sink(webhook_url_env='CRM_WEBHOOK_URL')
 
@@ -11,7 +8,7 @@ Sasha is a deduplicator(by='url').
 Eve is a summarizer.
 Sam is a sentiment_classifier.
 Tom is an urgency_classifier.
-Sync is a synchronizer.
+Sync is a synchronizer(inports=["summarizer", "sentiment_classifier", "urgency_classifier"]).
 Riley is a summary_writer.
 
 Connections:

@@ -10,6 +10,15 @@ rather than markdown. Pat opens ``brief.html`` in any browser; the
 file emails cleanly, drags into Notion, prints to a single-page
 PDF, and renders identically across devices.
 
+In addition to the HTML file, the sink also prints a colored
+terminal version of the brief at the end of a run (when the office
+calls ``finalize()``). That means ``dsl run periodic_brief`` shows
+output in the same window the user typed the command — no separate
+``open brief.html`` step is required. The HTML file remains for
+sharing, archiving, or auto-refresh dashboards. Console rendering
+can be disabled with ``print_to_console=False`` (useful for cron /
+CI / systemd, where stdout is not a real terminal).
+
 Routing
 =======
 
@@ -58,6 +67,7 @@ from __future__ import annotations
 
 import html
 import os
+import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -67,6 +77,40 @@ from typing import Any, Dict, List, Optional
 
 
 _DEFAULT_ACCENT = "#3b82f6"   # calm slate-blue
+
+
+# ── ANSI color codes for terminal rendering ──────────────────────────
+#
+# We render the brief to the terminal without depending on `rich` or
+# `colorama` — both are heavy for Pat's "one terminal command, see a
+# result" experience. Manual ANSI escape codes work on every modern
+# macOS/Linux terminal and most Windows terminals (Terminal.app,
+# iTerm2, GNOME Terminal, Windows Terminal). When stdout isn't a TTY
+# (e.g. Pat redirects to a file), `_color_off` strips them.
+_C_RESET   = "\033[0m"
+_C_BOLD    = "\033[1m"
+_C_DIM     = "\033[2m"
+_C_BLUE    = "\033[34m"
+_C_CYAN    = "\033[36m"
+_C_GREEN   = "\033[32m"
+_C_RED     = "\033[31m"
+_C_YELLOW  = "\033[33m"
+_C_MAGENTA = "\033[35m"
+
+
+def _color_supported() -> bool:
+    """Return True only if stdout is a TTY where ANSI codes will render.
+
+    Honors the de-facto-standard ``NO_COLOR`` environment variable
+    (https://no-color.org) so power-users can opt out without editing
+    code or office.md.
+    """
+    if os.environ.get("NO_COLOR"):
+        return False
+    try:
+        return sys.stdout.isatty()
+    except Exception:
+        return False
 
 
 def _esc(value: Any) -> str:
@@ -104,13 +148,36 @@ class PeriodicBriefHtmlSink:
         title: Optional[str] = None,
         accent_color: str = _DEFAULT_ACCENT,
         auto_refresh: bool = True,
+        print_to_console: bool = True,
     ):
+        """
+        Construct a periodic brief sink.
+
+        Args:
+            path:           Where to write the HTML file. Defaults to
+                            ``brief.html`` in the current directory.
+            name:           Override the sink name (only matters for
+                            tracing / log messages).
+            title:          Page title. Defaults to today's date.
+            accent_color:   CSS color used for links, badges, hero gradient.
+            auto_refresh:   If True, include a 60-second meta-refresh
+                            in the HTML so an open browser tab keeps up.
+            print_to_console: If True (default), also render the brief
+                            to the terminal when ``finalize()`` is called.
+                            This is the experience that makes
+                            ``dsl run periodic_brief`` show output in
+                            the same window the user typed the command
+                            — without needing a separate
+                            ``open brief.html`` step. Disable when
+                            running headless (cron / CI / systemd).
+        """
         self.path = Path(os.path.expanduser(path)).resolve()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._title = title or f"Brief — {datetime.now().strftime('%A, %B %-d, %Y')}"
         self._name = name or "periodic_brief_html_sink"
         self._accent = accent_color
         self._auto_refresh = auto_refresh
+        self._print_to_console = print_to_console
 
         # Per-bucket accumulators
         self._schedule: List[dict] = []
@@ -564,5 +631,188 @@ body {{
         return f'<section class="card"><h2>{_esc(title)}</h2>{body}</section>'
 
     def finalize(self) -> None:
-        """Final flush. Idempotent; safe to call at office shutdown."""
+        """Final flush — rewrite the HTML and (optionally) print to console.
+
+        Called by the framework at office shutdown. Idempotent; safe to
+        call repeatedly without producing duplicate output (we re-render
+        the file, but only print the console version once per call).
+        """
         self._rewrite()
+        if self._print_to_console:
+            self._print_brief_to_console()
+
+    # ── Terminal rendering ───────────────────────────────────────────
+
+    def _print_brief_to_console(self) -> None:
+        """Render the same brief content as a colored terminal block.
+
+        Two design choices worth noting:
+
+        1. We print on ``finalize()``, not on every ``_rewrite()``. A
+           polled office can produce dozens of messages over its run;
+           re-rendering to the console each time would scroll Pat's
+           terminal off the top. One clean final view is the right
+           UX for the periodic-brief use case.
+
+        2. No external dependency (no ``rich``, no ``colorama``). The
+           ANSI codes work on every modern macOS / Linux terminal, and
+           collapse to plain text when stdout isn't a TTY — see
+           ``_color_supported``. Keeping the dependency surface tiny
+           matters for Pat: every transitive dep is a chance the
+           install breaks.
+        """
+        use_color = _color_supported()
+        # Local aliases so the rendering code reads naturally — and so a
+        # no-color terminal gets exactly the same layout, just without
+        # the escape codes.
+        c_reset   = _C_RESET   if use_color else ""
+        c_bold    = _C_BOLD    if use_color else ""
+        c_dim     = _C_DIM     if use_color else ""
+        c_blue    = _C_BLUE    if use_color else ""
+        c_cyan    = _C_CYAN    if use_color else ""
+        c_green   = _C_GREEN   if use_color else ""
+        c_red     = _C_RED     if use_color else ""
+        c_yellow  = _C_YELLOW  if use_color else ""
+        c_magenta = _C_MAGENTA if use_color else ""
+
+        out = sys.stdout.write
+        nl = lambda: out("\n")
+
+        # Header bar — matches the HTML hero block.
+        date_str = datetime.now().strftime("%A, %B %-d, %Y")
+        bar = "━" * 60
+        nl()
+        out(f"{c_blue}{bar}{c_reset}\n")
+        out(f"{c_bold}{c_blue}  {date_str}{c_reset}\n")
+        out(f"{c_blue}{bar}{c_reset}\n")
+        nl()
+
+        # ── Schedule ──
+        if self._schedule:
+            out(f"{c_bold}{c_cyan}SCHEDULE{c_reset}\n")
+            for item in self._schedule:
+                title = item.get("title") or "(untitled event)"
+                ts = item.get("timestamp", "")
+                line = f"  • {title}"
+                if ts:
+                    line += f"  {c_dim}({ts}){c_reset}"
+                out(line + "\n")
+            nl()
+
+        # ── Weather ──
+        if self._weather is not None:
+            out(f"{c_bold}{c_cyan}WEATHER{c_reset}\n")
+            w = self._weather
+            title = w.get("title")
+            if title:
+                out(f"  {title}\n")
+            else:
+                city = w.get("city", "")
+                cond = w.get("conditions", "")
+                parts = [p for p in (cond, city) if p]
+                if parts:
+                    out(f"  {', '.join(parts)}\n")
+            bits = []
+            if w.get("temp_f") is not None and w.get("temp_c") is not None:
+                bits.append(f"{w['temp_f']}°F / {w['temp_c']}°C")
+            if w.get("wind_kmh") is not None:
+                bits.append(f"wind {w['wind_kmh']} km/h")
+            if bits:
+                out(f"  {c_dim}{' · '.join(bits)}{c_reset}\n")
+            nl()
+
+        # ── Markets ──
+        if self._markets:
+            out(f"{c_bold}{c_cyan}MARKETS{c_reset}\n")
+            for ticker in sorted(self._markets):
+                m = self._markets[ticker]
+                price = m.get("price")
+                change = m.get("change")
+                change_pct = m.get("change_pct")
+                up = isinstance(change, (int, float)) and change >= 0
+                arrow_color = c_green if up else c_red
+                arrow = "▲" if up else "▼"
+                price_str = (
+                    f"{price:,.2f}" if isinstance(price, (int, float)) else str(price or "?")
+                )
+                change_str = ""
+                if isinstance(change, (int, float)) and isinstance(change_pct, (int, float)):
+                    sign = "+" if up else ""
+                    change_str = (
+                        f"  {arrow_color}{arrow} {sign}{change:,.2f} "
+                        f"({sign}{change_pct:.2f}%){c_reset}"
+                    )
+                out(f"  {c_bold}{ticker:<6}{c_reset} {price_str}{change_str}\n")
+            nl()
+
+        # ── Email ──
+        if self._email:
+            out(f"{c_bold}{c_cyan}EMAIL{c_reset}\n")
+            for item in self._email:
+                headline = (
+                    item.get("headline") or item.get("title") or "(no subject)"
+                )
+                out(f"  • {headline}\n")
+            nl()
+
+        # ── News ──
+        if self._news:
+            out(f"{c_bold}{c_cyan}NEWS{c_reset}\n")
+            for item in self._news:
+                headline = (
+                    item.get("brief")
+                    or item.get("summary")
+                    or item.get("headline")
+                    or item.get("title")
+                    or "(untitled)"
+                )
+                # Long brief/summary text: fall back to title for the
+                # one-line terminal display so a 500-char paragraph
+                # doesn't wrap the whole screen.
+                if isinstance(headline, str) and len(headline) > 200 and item.get("title"):
+                    headline = item["title"]
+
+                # Badges for source / severity / topic — same accents as
+                # the HTML version, just as inline colored words.
+                badges = []
+                src = item.get("source")
+                if src:
+                    badges.append(f"{c_blue}{src}{c_reset}")
+                urgency = item.get("urgency")
+                severity = item.get("severity")
+                if isinstance(urgency, str) and urgency.upper() == "HIGH":
+                    badges.append(f"{c_red}urgent{c_reset}")
+                elif isinstance(severity, str) and severity.upper() in {"CRITICAL", "HIGH"}:
+                    badges.append(f"{c_red}{severity.lower()}{c_reset}")
+                topic = item.get("topic")
+                if isinstance(topic, str) and topic:
+                    badges.append(f"{c_magenta}{topic}{c_reset}")
+                badge_str = (
+                    f"  {c_dim}[{' '.join(badges)}{c_dim}]{c_reset}" if badges else ""
+                )
+
+                out(f"  • {headline}{badge_str}\n")
+            nl()
+
+        # ── Empty-state hint ──
+        # If every bucket was empty, Pat would otherwise see nothing
+        # between the two bars and wonder if the command worked. Tell
+        # her what just happened and where to look next.
+        if (
+            not self._schedule
+            and self._weather is None
+            and not self._markets
+            and not self._news
+            and not self._email
+        ):
+            out(
+                f"  {c_yellow}(no content yet — sources may still be loading "
+                f"or returned nothing){c_reset}\n"
+            )
+            nl()
+
+        # Footer with the file path so Pat knows where to find the
+        # polished HTML version if she wants to share or print it.
+        out(f"{c_dim}Saved to: {self.path}{c_reset}\n")
+        nl()
+        sys.stdout.flush()

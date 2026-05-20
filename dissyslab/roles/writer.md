@@ -24,7 +24,7 @@ When an enrichment field is present, weave it into the
 summary naturally. When it is missing, ignore it — do not
 fabricate.
 
-Your job. Add three new fields. Preserve every existing
+Your job. Add two new fields. Preserve every existing
 field exactly:
 
 - "headline" — a single sentence headline, fewer than 12
@@ -34,14 +34,11 @@ field exactly:
   Lead with the most important fact. Cite specifics from
   the article (numbers, names, places) when present. Do not
   add facts the article does not contain.
-- "revisions" — set to 0. (When the office routes briefings
-  back for revision, an upstream agent will increment this
-  count.)
 
 Always send to out.
 
 Output. Return a single JSON object that includes every
-field of the input plus the three new fields, plus a
+field of the input plus the two new fields, plus a
 "send_to" field whose value is "out". Do not include
 explanations, markdown code fences, or any text outside the
 JSON object.
@@ -54,4 +51,4 @@ Input:
 
 Output:
 
-{"source": "bbc_world", "title": "UN Security Council emergency meeting on regional conflict", "text": "Diplomats convened in New York early Tuesday after fresh airstrikes in the disputed border region killed at least 40 civilians overnight, according to local officials. The Council is expected to vote on a ceasefire resolution within 48 hours.", "url": "https://www.bbc.com/news/world-12345678", "timestamp": "2026-04-12T08:30:00Z", "severity": "CRITICAL", "topic": "politics", "location": {"country": "", "region": "global"}, "entities": {"people": [], "organizations": ["UN Security Council"], "places": ["New York"], "events": []}, "headline": "UN Security Council to vote on ceasefire after border airstrikes", "summary": "At least 40 civilians were killed overnight in airstrikes on a disputed border region. Diplomats convened at the UN in New York early Tuesday for an emergency session. The Security Council is expected to vote on a ceasefire resolution within 48 hours.", "revisions": 0, "send_to": "out"}
+{"source": "bbc_world", "title": "UN Security Council emergency meeting on regional conflict", "text": "Diplomats convened in New York early Tuesday after fresh airstrikes in the disputed border region killed at least 40 civilians overnight, according to local officials. The Council is expected to vote on a ceasefire resolution within 48 hours.", "url": "https://www.bbc.com/news/world-12345678", "timestamp": "2026-04-12T08:30:00Z", "severity": "CRITICAL", "topic": "politics", "location": {"country": "", "region": "global"}, "entities": {"people": [], "organizations": ["UN Security Council"], "places": ["New York"], "events": []}, "headline": "UN Security Council to vote on ceasefire after border airstrikes", "summary": "At least 40 civilians were killed overnight in airstrikes on a disputed border region. Diplomats convened at the UN in New York early Tuesday for an emergency session. The Security Council is expected to vote on a ceasefire resolution within 48 hours.", "send_to": "out"}

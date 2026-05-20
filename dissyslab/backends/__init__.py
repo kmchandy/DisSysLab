@@ -44,6 +44,16 @@ _REGISTRY: Dict[str, Callable[[], Backend]] = {
     "openrouter": lambda: OpenRouterBackend(),
 }
 
+# Aliases let multiple user-facing names resolve to the same registered
+# backend. Pat types the product name ("claude"), install.sh writes
+# DSL_BACKEND=claude into ~/.zshrc, and we resolve it to "anthropic"
+# here. Adding an alias is cheaper and safer than duplicating the
+# factory — re-registering "anthropic" automatically updates "claude"
+# too. Keys are lowercased before lookup.
+_ALIASES: Dict[str, str] = {
+    "claude": "anthropic",
+}
+
 # One lazily-constructed singleton per backend name. Cleared when a
 # name is re-registered (useful in tests).
 _CACHE: Dict[str, Backend] = {}
@@ -84,12 +94,19 @@ def get_backend(name: Optional[str] = None) -> Backend:
         ValueError: if the requested backend name is not registered.
     """
     key = (name or os.environ.get("DSL_BACKEND") or "anthropic").lower()
+    # Resolve aliases (e.g. "claude" -> "anthropic") so the cache and
+    # registry only ever see canonical names.
+    key = _ALIASES.get(key, key)
 
     if key in _CACHE:
         return _CACHE[key]
 
     if key not in _REGISTRY:
-        known = ", ".join(sorted(_REGISTRY)) or "(none)"
+        # Show both canonical names and aliases so the error message
+        # matches what users typed.
+        known_canonical = sorted(_REGISTRY)
+        known_aliases = sorted(_ALIASES)
+        known = ", ".join(known_canonical + known_aliases) or "(none)"
         raise ValueError(
             f"Unknown backend: {key!r}. Known backends: {known}.\n"
             f"Set DSL_BACKEND to one of the known names, or register "

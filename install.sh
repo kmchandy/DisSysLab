@@ -61,6 +61,121 @@ die() {
     exit 1
 }
 
+# Print a Pat-friendly explanation when Ollama can't be started on
+# port 11434. The previous behaviour was a single-line "did not start"
+# which left the user to guess between (a) didn't drag Ollama.app to
+# /Applications, (b) macOS too old for the current Ollama, (c) port
+# 11434 in use by something else, (d) headless server hung. This
+# checks each of those in order and prints the most specific cause
+# we can identify, plus a concrete next step.
+#
+# Triggers from the curl-to-11434 health check around step 4.
+diagnose_ollama_failure() {
+    red "Ollama service did not respond on port 11434."
+    echo
+    bold "── Diagnostics ──"
+
+    # (a) CLI missing — almost certainly a failed/partial install.
+    if ! command -v ollama >/dev/null 2>&1; then
+        yellow "The 'ollama' command is not on your PATH."
+        if [ "$PLATFORM" = "mac" ]; then
+            echo "  Fix: install Ollama from https://ollama.com/download"
+            echo "       — download Ollama.dmg, open it, drag Ollama.app"
+            echo "       to Applications, then re-run this installer."
+        else
+            echo "  Fix: re-run the Ollama Linux installer:"
+            bold  "         curl -fsSL https://ollama.com/install.sh | sh"
+            echo "       then re-run this installer."
+        fi
+        echo
+        echo "Or switch to a hosted backend (no download, ~pennies per run):"
+        bold "       bash install.sh --backend=openrouter"
+        exit 1
+    fi
+
+    # (b) Mac: Ollama.app missing even though the CLI exists.
+    # Brew normally installs both; if the .app is missing, the user
+    # likely installed just the CLI binary (or only downloaded the
+    # dmg without dragging it).
+    if [ "$PLATFORM" = "mac" ] && [ ! -d "/Applications/Ollama.app" ]; then
+        yellow "/Applications/Ollama.app is missing."
+        echo "  The 'ollama' CLI is on PATH, but the Mac app bundle is not"
+        echo "  in /Applications. Recent Ollama versions need the .app"
+        echo "  installed (it owns the launchd entry that serves port 11434)."
+        echo
+        echo "  Fix: download Ollama.dmg from https://ollama.com/download,"
+        echo "       open it, and drag Ollama into the Applications folder."
+        echo "       Then re-run this installer."
+        echo
+        echo "Or switch to a hosted backend:"
+        bold "       bash install.sh --backend=openrouter"
+        exit 1
+    fi
+
+    # (c) Mac: too-old macOS. Ollama drops support for older releases
+    # quietly; the symptom on Pat's machine was "Unable to find
+    # application name 'Ollama'" from launchctl/AppleScript when the
+    # current Ollama refuses to launch on the older OS.
+    if [ "$PLATFORM" = "mac" ]; then
+        # `sw_vers -productVersion` returns e.g. "13.6.4" or "10.15.7".
+        MACOS_VERSION="$(sw_vers -productVersion 2>/dev/null || echo unknown)"
+        MACOS_MAJOR="${MACOS_VERSION%%.*}"
+        # Ollama's current macOS minimum is 11.0 (Big Sur), with most
+        # newer releases preferring 12+. Anything reporting "10.x" is
+        # definitely too old; flag 11 too with a softer message.
+        if [ "$MACOS_MAJOR" = "10" ] || \
+           { [ "$MACOS_MAJOR" -lt 11 ] 2>/dev/null; }; then
+            yellow "macOS $MACOS_VERSION is older than Ollama supports."
+            echo "  Current Ollama needs macOS 11 (Big Sur) or newer."
+            echo "  This explains errors like:"
+            echo "     Unable to find application name 'Ollama'"
+            echo "  Even though brew/curl succeeded, the OS won't launch the app."
+            echo
+            echo "  Options:"
+            echo "    1. Upgrade macOS (System Settings → Software Update)."
+            echo "    2. Try Ollama on a different / newer machine."
+            echo "    3. Use a hosted backend on this machine — no install,"
+            echo "       no download, ~pennies per run:"
+            bold  "         bash install.sh --backend=openrouter"
+            echo
+            exit 1
+        fi
+    fi
+
+    # (d) Port 11434 may be busy with a different process (e.g. an
+    # older Ollama instance Pat forgot was running, or a Docker
+    # container bound to that port).
+    if command -v lsof >/dev/null 2>&1; then
+        BUSY="$(lsof -nP -iTCP:11434 -sTCP:LISTEN 2>/dev/null | tail -n +2 | head -1 || true)"
+        if [ -n "$BUSY" ]; then
+            yellow "Port 11434 is in use by another process:"
+            echo "  $BUSY"
+            echo
+            echo "  Fix: stop that process, or pick a different port for Ollama."
+            echo "       Then re-run this installer."
+            exit 1
+        fi
+    fi
+
+    # (e) Fall-through: CLI is present, .app is present (or Linux),
+    # macOS is recent, port is free — but the daemon still didn't come
+    # up. Most likely cause is the daemon crashed during startup;
+    # print the tail of its log so the user has something to file.
+    yellow "ollama is installed but the daemon did not bind to port 11434."
+    if [ -f /tmp/ollama.log ]; then
+        echo
+        echo "  Last lines of /tmp/ollama.log:"
+        tail -10 /tmp/ollama.log | sed 's/^/    /'
+        echo
+    fi
+    echo "  Fix: try running 'ollama serve' in another terminal and"
+    echo "       watch what it prints. Then re-run this installer."
+    echo "       If the error message mentions an Anthropic / OpenRouter"
+    echo "       fallback, try:"
+    bold  "         bash install.sh --backend=openrouter"
+    exit 1
+}
+
 # Read one line from the user's keyboard.
 #
 # `curl | bash` redirects stdin to the curl pipe, so plain `read` would
@@ -245,7 +360,7 @@ Run that, then re-run this installer. (Or install Ollama manually from https://o
     if curl -sSf -o /dev/null http://127.0.0.1:11434/api/version 2>/dev/null; then
         green "Ollama is responding on port 11434"
     else
-        die "Ollama service did not start. Try running 'ollama serve' in another terminal and re-run this installer."
+        diagnose_ollama_failure
     fi
 
     # Pull the model
@@ -280,6 +395,33 @@ fi
 "$DSL_HOME/venv/bin/pip" install --upgrade dissyslab
 
 green "DisSysLab installed at $DSL_HOME/venv"
+
+# Sanity-check: does the installed dissyslab actually recognise the
+# backend name we're about to write into the shell rc? When the user
+# picks an option that's been recently renamed/aliased (e.g. "claude"
+# before the v1.4 alias landed in PyPI), the install banner can say
+# "Backend: claude" while the installed wheel will throw
+# `Unknown backend: 'claude'` the first time Pat runs an office. This
+# warns at install time so the gap is visible *here*, not 90 seconds
+# later when Pat thinks she did something wrong.
+#
+# We only warn — never abort — because the user may know they're
+# ahead of PyPI (e.g. testing a backend that's in main but not yet
+# released).
+if ! "$DSL_HOME/venv/bin/python" -c \
+    "import sys; from dissyslab.backends import get_backend; sys.exit(0 if get_backend('$BACKEND') else 1)" \
+    >/dev/null 2>&1; then
+    echo
+    yellow "Heads-up: the installed dissyslab version does not yet recognise"
+    yellow "DSL_BACKEND=$BACKEND. The shell-rc export will still be written,"
+    yellow "but the first 'dsl run' will fail with:"
+    yellow "    Unknown backend: '$BACKEND'"
+    yellow ""
+    yellow "Either wait for a newer dissyslab release on PyPI, or pick a"
+    yellow "different backend with:"
+    bold   "       bash install.sh --backend=openrouter"
+    echo
+fi
 
 # ── 6. Update shell config ──────────────────────────────────────────
 

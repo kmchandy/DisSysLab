@@ -591,6 +591,137 @@ def specialist_role(
     )
 
 
+# ── synchronizer_role ─────────────────────────────────────────────────
+
+
+def synchronizer_role(inports: "list[str] | tuple[str, ...]") -> AgentRoleEntry:
+    """Build a synchronizer role with the given named inports.
+
+    A *synchronizer* is the framework's canonical fan-in primitive: it
+    waits until it has received exactly one message on each of its
+    named inports, dict-merges the messages into a single combined
+    message, and emits the combined message on ``out``.
+
+    The pattern shows up in every gallery office that forks an
+    article into parallel annotators and then needs to merge the
+    annotated copies back into one. Before this helper, each office
+    shipped its own near-identical 25-line ``synchronizer.py``. Now
+    each office's ``synchronizer.py`` is two lines::
+
+        from dissyslab.office_v2 import synchronizer_role
+        role = synchronizer_role(["entities", "severity", "topic", "location"])
+
+    Parameters
+    ----------
+    inports
+        Named inports the synchronizer will wait on. Must be a
+        non-empty sequence of unique strings. The names show up in
+        ``office.md`` connections as ``X's out is Sync's <name>``.
+
+    Returns
+    -------
+    AgentRoleEntry
+        With ``name="synchronizer"``, ``in_ports`` set to the names
+        you passed, ``out_ports=("out",)``, and a factory that builds
+        the Agent on demand.
+
+    Raises
+    ------
+    ValueError
+        If ``inports`` is empty or contains duplicates.
+
+    Examples
+    --------
+    >>> entry = synchronizer_role(["a", "b"])
+    >>> entry.in_ports
+    ('a', 'b')
+    >>> entry.out_ports
+    ('out',)
+
+    Notes
+    -----
+    The dict-merge step is order-independent only when each upstream
+    branch preserves the original message fields and adds its own.
+    That's the situation_room pattern (each parallel extractor adds
+    one new field and passes the rest through). If your upstream
+    branches produce overlapping keys with different values, the last
+    one wins — caller's responsibility to design around that.
+    """
+    if not inports:
+        raise ValueError("synchronizer_role requires at least one inport")
+    inports_tuple = tuple(inports)
+    if len(set(inports_tuple)) != len(inports_tuple):
+        raise ValueError(
+            f"synchronizer_role inports must be unique, got {list(inports_tuple)}"
+        )
+    if not all(isinstance(p, str) and p for p in inports_tuple):
+        raise ValueError(
+            f"synchronizer_role inports must all be non-empty strings, "
+            f"got {list(inports_tuple)}"
+        )
+
+    class _Synchronizer(Agent):
+        """Wait for one msg per named inport; dict-merge; emit on out_."""
+
+        def __init__(self, name=None):
+            super().__init__(
+                name=name,
+                inports=list(inports_tuple),
+                outports=["out_"],
+            )
+
+        def run(self) -> None:
+            while True:
+                merged: dict = {}
+                for p in self.inports:
+                    msg = self.recv(p)
+                    if isinstance(msg, dict):
+                        merged.update(msg)
+                self.send(merged, "out_")
+
+    return AgentRoleEntry(
+        name="synchronizer",
+        in_ports=inports_tuple,
+        out_ports=("out",),
+        factory=_Synchronizer,
+        description=(
+            f"Wait for one message on each of {list(inports_tuple)}, "
+            f"dict-merge, emit on 'out'."
+        ),
+    )
+
+
+# ── PARAMETERIZED_LIBRARY ─────────────────────────────────────────────
+
+
+# Roles that are constructed *with arguments* from the office.md call
+# site, rather than registered as static AgentRoleEntry values in the
+# library. The compiler looks here AFTER checking the (static) library
+# and BEFORE the fn_lib lookup. The kwargs Pat writes in
+# ``Sync is a synchronizer(inports=[...])`` are passed straight to the
+# registered constructor, which returns a fresh ``AgentRoleEntry``.
+#
+# Why this exists separately from the static library: some library
+# roles (like `synchronizer`) have port shapes that depend on the
+# specific office's wiring. Forcing every office to ship a per-office
+# Python file just to declare port names would break the "plain
+# English" promise. Parameterized library roles close that gap —
+# office.md kwargs become the parameterization vector, the framework
+# owns the implementation.
+#
+# Override precedence (high to low):
+#   1. Office's own ``roles/X.md`` or ``roles/X.py``  (load_roles_dir)
+#   2. Framework's ``dissyslab/roles/X.md``           (load_roles_dir)
+#   3. PARAMETERIZED_LIBRARY[X]                        (this dict)
+#   4. ``dissyslab.fn_lib`` entry for X
+#
+# So a Pat who wants different synchronizer behaviour can still drop
+# a local ``roles/synchronizer.py`` and the framework will prefer it.
+PARAMETERIZED_LIBRARY: Dict[str, Callable[..., "AgentRoleEntry"]] = {
+    "synchronizer": synchronizer_role,
+}
+
+
 # ── load_roles_dir ─────────────────────────────────────────────────────
 
 

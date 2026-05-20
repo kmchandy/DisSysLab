@@ -484,6 +484,113 @@ class TestFnLibResolution:
             compile_office(tmp_path)
 
 
+# ── PARAMETERIZED_LIBRARY resolution (synchronizer via office.md kwargs) ────
+
+
+class TestParameterizedLibraryResolution:
+    """The compiler resolves roles whose port shape depends on
+    office.md kwargs (synchronizer, etc.) via
+    ``PARAMETERIZED_LIBRARY``. This is the path that lets Pat
+    declare a synchronizer's inports directly in office.md instead
+    of shipping a per-office Python role file."""
+
+    def _office_using_synchronizer_via_kwargs(self, tmp_path):
+        """Build a tiny office: source → 2 echo agents → synchronizer → sink.
+
+        No ``roles/synchronizer.py`` in the office — relies entirely
+        on PARAMETERIZED_LIBRARY for synchronizer resolution.
+        """
+        _register_stub("stub-pl-a", _stub_default_send_to("a"))
+        _register_stub("stub-pl-b", _stub_default_send_to("b"))
+        _write_office_md(tmp_path, (
+            "# Office: sync_via_kwargs\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\n"
+            "Alpha is an echoer_a.\n"
+            "Beta  is an echoer_b.\n"
+            'Sync is a synchronizer(inports=["alpha", "beta"]).\n\n'
+            "Connections:\n"
+            "hacker_news's destination is Alpha.\n"
+            "hacker_news's destination is Beta.\n"
+            "Alpha's a is Sync's alpha.\n"
+            "Beta's b is Sync's beta.\n"
+            "Sync's out is discard.\n"
+        ))
+        # The two echoers come from the test library; synchronizer comes
+        # from PARAMETERIZED_LIBRARY (no static library entry needed).
+        library = {
+            "echoer_a": nl_role("Echo. Send to a.", AI="stub-pl-a"),
+            "echoer_b": nl_role("Echo. Send to b.", AI="stub-pl-b"),
+        }
+        return library
+
+    def test_compiles_when_no_per_office_synchronizer_py(self, tmp_path):
+        library = self._office_using_synchronizer_via_kwargs(tmp_path)
+        net, warnings = compile_office(tmp_path, library=library)
+        assert isinstance(net, Network)
+        assert warnings == []
+        # The synchronizer block should be present with the two named
+        # inports the office.md declared.
+        sync_block = net.blocks["Sync"]
+        assert set(sync_block.inports) == {"alpha", "beta"}
+
+    def test_missing_required_kwarg_gives_friendly_error(self, tmp_path):
+        _write_office_md(tmp_path, (
+            "# Office: bad_sync\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\n"
+            "Sync is a synchronizer.\n\n"  # no inports kwarg!
+            "Connections:\n"
+            "hacker_news's destination is Sync's a.\n"
+            "Sync's out is discard.\n"
+        ))
+        with pytest.raises(CompileError, match=r"synchronizer.*inport"):
+            compile_office(tmp_path, library={})
+
+    def test_unknown_kwarg_gives_friendly_error(self, tmp_path):
+        _write_office_md(tmp_path, (
+            "# Office: bad_sync\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\n"
+            "Sync is a synchronizer(inports=[\"a\"], unknown=42).\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Sync's a.\n"
+            "Sync's out is discard.\n"
+        ))
+        with pytest.raises(CompileError, match=r"synchronizer.*unknown"):
+            compile_office(tmp_path, library={})
+
+    def test_local_roles_py_still_overrides(self, tmp_path):
+        """If the office DOES ship a roles/synchronizer.py, that
+        static AgentRoleEntry must win over PARAMETERIZED_LIBRARY.
+        Precedence: local > framework > PARAMETERIZED_LIBRARY > fn_lib.
+        """
+        # Drop a local roles/synchronizer.py with FIXED inports.
+        roles_dir = tmp_path / "roles"
+        roles_dir.mkdir(parents=True, exist_ok=True)
+        (roles_dir / "synchronizer.py").write_text(
+            "from dissyslab.office_v2 import synchronizer_role\n"
+            'role = synchronizer_role(["fixed_x", "fixed_y"])\n'
+        )
+        _write_office_md(tmp_path, (
+            "# Office: override_sync\n\n"
+            "Sources: hacker_news\n"
+            "Sinks: discard\n\n"
+            "Agents:\n"
+            "Sync is a synchronizer.\n\n"
+            "Connections:\n"
+            "hacker_news's destination is Sync's fixed_x.\n"
+            "Sync's out is discard.\n"
+        ))
+        # No kwargs in office.md — the local roles/synchronizer.py
+        # provides the inports.
+        net, _w = compile_office(tmp_path)
+        assert set(net.blocks["Sync"].inports) == {"fixed_x", "fixed_y"}
+
+
 # ── Pat-friendly error messages (#57) ─────────────────────────────────
 
 

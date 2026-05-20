@@ -4,36 +4,42 @@
 [![Python](https://img.shields.io/pypi/pyversions/dissyslab)](https://pypi.org/project/dissyslab/)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**Use plain English to build offices of networks of agents that work for you continuously.**
-A chatbot answers when you ask; but your office of agents works for you nonstop 24 x 7. 
-Build your personal office staffed by multiple agents that monitor 
-and analyze information sources and send results to your apps and devices.
+**Use English to build offices staffed by multiple agents that work for you continuously.**
+A chatbot answers when you ask; but your office of agents works for you 
+nonstop monitoring sources, filtering, analyzing, and pushing results to
+your apps and devices.
 
-**Mix and match agents that best fit your tasks, budget and privacy needs.**
-Agents in your office can be free AI models that you can run on
-a laptop;
- powerful AI services such as those provided by Anthropic and
-OpenAI; 
- AI models for specialized tasks such as coding; and
-Python functions. 
+**Mix and match agents that best fit your accuracy, task, budget, and privacy needs.**
+An office can mix different types of agents: paid AI services such as Anthropic and OpenAI, ; free local AI such as Qwen on Ollama for roles where cost and privacy matter more than accuracy; task-specific small models; and Python functions. 
 
 **Construct agent networks of arbitrary complexity ideal for your application.**
-Different applications need different types of agent networks.
-Some networks are pipelines; some are feed-forward networks with parallel
-agents; some have conditional branches; and some have loops.
+The network of agents in an office is specified by an org chart.
+Different applications need different types of org charts.
+Some are pipelines; some fan out to parallel agents;
+some branch on conditions; some loop.
 Build an office with the agent network ideal for your application.
-Start by modifying examples of offices in the [`gallery`](dissyslab/gallery/).
+
+**Notes**
+
+The demos in this website terminate execution after processing
+a fixed amount of data to limit bills for hosted AI. You can execute
+apps forever by using free AI on your laptop or by specifying app
+parameters based on cost constraints. 
+
+
+My hypothesis is that offices for most apps can be specified in English; 
+however, some offices may require users to write agents in Python. I hope
+that the libraries in this framework are extensive enough that users will 
+rarely need to write Python.
 
 ---
 
-## Try it: a brief in ten seconds
+## Try it
 
-The fastest demo of the framework needs no API key and no model
+This demo needs no API key and no model
 download. [`periodic_brief`](dissyslab/gallery/apps/periodic_brief/)
 pulls news, weather, and a few stock tickers and renders them into a
-single, styled HTML page. Zero LLM calls in the default config — it's
-pure orchestration of public APIs, the framework doing what
-frameworks do.
+single, styled HTML page. It runs in a few seconds.
 
 **One-line install** (macOS or Linux, requires Python 3.10+):
 
@@ -52,7 +58,9 @@ The installer asks one question: which AI engine do you want?
 - **Claude** — Anthropic's hosted model. Paste an Anthropic key.
   Highest-quality output, ~25–50¢ per office run.
 
-Pick the one that fits. You can switch later by editing one line in
+  **Note**: These costs are estimates. Check costs before running.
+
+Pick an AI engine that fits. You can switch later by editing one line in
 your shell rc file.
 
 **Then: open a new terminal** (or run `source ~/.zshrc` on macOS /
@@ -65,33 +73,32 @@ dsl run periodic_brief
 open brief.html
 ```
 
-About ten seconds. You'll see a single HTML page with three news
+In 10 to 20 seconds you'll see a single HTML page with three news
 headlines from BBC, three from NPR, current weather for Pasadena,
-and three stock tickers — all wired together by the office's
-plain-English description of itself. No API keys, no LLM calls, no
-waiting.
+and three stock tickers.
 
-You can copy the `periodic_brief` to a local folder, `my_brief` on your computer and
-then execute the office from your local folder as follows:
-
+To make your own editable copy of `periodic_brief` execute
 ```bash
 dsl init periodic_brief my_brief
+```
+ You can then execute the office from your local folder by
+ executing:
+
+```bash
 cd my_brief
 dsl run .
 ```
 
-`dsl list` shows every office that ships with DisSysLab.
+`dsl list` shows offices that ship with DisSysLab.
 
-## Then: the real demo — situation_room
+## Your situation_room
 
-Once `periodic_brief` has shown you the bones of the framework, the
-office that shows what it's *for* is
-[`situation_room`](dissyslab/gallery/apps/situation_room/). Three
-news feeds in. One intelligence digest out: articles deduplicated,
-severity-classified, entity-extracted, topic-tagged, geolocated,
-and written up as 2–4 sentence briefings. Eight plain-English
-agents in one file — and you decide which briefings matter, not
-an LLM editor.
+First run `periodic_brief` and see it running end to end.
+Then build your own situation room by running and then
+modifying [`situation_room`](dissyslab/gallery/apps/situation_room/).
+Three news feeds in. One intelligence digest out: articles deduplicated,
+severity-classified, entity-extracted, topic-tagged, and geolocated.
+Roles specified in English job descriptions.
 
 ```bash
 dsl run situation_room
@@ -105,19 +112,18 @@ Speed and cost depend on the engine you picked at install time:
 | OpenRouter (Qwen-2.5-7B) | 1–5 min, any laptop | pennies |
 | Claude | 1–3 min, any laptop | tens of cents |
 
-> *All cost and speed figures above are rough estimates and are
-> likely to change. Hosted-model providers update their prices
-> regularly — check the provider's pricing page before relying on
-> any specific number here. The framework is honest about which
-> backend you're using; the actual bill is between you and your
-> provider.*
+> *Numbers above are estimates and will drift as providers update
+> prices. Check the provider's pricing page before relying on any
+> specific figure. You specify the agent types in your office;
+> the actual bill is between you and the providers of the services
+> that the office uses.*
 
 **About cost safety.** Every office in the gallery stops after a
-few polling cycles by default — long enough to see a real result,
-short enough that you won't accidentally rack up a bill. The
+few polling cycles by default — long enough to see a result,
+short enough that you won't get a large bill. Set
 `max_articles=N` and `max_readings=N` parameters in each office's
-`office.md` are the safety brakes. Remove them only when you mean
-for an office to run continuously (e.g. behind a cron).
+`office.md` to control execution. Remove these only when you want
+your office to run continuously.
 
 You should see a digest like
 [this sample](dev/experiments/situation_room_sample_day_1.md):
@@ -134,53 +140,49 @@ announced last month.
 [bbc_world](https://www.bbc.com/news/...)
 ```
 
-Twenty or so of these every morning.
-
 ---
 
 ## Make it yours
 
-`situation_room` is described in plain English in
-[`office.md`](dissyslab/gallery/apps/situation_room/office.md).
-Open it. Read it. You can change it. Most of what people want comes
-from changing one or more of just four things:
+Change the roles, agents and org chart in
+[`office.md`](dissyslab/gallery/apps/situation_room/office.md)
+to fit your needs.
+You may want to change one of the following:
 
 **1. Sources** — swap a news feed for Gmail or a webhook; add or
 remove a source entirely.
+
 **2. Parallel thinkers** — add, remove, or replace the agents that
 extract entities, severity, topic, location. Each one annotates
 the message with one more fact.
+
 **3. Writer** — change the prompt to produce a different style of
 briefing: executive summary, technical alert, blog draft, customer
 email.
-**4. Sinks** — where the result goes: terminal, markdown file,
-Slack channel, Notion page, downstream office.
 
-The rest of the office (the deduplicator, the synchronizer, the
-wiring) usually stays the same. Once you know which of the four
-slots you want to touch, the change is one or two lines in
-office.md.
+**4. Sinks** — change where the result goes: terminal, markdown file,
+or Slack channel.
 
-A staircase of effort:
 
-**Tweak — 5 minutes, one parameter.** Bump article counts, swap a
+
+## Examples of steps you may want to try
+
+**Change parameters.** Bump article counts, swap a
 feed, set a polling interval.
 
 ```
 Sources: techcrunch(max_articles=10, poll_interval=600)
 ```
 
-**Modify — 30 minutes, swap a component.** Replace the terminal
-display with a markdown file, add a topic filter agent, route one
-role to a stronger paid model.
+**Swap and add components.** Replace the terminal
+display with a markdown file or add a topic filter agent.
 
 ```
 Sinks: markdown_digest(path="~/digest.md")
 ```
 
-**Build — a few hours, write new agents.** Describe a new role in
-plain English for your industry, your competitor, your inbox. See
-[`docs/BUILD_APPS.md`](docs/BUILD_APPS.md).
+**Write new job descriptions.** Describe new roles for your specific app.
+See [`docs/BUILD_APPS.md`](docs/BUILD_APPS.md).
 
 A worked example of the third tier — overriding *one* role to use
 Claude while everything else stays on a cheap open model — is at
@@ -197,6 +199,8 @@ you'd describe a job to a new hire — and you write the org chart in
 plain English too. The framework compiles your description into a
 running concurrent system.
 
+This is a very brief overview of how you specify offices. 
+We describe specifics elsewhere.
 Here's `situation_room`'s wiring (excerpted from
 [`office.md`](dissyslab/gallery/apps/situation_room/office.md)):
 
@@ -230,20 +234,144 @@ Sync's out is Riley.
 Riley's out is intelligence_display, jsonl_recorder_briefing.
 ```
 
-The office monitors 3 RSS feeds. A deduplicator drops duplicates -- articles
-already seen. Each article forks to four agents. Each
-adds one annotation to the article — that's the parallel "thinking" layer. The synchronizer
-merges the four annotated streams. The writer
-composes a briefing — the *response* — and Riley's output fans
-out to both sinks at once: live terminal display and a JSONL
-archive. Eight agents, one file. Want an LLM-powered editor to
-decide which briefings to publish? Drop an `evaluator` between
-Riley and the sinks — the role library has one ready. Same
-plain-English grammar.
+## The network of agents in the situation_room office
+```
+        ┌──────────┐ ┌──────────┐ ┌──────────┐
+        │ bbc_news │ │ npr_news │ │  al_jaz  │
+        └────┬─────┘ └────┬─────┘ └────┬─────┘
+             └────────────┼────────────┘
+                          ▼         ← Asynchronous merge
+                  ┌───────────────┐
+                  │    Sasha      |
+                  | deduplicator  │
+                  └───────┬───────┘
+                          ▼ broadcast 
+      ┌─────────────┌─────────┐────────----──┐
+      ▼             ▼           ▼            ▼
+ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
+ │   Eve    | |    Sam   | |    Tom   | |  Greta   |
+ | extract  | |determine | |  topic   | |determine |
+ |entities  │ │ severity │ | tagger   | |location  |     
+ └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘
+      ▼            ▼            ▼            ▼             ← Synchronous merge 
+  ┌───────----------------------------------────────┐
+  │                     Sync                        │
+  │                 synchronizer                    │               
+  └─────----------------──┬─────------------------──┘
+                          ▼
+                  ┌───────────────┐
+                  │    Riley      │
+                  │    writer     │ 
+                  └───────┬───────┘
+                          ▼
+                      ┬───────┬
+                publish     revise/discard
+                      ▼          ▼
+               ┌──────────┐ ┌──────────┐        
+               │ display  │ │ archiv   │
+               └──────────┘ └──────────┘
+```
+
+The office monitors the feeds listed as `Sources`.
+The office output is displayed in the console as `intelligence_display` and
+stored to a file `jsonl_recorder_briefing` as specified in `Sinks`.
+The office has agents called Eve, Sam, Tom, Greta, Sync, and Riley.
+The roles of agents in the office are deduplicator, entity_extractor, 
+severity_classifier, topic_tagger, geo_locator, synchronizer, and
+writer. 
+
+**Connections** specifies the org chart or how information flows in the
+office. The line `Eve is an entity_extractor` specifies that the agent
+called `Eve` has the `entity_extractor` role.
+In this office each role is filled by exactly one agent. 
+In other offices, there may be multiple agents with the same role;
+for example there may be an agent that identifies topics in news sources
+and a different agent that identifies topics in competitors' websites,
+and both agents may have the same job description.
+
+An agent can have multiple inboxes in which incoming messages are placed
+and multiple outboxes in which the agent places its outgoing messages.
+The framework sends messages from outboxes to inboxes as specified in
+`Connections`. Most agents have a single inbox called **in** and a single
+outbox called **out**. A synchronizer can have multiple inboxes.
+
+The line `Sasha's out is Eve, Sam, Tom, Greta.` says that messages from
+Sasha's outbox are broadcast to the inboxes of Eve, Sam, Tom and Greta. 
+Messages from multiple outboxes can feed the same inbox. For example,
+messages from the three sources feed Sasha's inbox. The delay between
+a message appearing in an outbox and its delivery to its connected inbox
+is arbitrary. Performance issues are described later.
+
+## Example of a role
+Specify a role -- it's job description -- with sufficient detail 
+that agents in the role do what you want them to do. Here is an example of
+a job description for topic taggers
+
+```
+# Role: topic_tagger
+
+You read one news article at a time and assign it to one of
+a fixed set of topic categories.
+
+Input shape. Each article is a JSON object with these keys:
+
+- "source"    — name of the feed (string)
+- "title"     — headline (string)
+- "text"      — article body (string)
+- "url"       — link to the article (string)
+- "timestamp" — publication time (string)
+
+Your job. Add one new field, "topic", whose value is one of
+exactly these eight strings:
+
+- "politics"      — government, elections, diplomacy, war.
+- "business"      — markets, companies, industry, trade.
+- "technology"    — software, hardware, AI, internet, science
+  applied to commerce or daily life.
+- "science"       — research findings in physics, biology,
+  medicine, climate, space — when not tied to a product.
+- "health"        — public health, medicine, healthcare
+  policy, pandemics.
+- "sports"        — competitive athletics and games.
+- "entertainment" — film, TV, music, celebrity, gaming.
+- "other"         — anything that does not clearly fit one of
+  the seven above. Use this when you would have to guess.
+
+Preserve every existing field exactly; only add the new
+"topic" field.
+
+Rules:
+
+- Pick exactly one topic per article. Do not output a list.
+- Use the exact spelling above (lowercase).
+- When in doubt, prefer "other" rather than guessing.
+
+Always send to out.
+
+Output. Return a single JSON object that includes every
+field of the input plus the new "topic" field, plus a
+"send_to" field whose value is "out". Do not include
+explanations, markdown code fences, or any text outside the
+JSON object.
+
+Example.
+
+Input:
+
+{"source": "techcrunch", "title": "AI startup raises $50M to automate code review", "text": "Series B funding led by Sequoia values the company at $400M...", "url": "https://techcrunch.com/2026/04/15/ai-startup", "timestamp": "2026-04-15T10:00:00Z"}
+
+Output:
+
+{"source": "techcrunch", "title": "AI startup raises $50M to automate code review", "text": "Series B funding led by Sequoia values the company at $400M...", "url": "https://techcrunch.com/2026/04/15/ai-startup", "timestamp": "2026-04-15T10:00:00Z", "topic": "technology", "send_to": "out"}
+```
+
+
 
 ---
 
 ## Apps and examples
+
+Modify examples of offices in the [`gallery`](dissyslab/gallery/).
 
 - **[`gallery/apps/`](dissyslab/gallery/apps/)** — ready-to-run
   offices, organised by whether they need an API key.
@@ -268,59 +396,10 @@ plain-English grammar.
 
 ---
 
-## Pick your engine
-
-Every agent in an office can run on a different LLM. Pick from the
-built-in backends or plug in your own. The three real first-time
-choices, with honest setup times and ongoing costs:
-
-- **OpenRouter** — hosted, pay-per-token, runs on someone else's
-  GPU. *Setup: ~5 minutes* (sign up, $5 minimum credit, paste an
-  API key into the installer prompt). *Cost: pennies per
-  `situation_room` run* with the default Qwen-2.5-7B. Works on any
-  laptop because nothing runs locally.
-- **Claude (Anthropic)** — hosted, top quality. *Setup: ~5 minutes
-  from a clean machine, ~1 minute if you already have a Claude
-  account.* *Cost: pennies per run when used for a single role;
-  a few dollars a month if every agent uses Claude.* Same any-laptop
-  story as OpenRouter.
-- **Ollama** — free, local, private. *Setup: 20–40 minutes mostly
-  spent downloading the ~19 GB Qwen3 model.* *Cost: $0 ongoing
-  after the one-time download.* Works well on a 32 GB Mac (or
-  comparable PC); lighter offices like `periodic_brief` work on
-  much less. Default in the curl one-liner.
-- **OpenAI, Gemini, your own model** — see
-  [`docs/LANGUAGE_MODELS.md`](docs/LANGUAGE_MODELS.md) for the
-  Backend Protocol (one method, ~30 lines to implement).
-
-Switch all agents at once:
-
-```bash
-export DSL_BACKEND=openrouter
-export OPENROUTER_API_KEY=sk-or-v1-...
-```
-
-Switch only one agent inside one office by overriding its role
-file — [`situation_room_pro`](dissyslab/gallery/apps/situation_room_pro/)
-shows this in one file's difference.
-
-> **A note on cost.** Setting `DSL_BACKEND=anthropic` (Claude) on
-> a fan-out office like `situation_room` means ~18 Claude calls per
-> run — roughly 50 cents to two dollars depending on the model and
-> the article. That can add up quickly if you run the office on a
-> cron. For everyday operation, the cheapest reasonable path is
-> **Qwen-2.5-7B on OpenRouter for every role** (pennies per run),
-> or **Qwen for the extractors and Claude only for the writer**
-> (the `situation_room_pro` pattern, still pennies per run with
-> sharper prose). See
-> [`docs/LANGUAGE_MODELS.md`](docs/LANGUAGE_MODELS.md) for the
-> per-role override recipe.
-
----
 
 ## Documentation
 
-For people who run offices:
+Running offices:
 
 - **[`gallery/README.md`](dissyslab/gallery/README.md)** — the full
   app catalog, split into "runs on any laptop with no keys" and
@@ -331,7 +410,7 @@ For people who run offices:
 - **[Sample digest](dev/experiments/situation_room_sample_day_1.md)**
   — what a real morning's output looks like.
 
-For people who build offices:
+Building new offices:
 
 - **[`docs/BUILD_APPS.md`](docs/BUILD_APPS.md)** — design and wire
   your own office, from idea to running system.
@@ -344,7 +423,7 @@ For people who build offices:
 - **[`docs/MAKE_OFFICE.md`](docs/MAKE_OFFICE.md)** — the
   programmatic path: construct an office from Python.
 
-For people who extend the framework:
+Extending the framework:
 
 - **[`dev/PROMPTING_FOR_SLMS.md`](dev/PROMPTING_FOR_SLMS.md)** — the
   role-decomposition pattern that makes small models reliable.
@@ -393,15 +472,16 @@ Same result as the shell installer. Read each step before running it.
 
 ---
 
-## Also: a teaching framework
+## Also: A Python Distributed Systems Framework for Teaching
 
-DisSysLab is used in an introductory undergraduate distributed
-systems class. The same office.md vocabulary — sources, agents,
-roles, connections — teaches dataflow, concurrency, parallel
-composition, and termination detection to first year students
-using distributed systems examples constructed in plain English. 
-See [`docs/MAKE_OFFICE.md`](docs/MAKE_OFFICE.md) for
-the programmatic path used in coursework.
+DisSysLab is used in an introductory undergraduate class on distributed
+systems. English job descriptions and org charts are compiled
+to a Python famework of agents that can be run in threads or in
+processes. Students work with both natural lanuage and Python to
+build apps for their own personal interests. Then they learn 
+algorithms used in distributed systems and investigate concurrency
+concepts. 
+See [`docs/MAKE_OFFICE.md`](docs/MAKE_OFFICE.md).
 
 ---
 
@@ -422,10 +502,3 @@ the programmatic path used in coursework.
 MIT — see [LICENSE](LICENSE).
 
 ---
-
-**DisSysLab is an open framework for describing continuous offices
-of AI agents in plain English. The unit of design is
-sense → think → respond. The mission is to give Pat — small-business
-owner, journalist, analyst, NGO staff, anyone doing continuous
-information work — a system that pays its rent in attention rather
-than tokens.**

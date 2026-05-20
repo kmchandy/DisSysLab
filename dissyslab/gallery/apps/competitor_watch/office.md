@@ -1,8 +1,5 @@
 # Office: competitor_watch
 
-# An instance of the sense → think → respond pattern; see
-# docs/PATTERN_sense_think_respond.md.
-
 Sources: bbc_tech(max_articles=10), techcrunch(max_articles=10), venturebeat_ai(max_articles=10)
 Sinks: markdown_digest(path='competitors.md')
 
@@ -11,7 +8,7 @@ Sasha is a deduplicator(by='url').
 Eve is an entity_extractor.
 Sam is a sentiment_classifier.
 Tom is a topic_tagger.
-Sync is a synchronizer.
+Sync is a synchronizer(inports=["entity_extractor", "sentiment_classifier", "topic_tagger"]).
 Riley is a summary_writer.
 
 Connections:

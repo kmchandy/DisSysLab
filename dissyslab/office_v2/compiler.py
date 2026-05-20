@@ -80,6 +80,7 @@ from dissyslab.blocks.source import Source
 from dissyslab.blocks.sink import Sink
 from dissyslab.blocks.transform import Transform
 from dissyslab.fn_lib import FN_LIB, partition_kwargs
+from dissyslab.office_v2.library import PARAMETERIZED_LIBRARY
 
 from dissyslab.office_v2._internals import (
     CompileError,
@@ -507,9 +508,32 @@ def _resolve_role_ref(
             f"(got {type(entry).__name__})"
         )
 
-    # Not in roles_lib. Try fn_lib (framework-shipped Python
-    # transformers). Office-local roles win if both define the same
-    # name, because the roles_lib lookup happens first.
+    # Not in the static library. Try PARAMETERIZED_LIBRARY — roles
+    # whose port shape depends on office.md kwargs (synchronizer's
+    # inports, etc.). The local roles_lib lookup above takes
+    # precedence so an office can still override a parameterized
+    # library role with a local roles/X.py file.
+    constructor = PARAMETERIZED_LIBRARY.get(ref.role_name)
+    if constructor is not None:
+        user_kwargs = dict(ref.args)
+        try:
+            entry = constructor(**user_kwargs)
+        except TypeError as exc:
+            raise CompileError(
+                f"agent {ref.agent_name!r}: bad arguments to "
+                f"parameterized role {ref.role_name!r}: {exc}"
+            ) from exc
+        except ValueError as exc:
+            raise CompileError(
+                f"agent {ref.agent_name!r}: {exc}"
+            ) from exc
+        block = entry()
+        return block, "role", entry.out_ports
+
+    # Not in roles_lib or PARAMETERIZED_LIBRARY. Try fn_lib
+    # (framework-shipped Python transformers). Office-local roles win
+    # if both define the same name, because the roles_lib lookup
+    # happens first.
     fn_entry = FN_LIB.get(ref.role_name)
     if fn_entry is not None:
         user_kwargs = dict(ref.args)
@@ -559,7 +583,11 @@ def _resolve_role_ref(
         warnings.extend(child_warnings)
         return child_net, "subnetwork", tuple(child_net.outports)
 
-    all_roles = sorted(set(library.keys()) | set(FN_LIB.keys()))
+    all_roles = sorted(
+        set(library.keys())
+        | set(FN_LIB.keys())
+        | set(PARAMETERIZED_LIBRARY.keys())
+    )
     hint = _suggest(ref.role_name, all_roles)
     parts = [
         f"Agent {ref.agent_name!r} uses role {ref.role_name!r}, "

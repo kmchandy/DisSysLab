@@ -1,8 +1,5 @@
 # Office: ticket_router
 
-# An instance of the sense → think → respond pattern; see
-# docs/PATTERN_sense_think_respond.md.
-
 Sources: webhook(port=8000, path='/tickets')
 Sinks: slack_sink_alerts(webhook_url_env='SLACK_ONCALL_WEBHOOK'), jsonl_recorder_archive(path='tickets_archive.jsonl')
 
@@ -11,7 +8,7 @@ Sasha is a deduplicator(by='url').
 Eve is a severity_classifier.
 Sam is an urgency_classifier.
 Tom is a category_classifier.
-Sync is a synchronizer.
+Sync is a synchronizer(inports=["severity_classifier", "urgency_classifier", "category_classifier"]).
 Riley is a summary_writer.
 
 Connections:
@@ -24,5 +21,4 @@ Sam's out is Sync's urgency_classifier.
 Tom's out is Sync's category_classifier.
 
 Sync's out is Riley.
-Riley's publish is slack_sink_alerts.
-Riley's discard is jsonl_recorder_archive.
+Riley's out is slack_sink_alerts, jsonl_recorder_archive.

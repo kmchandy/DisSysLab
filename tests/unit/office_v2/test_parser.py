@@ -129,6 +129,116 @@ class TestSplitRecipients:
         assert self._split("X AND Y") == ["X", "Y"]
 
 
+# ── Plain-English sentence-style connections ───────────────────────────
+
+
+class TestSendsStyleConnections:
+    """The 'plain English' promise is load-bearing. The parser accepts
+    two equivalent connection shapes:
+
+    1. Canonical possessive:  X's port is Y[, Z[, and W]].
+    2. Sentence-style:        X sends [his|her|their|its] port to [the] Y.
+
+    These tests live in the parser layer (not via parse_office_dir)
+    so they exercise the connection-line regex directly without needing
+    a full office.md scaffold.
+    """
+
+    def _parse_line(self, line: str):
+        """Drive the connections-section parser with a single line."""
+        from dissyslab.office_v2.parser import (
+            _parse_connections_section,
+            _Line,
+        )
+        body = [_Line(no=1, text=line)]
+        # No inputs/outputs declared — both forms still parse cleanly,
+        # the sender just isn't boundary-rewritten.
+        return _parse_connections_section(
+            body, inputs=(), outputs=(), path=None
+        )
+
+    # Canonical possessive form (regression: must still work).
+
+    def test_canonical_singleton(self):
+        stmts = self._parse_line("Riley's out is editor.")
+        assert len(stmts) == 1
+        assert stmts[0].source.name == "Riley"
+        assert stmts[0].source.port == "out"
+        assert stmts[0].destinations[0].name == "editor"
+
+    def test_canonical_fanout(self):
+        stmts = self._parse_line(
+            "Sasha's out is Eve, Sam, Tom, Greta.")
+        assert len(stmts[0].destinations) == 4
+
+    def test_canonical_literal_output_port_preserved(self):
+        # Some roles legitimately declare a port named 'output'. The
+        # canonical form must take that as the literal port name, not
+        # alias it to 'out'. (Regression for org_two_office_news.)
+        stmts = self._parse_line("Morgan's output is article_out.")
+        assert stmts[0].source.port == "output"
+
+    # Sentence-style form (the four Mani asked about, plus variants).
+
+    def test_sends_his(self):
+        stmts = self._parse_line("Riley sends his output to the editor.")
+        assert len(stmts) == 1
+        assert stmts[0].source.name == "Riley"
+        assert stmts[0].source.port == "out"
+        assert stmts[0].destinations[0].name == "editor"
+
+    def test_sends_her(self):
+        stmts = self._parse_line("Riley sends her output to the editor.")
+        assert stmts[0].source.port == "out"
+        assert stmts[0].destinations[0].name == "editor"
+
+    def test_sends_their(self):
+        stmts = self._parse_line(
+            "Riley sends their output to the editor.")
+        assert stmts[0].source.port == "out"
+        assert stmts[0].destinations[0].name == "editor"
+
+    def test_sends_its(self):
+        stmts = self._parse_line("Riley sends its output to the editor.")
+        assert stmts[0].source.port == "out"
+        assert stmts[0].destinations[0].name == "editor"
+
+    def test_sends_without_pronoun(self):
+        stmts = self._parse_line("Riley sends output to editor.")
+        assert stmts[0].source.port == "out"
+        assert stmts[0].destinations[0].name == "editor"
+
+    def test_sends_with_real_port_name(self):
+        # "out" used as the literal port name, not the "output" alias.
+        stmts = self._parse_line("Riley sends his out to editor.")
+        assert stmts[0].source.port == "out"
+
+    def test_sends_without_the(self):
+        stmts = self._parse_line("Riley sends his output to editor.")
+        assert stmts[0].destinations[0].name == "editor"
+
+    def test_sends_fanout_with_per_recipient_the(self):
+        # Multiple recipients, each with optional leading "the".
+        stmts = self._parse_line(
+            "Riley sends his output to the editor, "
+            "the reviewer, and the archive.")
+        names = [d.name for d in stmts[0].destinations]
+        assert names == ["editor", "reviewer", "archive"]
+
+    def test_sends_fanout_plain(self):
+        stmts = self._parse_line(
+            "Riley sends his output to editor, reviewer and archive.")
+        names = [d.name for d in stmts[0].destinations]
+        assert names == ["editor", "reviewer", "archive"]
+
+    def test_error_message_mentions_both_forms(self):
+        # If the user writes something that matches neither form, the
+        # error should hint at the canonical AND the sentence-style.
+        from dissyslab.office_v2.parser_errors import ParseError as PE
+        with pytest.raises(PE, match="sends"):
+            self._parse_line("Riley → editor")
+
+
 # Note: ``_extract_send_to_ports`` lives in
 # ``dissyslab.office_v2.library`` (Step 4: parser stopped reading
 # ``roles/*.md``). Tests for it are in test_library.py.
