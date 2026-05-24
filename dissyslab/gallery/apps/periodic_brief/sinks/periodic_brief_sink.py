@@ -1,4 +1,4 @@
-# dissyslab/components/sinks/periodic_brief_sink.py
+# dissyslab/gallery/apps/periodic_brief/sinks/periodic_brief_sink.py
 
 """
 PeriodicBriefSink — write a periodic morning briefing assembled from

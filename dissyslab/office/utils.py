@@ -274,14 +274,27 @@ SINK_REGISTRY = {
         "args":   "named",
         "call":   "run",
     },
+    # ── App-specific sinks (live with their gallery app) ──
+    # periodic_brief_sink and periodic_brief_html_sink hardcode the
+    # bucket taxonomy (weather, stocks, calendar, gmail, news), the
+    # field schema (temp_f, ticker, price, change_pct, ...), and the
+    # visual layout of the periodic_brief office. That knowledge
+    # belongs to the app, not to the framework — moving the files
+    # into gallery/apps/periodic_brief/sinks/ lets components/sinks/
+    # stay genuinely generic, and gives Pat a clear model: when she
+    # writes her own app-specific renderer, it lives next to the
+    # office.md that uses it. The registry still owns name resolution
+    # so office.md doesn't need to change.
+    # Shared by periodic_brief and periodic_brief_pro (the pro variant
+    # uses the same renderer with extra sources).
     "periodic_brief_sink": {
-        "import": "from dissyslab.components.sinks.periodic_brief_sink import PeriodicBriefSink",
+        "import": "from dissyslab.gallery.apps.periodic_brief.sinks.periodic_brief_sink import PeriodicBriefSink",
         "class":  "PeriodicBriefSink",
         "args":   "named",
         "call":   "run",
     },
     "periodic_brief_html_sink": {
-        "import": "from dissyslab.components.sinks.periodic_brief_html_sink import PeriodicBriefHtmlSink",
+        "import": "from dissyslab.gallery.apps.periodic_brief.sinks.periodic_brief_html_sink import PeriodicBriefHtmlSink",
         "class":  "PeriodicBriefHtmlSink",
         "args":   "named",
         "call":   "run",

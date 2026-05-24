@@ -1,4 +1,4 @@
-# dissyslab/components/sinks/periodic_brief_html_sink.py
+# dissyslab/gallery/apps/periodic_brief/sinks/periodic_brief_html_sink.py
 
 """
 PeriodicBriefHtmlSink — write a Pat-grade HTML brief assembled from
@@ -65,6 +65,7 @@ Used in office.md as
 
 from __future__ import annotations
 
+import atexit
 import html
 import os
 import sys
@@ -76,7 +77,23 @@ from typing import Any, Dict, List, Optional
 # ── Module-level template helpers ─────────────────────────────────────
 
 
-_DEFAULT_ACCENT = "#3b82f6"   # calm slate-blue
+# Default accent stays a calm slate-blue — but the hero now uses a real
+# two-color gradient (slate-blue → violet) so the screenshot has visual
+# punch without making the rest of the page loud. See _css().
+_DEFAULT_ACCENT = "#3b82f6"
+_DEFAULT_ACCENT_TO = "#8b5cf6"   # violet end of the hero gradient
+
+# Per-section accent tints. Each card heading gets a subtle background
+# tint so the eye can pre-scan the brief: "ah, weather, markets, news,
+# email, schedule" before reading the content. These are *very* light —
+# they're a UX cue, not a visual statement. The card body remains white.
+_SECTION_TINTS = {
+    "Schedule": "#fffbeb",                # soft amber
+    "Weather": "#eff6ff",                 # sky blue
+    "Markets": "#ecfdf5",                 # mint green
+    "Email worth knowing about": "#fef3c7",   # peach
+    "News": "#f5f3ff",                    # lavender
+}
 
 
 # ── ANSI color codes for terminal rendering ──────────────────────────
@@ -147,6 +164,7 @@ class PeriodicBriefHtmlSink:
         name: Optional[str] = None,
         title: Optional[str] = None,
         accent_color: str = _DEFAULT_ACCENT,
+        accent_color_to: str = _DEFAULT_ACCENT_TO,
         auto_refresh: bool = True,
         print_to_console: bool = True,
     ):
@@ -159,7 +177,12 @@ class PeriodicBriefHtmlSink:
             name:           Override the sink name (only matters for
                             tracing / log messages).
             title:          Page title. Defaults to today's date.
-            accent_color:   CSS color used for links, badges, hero gradient.
+            accent_color:   Start color of the hero gradient and the
+                            accent used for links/badges.
+            accent_color_to: End color of the hero gradient. Defaults
+                            to a violet that pairs with the default
+                            slate-blue start. Pass the same value as
+                            ``accent_color`` for a monochrome hero.
             auto_refresh:   If True, include a 60-second meta-refresh
                             in the HTML so an open browser tab keeps up.
             print_to_console: If True (default), also render the brief
@@ -176,8 +199,13 @@ class PeriodicBriefHtmlSink:
         self._title = title or f"Brief — {datetime.now().strftime('%A, %B %-d, %Y')}"
         self._name = name or "periodic_brief_html_sink"
         self._accent = accent_color
+        self._accent_to = accent_color_to
         self._auto_refresh = auto_refresh
         self._print_to_console = print_to_console
+        # Guards against printing the brief twice when both finalize()
+        # and the atexit hook fire (e.g. tests call finalize directly
+        # AND the interpreter then exits).
+        self._printed = False
 
         # Per-bucket accumulators
         self._schedule: List[dict] = []
@@ -188,6 +216,22 @@ class PeriodicBriefHtmlSink:
 
         # Write an empty shell so a fresh file exists from t=0.
         self._rewrite()
+
+        # Register an interpreter-exit hook so the brief actually
+        # prints when `dsl run periodic_brief` ends.
+        #
+        # Background: the framework's network.shutdown() calls
+        # `agent.shutdown()` on each wrapping Sink block — but never
+        # invokes any method on the *underlying instance* the Sink
+        # wraps. That means a `finalize()` method on this class is
+        # unreachable in normal flow. atexit fires after
+        # `run_network()` returns and before the Python interpreter
+        # exits, which is the right moment to print the final brief.
+        # The hook is registered only when print_to_console is True
+        # so headless deployments (cron / systemd / CI) don't get a
+        # surprise stdout write at shutdown.
+        if self._print_to_console:
+            atexit.register(self._maybe_print_brief)
 
     @property
     def __name__(self) -> str:
@@ -278,6 +322,7 @@ class PeriodicBriefHtmlSink:
         return f"""
 :root {{
   --accent:           {self._accent};
+  --accent-to:        {self._accent_to};
   --accent-soft:      {self._accent}1a;
   --bg:               #fafafa;
   --card-bg:          #ffffff;
@@ -303,7 +348,10 @@ body {{
   padding: 32px 24px 48px 24px;
 }}
 .hero {{
-  background: linear-gradient(135deg, var(--accent), var(--accent-soft));
+  /* Two-color gradient (slate-blue → violet) gives the top of the brief
+     real visual punch — this is the element the eye lands on first, so
+     we make it the moment of color. Everything below stays calm. */
+  background: linear-gradient(135deg, var(--accent), var(--accent-to));
   color: white;
   padding: 28px 32px;
   border-radius: 16px;
@@ -382,11 +430,14 @@ body {{
   font-weight: 600;
   letter-spacing: 0.02em;
 }}
-.badge-default {{ background: #f3f4f6; color: var(--text-soft); }}
-.badge-source  {{ background: var(--accent-soft); color: var(--accent); }}
-.badge-urgent  {{ background: #fef2f2; color: var(--bad); }}
-.badge-low     {{ background: #f0fdf4; color: var(--good); }}
-.badge-topic   {{ background: #f5f3ff; color: #7c3aed; }}
+/* Badges are semantic signals — saturate the backgrounds enough that
+   they read as signals at a glance, not whispers. The bumps are one
+   Tailwind shade (e.g. red-50 → red-100) so they stay tasteful. */
+.badge-default {{ background: #e5e7eb; color: var(--text-soft); }}
+.badge-source  {{ background: #dbeafe; color: #1d4ed8; }}
+.badge-urgent  {{ background: #fee2e2; color: #b91c1c; }}
+.badge-low     {{ background: #d1fae5; color: #047857; }}
+.badge-topic   {{ background: #ede9fe; color: #6d28d9; }}
 .market-row {{
   display: flex;
   justify-content: space-between;
@@ -628,18 +679,63 @@ body {{
 
     @staticmethod
     def _card(title: str, body: str) -> str:
-        return f'<section class="card"><h2>{_esc(title)}</h2>{body}</section>'
+        """Render one section card with a section-specific heading tint.
+
+        Each section heading gets a very light background tint so the
+        eye can pre-scan which sections exist (weather, markets, news,
+        email, schedule) before reading content. The card body stays
+        white — the tint is on the H2 only.
+        """
+        tint = _SECTION_TINTS.get(title, "")
+        heading_style = (
+            f' style="background:{tint};padding:8px 12px;margin:-20px -24px 14px -24px;border-radius:12px 12px 0 0;"'
+            if tint else ""
+        )
+        return (
+            f'<section class="card">'
+            f'<h2{heading_style}>{_esc(title)}</h2>{body}'
+            f'</section>'
+        )
 
     def finalize(self) -> None:
         """Final flush — rewrite the HTML and (optionally) print to console.
 
-        Called by the framework at office shutdown. Idempotent; safe to
-        call repeatedly without producing duplicate output (we re-render
-        the file, but only print the console version once per call).
+        Idempotent; safe to call repeatedly without producing duplicate
+        output (the console-print is guarded by ``_printed``).
+
+        Note: the dissyslab framework does NOT call this method
+        automatically on the underlying sink instance — Sink blocks
+        wrap ``self.run``, and the network's shutdown only touches the
+        Sink block, not the wrapped instance. The actual at-exit
+        printing is wired through the atexit hook registered in
+        ``__init__``. ``finalize()`` is kept for explicit-call sites
+        (tests, programmatic use) and as a backwards-compat surface.
         """
         self._rewrite()
-        if self._print_to_console:
+        self._maybe_print_brief()
+
+    def _maybe_print_brief(self) -> None:
+        """Print the brief once. Idempotent across calls.
+
+        Called from two paths:
+        1. The atexit hook registered in ``__init__`` — fires once
+           per interpreter, after the network finishes its run.
+        2. An explicit ``finalize()`` call from test code.
+        Either path is fine; the ``_printed`` guard makes sure we
+        never print twice.
+
+        Exceptions during the print are swallowed: this can fire
+        very late in process shutdown (stdout may already be closed
+        in unusual environments), and we never want a print error
+        to mask a real exception from the network's run.
+        """
+        if self._printed or not self._print_to_console:
+            return
+        self._printed = True
+        try:
             self._print_brief_to_console()
+        except Exception:
+            pass
 
     # ── Terminal rendering ───────────────────────────────────────────
 

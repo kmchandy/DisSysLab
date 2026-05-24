@@ -4,33 +4,61 @@
 [![Python](https://img.shields.io/pypi/pyversions/dissyslab)](https://pypi.org/project/dissyslab/)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**Use English to build offices staffed by multiple agents that work for you continuously.**
-A chatbot answers when you ask; but your office of agents works for you 
-nonstop monitoring sources, filtering, analyzing, and pushing results to
-your apps and devices.
 
-**Mix and match agents that best fit your accuracy, task, budget, and privacy needs.**
-An office can mix different types of agents: paid AI services such as Anthropic and OpenAI, ; free local AI such as Qwen on Ollama for roles where cost and privacy matter more than accuracy; task-specific small models; and Python functions. 
+**Goal: Make sense and respond (S&R) systems available to individuals.**
+S&R systems respond proactively to conditions in the environment.
+They have been used for decades by militaries and institutions such as banks.
+S&R wasn't available to individuals because they didn't have teams of experts and 
+powerful computers. DisSysLab overcomes these hurdles by using three ideas.
 
-**Construct agent networks of arbitrary complexity ideal for your application.**
-The network of agents in an office is specified by an org chart.
-Different applications need different types of org charts.
-Some are pipelines; some fan out to parallel agents;
-some branch on conditions; some loop.
-Build an office with the agent network ideal for your application.
+1. **Sense and respond to your environment continuously**. A chatbot answers when you ask; use DisSysLab to build an office of agents that continuously senses and responds to opportunities, threats, and other situations.
 
-**Notes**
+2. **Use plain English to build offices of agents that sense and respond.**
+Write a document `office.md` that names the workers and lays out the org chart of your office. Give a job description for each worker's role. Run one command that creates an office that
+runs continuously. The org chart can have loops,
+broadcasts, merges, and branches.
 
-The demos in this website terminate execution after processing
-a fixed amount of data to limit bills for hosted AI. You can execute
-apps forever by using free AI on your laptop or by specifying app
-parameters based on cost constraints. 
+3. **Mix and match agents that fit your accuracy, budget, and privacy needs.**
+Build your office with paid AI services (e.g. Anthropic, OpenAI), free local
+AI (e.g. Qwen on Ollama), task-specific small models, and ordinary Python functions.
+For CPU-bound roles (numpy, ML inference) swap `run_network()` for `process_network()`
+and every agent runs in its own OS process. Individuals can make S&R systems that fit their
+individual budgets by mixing and matching agents.
+
+**Teaching**:
+DisSysLab is also used to teach distributed systems to first-year undergraduates 
+— the same framework, used both as an S&R tool and as a teaching laboratory.
+Each student builds an S&R app for her own specific needs. And only then learns
+about the algorithms underlying her app and other distributed systems.
+
+```mermaid
+flowchart LR
+  A[bbc_world]:::src --> D[Sasha<br/>deduplicate]
+  B[npr_news]:::src --> D
+  C[al_jazeera]:::src --> D
+  D --> E1[Eve<br/>extract entities]
+  D --> E2[Sam<br/>classify severity]
+  D --> E3[Tom<br/>tag topic]
+  D --> E4[Greta<br/>geolocate]
+  E1 --> H[Sync<br/>synchronize]
+  E2 --> H
+  E3 --> H
+  E4 --> H
+  H --> I[Riley<br/>write briefing]
+  I --> J[intelligence_display]:::sink
+  I --> K[(briefings.jsonl)]:::sink
+  classDef src fill:#dbeafe,stroke:#1d4ed8
+  classDef sink fill:#fef3c7,stroke:#92400e
+```
 
 
-My hypothesis is that offices for most apps can be specified in English; 
-however, some offices may require users to write agents in Python. I hope
-that the libraries in this framework are extensive enough that users will 
-rarely need to write Python.
+*The `situation_room` office: three news feeds fan into one
+deduplicator, four parallel agents enrich each article, a synchronizer
+merges their outputs, and a writer assembles and writes the briefing which
+is sent to a terminal display and to a JSONL archive. Every node is
+specified in one short English document.*
+
+
 
 ---
 
@@ -70,12 +98,16 @@ your shell rc file.
 
 ```bash
 dsl run periodic_brief
-open brief.html
 ```
 
-In 10 to 20 seconds you'll see a single HTML page with three news
-headlines from BBC, three from NPR, current weather for Pasadena,
-and three stock tickers.
+In 10–20 seconds you'll see a brief render in your terminal —
+news headlines from BBC and NPR, current weather for Pasadena, and a
+few stock tickers. A `brief.html` is also saved in the
+current folder so you can share or archive it.
+
+<p align="center">
+  <img src="docs/brief_hero.png" alt="brief.html produced by the periodic_brief office: news cards, a weather card, market tickers, and an email section" width="472">
+</p>
 
 To make your own editable copy of `periodic_brief` execute
 ```bash
@@ -91,19 +123,19 @@ dsl run .
 
 `dsl list` shows offices that ship with DisSysLab.
 
-## Your situation_room
+## Build your own situation room
 
-First run `periodic_brief` and see it running end to end.
-Then build your own situation room by running and then
+First see `periodic_brief` running end to end.
+Then build your own situation room by running and
 modifying [`situation_room`](dissyslab/gallery/apps/situation_room/).
-Three news feeds in. One intelligence digest out: articles deduplicated,
-severity-classified, entity-extracted, topic-tagged, and geolocated.
-Roles specified in English job descriptions.
+
 
 ```bash
 dsl run situation_room
 ```
 
+Three news feeds in. One intelligence digest out: articles deduplicated,
+severity-classified, entity-extracted, topic-tagged, and geolocated.
 Speed and cost depend on the engine you picked at install time:
 
 | Engine | Wall time per run | Cost per run |
@@ -142,7 +174,7 @@ announced last month.
 
 ---
 
-## Make it yours
+## Personalize your situation room
 
 Change the roles, agents and org chart in
 [`office.md`](dissyslab/gallery/apps/situation_room/office.md)
@@ -191,13 +223,12 @@ One file's difference.
 
 ---
 
-## What's an office?
+## What's an office of agents?
 
-An office is a team of AI agents with **roles**, connected by an
-**org chart**. You write each role in plain English — the same way
-you'd describe a job to a new hire — and you write the org chart in
-plain English too. The framework compiles your description into a
-running concurrent system.
+An office is a team of AI agents and an
+org chart. You give each agent a name and a role.
+You give a job description in plain English for each role. You also specify the org chart in
+English. The framework compiles your description into a concurrent system.
 
 This is a very brief overview of how you specify offices. 
 We describe specifics elsewhere.
@@ -235,6 +266,9 @@ Riley's out is intelligence_display, jsonl_recorder_briefing.
 ```
 
 ## The network of agents in the situation_room office
+
+The diagram below restates the same topology in ASCII art, with timing semantics labeled.
+
 ```
         ┌──────────┐ ┌──────────┐ ┌──────────┐
         │ bbc_news │ │ npr_news │ │  al_jaz  │
@@ -261,15 +295,14 @@ Riley's out is intelligence_display, jsonl_recorder_briefing.
                           ▼
                   ┌───────────────┐
                   │    Riley      │
-                  │    writer     │ 
+                  │    writer     │
                   └───────┬───────┘
                           ▼
-                      ┬───────┬
-                publish     revise/discard
-                      ▼          ▼
-               ┌──────────┐ ┌──────────┐        
-               │ display  │ │ archiv   │
-               └──────────┘ └──────────┘
+                   ┌──────┴──────┐
+                   ▼             ▼
+              ┌──────────┐  ┌──────────┐
+              │ display  │  │ archive  │
+              └──────────┘  └──────────┘
 ```
 
 The office monitors the feeds listed as `Sources`.
@@ -303,7 +336,7 @@ a message appearing in an outbox and its delivery to its connected inbox
 is arbitrary. Performance issues are described later.
 
 ## Example of a role
-Specify a role -- it's job description -- with sufficient detail 
+Specify a role — its job description — with sufficient detail
 that agents in the role do what you want them to do. Here is an example of
 a job description for topic taggers
 
@@ -365,6 +398,12 @@ Output:
 {"source": "techcrunch", "title": "AI startup raises $50M to automate code review", "text": "Series B funding led by Sequoia values the company at $400M...", "url": "https://techcrunch.com/2026/04/15/ai-startup", "timestamp": "2026-04-15T10:00:00Z", "topic": "technology", "send_to": "out"}
 ```
 
+---
+
+*Note: Agents for most apps can be specified in English; however,
+some require Python.*
+Users will need to resort to Python less frequently as
+LLMs integrate with Python libraries. 
 
 
 ---
@@ -396,6 +435,54 @@ Modify examples of offices in the [`gallery`](dissyslab/gallery/).
 
 ---
 
+
+## Why I am building DisSysLab
+
+S&R systems have been used by large institutions for decades. Militaries
+formalized them as the OODA loop (observe, orient, decide, act).
+Stephan Haeckel introduced "sense and respond" as a business
+methodology in 1992. In 2009, Roy Schulte of Gartner and I published
+*Event Processing: Designing IT Systems for Agile Companies*,
+surveying the field and describing many use cases. I worked on building
+earthquake-warning and radiation-detection systems.
+
+
+**I am building DisSysLab to make S&R available to an individual with a personal computer** --
+an amateur investor, a researcher who wants timely updates on new findings,
+a facilities manager who monitors water leaks, and an individual managing
+social media, mail and calendars. 
+S&R systems were not available to individuals for two reasons: individuals didn't
+have access to teams of experts and to adequate computing power.
+
+1. **Expertise**: Institutions develop S&R systems over multiple iterations. Business users describe their intent:
+*Build a system that responds to critical events in a timely fashion without generating
+many false alarms.* Teams of data scientists and engineers built prototype systems that are tested by
+business users. If the intent is not met engineers iterate on the next prototype.
+Individuals don't have programming teams.
+
+2. **Compute Power**: Organizations built S&R systems using powerful computing
+infrastructure. Militaries and banks use networks of multiprocessor computers.
+Individuals have only personal computers.
+
+DisSysLab uses LLMs to overcome both hurdles.
+You use LLMs to implement specialized S&R tasks
+such as filtering, entity identification, and signal processing.
+You tune prompts to do these special-purpose tasks extremely well.
+Then you use English to specify how the agents cooperate to execute
+complex S&R missions. You control costs by running some
+free, smaller LLMs on a PC while running others on hosted services (Anthropic,
+Gemini, OpenAI). You can even use LLMs to build the entire office of agents
+given S&R specifications.
+
+**DisSysLab for Teaching**:
+I have taught courses on concurrency for 40 years. Now first-year
+undergraduates are interested in concepts that
+were previously taught in graduate courses. I am teaching a course open to first-year
+undergraduates in the coming year. Each student begins by using DisSysLab to build an S&R app for her own 
+personal needs. Then I discuss algorithms underlying the systems
+they built.
+
+---
 
 ## Documentation
 
@@ -472,15 +559,13 @@ Same result as the shell installer. Read each step before running it.
 
 ---
 
-## Also: A Python Distributed Systems Framework for Teaching
+## A Python Distributed Systems Framework for Teaching
 
-DisSysLab is used in an introductory undergraduate class on distributed
-systems. English job descriptions and org charts are compiled
-to a Python famework of agents that can be run in threads or in
-processes. Students work with both natural lanuage and Python to
-build apps for their own personal interests. Then they learn 
-algorithms used in distributed systems and investigate concurrency
-concepts. 
+DisSysLab -- distributed systems laboratory -- is used 
+in an introductory undergraduate class on distributed
+systems. First, students build sense and 
+respond apps for their own specific personal needs. 
+The apps provide motivation for learning concurrency concepts.
 See [`docs/MAKE_OFFICE.md`](docs/MAKE_OFFICE.md).
 
 ---
@@ -496,6 +581,10 @@ See [`docs/MAKE_OFFICE.md`](docs/MAKE_OFFICE.md).
   OpenRouter or another hosted backend.
 
 ---
+
+
+
+
 
 ## License
 
