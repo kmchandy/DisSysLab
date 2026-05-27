@@ -68,6 +68,8 @@ SOURCE_REGISTRY = {
     "venturebeat_ai":  {"type": "rss"},
     "nasa_news":       {"type": "rss"},
     "python_jobs":     {"type": "rss"},
+    "remoteok":        {"type": "rss"},
+    "we_work_remotely": {"type": "rss"},
 
     # ── arXiv subject feeds (web-scraped, not RSS) ────────────────────
     # arXiv doesn't expose RSS for "recent submissions" pages, so
@@ -202,6 +204,22 @@ SOURCE_REGISTRY = {
         "type":   "file_source",
         "import": "from dissyslab.components.sources.file_source import FileSource",
         "class":  "FileSource",
+    },
+
+    # ── Kalshi (prediction markets — public GET /markets/{ticker}) ────────────
+    "kalshi": {
+        "type":   "kalshi",
+        "import": "from dissyslab.components.sources.kalshi_source import KalshiSource",
+        "class":  "KalshiSource",
+    },
+
+    # ── Interactive stdin (one line per poll) ───────────────────────────────
+    # Pairs with ``console_printer``. For headless runs (custom app ``Run``),
+    # pass ``default_message="..."`` or set env ``OFFICE_CONSOLE_INPUT``.
+    "console_input": {
+        "type":   "console_input",
+        "import": "from dissyslab.components.sources.console_input_source import ConsoleInputSource",
+        "class":  "ConsoleInputSource",
     },
 }
 

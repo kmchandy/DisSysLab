@@ -8,7 +8,18 @@ In Situation Room mode (max_items set), refreshes the display in place
 showing the last N items — like a live dashboard.
 """
 
+import json
+import os
+import re
 from datetime import datetime
+
+from dissyslab.components.sinks.message_coerce import (
+    coerce_sink_message,
+    normalize_multibullet_lines,
+)
+
+# Same prefix as custom_app backend ``APP_OUTPUT_PREFIX`` — one JSON line → SSE ``block``.
+_APP_SSE_PREFIX = "__DSLAPP__:"
 
 # ANSI color codes — no extra libraries needed
 RED = "\033[91m"
@@ -29,6 +40,23 @@ SIGNIFICANCE_COLOR = {
 
 WIDTH = 66
 
+# Use "Apply" only when URL / body looks like a job or application flow; otherwise "Link".
+_APPLY_URL_HINT = re.compile(
+    r"(/jobs/|/job/|/careers|apply\.|/apply\b|greenhouse\.|boards\.greenhouse|lever\.co|"
+    r"ashbyhq|workday\.com|myworkdayjobs|icims\.com|taleo\.|smartrecruiters|"
+    r"indeed\.com/(?:rc/|viewjob)|linkedin\.com/jobs)",
+    re.I,
+)
+
+
+def _markdown_link_append(text: str, url: str) -> str:
+    """Return a markdown line for a supplementary URL (neutral label by default)."""
+    if not url or url in text:
+        return ""
+    blob = f"{url}\n{text}"
+    label = "Apply" if _APPLY_URL_HINT.search(blob) else "Link"
+    return f"\n\n**{label}:** [{url}]({url})"
+
 
 class IntelligenceDisplay:
     """
@@ -43,6 +71,58 @@ class IntelligenceDisplay:
         self.max_items = max_items
         self.items = []   # rolling buffer
         self.count = 0
+
+    # ── Custom-app SSE bridge (Nyasha's React UI reads this) ──────────
+
+    def _app_sse_enabled(self) -> bool:
+        return os.environ.get("DISSYSLAB_APP_SSE", "").strip().lower() in (
+            "1",
+            "true",
+            "yes",
+        )
+
+    def _emit_app_markdown(self, body: str) -> None:
+        """Single-line JSON for the custom app SSE Activity panel (no ANSI)."""
+        line = _APP_SSE_PREFIX + json.dumps(
+            {"t": "markdown", "body": body},
+            ensure_ascii=False,
+        )
+        print(line, flush=True)
+
+    def _item_to_markdown(self, item: dict) -> str:
+        """Plain Markdown card for web UI / email-like readability."""
+        significance = str(item.get("significance", "LOW")).upper()
+        title = (item.get("title") or "").strip()
+        text = normalize_multibullet_lines((item.get("text") or "").strip())
+        url = (item.get("url") or "").strip()
+        source = (item.get("source") or "").strip()
+
+        parts: list[str] = []
+        # Matcher prompts use bullet "•" blocks — show as-is with light framing.
+        if text.startswith("•") or "\n•" in text[:400]:
+            if title:
+                parts.append(f"## {title}")
+                parts.append("")
+            parts.append(text)
+            if source and source not in ("agent", "unknown"):
+                parts.append("")
+                parts.append(f"_Source: {source}_")
+        else:
+            if title:
+                parts.append(f"## {title}")
+                parts.append("")
+            parts.append(f"**Significance:** {significance}")
+            parts.append("")
+            if text:
+                parts.append(text)
+        if url and url not in text:
+            extra = _markdown_link_append(text, url).strip()
+            if extra:
+                parts.append(extra)
+        out = "\n".join(parts).strip()
+        return out or "_No briefing content._"
+
+    # ── Console rendering ─────────────────────────────────────────────
 
     # Field names this sink recognises as the per-item "verdict" — the
     # value the colour-coded bar uses. Different rater roles write
@@ -96,6 +176,11 @@ class IntelligenceDisplay:
         title, who wrote it, what it's about, why the rater rated it
         that way, and where to find it.
         """
+        # Normalise envelope shape (Nyasha — handles custom-app message
+        # variants where the payload is wrapped under "data" / etc.).
+        item = coerce_sink_message(item)
+        # Multi-field verdict lookup so any rater role works without
+        # coordinated field naming.
         significance = "LOW"
         for _field in self._VERDICT_FIELDS:
             v = item.get(_field)
@@ -154,11 +239,16 @@ class IntelligenceDisplay:
         return out
 
     def run(self, msg):
+        msg = coerce_sink_message(msg)
         self.count += 1
         self.items.append(msg)
 
         if self.max_items and len(self.items) > self.max_items:
             self.items = self.items[-self.max_items:]
+
+        if self._app_sse_enabled():
+            self._emit_app_markdown(self._item_to_markdown(msg))
+            return
 
         if self.max_items:
             # Situation Room mode — clear and redraw
@@ -177,6 +267,11 @@ class IntelligenceDisplay:
                 print(line)
 
     def finalize(self):
+        if self._app_sse_enabled():
+            self._emit_app_markdown(
+                f"**Briefing complete** — _{self.count} item(s) processed._"
+            )
+            return
         print(f"\n{GREY}{'═' * (WIDTH+2)}{RESET}")
         print(f"  Briefing complete — {self.count} items filed.")
         print(f"{GREY}{'═' * (WIDTH+2)}{RESET}\n")

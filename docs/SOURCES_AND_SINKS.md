@@ -67,6 +67,30 @@ Sources: hacker_news(max_articles=20),
 }
 ```
 
+### `console_input` — one line from stdin per step
+
+Reads a single line with Python's `input()` when stdin is a TTY
+(local `dsl run` in a terminal). Pairs naturally with
+`console_printer`.
+
+**Arguments:**
+- `prompt` *(str, default `""`)* — passed to `input(prompt)`.
+- `default_message` *(str, default `None`)* — when stdin is **not**
+  interactive (for example the custom app runs the office with
+  closed stdin), the source emits this string **once**, then stops.
+  You can also set the environment variable `OFFICE_CONSOLE_INPUT`
+  instead of `default_message`.
+
+**Example `office.md`:**
+```
+Sources: console_input(default_message="Summarize the weather for Pasadena.")
+Sinks: console_printer
+...
+Connections:
+  console_input's destination is Alex.
+  Alex's briefing is console_printer.
+```
+
 ### `weather` — current weather for any city (no key)
 
 Polls the free [Open-Meteo](https://open-meteo.com/) API. No

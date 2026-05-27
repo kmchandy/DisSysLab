@@ -1,0 +1,43 @@
+{
+  "version": 1,
+  "wear_by_item": {
+    "item_hoodie_gray": {
+      "stack": "clean",
+      "wears_since_launder": 0,
+      "max_wears_before_dirty": 5
+    },
+    "item_tee_crest": {
+      "stack": "worn",
+      "wears_since_launder": 1,
+      "max_wears_before_dirty": 2
+    },
+    "item_tee_caltech": {
+      "stack": "clean",
+      "wears_since_launder": 0,
+      "max_wears_before_dirty": 2
+    },
+    "item_jeans_black": {
+      "stack": "worn",
+      "wears_since_launder": 1,
+      "max_wears_before_dirty": 5
+    },
+    "item_polo_wine": {
+      "stack": "clean",
+      "wears_since_launder": 0,
+      "max_wears_before_dirty": 5
+    }
+  },
+  "outfit_history": [
+    {
+      "id": "5f50d897-9671-4bde-9f99-5022300e8d66",
+      "source": "occasion_chat",
+      "occasion": "i'm going to a dinner with friends; it's a nice warm evening",
+      "picked": "A",
+      "title": "Casual Cool Graphic Look",
+      "garment_ids": [
+        "item_tee_crest",
+        "item_jeans_black"
+      ]
+    }
+  ]
+}

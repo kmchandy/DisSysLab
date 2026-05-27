@@ -30,6 +30,29 @@ from typing import Any, Dict, List, Optional, Tuple
 from dissyslab.office.parser_errors import ParseError
 
 
+def strip_leading_yaml_front_matter(text: str) -> str:
+    """Remove an optional YAML ``---`` / ``---`` block at the start of ``office.md``.
+
+    The custom app may prepend::
+
+        ---
+        description: One line for the sidebar
+        ---
+
+    before ``# Office:``. The office DSL parser ignores this block so
+    ``dsl run`` works without manual edits.
+    """
+    t = text.lstrip("\ufeff")
+    lines = t.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return text
+    for j in range(1, len(lines)):
+        if lines[j].strip() == "---":
+            rest = "\n".join(lines[j + 1 :])
+            return rest.lstrip("\n")
+    return text
+
+
 # Section names recognised at the document level. Keys are the
 # user-typed forms (lower-cased for case-insensitive matching);
 # values are the canonical labels the rest of the parser uses.

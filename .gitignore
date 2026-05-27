@@ -166,4 +166,7 @@ demo/
 !docs/*.gif
 custom_app-for-nyasha.tar.gz
 
+# Local scratch / private notes (not for PRs)
+.local/
+
 build/

@@ -1,0 +1,35 @@
+{
+  "notes": "Authoritative garment list for WardrobeAssistant. Each item uses photo_media pointing at chat uploads under media/uploads/. Keep ids stable for outfit logic and URLs.",
+  "items": [
+    {
+      "id": "item_hoodie_gray",
+      "category": "outerwear",
+      "description": "Charcoal heather zip hoodie \u2014 quilted lining, casual layering for cool mornings.",
+      "photo_media": "media/uploads/image_0.png"
+    },
+    {
+      "id": "item_tee_crest",
+      "category": "top",
+      "description": "Navy t-shirt with white heraldic crest graphic \u2014 relaxed fit casual top.",
+      "photo_media": "media/uploads/image_1.png"
+    },
+    {
+      "id": "item_tee_caltech",
+      "category": "top",
+      "description": "Cream 'Caltech Up Close 2024' graphic t-shirt \u2014 campus event souvenir tee.",
+      "photo_media": "media/uploads/image_2.png"
+    },
+    {
+      "id": "item_jeans_black",
+      "category": "bottom",
+      "description": "Black Calvin Klein jeans \u2014 classic fit versatile dark denim.",
+      "photo_media": "media/uploads/image_3.png"
+    },
+    {
+      "id": "item_polo_wine",
+      "category": "top",
+      "description": "Burgundy ribbed quarter-zip polo with white/brown shoulder stripes \u2014 smart casual.",
+      "photo_media": "media/uploads/image_4.png"
+    }
+  ]
+}

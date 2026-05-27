@@ -65,6 +65,7 @@ from __future__ import annotations
 import dataclasses
 import importlib.util
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -318,6 +319,27 @@ def _strip_code_fences(text: str) -> str:
     return text
 
 
+def _nl_role_runtime_context_suffix() -> str:
+    """Append prefetched tables from ``office_run_context`` env keys (when set).
+
+    Populated by :func:`~dissyslab.office.office_run_context.apply_office_run_context_to_environ`
+    (``dsl run``) inside the subprocess.
+    """
+    parts: list[str] = []
+    d = os.environ.get("OFFICE_WEATHERAPI_DIGEST", "").strip()
+    if d:
+        parts.append("## Shared NOAA / prefetched forecast\n\n" + d)
+    w = os.environ.get("OFFICE_WARDROBE_INVENTORY_DIGEST", "").strip()
+    if w:
+        parts.append("## Wardrobe inventory (canonical JSON snapshot)\n\n" + w)
+    o = os.environ.get("OFFICE_OPEN_METEO_CITIES_DIGEST", "").strip()
+    if o:
+        parts.append("## Multi-city current weather (Open-Meteo snapshot)\n\n" + o)
+    if not parts:
+        return ""
+    return "\n\n---\n\n" + "\n\n---\n\n".join(parts)
+
+
 def nl_role(
     prompt: str,
     AI: Optional[str] = None,
@@ -400,7 +422,7 @@ def nl_role(
             if not text or not text.strip():
                 return {}
             raw = backend.complete(
-                system=full_prompt,
+                system=full_prompt + _nl_role_runtime_context_suffix(),
                 user=text,
                 # 2048 is plenty for role outputs (typically 200–500
                 # tokens of JSON). The previous default was 8192, sized

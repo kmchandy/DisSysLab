@@ -11,10 +11,11 @@ argparse code in ``dissyslab.cli`` stays small and readable.
   messages.
 
 * ``cli_run(office_dir)`` — if ``build/run.py`` is missing or any
-  source file under the office tree is newer than the artifact,
-  rebuild. Then execute the artifact via ``runpy.run_path`` so the
-  network starts under the same ``__main__`` entry point a student
-  would use with ``python build/run.py`` directly.
+  contributing file is newer than the artifact (office tree **or**
+  key DisSysLab codegen modules such as ``office.utils``), rebuild.
+  Then execute the artifact via ``runpy.run_path`` so the network
+  starts under the same ``__main__`` entry point a student would use
+  with ``python build/run.py`` directly.
 
 Mtime-based staleness
 =====================
@@ -22,9 +23,13 @@ Mtime-based staleness
 We walk the office tree (parent + sub-offices, even when sub-offices
 live outside the parent's directory) and compare each ``.md`` /
 ``.py`` source file's mtime to ``build/run.py``'s. Any newer source
-file triggers a rebuild. We ignore ``__pycache__`` and the
-``build/`` directory itself so a fresh artifact does not appear
-"older than itself".
+file triggers a rebuild. We also compare a small set of framework
+modules (``dissyslab.office.utils`` for ``SOURCE_REGISTRY`` /
+``SINK_REGISTRY``, plus codegen/compiler/parser/library) so registry
+or emitter changes invalidate the artifact even when the office
+folder was not edited. We ignore ``__pycache__`` and the ``build/``
+directory itself so a fresh artifact does not appear "older than
+itself".
 
 This is deliberately simple — no content hashing, no cache
 subsystem. mtime is the obvious thing students can reason about:
@@ -32,6 +37,7 @@ subsystem. mtime is the obvious thing students can reason about:
 """
 from __future__ import annotations
 
+import importlib
 import runpy
 import sys
 from pathlib import Path
@@ -68,6 +74,10 @@ def _office_tree_files(office_dir: Path) -> Iterator[Path]:
             md = node.office_dir / "network.md"
         if md.exists():
             yield md
+        for extra in ("wardrobe_inventory.json", "wardrobe_run_config.json"):
+            ep = node.office_dir / extra
+            if ep.is_file():
+                yield ep
         d = node.office_dir / "roles"
         if not d.is_dir():
             continue
@@ -85,6 +95,32 @@ def _build_artifact_path(office_dir: Path) -> Path:
     return Path(office_dir).resolve() / "build" / "run.py"
 
 
+def _framework_codegen_inputs() -> Iterator[Path]:
+    """DisSysLab modules that affect ``emit_run_py`` output but live outside ``office_dir``.
+
+    Without this, ``dsl run`` only compares ``office.md`` / ``roles/*`` mtimes to
+    ``build/run.py``. Editing ``SOURCE_REGISTRY`` (or codegen) would leave a stale
+    artifact in place — the classic ``NameError`` on a newly-registered source.
+    """
+    for modname in (
+        "dissyslab.office.utils",
+        "dissyslab.office.codegen",
+        "dissyslab.office.compiler",
+        "dissyslab.office.parser",
+        "dissyslab.office.library",
+    ):
+        try:
+            mod = importlib.import_module(modname)
+        except Exception:
+            continue
+        path_str = getattr(mod, "__file__", None)
+        if not path_str:
+            continue
+        path = Path(path_str).resolve()
+        if path.is_file() and path.suffix == ".py":
+            yield path
+
+
 def is_build_stale(office_dir: Path) -> bool:
     """True iff ``build/run.py`` is missing or older than any source.
 
@@ -98,6 +134,12 @@ def is_build_stale(office_dir: Path) -> bool:
     for src in _office_tree_files(office_dir):
         if src.stat().st_mtime > art_mtime:
             return True
+    for dep in _framework_codegen_inputs():
+        try:
+            if dep.stat().st_mtime > art_mtime:
+                return True
+        except OSError:
+            continue
     return False
 
 
@@ -162,6 +204,12 @@ def cli_run(office_dir: Path) -> int:
         print(f"  Rebuilt {artifact}")
     else:
         artifact = _build_artifact_path(office_dir)
+
+    from dissyslab.office.office_run_context import (
+        apply_office_run_context_to_environ,
+    )
+
+    apply_office_run_context_to_environ(office_dir)
 
     # runpy.run_path with run_name="__main__" makes the artifact's
     # ``if __name__ == "__main__":`` block fire — the same behaviour
