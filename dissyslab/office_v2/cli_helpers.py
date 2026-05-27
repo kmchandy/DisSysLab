@@ -74,6 +74,10 @@ def _office_tree_files(office_dir: Path) -> Iterator[Path]:
             md = node.office_dir / "network.md"
         if md.exists():
             yield md
+        for extra in ("wardrobe_inventory.json", "wardrobe_run_config.json"):
+            ep = node.office_dir / extra
+            if ep.is_file():
+                yield ep
         d = node.office_dir / "roles"
         if not d.is_dir():
             continue
@@ -200,6 +204,12 @@ def cli_run(office_dir: Path) -> int:
         print(f"  Rebuilt {artifact}")
     else:
         artifact = _build_artifact_path(office_dir)
+
+    from dissyslab.office_v2.office_run_context import (
+        apply_office_run_context_to_environ,
+    )
+
+    apply_office_run_context_to_environ(office_dir)
 
     # runpy.run_path with run_name="__main__" makes the artifact's
     # ``if __name__ == "__main__":`` block fire — the same behaviour

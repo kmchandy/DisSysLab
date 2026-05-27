@@ -23,7 +23,7 @@ custom_app/
 
 Keep **office definitions and role prompts** under `custom_app/user_offices/<name>/` so your pipeline stays app-scoped.
 
-The sample **`wardrobe_assistant`** office is tracked with `office.md` and `roles/` only; add images under `media/uploads/` on your machine (those files are **gitignored** so the repo stays small).
+The sample **`wardrobe_assistant`** office mirrors **`calendar_stylist`** (calendar + NOAA MapClick scrape + situation display + JSONL + Gmail) and adds **`wardrobe_stylist`** / **`summary_compiler`** roles grounded in your edited inventory (`roles/wardrobe_stylist.md`). Reference photos live under `media/uploads/` and are wired through **`wardrobe_inventory.json`** (`photo_media`). **`media/` is gitignored** except what you explicitly keep — see **`user_offices/wardrobe_assistant/README.md`**.
 
 The sidebar shows a **short description** for each office: from `README.md` (first non-heading line) if present, else optional YAML `description:` at the top of `office.md`, else a short line inferred from `Agents:` / `Sources:` in `office.md`.
 
@@ -85,6 +85,8 @@ npm run dev
 ```
 
 Then open **http://localhost:3000** in your browser.
+
+**Standalone Wardrobe Assistant** (same backend, dedicated UI): from `wardrobe_assistant/`, run `npm install && npm run dev` and open **http://localhost:5173** — see [`wardrobe_assistant/README.md`](../wardrobe_assistant/README.md).
 
 **Office logs:** When you click **Run**, the child office process is streamed to the **Output** panel in the app. The same lines are also printed to the **backend terminal on stderr** with an `[office:name]` prefix (so you can debug next to Uvicorn’s `INFO` access lines).
 

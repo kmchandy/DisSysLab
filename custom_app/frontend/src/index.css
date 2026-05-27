@@ -117,3 +117,35 @@ textarea:focus, input:focus {
   border-left: 3px solid var(--accent);
   color: var(--text-dim);
 }
+.office-md img {
+  vertical-align: bottom;
+  display: inline-block;
+  max-height: 220px;
+  max-width: min(200px, 46vw);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+.office-md p:has(img) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  justify-content: center;
+  align-items: flex-end;
+  margin: 0.65em 0;
+}
+.office-md table {
+  margin: 0.65em auto;
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 520px;
+}
+.office-md table td,
+.office-md table th {
+  padding: 10px 8px;
+  vertical-align: bottom;
+  text-align: center;
+}
+.office-md table td p:has(img),
+.office-md table th p:has(img) {
+  margin: 0;
+}

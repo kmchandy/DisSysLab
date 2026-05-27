@@ -74,6 +74,18 @@ const styles = {
     alignSelf: 'flex-start',
     maxWidth: '90%',
   },
+  skipWarnBox: {
+    background: 'rgba(234,179,8,0.08)',
+    border: '1px solid rgba(234,179,8,0.35)',
+    borderRadius: '8px',
+    padding: '10px 14px',
+    fontSize: '12px',
+    color: 'var(--warning, #eab308)',
+    alignSelf: 'flex-start',
+    maxWidth: '90%',
+    lineHeight: 1.55,
+    whiteSpace: 'pre-wrap',
+  },
   inputRow: {
     position: 'relative',
     padding: '12px 16px',
@@ -163,7 +175,7 @@ export default function AIEditPanel({ office, onClose, onSaved }) {
   const [messages, setMessages] = useState([
     {
       role: 'assistant',
-      content: `I have the current files for "${office.name}" loaded. Tell me what you'd like to change — I'll update the files automatically.\n\nYou can attach JPEG/PNG/GIF/WebP images or PDFs for reference (e.g. style guides or screenshots). After you pick files, wait until they show as chips above the box, then click Send — files go with that message only.\n\nExamples:\n• "Add a third agent that formats results as bullet points"\n• "Change the sources to only use BBC and NPR"\n• "Make the analyst stricter — only pass CRITICAL items"`,
+      content: `I have the current files for "${office.name}" loaded. Tell me what you'd like to change — I'll update office/role/configuration files automatically.\n\nYou can attach JPEG/PNG/GIF/WebP images or PDFs **on Send**:\n• For **wardrobe_assistant**, new photos are saved under media/uploads before I reply — if they're all images, they're named image_0, image_1, … Ask me to update wardrobe_inventory.json and roles so garment rows and URLs match.\n• After you pick files, wait until they show as chips above the box, then click Send — files go with that message only.\n\nExamples:\n• "Replace hoodie photo with attachment; update wardrobe_inventory.json"\n• "Add a third agent that formats results as bullet points"\n• "Change the sources to only use BBC and NPR"`,
     },
   ])
   const [input, setInput] = useState('')
@@ -205,6 +217,7 @@ export default function AIEditPanel({ office, onClose, onSaved }) {
 
     let accumulated = ''
     let savedFiles = null
+    let saveSkipped = null
 
     const serialize = (m) => {
       const row = { role: m.role, content: m.content || '' }
@@ -260,6 +273,8 @@ export default function AIEditPanel({ office, onClose, onSaved }) {
             })
           } else if (eventType === 'saved') {
             try { savedFiles = JSON.parse(data) } catch (_) {}
+          } else if (eventType === 'save_skipped') {
+            try { saveSkipped = JSON.parse(data) } catch (_) {}
           } else if (eventType === 'error') {
             accumulated += `\n[Error: ${data}]`
             setMessages(prev => {
@@ -279,6 +294,9 @@ export default function AIEditPanel({ office, onClose, onSaved }) {
         return next
       })
 
+      if (saveSkipped) {
+        setMessages(prev => [...prev, { _saveSkipped: true, skipReasons: saveSkipped }])
+      }
       if (savedFiles) {
         setMessages(prev => [...prev, { _saved: true, files: savedFiles }])
         onSaved()
@@ -356,6 +374,14 @@ export default function AIEditPanel({ office, onClose, onSaved }) {
             if (m._saved) return (
               <div key={i} style={styles.savedBox}>
                 Files updated: {m.files.join(', ')}
+              </div>
+            )
+            if (m._saveSkipped) return (
+              <div key={i} style={styles.skipWarnBox}>
+                <strong>Role file not saved — would break Run</strong>
+                {Object.entries(m.skipReasons || {}).map(([path, msg]) => (
+                  <div key={path}>{path}: {msg}</div>
+                ))}
               </div>
             )
             return (

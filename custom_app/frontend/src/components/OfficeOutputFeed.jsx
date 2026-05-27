@@ -101,6 +101,25 @@ const styles = {
     marginTop: '6px',
     border: '1px solid var(--border)',
   },
+  outfitRow: {
+    display: 'flex',
+    flexWrap: 'wrap',
+    gap: '14px',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    padding: '10px 4px',
+  },
+  outfitImg: {
+    display: 'block',
+    flex: '0 1 auto',
+    maxHeight: '220px',
+    maxWidth: '180px',
+    width: 'auto',
+    objectFit: 'contain',
+    borderRadius: '8px',
+    border: '1px solid var(--border)',
+    background: 'rgba(0,0,0,0.2)',
+  },
 }
 
 /** Strip terminal ANSI / OSC sequences so web output matches readable email-style text. */
@@ -145,6 +164,29 @@ function prettySourceLabel(slug) {
     .filter(Boolean)
     .map((w) => (w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : ''))
     .join(' ')
+}
+
+/** Combine consecutive garment image blocks into one aligned row (drops back-to-back duplicate src). */
+function groupActivityImages(entries) {
+  const rows = []
+  let i = 0
+  while (i < entries.length) {
+    const e = entries[i]
+    if (e.kind === 'image') {
+      const imgs = []
+      while (i < entries.length && entries[i].kind === 'image') {
+        const cur = entries[i]
+        const prev = imgs[imgs.length - 1]
+        if (!prev || prev.src !== cur.src) imgs.push(cur)
+        i++
+      }
+      if (imgs.length > 0) rows.push({ kind: 'image-row', id: imgs[0].id, imgs })
+      continue
+    }
+    rows.push(e)
+    i++
+  }
+  return rows
 }
 
 /**
@@ -414,7 +456,7 @@ export default function OfficeOutputFeed({ officeName, running }) {
         <img
           src={resolveMediaSrc(officeName, src || '')}
           alt={alt || ''}
-          style={styles.imgBlock}
+          title={alt || undefined}
           loading="lazy"
         />
       ),
@@ -469,7 +511,7 @@ export default function OfficeOutputFeed({ officeName, running }) {
           ))}
 
         {tab === 'activity' &&
-          entries.map((e) => {
+          groupActivityImages(entries).map((e) => {
             if (e.kind === 'log') {
               const display = humanizeActivityLog(e.text)
               if (logTextLooksLikeMarkdown(display)) {
@@ -503,16 +545,36 @@ export default function OfficeOutputFeed({ officeName, running }) {
                 </div>
               )
             }
+            if (e.kind === 'image-row') {
+              return (
+                <div key={e.id} style={styles.activityCard} className="office-md outfit-garment-row">
+                  <div style={styles.outfitRow}>
+                    {e.imgs.map((im) => (
+                      <img
+                        key={im.id}
+                        src={resolveMediaSrc(officeName, im.src)}
+                        alt={im.alt || ''}
+                        title={im.alt ? String(im.alt) : undefined}
+                        style={styles.outfitImg}
+                        loading="lazy"
+                      />
+                    ))}
+                  </div>
+                </div>
+              )
+            }
             if (e.kind === 'image') {
               return (
-                <div key={e.id} style={styles.activityCard}>
-                  {e.alt ? <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: 6 }}>{e.alt}</div> : null}
-                  <img
-                    src={resolveMediaSrc(officeName, e.src)}
-                    alt={e.alt}
-                    style={styles.imgBlock}
-                    loading="lazy"
-                  />
+                <div key={e.id} style={styles.activityCard} className="office-md outfit-garment-row">
+                  <div style={styles.outfitRow}>
+                    <img
+                      src={resolveMediaSrc(officeName, e.src)}
+                      alt={e.alt || ''}
+                      title={e.alt ? String(e.alt) : undefined}
+                      style={styles.outfitImg}
+                      loading="lazy"
+                    />
+                  </div>
                 </div>
               )
             }

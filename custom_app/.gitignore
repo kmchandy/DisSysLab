@@ -19,8 +19,11 @@ user_offices/*
 !user_offices/job_hunter/**
 !user_offices/wardrobe_assistant/
 !user_offices/wardrobe_assistant/**
-# Sample office: version DSL + roles only; keep photos local (large binaries).
-user_offices/wardrobe_assistant/media/**
+# Wardrobe demo: track garment PNGs in media/uploads (wardrobe_inventory.json).
+# Ignore other media/ siblings; keep large camera JPGs out of git.
+user_offices/wardrobe_assistant/media/*
+!user_offices/wardrobe_assistant/media/uploads/
+user_offices/wardrobe_assistant/media/uploads/*.jpg
 
 # dsl codegen output — do not commit (office un-ignores above would otherwise track it)
 user_offices/*/build/

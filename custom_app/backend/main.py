@@ -18,7 +18,16 @@ import uuid
 from pathlib import Path
 from typing import Any, AsyncGenerator, Union
 
+# Repo root (`DisSysLab/`) must be importable — uvicorn is often launched with cwd `backend/`.
+BACKEND_DIR = Path(__file__).resolve().parent
+CUSTOM_APP_DIR = BACKEND_DIR.parent
+DISSYSLAB_ROOT = CUSTOM_APP_DIR.parent
+_dissy_root = str(DISSYSLAB_ROOT)
+if _dissy_root not in sys.path:
+    sys.path.insert(0, _dissy_root)
+
 import anthropic
+from dissyslab.office_v2.library import _extract_send_to_ports
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -26,21 +35,26 @@ from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 # Resolve .env next to this file so Gmail/API keys load even when uvicorn's cwd differs.
-BACKEND_DIR = Path(__file__).parent
 load_dotenv(BACKEND_DIR / ".env")
 
 app = FastAPI(title="DisSysLab Custom App")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+from wardrobe_routes import router as wardrobe_router
+
+app.include_router(wardrobe_router)
 # Paths
-CUSTOM_APP_DIR = BACKEND_DIR.parent
-DISSYSLAB_ROOT = CUSTOM_APP_DIR.parent
 GALLERY_DIR = DISSYSLAB_ROOT / "dissyslab" / "gallery"
 USER_OFFICES_DIR = CUSTOM_APP_DIR / "user_offices"
 CLAUDE_CONTEXT_PATH = DISSYSLAB_ROOT / "CLAUDE_CONTEXT_OFFICE.md"
@@ -56,6 +70,11 @@ _running: dict[str, subprocess.Popen] = {}
 
 # One Queue per running office: a daemon thread drains child stdout here; SSE reads the same queue.
 _office_output_queues: dict[str, queue.Queue[str | None]] = {}
+
+
+def _nl_role_md_declares_ports(content: str) -> bool:
+    """True if Markdown matches DisSysLab ``nl_role`` routing (phrase ``send to`` + ports)."""
+    return bool(content and content.strip() and _extract_send_to_ports(content))
 
 
 def _office_stdout_bridge(name: str, proc: subprocess.Popen, out_q: queue.Queue[str | None]) -> None:
@@ -414,6 +433,131 @@ def _dslapp_object_to_sse(obj: dict[str, Any], raw_fallback: str) -> tuple[str, 
     return ("block", {"kind": "json", "data": obj})
 
 
+def _markdown_body_has_dslapp_marker(body: str) -> bool:
+    pos, _ = _find_next_dslapp_marker(body, 0)
+    return pos >= 0
+
+
+def _sanitize_wardrobe_display_markdown(md: str) -> str:
+    """Drop broken pipe-table crumbs and stray protocol lines before Activity render."""
+    if not md:
+        return ""
+    lines_out: list[str] = []
+    for line in md.splitlines():
+        s = line.strip()
+        if not s:
+            lines_out.append(line)
+            continue
+        # Leftover DSL lines (normally split out upstream)
+        if re.match(r"^(?:__)?DSLAPP__?:\s*", s, re.I):
+            continue
+        if "|" in s and "!" not in s and "`" not in s:
+            if re.search(r"\bTops\b", s, re.I) and re.search(r"\bBottoms\b", s, re.I):
+                continue
+            if re.match(r"^[\s|:\-−—]+$", s):
+                continue
+            if re.match(r"^\|(?:\s*[-:]+[-\s:|]*)\|$", s):
+                continue
+        lines_out.append(line)
+    text = "\n".join(lines_out)
+    text = re.sub(r"\n{3,}", "\n\n", text).strip()
+    return text
+
+
+def _strip_inline_markdown_images(md: str) -> str:
+    """Remove ![alt](url) so thumbnails are not duplicated when DSL emits image blocks."""
+    if not md:
+        return ""
+    without = re.sub(r"!\[[^\]]*\]\([^)]*\)", "", md)
+    without = re.sub(r"[ \t]+\n", "\n", without)
+    without = re.sub(r"\n{3,}", "\n\n", without).strip()
+    return without
+
+
+def _expand_markdown_block_payload(
+    payload: dict[str, Any],
+) -> list[tuple[str, dict[str, Any]]]:
+    """Split markdown bodies on embedded DSLAPP JSON; strip wardrobe table noise."""
+    if payload.get("kind") != "markdown":
+        return [("block", payload)]
+    body = payload.get("body")
+    if not isinstance(body, str) or not body.strip():
+        return [("block", payload)]
+
+    preserved = {k: v for k, v in payload.items() if k not in {"kind", "body"}}
+    strip_imgs = _markdown_body_has_dslapp_marker(body)
+
+    out: list[tuple[str, dict[str, Any]]] = []
+    cursor = 0
+    dec = json.JSONDecoder()
+    s = body
+
+    while True:
+        pos, plen = _find_next_dslapp_marker(s, cursor)
+        if pos < 0:
+            tail = s[cursor:]
+            chunk = _strip_inline_markdown_images(tail) if strip_imgs else tail
+            sanitized = _sanitize_wardrobe_display_markdown(chunk)
+            if sanitized.strip():
+                md_payload = {"kind": "markdown", "body": sanitized, **preserved}
+                out.append(("block", md_payload))
+            break
+        head = s[cursor:pos]
+        if head.strip():
+            chunk = _strip_inline_markdown_images(head) if strip_imgs else head
+            sanitized = _sanitize_wardrobe_display_markdown(chunk)
+            if sanitized.strip():
+                md_payload = {"kind": "markdown", "body": sanitized, **preserved}
+                out.append(("block", md_payload))
+        j = pos + plen
+        while j < len(s) and s[j] in " \t":
+            j += 1
+        try:
+            obj, end = dec.raw_decode(s, j)
+        except json.JSONDecodeError:
+            cursor = pos + plen
+            continue
+        if isinstance(obj, dict):
+            ev, pl = _dslapp_object_to_sse(obj, s[pos:end])
+            if ev == "block" and pl.get("kind") == "markdown":
+                out.extend(_expand_markdown_block_payload(pl))
+            elif ev == "block":
+                out.append((ev, pl))
+            elif ev == "log":
+                tx = pl.get("text", "")
+                if tx.strip():
+                    chunk = tx
+                    sanitized = _sanitize_wardrobe_display_markdown(chunk)
+                    if sanitized.strip():
+                        out.append(("block", {**preserved, "kind": "markdown", "body": sanitized}))
+        cursor = end
+
+    if not out:
+        chunk = _strip_inline_markdown_images(body) if strip_imgs else body
+        sanitized = _sanitize_wardrobe_display_markdown(chunk)
+        if sanitized.strip():
+            return [("block", {"kind": "markdown", "body": sanitized, **preserved})]
+        return []
+
+    merged: list[tuple[str, dict[str, Any]]] = []
+    for ev, pl in out:
+        if (
+            merged
+            and ev == "block"
+            and merged[-1][0] == "block"
+            and merged[-1][1].get("kind") == "markdown"
+            and isinstance(pl, dict)
+            and pl.get("kind") == "markdown"
+        ):
+            mp = merged[-1][1]
+            bb = mp.get("body", "").strip() + "\n\n" + pl.get("body", "").strip()
+            mp["body"] = bb.strip()
+        else:
+            merged.append((ev, pl))
+
+    return merged
+
+
 def _iter_stdout_sse_events(line: str) -> list[tuple[str, dict[str, Any]]]:
     """Split one stdout line into zero or more ``(event, payload)`` tuples for SSE.
 
@@ -513,21 +657,45 @@ def _parse_claude_files(text: str) -> dict[str, str]:
             parts = parts[1:]
         return '/'.join(parts)
 
-    # Format 1: filename embedded in opening fence
-    for m in re.finditer(r"```(?:[\w]+\s+)?(\S+\.md)\n(.*?)```", text, re.DOTALL):
-        files[normalise(m.group(1))] = m.group(2)
+    # Format 1: filename embedded in opening fence (Markdown / JSON)
+    for m in re.finditer(r"```(?:[\w]+\s+)?(\S+\.(?:md|json))\n(.*?)```", text, re.DOTALL):
+        fname = (m.group(1) or "").strip().replace("\\", "/")
+        if fname.endswith(".md"):
+            files[normalise(fname)] = m.group(2)
+        elif fname.endswith(".json"):
+            base = Path(fname).name
+            if base in _EDITABLE_OFFICE_JSON:
+                files[base] = m.group(2)
 
     # Format 2: markdown heading directly before a bare fence
-    for m in re.finditer(r"#{1,4}\s+([\w./]+\.md)\s*\n+```[^\n]*\n(.*?)```", text, re.DOTALL):
-        key = normalise(m.group(1))
-        if key not in files:
-            files[key] = m.group(2)
+    for m in re.finditer(
+        r"#{1,4}\s+([\w./]+\.(?:md|json))\s*\n+```[^\n]*\n(.*?)```", text, re.DOTALL
+    ):
+        key = (m.group(1) or "").strip().replace("\\", "/")
+        payload = m.group(2)
+        if key.endswith(".md"):
+            norm = normalise(key)
+            if norm not in files:
+                files[norm] = payload
+        elif key.endswith(".json"):
+            base = Path(key).name
+            if base in _EDITABLE_OFFICE_JSON and base not in files:
+                files[base] = payload
 
     # Format 3: "Save as `path`" before a bare fence
-    for m in re.finditer(r"[Ss]ave as\s+`([\w./]+\.md)`[^\n]*\n+```[^\n]*\n(.*?)```", text, re.DOTALL):
-        key = normalise(m.group(1))
-        if key not in files:
-            files[key] = m.group(2)
+    for m in re.finditer(
+        r"[Ss]ave as\s+`([\w./]+\.(?:md|json))`[^\n]*\n+```[^\n]*\n(.*?)```", text, re.DOTALL
+    ):
+        key = (m.group(1) or "").strip().replace("\\", "/")
+        payload = m.group(2)
+        if key.endswith(".md"):
+            norm = normalise(key)
+            if norm not in files:
+                files[norm] = payload
+        elif key.endswith(".json"):
+            base = Path(key).name
+            if base in _EDITABLE_OFFICE_JSON and base not in files:
+                files[base] = payload
 
     return files
 
@@ -767,75 +935,6 @@ def create_office(payload: CreateOfficePayload):
     return {"status": "created", "name": payload.name}
 
 
-def _nws_mapclick_forecast_digest(page_url: str) -> str:
-    """
-    Scrape NOAA 7-day tombstones from a MapClick forecast URL.
-    """
-    from urllib.request import Request, urlopen
-
-    from bs4 import BeautifulSoup
-
-    req = Request(
-        page_url,
-        headers={
-            "User-Agent": (
-                "Mozilla/5.0 (compatible; DisSysLabCustomApp/1.0; "
-                "+https://github.com/kmchandy/DisSysLab)"
-            )
-        },
-    )
-    try:
-        with urlopen(req, timeout=25) as resp:
-            html = resp.read().decode("utf-8", errors="replace")
-    except OSError:
-        return ""
-    soup = BeautifulSoup(html, "html.parser")
-    rows: list[tuple[str, str]] = []
-    for li in soup.select("li.forecast-tombstone")[:14]:
-        pn = li.select_one("p.period-name")
-        tc = li.select_one("div.tombstone-container")
-        period = pn.get_text(strip=True) if pn else ""
-        body = tc.get_text(" ", strip=True) if tc else ""
-        if period or body:
-            safe = body.replace("|", "/")[:220]
-            rows.append((period, safe))
-    if not rows:
-        return ""
-    lines = [
-        "**NOAA weather.gov** (MapClick scrape for Pasadena area). "
-        "If the system prompt footer mentions another provider, **ignore that** — "
-        "use **only** this table for quantitative forecast.",
-        "",
-        "| period | conditions |",
-        "|--------|--------------|",
-    ]
-    for period, safe in rows:
-        lines.append(f"| {period} | {safe} |")
-    return "\n".join(lines)
-
-
-def _forecast_digest_for_subprocess(office_dir: Path) -> str:
-    """
-    Prefetch NOAA HTML when office.md uses web_scraper on forecast.weather.gov.
-    The office_v2 pipeline can surface this via env for role prompts when running
-    under ``dsl run`` / the custom app. Skips when office uses weatherapi (compiler
-    builds digest from JSON API).
-    """
-    md_path = office_dir / "office.md"
-    if not md_path.is_file():
-        return ""
-    raw = md_path.read_text()
-    if "weatherapi(" in raw:
-        return ""
-    if "web_scraper(" not in raw or "forecast.weather.gov" not in raw:
-        return ""
-    m = re.search(r'web_scraper\s*\(\s*url\s*=\s*"([^"]+)"', raw)
-    page_url = m.group(1) if m else ""
-    if not page_url or "forecast.weather.gov" not in page_url:
-        return ""
-    return _nws_mapclick_forecast_digest(page_url)
-
-
 # ---------------------------------------------------------------------------
 # Routes — Run / Stop / Stream output
 # ---------------------------------------------------------------------------
@@ -866,11 +965,8 @@ def run_office(name: str):
     _pp = env.get("PYTHONPATH", "")
     if _root not in _pp.split(os.pathsep):
         env["PYTHONPATH"] = _root if not _pp else f"{_root}{os.pathsep}{_pp}"
-    digest = _forecast_digest_for_subprocess(office_dir)
-    if digest:
-        env["OFFICE_WEATHERAPI_DIGEST"] = digest
-    else:
-        env.pop("OFFICE_WEATHERAPI_DIGEST", None)
+    # Prefetch NOAA / wardrobe / multi-city snapshots inside the subprocess:
+    # ``dissyslab.cli run`` → ``office_run_context.apply_office_run_context_to_environ``.
     proc = subprocess.Popen(
         [sys.executable, "-u", "-m", "dissyslab.cli", "run", str(office_dir)],
         cwd=str(DISSYSLAB_ROOT),
@@ -929,7 +1025,15 @@ async def stream_output(name: str):
                 yield _format_sse("log", {"text": "[Process finished]"})
                 break
             for ev, payload in _iter_stdout_sse_events(line):
-                yield _format_sse(ev, payload)
+                if ev == "block" and payload.get("kind") == "markdown":
+                    expanded = _expand_markdown_block_payload(payload)
+                    if expanded:
+                        for ev2, pl2 in expanded:
+                            yield _format_sse(ev2, pl2)
+                    else:
+                        yield _format_sse(ev, payload)
+                else:
+                    yield _format_sse(ev, payload)
 
     return StreamingResponse(event_generator(), media_type="text/event-stream")
 
@@ -985,6 +1089,8 @@ def get_env_keys():
 MAX_ATTACHMENT_BYTES = 28 * 1024 * 1024
 MAX_ATTACHMENTS_PER_MESSAGE = 12
 _ALLOWED_IMAGE_MEDIA = frozenset({"image/jpeg", "image/png", "image/gif", "image/webp"})
+# JSON blobs the customize-chat flow may overwrite (basename only).
+_EDITABLE_OFFICE_JSON = frozenset({"wardrobe_inventory.json", "wardrobe_run_config.json"})
 
 
 class ChatAttachment(BaseModel):
@@ -1095,6 +1201,114 @@ def _anthropic_messages_from_payload(messages: list[ChatMessage]) -> list[dict[s
     return out
 
 
+def _office_dir_is_under_user_offices(office_dir: Path) -> bool:
+    try:
+        Path(office_dir).resolve().relative_to(USER_OFFICES_DIR.resolve())
+        return True
+    except ValueError:
+        return False
+
+
+def _persist_last_user_message_attachments(
+    office_dir: Path, messages: list[ChatMessage]
+) -> tuple[list[str], int | None]:
+    """Write the **most recent** user message attachments to ``media/uploads/``.
+
+    For **Your Offices** that already have ``wardrobe_inventory.json``, image-only
+    batches are saved as ``image_0.<ext>``, ``image_1.<ext>``, … (same convention
+    as Create office) so ``photo_media`` paths stay stable. Other cases use unique
+    filenames to avoid collisions.
+    """
+    if not _office_dir_is_under_user_offices(office_dir):
+        return [], None
+
+    for idx in range(len(messages) - 1, -1, -1):
+        msg = messages[idx]
+        if msg.role != "user":
+            continue
+        atts = msg.attachments or []
+        if not atts:
+            continue
+        items = [
+            CreateOfficeMediaItem(
+                media_type=a.media_type, data=a.data, filename=a.filename
+            )
+            for a in atts
+        ]
+        has_wardrobe = (office_dir / "wardrobe_inventory.json").is_file()
+        only_images = all(
+            (a.media_type or "").strip().lower() in _ALLOWED_IMAGE_MEDIA for a in atts
+        )
+        sequential = bool(has_wardrobe and only_images)
+        saved = _persist_office_chat_media(
+            office_dir, items, sequential_names=sequential
+        )
+        return saved, idx
+
+    return [], None
+
+
+def _append_server_note_to_user_message(
+    messages: list[ChatMessage], idx: int, note: str
+) -> list[ChatMessage]:
+    if idx < 0 or idx >= len(messages):
+        return messages
+    base = (messages[idx].content or "").rstrip()
+    suffix = f"\n\n{note}" if base else note
+    new_content = base + suffix
+    msg = messages[idx]
+    if hasattr(msg, "model_copy"):
+        patched = msg.model_copy(update={"content": new_content})
+    else:
+        patched = msg.copy(update={"content": new_content})
+    out = list(messages)
+    out[idx] = patched
+    return out
+
+
+def _attachment_persist_note_for_claude(
+    saved_paths: list[str], office_dir: Path
+) -> str:
+    lines = (
+        ["[Server: attachment(s) saved to this office before your reply]"]
+        + [f"- {p}" for p in saved_paths]
+        + [""]
+    )
+    if (office_dir / "wardrobe_inventory.json").is_file():
+        lines += [
+            "This office has `wardrobe_inventory.json`. Map garments to the paths above "
+            "(typically `media/uploads/image_0.<ext>`, …). Emit a full fenced file whose "
+            "first line after the opening triple-backticks is exactly `wardrobe_inventory.json`, "
+            "then the JSON body, whenever `photo_media` or garment rows change. "
+            "Remove JSON entries if the user deleted garments.",
+        ]
+    else:
+        lines += [
+            "Reference these paths from roles or other config if the user asked to use new images.",
+        ]
+    return "\n".join(lines).strip()
+
+
+def _strip_json_fence_body(raw: str) -> str:
+    t = raw.strip()
+    if t.startswith("```"):
+        t = re.sub(r"^```[a-zA-Z0-9_]*\s*\n", "", t, count=1)
+        t = re.sub(r"\n```\s*$", "", t, count=1)
+    return t.strip()
+
+
+def _write_parsed_json_if_valid(office_dir: Path, basename: str, raw: str) -> bool:
+    body = _strip_json_fence_body(raw)
+    try:
+        data = json.loads(body)
+    except json.JSONDecodeError:
+        return False
+    target = Path(office_dir) / basename
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+    return True
+
+
 def _office_context_prompt(office_dir: Path) -> str:
     """Build a prompt prefix showing Claude the current office files."""
     try:
@@ -1112,9 +1326,15 @@ def _office_context_prompt(office_dir: Path) -> str:
     for role_name, content in data["roles"].items():
         lines += [f"```roles/{role_name}.md", content, "```\n"]
 
+    for json_name in sorted(_EDITABLE_OFFICE_JSON):
+        jp = Path(office_dir) / json_name
+        if jp.is_file():
+            lines += [f"```{json_name}", jp.read_text(encoding="utf-8"), "```\n"]
+
     lines += [
         "Update these files based on the user's request.",
         "Output the complete updated files (not diffs) using the filename-in-fence format.",
+        "When garment photos or wardrobe rows change, output a complete wardrobe_inventory.json block: opening fence line must be exactly the filename followed by newline, then raw JSON.",
         "Only output files that need to change.",
         "Do not give terminal instructions — the UI handles saving automatically.",
     ]
@@ -1137,12 +1357,36 @@ async def office_chat(name: str, payload: ChatPayload):
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
+    customize_banner = (
+        "### AI Customize — attachments persisted before each reply\n\n"
+        "When this panel sends photos or PDFs, the backend writes them under "
+        "`media/uploads/` on **Your Offices** before the model sees the conversation. "
+        "The user's last message may include a **[Server:** line listing paths. "
+        "If `wardrobe_inventory.json` exists and **every attachment on that Send is an image**, "
+        "files are saved as consecutive `media/uploads/image_0.<ext>`, "
+        "`image_1.<ext>`, … (same as Create office). Update JSON `photo_media` and mirror "
+        "changes in wardrobe roles.\n\n"
+        "**DisSysLab `nl_role` routing:** Each `roles/*.md` prompt **must** keep at least one "
+        "plain-text line containing **`send to`** plus the output port token(s), e.g. "
+        "`Always send to compiler.` — matching Jordan→Riley in `office.md`. "
+        "**Do not** remove or truncate those lines; **Run** fails if ports are undeclared.\n\n"
+        "---\n\n"
+    )
+    office_context = customize_banner + _office_context_prompt(office_dir)
+
     base_context = CLAUDE_CONTEXT_PATH.read_text() if CLAUDE_CONTEXT_PATH.exists() else ""
-    office_context = _office_context_prompt(office_dir)
-    system_prompt = base_context + "\n\n---\n\n## IMPORTANT — You are running inside a web UI\n\nDo NOT give terminal instructions. The user may attach images or PDFs as extra context — use them when updating files.\n\n### Rich output (optional)\n\nThe custom app can show structured output when roles or sinks print a line starting with ``__DSLAPP__:`` followed by JSON, e.g. ``{\\\"t\\\":\\\"markdown\\\",\\\"body\\\":\\\"## Title\\\\n...\\\"}`` or image blocks with ``src`` under ``/api/offices/<office_name>/media/...``.\n\n### Persisted uploads\n\nOn **Create office**, attachments are saved as ``media/uploads/image_0.<ext>``, ``image_1.<ext>``, … in chronological order across all user messages that had files (PDFs: ``document_0.pdf``, …). This office may already contain those paths—keep them when editing roles.\n\nOutput updated files using filename-in-fence format:\n\n```office.md\ncontent\n```\n\n```roles/analyst.md\ncontent\n```\n\n### console_input (web Run)\n\nWhen ``Sources:`` includes ``console_input``, always write ``console_input(default_message=\\\"...\\\")`` with one realistic sample user line. The custom app runs offices without interactive stdin; that string is used once so **Run** works.\n\n---\n\n" + office_context
+    system_prompt = base_context + "\n\n---\n\n## IMPORTANT — You are running inside a web UI\n\nDo NOT give terminal instructions. The user may attach images or PDFs as extra context — use them when updating files.\n\n### Rich output (optional)\n\nThe custom app can show structured output when roles or sinks print a line starting with ``__DSLAPP__:`` followed by JSON, e.g. ``{\\\"t\\\":\\\"markdown\\\",\\\"body\\\":\\\"## Title\\\\n...\\\"}`` or image blocks with ``src`` under ``/api/offices/<office_name>/media/...``.\n\n### Persisted uploads\n\nOn **Create office**, attachments are saved as ``media/uploads/image_0.<ext>``, ``image_1.<ext>``, … in chronological order across all user messages that had files (PDFs: ``document_0.pdf``, …). **AI Customize** persists attachments each Send too (with a **[Server:** note on the user's turn). Mixed PDF+image uploads use unique filenames to avoid overwriting.\n\nOutput updated files using filename-in-fence format:\n\n```office.md\ncontent\n```\n\n```roles/analyst.md\ncontent\n```\n\nJSON at the office root is allowed:\n\n```wardrobe_inventory.json\n{ ... }\n```\n\n### console_input (web Run)\n\nWhen ``Sources:`` includes ``console_input``, always write ``console_input(default_message=\\\"...\\\")`` with one realistic sample user line. The custom app runs offices without interactive stdin; that string is used once so **Run** works.\n\n---\n\n" + office_context
+
+    msgs = list(payload.messages)
+    saved_media, attach_idx = _persist_last_user_message_attachments(
+        office_dir, msgs
+    )
+    if saved_media and attach_idx is not None:
+        note = _attachment_persist_note_for_claude(saved_media, office_dir)
+        msgs = _append_server_note_to_user_message(msgs, attach_idx, note)
 
     try:
-        api_messages = _anthropic_messages_from_payload(payload.messages)
+        api_messages = _anthropic_messages_from_payload(msgs)
     except HTTPException:
         raise
     except Exception as e:
@@ -1168,19 +1412,37 @@ async def office_chat(name: str, payload: ChatPayload):
             return
 
         files = _parse_claude_files(full_response)
-        if files:
+        if files and _office_dir_is_under_user_offices(office_dir):
             # Auto-save updated files to the office directory
             roles_dir = office_dir / "roles"
-            roles_dir.mkdir(exist_ok=True)
+            roles_dir.mkdir(parents=True, exist_ok=True)
+            saved_paths: list[str] = []
+            skipped_roles: dict[str, str] = {}
             for filepath, content in files.items():
                 if filepath == "office.md":
-                    (office_dir / "office.md").write_text(content)
+                    (office_dir / "office.md").write_text(content, encoding="utf-8")
+                    saved_paths.append(filepath)
                 elif filepath.startswith("roles/"):
                     role_name = filepath.replace("roles/", "")
-                    (roles_dir / role_name).write_text(content)
+                    if not role_name.endswith(".md"):
+                        skipped_roles[filepath] = "not a .md role filename"
+                        continue
+                    if not _nl_role_md_declares_ports(content):
+                        skipped_roles[filepath] = (
+                            "no valid 'send to <port>' line — restore routing from "
+                            "office.md (file not saved to avoid breaking Run)"
+                        )
+                        continue
+                    (roles_dir / role_name).write_text(content, encoding="utf-8")
+                    saved_paths.append(filepath)
+                elif filepath in _EDITABLE_OFFICE_JSON:
+                    if _write_parsed_json_if_valid(office_dir, filepath, content):
+                        saved_paths.append(filepath)
 
-            import json
-            yield f"event: saved\ndata: {json.dumps(list(files.keys()))}\n\n"
+            if skipped_roles:
+                yield f"event: save_skipped\ndata: {json.dumps(skipped_roles)}\n\n"
+            if saved_paths:
+                yield f"event: saved\ndata: {json.dumps(saved_paths)}\n\n"
 
         yield "event: done\ndata: \n\n"
 
