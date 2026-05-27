@@ -27,8 +27,11 @@ YELLOW = "\033[93m"
 GREEN = "\033[92m"
 WHITE = "\033[97m"
 GREY = "\033[90m"
+CYAN = "\033[96m"          # Bright cyan — used for URL rows so the
+                           # link visually pops out of the grey body.
 RESET = "\033[0m"
 BOLD = "\033[1m"
+UNDERLINE = "\033[4m"
 CLEAR = "\033[2J\033[H"   # Clear screen, move cursor to top
 
 SIGNIFICANCE_COLOR = {
@@ -47,6 +50,29 @@ _APPLY_URL_HINT = re.compile(
     r"indeed\.com/(?:rc/|viewjob)|linkedin\.com/jobs)",
     re.I,
 )
+
+
+def _as_str(value) -> str:
+    """Coerce an arbitrary field value into a string for safe rendering.
+
+    Sinks downstream of LLM agents occasionally receive nested-dict
+    fields (e.g. ``{"text": {"role": "assistant", "content": "..."}}``)
+    when an agent forwards a raw model response without unwrapping.
+    Returning a string here lets the rest of the renderer rely on
+    ``str`` semantics (slicing, ``splitlines``, ``startswith``).
+    """
+    if value is None:
+        return ""
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (int, float, bool)):
+        return str(value)
+    # For dicts / lists / anything exotic, fall back to JSON so the
+    # console still shows *something* legible rather than a crash.
+    try:
+        return json.dumps(value, ensure_ascii=False)
+    except (TypeError, ValueError):
+        return str(value)
 
 
 def _markdown_link_append(text: str, url: str) -> str:
@@ -166,6 +192,70 @@ class IntelligenceDisplay:
             out_lines.append(line)
         return out_lines
 
+    @staticmethod
+    def _is_bulleted(text: str) -> bool:
+        """True if ``text`` looks like a pre-formatted bullet block.
+
+        Used to switch ``_format_item`` from "wrap to N lines" mode
+        (good for prose abstracts like arxiv_radar) into "preserve
+        each bullet on its own row" mode (needed by matcher-style
+        roles whose output is a vertical list of Title / Company /
+        Location / ... lines that must stay vertical to be readable).
+
+        Recognised bullet prefixes: ``•``, ``::``, and lines that
+        clearly look like ``key: value`` enumerations (e.g.
+        ``Title: ...``) — small models often drop the bullet glyph
+        entirely but keep the vertical key/value structure.
+        """
+        if not text:
+            return False
+        stripped = text.lstrip()
+        if stripped.startswith("•") or stripped.startswith("::"):
+            return True
+        head = text[:600]
+        if "\n•" in head or "\n::" in head:
+            return True
+        # Last-resort: at least two early lines look like Field: value
+        # AND a recognised matcher field name is present. Cheap heuristic.
+        early_lines = [ln.strip() for ln in head.splitlines() if ln.strip()][:8]
+        keyword_hits = sum(
+            1 for ln in early_lines
+            if ":" in ln
+            and ln.split(":", 1)[0].strip().lower() in {
+                "title", "company", "location",
+                "salary", "match", "match rating",
+            }
+        )
+        return keyword_hits >= 2
+
+    @staticmethod
+    def _format_bullets(text: str, max_lines: int = 18) -> list:
+        """Render a bullet body line-by-line, capped at ``max_lines``.
+
+        Each non-empty line of ``text`` becomes one display row. Long
+        lines are truncated to ``WIDTH - 4`` characters; paragraph
+        breaks (blank lines) are preserved as blank rows so visually
+        grouped sub-blocks (header / Resume Matches / Skills /
+        Gaps / Apply) stay grouped.
+        """
+        if not text:
+            return []
+        out = []
+        for raw_line in text.splitlines():
+            line = raw_line.rstrip()
+            if not line:
+                if out and out[-1] != "":
+                    out.append("")
+                continue
+            if len(line) > WIDTH - 4:
+                line = line[: WIDTH - 4]
+            out.append(line)
+            if len(out) >= max_lines:
+                break
+        while out and out[-1] == "":
+            out.pop()
+        return out
+
     def _format_item(self, item):
         """Format one briefing item as a list of display lines.
 
@@ -187,22 +277,36 @@ class IntelligenceDisplay:
             if v:
                 significance = str(v).upper()
                 break
-        source = item.get("source", "unknown")
-        title = item.get("title", item.get("text", "")[:60])
+        # All displayed fields are coerced to strings here so the
+        # rendering code below can rely on ``str`` semantics. Upstream
+        # agents occasionally hand us nested dicts (e.g. an LLM
+        # returning ``{"text": {...}}`` instead of a string); without
+        # this coercion ``item["text"][:60]`` raises KeyError on a
+        # slice because dicts don't support slicing.
+        source = _as_str(item.get("source", "unknown")) or "unknown"
+        text_raw = _as_str(item.get("text", ""))
+        title = _as_str(item.get("title", "")) or text_raw[:60]
         # Prefer the cleaner abstract field (set by rater roles) over
         # the raw text concatenation when both are present.
-        body = item.get("abstract") or item.get("text", "")
-        url = item.get("url", "")
-        timestamp = item.get("timestamp", "")
-        author = item.get("author", "")
-        reason = item.get("reason", "")
+        body = _as_str(item.get("abstract")) or text_raw
+        url = _as_str(item.get("url", ""))
+        timestamp = _as_str(item.get("timestamp", ""))
+        author = _as_str(item.get("author", ""))
+        reason = _as_str(item.get("reason", ""))
 
         color = SIGNIFICANCE_COLOR.get(significance, WHITE)
 
         # Show @author for BlueSky, source name for RSS
         source_label = f"@{author[:15]}" if source == "bluesky" else source[:20]
 
-        body_lines = self._wrap(body, max_lines=2)
+        # Pre-formatted bullet bodies (e.g. matcher roles emitting
+        # Title / Company / Location / ... on separate lines) get
+        # rendered line-by-line; everything else gets word-wrapped.
+        bulleted = self._is_bulleted(body)
+        if bulleted:
+            body_lines = self._format_bullets(body, max_lines=18)
+        else:
+            body_lines = self._wrap(body, max_lines=2)
         reason_lines = self._wrap(reason, max_lines=2)
 
         bar = "═" * WIDTH
@@ -215,7 +319,14 @@ class IntelligenceDisplay:
             f"{GREY}{source_label:<22}{RESET}  {GREY}{timestamp}{RESET}"
         )
         out.append(f"{GREY}╠{thin}╣{RESET}")
-        out.append(f"{GREY}║{RESET}  {BOLD}{title[:WIDTH-2]}{RESET}")
+        # Title row. Skip it when the bullet body already opens with a
+        # "• Title: ..." line — repeating the same string is just noise.
+        first_body = body_lines[0] if body_lines else ""
+        title_in_body = bulleted and first_body.lstrip().lower().startswith(
+            ("• title", "•title")
+        )
+        if title and not title_in_body:
+            out.append(f"{GREY}║{RESET}  {BOLD}{title[:WIDTH-2]}{RESET}")
         # Authors line — skip for Bluesky (the source label already
         # shows the @handle) and for items with no author field.
         if author and source != "bluesky":
@@ -223,7 +334,10 @@ class IntelligenceDisplay:
             out.append(f"{GREY}║{RESET}  {GREY}{author_str}{RESET}")
         # Body / abstract.
         for sl in body_lines:
-            out.append(f"{GREY}║{RESET}  {GREY}{sl}{RESET}")
+            if sl == "":
+                out.append(f"{GREY}║{RESET}")
+            else:
+                out.append(f"{GREY}║{RESET}  {GREY}{sl}{RESET}")
         # Verdict reasoning. Tinted in the verdict colour so the eye
         # follows from the ● bar at the top to the explanation here.
         if reason_lines:
@@ -232,8 +346,14 @@ class IntelligenceDisplay:
             )
             for rline in reason_lines[1:]:
                 out.append(f"{GREY}║{RESET}          {color}{rline}{RESET}")
-        if url:
-            out.append(f"{GREY}║{RESET}  {GREY}{url[:WIDTH-2]}{RESET}")
+        # Skip the trailing URL row if the body already includes it
+        # (matcher-style outputs put it inline on an "Apply:" line).
+        # Cyan + underline reads as a hyperlink in every modern
+        # terminal and contrasts cleanly with the grey body above.
+        if url and url not in body:
+            out.append(
+                f"{GREY}║{RESET}  {CYAN}{UNDERLINE}{url[:WIDTH-2]}{RESET}"
+            )
         out.append(f"{GREY}╚{bar}╝{RESET}")
         out.append("")
         return out

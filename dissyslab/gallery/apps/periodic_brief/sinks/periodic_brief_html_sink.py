@@ -68,6 +68,8 @@ from __future__ import annotations
 import atexit
 import html
 import os
+import platform
+import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -167,6 +169,7 @@ class PeriodicBriefHtmlSink:
         accent_color_to: str = _DEFAULT_ACCENT_TO,
         auto_refresh: bool = True,
         print_to_console: bool = True,
+        auto_open: bool = True,
     ):
         """
         Construct a periodic brief sink.
@@ -193,6 +196,14 @@ class PeriodicBriefHtmlSink:
                             — without needing a separate
                             ``open brief.html`` step. Disable when
                             running headless (cron / CI / systemd).
+            auto_open:      If True (default), attempt to open the
+                            generated brief.html in the user's browser
+                            once at interpreter exit. Skipped in
+                            non-interactive runs (no TTY, pytest, CI)
+                            and silently swallows any error so a
+                            missing ``open`` / ``xdg-open`` never
+                            masks the actual brief output. Set
+                            ``auto_open=False`` to suppress.
         """
         self.path = Path(os.path.expanduser(path)).resolve()
         self.path.parent.mkdir(parents=True, exist_ok=True)
@@ -202,10 +213,12 @@ class PeriodicBriefHtmlSink:
         self._accent_to = accent_color_to
         self._auto_refresh = auto_refresh
         self._print_to_console = print_to_console
+        self._auto_open = auto_open
         # Guards against printing the brief twice when both finalize()
         # and the atexit hook fire (e.g. tests call finalize directly
         # AND the interpreter then exits).
         self._printed = False
+        self._opened = False
 
         # Per-bucket accumulators
         self._schedule: List[dict] = []
@@ -232,6 +245,54 @@ class PeriodicBriefHtmlSink:
         # surprise stdout write at shutdown.
         if self._print_to_console:
             atexit.register(self._maybe_print_brief)
+        if self._auto_open:
+            atexit.register(self._maybe_open_brief)
+
+    # ── Auto-open brief.html in the user's browser ────────────────────
+
+    def _maybe_open_brief(self) -> None:
+        """Open the generated brief in the OS default browser at exit.
+
+        Best-effort. Idempotent. Skipped when:
+
+        - ``_auto_open`` was passed False,
+        - stdout is not a TTY (pytest / CI / cron / systemd),
+        - the platform's ``open`` / ``xdg-open`` command is missing or
+          returns non-zero,
+        - any other exception fires during the open (we never want
+          this hook to mask a real exception from the network run).
+
+        macOS uses ``open <file>``, Linux uses ``xdg-open <file>``,
+        Windows uses ``os.startfile(<file>)``. All run with a 2-second
+        timeout so the interpreter doesn't hang if the helper stalls.
+        """
+        if self._opened or not self._auto_open:
+            return
+        self._opened = True
+        try:
+            if not sys.stdout.isatty():
+                return
+            target = str(self.path)
+            system = platform.system()
+            if system == "Darwin":
+                subprocess.run(
+                    ["open", target], check=False, timeout=2,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+            elif system == "Linux":
+                subprocess.run(
+                    ["xdg-open", target], check=False, timeout=2,
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                )
+            elif system == "Windows":
+                # os.startfile exists only on Windows; guarded by the
+                # system check, so the type checker should be content.
+                os.startfile(target)  # type: ignore[attr-defined]
+        except Exception:
+            # Don't let a missing 'open' helper kill the interpreter
+            # at shutdown. The brief.html file is already on disk;
+            # worst case the user opens it manually as before.
+            pass
 
     @property
     def __name__(self) -> str:

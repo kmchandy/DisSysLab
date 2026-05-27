@@ -146,6 +146,21 @@ dissyslab/gallery/**/*.jsonl
 /brief.html
 /competitors.md
 
+# gmail_sink in preview mode (default when GMAIL_APP_PASSWORD is
+# unset) appends would-be emails here in the cwd. Don't commit
+# users' job-match previews if dsl is run from the source tree.
+/outbox.md
+dissyslab/gallery/**/outbox.md
+
+# job_hunter's job_html_sink writes a live HTML report. Same rule
+# as brief.html — never commit a user's run output.
+/matched_jobs.html
+dissyslab/gallery/**/matched_jobs.html
+
+# `dsl build` generated runtime code per office. Always regenerable;
+# never commit.
+dissyslab/gallery/**/build/
+
 # Personal scratch in examples/. Add specific names as Mani / Kamala
 # accumulate throwaway smoke-test scripts.
 examples/try.py

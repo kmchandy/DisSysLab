@@ -354,6 +354,44 @@ SINK_REGISTRY = {
         "args":   "named",
         "call":   "run",
     },
+    # Aliases that allow multiple GmailSink instances in one office.
+    # Same pattern as the jsonl_recorder_* aliases above. Each alias
+    # creates a distinct sink instance sharing the same underlying
+    # class — useful when several roles each produce a different
+    # email type (match notification, tailored resume, cover letter
+    # draft, company research brief, ...). All instances respect the
+    # same preview-mode logic, so in the absence of GMAIL_USER /
+    # GMAIL_APP_PASSWORD they all append to outbox.md.
+    "gmail_sink_match": {
+        "import": "from dissyslab.components.sinks.gmail_sink import GmailSink",
+        "class":  "GmailSink",
+        "args":   "named",
+        "call":   "run",
+    },
+    "gmail_sink_tailor": {
+        "import": "from dissyslab.components.sinks.gmail_sink import GmailSink",
+        "class":  "GmailSink",
+        "args":   "named",
+        "call":   "run",
+    },
+    "gmail_sink_cover_letter": {
+        "import": "from dissyslab.components.sinks.gmail_sink import GmailSink",
+        "class":  "GmailSink",
+        "args":   "named",
+        "call":   "run",
+    },
+    "gmail_sink_research": {
+        "import": "from dissyslab.components.sinks.gmail_sink import GmailSink",
+        "class":  "GmailSink",
+        "args":   "named",
+        "call":   "run",
+    },
+    "job_html_sink": {
+        "import": "from dissyslab.gallery.apps.job_hunter.sinks.job_html_sink import JobHtmlSink",
+        "class":  "JobHtmlSink",
+        "args":   "named",
+        "call":   "run",
+    },
     "slack_sink": {
         "import": "from dissyslab.components.sinks.slack_sink import SlackSink",
         "class":  "SlackSink",

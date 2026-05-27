@@ -69,7 +69,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, Mapping, Tuple, Union
+from typing import Any, Callable, Dict, List, Mapping, Tuple, Union
 
 from dissyslab.backends import get_backend
 from dissyslab.blocks.role import Role
@@ -764,6 +764,38 @@ def _import_role_module(py_path: Path):
     return module
 
 
+_INCLUDE_RE = re.compile(r"\{\{\s*include:\s*([^\s}]+)\s*\}\}")
+
+
+def _resolve_includes(text: str, search_dirs: List[Path]) -> str:
+    """Substitute ``{{include: filename}}`` directives with file contents.
+
+    Designed for role markdown files that want to bake another file
+    into their prompt (e.g. a matcher role embedding ``resume.md``).
+    Each directive is replaced inline; ``search_dirs`` is consulted
+    in order and the first hit wins. Missing files raise
+    ``FileNotFoundError`` so the failure is loud at office-load time
+    rather than silently producing a malformed prompt.
+
+    Includes are *one level deep* — included content is not itself
+    scanned for further ``{{include:}}`` directives. This keeps the
+    feature simple and prevents accidental recursion.
+    """
+
+    def repl(match):
+        fname = match.group(1)
+        for d in search_dirs:
+            candidate = d / fname
+            if candidate.is_file():
+                return candidate.read_text(encoding="utf-8")
+        searched = ", ".join(str(d) for d in search_dirs)
+        raise FileNotFoundError(
+            f"include not found: {fname!r} (searched: {searched})"
+        )
+
+    return _INCLUDE_RE.sub(repl, text)
+
+
 def load_roles_dir(roles_dir: Union[str, Path]) -> Dict[str, RoleEntry]:
     """Load every ``*.md`` and ``*.py`` role file in a directory.
 
@@ -771,8 +803,12 @@ def load_roles_dir(roles_dir: Union[str, Path]) -> Dict[str, RoleEntry]:
     ---------------
 
     * **``*.md``** — the file's contents are passed verbatim to
-      ``nl_role`` and the resulting entry is registered under the
-      filename stem (``analyst.md`` → ``"analyst"``).
+      ``nl_role``, with one substitution step first: any
+      ``{{include: filename}}`` directive is replaced by the
+      contents of ``filename`` (resolved against the office
+      directory, then the roles directory). The resulting entry
+      is registered under the filename stem (``analyst.md`` →
+      ``"analyst"``).
     * **``*.py``** — the module's top-level ``role`` attribute is
       taken as a ``RoleEntry`` and registered under the filename stem.
       Files whose name starts with ``_`` (e.g. ``__init__.py``) are
@@ -815,6 +851,8 @@ def load_roles_dir(roles_dir: Union[str, Path]) -> Dict[str, RoleEntry]:
         if md_path.stem.lower() == "readme":
             continue
         text = md_path.read_text(encoding="utf-8")
+        # Office dir (e.g. for resume.md), then the roles dir itself.
+        text = _resolve_includes(text, [path.parent, path])
         entry = nl_role(text)
         entry = dataclasses.replace(entry, name=md_path.stem)
         if md_path.stem in out:
