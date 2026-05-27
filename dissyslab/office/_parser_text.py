@@ -27,7 +27,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from dissyslab.office_v2.parser_errors import ParseError
+from dissyslab.office.parser_errors import ParseError
 
 
 # Section names recognised at the document level. Keys are the

@@ -295,7 +295,7 @@ In `roles/writer.py` (or in this office's `roles/writer.py`
 override), specify the backend:
 
 ```python
-from dissyslab.office_v2 import nl_role
+from dissyslab.office import nl_role
 role = nl_role(prompt_text, AI="claude")
 ```
 

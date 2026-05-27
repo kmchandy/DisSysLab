@@ -80,9 +80,9 @@ from dissyslab.blocks.source import Source
 from dissyslab.blocks.sink import Sink
 from dissyslab.blocks.transform import Transform
 from dissyslab.fn_lib import FN_LIB, partition_kwargs
-from dissyslab.office_v2.library import PARAMETERIZED_LIBRARY
+from dissyslab.office.library import PARAMETERIZED_LIBRARY
 
-from dissyslab.office_v2._internals import (
+from dissyslab.office._internals import (
     CompileError,
     CompileWarning,
     _BlockTable,
@@ -92,13 +92,13 @@ from dissyslab.office_v2._internals import (
     _runtime_outport,
     _suggest,
 )
-from dissyslab.office_v2.office_spec_constants import EXTERNAL
-from dissyslab.office_v2.library import (
+from dissyslab.office.office_spec_constants import EXTERNAL
+from dissyslab.office.library import (
     AgentRoleEntry,
     Library,
     OfficeRoleEntry,
 )
-from dissyslab.office_v2.office_spec import (
+from dissyslab.office.office_spec import (
     ConnectionStmt,
     Endpoint,
     OfficeSpec,
@@ -106,7 +106,7 @@ from dissyslab.office_v2.office_spec import (
     SinkSpec,
     SourceSpec,
 )
-from dissyslab.office_v2.parser import parse_office_dir
+from dissyslab.office.parser import parse_office_dir
 
 
 # ── Source and sink construction (delegates to v1 registries) ──────────
@@ -193,45 +193,80 @@ def _construct_or_pat_error(
 
 
 def _build_source(spec: SourceSpec) -> Source:
-    """Materialise a ``Source`` from a ``SourceSpec`` using SOURCE_REGISTRY.
+    """Materialise a ``Source`` from a ``SourceSpec`` using COMPONENT_REGISTRY.
 
-    Behaviour mirrors v1 ``office_compiler.build_and_run`` so the
-    gallery keeps working unchanged. Long-run we want sources to live
-    in the role library too, but that is a Step-8 concern.
+    Looks the name up in the unified registry and validates that
+    its ``kind`` is ``"source"``. If Pat used a sink or agent name
+    in the ``Sources:`` declaration, the compiler raises a
+    Pat-readable error naming the correction.
     """
     # Imported lazily so the compiler does not pull in feedparser etc.
     # at import time.
     from dissyslab.office.utils import (
-        SOURCE_REGISTRY,
+        COMPONENT_REGISTRY,
         expand_shortcut,
+        lookup_component,
     )
 
     name = spec.name
     args = dict(spec.args)
-    reg = SOURCE_REGISTRY.get(name)
-    if reg is None:
-        known = sorted(SOURCE_REGISTRY.keys())
-        hint = _suggest(name, known)
+    entry = lookup_component(name)
+
+    if entry is None:
+        # Unknown name. List only valid sources in the suggestion,
+        # not sinks (Pat used Sources: so a sink suggestion is noise).
+        known_sources = sorted(
+            n for n, e in COMPONENT_REGISTRY.items() if e["kind"] == "source"
+        )
+        hint = _suggest(name, known_sources)
         parts = [f"Unknown source {name!r}."]
         if hint:
             parts.append(hint)
-        parts.append(f"Known sources: {', '.join(known)}.")
+        parts.append(f"Known sources: {', '.join(known_sources)}.")
         raise CompileError(" ".join(parts))
 
-    if reg["type"] == "rss":
+    if entry["kind"] != "source":
+        # Pat used a sink or agent name in Sources:. Name the
+        # correction so she knows which section to move it to.
+        raise CompileError(
+            f"{name!r} is a {entry['kind']}, not a source. "
+            f"Move it to the {entry['kind'].title()}s: section, "
+            f"or pick a source name from the Sources catalogue."
+        )
+
+    if entry.get("type") == "rss":
         import dissyslab.components.sources.rss_normalizer as rss_normalizer
         factory = getattr(rss_normalizer, name)
         obj = _construct_or_pat_error(
             factory, args, kind="source", name=name
         )
-    elif reg["type"] == "mcp_shortcut":
+    elif entry.get("type") == "rss_generic":
+        # Generic rss(url=..., name=..., ...) — no factory, just
+        # construct RSSNormalizer with the args as-is. The compiler
+        # passes through whatever the user wrote in office.md.
+        cls = _import_class(entry["import"], entry["class"])
+        obj = _construct_or_pat_error(
+            cls, args, kind="source", name=name
+        )
+    elif entry.get("type") == "web_scraper_factory":
+        # Factory functions in web_scraper.py (arxiv_cs_ai,
+        # arxiv_cs_lg, etc.) — parallel to the RSS factory pattern.
+        # Each registered name corresponds to a function of the same
+        # name that returns a ready-to-use ArxivScraper / WebScraper
+        # instance.
+        import dissyslab.components.sources.web_scraper as web_scraper
+        factory = getattr(web_scraper, name)
+        obj = _construct_or_pat_error(
+            factory, args, kind="source", name=name
+        )
+    elif entry.get("type") == "mcp_shortcut":
         kwargs = expand_shortcut(name, args)
-        cls = _import_class(reg["import"], reg["class"])
+        cls = _import_class(entry["import"], entry["class"])
         obj = _construct_or_pat_error(
             cls, kwargs, kind="source", name=name
         )
     else:
-        cls = _import_class(reg["import"], reg["class"])
+        cls = _import_class(entry["import"], entry["class"])
         obj = _construct_or_pat_error(
             cls, args, kind="source", name=name
         )
@@ -240,24 +275,39 @@ def _build_source(spec: SourceSpec) -> Source:
 
 
 def _build_sink(spec: SinkSpec) -> Sink:
-    """Materialise a ``Sink`` from a ``SinkSpec`` using SINK_REGISTRY."""
-    from dissyslab.office.utils import SINK_REGISTRY
+    """Materialise a ``Sink`` from a ``SinkSpec`` using COMPONENT_REGISTRY.
+
+    Mirrors ``_build_source``: looks up the name in the unified
+    registry, validates that its ``kind`` is ``"sink"``, and raises
+    a Pat-readable error if not.
+    """
+    from dissyslab.office.utils import COMPONENT_REGISTRY, lookup_component
 
     name = spec.name
     args = dict(spec.args)
-    reg = SINK_REGISTRY.get(name)
-    if reg is None:
-        known = sorted(SINK_REGISTRY.keys())
-        hint = _suggest(name, known)
+    entry = lookup_component(name)
+
+    if entry is None:
+        known_sinks = sorted(
+            n for n, e in COMPONENT_REGISTRY.items() if e["kind"] == "sink"
+        )
+        hint = _suggest(name, known_sinks)
         parts = [f"Unknown sink {name!r}."]
         if hint:
             parts.append(hint)
-        parts.append(f"Known sinks: {', '.join(known)}.")
+        parts.append(f"Known sinks: {', '.join(known_sinks)}.")
         raise CompileError(" ".join(parts))
 
-    cls = _import_class(reg["import"], reg["class"])
+    if entry["kind"] != "sink":
+        raise CompileError(
+            f"{name!r} is a {entry['kind']}, not a sink. "
+            f"Move it to the {entry['kind'].title()}s: section, "
+            f"or pick a sink name from the Sinks catalogue."
+        )
+
+    cls = _import_class(entry["import"], entry["class"])
     obj = _construct_or_pat_error(cls, args, kind="sink", name=name)
-    return Sink(fn=getattr(obj, reg["call"]), name=name)
+    return Sink(fn=getattr(obj, entry["call"]), name=name)
 
 
 # ── Connection translation ─────────────────────────────────────────────

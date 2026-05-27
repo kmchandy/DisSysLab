@@ -80,8 +80,8 @@ REQUIRED_FILE_GLOBS = [
     # --- Core framework entry points --------------------------------------
     "dissyslab/__init__.py",
     "dissyslab/cli.py",
-    "dissyslab/office_v2/__init__.py",
-    "dissyslab/office_v2/library.py",
+    "dissyslab/office/__init__.py",
+    "dissyslab/office/library.py",
     "dissyslab/backends/openrouter_backend.py",
     "dissyslab/backends/ollama_backend.py",
     "dissyslab/backends/anthropic_backend.py",

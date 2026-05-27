@@ -1,4 +1,4 @@
-"""Unit tests for ``office_v2.codegen``.
+"""Unit tests for ``office.codegen``.
 
 Codegen emits a ``run.py`` whose execution produces the same Network
 that ``compile_office`` would build directly. These tests assert on
@@ -20,8 +20,8 @@ from pathlib import Path
 
 import pytest
 
-from dissyslab.office_v2 import nl_role, OfficeRoleEntry
-from dissyslab.office_v2.codegen import emit_run_py, render_run_py
+from dissyslab.office import nl_role, OfficeRoleEntry
+from dissyslab.office.codegen import emit_run_py, render_run_py
 
 
 # ── Helpers ───────────────────────────────────────────────────────────

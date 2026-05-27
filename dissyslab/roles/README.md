@@ -13,11 +13,11 @@ into the office's local `roles/`.
 ## Files
 
 - `*.md` — LLM-prompted roles (see `nl_role` in
-  `dissyslab.office_v2.library`). Each prompt is tuned to work
+  `dissyslab.office.library`). Each prompt is tuned to work
   reliably across Claude and at-least-3B local SLMs (Qwen,
   Llama, Gemma) by spelling out the JSON contract explicitly.
 - `*.py` — Python-function roles (see
-  `dissyslab.office_v2.library.AgentRoleEntry`). Each defines a
+  `dissyslab.office.library.AgentRoleEntry`). Each defines a
   module-level `role` attribute the loader picks up.
 
 ## How to add a role

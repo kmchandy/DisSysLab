@@ -47,8 +47,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Callable, List, Mapping, Optional
 
-from dissyslab.office_v2.library import RoleEntry
-from dissyslab.office_v2.office_spec import (
+from dissyslab.office.library import RoleEntry
+from dissyslab.office.office_spec import (
     ConnectionStmt,
     Endpoint,
     OfficeSpec,
@@ -56,7 +56,7 @@ from dissyslab.office_v2.office_spec import (
     SinkSpec,
     SourceSpec,
 )
-from dissyslab.office_v2.office_spec_constants import EXTERNAL
+from dissyslab.office.office_spec_constants import EXTERNAL
 
 
 def make_office(

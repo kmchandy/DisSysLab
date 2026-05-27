@@ -421,12 +421,23 @@ def _resolve_office_arg(arg: str, label: str) -> Path | None:
 
 
 def cmd_run(args: argparse.Namespace) -> int:
-    """Build (if stale) and run a closed office via office_v2."""
+    """Build (if stale) and run a closed office via office."""
     office_dir = _resolve_office_arg(args.office_dir, "office_dir")
     if office_dir is None:
         return 2
 
-    from dissyslab.office_v2.cli_helpers import cli_run
+    # Power-user override: --processes flag asks the runtime to use
+    # ``process_network()`` (one OS process per agent — true CPU
+    # parallelism) instead of the default ``run_network()`` (threads).
+    # Implemented via an environment variable so the generated artifact
+    # picks up the choice without needing a code change for every run.
+    # Pat does not see this flag in normal use; the help text mentions
+    # it for the curious. See examples/module_08 for the canonical
+    # CPU-parallelism demo.
+    if getattr(args, "processes", False):
+        os.environ["DSL_PROCESS_MODE"] = "process"
+
+    from dissyslab.office.cli_helpers import cli_run
 
     try:
         return cli_run(office_dir)
@@ -441,12 +452,12 @@ def cmd_run(args: argparse.Namespace) -> int:
 # ── Subcommand: build ─────────────────────────────────────────────────────────
 
 def cmd_build(args: argparse.Namespace) -> int:
-    """Generate build/run.py for an office via office_v2 codegen."""
+    """Generate build/run.py for an office via office codegen."""
     office_dir = _resolve_office_arg(args.office_dir, "office_dir")
     if office_dir is None:
         return 2
 
-    from dissyslab.office_v2.cli_helpers import cli_build
+    from dissyslab.office.cli_helpers import cli_build
 
     try:
         return cli_build(office_dir)
@@ -554,6 +565,149 @@ def cmd_init(args: argparse.Namespace) -> int:
         print("     Put it in a .env file in your office folder, or export")
         print("     it in your shell. Get a key at https://console.anthropic.com/")
     return 0
+
+
+# ── Subcommand: show ─────────────────────────────────────────────────────────
+
+
+def _resolve_builtin_role_path(name: str) -> Path | None:
+    """Locate <name>.md in the framework's built-in roles directory.
+
+    Returns the absolute Path if found, None otherwise. Local roles
+    (in an office's roles/ folder) are NOT considered here — Pat can
+    open those directly in her own folder. ``dsl show`` is for
+    components the framework ships.
+    """
+    try:
+        from importlib.resources import files
+        builtin_dir = Path(str(files("dissyslab") / "roles"))
+    except Exception:
+        return None
+    candidate = builtin_dir / f"{name}.md"
+    return candidate if candidate.is_file() else None
+
+
+def _resolve_component_path(entry: dict) -> Path | None:
+    """Resolve a COMPONENT_REGISTRY entry's import string to a file path.
+
+    The entry's ``import`` field is a Python import statement like
+    ``from dissyslab.components.sources.rss_normalizer import
+    RSSNormalizer``. We parse out the module path and ask importlib
+    where that module lives on disk. Returns the absolute Path or
+    None if resolution fails (e.g. entries with no import field).
+    """
+    import_stmt = entry.get("import")
+    if not import_stmt:
+        return None
+    import re
+    m = re.match(r"^\s*from\s+([\w.]+)\s+import\s+", import_stmt)
+    if not m:
+        return None
+    module_name = m.group(1)
+    try:
+        import importlib.util
+        spec = importlib.util.find_spec(module_name)
+        if spec is not None and spec.origin:
+            return Path(spec.origin)
+    except Exception:
+        return None
+    return None
+
+
+def _resolve_python_object_path(obj) -> Path | None:
+    """Find the source file of a Python callable or class via inspect."""
+    import inspect
+    try:
+        return Path(inspect.getfile(obj))
+    except (TypeError, OSError):
+        return None
+
+
+def cmd_show(args: argparse.Namespace) -> int:
+    """Show the implementation of a built-in component or LLM role.
+
+    Asymmetric output, calibrated to medium:
+
+    * For an LLM role (``<name>.md`` in ``dissyslab/roles/``): print
+      the file's full contents prefixed with a comment naming the
+      file path. The prompt is short and reading it is what Pat
+      wants.
+    * For a Python implementation (in ``COMPONENT_REGISTRY``,
+      ``FN_LIB``, or ``PARAMETERIZED_LIBRARY``): print only the
+      absolute file path on a single line. The source is long;
+      printing it would overwhelm the terminal. Pat opens the file
+      in her editor if she wants to inspect.
+
+    To modify a built-in role, Pat copies the printed content into
+    a file in her office's ``roles/`` folder and edits there. The
+    framework's name resolution prefers local files over built-ins.
+
+    Resolution order (matches the compiler's own lookup):
+
+    1. ``dissyslab/roles/<name>.md`` (built-in LLM prompt).
+    2. ``COMPONENT_REGISTRY[name]`` (Python source/sink/agent class).
+    3. ``PARAMETERIZED_LIBRARY[name]`` (parameterized factory like
+       ``synchronizer``).
+    4. ``dissyslab.fn_lib.FN_LIB[name]`` (Python function entry).
+    """
+    name = args.name
+
+    # 1. Built-in LLM role (.md file).
+    role_path = _resolve_builtin_role_path(name)
+    if role_path is not None:
+        print(f"# {role_path}")
+        print()
+        print(role_path.read_text(encoding="utf-8"), end="")
+        return 0
+
+    # 2. Python component in COMPONENT_REGISTRY.
+    from dissyslab.office.utils import lookup_component
+    entry = lookup_component(name)
+    if entry is not None:
+        py_path = _resolve_component_path(entry)
+        if py_path is None:
+            _eprint(
+                f"Could not resolve file path for component {name!r}. "
+                f"The registry entry has no usable import path."
+            )
+            return 1
+        print(py_path)
+        return 0
+
+    # 3. PARAMETERIZED_LIBRARY (e.g. `synchronizer` -> synchronizer_role).
+    try:
+        from dissyslab.office.library import PARAMETERIZED_LIBRARY
+        if name in PARAMETERIZED_LIBRARY:
+            factory = PARAMETERIZED_LIBRARY[name]
+            py_path = _resolve_python_object_path(factory)
+            if py_path is not None:
+                print(py_path)
+                return 0
+    except ImportError:
+        pass
+
+    # 4. fn_lib (Python function-library entries).
+    try:
+        from dissyslab.fn_lib import FN_LIB
+        if name in FN_LIB:
+            fn_entry = FN_LIB[name]
+            # FnEntry typically wraps a fn; try common attribute names.
+            fn = getattr(fn_entry, "fn", None) or fn_entry
+            py_path = _resolve_python_object_path(fn)
+            if py_path is not None:
+                print(py_path)
+                return 0
+    except ImportError:
+        pass
+
+    # Not found in any surface.
+    _eprint(
+        f"Unknown component or role {name!r}. Looked in the role "
+        f"library (dissyslab/roles/), the component registry, the "
+        f"parameterized library, and the function library. None of "
+        f"them have an entry named {name!r}."
+    )
+    return 1
 
 
 # ── Subcommands: new / edit (chat with Claude) ────────────────────────────────
@@ -863,6 +1017,33 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_init.set_defaults(handler=cmd_init)
 
+    p_show = sub.add_parser(
+        "show",
+        help="show the implementation of a built-in role or component",
+        description=(
+            "Print the implementation of a built-in role or component. "
+            "For LLM-prompt roles (deduplicator, writer, …) prints the "
+            "full prompt with its file path. For Python components "
+            "(rss, intelligence_display, …) prints only the file path; "
+            "open it in your editor to inspect."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  dsl show deduplicator       # prints the LLM prompt\n"
+            "  dsl show rss                # prints the .py file path\n"
+            "\n"
+            "To modify a built-in role for your own office: copy the "
+            "output into <office>/roles/<name>.md and edit. The "
+            "framework prefers local files over built-ins."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_show.add_argument(
+        "name",
+        help="name of the role or component (e.g. deduplicator, rss)",
+    )
+    p_show.set_defaults(handler=cmd_show)
+
     # `dsl new` — describe an office in plain English; Claude writes the files.
     # `dsl edit` — same, for an existing office. Both stream Claude's response
     # to the terminal and write office.md / roles/*.md automatically.
@@ -937,6 +1118,17 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p_run.add_argument("office_dir", help="path to an office directory")
+    p_run.add_argument(
+        "--processes",
+        action="store_true",
+        help=(
+            "Run each agent in its own OS process for true CPU "
+            "parallelism (advanced; default is threads, which is "
+            "correct for I/O-bound work). Equivalent to setting "
+            "DSL_PROCESS_MODE=process. See examples/module_08 for "
+            "when this matters."
+        ),
+    )
     p_run.set_defaults(handler=cmd_run)
 
     # `dsl build` emits the readable Python artifact at

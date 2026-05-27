@@ -97,8 +97,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Optional, Tuple
 
-from dissyslab.office_v2.agent_spec import AgentSpec
-from dissyslab.office_v2.office_spec_constants import EXTERNAL
+from dissyslab.office.agent_spec import AgentSpec
+from dissyslab.office.office_spec_constants import EXTERNAL
 
 
 # ── Source / Sink ──────────────────────────────────────────────────────

@@ -1,4 +1,4 @@
-"""Unit tests for ``office_v2.cli_helpers`` — what ``dsl build`` / ``dsl run`` do.
+"""Unit tests for ``office.cli_helpers`` — what ``dsl build`` / ``dsl run`` do.
 
 We do not exec the generated ``run.py`` (it would import the real
 runtime and source/sink classes, possibly hitting the network). The
@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from dissyslab.office_v2.cli_helpers import (
+from dissyslab.office.cli_helpers import (
     _build_artifact_path,
     cli_build,
     is_build_stale,
@@ -157,7 +157,7 @@ class TestIsBuildStale:
         ))
         _write_role(sub, "analyst", "Send to brief.")
         # Parent
-        from dissyslab.office_v2 import OfficeRoleEntry
+        from dissyslab.office import OfficeRoleEntry
         _write_office(tmp_path, (
             "# Office: parent\n\n"
             "Sources: hacker_news\n"

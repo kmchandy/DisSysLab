@@ -17,7 +17,7 @@ Public entry point
 This parser reads **only** the office's own ``office.md`` — it does
 not open ``roles/*.md`` or any sub-office's ``office.md``. Role
 discovery (and port-shape extraction) is the role library's job
-(see ``office_v2.library.load_roles_dir``); sub-office recursion is
+(see ``office.library.load_roles_dir``); sub-office recursion is
 the compiler's job (Layer 5). Each ``Agents:`` line — leaf or
 sub-office — produces a uniform ``RoleRef``; for the inline form
 ``X is an office at <path>.`` the parser captures the path so
@@ -92,7 +92,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from dissyslab.office_v2._parser_text import (
+from dissyslab.office._parser_text import (
     _Line,
     _Section,
     _enumerate_lines,
@@ -105,8 +105,8 @@ from dissyslab.office_v2._parser_text import (
     _strip_bullet,
     _strip_trailing_period,
 )
-from dissyslab.office_v2.office_spec_constants import EXTERNAL
-from dissyslab.office_v2.office_spec import (
+from dissyslab.office.office_spec_constants import EXTERNAL
+from dissyslab.office.office_spec import (
     ConnectionStmt,
     Endpoint,
     OfficeSpec,
@@ -114,7 +114,7 @@ from dissyslab.office_v2.office_spec import (
     SinkSpec,
     SourceSpec,
 )
-from dissyslab.office_v2.parser_errors import ParseError
+from dissyslab.office.parser_errors import ParseError
 
 
 # The implicit single inport name. Matches the runtime convention in

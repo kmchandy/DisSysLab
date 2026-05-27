@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from dissyslab.office_v2 import (
+from dissyslab.office import (
     ConnectionStmt,
     Endpoint,
     EXTERNAL,

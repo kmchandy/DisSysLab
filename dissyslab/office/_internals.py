@@ -23,7 +23,7 @@ Why a private module
 Compiler and codegen share these primitives word-for-word. Putting
 them in one place keeps the two layers honest: a refactor cannot
 silently update one and not the other. The leading-underscore module
-name signals "don't import this from outside ``office_v2``" — public
+name signals "don't import this from outside ``office``" — public
 API still flows through ``compiler.py`` and the package
 ``__init__``.
 """
@@ -34,8 +34,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterable, Tuple
 
-from dissyslab.office_v2.library import load_roles_dir
-from dissyslab.office_v2.office_spec_constants import EXTERNAL
+from dissyslab.office.library import load_roles_dir
+from dissyslab.office.office_spec_constants import EXTERNAL
 
 
 # ── "Did you mean?" helper ────────────────────────────────────────────
@@ -137,7 +137,7 @@ def _builtin_roles_dir() -> Path:
     harnesses can monkeypatch the package layout without us caching
     a stale path.
     """
-    # _internals.py lives at dissyslab/office_v2/_internals.py;
+    # _internals.py lives at dissyslab/office/_internals.py;
     # the built-in role library is two levels up + "roles".
     return Path(__file__).resolve().parent.parent / "roles"
 

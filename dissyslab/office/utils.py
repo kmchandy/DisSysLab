@@ -2,8 +2,8 @@
 """
 Source and sink registries — the catalogue of built-in components.
 
-Used by ``dissyslab.office_v2.compiler`` and
-``dissyslab.office_v2.codegen`` to materialise sources and sinks
+Used by ``dissyslab.office.compiler`` and
+``dissyslab.office.codegen`` to materialise sources and sinks
 declared in ``office.md`` (``Sources: hacker_news``,
 ``Sinks: discard``, …). The registries also auto-load any
 user-generated component files dropped into
@@ -14,12 +14,12 @@ Why this module persists in v2
 ==============================
 
 The v2 cutover replaced the LLM-driven parser, validator, and
-codegen — those all moved into ``dissyslab.office_v2``. What
+codegen — those all moved into ``dissyslab.office``. What
 remained worth keeping is the *catalogue itself*: the table that
 maps a name like ``hacker_news`` to "an RSS source called
 ``HackerNewsSource`` whose factory takes ``max_articles`` and
 ``poll_interval``". Migrating every entry into the role library
-would be a larger project; until then, ``office_v2`` reaches into
+would be a larger project; until then, ``office`` reaches into
 this module to instantiate registry-backed sources and sinks.
 
 Long-run direction
@@ -27,7 +27,7 @@ Long-run direction
 
 The contents of these registries should eventually become regular
 ``AgentRoleEntry`` entries in a built-in role library. When that
-happens, ``office_v2.compiler._build_source`` /
+happens, ``office.compiler._build_source`` /
 ``_build_sink`` go away and this module shrinks to just
 ``expand_shortcut`` for MCP plus the
 ``_load_generated_components`` hook.
@@ -42,7 +42,22 @@ from pathlib import Path
 
 
 SOURCE_REGISTRY = {
-    # ── RSS sources ───────────────────────────────────────────────────
+    # ── Generic parametric RSS ────────────────────────────────────────
+    # The Pat-friendly form. Pat writes:
+    #     Sources: rss(url="https://...", name="my_feed", max_articles=5)
+    # in office.md. No framework edit, no shortcut name to invent.
+    # See ``rss_normalizer.RSSNormalizer`` for the parameter list.
+    "rss": {
+        "type":   "rss_generic",
+        "import": "from dissyslab.components.sources.rss_normalizer import RSSNormalizer",
+        "class":  "RSSNormalizer",
+    },
+
+    # ── Named RSS shortcuts (use factory functions in rss_normalizer) ─
+    # Convenience entries for common feeds. The framework's ``type``
+    # field for these is ``"rss"`` (not ``"rss_generic"``), which tells
+    # the compiler to call the matching factory function rather than
+    # constructing RSSNormalizer directly.
     "al_jazeera":      {"type": "rss"},
     "bbc_world":       {"type": "rss"},
     "bbc_tech":        {"type": "rss"},
@@ -53,6 +68,16 @@ SOURCE_REGISTRY = {
     "venturebeat_ai":  {"type": "rss"},
     "nasa_news":       {"type": "rss"},
     "python_jobs":     {"type": "rss"},
+
+    # ── arXiv subject feeds (web-scraped, not RSS) ────────────────────
+    # arXiv doesn't expose RSS for "recent submissions" pages, so
+    # these wrap an HTML scraper. Each entry resolves to a factory
+    # function in ``web_scraper`` (parallel to the RSS pattern above).
+    "arxiv_cs_ai":     {"type": "web_scraper_factory"},
+    "arxiv_cs_lg":     {"type": "web_scraper_factory"},
+    "arxiv_cs_cl":     {"type": "web_scraper_factory"},
+    "arxiv_cs_cv":     {"type": "web_scraper_factory"},
+    "arxiv_cs_ro":     {"type": "web_scraper_factory"},
 
     # ── BlueSky streaming ─────────────────────────────────────────────
     "bluesky": {
@@ -405,8 +430,97 @@ def _load_generated_components():
 _load_generated_components()
 
 
+# ── Unified COMPONENT_REGISTRY ────────────────────────────────────────
+#
+# COMPONENT_REGISTRY is the single name-resolution surface for every
+# named Python implementation Pat can reference from office.md.
+# Sources, sinks, and Python-implemented agents (transformers) all
+# live here. Each entry has a ``kind`` field — exactly one of
+# ``"source"``, ``"sink"``, or ``"agent"`` — that tells the compiler
+# what runtime wrapper to use.
+#
+# Position in office.md (Sources:, Sinks:, Agents:) is what actually
+# drives code generation. ``kind`` is metadata: the compiler reads
+# it to detect Pat mistakes like using a sink in a Sources: section,
+# and to produce errors that name the right correction.
+#
+# For polymorphic components (e.g. a class that can serve as both a
+# source and a sink), register two separate entries with different
+# names. Same Python class can back both.
+#
+# **What is NOT here:** LLM-prompt roles (``deduplicator``, ``writer``,
+# ``entity_extractor``, ...). Those live in ``dissyslab/roles/`` and
+# are loaded by ``load_roles_dir()`` in
+# ``dissyslab.office.library``. Pat's local ``roles/`` folder
+# also goes through that path. The two surfaces are intentionally
+# separate: this registry is for Python implementations, the role
+# library is for English LLM prompts.
+#
+# **Compatibility:** ``SOURCE_REGISTRY`` and ``SINK_REGISTRY`` above
+# are still the source of truth during the v1.6 transition;
+# ``COMPONENT_REGISTRY`` is derived from them at import time. New
+# Python-agent classes can be added directly to either surface —
+# any future ``"agent"`` entries belong here (since there is no
+# AGENT_REGISTRY).
+
+
+COMPONENT_REGISTRY: dict = {}
+
+
+def _build_component_registry() -> None:
+    """Derive COMPONENT_REGISTRY from SOURCE_REGISTRY + SINK_REGISTRY.
+
+    Called once at module import. Tags each entry with its ``kind``
+    so the compiler can detect Pat misuse (sink-in-Sources, etc.).
+    Idempotent if called more than once.
+    """
+    import warnings
+
+    COMPONENT_REGISTRY.clear()
+    for _name, _entry in SOURCE_REGISTRY.items():
+        COMPONENT_REGISTRY[_name] = {**_entry, "kind": "source"}
+    for _name, _entry in SINK_REGISTRY.items():
+        if _name in COMPONENT_REGISTRY:
+            # If a name appears in both registries, the framework has
+            # an internal inconsistency. Warn at import; pick the sink
+            # interpretation (last wins) since SINK_REGISTRY is loaded
+            # second here, matching historical compiler behaviour.
+            warnings.warn(
+                f"COMPONENT_REGISTRY: name {_name!r} appears in both "
+                f"SOURCE_REGISTRY and SINK_REGISTRY. Using the sink "
+                f"interpretation.",
+                stacklevel=2,
+            )
+        COMPONENT_REGISTRY[_name] = {**_entry, "kind": "sink"}
+
+
+_build_component_registry()
+
+
+def lookup_component(name: str):
+    """Resolve a component name from the unified COMPONENT_REGISTRY.
+
+    Returns the registry entry as a dict (with at least a ``kind``
+    field) or ``None`` if the name is not registered. LLM-prompt
+    roles are not in this registry — they are resolved separately
+    by the role library
+    (``dissyslab.office.library.load_roles_dir``).
+
+    Callers should typically validate ``kind`` after lookup:
+
+        entry = lookup_component(name)
+        if entry is None:
+            ...   # unknown name
+        if entry["kind"] != expected_kind:
+            ...   # misused — Pat put a sink in Sources, etc.
+    """
+    return COMPONENT_REGISTRY.get(name)
+
+
 __all__ = [
+    "COMPONENT_REGISTRY",
     "SINK_REGISTRY",
     "SOURCE_REGISTRY",
     "expand_shortcut",
+    "lookup_component",
 ]

@@ -47,7 +47,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Tuple
 
-from dissyslab.office_v2.office_spec_constants import EXTERNAL
+from dissyslab.office.office_spec_constants import EXTERNAL
 
 
 @dataclass(frozen=True)

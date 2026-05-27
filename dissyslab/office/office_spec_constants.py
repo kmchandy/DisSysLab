@@ -1,5 +1,5 @@
 """
-Shared constants for office_v2.
+Shared constants for office.
 
 Lives in its own module so that ``agent_spec.py`` and
 ``office_spec.py`` can both reference ``EXTERNAL`` without creating a

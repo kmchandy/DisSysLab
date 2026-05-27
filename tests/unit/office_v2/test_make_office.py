@@ -1,4 +1,4 @@
-"""Unit tests for ``office_v2.make_office``.
+"""Unit tests for ``office.make_office``.
 
 The central guarantee: ``make_office`` is the inverse of
 ``parse_office_dir``. For every well-formed ``OfficeSpec`` we
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from dissyslab.office_v2 import (
+from dissyslab.office import (
     ConnectionStmt,
     Endpoint,
     EXTERNAL,
@@ -23,7 +23,7 @@ from dissyslab.office_v2 import (
     SourceSpec,
     parse_office_dir,
 )
-from dissyslab.office_v2.make_office import make_office
+from dissyslab.office.make_office import make_office
 
 
 # ── Round-trip tests ──────────────────────────────────────────────────

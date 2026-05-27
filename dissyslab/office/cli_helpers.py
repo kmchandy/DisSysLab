@@ -1,7 +1,7 @@
 """
 CLI helpers — what `dsl build` and `dsl run` actually do.
 
-Two thin handlers wrap the office_v2 pipeline so the top-level
+Two thin handlers wrap the office pipeline so the top-level
 argparse code in ``dissyslab.cli`` stays small and readable.
 
 * ``cli_build(office_dir)`` — parse, validate wiring, codegen
@@ -37,13 +37,13 @@ import sys
 from pathlib import Path
 from typing import Iterable, Iterator, List, Optional
 
-from dissyslab.office_v2.codegen import (
+from dissyslab.office.codegen import (
     _build_tree,
     _topo_order,
     emit_run_py,
 )
-from dissyslab.office_v2.compiler import CompileError, CompileWarning
-from dissyslab.office_v2.parser_errors import ParseError
+from dissyslab.office.compiler import CompileError, CompileWarning
+from dissyslab.office.parser_errors import ParseError
 
 
 # ── Build-tree mtime walk ─────────────────────────────────────────────

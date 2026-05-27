@@ -42,7 +42,7 @@ framework's prompt, set the backend you want.
 from pathlib import Path
 
 import dissyslab
-from dissyslab.office_v2 import nl_role
+from dissyslab.office import nl_role
 
 
 # Locate the framework's writer prompt without duplicating its text.

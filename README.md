@@ -13,10 +13,8 @@ powerful computers. DisSysLab overcomes these hurdles by using three ideas.
 
 1. **Sense and respond to your environment continuously**. A chatbot answers when you ask; use DisSysLab to build an office of agents that continuously senses and responds to opportunities, threats, and other situations.
 
-2. **Use plain English to build offices of agents that sense and respond.**
-Write a document `office.md` that names the workers and lays out the org chart of your office. Give a job description for each worker's role. Run one command that creates an office that
-runs continuously. The org chart can have loops,
-broadcasts, merges, and branches.
+2. **Describe each worker in plain English; lay out the office in a short configuration document.**
+Each worker's role is a job description in plain English — the framework hands it to an LLM at runtime. The office's structure (workers, sources, sinks, and how messages flow between them) lives in `office.md`, a short configuration document you can read and edit. Or describe what you want to Claude with `dsl new` and Claude writes the configuration for you. Run one command and the office runs continuously. The org chart can have loops, broadcasts, merges, and branches.
 
 3. **Mix and match agents that fit your accuracy, budget, and privacy needs.**
 Build your office with paid AI services (e.g. Anthropic, OpenAI), free local
@@ -227,8 +225,13 @@ One file's difference.
 
 An office is a team of AI agents and an
 org chart. You give each agent a name and a role.
-You give a job description in plain English for each role. You also specify the org chart in
-English. The framework compiles your description into a concurrent system.
+You write a job description in plain English for each role — the framework uses it as the agent's LLM prompt at runtime. You declare the agents and the org chart in `office.md`, a short configuration document with English-readable syntax. The framework compiles your description into a concurrent system.
+
+Three layers of English live in DisSysLab:
+
+- **Role descriptions** (the `roles/*.md` files in your office) are plain English, used directly as LLM prompts at runtime.
+- **Conversational creation** (`dsl new`) lets you describe the office you want to Claude; Claude writes the configuration for you.
+- **The configuration document** (`office.md`) is a short structured document with English-readable syntax. You can read and edit it directly.
 
 This is a very brief overview of how you specify offices. 
 We describe specifics elsewhere.

@@ -37,7 +37,7 @@ defines or overrides.
 
 Programmatic (Path B) — build a dict in Python::
 
-    from dissyslab.office_v2.library import nl_role, OfficeRoleEntry
+    from dissyslab.office.library import nl_role, OfficeRoleEntry
 
     my_roles = {
         "analyst":      nl_role(prompt=ANALYST_PROMPT),
@@ -608,7 +608,7 @@ def synchronizer_role(inports: "list[str] | tuple[str, ...]") -> AgentRoleEntry:
     shipped its own near-identical 25-line ``synchronizer.py``. Now
     each office's ``synchronizer.py`` is two lines::
 
-        from dissyslab.office_v2 import synchronizer_role
+        from dissyslab.office import synchronizer_role
         role = synchronizer_role(["entities", "severity", "topic", "location"])
 
     Parameters
@@ -728,12 +728,12 @@ PARAMETERIZED_LIBRARY: Dict[str, Callable[..., "AgentRoleEntry"]] = {
 def _import_role_module(py_path: Path):
     """Import ``py_path`` as a fresh module and return it.
 
-    The module is loaded under a synthetic name (``office_v2_role_<stem>``)
+    The module is loaded under a synthetic name (``office_role_<stem>``)
     so role files in different offices do not collide in
     ``sys.modules``.
     """
     spec = importlib.util.spec_from_file_location(
-        f"office_v2_role_{py_path.stem}", py_path
+        f"office_role_{py_path.stem}", py_path
     )
     if spec is None or spec.loader is None:
         raise ImportError(f"could not load role module {py_path}")

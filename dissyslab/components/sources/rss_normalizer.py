@@ -18,24 +18,25 @@ RSSNormalizer sits immediately after RSSSource in every gallery pipeline:
     RSSSource → RSSNormalizer → transforms → sinks
 
 Usage:
-    from dissyslab.components.sources.rss_source import RSSSource
     from dissyslab.components.sources.rss_normalizer import RSSNormalizer
-    from dissyslab.blocks import Source, Transform
+    from dissyslab.blocks import Source
 
-    rss        = RSSSource(urls=["https://hnrss.org/newest"], max_articles=20)
-    normalizer = RSSNormalizer(source_name="hacker_news")
+    normalizer = RSSNormalizer(
+        url="https://hnrss.org/newest",
+        name="hacker_news",
+        max_articles=20,
+    )
+    source = Source(fn=normalizer.run, name="feed")
 
-    source     = Source(fn=rss.run,          name="feed")
-    normalize  = Transform(fn=normalizer.run, name="normalize")
+In office.md, the same source can be declared parametrically with the
+generic ``rss`` registry entry:
 
-Note:
-    RSSSource.run() currently yields plain strings (title + description
-    concatenated). RSSNormalizer re-parses the original feed entries to
-    recover the individual fields. To do this it needs access to the same
-    RSSSource instance so it can read the already-fetched entries.
+    Sources: rss(url="https://hnrss.org/newest",
+                 name="hacker_news",
+                 max_articles=20)
 
-    Simpler design: pass the RSSSource instance to RSSNormalizer and let
-    it iterate entries directly, bypassing the string concatenation entirely.
+Or via a named factory (``bbc_world``, ``npr_news``, ``hacker_news``,
+…) for feeds the framework already knows by name.
 """
 
 import html
@@ -47,37 +48,40 @@ import feedparser
 
 class RSSNormalizer:
     """
-    Produces standard five-key article dicts from RSS feed entries.
+    Produces standard five-key article dicts from one RSS feed.
 
-    Rather than wrapping the string output of RSSSource (which has already
-    lost the individual fields), RSSNormalizer fetches and iterates feed
-    entries directly. It replaces RSSSource as the data-producing component
-    when used in gallery pipelines.
+    Replaces RSSSource as the data-producing component when used in
+    gallery pipelines. Fetches and iterates feed entries directly.
 
     Args:
-        urls:         List of RSS feed URLs (same as RSSSource)
-        source_name:  Human-readable name for the source (e.g. "hacker_news")
-        max_articles: Max articles per feed (None = all)
-        poll_interval: If set, re-fetch feeds every N seconds
+        url:           RSS feed URL (single).
+        name:          Human-readable name for the source
+                       (e.g. "hacker_news"). Used in log lines and as
+                       the ``source`` field on each emitted article.
+        max_articles:  Max articles per feed (None = all).
+        poll_interval: If set, re-fetch the feed every N seconds.
 
     Example:
         >>> normalizer = RSSNormalizer(
-        ...     urls=["https://hnrss.org/newest"],
-        ...     source_name="hacker_news",
-        ...     max_articles=20
+        ...     url="https://hnrss.org/newest",
+        ...     name="hacker_news",
+        ...     max_articles=20,
         ... )
         >>> source = Source(fn=normalizer.run, name="feed")
     """
 
     def __init__(
         self,
-        urls: list,
-        source_name: str = "rss",
+        url: str,
+        name: str = "rss",
         max_articles: Optional[int] = None,
         poll_interval: Optional[int] = None,
     ):
-        self.urls = urls
-        self.source_name = source_name
+        # Internally still a list so the existing fetch loop works for
+        # any (future) multi-URL extension. The public API is singular.
+        self.url = url
+        self.urls = [url]
+        self.name = name
         self.max_articles = max_articles
         self.poll_interval = poll_interval
 
@@ -95,7 +99,7 @@ class RSSNormalizer:
         if self.poll_interval:
             while True:
                 yield from self._fetch()
-                print(f"[{self.source_name}] Sleeping {self.poll_interval}s...")
+                print(f"[{self.name}] Sleeping {self.poll_interval}s...")
                 time.sleep(self.poll_interval)
         else:
             yield from self._fetch()
@@ -104,7 +108,7 @@ class RSSNormalizer:
         """Fetch all configured feeds and yield standard dicts."""
         for url in self.urls:
             try:
-                print(f"[{self.source_name}] Fetching {url}...")
+                print(f"[{self.name}] Fetching {url}...")
                 feed = feedparser.parse(url)
                 entries = feed.entries
 
@@ -116,7 +120,7 @@ class RSSNormalizer:
                 if not entries:
                     detail = self._diagnose_empty_feed(feed)
                     print(
-                        f"[{self.source_name}] 0 entries from {url} "
+                        f"[{self.name}] 0 entries from {url} "
                         f"— {detail}"
                     )
                     continue
@@ -124,7 +128,7 @@ class RSSNormalizer:
                 if self.max_articles:
                     entries = entries[:self.max_articles]
 
-                print(f"[{self.source_name}] {len(entries)} entries from {url}")
+                print(f"[{self.name}] {len(entries)} entries from {url}")
 
                 for entry in entries:
                     article = self._to_standard_dict(entry, url)
@@ -140,7 +144,7 @@ class RSSNormalizer:
                     yield article
 
             except Exception as e:
-                print(f"[{self.source_name}] Error fetching {url}: {e}")
+                print(f"[{self.name}] Error fetching {url}: {e}")
 
     @staticmethod
     def _diagnose_empty_feed(feed) -> str:
@@ -211,7 +215,7 @@ class RSSNormalizer:
         timestamp = self._parse_timestamp(entry)
 
         # ── source ────────────────────────────────────────────────────────
-        source = self.source_name
+        source = self.name
 
         return {
             "source":    source,
@@ -261,8 +265,8 @@ class RSSNormalizer:
 
 def hacker_news(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
-        urls=["https://hnrss.org/newest"],
-        source_name="hacker_news",
+        url="https://hnrss.org/newest",
+        name="hacker_news",
         max_articles=max_articles,
         poll_interval=poll_interval,
     )
@@ -270,8 +274,8 @@ def hacker_news(max_articles: int = 20, poll_interval: Optional[int] = None) -> 
 
 def mit_tech_review(max_articles: int = 10, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
-        urls=["https://www.technologyreview.com/feed/"],
-        source_name="mit_tech_review",
+        url="https://www.technologyreview.com/feed/",
+        name="mit_tech_review",
         max_articles=max_articles,
         poll_interval=poll_interval,
     )
@@ -279,8 +283,8 @@ def mit_tech_review(max_articles: int = 10, poll_interval: Optional[int] = None)
 
 def techcrunch(max_articles: int = 10, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
-        urls=["https://techcrunch.com/feed/"],
-        source_name="techcrunch",
+        url="https://techcrunch.com/feed/",
+        name="techcrunch",
         max_articles=max_articles,
         poll_interval=poll_interval,
     )
@@ -288,8 +292,8 @@ def techcrunch(max_articles: int = 10, poll_interval: Optional[int] = None) -> R
 
 def venturebeat_ai(max_articles: int = 10, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
-        urls=["https://venturebeat.com/category/ai/feed/"],
-        source_name="venturebeat_ai",
+        url="https://venturebeat.com/category/ai/feed/",
+        name="venturebeat_ai",
         max_articles=max_articles,
         poll_interval=poll_interval,
     )
@@ -297,8 +301,8 @@ def venturebeat_ai(max_articles: int = 10, poll_interval: Optional[int] = None) 
 
 def al_jazeera(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
-        urls=["https://www.aljazeera.com/xml/rss/all.xml"],
-        source_name="al_jazeera",
+        url="https://www.aljazeera.com/xml/rss/all.xml",
+        name="al_jazeera",
         max_articles=max_articles,
         poll_interval=poll_interval,
     )
@@ -306,8 +310,8 @@ def al_jazeera(max_articles: int = 20, poll_interval: Optional[int] = None) -> R
 
 def npr_news(max_articles: int = 10, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
-        urls=["https://feeds.npr.org/1001/rss.xml"],
-        source_name="npr_news",
+        url="https://feeds.npr.org/1001/rss.xml",
+        name="npr_news",
         max_articles=max_articles,
         poll_interval=poll_interval,
     )
@@ -315,8 +319,8 @@ def npr_news(max_articles: int = 10, poll_interval: Optional[int] = None) -> RSS
 
 def bbc_world(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
-        urls=["https://feeds.bbci.co.uk/news/world/rss.xml"],
-        source_name="bbc_world",
+        url="https://feeds.bbci.co.uk/news/world/rss.xml",
+        name="bbc_world",
         max_articles=max_articles,
         poll_interval=poll_interval,
     )
@@ -324,8 +328,8 @@ def bbc_world(max_articles: int = 20, poll_interval: Optional[int] = None) -> RS
 
 def bbc_tech(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
-        urls=["https://feeds.bbci.co.uk/news/technology/rss.xml"],
-        source_name="bbc_tech",
+        url="https://feeds.bbci.co.uk/news/technology/rss.xml",
+        name="bbc_tech",
         max_articles=max_articles,
         poll_interval=poll_interval,
     )
@@ -333,8 +337,8 @@ def bbc_tech(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSS
 
 def nasa_news(max_articles: int = 10, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
-        urls=["https://www.nasa.gov/rss/dyn/breaking_news.rss"],
-        source_name="nasa",
+        url="https://www.nasa.gov/rss/dyn/breaking_news.rss",
+        name="nasa",
         max_articles=max_articles,
         poll_interval=poll_interval,
     )
@@ -342,8 +346,8 @@ def nasa_news(max_articles: int = 10, poll_interval: Optional[int] = None) -> RS
 
 def python_jobs(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
-        urls=["https://www.python.org/jobs/feed/rss/"],
-        source_name="python_jobs",
+        url="https://www.python.org/jobs/feed/rss/",
+        name="python_jobs",
         max_articles=max_articles,
         poll_interval=poll_interval,
     )
@@ -351,8 +355,8 @@ def python_jobs(max_articles: int = 20, poll_interval: Optional[int] = None) -> 
 
 def remoteok(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
-        urls=["https://remoteok.com/rss"],
-        source_name="remoteok",
+        url="https://remoteok.com/rss",
+        name="remoteok",
         max_articles=max_articles,
         poll_interval=poll_interval,
     )
@@ -360,8 +364,8 @@ def remoteok(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSS
 
 def we_work_remotely(max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
-        urls=["https://weworkremotely.com/remote-jobs.rss"],
-        source_name="we_work_remotely",
+        url="https://weworkremotely.com/remote-jobs.rss",
+        name="we_work_remotely",
         max_articles=max_articles,
         poll_interval=poll_interval,
     )
@@ -369,8 +373,8 @@ def we_work_remotely(max_articles: int = 20, poll_interval: Optional[int] = None
 
 def reddit(subreddit: str, max_articles: int = 20, poll_interval: Optional[int] = None) -> RSSNormalizer:
     return RSSNormalizer(
-        urls=[f"https://www.reddit.com/r/{subreddit}.rss"],
-        source_name=f"reddit_{subreddit}",
+        url=f"https://www.reddit.com/r/{subreddit}.rss",
+        name=f"reddit_{subreddit}",
         max_articles=max_articles,
         poll_interval=poll_interval,
     )

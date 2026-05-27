@@ -1,4 +1,4 @@
-"""Unit tests for ``office_v2.compiler``.
+"""Unit tests for ``office.compiler``.
 
 The compiler walks an OfficeSpec + role library and produces a runtime
 ``dissyslab.network.Network``. These tests cover the wiring decisions
@@ -18,12 +18,12 @@ import pytest
 
 from dissyslab.backends import register_backend
 from dissyslab.network import Network
-from dissyslab.office_v2 import (
+from dissyslab.office import (
     AgentRoleEntry,
     OfficeRoleEntry,
     nl_role,
 )
-from dissyslab.office_v2.compiler import (
+from dissyslab.office.compiler import (
     CompileError,
     CompileWarning,
     compile_office,
@@ -200,7 +200,7 @@ class TestSubOffices:
         # Replace the .md with an explicit AI=stub binding via .py
         (sub / "roles" / "analyst.md").unlink()
         (sub / "roles" / "analyst.py").write_text(
-            "from dissyslab.office_v2 import nl_role\n"
+            "from dissyslab.office import nl_role\n"
             "role = nl_role('You analyse. Send to brief.', "
             "AI='stub-sub-explicit')\n"
         )
@@ -238,7 +238,7 @@ class TestSubOffices:
         # sub-office's library uses our stub backend.
         (sub / "roles" / "analyst.md").unlink()
         (sub / "roles" / "analyst.py").write_text(
-            "from dissyslab.office_v2 import nl_role\n"
+            "from dissyslab.office import nl_role\n"
             "role = nl_role('You analyse. Send to brief.', "
             "AI='stub-sugar')\n"
         )
@@ -351,7 +351,7 @@ class TestLibraryScoping:
         ))
         (sub / "roles").mkdir()
         (sub / "roles" / "analyst.py").write_text(
-            "from dissyslab.office_v2 import nl_role\n"
+            "from dissyslab.office import nl_role\n"
             "role = nl_role('Send to brief.', AI='stub-iso')\n"
         )
 
@@ -443,7 +443,7 @@ class TestFnLibResolution:
         roles_dir = tmp_path / "roles"
         roles_dir.mkdir()
         (roles_dir / "deduplicator.py").write_text(
-            "from dissyslab.office_v2 import nl_role\n"
+            "from dissyslab.office import nl_role\n"
             "role = nl_role('Drop spam. Send to out.', "
             "AI='stub-fn-override')\n"
         )
@@ -572,7 +572,7 @@ class TestParameterizedLibraryResolution:
         roles_dir = tmp_path / "roles"
         roles_dir.mkdir(parents=True, exist_ok=True)
         (roles_dir / "synchronizer.py").write_text(
-            "from dissyslab.office_v2 import synchronizer_role\n"
+            "from dissyslab.office import synchronizer_role\n"
             'role = synchronizer_role(["fixed_x", "fixed_y"])\n'
         )
         _write_office_md(tmp_path, (

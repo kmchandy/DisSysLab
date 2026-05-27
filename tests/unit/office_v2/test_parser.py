@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from dissyslab.office_v2 import (
+from dissyslab.office import (
     Endpoint,
     EXTERNAL,
     IMPLICIT_INPORT,
@@ -22,7 +22,7 @@ from dissyslab.office_v2 import (
     RoleRef,
     parse_office_dir,
 )
-from dissyslab.office_v2.parser import (
+from dissyslab.office.parser import (
     _parse_decl,
     _parse_kw_args,
     _split_recipients,
@@ -146,7 +146,7 @@ class TestSendsStyleConnections:
 
     def _parse_line(self, line: str):
         """Drive the connections-section parser with a single line."""
-        from dissyslab.office_v2.parser import (
+        from dissyslab.office.parser import (
             _parse_connections_section,
             _Line,
         )
@@ -234,13 +234,13 @@ class TestSendsStyleConnections:
     def test_error_message_mentions_both_forms(self):
         # If the user writes something that matches neither form, the
         # error should hint at the canonical AND the sentence-style.
-        from dissyslab.office_v2.parser_errors import ParseError as PE
+        from dissyslab.office.parser_errors import ParseError as PE
         with pytest.raises(PE, match="sends"):
             self._parse_line("Riley → editor")
 
 
 # Note: ``_extract_send_to_ports`` lives in
-# ``dissyslab.office_v2.library`` (Step 4: parser stopped reading
+# ``dissyslab.office.library`` (Step 4: parser stopped reading
 # ``roles/*.md``). Tests for it are in test_library.py.
 
 

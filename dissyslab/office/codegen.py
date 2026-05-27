@@ -56,8 +56,8 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from dissyslab.fn_lib import FN_LIB, partition_kwargs
-from dissyslab.office_v2.library import PARAMETERIZED_LIBRARY
-from dissyslab.office_v2._internals import (
+from dissyslab.office.library import PARAMETERIZED_LIBRARY
+from dissyslab.office._internals import (
     CompileError,
     _BlockTable,
     _load_office_library,
@@ -65,12 +65,12 @@ from dissyslab.office_v2._internals import (
     _runtime_inport,
     _runtime_outport,
 )
-from dissyslab.office_v2.library import (
+from dissyslab.office.library import (
     AgentRoleEntry,
     Library,
     OfficeRoleEntry,
 )
-from dissyslab.office_v2.office_spec import (
+from dissyslab.office.office_spec import (
     ConnectionStmt,
     Endpoint,
     OfficeSpec,
@@ -78,8 +78,8 @@ from dissyslab.office_v2.office_spec import (
     SinkSpec,
     SourceSpec,
 )
-from dissyslab.office_v2.office_spec_constants import EXTERNAL
-from dissyslab.office_v2.parser import parse_office_dir
+from dissyslab.office.office_spec_constants import EXTERNAL
+from dissyslab.office.parser import parse_office_dir
 
 
 # ── Tree of offices to emit ───────────────────────────────────────────
@@ -286,11 +286,19 @@ def _conn_comment(src: Endpoint, dest: Endpoint) -> str:
 def _emit_source(
     src: SourceSpec, indent: str
 ) -> Tuple[List[str], Optional[str]]:
-    """Return (lines, import_stmt). ``import_stmt`` may be None for RSS."""
-    from dissyslab.office.utils import SOURCE_REGISTRY, expand_shortcut
+    """Return (lines, import_stmt). ``import_stmt`` may be None for RSS.
 
-    reg = SOURCE_REGISTRY.get(src.name)
-    if reg is None:
+    Looks up the source name in the unified COMPONENT_REGISTRY via
+    ``lookup_component`` and validates that its ``kind`` is
+    ``"source"``. A kind mismatch produces a Pat-readable warning in
+    the generated artifact (the runtime will surface the same error
+    via the compiler; codegen prefers to emit a runnable file that
+    is loud about the misuse rather than refusing to generate).
+    """
+    from dissyslab.office.utils import expand_shortcut, lookup_component
+
+    entry = lookup_component(src.name)
+    if entry is None:
         return (
             [
                 f"{indent}# WARNING: unknown source {src.name!r}; "
@@ -299,21 +307,39 @@ def _emit_source(
             None,
         )
 
+    if entry["kind"] != "source":
+        return (
+            [
+                f"{indent}# WARNING: {src.name!r} is a {entry['kind']}, "
+                f"not a source; will fail at runtime"
+            ],
+            None,
+        )
+
     args = dict(src.args)
 
-    if reg["type"] == "rss":
+    if entry.get("type") == "rss":
         ctor = f"rss_normalizer.{src.name}({_kwargs_repr(args)})"
         import_stmt = (
             "import dissyslab.components.sources.rss_normalizer "
             "as rss_normalizer"
         )
-    elif reg["type"] == "mcp_shortcut":
+    elif entry.get("type") == "rss_generic":
+        ctor = f'{entry["class"]}({_kwargs_repr(args)})'
+        import_stmt = entry["import"]
+    elif entry.get("type") == "web_scraper_factory":
+        ctor = f"web_scraper.{src.name}({_kwargs_repr(args)})"
+        import_stmt = (
+            "import dissyslab.components.sources.web_scraper "
+            "as web_scraper"
+        )
+    elif entry.get("type") == "mcp_shortcut":
         kwargs = expand_shortcut(src.name, args)
-        ctor = f'{reg["class"]}({_kwargs_repr(kwargs)})'
-        import_stmt = reg["import"]
+        ctor = f'{entry["class"]}({_kwargs_repr(kwargs)})'
+        import_stmt = entry["import"]
     else:
-        ctor = f'{reg["class"]}({_kwargs_repr(args)})'
-        import_stmt = reg["import"]
+        ctor = f'{entry["class"]}({_kwargs_repr(args)})'
+        import_stmt = entry["import"]
 
     lines = [
         f"{indent}_{src.name} = {ctor}",
@@ -327,10 +353,10 @@ def _emit_sink(
     snk: SinkSpec, indent: str
 ) -> Tuple[List[str], Optional[str]]:
     """Return (lines, import_stmt)."""
-    from dissyslab.office.utils import SINK_REGISTRY
+    from dissyslab.office.utils import lookup_component
 
-    reg = SINK_REGISTRY.get(snk.name)
-    if reg is None:
+    entry = lookup_component(snk.name)
+    if entry is None:
         return (
             [
                 f"{indent}# WARNING: unknown sink {snk.name!r}; "
@@ -339,14 +365,23 @@ def _emit_sink(
             None,
         )
 
+    if entry["kind"] != "sink":
+        return (
+            [
+                f"{indent}# WARNING: {snk.name!r} is a {entry['kind']}, "
+                f"not a sink; will fail at runtime"
+            ],
+            None,
+        )
+
     args = dict(snk.args)
-    ctor = f'{reg["class"]}({_kwargs_repr(args)})'
+    ctor = f'{entry["class"]}({_kwargs_repr(args)})'
     lines = [
         f"{indent}_{snk.name} = {ctor}",
         f"{indent}{snk.name} = Sink("
-        f"fn=_{snk.name}.{reg['call']}, name={snk.name!r})",
+        f"fn=_{snk.name}.{entry['call']}, name={snk.name!r})",
     ]
-    return lines, reg["import"]
+    return lines, entry["import"]
 
 
 def _emit_builder(node: _OfficeNode) -> str:
@@ -466,7 +501,7 @@ def _emit_imports(nodes: List[_OfficeNode]) -> str:
         "from dissyslab.blocks.sink import Sink",
         "from dissyslab.blocks.transform import Transform",
         "from dissyslab.fn_lib import FN_LIB",
-        "from dissyslab.office_v2 import (",
+        "from dissyslab.office import (",
         "    PARAMETERIZED_LIBRARY,",
         "    load_roles_dir,",
         ")",
@@ -504,7 +539,7 @@ def _emit_library_loads(
         "def _load_lib(office_dir: Path):",
         '    """Load <office_dir>/roles plus the framework\'s built-in roles.',
         '',
-        '    Same convention as office_v2.compiler — office-local entries',
+        '    Same convention as office.compiler — office-local entries',
         '    win over built-ins of the same name.',
         '    """',
         "    builtin = load_roles_dir(_BUILTIN_ROLES)",
@@ -521,20 +556,33 @@ def _emit_library_loads(
 
 
 def _emit_main(root: _OfficeNode) -> str:
-    """If the root office is closed, emit the ``__main__`` runner block."""
+    """If the root office is closed, emit the ``__main__`` runner block.
+
+    The runner picks between ``run_network()`` (threads, the default —
+    correct for I/O-bound work) and ``process_network()`` (OS
+    processes, true CPU parallelism) based on the ``DSL_PROCESS_MODE``
+    environment variable. Pat does not see this choice; ``dsl run``
+    exposes ``--processes`` as a power-user flag that sets the env
+    var before invoking the artifact.
+    """
     if root.spec.is_open():
         return ""
     return (
         "\n\n"
         "if __name__ == \"__main__\":\n"
-        f"    build_{root.name}().run_network()\n"
+        "    import os\n"
+        f"    _office = build_{root.name}()\n"
+        "    if os.environ.get(\"DSL_PROCESS_MODE\") == \"process\":\n"
+        "        _office.process_network()\n"
+        "    else:\n"
+        "        _office.run_network()\n"
     )
 
 
 def _emit_header(root: _OfficeNode) -> str:
     """Module docstring at the top of run.py."""
     return (
-        f'"""run.py — generated by office_v2 codegen for '
+        f'"""run.py — generated by office codegen for '
         f'office {root.raw_name!r}.\n\n'
         f"Do not edit by hand. Re-run `dsl build` to regenerate.\n\n"
         f"This file is plain Python: read it to see exactly which\n"

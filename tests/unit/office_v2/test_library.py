@@ -1,4 +1,4 @@
-"""Unit tests for ``office_v2.library``.
+"""Unit tests for ``office.library``.
 
 Two layers, mirroring ``test_office_spec.py``:
 
@@ -15,7 +15,7 @@ import pytest
 
 from dissyslab.backends import register_backend
 from dissyslab.blocks.role import Role
-from dissyslab.office_v2.library import (
+from dissyslab.office.library import (
     AgentRoleEntry,
     OfficeRoleEntry,
     RoleEntry,
@@ -510,7 +510,7 @@ class TestLoadRolesDir:
 
     def test_loads_py_files(self, tmp_path):
         (tmp_path / "rss.py").write_text(
-            "from dissyslab.office_v2.library import OfficeRoleEntry\n"
+            "from dissyslab.office.library import OfficeRoleEntry\n"
             "role = OfficeRoleEntry(name='', path='./somewhere')\n"
         )
         out = load_roles_dir(tmp_path)
@@ -521,7 +521,7 @@ class TestLoadRolesDir:
 
     def test_py_keeps_explicit_name(self, tmp_path):
         (tmp_path / "x.py").write_text(
-            "from dissyslab.office_v2.library import OfficeRoleEntry\n"
+            "from dissyslab.office.library import OfficeRoleEntry\n"
             "role = OfficeRoleEntry(name='custom', path='./p')\n"
         )
         out = load_roles_dir(tmp_path)
@@ -548,7 +548,7 @@ class TestLoadRolesDir:
         # simulate via .md and .py with the same stem.
         (tmp_path / "x.md").write_text("Send to out.")
         (tmp_path / "x.py").write_text(
-            "from dissyslab.office_v2.library import OfficeRoleEntry\n"
+            "from dissyslab.office.library import OfficeRoleEntry\n"
             "role = OfficeRoleEntry(name='x', path='./p')\n"
         )
         with pytest.raises(ValueError, match="duplicate"):

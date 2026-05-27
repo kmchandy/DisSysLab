@@ -338,7 +338,7 @@ def _render_synchronizer_py(*, thinkers: Sequence[AgentSpec]) -> str:
         'and emits the merged article on `out`.\n'
         '"""\n'
         "from dissyslab.core import Agent\n"
-        "from dissyslab.office_v2 import AgentRoleEntry\n"
+        "from dissyslab.office import AgentRoleEntry\n"
         "\n"
         "\n"
         "class _Synchronizer(Agent):\n"
