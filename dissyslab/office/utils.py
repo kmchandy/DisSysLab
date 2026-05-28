@@ -88,6 +88,16 @@ SOURCE_REGISTRY = {
         "class":  "BlueSkyJetstreamSource",
     },
 
+    # ── Starter (one-shot bootstrap) ──────────────────────────────────
+    # Emits a single ``{"signal": "start"}`` message at startup and
+    # then stops. Used by iterative offices (debate, consensus) that
+    # need a single kick to start their feedback loop.
+    "starter": {
+        "type":   "starter",
+        "import": "from dissyslab.components.sources.starter_source import Starter",
+        "class":  "Starter",
+    },
+
     # ── Weather (first-class, no key) ─────────────────────────────────
     "weather": {
         "type":   "weather",

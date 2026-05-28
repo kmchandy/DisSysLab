@@ -403,10 +403,11 @@ def nl_role(
             "<port>.' so the role's destinations are explicit."
         )
 
-    # When AI is None, leave backend_name unset so the factory honors
-    # DSL_BACKEND at run time. When AI is given, lock that backend in
-    # for this role.
-    backend_name: Optional[str] = _resolve_ai(AI) if AI else None
+    # When AI is None, leave default_backend_name unset so the factory
+    # honors DSL_BACKEND at run time. When AI is given (via nl_role's
+    # AI kwarg from a .py wrapper, or via the office.md "X's AI is Y"
+    # sentence), lock that backend in for this role instance.
+    default_backend_name: Optional[str] = _resolve_ai(AI) if AI else None
     options = ", ".join(out_ports)
     full_prompt = prompt.strip() + _NL_CONTRACT.format(options=options)
     default_dest = out_ports[0]
@@ -414,7 +415,15 @@ def nl_role(
     # Closures captured by the factory. We deliberately resolve the
     # backend lazily (inside the factory) so that constructing a role
     # library does not require API credentials.
-    def factory() -> Agent:
+    #
+    # The factory accepts an optional ``AI`` kwarg so the compiler can
+    # override the role-file's backend choice per agent instance —
+    # this is what makes office.md sentences like
+    # ``Qwen's AI is ollama.`` work even when ``qwen.md`` itself did
+    # not specify an ``AI=`` (and conversely, lets office.md override
+    # a role file's default backend).
+    def factory(AI: Optional[str] = None) -> Agent:
+        backend_name = _resolve_ai(AI) if AI else default_backend_name
         backend = get_backend(backend_name)
 
         def call_llm(text: str) -> Any:

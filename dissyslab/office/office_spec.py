@@ -216,10 +216,18 @@ class RoleRef:
     role_name: str
     args: Tuple[Tuple[str, Any], ...] = ()
     path: Optional[str] = None
+    ai_backend: Optional[str] = None
 
     def __post_init__(self) -> None:
         # Coerce iterables to tuples so callers may pass lists.
         object.__setattr__(self, "args", tuple(self.args))
+        if self.ai_backend is not None and (
+            not isinstance(self.ai_backend, str) or not self.ai_backend
+        ):
+            raise ValueError(
+                f"RoleRef {self.agent_name!r} has empty ai_backend "
+                f"(use ai_backend=None to indicate no override)"
+            )
         if not isinstance(self.agent_name, str) or not self.agent_name:
             raise ValueError(
                 f"RoleRef.agent_name must be a non-empty string, "

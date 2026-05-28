@@ -417,6 +417,24 @@ def _emit_builder(node: _OfficeNode) -> str:
         lines.append(f'            "{snk.name}": {snk.name},')
 
     for ref in node.spec.agents:
+        # An AI override (``Qwen's AI is ollama.``) is only meaningful
+        # for LLM roles built via ``nl_role`` — i.e. the plain-role
+        # branch below. Catching it here gives a clear error rather
+        # than a TypeError at runtime when someone writes
+        # ``Sync's AI is anthropic.`` for a synchronizer.
+        if ref.ai_backend is not None and (
+            ref.agent_name in node.table.subnetworks
+            or ref.agent_name in node.fn_lib_agents
+            or ref.agent_name in node.parameterized_agents
+        ):
+            raise CompileError(
+                f"agent {ref.agent_name!r} is not an LLM role, so "
+                f"\"'s AI is\" override has no effect. Drop the "
+                f"\"{ref.agent_name}'s AI is {ref.ai_backend}.\" line "
+                f"from office.md, or move it to an agent backed by a "
+                f"role.md file."
+            )
+
         if ref.agent_name in node.table.subnetworks:
             child = next(
                 c for n, c in node.children if n == ref.agent_name
@@ -459,9 +477,16 @@ def _emit_builder(node: _OfficeNode) -> str:
                 f'{kwargs_repr})(),'
             )
         else:
+            # Plain LLM role. If the office.md included an
+            # ``X's AI is <backend>.`` sentence, pass the backend
+            # name into the role's factory; nl_role's factory accepts
+            # an optional ``AI`` kwarg precisely for this.
+            ai_kwarg = (
+                f"AI={ref.ai_backend!r}" if ref.ai_backend else ""
+            )
             lines.append(
                 f'            "{ref.agent_name}": '
-                f'{roles_var}[{ref.role_name!r}](),'
+                f'{roles_var}[{ref.role_name!r}]({ai_kwarg}),'
             )
 
     lines.append("        },")

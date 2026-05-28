@@ -194,27 +194,63 @@ _AGENT_LINE_RE = re.compile(
 )
 
 
+# Per-agent backend override sentence, e.g.
+#     "Qwen's AI is ollama."
+#     "Claude's AI is anthropic."
+# The right-hand side is captured as one token. Parenthesised forms
+# like "anthropic(temperature=0.7)" are caught at parse time and
+# rejected with a "Level 2 not yet implemented" message — the framework
+# currently only supports backend-by-name selection.
+_AI_OVERRIDE_RE = re.compile(
+    r"""^\s*
+    (?P<agent>[A-Za-z_][A-Za-z0-9_]*)        # the agent name
+    \s*'s\s+AI\s+is\s+
+    (?P<backend>.+?)                          # backend name (or
+                                              # "name(args...)" — caught below)
+    \s*$""",
+    re.VERBOSE | re.IGNORECASE,
+)
+
+
 def _parse_agents_section(
     body: List[_Line], path: Optional[Path]
 ) -> Tuple[
     List[Tuple[str, str, Tuple[Tuple[str, Any], ...], _Line]],
     List[Tuple[str, str, _Line]],
+    Dict[str, str],
 ]:
-    """Split agent lines into (leaf_agents, sub_offices).
+    """Split agent lines into (leaf_agents, sub_offices, ai_overrides).
 
-    leaf_agents:  list of (agent_name, role_name, args, line)
-    sub_offices:  list of (agent_name, path_str,  line)
+    leaf_agents:   list of (agent_name, role_name, args, line)
+    sub_offices:   list of (agent_name, path_str,  line)
+    ai_overrides:  mapping {agent_name: backend_name}
 
-    Three sentence forms are recognised:
+    Four sentence forms are recognised:
 
     * ``Susan is an editor.``                 (leaf agent, no args)
     * ``Sasha is a deduplicator(by="url").``  (leaf agent with kwargs)
     * ``X is an office at <path>.``           (sub-office)
     * ``X is <name>``  (legacy network.md ``Offices:`` form, where
       <name> is itself a path; treated as a sub-office)
+    * ``Qwen's AI is ollama.``                (per-agent backend
+      override; matched separately and folded into the agent's
+      RoleRef by the caller)
+
+    Per-agent AI override rules
+    ---------------------------
+
+    * The agent referenced must be declared in the same Agents
+      section (forward and backward references both work; the order
+      of sentences does not matter).
+    * Duplicate overrides for the same agent raise ParseError.
+    * Parenthesised backend forms like ``anthropic(temperature=0.7)``
+      raise ParseError with a helpful message — they will be
+      supported by a later "Level 2" framework change that threads
+      per-call parameters through the backend layer.
     """
     leaves: List[Tuple[str, str, Tuple[Tuple[str, Any], ...], _Line]] = []
     subs: List[Tuple[str, str, _Line]] = []
+    ai_overrides: Dict[str, str] = {}
 
     for line in body:
         text = _strip_bullet(line.text)
@@ -222,6 +258,37 @@ def _parse_agents_section(
         text = text.strip()
         if not text:
             continue
+
+        # Per-agent AI override sentence — try first, since it shares
+        # the possessive form with connection sentences and we want to
+        # consume it here before the agent-line regex sees it.
+        ai_m = _AI_OVERRIDE_RE.match(text)
+        if ai_m:
+            agent_name = ai_m.group("agent")
+            backend_str = ai_m.group("backend").strip()
+            if "(" in backend_str or ")" in backend_str:
+                raise ParseError(
+                    "per-backend parameters (temperature, max_tokens, "
+                    "model) are not yet supported. For now write the "
+                    "backend name without parentheses, e.g. "
+                    "\"Qwen's AI is ollama.\" "
+                    "Parameterised AI selectors will be enabled by a "
+                    "later framework change.",
+                    path=path,
+                    line_no=line.no,
+                    snippet=line.text,
+                )
+            if agent_name in ai_overrides:
+                raise ParseError(
+                    f"agent {agent_name!r} has more than one "
+                    f"\"'s AI is <backend>\" sentence; declare it once.",
+                    path=path,
+                    line_no=line.no,
+                    snippet=line.text,
+                )
+            ai_overrides[agent_name] = backend_str
+            continue
+
         m = _AGENT_LINE_RE.match(text)
         if not m:
             # Try the legacy form: "name is path/with/slashes"
@@ -262,7 +329,7 @@ def _parse_agents_section(
         )
         leaves.append((agent_name, role_name, args, line))
 
-    return leaves, subs
+    return leaves, subs, ai_overrides
 
 
 # ── Connections ────────────────────────────────────────────────────────
@@ -575,15 +642,32 @@ def _build_office_spec(
     # job.
     agent_entries: List[RoleRef] = []
     if "agents" in seen_labels:
-        leaves, subs = _parse_agents_section(
+        leaves, subs, ai_overrides = _parse_agents_section(
             seen_labels["agents"].body, md_path
         )
+        # Validate that every AI override names a real agent in this
+        # office. Doing this here (rather than at compile time) lets
+        # us point at the right line in the parse error.
+        declared_names = {n for n, _r, _a, _l in leaves} | {
+            n for n, _p, _l in subs
+        }
+        for agent_name in ai_overrides:
+            if agent_name not in declared_names:
+                raise ParseError(
+                    f"\"'s AI is\" sentence refers to unknown agent "
+                    f"{agent_name!r}; declare it first with "
+                    f"\"{agent_name} is a <role>.\".",
+                    path=md_path,
+                    line_no=1,
+                    snippet=f"{agent_name}'s AI is ...",
+                )
         for agent_name, role_name, agent_args, _line in leaves:
             agent_entries.append(
                 RoleRef(
                     agent_name=agent_name,
                     role_name=role_name,
                     args=agent_args,
+                    ai_backend=ai_overrides.get(agent_name),
                 )
             )
         for sub_name, sub_path, _line in subs:
@@ -596,6 +680,7 @@ def _build_office_spec(
                     agent_name=sub_name,
                     role_name=role_name,
                     path=sub_path,
+                    ai_backend=ai_overrides.get(sub_name),
                 )
             )
 
