@@ -426,6 +426,89 @@ The two contrasting rules:
 | `nl_role(prompt)` (no `AI`) — what `.md` files do | follows `DSL_BACKEND` (or anthropic if unset) |
 | `nl_role(prompt, AI="X")` — explicit `.py` files | locked to backend `X`, regardless of `DSL_BACKEND` |
 
+A third pattern is available without writing any Python at all: see
+**Per-agent backend selection in office.md** below.
+
+### Per-agent backend selection in office.md
+
+For the common case where you want different agents on different
+backends but you'd rather not write a `.py` wrapper per agent,
+office.md accepts a sentence-form declaration in the `Agents:`
+section:
+
+```
+Agents:
+Qwen is a qwen.
+Qwen's AI is ollama.
+Claude is a claude.
+Claude's AI is anthropic.
+```
+
+The parser folds the backend name into the agent's role reference;
+the compiler passes it to `nl_role`'s factory via a new `AI=` kwarg.
+Per-agent override wins over the role file's default (if any), which
+in turn wins over `DSL_BACKEND`. This is the recommended path when
+you want a single office to compare backends side-by-side — the
+`debate` gallery app uses it to put each of Qwen, Gemma, GPT, and
+Claude on its own LLM.
+
+---
+
+## 5. Named backend variants — picking a persona, not a number
+
+DisSysLab registers two extra variants for each backend, encoding a
+sampling temperature in the name:
+
+| Variant | Temperature | When to use |
+| --- | --- | --- |
+| `anthropic` / `ollama` / `openrouter` (bare) | 0.7 | The balanced default. Good for almost everything. |
+| `<name>_creative` | 1.0 | Brainstorming, divergent writing, anything where you want more variance. |
+| `<name>_precise` | 0.1 | Arithmetic, structured extraction, anything where determinism matters. |
+
+So `claude_creative` and `claude_precise` are first-class names
+alongside `claude`. They show up in `office.md` exactly the same way:
+
+```
+Qwen's AI is qwen_creative.       # high temperature local Qwen
+Claude's AI is claude_precise.    # low temperature Claude
+GPT is a gpt.                     # follows DSL_BACKEND
+```
+
+Why this exists. Picking a number on a `0-1` scale is an unhelpful
+abstraction for most users; picking *creative* vs *precise* is not.
+The variants register a persona as a name; the underlying parameter
+is an implementation detail. Power users who want a specific
+temperature can still construct the backend directly in a Python
+role file:
+
+```python
+# my_office/roles/skeptic.py
+from dissyslab.backends import AnthropicBackend
+from dissyslab.office.library import AgentRoleEntry, nl_role
+
+# A custom temperature that doesn't match the canonical 0.7 / 1.0 / 0.1
+# tiers — uncommon, but supported for research.
+_BACKEND = AnthropicBackend(temperature=0.35)
+
+# ... wire it into an AgentRoleEntry with that backend baked in.
+```
+
+Both routes coexist. Most offices use the named variants in
+`office.md`; an occasional `.py` role pins a specific temperature
+when the experiment demands it.
+
+### Available backends and their variants
+
+| Bare name | Aliases | Where it runs | Notes |
+| --- | --- | --- | --- |
+| `anthropic` | `claude` | Anthropic Claude (cloud) | Highest quality, real cost. |
+| `ollama` | `qwen` | Local model server | Free, private, slow. |
+| `openrouter` | — | OpenRouter (cloud, many models) | Cheap, fast, model-pickable. |
+
+Every backend gets the three-tier treatment, so the full vocabulary is
+nine registered names plus six aliases. `dsl doctor` (when available)
+prints the active list.
+
 ---
 
 ## 5. Comparing models in the same office

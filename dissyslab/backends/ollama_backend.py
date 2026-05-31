@@ -75,6 +75,9 @@ with margin. It's architecturally similar to the
 Qwen3.5-35B-A3B used in our OpenRouter validation runs, with
 acceptable-to-better quality for Pat-B's situation-room office."""
 
+DEFAULT_TEMPERATURE = 1.0
+DEFAULT_MAX_TOKENS = 8192
+
 
 def _default_host() -> str:
     return os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
@@ -88,6 +91,8 @@ class OllamaBackend:
         host: Optional[str] = None,
         model: Optional[str] = None,
         timeout: float = 600.0,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
     ) -> None:
         """
         Args:
@@ -101,10 +106,24 @@ class OllamaBackend:
                      (10 minutes) — local SLM inference on a typical
                      Mac can take ~30 seconds per call, and slow
                      hardware on a cold start can be much slower.
+            temperature: Default sampling temperature when
+                     ``complete(temperature=None)``. If None, uses
+                     DEFAULT_TEMPERATURE. Named backend variants
+                     (ollama_creative, ollama_precise) bake a specific
+                     value in here.
+            max_tokens: Default max-tokens cap when
+                     ``complete(max_tokens=None)``. If None, uses
+                     DEFAULT_MAX_TOKENS.
         """
         self._host = host
         self._default_model = model
         self._timeout = timeout
+        self._default_temperature = (
+            temperature if temperature is not None else DEFAULT_TEMPERATURE
+        )
+        self._default_max_tokens = (
+            max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS
+        )
 
     def _resolve_host(self) -> str:
         return self._host or _default_host()
@@ -124,8 +143,8 @@ class OllamaBackend:
         *,
         system: str,
         user: str,
-        max_tokens: int = 8192,
-        temperature: float = 1.0,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
         model: Optional[str] = None,
     ) -> str:
         """
@@ -133,11 +152,22 @@ class OllamaBackend:
         raw text of the assistant reply.
 
         See ``dissyslab.backends.base.Backend.complete`` for the full
-        contract.
+        contract. ``max_tokens``, ``temperature`` and ``model`` fall
+        back to the instance defaults set in ``__init__`` when the
+        caller passes ``None``.
         """
         host = self._resolve_host().rstrip("/")
         model_id = self._resolve_model(model)
         url = f"{host}/v1/chat/completions"
+
+        effective_temperature = (
+            temperature if temperature is not None
+            else self._default_temperature
+        )
+        effective_max_tokens = (
+            max_tokens if max_tokens is not None
+            else self._default_max_tokens
+        )
 
         headers = {"Content-Type": "application/json"}
         payload: Dict[str, Any] = {
@@ -146,8 +176,8 @@ class OllamaBackend:
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            "max_tokens": max_tokens,
-            "temperature": temperature,
+            "max_tokens": effective_max_tokens,
+            "temperature": effective_temperature,
         }
 
         try:

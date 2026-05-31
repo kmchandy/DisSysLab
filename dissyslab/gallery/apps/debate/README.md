@@ -143,7 +143,7 @@ independently — each is fully self-contained.
 
 ## Experiments Jeffrey can run first
 
-Five concrete experiments that need only this office and a small
+Six concrete experiments that need only this office and a small
 amount of edit-and-rerun work:
 
 1. **Wisdom of Crowds baseline.** Cap M = 1 round (edit Riley's
@@ -180,6 +180,23 @@ amount of edit-and-rerun work:
    Same backend on every panellist, four different prompts.
    Compare to experiment 4. If persona diversity buys most of what
    cross-backend diversity buys, persona is the cheaper knob.
+
+6. **Temperature heterogeneity for free.** Without changing models,
+   set the four panellists to different *named variants*:
+
+   ```
+   Qwen's AI is qwen_creative.       # temp 1.0
+   Gemma's AI is qwen.               # temp 0.7 (the balanced default)
+   GPT's AI is qwen_precise.         # temp 0.1
+   Claude's AI is claude.            # temp 0.7, frontier model
+   ```
+
+   Now you have a panel where two panellists run the same model at
+   different temperatures. Does the *creative* panellist drive
+   convergence (more options on the table) or destabilise it (more
+   noise to chase)? Does the *precise* panellist serve as an
+   anchor? Cheaper to run than experiment 4 (no new backends
+   needed) and isolates the temperature variable cleanly.
 
 A more ambitious experiment, once the basics work: implement
 configuration A (peer-to-peer, no moderator) as `consensus_room`

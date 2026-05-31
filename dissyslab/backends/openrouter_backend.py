@@ -92,6 +92,9 @@ Override per-experiment with ``OPENROUTER_MODEL`` env var or the
 
 _ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 
+DEFAULT_TEMPERATURE = 1.0
+DEFAULT_MAX_TOKENS = 2048
+
 
 class OpenRouterBackend:
     """Concrete Backend backed by OpenRouter's chat-completions API."""
@@ -101,6 +104,8 @@ class OpenRouterBackend:
         api_key: Optional[str] = None,
         model: Optional[str] = None,
         timeout: float = 60.0,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
     ) -> None:
         """
         Args:
@@ -111,10 +116,24 @@ class OpenRouterBackend:
                      ``DEFAULT_MODEL``.
             timeout: HTTP request timeout in seconds. Default 60s
                      covers slow SLMs without hanging indefinitely.
+            temperature: Default sampling temperature when
+                     ``complete(temperature=None)``. If None, uses
+                     DEFAULT_TEMPERATURE. Named backend variants
+                     (openrouter_creative, openrouter_precise) bake a
+                     specific value in here.
+            max_tokens: Default max-tokens cap when
+                     ``complete(max_tokens=None)``. If None, uses
+                     DEFAULT_MAX_TOKENS.
         """
         self._api_key = api_key
         self._default_model = model
         self._timeout = timeout
+        self._default_temperature = (
+            temperature if temperature is not None else DEFAULT_TEMPERATURE
+        )
+        self._default_max_tokens = (
+            max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS
+        )
 
     def _resolve_api_key(self) -> str:
         api_key = self._api_key or os.environ.get("OPENROUTER_API_KEY")
@@ -145,8 +164,8 @@ class OpenRouterBackend:
         *,
         system: str,
         user: str,
-        max_tokens: int = 2048,
-        temperature: float = 1.0,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
         model: Optional[str] = None,
     ) -> str:
         # NOTE: max_tokens default is 2048. The previous default was
@@ -173,6 +192,15 @@ class OpenRouterBackend:
         api_key = self._resolve_api_key()
         model_id = self._resolve_model(model)
 
+        effective_temperature = (
+            temperature if temperature is not None
+            else self._default_temperature
+        )
+        effective_max_tokens = (
+            max_tokens if max_tokens is not None
+            else self._default_max_tokens
+        )
+
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
@@ -187,8 +215,8 @@ class OpenRouterBackend:
                 {"role": "system", "content": system},
                 {"role": "user", "content": user},
             ],
-            "max_tokens": max_tokens,
-            "temperature": temperature,
+            "max_tokens": effective_max_tokens,
+            "temperature": effective_temperature,
         }
 
         try:

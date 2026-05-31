@@ -33,6 +33,8 @@ from anthropic import Anthropic
 
 
 DEFAULT_MODEL = "claude-sonnet-4-5"
+DEFAULT_TEMPERATURE = 1.0
+DEFAULT_MAX_TOKENS = 1024
 
 
 class AnthropicBackend:
@@ -42,6 +44,8 @@ class AnthropicBackend:
         self,
         api_key: Optional[str] = None,
         model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        max_tokens: Optional[int] = None,
     ) -> None:
         """
         Args:
@@ -49,9 +53,25 @@ class AnthropicBackend:
                      ANTHROPIC_API_KEY at first `complete` call.
             model:   Default model to use when `complete(model=None)`.
                      If None, uses DEFAULT_MODEL.
+            temperature: Default sampling temperature when
+                     ``complete(temperature=None)``. If None, uses
+                     DEFAULT_TEMPERATURE. Named backend variants
+                     (anthropic_creative, anthropic_precise) bake a
+                     specific value in here so the office writer
+                     does not have to think about temperature
+                     numbers — they pick a persona instead.
+            max_tokens: Default max-tokens cap when
+                     ``complete(max_tokens=None)``. If None, uses
+                     DEFAULT_MAX_TOKENS.
         """
         self._api_key = api_key
         self._default_model = model or DEFAULT_MODEL
+        self._default_temperature = (
+            temperature if temperature is not None else DEFAULT_TEMPERATURE
+        )
+        self._default_max_tokens = (
+            max_tokens if max_tokens is not None else DEFAULT_MAX_TOKENS
+        )
         self._client: Optional[Anthropic] = None
 
     def _get_client(self) -> Anthropic:
@@ -83,8 +103,8 @@ class AnthropicBackend:
         *,
         system: str,
         user: str,
-        max_tokens: int = 1024,
-        temperature: float = 1.0,
+        max_tokens: Optional[int] = None,
+        temperature: Optional[float] = None,
         model: Optional[str] = None,
     ) -> str:
         """
@@ -93,12 +113,27 @@ class AnthropicBackend:
 
         See `dissyslab.backends.base.Backend.complete` for the full
         contract.
+
+        ``max_tokens``, ``temperature`` and ``model`` all fall back to
+        the instance defaults set at ``__init__`` time when the caller
+        passes ``None``. This is what makes named variants like
+        ``anthropic_creative`` (temperature=1.0) and
+        ``anthropic_precise`` (temperature=0.1) work: the variant is
+        a factory entry that constructs the backend with a baked-in
+        temperature, and ``nl_role``'s ``complete()`` call does not
+        override it.
         """
         client = self._get_client()
         message = client.messages.create(
             model=model or self._default_model,
-            max_tokens=max_tokens,
-            temperature=temperature,
+            max_tokens=(
+                max_tokens if max_tokens is not None
+                else self._default_max_tokens
+            ),
+            temperature=(
+                temperature if temperature is not None
+                else self._default_temperature
+            ),
             system=system,
             messages=[
                 {"role": "user", "content": user},

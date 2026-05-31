@@ -449,7 +449,13 @@ def nl_role(
                 # and start seeing empty completions, bump this here
                 # or override per-call via ``backend.complete(..., max_tokens=8192)``.
                 max_tokens=2048,
-                temperature=1.0,
+                # Note: we deliberately do *not* pass ``temperature``
+                # here. The backend's own default applies, which is
+                # what makes named variants like ``anthropic_creative``
+                # (temperature=1.0) and ``anthropic_precise``
+                # (temperature=0.1) take effect. Passing a literal
+                # temperature here would silently override the
+                # variant choice.
             )
             cleaned = _strip_code_fences(raw)
             if not cleaned:

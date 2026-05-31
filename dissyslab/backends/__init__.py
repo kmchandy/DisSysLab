@@ -38,10 +38,37 @@ __all__ = [
 # Factories produce a backend instance on demand. A factory (not an
 # instance) is registered so that construction — which may touch the
 # environment or network — is deferred until first use.
+#
+# Named-variant convention
+# ------------------------
+#
+# For every backend, three registry entries are provided:
+#
+# * Bare name (e.g. ``anthropic``) — a *balanced* default
+#   (temperature 0.7).
+# * ``<name>_creative`` (e.g. ``anthropic_creative``) — high
+#   temperature (1.0); favours novelty / variance.
+# * ``<name>_precise`` (e.g. ``anthropic_precise``) — low
+#   temperature (0.1); favours determinism.
+#
+# This lets office.md select the LLM persona in plain English —
+# ``Claude's AI is anthropic_creative.`` — without the office writer
+# having to think about numerical temperatures. Power users who want
+# a specific temperature can still construct the backend directly in
+# a .py role file via ``AnthropicBackend(temperature=0.4)``.
 _REGISTRY: Dict[str, Callable[[], Backend]] = {
-    "anthropic": lambda: AnthropicBackend(),
-    "ollama": lambda: OllamaBackend(),
-    "openrouter": lambda: OpenRouterBackend(),
+    # Anthropic / Claude
+    "anthropic":           lambda: AnthropicBackend(temperature=0.7),
+    "anthropic_creative":  lambda: AnthropicBackend(temperature=1.0),
+    "anthropic_precise":   lambda: AnthropicBackend(temperature=0.1),
+    # Ollama (local — typically Qwen)
+    "ollama":              lambda: OllamaBackend(temperature=0.7),
+    "ollama_creative":     lambda: OllamaBackend(temperature=1.0),
+    "ollama_precise":      lambda: OllamaBackend(temperature=0.1),
+    # OpenRouter (cloud — typically Qwen)
+    "openrouter":          lambda: OpenRouterBackend(temperature=0.7),
+    "openrouter_creative": lambda: OpenRouterBackend(temperature=1.0),
+    "openrouter_precise":  lambda: OpenRouterBackend(temperature=0.1),
 }
 
 # Aliases let multiple user-facing names resolve to the same registered
@@ -50,8 +77,21 @@ _REGISTRY: Dict[str, Callable[[], Backend]] = {
 # here. Adding an alias is cheaper and safer than duplicating the
 # factory — re-registering "anthropic" automatically updates "claude"
 # too. Keys are lowercased before lookup.
+#
+# The Pat-facing model names (claude, qwen) each get the same
+# three-tier creative / bare / precise treatment as the underlying
+# backend, so ``Qwen's AI is qwen_creative.`` works in office.md.
 _ALIASES: Dict[str, str] = {
-    "claude": "anthropic",
+    # Claude (= anthropic)
+    "claude":           "anthropic",
+    "claude_creative":  "anthropic_creative",
+    "claude_precise":   "anthropic_precise",
+    # Qwen (= ollama by default; users running Qwen via OpenRouter
+    # should write openrouter / openrouter_creative / openrouter_precise
+    # directly).
+    "qwen":             "ollama",
+    "qwen_creative":    "ollama_creative",
+    "qwen_precise":     "ollama_precise",
 }
 
 # One lazily-constructed singleton per backend name. Cleared when a
