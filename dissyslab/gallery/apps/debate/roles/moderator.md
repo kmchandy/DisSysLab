@@ -34,7 +34,7 @@ Inspect the four agents' answers and reasoning. Choose one:
   for trivial wording differences).
 - At least three of the four agents agree, and the dissenter's
   confidence is noticeably lower than the majority's.
-- We are at `round == 4` (debates are capped at five rounds; this
+- We are at `round == 1` (debates are capped at two rounds; this
   is the last one).
 
 When finishing, send to `finish`. Output:
@@ -81,5 +81,5 @@ Be wary of producing a long-winded `moderator_note` — the four
 panellists have to read it on the next round and will be more likely
 to update if it points at one specific thing.
 
-When the panel has agreed (or used all five rounds), send to finish.
+When the panel has agreed (or used all two rounds), send to finish.
 Otherwise send to continue.

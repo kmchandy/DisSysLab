@@ -90,12 +90,36 @@ dsl run debate
 You will see Sasha emit problems one at a time, the four panellists
 debate each one, and Riley's per-problem verdict land in
 `debate_answers.jsonl`. Round-by-round answers from all four
-panellists land in `debate_transcript.jsonl`.
+panellists land in `debate_transcript.jsonl`. The terminal also
+renders a colour-coded card per panellist per round plus the
+moderator's verdict, via the `debate_display` sink — one colour
+per panellist (Qwen cyan, Gemma magenta, GPT green, Claude yellow),
+moderator continue in blue, final verdict in green.
 
-The shipped `problems.jsonl` has ten starter problems mixing clean
-arithmetic, tricky facts, multiple-choice, open-ended judgement, and
-deliberately-tricky wording. Replace it with your own bank to study
-a different question class.
+The shipped `problems.jsonl` carries one problem of each kind
+(arithmetic, tricky factual, multiple-choice, open-ended judgement,
+trick wording) — five problems total, designed for cheap end-to-end
+smoke tests. For a larger bank, place your own `problems.jsonl` in
+the directory you run `dsl run` from; that path overrides the
+shipped default.
+
+### Step-through mode
+
+For interactive review — see each debate finish on screen before
+moving to the next problem — set `DSL_DEBATE_STEP=1`:
+
+```bash
+DSL_DEBATE_STEP=1 dsl run debate
+```
+
+Sasha (the gate role) blocks on Enter between problems. Because
+every downstream panellist is waiting for Sasha to broadcast, the
+entire pipeline idles during the pause — no coordination needed
+inside the display sink. Hit Enter when you're ready for the next
+problem. The first problem fires immediately on startup; pauses
+appear before problems 2 through N. The env var has no effect when
+stdin is not a TTY (cron / CI / piped input), so unattended runs
+still proceed straight through.
 
 ## Backends — what runs today
 

@@ -229,9 +229,24 @@ class AgentRoleEntry:
                 f"callable, got {type(self.factory).__name__}"
             )
 
-    def __call__(self) -> Agent:
-        """Build a fresh runtime ``Agent`` for this role."""
-        return self.factory()
+    def __call__(self, **kwargs: Any) -> Agent:
+        """Build a fresh runtime ``Agent`` for this role.
+
+        Forwards any keyword arguments to the factory. The common
+        case is no kwargs (``entry()``), which works because all
+        factories registered via ``nl_role`` accept an optional
+        ``AI=`` kwarg with a default of None. The kwargs path is
+        used by office.md codegen to pass a per-agent backend
+        override — e.g. ``_ROLES_DEBATE['qwen'](AI='ollama')`` for
+        a ``Qwen's AI is ollama.`` sentence.
+
+        Factories that do not accept a particular kwarg will raise
+        ``TypeError`` here; the codegen layer guards against that
+        for non-LLM roles (synchronizer / gate / fn_lib), so in
+        practice only nl_role-built factories ever receive an
+        ``AI=`` override.
+        """
+        return self.factory(**kwargs)
 
 
 # ── OfficeRoleEntry ────────────────────────────────────────────────────

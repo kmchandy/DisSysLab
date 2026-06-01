@@ -2,7 +2,8 @@
 
 Sources: starter
 Sinks: jsonl_recorder(path="debate_answers.jsonl"),
-       jsonl_recorder_briefing(path="debate_transcript.jsonl")
+       jsonl_recorder_briefing(path="debate_transcript.jsonl"),
+       debate_display
 
 Agents:
 Sasha is a gate.
@@ -27,7 +28,7 @@ Gemma's out is Sync's from_gemma.
 GPT's out is Sync's from_gpt.
 Claude's out is Sync's from_claude.
 
-Sync's out is Riley, jsonl_recorder_briefing.
+Sync's out is Riley, jsonl_recorder_briefing, debate_display.
 
-Riley's continue is Qwen, Gemma, GPT, Claude.
-Riley's finish is jsonl_recorder, Sasha.
+Riley's continue is Qwen, Gemma, GPT, Claude, debate_display.
+Riley's finish is jsonl_recorder, Sasha, debate_display.

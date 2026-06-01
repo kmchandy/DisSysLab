@@ -38,6 +38,8 @@ The file is looked up in this order:
 from __future__ import annotations
 
 import json
+import os
+import sys
 from pathlib import Path
 
 from dissyslab.core import Agent
@@ -71,8 +73,30 @@ def _load_bank(path: Path) -> list[dict]:
     return items
 
 
+def _step_through_enabled() -> bool:
+    """True when the DSL_DEBATE_STEP env var asks for interactive
+    step-through between problems.
+
+    Recognised truthy values: ``"1"``, ``"true"``, ``"yes"`` (case-
+    insensitive). Any other value, including unset, disables the
+    pause and the office runs straight through the problem bank
+    just like before.
+    """
+    return os.environ.get("DSL_DEBATE_STEP", "").strip().lower() in (
+        "1", "true", "yes"
+    )
+
+
 class _Gate(Agent):
-    """Emit one problem per inbound signal; end-of-stream when empty."""
+    """Emit one problem per inbound signal; end-of-stream when empty.
+
+    When ``DSL_DEBATE_STEP=1`` is set in the environment, the gate
+    blocks on standard input between problems (after the first), so
+    the user can review the previous debate before the next one
+    fires. Because every panellist downstream is waiting for this
+    block to broadcast its next message, the pause naturally idles
+    the whole pipeline — no other coordination is needed.
+    """
 
     def __init__(self, name=None):
         super().__init__(
@@ -82,6 +106,19 @@ class _Gate(Agent):
         )
         self._bank = _load_bank(_locate_problems())
         self._cursor = 0
+        self._step = _step_through_enabled()
+
+    def _pause_for_user(self) -> None:
+        """Print a prompt and block on stdin. Best-effort: if stdin
+        is closed or not a TTY (cron / CI / pipe), skip the pause
+        so the office still runs straight through."""
+        if not sys.stdin or not sys.stdin.isatty():
+            return
+        try:
+            input("\n[Press Enter for the next problem...] ")
+        except (EOFError, KeyboardInterrupt):
+            # User EOF'd or Ctrl-C'd — treat as "fall through".
+            print()
 
     def run(self) -> None:
         while True:
@@ -89,6 +126,9 @@ class _Gate(Agent):
             if self._cursor >= len(self._bank):
                 self.send({"end_of_stream": True}, "out_")
                 return
+            # Pause between problems (not before the first one).
+            if self._step and self._cursor > 0:
+                self._pause_for_user()
             item = self._bank[self._cursor]
             self._cursor += 1
             msg = {

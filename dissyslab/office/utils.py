@@ -402,6 +402,16 @@ SINK_REGISTRY = {
         "args":   "named",
         "call":   "run",
     },
+    # Debate office: situation_room-style console display of each
+    # round's panellist + moderator output. Receives messages from
+    # Sync's out AND Riley's continue/finish; discriminates by
+    # inspecting fields on the inbound dict.
+    "debate_display": {
+        "import": "from dissyslab.gallery.apps.debate.sinks.debate_display import DebateDisplay",
+        "class":  "DebateDisplay",
+        "args":   "named",
+        "call":   "run",
+    },
     "slack_sink": {
         "import": "from dissyslab.components.sinks.slack_sink import SlackSink",
         "class":  "SlackSink",

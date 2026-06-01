@@ -245,3 +245,41 @@ def test_backend_per_call_overrides_instance_temperature(monkeypatch):
     backend.complete(system="s", user="u", temperature=0.9)
 
     assert captured["temperature"] == 0.9
+
+
+# ── AgentRoleEntry.__call__ kwargs forwarding ─────────────────────────
+
+
+def test_role_entry_call_forwards_ai_kwarg():
+    """Regression: ``entry(AI="...")`` must not raise TypeError.
+
+    The office.md codegen emits lines like
+    ``_ROLES_OFFICE['qwen'](AI='ollama')`` to wire a per-agent
+    backend override (the "Qwen's AI is ollama." office.md sentence).
+    Before this test was added, ``AgentRoleEntry.__call__`` was
+    declared with no parameters and silently ate any kwargs, so
+    every office that used a per-agent AI override failed at
+    runtime with::
+
+        TypeError: AgentRoleEntry.__call__() got an unexpected
+                   keyword argument 'AI'
+
+    Unit tests didn't catch it because none of them actually
+    constructed the Network from a generated ``run.py``; they all
+    stopped at the OfficeSpec / compile-time shape level. This test
+    drives the exact call shape codegen emits.
+    """
+    from dissyslab.office import nl_role
+
+    # Build a role just like .md files do — no AI baked into the
+    # factory. The codegen then has to be the one to supply the AI.
+    entry = nl_role("You triage. Send to keep or to discard.")
+
+    # The buggy version raised TypeError here.
+    agent = entry(AI="anthropic")
+    assert agent is not None
+
+    # And the zero-arg call still works for offices that didn't
+    # write an AI override sentence.
+    agent_default = entry()
+    assert agent_default is not None
