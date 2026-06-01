@@ -22,13 +22,17 @@ from typing import Callable, Dict, Optional
 
 from dissyslab.backends.base import Backend
 from dissyslab.backends.anthropic_backend import AnthropicBackend
+from dissyslab.backends.gemini_backend import GeminiBackend
 from dissyslab.backends.ollama_backend import OllamaBackend
+from dissyslab.backends.openai_backend import OpenAIBackend
 from dissyslab.backends.openrouter_backend import OpenRouterBackend
 
 __all__ = [
     "Backend",
     "AnthropicBackend",
+    "GeminiBackend",
     "OllamaBackend",
+    "OpenAIBackend",
     "OpenRouterBackend",
     "get_backend",
     "register_backend",
@@ -69,6 +73,38 @@ _REGISTRY: Dict[str, Callable[[], Backend]] = {
     "openrouter":          lambda: OpenRouterBackend(temperature=0.7),
     "openrouter_creative": lambda: OpenRouterBackend(temperature=1.0),
     "openrouter_precise":  lambda: OpenRouterBackend(temperature=0.1),
+    # OpenAI — GPT-4o, GPT-5, etc. via api.openai.com.
+    "openai":              lambda: OpenAIBackend(temperature=0.7),
+    "openai_creative":     lambda: OpenAIBackend(temperature=1.0),
+    "openai_precise":      lambda: OpenAIBackend(temperature=0.1),
+    # Google AI Studio — same API endpoint serves both Gemini and
+    # Gemma model families. The "gemini" entries default to a Gemini
+    # Flash model; the "gemma" entries default to a Gemma 3 model.
+    # Both read GEMINI_API_KEY (or GOOGLE_API_KEY) from the
+    # environment.
+    "gemini":              lambda: GeminiBackend(
+        model="gemini-2.5-flash", temperature=0.7,
+    ),
+    "gemini_creative":     lambda: GeminiBackend(
+        model="gemini-2.5-flash", temperature=1.0,
+    ),
+    "gemini_precise":      lambda: GeminiBackend(
+        model="gemini-2.5-flash", temperature=0.1,
+    ),
+    # Gemma 4 (current as of 2026-05). Earlier Gemma 3 ids like
+    # "gemma-3-27b-it" are no longer served by Google AI Studio for
+    # newly-issued keys. If you find this model has been retired in
+    # turn, list available models with the curl command in
+    # docs/LANGUAGE_MODELS.md and update the three lines here.
+    "gemma":               lambda: GeminiBackend(
+        model="gemma-4-31b-it", temperature=0.7,
+    ),
+    "gemma_creative":      lambda: GeminiBackend(
+        model="gemma-4-31b-it", temperature=1.0,
+    ),
+    "gemma_precise":       lambda: GeminiBackend(
+        model="gemma-4-31b-it", temperature=0.1,
+    ),
 }
 
 # Aliases let multiple user-facing names resolve to the same registered
@@ -92,6 +128,10 @@ _ALIASES: Dict[str, str] = {
     "qwen":             "ollama",
     "qwen_creative":    "ollama_creative",
     "qwen_precise":     "ollama_precise",
+    # GPT (= openai)
+    "gpt":              "openai",
+    "gpt_creative":     "openai_creative",
+    "gpt_precise":      "openai_precise",
 }
 
 # One lazily-constructed singleton per backend name. Cleared when a

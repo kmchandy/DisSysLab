@@ -504,10 +504,46 @@ when the experiment demands it.
 | `anthropic` | `claude` | Anthropic Claude (cloud) | Highest quality, real cost. |
 | `ollama` | `qwen` | Local model server | Free, private, slow. |
 | `openrouter` | — | OpenRouter (cloud, many models) | Cheap, fast, model-pickable. |
+| `openai` | `gpt` | OpenAI (cloud) | GPT-4o-mini by default; real cost. |
+| `gemini` | — | Google AI Studio (cloud) | Free tier, Gemini 2.5 Flash by default. |
+| `gemma` | — | Google AI Studio (cloud) | Free tier, Gemma 4 31B (dense) by default. Same API key as `gemini`. |
 
 Every backend gets the three-tier treatment, so the full vocabulary is
-nine registered names plus six aliases. `dsl doctor` (when available)
-prints the active list.
+eighteen registered names plus nine aliases. `dsl doctor` (when
+available) prints the active list.
+
+### Google AI Studio (gemini + gemma)
+
+One backend module (``GeminiBackend``) serves both Google model
+families through ``generativelanguage.googleapis.com``. The same
+``GEMINI_API_KEY`` (or ``GOOGLE_API_KEY`` as a fallback) authenticates
+both — there is no separate "Gemma key". Get a free key at
+<https://aistudio.google.com/apikey>; no credit card needed.
+
+The two model families differ only in their default model name:
+
+* ``gemini`` / ``gemini_creative`` / ``gemini_precise`` — point at
+  ``gemini-2.5-flash`` (frontier proprietary, free tier).
+* ``gemma`` / ``gemma_creative`` / ``gemma_precise`` — point at
+  ``gemma-4-31b-it`` (open-weight dense 31B, free tier). For higher
+  throughput at slightly lower quality, the MoE variant
+  ``gemma-4-26b-a4b-it`` (4B active params) is also available; swap
+  it into the registry entries in
+  ``dissyslab/backends/__init__.py`` if needed.
+
+If Google rotates these defaults in the future, list the models your
+key can see with::
+
+    curl -s -H "x-goog-api-key: $GEMINI_API_KEY" \\
+      "https://generativelanguage.googleapis.com/v1beta/models" \\
+      | python3 -m json.tool | grep '"name"'
+
+To use a different model inside the same family, either set
+``GEMINI_MODEL`` in your shell or pass ``model=`` per-call in a
+``.py`` role file. Free-tier rate limits at time of writing are
+generous for both families (tens of thousands of requests per day);
+enough to run the ``debate`` gallery office repeatedly without
+hitting limits.
 
 ---
 

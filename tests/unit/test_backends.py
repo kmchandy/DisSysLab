@@ -130,7 +130,10 @@ def test_named_variants_have_distinct_temperatures():
     the scenes. If a variant ever collapses to the same temperature as
     the bare name, the convention has lost its meaning.
     """
-    for prefix in ("anthropic", "ollama", "openrouter"):
+    for prefix in (
+        "anthropic", "ollama", "openrouter",
+        "openai", "gemini", "gemma",
+    ):
         bare = get_backend(prefix)
         creative = get_backend(f"{prefix}_creative")
         precise = get_backend(f"{prefix}_precise")
@@ -141,6 +144,23 @@ def test_named_variants_have_distinct_temperatures():
         assert bare is not creative
         assert bare is not precise
         assert creative is not precise
+
+
+def test_gemini_and_gemma_select_different_models():
+    """``gemini`` and ``gemma`` share one backend class but route to
+    different model families. The model name is the only thing that
+    distinguishes them; check that it's actually set correctly.
+    """
+    gemini = get_backend("gemini")
+    gemma = get_backend("gemma")
+    # Both are GeminiBackend instances ...
+    from dissyslab.backends import GeminiBackend
+    assert isinstance(gemini, GeminiBackend)
+    assert isinstance(gemma, GeminiBackend)
+    # ... but with distinct default models.
+    assert "gemini" in gemini._default_model
+    assert "gemma" in gemma._default_model
+    assert gemini._default_model != gemma._default_model
 
 
 def test_claude_qwen_aliases_track_variants():
@@ -160,6 +180,9 @@ def test_claude_qwen_aliases_track_variants():
         ("qwen",             "ollama"),
         ("qwen_creative",    "ollama_creative"),
         ("qwen_precise",     "ollama_precise"),
+        ("gpt",              "openai"),
+        ("gpt_creative",     "openai_creative"),
+        ("gpt_precise",      "openai_precise"),
     ]
     for alias, canonical in pairs:
         assert get_backend(alias) is get_backend(canonical)

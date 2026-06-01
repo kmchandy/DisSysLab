@@ -8,7 +8,7 @@ after the language models behind them: `qwen`, `gemma`, `gpt`, and
 On each round you produce one answer. If the panel has not yet agreed,
 Riley will give you another turn together with a record of what every
 panellist said in earlier rounds and a short note from Riley pointing
-at the disagreement.
+at the disagreement. The note from Riley may be empty
 
 ## Inputs you receive
 
