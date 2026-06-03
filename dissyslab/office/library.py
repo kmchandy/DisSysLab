@@ -472,6 +472,9 @@ def nl_role(
                 # temperature here would silently override the
                 # variant choice.
             )
+            print(f"\n=== RAW LLM OUTPUT ({backend.__class__.__name__}) ===")
+            print(raw)
+            print("=== END RAW ===\n")
             cleaned = _strip_code_fences(raw)
             if not cleaned:
                 return {}

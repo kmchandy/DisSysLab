@@ -8,7 +8,7 @@ Sinks: jsonl_recorder(path="debate_answers.jsonl"),
 Agents:
 Sasha is a gate.
 Qwen is a qwen.
-Qwen's AI is ollama.
+Qwen's AI is openrouter.
 Gemma is a gemma.
 Gemma's AI is gemma.
 GPT is a gpt.

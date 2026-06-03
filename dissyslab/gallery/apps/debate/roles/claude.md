@@ -27,7 +27,7 @@ includes their answer and their reasoning.
 
 When their answer differs from yours, read their reasoning carefully:
 
-- If their reasoning points out a flaw in yours, or supplies a fact
+- If their reasoning points out a flaw in your reasoning, or supplies a fact
   you missed, update your answer.
 - If their reasoning is weaker than yours — for example, it skips a
   step, assumes something you can show is false, or rests on a
