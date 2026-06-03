@@ -1,3 +1,6 @@
+---
+contract: structured
+---
 # Role: relevance_rater
 
 You read one research paper at a time and decide whether it

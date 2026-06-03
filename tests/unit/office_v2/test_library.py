@@ -579,3 +579,179 @@ class TestTypeAliases:
             "x": OfficeRoleEntry(name="x", path="./p"),
         }
         assert lib["x"].path == "./p"
+
+
+# ── Named contracts (α) ───────────────────────────────────────────────
+
+
+class TestNamedContracts:
+    """Cover the two named output contracts: passthrough, structured.
+    The point of the named-contract design is that a role can opt out
+    of the historical {send_to, text} envelope when its prompt needs
+    a specific JSON top-level key (e.g. debate panellists that emit
+    ``{"qwen": {answer, reasoning, confidence}}``).
+    """
+
+    def _capture_system_prompt(self, contract: str) -> str:
+        """Build a role with the given contract and return the system
+        prompt the backend actually sees on a complete() call."""
+        stub = _register_stub(
+            f"stub-contract-{contract}", '{"send_to": "out", "text": "ok"}'
+        )
+        entry = nl_role(
+            "You answer. Send to out.",
+            AI=f"stub-contract-{contract}",
+            contract=contract,
+        )
+        agent = entry()
+        # Drive one role_fn call so the backend is exercised.
+        agent._fn({"problem": "x"})
+        return stub.calls[0]["system"]
+
+    def test_passthrough_appends_send_to_text_template(self):
+        """The default contract should still produce the historical
+        {send_to, text} template — every gallery app shipped before
+        the α change relies on this and must keep working."""
+        system = self._capture_system_prompt("passthrough")
+        assert "send_to" in system
+        assert '"text"' in system
+        assert "<content>" in system
+
+    def test_structured_appends_no_contract(self):
+        """The structured contract appends nothing. The role's own .md
+        is fully responsible for the output JSON shape."""
+        system = self._capture_system_prompt("structured")
+        # No {send_to, text} template appended.
+        assert "<content>" not in system
+        # The user's prompt body is still there.
+        assert "Send to out." in system
+
+    def test_unknown_contract_raises(self):
+        with pytest.raises(ValueError) as exc:
+            nl_role("Send to out.", contract="bogus")
+        assert "bogus" in str(exc.value)
+        # Error names the legal values.
+        assert "passthrough" in str(exc.value)
+        assert "structured" in str(exc.value)
+
+    def test_default_contract_is_passthrough(self):
+        """Backward compat: nl_role with no contract kwarg must behave
+        identically to nl_role(contract='passthrough')."""
+        a = self._capture_system_prompt("passthrough")
+        # Build a default entry the same way.
+        stub = _register_stub(
+            "stub-contract-default", '{"send_to": "out", "text": "ok"}'
+        )
+        entry = nl_role(
+            "You answer. Send to out.", AI="stub-contract-default",
+        )
+        agent = entry()
+        agent._fn({"problem": "x"})
+        b = stub.calls[0]["system"]
+        assert a == b
+
+
+class TestRoleFrontMatter:
+    """The .md role file can carry a YAML ``--- ... ---`` block on top
+    that names ``contract:`` and ``AI:``. ``load_roles_dir`` parses it
+    and threads the values through to ``nl_role``.
+    """
+
+    def test_structured_contract_via_front_matter(self, tmp_path):
+        stub = _register_stub(
+            "stub-fm-structured", '{"out": {"value": 1}}'
+        )
+        roles = tmp_path / "roles"
+        roles.mkdir()
+        (roles / "agent.md").write_text(
+            "---\n"
+            "contract: structured\n"
+            f"AI: stub-fm-structured\n"
+            "---\n"
+            "# Role: agent\n\n"
+            "You answer. Send to out.\n"
+        )
+        lib = load_roles_dir(roles)
+        entry = lib["agent"]
+        agent = entry()
+        agent._fn({"problem": "x"})
+        system = stub.calls[0]["system"]
+        # No {send_to, text} template appended.
+        assert "<content>" not in system
+        # User's prompt body is preserved.
+        assert "Send to out." in system
+
+    def test_no_front_matter_keeps_default_passthrough(self, tmp_path):
+        stub = _register_stub(
+            "stub-fm-none", '{"send_to": "out", "text": "ok"}'
+        )
+        roles = tmp_path / "roles"
+        roles.mkdir()
+        (roles / "agent.md").write_text(
+            "# Role: agent\n\n"
+            "You answer. Send to out.\n"
+        )
+        lib = load_roles_dir(roles)
+        # No explicit AI in this file; tell the factory directly.
+        agent = lib["agent"](AI="stub-fm-none")
+        agent._fn({"problem": "x"})
+        system = stub.calls[0]["system"]
+        # Default = passthrough = {send_to, text} template appended.
+        assert "<content>" in system
+
+    def test_unknown_front_matter_keys_ignored(self, tmp_path):
+        """Forward compatibility: future framework versions might use
+        the same front-matter block for additional keys. Unknown keys
+        must NOT break the loader."""
+        stub = _register_stub(
+            "stub-fm-unknown", '{"out": {"v": 1}}'
+        )
+        roles = tmp_path / "roles"
+        roles.mkdir()
+        (roles / "agent.md").write_text(
+            "---\n"
+            "contract: structured\n"
+            f"AI: stub-fm-unknown\n"
+            "future_feature: some_value\n"
+            "---\n"
+            "# Role: agent\n\n"
+            "You answer. Send to out.\n"
+        )
+        lib = load_roles_dir(roles)
+        assert "agent" in lib  # didn't raise
+
+    def test_unclosed_front_matter_leaves_file_unchanged(self, tmp_path):
+        """If the closing ``---`` is missing, treat the whole file as
+        prompt body. The role will fail at nl_role parse time if the
+        body doesn't declare any outports, but the loader itself
+        doesn't crash."""
+        stub = _register_stub(
+            "stub-fm-unclosed", '{"send_to": "out", "text": "ok"}'
+        )
+        roles = tmp_path / "roles"
+        roles.mkdir()
+        (roles / "agent.md").write_text(
+            "---\n"
+            "contract: structured\n"
+            "# Role: agent\n\n"
+            "You answer. Send to out.\n"
+        )
+        # Should still load; the would-be front matter is treated as
+        # part of the prompt body.
+        lib = load_roles_dir(roles)
+        assert "agent" in lib
+
+    def test_front_matter_bad_line_shape_raises(self, tmp_path):
+        """A front matter line with no colon is a typo we should
+        surface at load time, not silently skip."""
+        roles = tmp_path / "roles"
+        roles.mkdir()
+        (roles / "agent.md").write_text(
+            "---\n"
+            "contract structured\n"  # missing colon
+            "---\n"
+            "# Role: agent\n\n"
+            "Send to out.\n"
+        )
+        with pytest.raises((ValueError,)):
+            load_roles_dir(roles)

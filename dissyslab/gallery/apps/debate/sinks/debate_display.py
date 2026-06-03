@@ -79,15 +79,16 @@ WIDTH = 70
 # One colour per panellist so a glance shows which agent said what.
 _PANELLIST_COLOURS = {
     "qwen":   CYAN,
-    "gemma":  MAGENTA,
     "gpt":    GREEN,
     "claude": YELLOW,
 }
 
 # Names the display recognises as panellists. Add more here if the
-# office grows to N=5+ agents — the sink picks up new keys
-# automatically only if listed here.
-_PANELLIST_KEYS = ("qwen", "gemma", "gpt", "claude")
+# office grows back to N=4+ agents — the sink picks up new keys
+# automatically only if listed here. ``gemma`` was removed because
+# Gemma 4 wouldn't follow the JSON output discipline; restore the
+# entry alongside its colour if you bring Gemma back.
+_PANELLIST_KEYS = ("qwen", "gpt", "claude")
 
 
 def _wrap(text: str, max_lines: int = 4, width: int = WIDTH - 4) -> list[str]:

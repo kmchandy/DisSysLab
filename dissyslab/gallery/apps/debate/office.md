@@ -9,26 +9,23 @@ Agents:
 Sasha is a gate.
 Qwen is a qwen.
 Qwen's AI is openrouter.
-Gemma is a gemma.
-Gemma's AI is gemma.
 GPT is a gpt.
 GPT's AI is openai.
 Claude is a claude.
 Claude's AI is anthropic.
-Sync is a synchronizer(inports=["from_qwen", "from_gemma", "from_gpt", "from_claude"]).
+Sync is a synchronizer(inports=["from_qwen", "from_gpt", "from_claude"]).
 Riley is a moderator.
 
 Connections:
 starter's destination is Sasha.
 
-Sasha's out is Qwen, Gemma, GPT, Claude.
+Sasha's out is Qwen, GPT, Claude.
 
 Qwen's out is Sync's from_qwen.
-Gemma's out is Sync's from_gemma.
 GPT's out is Sync's from_gpt.
 Claude's out is Sync's from_claude.
 
 Sync's out is Riley, jsonl_recorder_briefing, debate_display.
 
-Riley's continue is Qwen, Gemma, GPT, Claude, debate_display.
+Riley's continue is Qwen, GPT, Claude, debate_display.
 Riley's finish is jsonl_recorder, Sasha, debate_display.

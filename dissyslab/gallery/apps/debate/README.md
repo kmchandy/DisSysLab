@@ -2,11 +2,19 @@
 
 **Tags:** consensus, multi-agent decision, moderator-led, iterative loop
 
-A four-agent panel argues a question until they agree (or until the
+A three-agent panel argues a question until they agree (or until the
 moderator calls time). On every round, each panellist sees what the
 others said in earlier rounds and may update its answer. The
 panellists are named after the language models behind them: **Qwen**,
-**Gemma**, **GPT**, **Claude**. The moderator is **Riley**.
+**GPT**, **Claude**. The moderator is **Riley**.
+
+(An earlier shipping prototype included a fourth panellist, Gemma,
+on Google's free-tier Gemma 4 31B. It was dropped because the model
+would not follow the JSON output discipline even with explicit
+imperative prompting and the `structured` contract — it kept
+returning prose. The wiring is structured to admit a Gemma slot back
+in cleanly if a future Gemma release ships with reliable JSON
+adherence; see "Adding a fourth panellist" below.)
 
 The office runs on a problem bank — `problems.jsonl` in the office
 directory, or override by placing your own `problems.jsonl` in the
@@ -23,31 +31,31 @@ deliberation (this iterative loop).
 ## How it is wired
 
 ```
-starter ──→ Sasha ──→ {Qwen, Gemma, GPT, Claude} ──→ Sync ──→ Riley
-                  ↑                                            │
-                  └────── finish ──────────────────────────────┤
-                                                               │
-            {Qwen, Gemma, GPT, Claude} ←── continue ───────────┘
+starter ──→ Sasha ──→ {Qwen, GPT, Claude} ──→ Sync ──→ Riley
+                  ↑                                     │
+                  └────── finish ───────────────────────┤
+                                                        │
+            {Qwen, GPT, Claude} ←── continue ───────────┘
 ```
 
 The `starter` source emits one bootstrap message at startup. Sasha
 reads the first problem from `problems.jsonl` and broadcasts it to
-the four panellists. Each panellist outputs a JSON object **wrapped
+the three panellists. Each panellist outputs a JSON object **wrapped
 under a top-level key equal to its own name** — Qwen emits
-`{"qwen": {...}}`, Gemma emits `{"gemma": {...}}`, etc. The
-synchronizer waits for one message on each of its four named inports
-and merges the four dicts into one (`dict.update`, same primitive as
-situation_room — the keys are disjoint, so all four payloads survive
-the merge).
+`{"qwen": {...}}`, GPT emits `{"gpt": {...}}`, etc. The synchronizer
+waits for one message on each of its three named inports and merges
+the three dicts into one (`dict.update`, same primitive as
+situation_room — the keys are disjoint, so all three payloads
+survive the merge).
 
 Riley reads the merged dict and decides:
 
-- **continue** — the four answers don't agree yet. Riley appends
+- **continue** — the three answers don't agree yet. Riley appends
   this round to a `history` list, writes a `moderator_note` that
   points at the specific disagreement, and routes the new message
-  back to all four panellists. They get another turn, this time
+  back to all three panellists. They get another turn, this time
   seeing what everyone said before.
-- **finish** — the panel has agreed (or used all five rounds).
+- **finish** — the panel has agreed (or used both rounds).
   Riley emits the final answer to `debate_answers.jsonl` AND fires
   a single message into Sasha, which uses that as the cue to advance
   to the next problem.
@@ -62,18 +70,17 @@ The office.md file selects the LLM for each panellist with a
 sentence-form declaration:
 
 ```
-Qwen's AI is ollama.
-Gemma's AI is gemma.
+Qwen's AI is openrouter.
 GPT's AI is openai.
 Claude's AI is anthropic.
 ```
 
-These four sentences are the only difference between "all panellists
+These three sentences are the only difference between "all panellists
 on Claude" and "all panellists on different models". The role files
-themselves (`qwen.md`, `gemma.md`, `gpt.md`, `claude.md`) carry only
-prose prompts — no Python, no hidden configuration. To run the
-office on a different mix of backends, edit the four sentences; no
-.py file changes anywhere.
+themselves (`qwen.md`, `gpt.md`, `claude.md`) carry only prose
+prompts — no Python, no hidden configuration. To run the office on
+a different mix of backends, edit the three sentences; no .py file
+changes anywhere.
 
 (The framework currently only supports backend name selection —
 `Claude's AI is anthropic.` works, `Claude's AI is anthropic(temperature=0.7).`
@@ -87,14 +94,14 @@ layer.)
 dsl run debate
 ```
 
-You will see Sasha emit problems one at a time, the four panellists
+You will see Sasha emit problems one at a time, the three panellists
 debate each one, and Riley's per-problem verdict land in
-`debate_answers.jsonl`. Round-by-round answers from all four
+`debate_answers.jsonl`. Round-by-round answers from all three
 panellists land in `debate_transcript.jsonl`. The terminal also
 renders a colour-coded card per panellist per round plus the
 moderator's verdict, via the `debate_display` sink — one colour
-per panellist (Qwen cyan, Gemma magenta, GPT green, Claude yellow),
-moderator continue in blue, final verdict in green.
+per panellist (Qwen cyan, GPT green, Claude yellow), moderator
+continue in blue, final verdict in green.
 
 The shipped `problems.jsonl` carries one problem of each kind
 (arithmetic, tricky factual, multiple-choice, open-ended judgement,
@@ -123,40 +130,57 @@ still proceed straight through.
 
 ## Backends — what runs today
 
-The shipped office.md uses four backend names: `ollama`, `gemma`,
-`openai`, `anthropic`. Two of these are already registered in
-DisSysLab; **two need a small amount of one-time setup before they
-work**.
+The shipped office.md uses three backend names: `openrouter`,
+`openai`, `anthropic`. All three are registered in DisSysLab and
+work out of the box once the corresponding API key is exported
+(`OPENROUTER_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`).
 
-| Panellist | Backend  | Status |
-| --------- | -------- | --- |
-| Qwen      | `ollama` | Works out of the box if Ollama is installed and serving Qwen locally. |
-| Gemma     | `gemma`  | **Not yet registered.** Register it by adapting `dissyslab/backends/ollama_backend.py` to point at a local Gemma model, then `register_backend("gemma", ...)`. Until you do, the office will fail at run time when Gemma's first round fires. |
-| GPT       | `openai` | **Not yet registered.** Register an OpenAI backend mirroring the existing `AnthropicBackend` (~50 lines). |
-| Claude    | `anthropic` | Works out of the box with an `ANTHROPIC_API_KEY`. |
+| Panellist | Backend     | Status |
+| --------- | ----------- | --- |
+| Qwen      | `openrouter`| Works with an `OPENROUTER_API_KEY`. Cents per debate. |
+| GPT       | `openai`    | Works with an `OPENAI_API_KEY`. Defaults to `gpt-4o-mini`. |
+| Claude    | `anthropic` | Works with an `ANTHROPIC_API_KEY`. Defaults to `claude-sonnet-4-5`. |
 
-While Gemma and GPT are missing, the simplest fix is to redirect
-those panellists to backends you do have. For example, change to
-`Gemma's AI is openrouter.` and `GPT's AI is openrouter.` if you
-have an OpenRouter key — the office will then run end-to-end with
-two of the four panellists effectively running the same model. Not
-ideal for the diversity experiments but works for the convergence
-ones.
+To swap Qwen onto local Ollama (free, slow), change
+`Qwen's AI is openrouter.` to `Qwen's AI is ollama.` in office.md
+and ensure Ollama is running with `qwen3:30b` (or whichever model
+your `OLLAMA_MODEL` env var names) pulled.
 
-The full backend-registration recipe lives at
-`docs/LANGUAGE_MODELS.md` and is a 5-minute job once you have an
-API key for the missing model.
+The full backend-registration recipe for adding other backends
+lives at `docs/LANGUAGE_MODELS.md`.
+
+### Adding a fourth panellist
+
+The office's structure is symmetric in N. To add a fourth voice
+later (e.g. when a Gemma release ships with reliable JSON output,
+or when you want to introduce a domain-specialist persona):
+
+1. Create `roles/<name>.md` mirroring an existing panellist file
+   (the same imperative block at the top, the same `contract:
+   structured` front matter, just the agent name swapped).
+2. In `office.md`: add the agent declaration and `'s AI is`
+   line, add `from_<name>` to the synchronizer inports, add the
+   agent to `Sasha's out`, add `<Name>'s out is Sync's from_<name>.`,
+   add the agent to `Riley's continue`.
+3. In `roles/moderator.md`: bump the panellist count, add the new
+   name to the list and to the `history` shape, and adjust the
+   majority-rule threshold.
+4. In `sinks/debate_display.py`: add the agent name to
+   `_PANELLIST_KEYS` and pick a colour for it in
+   `_PANELLIST_COLOURS`.
+
+The wiring is small enough that adding a panellist is a
+five-minute change concentrated in those four files.
 
 ## The five agents
 
 | Agent  | Role          | Backend (default)        | Why this default |
 | ------ | ------------- | ------------------------ | --- |
 | Sasha  | `gate`        | (no LLM — pure Python)   | Cycles problems in one at a time so the panel sees one question per debate. |
-| Qwen   | `qwen`        | `ollama` (local Qwen)    | Free, private, slow. Anchors the panel with a small open model. |
-| Gemma  | `gemma`       | `gemma` (needs register) | Second open-model voice; expected to disagree with Qwen on subtle reasoning. |
-| GPT    | `gpt`         | `openai` (needs register)| Frontier proprietary voice for diversity. |
+| Qwen   | `qwen`        | `openrouter` (cloud Qwen)| Cheap, fast cloud model from a different lab than Claude or GPT — different blind spots, different strengths. |
+| GPT    | `gpt`         | `openai` (`gpt-4o-mini`) | Frontier proprietary voice for diversity. |
 | Claude | `claude`      | `anthropic`              | Highest expected quality on reasoning. |
-| Sync   | `synchronizer`| (no LLM — pure Python)   | Barrier that waits for all four panellists each round and merges their outputs. |
+| Sync   | `synchronizer`| (no LLM — pure Python)   | Barrier that waits for all three panellists each round and merges their outputs. |
 | Riley  | `moderator`   | follows `DSL_BACKEND`    | The decider. Defaults to the same backend the rest of the .md roles use. |
 
 To swap any panellist onto another backend, edit the single
@@ -191,7 +215,7 @@ amount of edit-and-rerun work:
    prompts on the same panellist.
 
 4. **Homogeneous vs heterogeneous panels.** Edit office.md to set
-   all four `<X>'s AI is ...` lines to `anthropic` (or whichever
+   all three `<X>'s AI is ...` lines to `anthropic` (or whichever
    backend you have working). Compare to the shipped mixed-backend
    setup. Surowiecki's diversity thesis predicts the mixed panel
    should beat the homogeneous one on hard questions; the
@@ -199,26 +223,25 @@ amount of edit-and-rerun work:
    information sharing or just noise reduction.
 
 5. **Persona heterogeneity for free.** Don't change backends at
-   all — instead rewrite each of the four solver .md files with a
-   different persona: skeptic, optimist, domain expert, synthesiser.
-   Same backend on every panellist, four different prompts.
-   Compare to experiment 4. If persona diversity buys most of what
+   all — instead rewrite each of the three solver .md files with a
+   different persona: skeptic, optimist, domain expert. Same backend
+   on every panellist, three different prompts. Compare to
+   experiment 4. If persona diversity buys most of what
    cross-backend diversity buys, persona is the cheaper knob.
 
 6. **Temperature heterogeneity for free.** Without changing models,
-   set the four panellists to different *named variants*:
+   set the three panellists to different *named variants*:
 
    ```
    Qwen's AI is qwen_creative.       # temp 1.0
-   Gemma's AI is qwen.               # temp 0.7 (the balanced default)
-   GPT's AI is qwen_precise.         # temp 0.1
-   Claude's AI is claude.            # temp 0.7, frontier model
+   GPT's AI is openai_precise.       # temp 0.1
+   Claude's AI is anthropic.         # temp 0.7, frontier model
    ```
 
-   Now you have a panel where two panellists run the same model at
-   different temperatures. Does the *creative* panellist drive
-   convergence (more options on the table) or destabilise it (more
-   noise to chase)? Does the *precise* panellist serve as an
+   Now you have a panel where every panellist runs a different
+   model at a different temperature. Does the *creative* panellist
+   drive convergence (more options on the table) or destabilise it
+   (more noise to chase)? Does the *precise* panellist serve as an
    anchor? Cheaper to run than experiment 4 (no new backends
    needed) and isolates the temperature variable cleanly.
 
@@ -230,20 +253,22 @@ moderator-led vs leaderless on the same questions.
 
 ## Files
 
-- `office.md` — the seven-agent wiring with two named output ports
-  on Riley (`continue` and `finish`) and four `<Agent>'s AI is
+- `office.md` — the six-agent wiring with two named output ports
+  on Riley (`continue` and `finish`) and three `<Agent>'s AI is
   <backend>.` declarations.
 - `problems.jsonl` — the starter problem bank. Edit it (or place
   your own `problems.jsonl` in the directory you run `dsl run`
   from) to swap question banks.
-- `roles/qwen.md`, `gemma.md`, `gpt.md`, `claude.md` — four full,
+- `roles/qwen.md`, `gpt.md`, `claude.md` — three full,
   self-contained prompt files. No Python wrappers, no shared
   template. Each can be edited independently if Jeffrey wants to
   give one panellist a longer prompt (e.g. for a smaller model that
-  benefits from more guidance).
+  benefits from more guidance). Each has YAML front matter
+  declaring `contract: structured` so the role's `{"qwen": {...}}`
+  shape isn't fought by the framework's default routing contract.
 - `roles/moderator.md` — Riley's role. Edit the convergence rule
-  here (currently "unanimous or 3-of-4 with a low-confidence
-  dissenter, capped at 5 rounds").
+  here (currently "unanimous or 2-of-3 with a low-confidence
+  dissenter, capped at 2 rounds").
 - `roles/gate.py` — Sasha's Python role. The single non-LLM role
   in the office; pure logic, no prompt. Looks for
   `problems.jsonl` in cwd first, then falls back to the office
@@ -261,9 +286,10 @@ moderator-led vs leaderless on the same questions.
 
 ## Cost note
 
-Each round of debate makes four LLM calls (Qwen, Gemma, GPT, Claude)
-plus one moderator call. Default cap is five rounds. So a single
-problem costs at most 5 × 4 + 5 = 25 LLM calls. Cheap on Ollama
-(free), modest on OpenRouter (cents per problem), real money on
-Claude ($0.10–$0.30 per problem). Trim the round cap in Riley's
-prompt or shrink the panel to N=2 if cost matters.
+Each round of debate makes three LLM calls (Qwen, GPT, Claude)
+plus one moderator call. Default cap is two rounds. So a single
+problem costs at most 2 × 3 + 2 = 8 LLM calls. Modest on OpenRouter
+(cents per problem) and gpt-4o-mini (fractions of a cent), real
+money on Claude ($0.05–$0.15 per problem). Trim the round cap in
+Riley's prompt further if cost matters; shrink the panel to N=2 by
+removing one panellist per "Adding a fourth panellist" in reverse.

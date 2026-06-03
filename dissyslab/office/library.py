@@ -304,14 +304,47 @@ Library = Mapping[str, RoleEntry]
 # ── nl_role ────────────────────────────────────────────────────────────
 
 
-# JSON contract appended to every prompt-driven role. The role's
-# returned JSON tells the runtime which outport each message goes to.
-# The contract is filled in with the role's actual outports so the
-# model knows the legal values.
-_NL_CONTRACT = (
+# JSON contracts appended to a prompt-driven role.
+#
+# Two named contracts, chosen per role by the axis that actually
+# matters: is the LLM producing a string (text) or a structured
+# JSON object?
+#
+# * ``passthrough`` (default) — the LLM produces a string. The
+#   framework appends a ``{"send_to": "<one of: ...>", "text":
+#   "<content>"}`` template so the content lands in a known field
+#   and routing is explicit. Good for text-output roles (writers,
+#   summarisers) and for filters / multi-port screeners. Every
+#   gallery app shipped before 2026-06 depends on this shape.
+#
+# * ``structured`` — the LLM produces a JSON object whose shape the
+#   role's own .md fully describes. The framework appends nothing.
+#   ``send_to`` defaults to the single outport when absent; a role
+#   that wants multi-port routing AND structured output writes the
+#   ``send_to`` requirement into its own schema. This is what the
+#   debate panellists, job_hunter's matcher, and arxiv_radar's
+#   rater roles want — they need a specific top-level key
+#   (``{"claude": {...}}``) that conflicts with the
+#   ``{send_to, text}`` envelope.
+#
+# Roles declare which contract via YAML front matter in their .md
+# file (parsed by ``load_roles_dir`` below). The default is
+# ``passthrough`` so existing offices keep working unchanged.
+_NL_CONTRACT_PASSTHROUGH = (
     "\n\nReturn JSON only, no explanation, no nested JSON:\n"
     '{{"send_to": "<one of: {options}>", "text": "<content>"}}'
 )
+_NL_CONTRACT_STRUCTURED = ""
+
+_NL_CONTRACTS: Dict[str, str] = {
+    "passthrough": _NL_CONTRACT_PASSTHROUGH,
+    "structured":  _NL_CONTRACT_STRUCTURED,
+}
+_NL_CONTRACT_DEFAULT = "passthrough"
+
+# Kept as a module-level name for backward compatibility with any
+# external callers that imported it.
+_NL_CONTRACT = _NL_CONTRACT_PASSTHROUGH
 
 
 def _resolve_ai(ai: str) -> str:
@@ -358,6 +391,7 @@ def _nl_role_runtime_context_suffix() -> str:
 def nl_role(
     prompt: str,
     AI: Optional[str] = None,
+    contract: str = _NL_CONTRACT_DEFAULT,
 ) -> AgentRoleEntry:
     """Build an ``AgentRoleEntry`` from a natural-language prompt.
 
@@ -387,6 +421,36 @@ def nl_role(
         backend than the rest of the office. Office-md role files
         loaded via ``load_roles_dir`` always leave ``AI`` unset, so
         the entire office honors ``DSL_BACKEND``.
+    contract
+        Selects the framework's output contract for this role.
+        The axis is whether the LLM produces a string or a
+        structured JSON object:
+
+        * ``"passthrough"`` (default, backward compatible) — appends
+          the ``{"send_to": ..., "text": ...}`` envelope. The LLM's
+          content goes in ``text`` as a string. Good for writers,
+          summarisers, and filters.
+        * ``"structured"`` — appends nothing. The role's own .md
+          must fully describe the output JSON shape; ``send_to``
+          defaults to the single outport when absent. Used by
+          roles that need a specific top-level key, e.g. a debate
+          panellist emitting
+          ``{"qwen": {answer, reasoning, confidence}}``.
+
+        Most roles use the default. Set ``contract="structured"``
+        when the role.md prompt requires a specific top-level key
+        — the default ``passthrough`` contract actively fights such
+        roles because it tells the model to use the ``text``
+        envelope instead.
+
+        Role files loaded from .md by ``load_roles_dir`` declare
+        their contract via YAML front matter at the top of the file::
+
+            ---
+            contract: structured
+            ---
+            # Role: claude
+            ...
 
     Returns
     -------
@@ -418,13 +482,27 @@ def nl_role(
             "<port>.' so the role's destinations are explicit."
         )
 
+    # Validate the contract name early so a typo in a .md role file's
+    # front matter surfaces at load time, not when the LLM is called.
+    if contract not in _NL_CONTRACTS:
+        raise ValueError(
+            f"nl_role(contract={contract!r}) must be one of "
+            f"{sorted(_NL_CONTRACTS)}; got {contract!r}."
+        )
+
     # When AI is None, leave default_backend_name unset so the factory
     # honors DSL_BACKEND at run time. When AI is given (via nl_role's
     # AI kwarg from a .py wrapper, or via the office.md "X's AI is Y"
     # sentence), lock that backend in for this role instance.
     default_backend_name: Optional[str] = _resolve_ai(AI) if AI else None
     options = ", ".join(out_ports)
-    full_prompt = prompt.strip() + _NL_CONTRACT.format(options=options)
+    contract_template = _NL_CONTRACTS[contract]
+    contract_suffix = (
+        contract_template.format(options=options)
+        if contract_template
+        else ""
+    )
+    full_prompt = prompt.strip() + contract_suffix
     default_dest = out_ports[0]
 
     # Closures captured by the factory. We deliberately resolve the
@@ -472,9 +550,6 @@ def nl_role(
                 # temperature here would silently override the
                 # variant choice.
             )
-            print(f"\n=== RAW LLM OUTPUT ({backend.__class__.__name__}) ===")
-            print(raw)
-            print("=== END RAW ===\n")
             cleaned = _strip_code_fences(raw)
             if not cleaned:
                 return {}
@@ -797,6 +872,61 @@ def _import_role_module(py_path: Path):
     return module
 
 
+# Keys recognised in a role.md YAML front-matter block. Keys not on
+# this list are silently ignored (forward compatibility — future
+# framework features can use the same front-matter block without
+# requiring a per-feature loader change).
+_ROLE_FRONT_MATTER_KEYS = {"contract", "AI"}
+
+
+def _extract_role_front_matter(text: str) -> Tuple[Dict[str, str], str]:
+    """Pull a YAML ``---`` / ``---`` block off the top of a role .md file.
+
+    Returns ``(front_matter_dict, body_without_front_matter)``. When
+    the file has no front matter, returns ``({}, text)`` unchanged.
+
+    Deliberately minimal: only flat ``key: value`` lines are parsed
+    (no nesting, no lists, no quoted multi-line scalars). That covers
+    the role-file use cases (``contract: structured``, ``AI: ollama``)
+    without pulling in a YAML dependency. Unknown keys are kept in
+    the returned dict — the caller decides what to do with them.
+
+    Recognised keys today: ``contract``, ``AI`` (see
+    ``_ROLE_FRONT_MATTER_KEYS``).
+    """
+    t = text.lstrip("﻿")
+    lines = t.splitlines()
+    if not lines or lines[0].strip() != "---":
+        return ({}, text)
+    # First pass: find the closing ``---``. Without one, the leading
+    # ``---`` is just part of the prompt body — fall back to "no
+    # front matter" rather than failing.
+    closing_idx: Optional[int] = None
+    for j in range(1, len(lines)):
+        if lines[j].strip() == "---":
+            closing_idx = j
+            break
+    if closing_idx is None:
+        return ({}, text)
+    # Second pass: parse key/value lines between the fences. A line
+    # that isn't blank, comment, or ``key: value`` shape is a typo
+    # and must surface as a load-time error.
+    fm: Dict[str, str] = {}
+    for j in range(1, closing_idx):
+        stripped = lines[j].strip()
+        if not stripped or stripped.startswith("#"):
+            continue
+        if ":" not in stripped:
+            raise ValueError(
+                f"role front matter line is not 'key: value' shape: "
+                f"{lines[j]!r}"
+            )
+        key, _, value = stripped.partition(":")
+        fm[key.strip()] = value.strip()
+    body = "\n".join(lines[closing_idx + 1:]).lstrip("\n")
+    return (fm, body)
+
+
 _INCLUDE_RE = re.compile(r"\{\{\s*include:\s*([^\s}]+)\s*\}\}")
 
 
@@ -884,9 +1014,28 @@ def load_roles_dir(roles_dir: Union[str, Path]) -> Dict[str, RoleEntry]:
         if md_path.stem.lower() == "readme":
             continue
         text = md_path.read_text(encoding="utf-8")
+        # Extract YAML front matter (contract:, AI:) before any other
+        # text manipulation, so include directives in the prompt body
+        # aren't confused with front-matter keys.
+        front_matter, text = _extract_role_front_matter(text)
         # Office dir (e.g. for resume.md), then the roles dir itself.
         text = _resolve_includes(text, [path.parent, path])
-        entry = nl_role(text)
+        # Pull out the keys the loader recognises; ignore any others
+        # (forward compatibility — future framework features can use
+        # the same front-matter block without changing the loader).
+        nl_role_kwargs: Dict[str, Any] = {}
+        if "contract" in front_matter:
+            nl_role_kwargs["contract"] = front_matter["contract"]
+        if "AI" in front_matter:
+            nl_role_kwargs["AI"] = front_matter["AI"]
+        try:
+            entry = nl_role(text, **nl_role_kwargs)
+        except ValueError as e:
+            # Re-raise with the source file name so a typo in the
+            # front matter doesn't surface as a context-free error.
+            raise ValueError(
+                f"{md_path}: {e}"
+            ) from e
         entry = dataclasses.replace(entry, name=md_path.stem)
         if md_path.stem in out:
             raise ValueError(
