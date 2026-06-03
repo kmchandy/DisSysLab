@@ -89,6 +89,20 @@ class GmailSink:
         self.user = os.environ.get(user_env)
         self.password = os.environ.get(password_env)
 
+        # Placeholder substitution. Gallery offices ship with
+        # ``to="you@example.com"`` because that domain is reserved
+        # for documentation by RFC 2606. If the office writer used
+        # that placeholder AND the user has GMAIL_USER set, route
+        # to that address instead — single-knob setup so Pat does
+        # not have to edit every shipped office's office.md just
+        # to receive her own emails. An office that needs a
+        # different recipient (e.g. ``to="boss@company.com"``)
+        # keeps its explicit address because the domain is not
+        # ``example.com``.
+        if self.user and isinstance(self.to, str) and \
+                self.to.lower().endswith("@example.com"):
+            self.to = self.user
+
         self.preview_mode = not (self.user and self.password)
         self.emails_sent = 0
         self.previews_written = 0

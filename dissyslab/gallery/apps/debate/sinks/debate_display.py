@@ -217,7 +217,11 @@ class DebateDisplay:
         if self.show_reasoning and reasoning:
             print(f"  {GREY}│{RESET}")
             for line in _wrap(reasoning, max_lines=self.max_reasoning_lines):
-                print(f"  {GREY}│  {DIM}{line}{RESET}")
+                # No DIM here — DIM is intentionally faint and was
+                # unreadable on white terminals. Default foreground
+                # colour reads as black on light themes and white on
+                # dark themes.
+                print(f"  {GREY}│{RESET}  {line}")
         print(f"  {GREY}└{bar}┘{RESET}")
 
     def _render_continue(self, msg: Dict[str, Any]) -> None:
@@ -263,7 +267,7 @@ class DebateDisplay:
         if final_reasoning:
             print(f"  {GREEN}║{RESET}")
             for line in _wrap(final_reasoning, max_lines=4):
-                print(f"  {GREEN}║{RESET}  {DIM}{line}{RESET}")
+                print(f"  {GREEN}║{RESET}  {line}")
         print(f"  {GREEN}╚{bar}╝{RESET}")
         # Hint about the step-through prompt that Sasha will print
         # when DSL_DEBATE_STEP=1 is in effect.

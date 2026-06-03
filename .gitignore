@@ -161,6 +161,15 @@ dissyslab/gallery/**/matched_jobs.html
 # never commit.
 dissyslab/gallery/**/build/
 
+# wardrobe_assistant runtime state — tracks which items are clean
+# vs worn vs in-laundry. Mutates on every run; commits would record
+# personal wear history we don't want in the repo. wardrobe_outfits
+# is the per-run jsonl recorder output; same rule.
+/wardrobe_state.json
+/wardrobe_outfits.jsonl
+dissyslab/gallery/**/wardrobe_state.json
+dissyslab/gallery/**/wardrobe_outfits.jsonl
+
 # Personal scratch in examples/. Add specific names as Mani / Kamala
 # accumulate throwaway smoke-test scripts.
 examples/try.py

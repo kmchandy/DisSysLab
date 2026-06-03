@@ -312,11 +312,19 @@ class IntelligenceDisplay:
         bar = "═" * WIDTH
         thin = "─" * WIDTH
 
+        # Colour discipline: GREY is reserved for the box-drawing
+        # characters (║ ╔ ╠ ╣ ╚ ═ ─) so the structural frame stays
+        # subtle. All *content* text — source label, timestamp,
+        # title, author, body — is rendered without a color escape
+        # so it picks up the terminal's default foreground colour.
+        # That means readable black on light themes AND readable
+        # white on dark themes, instead of the previous mid-grey
+        # which was hard to see on white backgrounds.
         out = []
         out.append(f"{GREY}╔{bar}╗{RESET}")
         out.append(
             f"{GREY}║{RESET}  {BOLD}{color}● {significance:<10}{RESET}  "
-            f"{GREY}{source_label:<22}{RESET}  {GREY}{timestamp}{RESET}"
+            f"{source_label:<22}  {timestamp}"
         )
         out.append(f"{GREY}╠{thin}╣{RESET}")
         # Title row. Skip it when the bullet body already opens with a
@@ -331,13 +339,13 @@ class IntelligenceDisplay:
         # shows the @handle) and for items with no author field.
         if author and source != "bluesky":
             author_str = ("by " + author)[:WIDTH - 4]
-            out.append(f"{GREY}║{RESET}  {GREY}{author_str}{RESET}")
+            out.append(f"{GREY}║{RESET}  {author_str}")
         # Body / abstract.
         for sl in body_lines:
             if sl == "":
                 out.append(f"{GREY}║{RESET}")
             else:
-                out.append(f"{GREY}║{RESET}  {GREY}{sl}{RESET}")
+                out.append(f"{GREY}║{RESET}  {sl}")
         # Verdict reasoning. Tinted in the verdict colour so the eye
         # follows from the ● bar at the top to the explanation here.
         if reason_lines:
