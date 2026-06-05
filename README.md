@@ -5,29 +5,17 @@
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
 
-**Goal: Make sense and respond (S&R) systems available to individuals.**
-S&R systems respond proactively to conditions in the environment.
-They have been used for decades by militaries and institutions such as banks.
-S&R wasn't available to individuals because they didn't have teams of experts and 
-powerful computers. DisSysLab overcomes these hurdles by using three ideas.
+**Goal: Make sense and respond (S&R) systems available to individuals — students, small businesses, researchers.**
+S&R systems respond proactively to conditions in the environment. S&R has been used for decades by militaries, banks and institutions with powerful computers and teams of programmers and data science experts. DisSysLab attempts to make S&R available to a non-programmer with a laptop and a limited budget. DisSysLab is based on three ideas.
 
-1. **Sense and respond to your environment continuously**. A chatbot answers when you ask; use DisSysLab to build an office of agents that continuously senses and responds to opportunities, threats, and other situations.
-
-2. **Describe each worker in plain English; lay out the office in a short configuration document.**
-Each worker's role is a job description in plain English — the framework hands it to an LLM at runtime. The office's structure (workers, sources, sinks, and how messages flow between them) lives in `office.md`, a short configuration document you can read and edit. Or describe what you want to Claude with `dsl new` and Claude writes the configuration for you. Run one command and the office runs continuously. The org chart can have loops, broadcasts, merges, and branches.
-
+1. **Build an office of agents that responds to your environment continuously.**. A chatbot answers when you ask; use DisSysLab to build an office of agents that responds continuously to your environment. Populate your office with agents that carry out specialized processing tasks and other agents that interface with your environment: sesnsors, actuators, audio streams, archives of research papers, video, news sources, and mail.
+2.  **Describe your office in English.**
+An office is specified by its workers and an org chart. Each worker's role is a job description in English. The org chart specifies the flow of messages between workers. Workers are implemented as agents that execute concurrently in threads or processes.
 3. **Mix and match agents that fit your accuracy, budget, and privacy needs.**
-Build your office with paid AI services (e.g. Anthropic, OpenAI), free local
-AI (e.g. Qwen on Ollama), task-specific small models, and ordinary Python functions.
-For CPU-bound roles (numpy, ML inference) swap `run_network()` for `process_network()`
-and every agent runs in its own OS process. Individuals can make S&R systems that fit their
-individual budgets by mixing and matching agents.
+Build your office with a mix of free local AI (e.g. Qwen on Ollama), paid AI services (e.g. Anthropic, OpenAI, Gemini), task-specific small models, and Python functions to best fit your needs.
 
 **Teaching**:
-DisSysLab is also used to teach distributed systems to first-year undergraduates 
-— the same framework, used both as an S&R tool and as a teaching laboratory.
-Each student builds an S&R app for her own specific needs. And only then learns
-about the algorithms underlying her app and other distributed systems.
+I will be using DisSysLab to teach distributed systems to undergraduates, including first-year students. Students in all disciplines -- including the humanities, arts, and sciences — can use S&R because they monitor research paper archives, lab measurements, calendars and homework assignments. The course is open to all students including Computer Science students. The course begins with students buildings apps for their own specific needs. Only then do we investigate algorithms such as termination detection and global snapshots that underly their apps.
 
 ```mermaid
 flowchart LR
