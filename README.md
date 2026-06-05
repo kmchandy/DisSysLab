@@ -11,13 +11,13 @@ S&R systems respond proactively to conditions in the environment. S&R has been u
 DisSysLab is based on three ideas.
 
 1. **Build an office of agents that responds to your environment continuously.**. A chatbot answers when you ask; use DisSysLab to build an office of agents that responds continuously to your environment. Populate your office with agents that carry out specialized processing tasks and agents that interface with your environment -- sensors, actuators, audio streams, news, and mail.
-2.  **Describe your office in English.**
+2.  **Specify your office in English.**
 An office is specified by its workers and an org chart. Each worker's role is specified by a job description. The org chart specifies the flow of messages between workers. Workers are implemented as agents that execute concurrently in threads or processes. Job descriptions and the org chart are specified in English. 
 3. **Mix and match agents that fit your accuracy, budget, and privacy needs.**
 Build your office with a mix of free local AI (e.g. Qwen on Ollama), paid AI services (e.g. Anthropic, OpenAI, Gemini), task-specific small models, and Python functions to fit your needs.
 
 **Teaching**:
-I will be using DisSysLab to teach distributed systems to undergraduates, including first-year students. Students in all disciplines -- including the humanities, arts, and sciences — can use S&R because they monitor research paper archives, lab measurements, calendars and homework assignments. The course is open to all students including Computer Science students. The course begins with students buildings apps for their own specific needs. Only then do we investigate algorithms such as termination detection and global snapshots that underly their apps.
+I will be using DisSysLab to teach distributed systems to undergraduates, including first-year students. Students in all disciplines -- including the humanities, arts, and sciences — can use S&R because they monitor and respond to changes in research paper archives, lab measurements, calendars and homework assignments. The course is open to all students including Computer Science students. The course begins with students buildings apps for their own specific needs. Then we study algorithms that underly their apps.
 
 ```mermaid
 flowchart LR
