@@ -17,7 +17,13 @@ An office is specified by its workers and an org chart. Each worker's role is s
 Build your office with a mix of free local AI (e.g. Qwen on Ollama), paid AI services (e.g. Anthropic, OpenAI, Gemini), task-specific small models, and Python functions to fit your needs.
 
 **Teaching**:
-I will be using DisSysLab to teach distributed systems to undergraduates, including first-year students. Students in all disciplines -- including the humanities, arts, and sciences — can use S&R because they monitor and respond to changes in research paper archives, lab measurements, calendars and homework assignments. The course is open to all students including Computer Science students. The course begins with students buildings apps for their own specific needs. Then we study algorithms that underly their apps.
+I will be using DisSysLab to teach distributed systems to undergraduates, including first-year students. Students in all disciplines -- including the humanities, arts, and sciences — can use S&R because they monitor and respond to changes in research paper archives, lab measurements, calendars and homework assignments. The course begins with students buildings apps for their own specific interests. Then we study algorithms that underly the apps.
+
+**An Org Chart Diagram**
+The diagram below shows the org chart of an office that maintains a “situation room.” Agents, shown on the left, monitor news sources: bbc_world, npr_news and al_jazeera. These agents send messages to an agent called Sasha who removes duplicates in the message streams. Sasha broadcasts the messages she receives to Eve, Sam, Tom and Greta, each of whom does a specialized task. Sync waits to receive messages from each of them and sends the collated message to Riley who writes a briefing. Riley’s output is broadcast to a display and a file. 
+
+An org chart can have loops and branches and be arbitrarily complex.
+
 
 ```mermaid
 flowchart LR
