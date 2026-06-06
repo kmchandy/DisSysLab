@@ -78,9 +78,9 @@ your shell rc file.
 **Then: open a new terminal** (or run `source ~/.zshrc` on macOS /
 `source ~/.bashrc` on Linux) so the new PATH takes effect.
 
-**Now run your first office:**
+## Run your first office
 
-This demo needs no API key and no model
+This simple demo needs no API key and no model
 download. [`periodic_brief`](dissyslab/gallery/apps/periodic_brief/)
 pulls news, weather, and a few stock tickers and renders them into a
 single, styled HTML page. It runs in a few seconds.
@@ -110,8 +110,12 @@ cd my_brief
 dsl run .
 ```
 You can modify the folder my_brief and its contents just as you modify any other folder.
+Modify the office to change stock symbols and weather location.
 
-`dsl list` shows offices that ship with DisSysLab.
+```bash
+dsl list
+```
+shows offices that ship with DisSysLab.
 
 ## Another simple example: build your own situation room
 
