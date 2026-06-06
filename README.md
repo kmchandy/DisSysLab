@@ -113,7 +113,7 @@ You can modify the folder my_brief and its contents just as you modify any other
 
 `dsl list` shows offices that ship with DisSysLab.
 
-## Build your own situation room
+## Another simple example: build your own situation room
 
 First see `periodic_brief` running end to end.
 Then build your own situation room (described earlier) by running and
@@ -160,7 +160,7 @@ announced last month.
 
 ---
 
-## Personalize your situation room
+## Example: Personalize your situation room
 
 Change the roles, agents and org chart in
 [`office.md`](dissyslab/gallery/apps/situation_room/office.md)
