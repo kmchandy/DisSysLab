@@ -46,22 +46,12 @@ flowchart LR
 ```
 
 
-*The `situation_room` office: three news feeds fan into one
-deduplicator, four parallel agents enrich each article, a synchronizer
-merges their outputs, and a writer assembles and writes the briefing which
-is sent to a terminal display and to a JSONL archive. Every node is
-specified in one short English document.*
-
-
 
 ---
 
 ## Try it
 
-This demo needs no API key and no model
-download. [`periodic_brief`](dissyslab/gallery/apps/periodic_brief/)
-pulls news, weather, and a few stock tickers and renders them into a
-single, styled HTML page. It runs in a few seconds.
+
 
 **One-line install** (macOS or Linux, requires Python 3.10+):
 
@@ -90,6 +80,11 @@ your shell rc file.
 
 **Now run your first office:**
 
+This demo needs no API key and no model
+download. [`periodic_brief`](dissyslab/gallery/apps/periodic_brief/)
+pulls news, weather, and a few stock tickers and renders them into a
+single, styled HTML page. It runs in a few seconds.
+
 ```bash
 dsl run periodic_brief
 ```
@@ -114,23 +109,20 @@ dsl init periodic_brief my_brief
 cd my_brief
 dsl run .
 ```
+You can modify the folder my_brief and its contents just as you modify any other folder.
 
 `dsl list` shows offices that ship with DisSysLab.
 
 ## Build your own situation room
 
 First see `periodic_brief` running end to end.
-Then build your own situation room by running and
+Then build your own situation room (described earlier) by running and
 modifying [`situation_room`](dissyslab/gallery/apps/situation_room/).
 
 
 ```bash
 dsl run situation_room
 ```
-
-Three news feeds in. One intelligence digest out: articles deduplicated,
-severity-classified, entity-extracted, topic-tagged, and geolocated.
-Speed and cost depend on the engine you picked at install time:
 
 | Engine | Wall time per run | Cost per run |
 |---|---|---|
@@ -210,10 +202,9 @@ Sinks: markdown_digest(path="~/digest.md")
 **Write new job descriptions.** Describe new roles for your specific app.
 See [`docs/BUILD_APPS.md`](docs/BUILD_APPS.md).
 
-A worked example of the third tier — overriding *one* role to use
-Claude while everything else stays on a cheap open model — is at
+An example of modifying the app by making *one* role use
+Claude while everything else stays on a cheaper model — is at
 [`situation_room_pro`](dissyslab/gallery/apps/situation_room_pro/).
-One file's difference.
 
 ---
 
