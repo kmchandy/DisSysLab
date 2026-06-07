@@ -165,6 +165,56 @@ announced last month.
 ---
 
 ## Example: Personalize your situation room
+Here is the specification of the office in the situation_room.
+[`office.md`](dissyslab/gallery/apps/situation_room/office.md)
+
+```
+Sources: bbc_world(max_articles=5), npr_news(max_articles=5),
+         al_jazeera(max_articles=5)
+Sinks: intelligence_display, jsonl_recorder_briefing(...)
+
+Agents:
+Sasha is a deduplicator(by="url").
+Eve is an entity_extractor.
+Sam is a severity_classifier.
+Tom is a topic_tagger.
+Greta is a geolocator.
+Sync is a synchronizer.
+Riley is a writer.
+
+Connections:
+bbc_world's destination is Sasha.
+npr_news's destination is Sasha.
+al_jazeera's destination is Sasha.
+
+Sasha's out is Eve, Sam, Tom, Greta.
+
+Eve's out is Sync's entities.
+Sam's out is Sync's severity.
+Tom's out is Sync's topic.
+Greta's out is Sync's location.
+
+Sync's out is Riley.
+Riley's out is intelligence_display, jsonl_recorder_briefing.
+```
+The office has sections called **sources**, **sinks**, **agents** and **connections**.
+The **sources** and **sinks** sections list the sources and sinks of the app.
+For example, the office has a source **bbc_world** and a sink **intelligence_display**.
+The sources and sinks that are shipped with the framework are specified in x, and you can
+add more.
+The **agents** section specifies names of agents and their roles. 
+For example, the office has an agent called **eve** whose role is **entity_extractor**.
+
+
+In this office each role is filled by exactly one agent.
+You can build offices in which more than one agent executes the same role.
+For example you may have a role that identifies topics in messages received by an agent;
+your office can have an agent that identifies topics in a news source
+and a different agent that identifies topics in updates to a competitors' websites.
+Both agents execute the same role but have different inputs.
+Roles are specified as English files in the **roles** folder of the app
+[`roles1`](dissyslab/gallery/apps/situation_room/roles)
+
 
 Change the roles, agents and org chart in
 [`office.md`](dissyslab/gallery/apps/situation_room/office.md)
@@ -212,92 +262,9 @@ Claude while everything else stays on a cheaper model — is at
 
 ---
 
-## What's an office of agents?
 
-An office is a team of AI agents and an
-org chart. You give each agent a name and a role.
-You write a job description in plain English for each role — the framework uses it as the agent's LLM prompt at runtime. You declare the agents and the org chart in `office.md`, a short configuration document with English-readable syntax. The framework compiles your description into a concurrent system.
-
-Three layers of English live in DisSysLab:
-
-- **Role descriptions** (the `roles/*.md` files in your office) are plain English, used directly as LLM prompts at runtime.
 - **Conversational creation** (`dsl new`) lets you describe the office you want to Claude; Claude writes the configuration for you.
-- **The configuration document** (`office.md`) is a short structured document with English-readable syntax. You can read and edit it directly.
 
-This is a very brief overview of how you specify offices. 
-We describe specifics elsewhere.
-Here's `situation_room`'s wiring (excerpted from
-[`office.md`](dissyslab/gallery/apps/situation_room/office.md)):
-
-```
-Sources: bbc_world(max_articles=5), npr_news(max_articles=5),
-         al_jazeera(max_articles=5)
-Sinks: intelligence_display, jsonl_recorder_briefing(...)
-
-Agents:
-Sasha is a deduplicator(by="url").
-Eve is an entity_extractor.
-Sam is a severity_classifier.
-Tom is a topic_tagger.
-Greta is a geolocator.
-Sync is a synchronizer.
-Riley is a writer.
-
-Connections:
-bbc_world's destination is Sasha.
-npr_news's destination is Sasha.
-al_jazeera's destination is Sasha.
-
-Sasha's out is Eve, Sam, Tom, Greta.
-
-Eve's out is Sync's entities.
-Sam's out is Sync's severity.
-Tom's out is Sync's topic.
-Greta's out is Sync's location.
-
-Sync's out is Riley.
-Riley's out is intelligence_display, jsonl_recorder_briefing.
-```
-
-## The network of agents in the situation_room office
-
-The diagram below restates the same topology in ASCII art, with timing semantics labeled.
-
-```
-        ┌──────────┐ ┌──────────┐ ┌──────────┐
-        │ bbc_news │ │ npr_news │ │  al_jaz  │
-        └────┬─────┘ └────┬─────┘ └────┬─────┘
-             └────────────┼────────────┘
-                          ▼         ← Asynchronous merge
-                  ┌───────────────┐
-                  │    Sasha      |
-                  | deduplicator  │
-                  └───────┬───────┘
-                          ▼ broadcast 
-      ┌─────────────┌─────────┐────────----──┐
-      ▼             ▼           ▼            ▼
- ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
- │   Eve    | |    Sam   | |    Tom   | |  Greta   |
- | extract  | |determine | |  topic   | |determine |
- |entities  │ │ severity │ | tagger   | |location  |     
- └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘
-      ▼            ▼            ▼            ▼             ← Synchronous merge 
-  ┌───────----------------------------------────────┐
-  │                     Sync                        │
-  │                 synchronizer                    │               
-  └─────----------------──┬─────------------------──┘
-                          ▼
-                  ┌───────────────┐
-                  │    Riley      │
-                  │    writer     │
-                  └───────┬───────┘
-                          ▼
-                   ┌──────┴──────┐
-                   ▼             ▼
-              ┌──────────┐  ┌──────────┐
-              │ display  │  │ archive  │
-              └──────────┘  └──────────┘
-```
 
 The office monitors the feeds listed as `Sources`.
 The office output is displayed in the console as `intelligence_display` and
