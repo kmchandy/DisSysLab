@@ -78,6 +78,11 @@ your shell rc file.
 **Then: open a new terminal** (or run `source ~/.zshrc` on macOS /
 `source ~/.bashrc` on Linux) so the new PATH takes effect.
 
+**You can mix and match AI** The simplest option is to use the same AI
+service for all agents, and that's what you get when you specify the AI
+in the installer. You can use different AI services, and different AI
+parameters (e.g. temperature) for different agents as described later.
+
 ## Run your first office of agents
 
 This simple demo needs no API key and no model
@@ -164,7 +169,7 @@ announced last month.
 
 ---
 
-## The office for the situation room
+## The office in the situation room
 Here is the specification of the office in the situation_room.
 [`office.md`](dissyslab/gallery/apps/situation_room/office.md)
 
@@ -205,6 +210,19 @@ add more.
 The **agents** section specifies names of agents and their roles. 
 For example, the office has an agent called **eve** whose role is **entity_extractor**.
 
+Each role has a set of named input mailboxes to which mail is delivered and set of output mailboxes from which mail is removed. A connection is from an output mailbox of an agent to an input mailbox of an agent. If there is a connection from mailbox **m** of agent **X** to a mailbox **m'** of an agent **X'** then the framework removes messages from mailbox **m** of **x**Xand puts them in mailbox **m'**
+of **X'**. Messages are removed from a mailbox in the order in which they are placed in the mailbox.
+
+Many roles have a single input mailbox in which case the input mailbox isn't named.
+And many roles have a single ouput mailbox in which case the default name of the
+output mailbox is **out**. 
+
+The connection:
+
+```
+Sasha's out is Eve, Sam, Tom, Greta.
+```
+says that Sasha has a single output mailbox and messages sent by Sasha are broadcast to the single input mailboxes of agents Eve, Sam, Tom, and Greta.
 
 In this office each role is filled by exactly one agent.
 You can build offices in which more than one agent executes the same role.
@@ -216,7 +234,9 @@ Roles are specified as English files in the **roles** folder of the app
 [`roles1`](dissyslab/gallery/apps/situation_room/roles)
 
 
-## Example of a role in the situation room.
+---
+
+## Example: a role in the situation room.
 Specify a role — its job description — with sufficient detail
 that agents in the role do what you want them to do. Here is an example of
 a job description for topic taggers
@@ -281,31 +301,12 @@ Output:
 
 ---
 
-Change the roles, agents and org chart in
-[`office.md`](dissyslab/gallery/apps/situation_room/office.md)
-to fit your needs.
-You may want to change one of the following:
 
-**1. Sources** — swap a news feed for Gmail or a webhook; add or
-remove a source entirely.
-
-**2. Parallel thinkers** — add, remove, or replace the agents that
-extract entities, severity, topic, location. Each one annotates
-the message with one more fact.
-
-**3. Writer** — change the prompt to produce a different style of
-briefing: executive summary, technical alert, blog draft, customer
-email.
-
-**4. Sinks** — change where the result goes: terminal, markdown file,
-or Slack channel.
-
-
-
-## Examples of steps you may want to try
+## Example: Modify situation room
 
 **Change parameters.** Bump article counts, swap a
-feed, set a polling interval.
+feed, set a polling interval or add a source such as
+techcrunch.
 
 ```
 Sources: techcrunch(max_articles=10, poll_interval=600)
@@ -318,7 +319,13 @@ display with a markdown file or add a topic filter agent.
 Sinks: markdown_digest(path="~/digest.md")
 ```
 
-**Write new job descriptions.** Describe new roles for your specific app.
+**Write new job descriptions.** 
+Example: Writer — change the prompt for the writer role
+to produce a different style of briefing: 
+executive summary, technical alert, blog draft, customer
+email.
+
+Describe new roles for your specific app.
 See [`docs/BUILD_APPS.md`](docs/BUILD_APPS.md).
 
 An example of modifying the app by making *one* role use
@@ -330,42 +337,10 @@ Claude while everything else stays on a cheaper model — is at
 
 - **Conversational creation** (`dsl new`) lets you describe the office you want to Claude; Claude writes the configuration for you.
 
-
-The office monitors the feeds listed as `Sources`.
-The office output is displayed in the console as `intelligence_display` and
-stored to a file `jsonl_recorder_briefing` as specified in `Sinks`.
-The office has agents called Eve, Sam, Tom, Greta, Sync, and Riley.
-The roles of agents in the office are deduplicator, entity_extractor, 
-severity_classifier, topic_tagger, geo_locator, synchronizer, and
-writer. 
-
-**Connections** specifies the org chart or how information flows in the
-office. The line `Eve is an entity_extractor` specifies that the agent
-called `Eve` has the `entity_extractor` role.
-In this office each role is filled by exactly one agent. 
-In other offices, there may be multiple agents with the same role;
-for example there may be an agent that identifies topics in news sources
-and a different agent that identifies topics in competitors' websites,
-and both agents may have the same job description.
-
-An agent can have multiple inboxes in which incoming messages are placed
-and multiple outboxes in which the agent places its outgoing messages.
-The framework sends messages from outboxes to inboxes as specified in
-`Connections`. Most agents have a single inbox called **in** and a single
-outbox called **out**. A synchronizer can have multiple inboxes.
-
-The line `Sasha's out is Eve, Sam, Tom, Greta.` says that messages from
-Sasha's outbox are broadcast to the inboxes of Eve, Sam, Tom and Greta. 
-Messages from multiple outboxes can feed the same inbox. For example,
-messages from the three sources feed Sasha's inbox. The delay between
-a message appearing in an outbox and its delivery to its connected inbox
-is arbitrary. Performance issues are described later.
-
-
 *Note: Agents for most apps can be specified in English; however,
 some require Python.*
 Users will need to resort to Python less frequently as
-LLMs integrate with Python libraries. 
+more Python sources and sinks are added to the library. 
 
 
 ---
@@ -403,46 +378,15 @@ Modify examples of offices in the [`gallery`](dissyslab/gallery/).
 S&R systems have been used by large institutions for decades. Militaries
 formalized them as the OODA loop (observe, orient, decide, act).
 Stephan Haeckel introduced "sense and respond" as a business
-methodology in 1992. In 2009, Roy Schulte of Gartner and I published
+methodology in 1992. In 2009, Roy Schulte of Gartner and I published a book
 *Event Processing: Designing IT Systems for Agile Companies*,
-surveying the field and describing many use cases. I worked on building
-earthquake-warning and radiation-detection systems.
+surveying the field and describing many use cases. I worked on two startups
+building S&R systems, and I helped build earthquake-warning and 
+radiation-detection systems.
 
-
-**I am building DisSysLab to make S&R available to an individual with a personal computer** --
-an amateur investor, a researcher who wants timely updates on new findings,
-a facilities manager who monitors water leaks, and an individual managing
-social media, mail and calendars. 
-S&R systems were not available to individuals for two reasons: individuals didn't
-have access to teams of experts and to adequate computing power.
-
-1. **Expertise**: Institutions develop S&R systems over multiple iterations. Business users describe their intent:
-*Build a system that responds to critical events in a timely fashion without generating
-many false alarms.* Teams of data scientists and engineers built prototype systems that are tested by
-business users. If the intent is not met engineers iterate on the next prototype.
-Individuals don't have programming teams.
-
-2. **Compute Power**: Organizations built S&R systems using powerful computing
-infrastructure. Militaries and banks use networks of multiprocessor computers.
-Individuals have only personal computers.
-
-DisSysLab uses LLMs to overcome both hurdles.
-You use LLMs to implement specialized S&R tasks
-such as filtering, entity identification, and signal processing.
-You tune prompts to do these special-purpose tasks extremely well.
-Then you use English to specify how the agents cooperate to execute
-complex S&R missions. You control costs by running some
-free, smaller LLMs on a PC while running others on hosted services (Anthropic,
-Gemini, OpenAI). You can even use LLMs to build the entire office of agents
-given S&R specifications.
-
-**DisSysLab for Teaching**:
-I have taught courses on concurrency for 40 years. Now first-year
-undergraduates are interested in concepts that
-were previously taught in graduate courses. I am teaching a course open to first-year
-undergraduates in the coming year. Each student begins by using DisSysLab to build an S&R app for her own 
-personal needs. Then I discuss algorithms underlying the systems
-they built.
+My experience suggests to me that the power of S&R can be useful to an 
+individual with a laptop and a limited budget. This package is a step towards 
+helping individuals harness that power. 
 
 ---
 
