@@ -477,16 +477,24 @@ def _emit_builder(node: _OfficeNode) -> str:
                 f'{kwargs_repr})(),'
             )
         else:
-            # Plain LLM role. If the office.md included an
-            # ``X's AI is <backend>.`` sentence, pass the backend
-            # name into the role's factory; nl_role's factory accepts
-            # an optional ``AI`` kwarg precisely for this.
-            ai_kwarg = (
-                f"AI={ref.ai_backend!r}" if ref.ai_backend else ""
-            )
+            # Plain LLM role *or* Python AgentRoleEntry role.
+            #
+            # Forward any office.md kwargs to the role's factory
+            # (``Alex is a bird_classifier(min_confidence=0.7).``),
+            # together with the optional AI backend override
+            # (``Qwen's AI is ollama.``). For LLM roles built via
+            # ``nl_role`` the factory accepts ``AI=...``; for
+            # Python roles the factory accepts whatever kwargs the
+            # role's ``__init__`` declares. Unknown kwargs raise a
+            # TypeError at runtime, which is the same behaviour
+            # parameterized-library roles already have.
+            factory_kwargs = dict(ref.args)
+            if ref.ai_backend:
+                factory_kwargs["AI"] = ref.ai_backend
+            kwargs_repr = _kwargs_repr(factory_kwargs)
             lines.append(
                 f'            "{ref.agent_name}": '
-                f'{roles_var}[{ref.role_name!r}]({ai_kwarg}),'
+                f'{roles_var}[{ref.role_name!r}]({kwargs_repr}),'
             )
 
     lines.append("        },")

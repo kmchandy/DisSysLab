@@ -1,0 +1,9 @@
+build/
+bird_detections.jsonl
+samples/*.mp3
+samples/*.wav
+samples/*.flac
+samples/*.ogg
+samples/*.m4a
+samples/*.aac
+!samples/.gitkeep

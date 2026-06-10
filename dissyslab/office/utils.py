@@ -231,6 +231,17 @@ SOURCE_REGISTRY = {
         "import": "from dissyslab.components.sources.console_input_source import ConsoleInputSource",
         "class":  "ConsoleInputSource",
     },
+
+    # ── Audio folder (one message per .mp3 / .wav / … file) ───────────
+    # Used by the ``backyard_birds`` gallery office to feed pre-recorded
+    # clips into a BirdNET classifier agent. The source itself does no
+    # decoding — it just emits the file path; downstream agents open
+    # the file when they need the audio bytes.
+    "audio_folder": {
+        "type":   "audio_folder",
+        "import": "from dissyslab.components.sources.audio_folder_source import AudioFolderSource",
+        "class":  "AudioFolderSource",
+    },
 }
 
 
