@@ -1,122 +1,98 @@
-# DisSysLab documentation
+# DisSysLab user guide
 
-If you're new, the [top-level README](../README.md) is the right
-starting point — install, pick an AI engine, run your first office.
-Come back here when you have a specific question.
+This folder is the user manual for DisSysLab. The
+[top-level README](../README.md) is the place to start — it covers
+installation, the first office to run, and the framework's core
+design ideas. Come here after the first office runs successfully,
+when the question is *how do I build my own?* or *how do I do
+this specific thing?*
 
-## Quick map by audience
+The documents below assume DisSysLab is already installed and that
+`dsl run periodic_brief` produced a brief on your terminal.
 
-There are two kinds of reader. Most of these docs serve both, but
-the entry points differ.
+## Where to start
 
-**Running an office that ships with DisSysLab** (you're Pat —
-small-business owner, journalist, analyst, anyone with continuous
-information work):
+A reader new to DisSysLab will find the path of least friction is:
 
-1. [Top-level README](../README.md) — install + first office.
-2. [Gallery README](../dissyslab/gallery/README.md) — every office
-   that ships, split into "runs on any laptop, no keys" and "needs an
-   API key."
-3. [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — common errors keyed on
-   the actual error strings. `dsl doctor` from your terminal runs the
-   same checks live.
-4. [recipes/](recipes/README.md) — short copy-pasteable changes for
-   "I want my office to do X."
+1. Run [`periodic_brief`](../dissyslab/gallery/apps/periodic_brief/)
+   and a second office from the
+   [gallery](../dissyslab/gallery/README.md). Two examples are
+   enough to recognise the structure of an office.
+2. Read **[BUILD_APPS.md](BUILD_APPS.md)**, which works through the
+   full grammar of `office.md` and a substantial example role.
+3. Browse **[SOURCES_AND_SINKS.md](SOURCES_AND_SINKS.md)** for
+   sources and sinks the framework ships with. Most new offices can
+   be assembled from existing components.
+4. Edit a copy of a gallery office (`dsl init <name> my_office`)
+   and modify it until it does what you want. Many users never need
+   to write an office from scratch.
 
-**Extending DisSysLab with new sources, sinks, roles, or patterns**
-(you're Kamala — Python-fluent, building things for others to use):
+When something does not work, [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+indexes the common errors by their exact text. The command
+`dsl doctor` runs the same checks live in your terminal.
 
-1. [BUILD_APPS.md](BUILD_APPS.md) — design and wire your own office
-   from scratch. Start here.
-2. [SOURCES_AND_SINKS.md](SOURCES_AND_SINKS.md) — the catalog of
-   built-in components and their arguments. Look here before writing
-   a new one.
-3. [LANGUAGE_MODELS.md](LANGUAGE_MODELS.md) — per-role backend
-   override, the Backend Protocol for adding a new LLM provider.
-4. [MAKE_OFFICE.md](MAKE_OFFICE.md) — the Python API for
-   *generating* offices instead of hand-writing them. Use this when a
-   tool needs to emit office.md programmatically.
-5. [PATTERN_sense_think_respond.md](PATTERN_sense_think_respond.md) —
-   the sense → think → respond pattern that most gallery offices
-   instantiate, and the `build_office()` generator that emits new
-   instances.
-6. [`../RESEARCH_TODO.md`](../RESEARCH_TODO.md) — the year-horizon
-   research agenda (community libraries, polyglot AI, chatbots).
-   Pick a thread, contribute.
+## Documents in this folder
 
-## Recipes — copy-pasteable patterns
+| Document | Subject | When to read |
+|---|---|---|
+| [BUILD_APPS.md](BUILD_APPS.md) | Designing and wiring your own office, from idea to running system. Includes the full `office.md` grammar and a worked example of a substantial role. | Before writing your first office from scratch. |
+| [SOURCES_AND_SINKS.md](SOURCES_AND_SINKS.md) | Every source and sink component the framework ships with, with arguments, environment variables, and setup notes. | Reference. Consult before writing a custom source or sink. |
+| [LANGUAGE_MODELS.md](LANGUAGE_MODELS.md) | Choosing and mixing LLM backends (`anthropic`, `openai`, `gemini`, `openrouter`, `ollama`), per-role backend overrides, named variants (`_creative`, `_precise`), and the Backend Protocol for adding a new provider. | Before changing the office's AI engine or adding a new provider. |
+| [PATTERN_sense_think_respond.md](PATTERN_sense_think_respond.md) | The canonical multi-stage pattern that most gallery offices instantiate. Includes a Python helper for generating new instances of the pattern. | When the office you want resembles `sense → think → respond`. |
+| [MAKE_OFFICE.md](MAKE_OFFICE.md) | The Python API for generating offices programmatically rather than writing `office.md` by hand. | When a tool or script needs to produce offices. Most users do not need this. |
+| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Error messages from `dsl run` and `dsl build`, with the cause and the remedy for each. | When something goes wrong. The companion command is `dsl doctor`. |
 
-Each recipe solves one concrete task by editing two plain-English
-files (`office.md` and a role under `roles/`):
+## Recipes
 
-- **[Filter for a topic](recipes/filter-for-a-topic.md)** — keep only
-  items you care about, discard the rest.
-- **[Monitor your inbox](recipes/monitor-your-inbox.md)** — turn
-  Gmail messages into briefings, with App Password setup.
-- **[Receive webhooks](recipes/receive-webhooks.md)** — listen on a
-  local port for posts from GitHub, Stripe, Zapier, or your own
-  scripts.
-- **[Send messages outside](recipes/send-messages-outside.md)** —
-  forward briefings to email, Slack, a webhook, or a JSONL file.
-- **[Add an RSS source](recipes/add-an-rss-source.md)** — pull from
-  any RSS or Atom feed.
-- **[Chain offices](recipes/chain-offices.md)** — let one office's
-  output flow into another.
-- **[Write a custom role](recipes/write-a-custom-role.md)** —
-  describe a new job in plain English and assign it to an agent.
+The [recipes/](recipes/) folder holds short, copy-pasteable
+solutions to common tasks. Each recipe edits one or two plain
+English files — typically an `office.md` and a role under
+`roles/`:
 
-The full index, including recipes added later, is at
-[recipes/README.md](recipes/README.md).
+| Recipe | What it does |
+|---|---|
+| [Filter for a topic](recipes/filter-for-a-topic.md) | Keep items that mention something specific, discard the rest. |
+| [Monitor your inbox](recipes/monitor-your-inbox.md) | Turn Gmail messages into briefings, with App Password setup. |
+| [Receive webhooks](recipes/receive-webhooks.md) | Listen on a local port for posts from GitHub, Stripe, Zapier, or your own scripts. |
+| [Send messages outside](recipes/send-messages-outside.md) | Forward briefings to email, Slack, a webhook, or a JSONL file. |
+| [Add an RSS source](recipes/add-an-rss-source.md) | Read items from any RSS or Atom feed. |
+| [Chain offices](recipes/chain-offices.md) | Let one office's output flow into another. |
+| [Write a custom role](recipes/write-a-custom-role.md) | Describe a new job in plain English and assign it to an agent. |
 
-## Reference
+## Lookup by task
 
-- **[SOURCES_AND_SINKS.md](SOURCES_AND_SINKS.md)** — every component
-  the framework ships with, with arguments, env vars, and setup
-  instructions.
-- **[LANGUAGE_MODELS.md](LANGUAGE_MODELS.md)** — switch the office's
-  AI engine (Ollama / OpenRouter / Claude), mix backends per role,
-  add a new provider via the Backend Protocol.
-- **[BUILD_APPS.md](BUILD_APPS.md)** — design and wire your own
-  office: org-chart shapes, prompt-writing tips, when to split into
-  sub-offices.
-- **[MAKE_OFFICE.md](MAKE_OFFICE.md)** — the Python API for
-  generating offices programmatically.
-- **[PATTERN_sense_think_respond.md](PATTERN_sense_think_respond.md)** —
-  the canonical multi-stage pattern + the `build_office()` generator
-  used by most gallery offices.
-- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** — error messages and
-  fixes.
+For frequently asked questions, the relevant section of the
+documentation is named below.
 
-## Looking for something specific?
-
-- *"How do I use OpenAI / Gemini / Ollama / a local model?"* →
+- *Pick an LLM backend* —
   [LANGUAGE_MODELS.md](LANGUAGE_MODELS.md).
-- *"How do I build my own office?"* → [BUILD_APPS.md](BUILD_APPS.md).
-- *"How do I generate offices from Python code?"* →
+- *Use a different backend for one specific agent* —
+  [LANGUAGE_MODELS.md](LANGUAGE_MODELS.md), the per-role override
+  section.
+- *Build a new office from scratch* —
+  [BUILD_APPS.md](BUILD_APPS.md).
+- *Generate offices programmatically* —
   [MAKE_OFFICE.md](MAKE_OFFICE.md).
-- *"How do I send results to Slack / email / a file?"* →
-  [send-messages-outside.md](recipes/send-messages-outside.md).
-- *"How do I read my Gmail?"* →
-  [monitor-your-inbox.md](recipes/monitor-your-inbox.md).
-- *"How do I add a new RSS feed?"* →
-  [add-an-rss-source.md](recipes/add-an-rss-source.md).
-- *"What sources and sinks come with the package?"* →
-  [SOURCES_AND_SINKS.md](SOURCES_AND_SINKS.md).
-- *"How do I connect two offices together?"* →
-  [chain-offices.md](recipes/chain-offices.md).
-- *"How do I write a role from scratch?"* →
-  [write-a-custom-role.md](recipes/write-a-custom-role.md).
-- *"I hit an error and don't know what it means."* →
+- *Read Gmail messages* —
+  [recipes/monitor-your-inbox.md](recipes/monitor-your-inbox.md).
+- *Send results to Slack, email, or a file* —
+  [recipes/send-messages-outside.md](recipes/send-messages-outside.md).
+- *Add a new RSS feed* —
+  [recipes/add-an-rss-source.md](recipes/add-an-rss-source.md).
+- *Connect two offices together* —
+  [recipes/chain-offices.md](recipes/chain-offices.md).
+- *Write a role from scratch* —
+  [recipes/write-a-custom-role.md](recipes/write-a-custom-role.md).
+- *Diagnose an error* —
   [TROUBLESHOOTING.md](TROUBLESHOOTING.md), or run `dsl doctor`.
-- *"What's coming next in DisSysLab?"* →
-  [`../RESEARCH_TODO.md`](../RESEARCH_TODO.md).
 
-Missing? Open an issue on
-[GitHub](https://github.com/kmchandy/DisSysLab/issues) — that's the
-fastest way to get an answer and to flag a gap in the docs.
+If a question is not answered here, please open an issue on
+[GitHub](https://github.com/kmchandy/DisSysLab/issues). Gaps in
+the documentation are easier to fix when they are reported.
 
 ---
 
-Internal design notes (for contributors to the framework itself, not
-users running offices) live in `dev/` and are not indexed here. They
-change frequently.
+Notes used during the development of the framework itself, rather
+than for running offices, live in the `dev/` folder at the repo
+root. Those notes change frequently and are not part of the user
+guide.
