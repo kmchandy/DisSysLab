@@ -1,0 +1,13 @@
+build/
+samples/*.mp3
+samples/*.wav
+samples/*.flac
+samples/*.ogg
+samples/*.m4a
+samples/*.aac
+!samples/.gitkeep
+
+# Demo clip shipped with the repo so `dsl run loudness_monitor`
+# works out of the box. Generator script lives next to it.
+!samples/thunderstorm.mp3
+!samples/make_thunder.py
