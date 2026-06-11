@@ -47,6 +47,48 @@ def _significance(peak_db: float) -> str:
     return "LOW"
 
 
+def _description(peak_db: float) -> str:
+    """Plain-language label for the loud event.
+
+    These describe the level of the *signal in the recording*
+    (dBFS), not the perceived loudness in your room (dB SPL).
+    The two are related only by your playback gain, so we avoid
+    claims like 'dangerous' that depend on physical loudness.
+    """
+    if peak_db >= -10:
+        return "Very loud peak"
+    if peak_db >= -15:
+        return "Loud peak"
+    if peak_db >= -22:
+        return "Notable burst"
+    return "Above ambient"
+
+
+def _format_position(seconds: float | None) -> str:
+    """Render seconds as ``MM:SS.s`` (e.g. ``"00:33.2"``)."""
+    if seconds is None:
+        return "??:??.?"
+    minutes = int(seconds // 60)
+    rem = seconds - minutes * 60
+    return f"{minutes:02d}:{rem:04.1f}"
+
+
+def _level_bar(peak_db: float, threshold_db: float, width: int = 10) -> str:
+    """A small visual indicator of how far the peak exceeded threshold.
+
+    Empty when peak is at threshold, full when peak is 0 dBFS.
+    Uses Unicode block characters with an ASCII fallback path is
+    handled by the terminal — most modern terminals render these
+    fine.
+    """
+    span = -threshold_db
+    if span <= 0:
+        return ""
+    fraction = max(0.0, min(1.0, (peak_db - threshold_db) / span))
+    filled = int(round(fraction * width))
+    return "█" * filled + "░" * (width - filled)
+
+
 class _ThresholdDetector(Agent):
     """Edge-triggered threshold detector with debounce.
 
@@ -77,6 +119,7 @@ class _ThresholdDetector(Agent):
         self.debounce_ms = float(debounce_ms)
         self._armed = True
         self._below_since_ts = None
+        self._event_counter = 0
 
     def run(self) -> None:
         while True:
@@ -85,6 +128,7 @@ class _ThresholdDetector(Agent):
                 continue
             db = msg.get("db")
             ts = msg.get("timestamp") or time.time()
+            stream_position = msg.get("stream_position_seconds")
             if db is None:
                 continue
 
@@ -94,7 +138,7 @@ class _ThresholdDetector(Agent):
                 # Any above-threshold reading resets debounce
                 self._below_since_ts = None
                 if self._armed:
-                    self._fire(db, ts)
+                    self._fire(db, ts, stream_position)
                     self._armed = False
             else:
                 if not self._armed:
@@ -107,19 +151,34 @@ class _ThresholdDetector(Agent):
                             self._below_since_ts = None
 
     # ── Emit one event message ───────────────────────────────────────
-    def _fire(self, peak_db: float, ts: float) -> None:
+    def _fire(
+        self,
+        peak_db: float,
+        ts: float,
+        stream_position: float | None,
+    ) -> None:
+        self._event_counter += 1
         started_at = datetime.fromtimestamp(ts).isoformat(
             timespec="seconds",
         )
+        sig = _significance(peak_db)
+        desc = _description(peak_db)
+        position_str = _format_position(stream_position)
+        bar = _level_bar(peak_db, self.db_threshold)
         self.send(
             {
-                "event":        "loud",
-                "peak_db":      peak_db,
-                "started_at":   started_at,
-                "title":        "Loud event",
-                "text":         f"Detected at {peak_db:.1f} dBFS.",
-                "significance": _significance(peak_db),
-                "source":       "loudness_monitor",
+                "event":         "loud",
+                "event_index":   self._event_counter,
+                "peak_db":       peak_db,
+                "started_at":    started_at,
+                "stream_position_seconds": stream_position,
+                "title":         f"{desc} at {position_str}",
+                "text": (
+                    f"Event #{self._event_counter} — "
+                    f"peak {peak_db:+.1f} dBFS  {bar}  ({sig})"
+                ),
+                "significance":  sig,
+                "source":        "loudness_monitor",
             },
             "out_",
         )

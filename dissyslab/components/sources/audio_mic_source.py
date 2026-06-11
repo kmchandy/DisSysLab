@@ -165,11 +165,16 @@ class AudioMicSource:
         else:
             samples = samples.flatten()
         self._chunk_index += 1
+        # stream_position_seconds is start-of-chunk: seconds since
+        # the office started capturing. Same field name as
+        # audio_clip uses, so downstream agents are source-agnostic.
+        stream_position_seconds = (self._chunk_index - 1) * (self.chunk_ms / 1000.0)
         return {
             "samples":     samples,
             "sample_rate": self.sample_rate,
             "timestamp":   time.time(),
             "chunk_index": self._chunk_index,
+            "stream_position_seconds": stream_position_seconds,
         }
 
     def _close(self) -> None:

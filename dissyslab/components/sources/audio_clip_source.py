@@ -238,9 +238,17 @@ class AudioClipSource:
                 time.sleep(wait)
         samples = self._chunks[self._cursor]
         self._cursor += 1
+        # stream_position_seconds is start-of-chunk in the audio
+        # stream. For audio_clip this is position in the source
+        # file; for audio_mic it is wall-clock seconds since the
+        # office started capturing. The field's name is the same so
+        # downstream agents do not need to know which kind of source
+        # they are reading from.
+        stream_position_seconds = (self._cursor - 1) * (self.chunk_ms / 1000.0)
         return {
             "samples":     samples,
             "sample_rate": self._sample_rate,
             "timestamp":   time.time(),
             "chunk_index": self._cursor,
+            "stream_position_seconds": stream_position_seconds,
         }

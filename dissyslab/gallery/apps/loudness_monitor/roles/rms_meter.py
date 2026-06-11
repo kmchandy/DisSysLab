@@ -71,6 +71,8 @@ class _RMSMeter(Agent):
                     "rms":         rms,
                     "timestamp":   msg.get("timestamp"),
                     "chunk_index": msg.get("chunk_index"),
+                    "stream_position_seconds":
+                        msg.get("stream_position_seconds"),
                 },
                 "out_",
             )
