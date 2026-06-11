@@ -36,7 +36,10 @@ CLEAR = "\033[2J\033[H"   # Clear screen, move cursor to top
 
 SIGNIFICANCE_COLOR = {
     "CRITICAL": RED,
-    "HIGH":     YELLOW,
+    "HIGH":     RED,      # bright red — same as CRITICAL by intent;
+                          # see loudness_monitor: dangerous-volume peaks
+                          # should pop visually whether the agent labels
+                          # them HIGH or CRITICAL.
     "MEDIUM":   GREEN,
     "LOW":      WHITE,
 }
