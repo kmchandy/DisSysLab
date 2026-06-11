@@ -4,12 +4,16 @@
 [![Python](https://img.shields.io/pypi/pyversions/dissyslab)](https://pypi.org/project/dissyslab/)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 
-**Use English to build offices of AI agents that watch your world and act.**
+**Build offices of small specialist agents that watch your world and react.**
 
 DisSysLab is a framework for **sense-and-respond systems** that
-monitor your environment -- news feeds, calendars, weather, sensors, audio,
-or images -- and respond proactively. Unlike chatbot frameworks, an
-**office runs continuously.** 
+monitor your environment and respond proactively. An app built with DisSysLab is an
+office of specialist agents. Each agent has one well-defined job
+and a stable contract on its inputs and outputs. An office runs
+continuously — sources monitor your environment (sensors, news, calendars, weather, 
+audio, images); processing agents transform data streams; sinks (actuators, databases,
+messages) receive data streams. Unlike chatbots, an office never waits for a
+prompt.
 
 ```mermaid
 flowchart LR
@@ -31,11 +35,11 @@ flowchart LR
   classDef sink fill:#fef3c7,stroke:#92400e
 ```
 
-*The `situation_room` office: three news feeds fan into one
-deduplicator; four parallel agents enrich each article; a
-synchronizer merges their outputs; a writer assembles and emits the
-briefing. Org charts of offices
-can have loops, branches, and arbitrary topology.*
+*The `situation_room` office. Each block is a specialist agent:
+three news-feed sources fan into a deduplicator; four specialists
+enrich each article in parallel; a synchronizer merges their
+outputs; a writer assembles and emits the briefing. Office
+topologies can have loops, branches, and arbitrary structure.*
 
 ---
 
@@ -69,7 +73,8 @@ dsl run .
 ```
 
 Modify `office.md` or the role files inside `my_brief/roles/` and
-rerun. The development loop is *edit English; rerun*.
+rerun.
+To see an interactive slide intro open [office_microcourse.html](office_microcourse.html).
 
 ---
 
@@ -104,8 +109,15 @@ Sync's out is Riley.
 Riley's out is intelligence_display, jsonl_recorder_briefing.
 ```
 
-Each agent's job description lives in `roles/<role>.md`, as plain
-English. Here's a deliberately small example:
+Every block in this office is a specialist agent. The **Sources**
+section lists specialists that fetch data. The
+**Sinks** section lists specialists that act on the environment. The
+**Agents** section lists specialists that transform data streams.
+The framework runs them all the same way.
+
+Each agent's role is specified either as a job description in  English in a file called
+`roles/<role>.md` or in Python in `roles/<role>.py`. An example of an English job
+description is:
 
 ```
 # Role: topic_tagger
@@ -120,19 +132,28 @@ whose value is one of the eight labels above.
 Always send to out.
 ```
 
-The specification consists of an `office.md` that specifies
-sources, agents, sinks, and their connections; and a `roles/<role>.md` file that describes
-a role -- a job description. Write and run your own office and roles.
+Use Python to specify a role when an English language job description is vague or 
+inappropriate, and when you want to reduce calls to LLMs to reduce costs. For
+example use Python for many signal processing tasks such as computing the 
+RMS (root mean square) of a signal over a moving window. 
 
-See [docs/](docs/README.md) for the full grammar and a worked
-walk-through of a more substantial role.
+```
+Agents:
+Tom is a topic_tagger.        # English role; LLM does the work
+Sasha is a deduplicator.      # Python role; deterministic
+Alex is a bird_classifier.    # Python role; wraps an ML model
+```
+
+See [docs/](docs/README.md) for the full grammar and examples.
 
 ---
 
 ## Mix and match AI per agent
 
-**Each agent can run on a
-different LLM backend**. Specify the backend in English in `office.md`.
+Each specialist agent has a stable contract on its inputs and
+outputs, so swapping the LLM that powers it does not change the office
+org chart. **Each agent can run on a different LLM backend.** Specify
+the backend in `office.md`:
 
 ```
 Agents:
@@ -147,11 +168,12 @@ Riley's AI is claude.          # high quality for the final briefing
 Those three `AI is` sentences are the only difference between
 *"all agents on Claude"* (uniform high cost) and *"a tiered system
 that uses cheap models for routine work and Claude for the
-synthesis step"*. 
-Backends shipped today: `anthropic` (aliased `claude`),
-`openai` (aliased `gpt`), `gemini`, `openrouter`, `ollama`. Each
-has `_creative` and `_precise` variants for finer control over
-agent temperature.
+synthesis step."*
+
+Backends shipped today: `anthropic` (aliased `claude`), `openai`
+(aliased `gpt`), `gemini`, `openrouter`, `ollama`. Each has
+`_creative` and `_precise` variants for finer control over agent
+temperature.
 
 See [docs/LANGUAGE_MODELS.md](docs/LANGUAGE_MODELS.md) for the full
 backend catalog.
@@ -181,8 +203,9 @@ only when you want continuous operation.
 
 | App | What it does | Notable technique |
 |---|---|---|
-| backyard_birds *(in development)* | Audio classification of bird calls | ML model agent, no LLM |
-| wildlife_watcher *(in development)* | Image classification of camera-trap photos | ML model agent, no LLM |
+| loudness_monitor *(in development)* | Live audio stream → threshold → alert | Streaming sense-respond, no LLM |
+| backyard_birds *(in development)* | Audio classification of bird calls | ML-model agent, no LLM |
+| wildlife_watcher *(in development)* | Image classification of camera-trap photos | ML-model agent, no LLM |
 | [periodic_brief](dissyslab/gallery/apps/periodic_brief/) | Morning HTML brief: news + weather + tickers | Zero-LLM stream processing |
 | [situation_room](dissyslab/gallery/apps/situation_room/) | News → multi-agent enrichment → digest | Five parallel agents, synchronizer |
 | [arxiv_radar](dissyslab/gallery/apps/arxiv_radar/) | Daily arXiv papers → LLM rater → digest | Web-scraped source, LLM rating |
@@ -190,23 +213,20 @@ only when you want continuous operation.
 | [kalshi_market_watch](dissyslab/gallery/apps/kalshi_market_watch/) | Polls prediction markets → LLM briefing | External API + rate limiting |
 | [wardrobe_assistant](https://github.com/Nyasha2/wardrobe-assistant) | Calendar + weather → daily outfit recommendation | Multi-source fan-in, multi-stage pipeline |
 
-`job_hunter` and `wardrobe_assistant` are created by
-Caltech undergraduate **Nyasha Makaya**, who maintains his own
-versions — plus a third app, **calendar_manager** (Los Angeles
-event discovery that matches LA listings against your calendar) —
-in standalone repos:
+`job_hunter` and `wardrobe_assistant` were created and are maintained
+by Caltech undergraduate **Nyasha Makaya**.
+Nyasha also built an app, **calendar_manager**, that searches for listings
+of events that interest you in your area and matches them with available
+slots in your calendar. See
 
 - [github.com/Nyasha2/job-hunter](https://github.com/Nyasha2/job-hunter)
 - [github.com/Nyasha2/wardrobe-assistant](https://github.com/Nyasha2/wardrobe-assistant)
 - [github.com/Nyasha2/calendar-manager](https://github.com/Nyasha2/calendar-manager)
 
 Each of Nyasha's apps follows the same pattern: a DisSysLab office
-(`office.md` + role prompts), a FastAPI backend that wraps
-`dsl run`, and a React frontend. He uses `dissyslab` as a PyPI
-dependency rather than a fork. That's the deployment pattern
-DisSysLab is designed to support — anybody can build their own
-sense-respond apps in their own repos, optionally putting a web UI
-on top. Nyasha's repos are the example.
+(`office.md` + role files), a FastAPI backend that wraps `dsl run`,
+and a React frontend. He uses `dissyslab` as a PyPI dependency. 
+Anybody can build sense-respond apps in the same way.
 
 Enter `dsl list` to see apps shipped with this package. See
 [gallery/README.md](dissyslab/gallery/README.md) for short demos
@@ -216,16 +236,15 @@ and patterns beyond the shipped slate.
 
 ## How it runs
 
-Every agent runs in its own thread by default. Sources poll
-independently on their own schedule. Sinks consume independently.
-The framework manages the queues that connect them. For CPU-bound
-work (numpy, local ML inference), use `dsl run --processes` and
-every agent runs in its own OS process.
+Every specialist agent runs in its own thread by default. 
+The framework manages messages between agents.
+You can also run each agent in its own OS process if your
+app is CPU intensive.
 
-**DisSysLab has no Python DAG definition step** unlike some
-other frameworks. Moreover, the network (org chart) of agents need not
-be a DAG -- it can have loops. An app is specified in an English
-file `office.md` and role `.md` files. The framework reads the
+DisSysLab has no Python DAG definition step unlike some other
+frameworks. Moreover, the network of agents need not be a DAG — it
+can have loops. An app is specified in an English `office.md` and
+role files (English `.md` or Python `.py`). The framework reads the
 files and executes the app.
 
 ---
@@ -235,19 +254,30 @@ files and executes the app.
 Sense-and-respond systems have been used by large institutions for
 decades. Militaries formalized them as the OODA loop (observe,
 orient, decide, act). Stephan Haeckel introduced "sense and
-respond" as a business methodology in 1992. In 2009, Roy Schulte
-of Gartner and I published *Event Processing: Designing IT Systems
-for Agile Companies*, which surveys the field and describes many
-use cases. I worked on two startups building S&R systems, and
-helped build earthquake-warning and radiation-detection systems.
+respond" as a business methodology in 1992. In 2009, Roy Schulte of
+Gartner and I published *Event Processing: Designing IT Systems for
+Agile Companies*, which surveys the field and describes many use
+cases. I worked on two startups building S&R systems, and helped
+build earthquake-warning and radiation-detection systems.
 
 I saw the power of S&R systems. I want individuals — students,
 small businesses, researchers — to harness that power.
+S&R systems were used primarily by institutions because only they
+had the expertise.
+LLMs allow individuals to use English job descriptions to build 
+and connect special-purpose agents to form offices.
+LLMs can also write Python for special-purpose agents whose job
+is deterministic — a sliding-window RMS, a deduplicator, an
+ML-model wrapper. An individual does not have to be a programmer.
+
 
 I am using DisSysLab to teach distributed system algorithms to
-undergraduates including first-year students. Each student uses
-DisSysLab to build an S&R app for the student's specific interests.
-And then we study the algorithms underlying the students' apps.
+undergraduates, including students in disciplines
+other than CS and first-year students. Each student uses DisSysLab to build
+an S&R app for the student's specific interests. And then we study the
+algorithms underlying the students' apps. The student's own app provides
+added motivation to study topics such as termination detection,
+global snapshots, block chain, and distributed consensus.
 
 
 ---
@@ -275,7 +305,7 @@ dsl run periodic_brief
 open brief.html
 ```
 
-For offices with multiple agents  (`situation_room`, `inbox_triage`, etc.) pick
+For offices with multiple agents (`situation_room`, `inbox_triage`, etc.) pick
 a backend and export its credentials:
 
 ```bash
