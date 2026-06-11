@@ -8,6 +8,7 @@ samples/*.aac
 !samples/.gitkeep
 
 # Demo clip shipped with the repo so `dsl run loudness_monitor`
-# works out of the box. Generator script lives next to it.
-!samples/thunderstorm.mp3
+# works out of the box on a clean install (numpy only — no librosa,
+# no MP3 codec, no llvmlite). The generator script lives next to it.
+!samples/thunderstorm.wav
 !samples/make_thunder.py

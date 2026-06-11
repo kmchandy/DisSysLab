@@ -1,6 +1,6 @@
 # Office: loudness_monitor
 
-Sources: audio_clip(path="./samples/thunderstorm.mp3", chunk_ms=200)
+Sources: audio_clip(path="./samples/thunderstorm.wav", chunk_ms=200)
 Sinks:   intelligence_display
 
 Agents:

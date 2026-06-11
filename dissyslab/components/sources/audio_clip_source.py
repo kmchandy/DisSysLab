@@ -50,10 +50,12 @@ from __future__ import annotations
 
 import sys
 import time
+import wave
 from pathlib import Path
 
 
-_TARGET_SR = 16000
+# WAV extensions decoded by the stdlib path.
+_WAV_EXTS = {".wav", ".wave"}
 
 
 class AudioClipSource:
@@ -61,7 +63,7 @@ class AudioClipSource:
 
     def __init__(
         self,
-        path: str = "./samples/clip.mp3",
+        path: str = "./samples/clip.wav",
         chunk_ms: int = 200,
         paced: bool = True,
     ):
@@ -93,38 +95,33 @@ class AudioClipSource:
             )
             self._exhausted = True
             return False
+
+        # numpy is the only hard dependency. rms_meter needs it
+        # anyway so the rest of the office wouldn't run without it.
         try:
-            import librosa
             import numpy as np
-        except ImportError as exc:
+        except ImportError:
             print(
-                f"[audio_clip] missing dependency: {exc}",
-                file=sys.stderr,
-            )
-            print(
-                "[audio_clip] Run: pip install librosa",
+                "[audio_clip] numpy is required.\n"
+                "[audio_clip] Run: pip install numpy",
                 file=sys.stderr,
             )
             self._exhausted = True
             return False
-        try:
-            y, sr = librosa.load(
-                str(self.path),
-                sr=_TARGET_SR,
-                mono=True,
-            )
-        except Exception as exc:
-            print(
-                f"[audio_clip] could not decode {self.path}: {exc}",
-                file=sys.stderr,
-            )
+
+        # WAV → stdlib path. Everything else → optional librosa.
+        if self.path.suffix.lower() in _WAV_EXTS:
+            y, sr = self._load_wav(np)
+        else:
+            y, sr = self._load_non_wav(np)
+        if y is None:
             self._exhausted = True
             return False
+
         self._sample_rate = int(sr)
         chunk_size = int(self._sample_rate * self.chunk_ms / 1000)
         if chunk_size <= 0:
             chunk_size = 1
-        # Split y into chunk_size-sized chunks; drop incomplete tail
         n_chunks = max(1, len(y) // chunk_size)
         self._chunks = [
             y[i * chunk_size:(i + 1) * chunk_size]
@@ -132,6 +129,99 @@ class AudioClipSource:
         ]
         self._started_at = time.time()
         return True
+
+    # ── WAV decoder (stdlib only) ────────────────────────────────────
+    def _load_wav(self, np):
+        """Decode a WAV file with the stdlib ``wave`` module + numpy.
+
+        Returns ``(samples_mono_float32, sample_rate)`` or
+        ``(None, None)`` on failure.
+        """
+        try:
+            with wave.open(str(self.path), "rb") as wf:
+                nchannels = wf.getnchannels()
+                sampwidth = wf.getsampwidth()
+                sample_rate = wf.getframerate()
+                nframes = wf.getnframes()
+                raw = wf.readframes(nframes)
+        except Exception as exc:
+            print(
+                f"[audio_clip] could not read WAV {self.path}: {exc}",
+                file=sys.stderr,
+            )
+            return None, None
+
+        # Convert raw bytes to float32 in [-1, 1] based on bit depth.
+        if sampwidth == 1:           # 8-bit unsigned
+            y = (
+                np.frombuffer(raw, dtype=np.uint8).astype(np.float32)
+                / 128.0
+                - 1.0
+            )
+        elif sampwidth == 2:         # 16-bit signed
+            y = (
+                np.frombuffer(raw, dtype=np.int16).astype(np.float32)
+                / 32768.0
+            )
+        elif sampwidth == 3:         # 24-bit signed (rare; expand to int32)
+            arr = np.frombuffer(raw, dtype=np.uint8).reshape(-1, 3)
+            i32 = (
+                (arr[:, 0].astype(np.int32))
+                | (arr[:, 1].astype(np.int32) << 8)
+                | (arr[:, 2].astype(np.int32) << 16)
+            )
+            # Sign-extend
+            i32 = np.where(i32 & 0x800000, i32 - 0x1000000, i32)
+            y = i32.astype(np.float32) / float(2 ** 23)
+        elif sampwidth == 4:         # 32-bit signed
+            y = (
+                np.frombuffer(raw, dtype=np.int32).astype(np.float32)
+                / float(2 ** 31)
+            )
+        else:
+            print(
+                f"[audio_clip] unsupported WAV sample width: "
+                f"{sampwidth} bytes",
+                file=sys.stderr,
+            )
+            return None, None
+
+        # Downmix to mono if needed.
+        if nchannels > 1:
+            y = y.reshape(-1, nchannels).mean(axis=1)
+        return y.astype(np.float32), int(sample_rate)
+
+    # ── Non-WAV decoder (optional librosa) ───────────────────────────
+    def _load_non_wav(self, np):
+        """Decode mp3/flac/ogg/m4a via librosa if it is installed.
+
+        librosa pulls in numba / llvmlite, which are heavy and
+        sometimes fail to install. We do not require it for the
+        default gallery experience; we ship a WAV instead. But if
+        a user points us at a non-WAV file, we try.
+        """
+        try:
+            import librosa
+        except ImportError:
+            print(
+                f"[audio_clip] {self.path.suffix} files require the "
+                "optional 'librosa' dependency.\n"
+                "[audio_clip] Either pip install librosa (and accept "
+                "the numba/llvmlite build), or convert your file to "
+                "WAV first, e.g.:\n"
+                "[audio_clip]     ffmpeg -i input.mp3 output.wav",
+                file=sys.stderr,
+            )
+            return None, None
+        try:
+            y, sr = librosa.load(str(self.path), sr=None, mono=True)
+            return y.astype(np.float32), int(sr)
+        except Exception as exc:
+            print(
+                f"[audio_clip] could not decode {self.path}: {exc}",
+                file=sys.stderr,
+            )
+            return None, None
 
     # ── Per-chunk emit ───────────────────────────────────────────────
     def run(self):
