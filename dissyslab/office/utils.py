@@ -242,6 +242,26 @@ SOURCE_REGISTRY = {
         "import": "from dissyslab.components.sources.audio_folder_source import AudioFolderSource",
         "class":  "AudioFolderSource",
     },
+
+    # ── Audio mic (live microphone, chunked) ──────────────────────────
+    # Streams chunks of live audio from the system microphone. Used by
+    # the ``loudness_monitor`` gallery office. Lazy-imports sounddevice
+    # so dsl build succeeds without portaudio installed.
+    "audio_mic": {
+        "type":   "audio_mic",
+        "import": "from dissyslab.components.sources.audio_mic_source import AudioMicSource",
+        "class":  "AudioMicSource",
+    },
+
+    # ── Audio clip (one file, chunked, paced) ─────────────────────────
+    # File-based alternative to audio_mic with the same per-chunk
+    # message contract. Useful when you want to demo or test a
+    # streaming audio office without setting up a microphone.
+    "audio_clip": {
+        "type":   "audio_clip",
+        "import": "from dissyslab.components.sources.audio_clip_source import AudioClipSource",
+        "class":  "AudioClipSource",
+    },
 }
 
 
