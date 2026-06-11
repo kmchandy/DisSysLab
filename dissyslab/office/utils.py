@@ -262,6 +262,16 @@ SOURCE_REGISTRY = {
         "import": "from dissyslab.components.sources.audio_clip_source import AudioClipSource",
         "class":  "AudioClipSource",
     },
+
+    # ── Image folder (one message per .jpg / .png file) ───────────────
+    # Used by the ``wildlife_watcher`` gallery office to feed
+    # camera-trap photos into an animal classifier agent. Emits a dict
+    # per file with filename, decoded pixel array, dimensions.
+    "image_folder": {
+        "type":   "image_folder",
+        "import": "from dissyslab.components.sources.image_folder_source import ImageFolderSource",
+        "class":  "ImageFolderSource",
+    },
 }
 
 

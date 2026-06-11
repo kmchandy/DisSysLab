@@ -61,19 +61,35 @@ class ImageFolderSource:
         self._index     = 0
 
     def _find_images(self) -> list:
-        """Find all supported image files in folder, sorted by name."""
-        if not self.folder.exists():
-            raise FileNotFoundError(
-                f"Image folder not found: {self.folder}\n"
-                f"Run first: python3 examples/module_07/download_demo_images.py"
-            )
+        """Find all supported image files in folder, sorted by name.
+
+        Missing folder and empty folder are *not* errors — they
+        produce a friendly note on first ``run()`` call and an
+        empty list. This lets ``dsl run`` complete cleanly on a
+        fresh clone where the user has not yet dropped images
+        into the office's samples folder.
+        """
+        if not self.folder.exists() or not self.folder.is_dir():
+            self._missing_folder = True
+            return []
         files = sorted([
             f for f in self.folder.iterdir()
             if f.suffix.lower() in SUPPORTED_EXTENSIONS
         ])
-        if not files:
-            raise ValueError(f"No images found in {self.folder}")
         return files
+
+    def _announce_empty_once(self) -> None:
+        """Print a one-time hint when the folder is missing/empty."""
+        if getattr(self, "_announced_empty", False):
+            return
+        self._announced_empty = True
+        resolved = self.folder.resolve()
+        exts = ", ".join(sorted(SUPPORTED_EXTENSIONS))
+        print(
+            f"[image_folder] no images found in {resolved}.\n"
+            f"[image_folder] Drop one or more {exts} files into "
+            "that folder and rerun."
+        )
 
     def run(self):
         """
@@ -83,6 +99,8 @@ class ImageFolderSource:
         """
         limit = self.max_images or len(self._files)
         if self._index >= min(len(self._files), limit):
+            if not self._files:
+                self._announce_empty_once()
             return None
 
         filepath = self._files[self._index]

@@ -1,0 +1,8 @@
+build/
+samples/*.jpg
+samples/*.jpeg
+samples/*.png
+samples/*.bmp
+samples/*.tiff
+samples/*.webp
+!samples/.gitkeep
