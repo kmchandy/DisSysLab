@@ -6,3 +6,10 @@ samples/*.bmp
 samples/*.tiff
 samples/*.webp
 !samples/.gitkeep
+
+# Ship the downloader script and the license file so users see the
+# licensing story without having to run the script. The actual
+# images are produced by `python download_samples.py` and stay
+# gitignored — no binaries in the repo.
+!samples/download_samples.py
+!samples/LICENSES.md

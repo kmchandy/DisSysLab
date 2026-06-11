@@ -37,22 +37,37 @@ Subsequent runs are offline.
 
 ## Sample images
 
-The `samples/` folder ships empty. Drop a few `.jpg` or `.png`
-images into it and run:
+The office ships with a download script for six small
+public-domain animal photos (white-tailed deer, bald eagle, black
+bear, red fox, coyote, mountain lion). Run it once from the
+samples folder:
+
+```bash
+cd dissyslab/gallery/apps/wildlife_watcher/samples
+python download_samples.py
+```
+
+Pure standard library, no pip install needed. Five photos are
+works of US federal employees (USFWS / USDA / NPS) released into
+the public domain; one is CC0. The script writes a `LICENSES.md`
+next to the images crediting each photographer and linking to the
+canonical Wikimedia Commons page where each license can be
+independently verified. Total download: ~360 KB. Existing files
+are skipped, so reruns are safe.
+
+Then:
 
 ```bash
 dsl run wildlife_watcher
 ```
 
-For HN-style first-touch demos, free Creative-Commons animal
-photos:
+Six cards roll into the terminal — one per animal that crosses
+the confidence threshold.
 
-- [Wikimedia Commons Featured Pictures — Animals](https://commons.wikimedia.org/wiki/Commons:Featured_pictures/Animals)
-- [Pixabay — Animals](https://pixabay.com/images/search/animal/) (CC0)
-- Your own phone photos of dogs, cats, birds at a feeder, deer at the back fence — any of these work.
-
-Six small photos (~100 KB each) are enough to demonstrate the
-pipeline.
+**Want to use your own images instead?** Drop any `.jpg` or `.png`
+into `samples/` and rerun — the office reads every supported
+image in the folder. The downloader script is only there to
+remove the "I have no photos handy" friction for HN drive-bys.
 
 ## Tuning
 
