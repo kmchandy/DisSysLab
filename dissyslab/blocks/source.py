@@ -155,9 +155,23 @@ class Source(Agent):
         Repeatedly calls fn to get messages and emits them. When fn
         returns None or an exception occurs, sends termination message
         to os_agent and returns.
+
+        v1.6: between iterations, poll for OS messages
+        (_Checkpoint, _PrepareRecover, _StartRecover). When the
+        agent is in RECOVER_WAITING, block until _StartRecover
+        releases the barrier. When self.os_q is None (the Source
+        is being used outside a framework Network — e.g. in unit
+        tests), the OS polling is skipped.
         """
+        from dissyslab.core import _SnapshotState
         try:
             while True:
+                # v1.6: poll OS messages between emission iterations.
+                if self.os_q is not None:
+                    self._poll_os(blocking=False)
+                    while self._snapshot_state == _SnapshotState.RECOVER_WAITING:
+                        self._poll_os(blocking=True, timeout=1.0)
+
                 msg = self._call_fn()
 
                 # None means the source is exhausted
@@ -174,6 +188,38 @@ class Source(Agent):
             print(f"[Source '{self.name}'] Error in fn: {e}")
             print(traceback.format_exc())
             self._send_termination()
+
+    # v1.6: save_state and load_state delegate to the wrapped
+    # callable's owner if it provides them. This lets source-class
+    # authors (e.g. CSVPointsSource in dissyslab/components/sources/)
+    # define their state cursor on their own object — the framework
+    # picks it up automatically when a snapshot is taken or restored.
+    def save_state(self):
+        owner = getattr(self._fn, "__self__", None)
+        if owner is not None and hasattr(owner, "save_state"):
+            return {"owner_state": owner.save_state()}
+        if self._state is None:
+            return {}
+        # Convention: keys starting with "_" are transient and not
+        # checkpointed. The rest is the source's persistent state.
+        return {
+            k: v
+            for k, v in self._state.items()
+            if not k.startswith("_")
+        }
+
+    def load_state(self, state):
+        owner = getattr(self._fn, "__self__", None)
+        if owner is not None and hasattr(owner, "load_state"):
+            if isinstance(state, dict) and "owner_state" in state:
+                owner.load_state(state["owner_state"])
+            return
+        if isinstance(state, dict) and self._state is not None:
+            # Reset persistent keys, then merge in the saved values.
+            for k in list(self._state.keys()):
+                if not k.startswith("_"):
+                    del self._state[k]
+            self._state.update(state)
 
     def __repr__(self) -> str:
         fn_name = getattr(self._fn, "__name__", repr(self._fn))

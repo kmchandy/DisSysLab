@@ -437,6 +437,13 @@ def cmd_run(args: argparse.Namespace) -> int:
     if getattr(args, "processes", False):
         os.environ["DSL_PROCESS_MODE"] = "process"
 
+    # v1.6: propagate checkpoint-resume flags to the generated build/run.py
+    # via environment variables that the artifact's __main__ block reads.
+    if getattr(args, "snapshot_interval", None) is not None:
+        os.environ["DSL_SNAPSHOT_INTERVAL"] = str(args.snapshot_interval)
+    if getattr(args, "resume", None) is not None:
+        os.environ["DSL_RESUME"] = str(args.resume)
+
     from dissyslab.office.cli_helpers import cli_run
 
     try:
@@ -1127,6 +1134,29 @@ def build_parser() -> argparse.ArgumentParser:
             "correct for I/O-bound work). Equivalent to setting "
             "DSL_PROCESS_MODE=process. See examples/module_08 for "
             "when this matters."
+        ),
+    )
+    # v1.6: checkpoint-resume opt-in flags.
+    p_run.add_argument(
+        "--snapshot-interval",
+        type=float,
+        metavar="SECONDS",
+        help=(
+            "Enable periodic distributed snapshots every SECONDS "
+            "of execution. Snapshots are written under "
+            "<office_dir>/snapshots/checkpoints/<N>/. Only "
+            "checkpoint-aware sources (those that call _poll_os "
+            "from their run loop) participate. See "
+            "docs/algorithms/CHECKPOINT_RESUME.md."
+        ),
+    )
+    p_run.add_argument(
+        "--resume",
+        metavar="N|latest",
+        help=(
+            "Resume execution from snapshot N (an integer) or "
+            "from the most recent snapshot ('latest'). Requires "
+            "that the office's sources are checkpoint-aware."
         ),
     )
     p_run.set_defaults(handler=cmd_run)

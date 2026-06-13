@@ -13,6 +13,7 @@ from __future__ import annotations
 from typing import Optional, List, Dict, Tuple, Any, Union
 from queue import SimpleQueue
 from collections import deque
+from pathlib import Path
 import multiprocessing
 from dissyslab.core import Agent, ExceptionThread, ExceptionProcess
 
@@ -92,6 +93,17 @@ class Network:
         self.threads: List[ExceptionThread] = []
         self.unresolved_connections: List[Tuple[str, str, str, str]] = []
         self._os_agent = None
+
+        # ── Checkpoint-resume configuration (v1.6) ──────────────────
+        # All default to inert values; the v1.6 feature only activates
+        # when an external caller (CLI in Part E) sets these before
+        # run_network(). When all four are at their defaults, every
+        # existing gallery office's execution path is byte-identical
+        # to v1.5.
+        self.snapshot_dir: Optional[Path] = None
+        self.snapshot_interval: Optional[float] = None
+        self.resume_from_N: Optional[int] = None
+        self.office_name: str = name if name is not None else "office"
 
         # Process compilation state (populated by compile_for_processes())
         self.compiled_for_processes: bool = False
@@ -417,6 +429,21 @@ class Network:
 
         First assigns each agent's name to its full flattened path
         so that status messages from agents match os_agent's keys.
+
+        v1.6 additions (purely additive — behaviour unchanged when
+        snapshot_dir / snapshot_interval / resume_from_N are at
+        their default None):
+        - Pass snapshot_interval, snapshot_dir, office_name through
+          to OsAgent so the periodic snapshot timer and on-disk
+          persistence are configured.
+        - Construct one input queue per source agent and wire it
+          into both ``agent.in_q[Agent._OS_PORT_NAME]`` (so the
+          source's _poll_os() can read it) and
+          ``os_agent._source_os_inports[name]`` (so the OS
+          manager's _broadcast_to_sources() can write into it).
+        - Propagate self.snapshot_dir to every agent's
+          _snapshot_dir attribute so _load_checkpoint_from_disk()
+          can find the snapshot files on resume.
         """
         from dissyslab.os_agent import OsAgent
 
@@ -428,11 +455,35 @@ class Network:
         self._os_agent = OsAgent(
             agents=self.agents,
             graph_connections=self.graph_connections,
+            # v1.6 parameters; defaults preserve existing behaviour.
+            snapshot_interval=self.snapshot_interval,
+            snapshot_dir=self.snapshot_dir,
+            office_name=self.office_name,
         )
 
         # Inject os_agent's input queue into every client agent
         for agent in self.agents.values():
             agent.os_q = self._os_agent.in_q
+
+        # ── v1.6: per-source OS input queue wiring ────────────────
+        # Every source gets one SimpleQueue. The OS manager writes
+        # _Checkpoint, _PrepareRecover, and _StartRecover messages
+        # into this queue via _broadcast_to_sources(). The source
+        # reads from it inside its run() loop via _poll_os().
+        # Non-source agents do not need a dedicated OS queue — they
+        # receive these messages on their data inports as upstream
+        # agents forward them.
+        for name in self._os_agent.source_agents:
+            agent = self.agents[name]
+            os_inport_q = SimpleQueue()
+            # Both endpoints reference the same queue object.
+            agent.in_q[Agent._OS_PORT_NAME] = os_inport_q
+            self._os_agent._source_os_inports[name] = os_inport_q
+
+        # Propagate snapshot_dir to every agent. None is fine —
+        # _load_checkpoint_from_disk short-circuits in that case.
+        for agent in self.agents.values():
+            agent._snapshot_dir = self.snapshot_dir
 
     def _wire_queues(self) -> None:
         """Wire communication queues between agents."""
@@ -553,6 +604,16 @@ class Network:
         start_time = time.time()
         for t in self.threads:
             t.start()
+
+        # v1.6: if the caller set resume_from_N before calling
+        # run_network(), initiate the four-way recovery handshake now
+        # that the agent threads are running and able to read the
+        # broadcast _PrepareRecover from their queues. The recovery
+        # protocol completes within milliseconds of the threads
+        # starting; client work resumes from the loaded checkpoint
+        # state.
+        if self.resume_from_N is not None and self._os_agent is not None:
+            self._os_agent.initiate_recovery(self.resume_from_N)
 
         failed_threads = []
         hung_threads = []

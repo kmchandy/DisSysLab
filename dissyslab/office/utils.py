@@ -272,6 +272,17 @@ SOURCE_REGISTRY = {
         "import": "from dissyslab.components.sources.image_folder_source import ImageFolderSource",
         "class":  "ImageFolderSource",
     },
+
+    # ── CSV points (x,y pairs from a file) ────────────────────────────
+    # Used by the ``recovery_demo`` gallery office (Monte Carlo π) to
+    # stream (x, y) pairs from disk. Checkpoint-aware: the wrapped
+    # CSVPointsSource implements save_state/load_state so the Source
+    # wrapper can persist a cursor across snapshots.
+    "csv_points_source": {
+        "type":   "csv_points_source",
+        "import": "from dissyslab.components.sources.csv_points_source import CSVPointsSource",
+        "class":  "CSVPointsSource",
+    },
 }
 
 

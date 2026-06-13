@@ -194,3 +194,9 @@ custom_app-for-nyasha.tar.gz
 .local/
 
 build/
+
+# v1.6: codegen chdir means offices write artifacts next to office.md,
+# so gallery offices may write brief.html / *.jsonl into their own dir.
+dissyslab/gallery/apps/*/brief.html
+dissyslab/gallery/apps/*/snapshots/
+dissyslab/gallery/apps/recovery_demo/samples/points.txt

@@ -31,10 +31,15 @@ Communication:
 
 from __future__ import annotations
 from queue import SimpleQueue, Empty
-from typing import Dict, List, Tuple, Any, Set
+from typing import Dict, List, Tuple, Any, Set, Optional
+from pathlib import Path
+import sys
 import time
 
-from dissyslab.core import _GiveMeCounts, _Shutdown
+from dissyslab.core import (
+    _GiveMeCounts, _Shutdown,
+    _Checkpoint, _Reply, _PrepareRecover, _RecoverReady, _StartRecover,
+)
 
 
 class OsAgent:
@@ -52,6 +57,10 @@ class OsAgent:
         agents: Dict[str, Any],
         graph_connections: List[Tuple[str, str, str, str]],
         poll_interval: float = 0.1,
+        # ── Checkpoint-resume parameters (v1.6) ──────────────────
+        snapshot_interval: Optional[float] = None,
+        snapshot_dir: Optional[Path] = None,
+        office_name: str = "office",
     ):
         self.all_agents = dict(agents)
         self.graph_connections = list(graph_connections)
@@ -85,6 +94,47 @@ class OsAgent:
             self.edge_sent[(fa, fp)] = 0
             self.edge_received[(ta, tp)] = 0
 
+        # ── Checkpoint-resume state (v1.6) ───────────────────────
+        # See dev/CHECKPOINT_RESUME_ALGORITHM.md.
+        self.snapshot_interval: Optional[float] = snapshot_interval
+        self.snapshot_dir: Optional[Path] = snapshot_dir
+        self.office_name: str = office_name
+
+        # Monotonic snapshot number. Incremented every time a snapshot
+        # is initiated, whether periodic or manual.
+        self._next_N: int = 0
+
+        # Wall-clock time after which the next periodic snapshot fires.
+        # Sentinel float('inf') means periodic snapshots are disabled.
+        self._next_snapshot_at: float = (
+            time.time() + snapshot_interval
+            if snapshot_interval is not None
+            else float("inf")
+        )
+
+        # In-flight snapshot bookkeeping. Keyed by N.
+        # _inflight_checkpoints[N] = {
+        #     "pending": set of agent names yet to reply,
+        #     "replies": dict of agent_name → _Reply,
+        # }
+        self._inflight_checkpoints: Dict[int, Dict[str, Any]] = {}
+
+        # In-flight recovery bookkeeping. Either None (no recovery
+        # underway) or a dict:
+        # _inflight_recovery = {
+        #     "N":       snapshot number being recovered,
+        #     "pending": set of agent names yet to send _RecoverReady,
+        # }
+        self._inflight_recovery: Optional[Dict[str, Any]] = None
+
+        # Source OS input queues, keyed by source agent name. Populated
+        # by network.py in Part C after _wire_queues completes. The
+        # OS manager uses these to put _Checkpoint, _PrepareRecover,
+        # and _StartRecover messages directly into each source's input
+        # queue, from which they propagate via upstream-forwarding to
+        # the rest of the network.
+        self._source_os_inports: Dict[str, Any] = {}
+
     # ── Main loop ─────────────────────────────────────────────────────────────
 
     def run(self) -> None:
@@ -93,11 +143,25 @@ class OsAgent:
         arrived (from sources or non-sources). Declare termination when
         all agents heard from and all edges balanced. Then shut down all
         non-source agents.
+
+        v1.6 extension: when ``snapshot_interval`` is set, the loop also
+        initiates a periodic snapshot every ``snapshot_interval`` seconds
+        and drains _Reply / _RecoverReady messages from in_q alongside
+        the existing count responses.
         """
         while True:
             time.sleep(self.poll_interval)
             self._send_give_me_counts()
             self._drain_responses()
+
+            # Periodic snapshot trigger (v1.6).
+            if time.time() >= self._next_snapshot_at:
+                self._initiate_snapshot(self._next_N)
+                self._next_N += 1
+                self._next_snapshot_at = (
+                    time.time() + self.snapshot_interval
+                )
+
             if self._terminated():
                 self._shutdown_all()
                 return
@@ -117,14 +181,24 @@ class OsAgent:
     def _drain_responses(self) -> None:
         """
         Drain all messages currently in in_q without blocking.
-        Updates counts from whatever has arrived — sources or non-sources.
+        Dispatches by message type:
+
+        - _Reply           → _collect_reply (snapshot replies)
+        - _RecoverReady    → _collect_recover_ready (recovery handshake)
+        - dict             → _update_counts (existing termination format)
         """
         while True:
             try:
                 response = self.in_q.get_nowait()
-                self._update_counts(response)
             except Empty:
                 break
+            if isinstance(response, _Reply):
+                self._collect_reply(response)
+            elif isinstance(response, _RecoverReady):
+                self._collect_recover_ready(response)
+            else:
+                # Existing count-response format: dict with agent/sent/received.
+                self._update_counts(response)
 
     # ── Count updates ─────────────────────────────────────────────────────────
 
@@ -184,3 +258,123 @@ class OsAgent:
         for name, queues in self.client_queues.items():
             for q in queues:
                 q.put(msg)
+
+    # ── Checkpoint-Resume Orchestration (v1.6) ────────────────────────────
+    # See dev/CHECKPOINT_RESUME_ALGORITHM.md for the full specification.
+    # The OS manager initiates snapshots and recoveries by putting
+    # messages directly into source input queues; the messages
+    # propagate via upstream-forwarding through the rest of the network.
+
+    def _broadcast_to_sources(self, msg: Any) -> None:
+        """Put a message in every source's OS input queue.
+
+        Source agents poll the queue from inside their run() loop
+        via Agent._poll_os() and execute the appropriate snapshot or
+        recovery handler when the message arrives. The handler then
+        forwards the same message on every outport, which is how it
+        propagates downstream.
+        """
+        for name, q in self._source_os_inports.items():
+            q.put(msg)
+
+    # ── Snapshot initiation and reply collection ─────────────────────────
+
+    def _initiate_snapshot(self, N: int) -> None:
+        """Start snapshot N by broadcasting _Checkpoint(N) to all source
+        input queues.
+
+        Records the in-flight bookkeeping so that _collect_reply can
+        decide when all agents have replied and the snapshot is
+        complete.
+        """
+        if not self._source_os_inports:
+            # No sources wired up — cannot initiate a snapshot. This
+            # happens before network.py finishes Phase 2; ignore.
+            return
+        self._inflight_checkpoints[N] = {
+            "pending": set(self.all_agents.keys()),
+            "replies": {},
+        }
+        self._broadcast_to_sources(_Checkpoint(N=N))
+
+    def _collect_reply(self, reply: '_Reply') -> None:
+        """Record one agent's snapshot reply. When the last reply for
+        snapshot N arrives, write the snapshot to disk and clear the
+        in-flight tracking."""
+        inflight = self._inflight_checkpoints.get(reply.N)
+        if inflight is None:
+            # Stray or late reply for a snapshot that has already
+            # been written or abandoned. Drop silently.
+            return
+        inflight["replies"][reply.agent] = reply
+        inflight["pending"].discard(reply.agent)
+        if not inflight["pending"]:
+            try:
+                self._write_snapshot(reply.N, inflight["replies"])
+            except Exception as exc:
+                print(
+                    f"[os_agent] snapshot {reply.N} write failed: {exc}",
+                    file=sys.stderr,
+                )
+            del self._inflight_checkpoints[reply.N]
+
+    def _write_snapshot(self, N: int, replies: Dict[str, '_Reply']) -> None:
+        """Persist snapshot N to disk under self.snapshot_dir.
+
+        Delegates to dissyslab.snapshot.write_snapshot which owns
+        the on-disk layout and naming conventions (see that module
+        for the full specification).
+        """
+        if self.snapshot_dir is None:
+            return  # in-memory only mode
+        from dissyslab.snapshot import write_snapshot
+        write_snapshot(
+            snapshot_dir=self.snapshot_dir,
+            office_name=self.office_name,
+            N=N,
+            graph_connections=self.graph_connections,
+            replies=replies,
+        )
+
+    # ── Recovery initiation and handshake ─────────────────────────────────
+
+    def initiate_recovery(self, N: int) -> None:
+        """Start the four-way recovery handshake for snapshot N.
+
+        Step 1: broadcast _PrepareRecover(N) to all source input queues.
+        Step 2: each agent loads checkpoint-N state and sends _RecoverReady.
+        Step 3 (in _collect_recover_ready): once all _RecoverReady are in,
+                broadcast _StartRecover(N) to all source input queues.
+        Step 4: each agent forwards _StartRecover and resumes execution.
+
+        Recovery wins over any in-flight snapshot: existing
+        _inflight_checkpoints are cleared (agents abandon their
+        RECORDING state when they see _PrepareRecover).
+        """
+        # Abandon any in-flight snapshots.
+        self._inflight_checkpoints.clear()
+        # Track the recovery handshake.
+        self._inflight_recovery = {
+            "N":       N,
+            "pending": set(self.all_agents.keys()),
+        }
+        self._broadcast_to_sources(_PrepareRecover(N=N))
+
+    def _collect_recover_ready(self, ready: '_RecoverReady') -> None:
+        """Record one agent's _RecoverReady. When the last one arrives,
+        broadcast _StartRecover to release the barrier."""
+        if self._inflight_recovery is None:
+            # Stray RecoverReady — no recovery underway.
+            return
+        if ready.N != self._inflight_recovery["N"]:
+            # Wrong snapshot number — ignore.
+            return
+        self._inflight_recovery["pending"].discard(ready.agent)
+        if not self._inflight_recovery["pending"]:
+            # All agents have loaded state and are awaiting StartRecover.
+            self._broadcast_to_sources(_StartRecover(N=ready.N))
+            self._inflight_recovery = None
+
+
+# Module-level helpers (filename sanitization, etc.) live in
+# dissyslab.snapshot now.

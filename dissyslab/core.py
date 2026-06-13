@@ -9,11 +9,13 @@ This module provides:
 """
 
 from __future__ import annotations
-from queue import SimpleQueue
-from threading import Thread
+from queue import SimpleQueue, Empty
+from threading import Thread, Lock
 from typing import Optional, List, Dict, Tuple, Union, Any, Protocol
 from collections import deque
 from abc import ABC, abstractmethod
+from enum import Enum
+from pathlib import Path
 import sys
 import multiprocessing
 
@@ -62,6 +64,133 @@ class _Shutdown(_OsMessage):
 class _ShutdownSignal(Exception):
     """Raised inside recv() when _Shutdown is received. Unwinds run() cleanly."""
     pass
+
+
+# ── Checkpoint-Resume OS messages (added v1.6) ────────────────────────────
+# These implement the Chandy-Lamport distributed snapshot algorithm.
+# See dev/CHECKPOINT_RESUME_ALGORITHM.md for the full specification.
+
+class _Checkpoint(_OsMessage):
+    """Marker for snapshot N.
+
+    Put in each source's input queue by the OS manager to initiate
+    snapshot N. Propagates downstream because every agent that
+    receives _Checkpoint(N) on a data inport for the first time
+    forwards _Checkpoint(N) on every one of its outports.
+
+    Multi-worker agents (MergeAsynch) may forward more than once
+    on the same outport; receivers deduplicate by the subsequent-
+    marker rule (idempotent on duplicate arrivals per inport).
+    """
+
+    def __init__(self, N: int):
+        self.N = N
+
+
+class _Reply(_OsMessage):
+    """Agent → OS: "snapshot N for me is complete."
+
+    Carries the agent's saved state (the value returned by
+    save_state) and the per-inport channel-state recording (a
+    dict mapping inport name to a list of data messages received
+    on that inport between when this agent first saw _Checkpoint(N)
+    and when _Checkpoint(N) arrived on the inport).
+
+    Travels on the existing os_q back-channel that today carries
+    _GiveMeCounts replies.
+    """
+
+    def __init__(self, N: int, agent: str, state: Any, channel_states: dict):
+        self.N = N
+        self.agent = agent
+        self.state = state
+        self.channel_states = channel_states
+
+
+class _PrepareRecover(_OsMessage):
+    """OS broadcast: stop, load checkpoint N, fill recovery buffer, wait.
+
+    Put in each source's input queue by the OS manager at the start
+    of recovery from snapshot N. Propagates downstream like
+    _Checkpoint. Each agent on receipt loads its checkpoint-N state
+    from disk via load_state(), fills a per-inport recovery buffer
+    from the on-disk channel-state files, sends _RecoverReady on
+    os_q, and enters RECOVER_WAITING.
+    """
+
+    def __init__(self, N: int):
+        self.N = N
+
+
+class _RecoverReady(_OsMessage):
+    """Agent → OS: "I have stopped, loaded state, and am waiting."
+
+    Travels on the existing os_q back-channel.
+    """
+
+    def __init__(self, N: int, agent: str):
+        self.N = N
+        self.agent = agent
+
+
+class _StartRecover(_OsMessage):
+    """OS broadcast: release the recovery barrier; resume execution.
+
+    Put in each source's input queue by the OS manager only after
+    every agent's _RecoverReady has been received. Propagates
+    downstream like _Checkpoint. Each agent on receipt exits
+    RECOVER_WAITING; subsequent recv() calls serve from the
+    per-inport recovery buffer first, then from the inport queue.
+    """
+
+    def __init__(self, N: int):
+        self.N = N
+
+
+# ── No-op lock for single-threaded agents (added v1.6) ────────────────────
+# Concurrency on snapshot state exists only in MergeAsynch, which has one
+# worker thread per inport. Every other agent has a single execution
+# thread and needs no synchronization on its own state. To keep the
+# snapshot handler code uniform — `with self._snapshot_lock: ...` —
+# every Agent gets a lock attribute initialised to this no-op singleton;
+# MergeAsynch.__init__ replaces it with a real threading.Lock.
+
+class _NoLock:
+    """Context-manager that does nothing. Singleton instance _NO_LOCK
+    is shared by every single-threaded agent."""
+    def __enter__(self): return self
+    def __exit__(self, *_): return False
+
+
+_NO_LOCK = _NoLock()
+
+
+# ── Per-agent snapshot state machine (added v1.6) ─────────────────────────
+# See dev/CHECKPOINT_RESUME_ALGORITHM.md for the full state diagram.
+
+class _SnapshotState(Enum):
+    """The agent's current state with respect to the checkpoint-resume
+    protocol.
+
+    NORMAL — no snapshot or recovery in flight; the agent processes
+        client messages as usual.
+    RECORDING — a snapshot is in progress; the client layer continues
+        running normally, and the OS layer is appending data messages
+        to per-inport channel-state lists.
+    RECOVER_WAITING — a _PrepareRecover has been received and a
+        _RecoverReady has been sent; the agent has loaded its
+        checkpoint-N state and is blocked awaiting _StartRecover.
+
+    Transitions:
+        NORMAL          --_Checkpoint(N)----->  RECORDING
+        RECORDING       --all inports closed->  NORMAL  (and send _Reply(N))
+        NORMAL          --_PrepareRecover(N)->  RECOVER_WAITING
+        RECORDING       --_PrepareRecover(N)->  RECOVER_WAITING (abandons in-flight snapshot)
+        RECOVER_WAITING --_StartRecover(N)--->  NORMAL
+    """
+    NORMAL          = "normal"
+    RECORDING       = "recording"
+    RECOVER_WAITING = "recover_waiting"
 
 
 # ============================================================================
@@ -188,6 +317,41 @@ class Agent(ABC):
         # Always set before threads start, never None at runtime
         self.os_q: Optional[QueueLike] = None
 
+        # ── Checkpoint-resume bookkeeping (v1.6) ──────────────────────────
+        # See dev/CHECKPOINT_RESUME_ALGORITHM.md for the full state machine.
+        # All access to mutable snapshot state is wrapped in
+        # `with self._snapshot_lock:`. For single-threaded agents the lock
+        # is the no-op singleton _NO_LOCK (acquire/release compile to
+        # nothing); MergeAsynch.__init__ replaces it with a real
+        # threading.Lock because its workers race on shared snapshot state.
+        self._snapshot_lock: Any = _NO_LOCK
+
+        # The agent's current state in the checkpoint-resume protocol.
+        self._snapshot_state: _SnapshotState = _SnapshotState.NORMAL
+
+        # Snapshot-in-progress data. Populated when entering RECORDING;
+        # cleared when transitioning out of RECORDING. Shape:
+        #   {"saved":        Any,            # the value save_state() returned
+        #    "open_inports": set[str],       # inports awaiting their per-inport marker
+        #    "channels":     dict[str, list] # per-inport channel-state recording
+        #   }
+        self._recording: Optional[dict] = None
+        self._recording_N: Optional[int] = None
+
+        # Recovery-in-progress data. Populated when entering
+        # RECOVER_WAITING; consumed by recv() during the catchup phase
+        # after the transition back to NORMAL.
+        self._recovery_N: Optional[int] = None
+        # Per-inport messages restored from the snapshot's channel-state
+        # files. recv() serves these to the client before pulling from
+        # the inport queue. Shape: dict[inport_name, list[Any]].
+        self._recovery_buffer: Dict[str, list] = {}
+
+        # Where snapshot files are written and read. Set by network.py
+        # at compile time when the office's checkpoint directory is
+        # known. None means this run is not checkpoint-enabled.
+        self._snapshot_dir: Optional[Path] = None
+
     # ========== Lifecycle Methods ==========
 
     def startup(self) -> None:
@@ -265,6 +429,31 @@ class Agent(ABC):
             )
 
         while True:
+            # ── Recovery buffer fast path ─────────────────────────
+            # During NORMAL or RECORDING (not RECOVER_WAITING), if
+            # this inport has buffered channel-state messages from
+            # the most recent recovery, serve them in FIFO order
+            # before pulling from the queue. The buffer only ever
+            # contains client data messages — OS messages are
+            # intercepted and never recorded into channel state.
+            if (
+                self._snapshot_state != _SnapshotState.RECOVER_WAITING
+                and self._recovery_buffer.get(inport)
+            ):
+                msg = self._recovery_buffer[inport].pop(0)
+                # Record into ongoing channel-state recording if
+                # a snapshot is in progress for this inport.
+                with self._snapshot_lock:
+                    if (
+                        self._snapshot_state == _SnapshotState.RECORDING
+                        and self._recording is not None
+                        and inport in self._recording["channels"]
+                    ):
+                        self._recording["channels"][inport].append(msg)
+                self.received[inport] += 1
+                return msg
+
+            # ── Normal queue read path ───────────────────────────
             msg = q.get()
 
             if isinstance(msg, _GiveMeCounts):
@@ -279,8 +468,32 @@ class Agent(ABC):
                 # Unwind run() cleanly
                 raise _ShutdownSignal()
 
+            elif isinstance(msg, _Checkpoint):
+                self._handle_checkpoint(msg, inport)
+
+            elif isinstance(msg, _PrepareRecover):
+                self._handle_prepare_recover(msg)
+
+            elif isinstance(msg, _StartRecover):
+                self._handle_start_recover(msg)
+
             else:
-                # Client message — count and return
+                # Client data message.
+                # During RECOVER_WAITING, the protocol guarantees no
+                # client data should be arriving. Defensively discard
+                # any that does, to avoid feeding pre-recovery data
+                # to the client.
+                if self._snapshot_state == _SnapshotState.RECOVER_WAITING:
+                    continue
+                # Record into ongoing channel-state recording if
+                # snapshot is in progress for this inport.
+                with self._snapshot_lock:
+                    if (
+                        self._snapshot_state == _SnapshotState.RECORDING
+                        and self._recording is not None
+                        and inport in self._recording["channels"]
+                    ):
+                        self._recording["channels"][inport].append(msg)
                 self.received[inport] += 1
                 return msg
 
@@ -292,6 +505,324 @@ class Agent(ABC):
         """
         if self.os_q is not None:
             self.os_q.put(msg)
+
+    # ========== Checkpoint-Resume Hooks (v1.6) ==========
+
+    # Convention: the framework constructs one input queue for every
+    # source and stores it under this key in self.in_q. Sources poll
+    # it via self._poll_os() to receive OS messages (_Checkpoint,
+    # _PrepareRecover, _StartRecover). Non-source agents receive OS
+    # messages on their normal data inport queues and do not use this
+    # key. The leading underscore prevents collision with client
+    # inport names.
+    _OS_PORT_NAME: str = "_os"
+
+    def save_state(self) -> Any:
+        """Return a pickle-safe object capturing every piece of this
+        agent's instance state that must survive a snapshot.
+
+        Default: returns an empty dict. Stateless agents need not
+        override.
+
+        Stateful agents should override and return a small dict
+        containing only *non-derivable* state — position cursors,
+        accumulators, debounce timers, per-event counters, RSS
+        seen-URL sets, etc. Re-derivable artifacts (loaded ML model
+        weights, decoded audio buffers, open file handles) should
+        not be saved; they are recreated on first use after resume.
+
+        Called by the framework at most once per snapshot. The agent
+        author should ensure save_state is cheap and free of side
+        effects.
+
+        Returns
+        -------
+        A Python object that ``pickle.dumps`` can serialize.
+        Typically a dict.
+        """
+        return {}
+
+    def load_state(self, state: Any) -> None:
+        """Restore this agent's state from an object previously
+        returned by save_state.
+
+        Default: no-op. Stateful agents override.
+
+        Called by the framework during recovery, before the
+        client's recv() returns the first post-recovery message.
+        The framework guarantees that no client message has been
+        processed by this agent between load_state and the
+        subsequent recv() returning the first post-recovery
+        message.
+
+        Parameters
+        ----------
+        state : Any
+            Whatever this agent's save_state returned at snapshot
+            time. The framework hands it back unchanged via a
+            pickle round-trip.
+        """
+        pass
+
+    def _poll_os(self, blocking: bool = False, timeout: Optional[float] = None) -> Any:
+        """For sources only: poll the OS input queue for one message
+        and dispatch it through the appropriate internal handler.
+
+        The framework constructs an input queue for every source and
+        stores it at ``self.in_q[Agent._OS_PORT_NAME]``. Sources
+        call this method from inside their ``run()`` loop to receive
+        OS messages — non-source agents receive OS messages
+        transparently through their normal recv() loop and should
+        not call this.
+
+        Typical source usage::
+
+            def run(self):
+                while True:
+                    # ... produce one item of data, emit it ...
+                    self._poll_os()                 # non-blocking
+                    # while we are in RECOVER_WAITING, stop producing
+                    # and just wait for _StartRecover.
+                    while self._snapshot_state == _SnapshotState.RECOVER_WAITING:
+                        self._poll_os(blocking=True)
+
+        Parameters
+        ----------
+        blocking : bool
+            If True, blocks until an OS message arrives. Used by
+            sources in RECOVER_WAITING. If False, returns None when
+            the queue is empty (the typical between-iterations poll
+            pattern).
+        timeout : float | None
+            If blocking, maximum seconds to wait. None means wait
+            forever.
+
+        Returns
+        -------
+        The OS message that was processed, or None if the queue was
+        empty and blocking is False.
+        """
+        q = self.in_q.get(Agent._OS_PORT_NAME)
+        if q is None:
+            return None
+        try:
+            if blocking:
+                msg = q.get(timeout=timeout) if timeout is not None else q.get()
+            else:
+                msg = q.get_nowait()
+        except Empty:
+            return None
+        # Dispatch by message type. inport is None because this
+        # message arrived on the source's dedicated OS input queue,
+        # not on a data edge.
+        if isinstance(msg, _Checkpoint):
+            self._handle_checkpoint(msg, inport=None)
+        elif isinstance(msg, _PrepareRecover):
+            self._handle_prepare_recover(msg)
+        elif isinstance(msg, _StartRecover):
+            self._handle_start_recover(msg)
+        elif isinstance(msg, _Shutdown):
+            raise _ShutdownSignal()
+        # _GiveMeCounts also flows here for sources; respond normally
+        elif isinstance(msg, _GiveMeCounts):
+            self.send_os({
+                "agent":    self.name,
+                "sent":     dict(self.sent),
+                "received": dict(self.received),
+            })
+        return msg
+
+    def _handle_checkpoint(self, msg: '_Checkpoint', inport: Optional[str]) -> None:
+        """Process a _Checkpoint(N) marker. See the algorithm doc for
+        the full Chandy-Lamport per-agent algorithm.
+
+        State transitions:
+            NORMAL    + first _Checkpoint(N) overall
+                          → RECORDING (save state, open all inports
+                            except `inport`, forward on outports)
+            RECORDING + _Checkpoint(N) on inport β
+                          → close β's recording; if all closed,
+                            send _Reply(N) and transition to NORMAL.
+
+        For MergeAsynch (multi-worker), the lock serializes all
+        access. For single-threaded agents the lock is _NO_LOCK.
+        Forwarding may happen more than once per outport
+        (at-least-once OK); receivers deduplicate by the
+        subsequent-marker rule.
+
+        Parameters
+        ----------
+        msg : _Checkpoint
+            The marker just received.
+        inport : str | None
+            The inport on which the marker arrived, or None if it
+            arrived on a source's OS input queue.
+        """
+        with self._snapshot_lock:
+            # FIRST MARKER OVERALL for snapshot msg.N
+            if self._snapshot_state == _SnapshotState.NORMAL:
+                self._snapshot_state = _SnapshotState.RECORDING
+                self._recording_N = msg.N
+                saved = self.save_state()
+                # The inport on which the first marker arrived gets
+                # the empty-queue special case (or, if it arrived
+                # on a source's OS queue, all data inports are open).
+                data_inports = [p for p in self.inports
+                                if p != Agent._OS_PORT_NAME]
+                if inport is not None and inport in data_inports:
+                    open_inports = set(data_inports) - {inport}
+                else:
+                    open_inports = set(data_inports)
+                self._recording = {
+                    "saved":        saved,
+                    "open_inports": open_inports,
+                    "channels":     {p: [] for p in open_inports},
+                }
+                # Forward on every outport (direct queue.put bypasses
+                # the data-message send-count tracking, matching the
+                # OS-message convention).
+                for outport in self.outports:
+                    q = self.out_q.get(outport)
+                    if q is not None:
+                        q.put(_Checkpoint(N=msg.N))
+                # If there are no inports to wait for (sources, or
+                # downstream agents whose only inport was the first
+                # marker), complete the snapshot immediately.
+                if not open_inports:
+                    self.send_os(_Reply(
+                        N=msg.N, agent=self.name,
+                        state=self._recording["saved"],
+                        channel_states=self._recording["channels"],
+                    ))
+                    self._recording = None
+                    self._recording_N = None
+                    self._snapshot_state = _SnapshotState.NORMAL
+                return
+
+            # SUBSEQUENT MARKER for the in-progress snapshot
+            if (
+                self._snapshot_state == _SnapshotState.RECORDING
+                and self._recording_N == msg.N
+            ):
+                if inport is None:
+                    # Duplicate OS broadcast from the OS queue —
+                    # ignore.
+                    return
+                # If this inport's recording is still open, close
+                # it now (its channel state was being captured into
+                # self._recording["channels"][inport]).
+                if inport in self._recording["open_inports"]:
+                    self._recording["open_inports"].discard(inport)
+                    # Forward on outports (at-least-once OK).
+                    for outport in self.outports:
+                        q = self.out_q.get(outport)
+                        if q is not None:
+                            q.put(_Checkpoint(N=msg.N))
+                    # All inports closed → snapshot complete for
+                    # this agent → reply and reset.
+                    if not self._recording["open_inports"]:
+                        self.send_os(_Reply(
+                            N=msg.N, agent=self.name,
+                            state=self._recording["saved"],
+                            channel_states=self._recording["channels"],
+                        ))
+                        self._recording = None
+                        self._recording_N = None
+                        self._snapshot_state = _SnapshotState.NORMAL
+                # else: duplicate marker on an already-closed inport
+                # — ignore.
+                return
+
+            # _Checkpoint received in RECOVER_WAITING or for a
+            # snapshot N other than the one in progress — ignore.
+            return
+
+    def _handle_prepare_recover(self, msg: '_PrepareRecover') -> None:
+        """Process a _PrepareRecover(N) message.
+
+        Lock-protected and idempotent on duplicate arrivals. On the
+        first arrival for snapshot N: abandon any in-flight snapshot
+        recording, load checkpoint-N state from disk, populate the
+        per-inport recovery buffer, forward _PrepareRecover on every
+        outport, send _RecoverReady on os_q, and transition to
+        RECOVER_WAITING.
+        """
+        with self._snapshot_lock:
+            # If already in recovery for this or another N, the
+            # duplicate is a no-op.
+            if self._snapshot_state == _SnapshotState.RECOVER_WAITING:
+                return
+            # Abandon any in-flight snapshot — recovery wins.
+            self._recording = None
+            self._recording_N = None
+            # Load state and channel-state from disk into the
+            # recovery buffer. Done outside the lock would be
+            # cleaner, but disk I/O for v1.6's recovery_demo office
+            # is small (a single pickle per agent and per inport)
+            # and the lock is the no-op singleton for the only
+            # agent type that will use this in v1.6 (file_source,
+            # custom accumulators — all single-threaded).
+            self._load_checkpoint_from_disk(msg.N)
+            # Tell the OS manager we are ready, then forward.
+            self.send_os(_RecoverReady(N=msg.N, agent=self.name))
+            for outport in self.outports:
+                q = self.out_q.get(outport)
+                if q is not None:
+                    q.put(_PrepareRecover(N=msg.N))
+            self._snapshot_state = _SnapshotState.RECOVER_WAITING
+            self._recovery_N = msg.N
+
+    def _handle_start_recover(self, msg: '_StartRecover') -> None:
+        """Process a _StartRecover(N) message.
+
+        Lock-protected and idempotent. Transitions back to NORMAL
+        and forwards on every outport. The recovery buffer remains
+        populated; subsequent recv() calls serve from it before
+        pulling from the inport queue.
+        """
+        with self._snapshot_lock:
+            if self._snapshot_state != _SnapshotState.RECOVER_WAITING:
+                # Not in recovery — duplicate or stray; ignore.
+                return
+            if msg.N != self._recovery_N:
+                # Mismatched N — protocol violation; safest to
+                # ignore and stay in RECOVER_WAITING until the
+                # right one arrives.
+                return
+            self._snapshot_state = _SnapshotState.NORMAL
+            for outport in self.outports:
+                q = self.out_q.get(outport)
+                if q is not None:
+                    q.put(_StartRecover(N=msg.N))
+            # _recovery_buffer stays populated — recv() will drain it.
+
+    def _load_checkpoint_from_disk(self, N: int) -> None:
+        """Read this agent's checkpoint-N state and per-inport
+        channel state from disk and populate self._recovery_buffer.
+
+        Delegates to dissyslab.snapshot for the on-disk layout —
+        see that module for the file conventions. For inports with
+        no on-disk channel file (e.g. empty channel state at the
+        cut), the recovery buffer entry is an empty list — recv()
+        then falls through to the queue directly.
+
+        If self._snapshot_dir is None (the office was not started
+        with --resume), this is a no-op; the agent does no
+        recovery loading.
+        """
+        if self._snapshot_dir is None:
+            return
+        from dissyslab.snapshot import load_agent_state, load_channel_state
+        state = load_agent_state(self._snapshot_dir, N, self.name)
+        if state is not None:
+            self.load_state(state)
+        self._recovery_buffer = {}
+        for port in self.inports:
+            if port == Agent._OS_PORT_NAME:
+                continue
+            self._recovery_buffer[port] = load_channel_state(
+                self._snapshot_dir, N, self.name, port
+            )
 
     # ========== Default Port Properties ==========
 

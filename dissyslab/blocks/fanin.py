@@ -41,6 +41,16 @@ class MergeAsynch(Agent):
         super().__init__(name=name, inports=inports, outports=["out_"])
         self.num_inputs = num_inputs
 
+        # MergeAsynch is the only multi-worker agent in DSL. Its
+        # workers share access to self._recording, self._snapshot_state,
+        # and other checkpoint-resume bookkeeping. Upgrade the no-op
+        # lock that Agent.__init__ installed to a real threading.Lock
+        # so the handler code (in core.py, lock-protected with
+        # `with self._snapshot_lock: ...`) is correct under concurrency.
+        # All other agents keep the no-op lock and pay no overhead.
+        import threading
+        self._snapshot_lock = threading.Lock()
+
     @property
     def default_inport(self) -> Optional[str]:
         """No default input (multiple inputs - ambiguous)."""

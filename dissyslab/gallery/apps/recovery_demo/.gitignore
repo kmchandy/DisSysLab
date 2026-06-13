@@ -1,0 +1,5 @@
+build/
+snapshots/
+samples/points.txt
+
+!samples/make_points.py
