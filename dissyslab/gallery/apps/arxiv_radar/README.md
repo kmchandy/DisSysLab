@@ -62,11 +62,3 @@ and then Iris, picking up a `paper_type` field and then an `impact`
 - **Add a daily digest.** Wire a `synchronizer` + a custom
   `report_writer` role + an `intelligence_display` sink. See
   `situation_room` for the multi-agent shape.
-
-## Compare to the Python equivalent
-
-A more elaborate Python implementation of the same idea lives at
-[`examples/python_offices/arxiv_tracker/`](../../examples/python_offices/arxiv_tracker/).
-That version adds a topic filter, a daily batcher, and a written
-research digest. This gallery office is intentionally simpler: it
-shows the framework primitives without distractions.
