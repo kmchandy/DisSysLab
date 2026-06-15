@@ -1,4 +1,4 @@
-# examples/custom_backend/mock_backend.py
+# docs/recipes/add-a-backend/mock_backend.py
 """
 Mock backend — proves the Backend Protocol works end-to-end without
 calling any external LLM.

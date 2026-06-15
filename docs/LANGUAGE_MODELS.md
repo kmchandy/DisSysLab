@@ -683,7 +683,7 @@ additions are designed to be opt-in.
   — the Protocol definition.
 - [`dissyslab/backends/anthropic_backend.py`](https://github.com/kmchandy/DisSysLab/blob/main/dissyslab/backends/anthropic_backend.py)
   — the reference implementation.
-- [`examples/custom_backend/`](https://github.com/kmchandy/DisSysLab/tree/main/examples/custom_backend)
+- [`docs/recipes/add-a-backend/`](https://github.com/kmchandy/DisSysLab/tree/main/docs/recipes/add-a-backend)
   — a runnable mock backend that demonstrates the registration
   pattern end-to-end without any external LLM.
 - [`docs/BUILD_APPS.md`](BUILD_APPS.md) — how to build offices
