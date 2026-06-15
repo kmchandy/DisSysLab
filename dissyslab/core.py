@@ -68,7 +68,7 @@ class _ShutdownSignal(Exception):
 
 # ── Checkpoint-Resume OS messages (added v1.6) ────────────────────────────
 # These implement the Chandy-Lamport distributed snapshot algorithm.
-# See dev/CHECKPOINT_RESUME_ALGORITHM.md for the full specification.
+# See docs/algorithms/CHECKPOINT_RESUME.md for the full specification.
 
 class _Checkpoint(_OsMessage):
     """Marker for snapshot N.
@@ -166,7 +166,7 @@ _NO_LOCK = _NoLock()
 
 
 # ── Per-agent snapshot state machine (added v1.6) ─────────────────────────
-# See dev/CHECKPOINT_RESUME_ALGORITHM.md for the full state diagram.
+# See docs/algorithms/CHECKPOINT_RESUME.md for the full state diagram.
 
 class _SnapshotState(Enum):
     """The agent's current state with respect to the checkpoint-resume
@@ -318,7 +318,7 @@ class Agent(ABC):
         self.os_q: Optional[QueueLike] = None
 
         # ── Checkpoint-resume bookkeeping (v1.6) ──────────────────────────
-        # See dev/CHECKPOINT_RESUME_ALGORITHM.md for the full state machine.
+        # See docs/algorithms/CHECKPOINT_RESUME.md for the full state machine.
         # All access to mutable snapshot state is wrapped in
         # `with self._snapshot_lock:`. For single-threaded agents the lock
         # is the no-op singleton _NO_LOCK (acquire/release compile to
@@ -663,7 +663,18 @@ class Agent(ABC):
             if self._snapshot_state == _SnapshotState.NORMAL:
                 self._snapshot_state = _SnapshotState.RECORDING
                 self._recording_N = msg.N
-                saved = self.save_state()
+                # Snapshot envelope: user state plus framework counters.
+                # The wrapping is transparent to the user's save_state /
+                # load_state contract. ``_load_checkpoint_from_disk``
+                # unwraps and applies sent/received then calls the
+                # user's load_state with the inner "user" payload.
+                # Old-format snapshots (a bare user dict without "user"
+                # key) are still accepted on load.
+                saved = {
+                    "user":     self.save_state(),
+                    "sent":     dict(self.sent),
+                    "received": dict(self.received),
+                }
                 # The inport on which the first marker arrived gets
                 # the empty-queue special case (or, if it arrived
                 # on a source's OS queue, all data inports are open).
@@ -815,7 +826,26 @@ class Agent(ABC):
         from dissyslab.snapshot import load_agent_state, load_channel_state
         state = load_agent_state(self._snapshot_dir, N, self.name)
         if state is not None:
-            self.load_state(state)
+            # v1.6: snapshot envelope is
+            #   {"user": <user_state>, "sent": {...}, "received": {...}}
+            # See _handle_checkpoint where it is constructed. Old-format
+            # snapshots (a bare user dict without "user" key) are still
+            # accepted — treat the whole dict as user state.
+            if (
+                isinstance(state, dict)
+                and "user" in state
+                and ("sent" in state or "received" in state)
+            ):
+                if "sent" in state:
+                    self.sent.update(state["sent"])
+                if "received" in state:
+                    self.received.update(state["received"])
+                user_state = state["user"]
+                if user_state is not None:
+                    self.load_state(user_state)
+            else:
+                # Backward compat: treat whole state as user state.
+                self.load_state(state)
         self._recovery_buffer = {}
         for port in self.inports:
             if port == Agent._OS_PORT_NAME:

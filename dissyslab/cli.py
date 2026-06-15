@@ -960,7 +960,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="dsl",
         description=(
-            "Build continuous offices of AI agents in plain English."
+            "Build continuous offices of specialist agents in plain English."
         ),
         epilog=(
             "Common workflow:\n"

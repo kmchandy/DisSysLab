@@ -208,7 +208,7 @@ prompt_user() {
 # ── 0. Banner ────────────────────────────────────────────────────────
 
 bold "DisSysLab installer"
-echo "Describe a continuous office of AI agents in plain English."
+echo "Describe a continuous office of specialist agents in plain English."
 echo "Sense → think → respond. Each agent uses the AI best suited to its job."
 echo
 

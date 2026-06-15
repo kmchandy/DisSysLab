@@ -11,7 +11,7 @@ Tests cover:
 - An end-to-end resume of the ``recovery_demo`` office from a
   snapshot written by a previous run
 
-See ``dev/CHECKPOINT_RESUME_ALGORITHM.md`` for the algorithm.
+See ``docs/algorithms/CHECKPOINT_RESUME.md`` for the algorithm.
 """
 
 from __future__ import annotations
@@ -321,7 +321,10 @@ class TestRecoveryDemoOffice:
                 ), f"snapshot {n} missing auto-inserted merge"
 
             # The last snapshot's per-agent state is consistent:
-            # Alex.count + Bob.count never exceeds 200.
+            # Alex.count + Bob.count never exceeds 200. State on disk
+            # is wrapped in the v1.6 framework envelope: the user's
+            # save_state() return value lives under the "user" key
+            # alongside framework counters "sent" and "received".
             last = snapshots[-1]
             alex_state = load_agent_state(
                 snapshot_root, last, 'recovery_demo_test::Alex',
@@ -329,9 +332,9 @@ class TestRecoveryDemoOffice:
             bob_state = load_agent_state(
                 snapshot_root, last, 'recovery_demo_test::Bob',
             )
-            assert alex_state is not None and 'count' in alex_state
-            assert bob_state is not None and 'count' in bob_state
-            assert 0 <= alex_state['count'] + bob_state['count'] <= 200
+            assert alex_state is not None and 'count' in alex_state['user']
+            assert bob_state is not None and 'count' in bob_state['user']
+            assert 0 <= alex_state['user']['count'] + bob_state['user']['count'] <= 200
 
     def test_resume_restores_counter_state(self):
         """Take a snapshot, then start a fresh run with
@@ -395,3 +398,195 @@ class TestRecoveryDemoOffice:
             assert alex.count >= 4 or bob.count >= 3, (
                 "Expected at least one classifier to retain its loaded count"
             )
+
+
+# ── Regression: race-free resume on cold start ────────────────────────────
+
+
+class TestRaceFreeResume:
+    """Regression test for the race between thread startup and the
+    recovery handshake. The strong property: the FIRST message produced
+    after ``--resume`` must reflect the loaded state, not default-init
+    state. Before the fix in ``network.run_network()``, threads started
+    before ``initiate_recovery`` fired; the first emitted message
+    carried default-init values (sum=1, x=1) rather than the loaded
+    snapshot's values (sum=21, x=6). State was loaded a few messages
+    later, masking the bug in any test whose assertion examined
+    final or aggregate state."""
+
+    def _build_office(self, snapshot_dir, points_path,
+                      resume_from_N=None, interval=0.0):
+        from dissyslab.core import Agent
+        from dissyslab.components.sources.csv_points_source import \
+            CSVPointsSource
+        from dissyslab.network import Network
+        from dissyslab.blocks.source import Source
+        from dissyslab.blocks.sink import Sink
+
+        class _Adder(Agent):
+            def __init__(self, name=None):
+                super().__init__(name=name, inports=["in_"], outports=["out_"])
+                self.sum = 0
+
+            def save_state(self):
+                return {"sum": self.sum}
+
+            def load_state(self, state):
+                self.sum = int((state or {}).get("sum", 0))
+
+            def run(self):
+                while True:
+                    msg = self.recv("in_")
+                    x = int(float(msg["x"]))
+                    self.sum += x
+                    self.send({"sum": self.sum, "x": x}, "out_")
+
+        results = []
+        _csv = CSVPointsSource(path=str(points_path))
+        src = Source(fn=_csv.run, interval=interval, name='source')
+        adder = _Adder(name='Adder')
+        sink = Sink(fn=lambda msg: results.append(msg), name='collector')
+
+        net = Network(
+            name='resume_race_test',
+            blocks={'source': src, 'Adder': adder, 'collector': sink},
+            connections=[
+                ('source', 'out_', 'Adder', 'in_'),
+                ('Adder',  'out_', 'collector', 'in_'),
+            ],
+        )
+        net.snapshot_dir = snapshot_dir
+        if resume_from_N is not None:
+            net.resume_from_N = resume_from_N
+        net.office_name = 'resume_race_test'
+        return net, results, adder
+
+    def test_first_post_resume_emit_reflects_loaded_state(self):
+        """The first message Adder emits after a `--resume` start MUST
+        carry the loaded snapshot's sum, not the default-init zero.
+        This test would have caught the race that produced the buggy
+        first-emit value `{"sum": 1, "x": 1}` on a snapshot where
+        `sum=15` had been recorded."""
+        from dissyslab.snapshot import write_snapshot
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            # Sequential x = 1..30. Snapshot after 5 emissions
+            # (cursor=5, sum=15). Resume run should emit
+            # {"sum": 21, "x": 6} as the FIRST message.
+            points = tmpdir / "points.txt"
+            with points.open("w") as f:
+                for i in range(1, 31):
+                    f.write(f"{i},0\n")
+            snapshot_root = tmpdir / "snapshots"
+
+            # Pre-stage a snapshot. State is wrapped in the v1.6
+            # framework envelope (user + sent + received).
+            replies = {
+                'resume_race_test::source': _MockReply(
+                    0, 'resume_race_test::source',
+                    {"user":     {"owner_state": {"cursor": 5}},
+                     "sent":     {"out_": 5},
+                     "received": {}},
+                    {},
+                ),
+                'resume_race_test::Adder': _MockReply(
+                    0, 'resume_race_test::Adder',
+                    {"user":     {"sum": 15},
+                     "sent":     {"out_": 5},
+                     "received": {"in_": 5}},
+                    {"in_": []},
+                ),
+                'resume_race_test::collector': _MockReply(
+                    0, 'resume_race_test::collector',
+                    {"user":     {},
+                     "sent":     {},
+                     "received": {"in_": 5}},
+                    {"in_": []},
+                ),
+            }
+            write_snapshot(snapshot_root, 'resume_race_test', 0, [], replies)
+
+            net, results, adder = self._build_office(
+                snapshot_root, points, resume_from_N=0, interval=0.0,
+            )
+            net.run_network(timeout=15.0)
+
+            # STRONG ASSERTION 1: First emitted x is 6, not 1.
+            # Demonstrates the source's load_state ran BEFORE the
+            # source's run() loop began emitting.
+            assert len(results) > 0, \
+                "Office produced no output after resume."
+            first = results[0]
+            assert first["x"] == 6, (
+                f"First emitted x should be 6 (snapshot cursor=5, so "
+                f"next read is line 6); got {first}. This means the "
+                f"source did not load cursor before threads started."
+            )
+
+            # STRONG ASSERTION 2: First emitted sum is 21 = 15 + 6,
+            # not 1 = 0 + 1. Demonstrates the Adder's load_state ran
+            # BEFORE the Adder's run() loop began processing.
+            assert first["sum"] == 21, (
+                f"First emitted sum should be 21 (loaded 15 + x=6); "
+                f"got {first}. This means the Adder did not load sum "
+                f"before threads started — the race we fixed in "
+                f"network.run_network()."
+            )
+
+            # STRONG ASSERTION 3: Framework counters were loaded.
+            # Snapshot recorded received[in_]=5; after processing the
+            # remaining 25 points the count should be at least 30
+            # (5 loaded + 25 new). Without framework-state save/load
+            # it would be at most 25.
+            assert adder.received["in_"] >= 30, (
+                f"Adder.received[in_] should reflect loaded counter "
+                f"(snapshot was 5); got {adder.received['in_']}. This "
+                f"means save/load of framework counters (sent/received) "
+                f"is not wired."
+            )
+
+    def test_old_format_snapshot_still_loads(self):
+        """Backward-compatibility: a snapshot written without the v1.6
+        framework envelope (plain user-state dict, as v1.6.0-rc would
+        have produced) must still be loadable. The framework counters
+        will not be restored, but the user state will."""
+        from dissyslab.snapshot import write_snapshot
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmpdir = Path(tmpdir)
+            points = tmpdir / "points.txt"
+            with points.open("w") as f:
+                for i in range(1, 31):
+                    f.write(f"{i},0\n")
+            snapshot_root = tmpdir / "snapshots"
+
+            # Old-format snapshot: bare user state dicts, no wrapping.
+            replies = {
+                'resume_race_test::source': _MockReply(
+                    0, 'resume_race_test::source',
+                    {"owner_state": {"cursor": 5}},
+                    {},
+                ),
+                'resume_race_test::Adder': _MockReply(
+                    0, 'resume_race_test::Adder',
+                    {"sum": 15},
+                    {"in_": []},
+                ),
+                'resume_race_test::collector': _MockReply(
+                    0, 'resume_race_test::collector',
+                    {},
+                    {"in_": []},
+                ),
+            }
+            write_snapshot(snapshot_root, 'resume_race_test', 0, [], replies)
+
+            net, results, adder = self._build_office(
+                snapshot_root, points, resume_from_N=0, interval=0.0,
+            )
+            net.run_network(timeout=15.0)
+
+            # User state still loads correctly even from old format.
+            assert len(results) > 0
+            assert results[0]["x"] == 6
+            assert results[0]["sum"] == 21

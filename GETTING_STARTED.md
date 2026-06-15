@@ -1,7 +1,7 @@
 # Getting Started with DisSysLab
 
 In the next **10 minutes** you will install DisSysLab, get an
-Anthropic API key, and run your first office of AI agents. 
+Anthropic API key, and run your first office of specialist agents. 
 
 Then in the following **10** minutes you will build and run a more 
 complex office of agents;  modify the office as you wish;
@@ -28,7 +28,7 @@ A few minutes after that, you'll swap to a richer office —
 **org_situation_room** — that scans Bluesky and live news feeds
 in real time, with two agents collaborating on what makes the cut.
 
-An **office** in DisSysLab is a tiny team of AI agents wired to
+An **office** in DisSysLab is a tiny team of specialist agents wired to
 a source (where data comes from) and a sink (where results go).
 You describe each agent's role in plain English. DisSysLab takes
 care of threading, message passing, and shutdown.

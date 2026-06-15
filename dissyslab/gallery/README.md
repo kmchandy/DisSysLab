@@ -35,6 +35,10 @@ output in seconds.
 | [`periodic_brief`](apps/periodic_brief/) | Morning briefing combining BBC + NPR news, Pasadena weather, and stock tickers (AAPL, NVDA, MSFT) into one HTML page. | Zero LLM calls. Pure orchestration of public APIs into a styled brief. |
 | [`weather_monitor`](apps/weather_monitor/) | Hourly plain-English weather briefing for a city you pick. | One LLM call per reading; ~30 s on Ollama, instant on OpenRouter. |
 | [`stocks_monitor`](apps/stocks_monitor/) | One-line read of a stock ticker's movement every few minutes. | One LLM call per reading; same latency as weather_monitor. |
+| [`loudness_monitor`](apps/loudness_monitor/) | Live mic or audio file → sliding-window RMS → threshold-crossing alert. | Pure signal processing, no LLM. Demonstrates streaming sense-respond. |
+| [`backyard_birds`](apps/backyard_birds/) | Audio clips (mic or files) → BirdNET classifier → bird species per clip with confidence scores. | Local ML model, no LLM. BirdNET runs in-process via a Python role. |
+| [`wildlife_watcher`](apps/wildlife_watcher/) | Image files (e.g. camera-trap photos) → ML classifier → species labels with confidence filtering. | Local image classifier, no LLM. A `confidence_filter` role drops low-confidence predictions. |
+| [`recovery_demo`](apps/recovery_demo/) | Monte Carlo π estimator that demonstrates v1.6 checkpoint-recovery. With `--snapshot-interval N` the office takes a distributed snapshot every N seconds; with `--resume latest` it restarts from the most recent snapshot. | Pure Python, no LLM. Demonstrates the Chandy-Lamport distributed snapshot algorithm; see [`docs/algorithms/CHECKPOINT_RESUME.md`](../../docs/algorithms/CHECKPOINT_RESUME.md). |
 
 Start with `periodic_brief` — it's the cleanest demo of the
 framework's value (multi-source orchestration, structured output)
@@ -55,14 +59,27 @@ they take 1–5 minutes — fast enough for an interactive demo.
 | [`periodic_brief_pro`](apps/periodic_brief_pro/) | Same idea as `periodic_brief` plus a sense → think → respond news pipeline (entity / topic / urgency tagging, then a writer composing per-article briefs), plus Google Calendar, plus Gmail. The richest single-page brief. | OpenRouter or Claude key; `CALENDAR_ICS_URL`; `GMAIL_USER` and `GMAIL_APP_PASSWORD`. |
 | [`situation_room`](apps/situation_room/) | Three news feeds → dedupe → four parallel thinkers (entity, severity, topic, geo) → synchronizer → writer → terminal + JSONL archive. The framework's canonical s→t→r demo. | OpenRouter or Claude key recommended. |
 | [`situation_room_pro`](apps/situation_room_pro/) | Same office, Claude as the writer for top-quality briefings, open-weight Qwen (Ollama or OpenRouter) for the four extractors. Demonstrates per-role backend override. | Anthropic key, plus your usual `DSL_BACKEND` (Ollama or OpenRouter) for the cheaper roles. |
+| [`arxiv_radar`](apps/arxiv_radar/) | Daily arXiv papers in topics you pick → LLM rater → digest of high-relevance items. | OpenRouter or Claude key. No third-party signups. |
+| [`kalshi_market_watch`](apps/kalshi_market_watch/) | Polls Kalshi prediction markets → LLM analyst writes a briefing about price moves and the reasoning behind them. | OpenRouter or Claude key. Kalshi market data is public; no exchange key needed. |
+| [`competitor_watch`](apps/competitor_watch/) | Watches BBC Tech + TechCrunch + VentureBeat AI; annotates each article with entities + sentiment + topic; writes a daily markdown digest. | OpenRouter or Claude key. No third-party signups beyond that. |
 | [`inbox_triage`](apps/inbox_triage/) | Watches Gmail; rates each unread email by urgency + sentiment, summarises it, drops a digest of keepers into Slack. | OpenRouter or Claude key; `GMAIL_USER`, `GMAIL_APP_PASSWORD`, `SLACK_WEBHOOK_URL`. |
 | [`ticket_router`](apps/ticket_router/) | Listens on a webhook for support tickets; classifies severity + urgency + category; posts the keepers to an oncall Slack channel. | OpenRouter or Claude key; `SLACK_ONCALL_WEBHOOK`. |
-| [`competitor_watch`](apps/competitor_watch/) | Watches BBC Tech + TechCrunch + VentureBeat AI; annotates each article with entities + sentiment + topic; writes a daily markdown digest. | OpenRouter or Claude key. No third-party signups beyond that. |
 | [`lead_qualifier`](apps/lead_qualifier/) | Listens on a webhook for form submissions; summarises each lead + tags sentiment and urgency; forwards qualified leads to your CRM via outbound webhook. | OpenRouter or Claude key; `CRM_WEBHOOK_URL`. |
 | [`new_grad_jobs`](apps/new_grad_jobs/) | Watches Hacker News' Who's Hiring thread; screens postings for entry-level / new-grad fit; reformats matches as structured briefs. | OpenRouter or Claude key (hundreds of postings × 2 LLM calls). |
+| [`job_hunter`](apps/job_hunter/) | RSS job feeds → screen for relevance → match to your resume → produce a tailored cover letter, tailored resume, and company background brief per match. | OpenRouter or Claude key. Your resume as a markdown file. |
+| [`wardrobe_assistant`](apps/wardrobe_assistant/) | Calendar + weather + your wardrobe inventory → daily outfit recommendation. | OpenRouter or Claude key; `CALENDAR_ICS_URL`. |
+| [`debate`](apps/debate/) | Four panellists on different LLM backends discuss a problem; a moderator summarizes consensus and disagreement per round. Optional interactive step-through via `DSL_DEBATE_STEP`. | Multiple LLM keys recommended (Anthropic, OpenAI, Google, OpenRouter) to make the per-role backend variety visible. |
 
 Each app's own README documents which env vars to export and what
 to expect for runtime and cost.
+
+**Attribution.** `job_hunter` and `wardrobe_assistant` were created
+by Caltech undergraduate Nyasha Makaya. The copies in this gallery
+are reference versions. Nyasha maintains his own React/FastAPI
+deployments at
+[github.com/Nyasha2/job-hunter](https://github.com/Nyasha2/job-hunter)
+and [github.com/Nyasha2/wardrobe-assistant](https://github.com/Nyasha2/wardrobe-assistant);
+both use `dissyslab` as a PyPI dependency.
 
 ---
 

@@ -203,21 +203,21 @@ only when you want continuous operation.
 
 | App | What it does | Notable technique |
 |---|---|---|
-| loudness_monitor *(in development)* | Live audio stream → threshold → alert | Streaming sense-respond, no LLM |
-| backyard_birds *(in development)* | Audio classification of bird calls | ML-model agent, no LLM |
-| wildlife_watcher *(in development)* | Image classification of camera-trap photos | ML-model agent, no LLM |
 | [periodic_brief](dissyslab/gallery/apps/periodic_brief/) | Morning HTML brief: news + weather + tickers | Zero-LLM stream processing |
 | [situation_room](dissyslab/gallery/apps/situation_room/) | News → multi-agent enrichment → digest | Five parallel agents, synchronizer |
 | [arxiv_radar](dissyslab/gallery/apps/arxiv_radar/) | Daily arXiv papers → LLM rater → digest | Web-scraped source, LLM rating |
-| [job_hunter](https://github.com/Nyasha2/job-hunter) | RSS jobs → screen → match → tailored materials | Five-agent fan-out, structured output |
 | [kalshi_market_watch](dissyslab/gallery/apps/kalshi_market_watch/) | Polls prediction markets → LLM briefing | External API + rate limiting |
+| [backyard_birds](dissyslab/gallery/apps/backyard_birds/) | Audio classification of bird calls | BirdNET classifier in a Python role |
+| [wildlife_watcher](dissyslab/gallery/apps/wildlife_watcher/) | Image classification of camera-trap photos | Image classifier with confidence filtering |
+| loudness_monitor | Live audio stream → threshold → alert | Streaming sense-respond, no LLM |
+| [recovery_demo](dissyslab/gallery/apps/recovery_demo/) | Monte Carlo π estimator with checkpoint-recovery | Distributed snapshot algorithm (Chandy-Lamport) |
+| [job_hunter](https://github.com/Nyasha2/job-hunter) | RSS jobs → screen → match → tailored materials | Five-agent fan-out, structured output |
 | [wardrobe_assistant](https://github.com/Nyasha2/wardrobe-assistant) | Calendar + weather → daily outfit recommendation | Multi-source fan-in, multi-stage pipeline |
+| [calendar_manager](https://github.com/Nyasha2/calendar-manager) | Local events → matched against open slots in your calendar | Two-source fan-in, schedule matching |
 
-`job_hunter` and `wardrobe_assistant` were created and are maintained
-by Caltech undergraduate **Nyasha Makaya**.
-Nyasha also built an app, **calendar_manager**, that searches for listings
-of events that interest you in your area and matches them with available
-slots in your calendar. See
+`job_hunter`, `wardrobe_assistant`, and `calendar_manager` were
+created and are maintained by Caltech undergraduate **Nyasha
+Makaya**:
 
 - [github.com/Nyasha2/job-hunter](https://github.com/Nyasha2/job-hunter)
 - [github.com/Nyasha2/wardrobe-assistant](https://github.com/Nyasha2/wardrobe-assistant)
@@ -225,7 +225,7 @@ slots in your calendar. See
 
 Each of Nyasha's apps follows the same pattern: a DisSysLab office
 (`office.md` + role files), a FastAPI backend that wraps `dsl run`,
-and a React frontend. He uses `dissyslab` as a PyPI dependency. 
+and a React frontend. He uses `dissyslab` as a PyPI dependency.
 Anybody can build sense-respond apps in the same way.
 
 Enter `dsl list` to see apps shipped with this package. See
@@ -249,6 +249,27 @@ files and executes the app.
 
 ---
 
+## Current limitations
+
+What DisSysLab does **not** do in this release, named honestly so
+new users do not infer promises the framework does not keep:
+
+- **Single machine.** An office runs in one process (or one
+  process per agent with `dsl run --processes`). Multi-machine
+  distribution is on the v2.x roadmap.
+- **Checkpoint-recovery is opt-in.** New in v1.6, the framework
+  implements the Chandy-Lamport distributed snapshot algorithm;
+  the `recovery_demo` gallery office demonstrates the protocol
+  end-to-end. Other shipped offices use it as their authors add
+  `save_state` / `load_state` methods on their stateful agents.
+  See [docs/algorithms/CHECKPOINT_RESUME.md](docs/algorithms/CHECKPOINT_RESUME.md).
+- **No first-party web UI.** [Nyasha Makaya](https://github.com/Nyasha2)
+  ships React/FastAPI frontends on top of his three offices as
+  the recommended deployment pattern for office authors who want
+  a UI; the framework itself stays Python-only.
+
+---
+
 ## Why I am building DisSysLab
 
 Sense-and-respond systems have been used by large institutions for
@@ -256,9 +277,14 @@ decades. Militaries formalized them as the OODA loop (observe,
 orient, decide, act). Stephan Haeckel introduced "sense and
 respond" as a business methodology in 1992. In 2009, Roy Schulte of
 Gartner and I published *Event Processing: Designing IT Systems for
-Agile Companies*, which surveys the field and describes many use
-cases. I worked on two startups building S&R systems, and helped
-build earthquake-warning and radiation-detection systems.
+Agile Companies* (Morgan Kaufmann), which surveys the field and
+describes many use cases. I worked on two startups building S&R
+systems, and helped build earthquake-warning and radiation-detection
+systems. For an account of the earthquake-warning work, see
+*Community Sense and Response Systems: Your Phone as Quake
+Detector*, Communications of the ACM, July 2014. And for radiation
+detection see *Sensor Networks for the Detection and Tracking of Radiation
+and Other Threats in Cities* -  Information Processing in Sensor Networks (IPSN), 2011 
 
 I saw the power of S&R systems. I want individuals — students,
 small businesses, researchers — to harness that power.
@@ -277,7 +303,10 @@ other than CS and first-year students. Each student uses DisSysLab to build
 an S&R app for the student's specific interests. And then we study the
 algorithms underlying the students' apps. The student's own app provides
 added motivation to study topics such as termination detection,
-global snapshots, block chain, and distributed consensus.
+global snapshots, block chain, and distributed consensus. For the
+formal treatment of concurrent algorithms that informs the course,
+see *Parallel Program Design: A Foundation*, K. Mani Chandy and
+Jayadev Misra (Addison-Wesley, 1988).
 
 
 ---
@@ -290,6 +319,8 @@ global snapshots, block chain, and distributed consensus.
   app catalog with annotations.
 - **[Sample digest](dev/experiments/situation_room_sample_day_1.md)**
   — what a real morning's `situation_room` output looks like.
+- **[CHANGELOG.md](CHANGELOG.md)** — what is new in each release,
+  including the v1.6 distributed snapshot checkpoint-recovery.
 
 ---
 

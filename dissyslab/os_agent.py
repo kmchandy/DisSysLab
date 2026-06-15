@@ -95,7 +95,7 @@ class OsAgent:
             self.edge_received[(ta, tp)] = 0
 
         # ── Checkpoint-resume state (v1.6) ───────────────────────
-        # See dev/CHECKPOINT_RESUME_ALGORITHM.md.
+        # See docs/algorithms/CHECKPOINT_RESUME.md.
         self.snapshot_interval: Optional[float] = snapshot_interval
         self.snapshot_dir: Optional[Path] = snapshot_dir
         self.office_name: str = office_name
@@ -260,7 +260,7 @@ class OsAgent:
                 q.put(msg)
 
     # ── Checkpoint-Resume Orchestration (v1.6) ────────────────────────────
-    # See dev/CHECKPOINT_RESUME_ALGORITHM.md for the full specification.
+    # See docs/algorithms/CHECKPOINT_RESUME.md for the full specification.
     # The OS manager initiates snapshots and recoveries by putting
     # messages directly into source input queues; the messages
     # propagate via upstream-forwarding through the rest of the network.

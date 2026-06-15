@@ -602,18 +602,29 @@ class Network:
         import time
 
         start_time = time.time()
+
+        # v1.6: when started with --resume, load each agent's user
+        # state AND populate its channel-state recovery buffer from
+        # disk BEFORE starting any threads. This is synchronous: every
+        # agent is in its post-snapshot state before t.start() spawns
+        # the first worker thread, so there is no race between thread
+        # startup and the (former) recovery handshake.
+        #
+        # Agents start in NORMAL state. recv() drains _recovery_buffer
+        # before reading from the queue (see core.py recv() at
+        # _recovery_buffer check), so the in-flight messages recorded
+        # at the snapshot cut replay first; the source picks up from
+        # its saved cursor; everything is consistent without the
+        # in-process four-way handshake.
+        #
+        # The handshake-based initiate_recovery is still available on
+        # the OS agent for the future in-process recovery use case.
+        if self.resume_from_N is not None:
+            for agent in self.agents.values():
+                agent._load_checkpoint_from_disk(self.resume_from_N)
+
         for t in self.threads:
             t.start()
-
-        # v1.6: if the caller set resume_from_N before calling
-        # run_network(), initiate the four-way recovery handshake now
-        # that the agent threads are running and able to read the
-        # broadcast _PrepareRecover from their queues. The recovery
-        # protocol completes within milliseconds of the threads
-        # starting; client work resumes from the loaded checkpoint
-        # state.
-        if self.resume_from_N is not None and self._os_agent is not None:
-            self._os_agent.initiate_recovery(self.resume_from_N)
 
         failed_threads = []
         hung_threads = []

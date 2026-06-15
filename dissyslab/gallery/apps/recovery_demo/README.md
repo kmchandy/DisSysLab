@@ -73,17 +73,26 @@ After ~30 seconds press **Ctrl-C**. A few snapshots will have been written.
 ## Resume from a snapshot
 
 ```bash
-dsl run recovery_demo --resume latest --snapshot-interval 5
+dsl run recovery_demo --resume latest
 ```
 
 The office reconstructs the agents, loads each agent's state from
 disk, refills the channel queues with the messages that were
 in-flight at the cut, and continues. The π estimate picks up from
 the saved counts rather than restarting at zero — visible
-confirmation that the four-way recovery handshake worked.
+confirmation that snapshot-resume restored the recorded state
+before any agent began processing new messages.
 
 Specific snapshot numbers also work: `--resume 3` resumes from
 `snapshots/checkpoints/000003/`.
+
+`--resume` and `--snapshot-interval` are independent. Add
+`--snapshot-interval 5` to keep snapshotting during the resumed
+run, so a second crash can also be recovered:
+
+```bash
+dsl run recovery_demo --resume latest --snapshot-interval 5
+```
 
 ## What this demonstrates
 
@@ -99,7 +108,7 @@ Specific snapshot numbers also work: `--resume 3` resumes from
 ## Algorithm reference
 
 The algorithm's specification lives in
-[`dev/CHECKPOINT_RESUME_ALGORITHM.md`](../../../dev/CHECKPOINT_RESUME_ALGORITHM.md).
+[`docs/algorithms/CHECKPOINT_RESUME.md`](../../../docs/algorithms/CHECKPOINT_RESUME.md).
 Read that document and then read the three role files
 alongside `dissyslab/core.py`'s `Agent._handle_checkpoint` /
 `_handle_prepare_recover` / `_handle_start_recover` and

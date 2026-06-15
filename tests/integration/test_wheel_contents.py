@@ -62,6 +62,10 @@ REQUIRED_FILE_GLOBS = [
     # Tier 1 (no-key, the ten-second demo).
     "dissyslab/gallery/apps/periodic_brief/office.md",
     "dissyslab/gallery/apps/periodic_brief/README.md",
+    # periodic_brief's HTML sink lives alongside the office, not under
+    # dissyslab/components/sinks/ (it used to, before the move in
+    # "v1.4.x: app-specific sinks live in gallery app folders").
+    "dissyslab/gallery/apps/periodic_brief/sinks/periodic_brief_html_sink.py",
     "dissyslab/gallery/apps/weather_monitor/office.md",
     "dissyslab/gallery/apps/stocks_monitor/office.md",
 
@@ -74,7 +78,6 @@ REQUIRED_FILE_GLOBS = [
     "dissyslab/gallery/apps/situation_room_pro/roles/writer.py",
 
     # --- Components shipped as Python modules (not data) ------------------
-    "dissyslab/components/sinks/periodic_brief_html_sink.py",
     "dissyslab/components/sources/__init__.py",
 
     # --- Core framework entry points --------------------------------------

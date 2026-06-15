@@ -1,9 +1,9 @@
 [project]
 name = "dissyslab"
-version = "1.4.0"
-description = "DisSysLab — build continuous offices of AI agents in plain English."
+version = "1.6.0"
+description = "DisSysLab — build continuous offices of specialist agents in plain English."
 readme = "README.pypi.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [{ name = "K. Mani Chandy", email = "kmchandy@gmail.com" }]
 keywords = [
@@ -23,7 +23,6 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
