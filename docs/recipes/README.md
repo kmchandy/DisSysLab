@@ -35,6 +35,9 @@ one office.
 - **[How to deploy with Docker](deploy-with-docker.md)** — run an
   office continuously in the cloud on a schedule (Docker + Railway,
   or cron + Docker on your own machine).
+- **[How to add a custom LLM backend](add-a-backend/README.md)** —
+  plug a non-shipped LLM provider into DisSysLab without forking
+  the package. Mock + Ollama examples.
 
 ## Related references
 
