@@ -105,6 +105,10 @@ exclude = ["tests*", "examples*", "gallery*", "dev*", "site*", "micro_course*"]
 [tool.pytest.ini_options]
 minversion = "8.0"
 testpaths = ["tests"]
+# pythonpath adds the repo root to sys.path so `from dissyslab import ...`
+# works in tests even without the package being pip-installed first.
+# Carried over from the now-removed pytest.ini.
+pythonpath = ["."]
 addopts = "-v --tb=short --strict-markers"
 markers = [
   "unit: Unit tests",
