@@ -7,7 +7,7 @@ each one accepts, and how to connect it in `office.md`.
 You can also build your own sources and sinks.
 
 For new users, start with the [Getting Started
-guide](../GETTING_STARTED.md) and the gallery (`dsl list`); come back
+guide](GETTING_STARTED.md) and the gallery (`dsl list`); come back
 here once you want to swap in a different source or send results
 somewhere new.
 

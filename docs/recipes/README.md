@@ -5,7 +5,7 @@ Each recipe shows the smallest example that demonstrates a
 pattern, with a working gallery example you can run.
 
 If you're brand new, start with the
-[Getting Started guide](../../GETTING_STARTED.md) first. The
+[Getting Started guide](../GETTING_STARTED.md) first. The
 recipes assume you've installed DisSysLab and have run at least
 one office.
 
