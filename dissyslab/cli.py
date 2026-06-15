@@ -274,7 +274,7 @@ def _explain_failure_message(command: str, exc: BaseException) -> str:
                 f"  Fix: compare `which dsl` and `which python` — they must "
                 f"match.\n"
                 f"       If you're using a venv, activate it first.\n"
-                f"       See API_KEY_SETUP.md for details."
+                f"       See docs/API_KEY_SETUP.md for details."
             )
         return (
             f"{command} failed: module '{name}' not found.\n"
@@ -290,7 +290,7 @@ def _explain_failure_message(command: str, exc: BaseException) -> str:
             f"{command} failed: Anthropic rejected the API key (HTTP 401).\n"
             f"  Fix: run `dsl doctor` from the office folder to check .env,\n"
             f"       then re-copy your key from https://console.anthropic.com/\n"
-            f"       See API_KEY_SETUP.md for the full checklist."
+            f"       See docs/API_KEY_SETUP.md for the full checklist."
         )
     if "429" in msg or "rate limit" in lower:
         return (
@@ -310,7 +310,7 @@ def _explain_failure_message(command: str, exc: BaseException) -> str:
             f"{command} failed: ANTHROPIC_API_KEY isn't set.\n"
             f"  Fix: create a .env file in the office folder:\n"
             f"         echo \"ANTHROPIC_API_KEY=<your-key>\" > .env\n"
-            f"       See API_KEY_SETUP.md for the full walkthrough."
+            f"       See docs/API_KEY_SETUP.md for the full walkthrough."
         )
 
     # Common file-not-found during artifact startup (e.g. missing run.py).
@@ -319,7 +319,7 @@ def _explain_failure_message(command: str, exc: BaseException) -> str:
         return (
             f"{command} failed: file not found: {missing}\n"
             f"  If this is build/run.py, run `dsl build <office_dir>` first.\n"
-            f"  If this is .env, see API_KEY_SETUP.md."
+            f"  If this is .env, see docs/API_KEY_SETUP.md."
         )
 
     # Port-in-use from the webhook source (or any other socket-binding

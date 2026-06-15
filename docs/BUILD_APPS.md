@@ -619,5 +619,5 @@ The `examples/module_*` folders show this style.
 - [`docs/recipes/`](recipes/) — how-tos for specific tasks
   (adding an RSS source, monitoring an inbox, receiving
   webhooks, ...).
-- [`API_KEY_SETUP.md`](../API_KEY_SETUP.md) — environment
+- [`API_KEY_SETUP.md`](API_KEY_SETUP.md) — environment
   variables for Anthropic, Gmail, Slack, etc.
