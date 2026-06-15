@@ -32,6 +32,9 @@ one office.
 - **[How to receive webhooks](receive-webhooks.md)** — listen for
   HTTP POSTs from another service (GitHub, Stripe, Zapier, another
   office) and let an agent decide what to do with each one.
+- **[How to deploy with Docker](deploy-with-docker.md)** — run an
+  office continuously in the cloud on a schedule (Docker + Railway,
+  or cron + Docker on your own machine).
 
 ## Related references
 

@@ -321,6 +321,9 @@ Jayadev Misra (Addison-Wesley, 1988).
   — what a real morning's `situation_room` output looks like.
 - **[CHANGELOG.md](CHANGELOG.md)** — what is new in each release,
   including the v1.6 distributed snapshot checkpoint-recovery.
+- **[Deploy with Docker](docs/recipes/deploy-with-docker.md)** —
+  run an office continuously in the cloud on a schedule
+  (Docker + Railway, or cron + Docker on your own machine).
 
 ---
 
