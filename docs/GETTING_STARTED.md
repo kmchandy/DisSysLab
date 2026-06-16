@@ -37,7 +37,7 @@ care of threading, message passing, and shutdown.
 
 ## Prerequisites
 
-- **Python 3.9 or newer.** Check with `python3 --version`. Most
+- **Python 3.10 or newer.** Check with `python3 --version`. Most
   Macs and modern Linux distributions already have it.
 - **A terminal.** Terminal.app on Mac, any terminal on Linux,
   PowerShell or Windows Terminal on Windows.
@@ -73,11 +73,11 @@ dsl --version
 ```
 
 ## Troubleshooting
-You should see a version number like `1.2.4` or higher. If you
+You should see a version number like `1.6.0` or higher. If you
 see **"command not found: dsl"**, your venv didn't activate.
 Re-run the `source .venv/bin/activate` line and try again.
 
-If you see a version number lower than `1.2.4`, two situations
+If you see a version number lower than `1.6.0`, two situations
 are possible. Check `which dsl` first to tell them apart:
 
 ```bash
@@ -509,4 +509,4 @@ with:
 
 ---
 
-*Last reviewed for DisSysLab v1.2.4.*
+*Last reviewed for DisSysLab v1.6.0.*
