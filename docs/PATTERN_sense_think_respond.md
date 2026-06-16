@@ -34,9 +34,6 @@ THINK   ┌──────────┐ ┌──────────�
                   │    writer     │              (SLOT 3)
                   └───────┬───────┘
                           ▼
-                      ┬───────┬
-                publish     revise/discard
-                      ▼          ▼
 RESPOND        ┌──────────┐ ┌──────────┐         (SLOT 4)
                │ sink A   │ │ sink B   │
                └──────────┘ └──────────┘
@@ -71,11 +68,8 @@ THINK   ┌──────────┐ ┌──────────�
                   │    writer     │              (SLOT 3)
                   └───────┬───────┘
                           ▼
-                      ┬───────┬
-                publish     revise/discard
-                      ▼          ▼
 RESPOND        ┌──────────┐ ┌──────────┐        
-               │ display  │ │ archiv   │          (Slot 4)
+               │ display  │ │ archive  │          (Slot 4)
                └──────────┘ └──────────┘
 ```
 
@@ -119,7 +113,7 @@ Offices that follow this pattern:
 - **[`situation_room`](../dissyslab/gallery/apps/situation_room/)**
   — three news feeds → deduplicator → four parallel thinkers
   (entity, severity, topic, location) → synchronizer → writer →
-  evaluator → intelligence display + JSONL. The canonical instance.
+  intelligence display + JSONL. The canonical instance.
 
 - **[`situation_room_pro`](../dissyslab/gallery/apps/situation_room_pro/)**
   — same office, Claude as the writer, open-weight Qwen for every
