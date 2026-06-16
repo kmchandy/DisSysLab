@@ -606,7 +606,9 @@ pass them to `Network(blocks=..., connections=...)`, and call
 behaviour — for example, agents that maintain state across
 messages or implement custom termination logic.
 
-The `examples/module_*` folders show this style.
+See `dissyslab/gallery/apps/recovery_demo/` and the role files
+under any gallery office's `roles/` for this pattern — stateful
+`Agent` subclasses with `save_state` / `load_state` overrides.
 
 ---
 
@@ -615,7 +617,8 @@ The `examples/module_*` folders show this style.
 - [`docs/LANGUAGE_MODELS.md`](LANGUAGE_MODELS.md) — switching
   the LLM, mixing backends, comparing models.
 - [`dissyslab/gallery/`](https://github.com/kmchandy/DisSysLab/tree/main/dissyslab/gallery)
-  — twelve worked examples covering the patterns above.
+  — twenty worked offices covering the patterns above; `dsl list`
+  prints them with one-line descriptions.
 - [`docs/recipes/`](recipes/) — how-tos for specific tasks
   (adding an RSS source, monitoring an inbox, receiving
   webhooks, ...).
