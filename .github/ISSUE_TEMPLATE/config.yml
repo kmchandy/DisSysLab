@@ -1,0 +1,11 @@
+# Force issue reporters through the templates instead of opening
+# a blank issue. Reduces low-context bug reports.
+blank_issues_enabled: false
+
+# If GitHub Discussions becomes enabled on the repo later, uncomment
+# this so "how do I" questions land there rather than in Issues.
+#
+# contact_links:
+#   - name: How-do-I question
+#     url: https://github.com/kmchandy/DisSysLab/discussions
+#     about: Ask for help, ideas, and how-to in GitHub Discussions.
