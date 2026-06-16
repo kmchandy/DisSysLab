@@ -3,15 +3,12 @@
 Utility functions for DisSysLab.
 
 Available utilities:
-- visualize: Visualize network structure and connections
-- draw: Alias for visualize
 - get_anthropic_client: Get Anthropic API client
-- get_openai_client: Get OpenAI API client
-- get_anthropic_key: Get Anthropic API key
-- get_openai_key: Get OpenAI API key
+- get_openai_client:    Get OpenAI API client
+- get_anthropic_key:    Get Anthropic API key
+- get_openai_key:       Get OpenAI API key
 """
 
-from dissyslab.utils.visualize import visualize, draw
 from dissyslab.utils.get_credentials import (
     get_anthropic_client,
     get_openai_client,
@@ -20,10 +17,6 @@ from dissyslab.utils.get_credentials import (
 )
 
 __all__ = [
-    # Visualization
-    "visualize",
-    "draw",
-    # Credentials
     "get_anthropic_client",
     "get_openai_client",
     "get_anthropic_key",

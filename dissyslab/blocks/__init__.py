@@ -16,7 +16,6 @@ from dissyslab.blocks.transform import Transform
 from dissyslab.blocks.sink import Sink
 from dissyslab.blocks.fanout import Broadcast
 from dissyslab.blocks.fanin import MergeAsynch
-from dissyslab.blocks.merge_synch import MergeSynch
 from dissyslab.blocks.split import Split
 from dissyslab.blocks.role import Role
 
@@ -26,7 +25,6 @@ __all__ = [
     "Sink",
     "Broadcast",
     "MergeAsynch",
-    "MergeSynch",
     "Split",
     "Role",
 ]
