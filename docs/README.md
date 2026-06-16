@@ -39,7 +39,6 @@ indexes the common errors by their exact text. The command
 | [SOURCES_AND_SINKS.md](SOURCES_AND_SINKS.md) | Every source and sink component the framework ships with, with arguments, environment variables, and setup notes. | Reference. Consult before writing a custom source or sink. |
 | [LANGUAGE_MODELS.md](LANGUAGE_MODELS.md) | Choosing and mixing LLM backends (`anthropic`, `openai`, `gemini`, `openrouter`, `ollama`), per-role backend overrides, named variants (`_creative`, `_precise`), and the Backend Protocol for adding a new provider. | Before changing the office's AI engine or adding a new provider. |
 | [PATTERN_sense_think_respond.md](PATTERN_sense_think_respond.md) | The canonical multi-stage pattern that most gallery offices instantiate. Includes a Python helper for generating new instances of the pattern. | When the office you want resembles `sense → think → respond`. |
-| [MAKE_OFFICE.md](MAKE_OFFICE.md) | The Python API for generating offices programmatically rather than writing `office.md` by hand. | When a tool or script needs to produce offices. Most users do not need this. |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Error messages from `dsl run` and `dsl build`, with the cause and the remedy for each. | When something goes wrong. The companion command is `dsl doctor`. |
 
 ## Recipes
@@ -71,8 +70,6 @@ documentation is named below.
   section.
 - *Build a new office from scratch* —
   [BUILD_APPS.md](BUILD_APPS.md).
-- *Generate offices programmatically* —
-  [MAKE_OFFICE.md](MAKE_OFFICE.md).
 - *Read Gmail messages* —
   [recipes/monitor-your-inbox.md](recipes/monitor-your-inbox.md).
 - *Send results to Slack, email, or a file* —
