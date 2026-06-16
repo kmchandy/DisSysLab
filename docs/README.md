@@ -56,6 +56,7 @@ indexes the common errors by their exact text. The command
 | [SOURCES_AND_SINKS.md](SOURCES_AND_SINKS.md) | Every source and sink component the framework ships with, with arguments, environment variables, and setup notes. | Reference. Consult before writing a custom source or sink. |
 | [LANGUAGE_MODELS.md](LANGUAGE_MODELS.md) | Choosing and mixing LLM backends (`anthropic`, `openai`, `gemini`, `openrouter`, `ollama`), per-role backend overrides, named variants (`_creative`, `_precise`), and the Backend Protocol for adding a new provider. | Before changing the office's AI engine or adding a new provider. |
 | [PATTERN_sense_think_respond.md](PATTERN_sense_think_respond.md) | The canonical multi-stage pattern that most gallery offices instantiate. Includes a Python helper for generating new instances of the pattern. | When the office you want resembles `sense → think → respond`. |
+| [EXTENDING.md](EXTENDING.md) | When to use English (Claude), when to write Python, when to promote to the framework library. The layered framework surface, named for the three audiences. | When you are unsure where your changes belong (local office vs. framework). |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Error messages from `dsl run` and `dsl build`, with the cause and the remedy for each. | When something goes wrong. The companion command is `dsl doctor`. |
 
 ## Recipes
