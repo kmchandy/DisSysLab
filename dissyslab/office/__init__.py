@@ -1,27 +1,27 @@
 """
-dissyslab.office — refactored office compiler (work in progress).
+dissyslab.office — the office compile pipeline.
 
-Built piece by piece on the refactor/compiler-v2 branch alongside the
-existing dissyslab.office package. Replaces dissyslab.office at cutover.
+Reads ``office.md`` plus role files; produces a runtime Network or
+emits a ``build/run.py`` Python file. Most users do not import from
+this subpackage; they use the ``dsl`` command-line tool
+(``dsl build <office_dir>`` or ``dsl run <office_dir>``).
 
-Layers, built in order:
-    1. (retired) Edge          — runtime uses 4-tuples; no v2 type
-    2. (retired) Network spec  — runtime Network is the spec
-    3. AgentSpec               — name, in_ports, out_ports             (done)
-    4. OfficeSpec + parser     — agents are uniform RoleRefs; parser
-                                 reads only office.md (no roles/*.md) (done)
-    4b. Role library           — AgentRoleEntry / OfficeRoleEntry,
-                                 nl_role, load_roles_dir               (done)
-    5. Compiler                — OfficeSpec + Library ->
-                                 dissyslab.network.Network             (done)
-    6. Codegen                 — emit <office>/build/run.py from a
-                                 compiled tree                         (done)
-    6. (Runner is unchanged — see dissyslab.network)
-    7. AgentImpl factory       — RoleEntry -> runtime Agent            (todo)
+Pipeline stages (each implemented in its own module):
 
-First-year students normally do not import from this subpackage
-directly; they run the CLI (`dsl build <office_dir>` or
-`dsl run <office_dir>`).
+    1. parser            — office.md text → OfficeSpec
+    2. office_spec       — OfficeSpec dataclass and related types
+    3. library           — AgentRoleEntry / OfficeRoleEntry, named
+                           role helpers (``nl_role``,
+                           ``synchronizer_role``, ``specialist_role``),
+                           and ``load_roles_dir``
+    4. compiler          — OfficeSpec + Library → dissyslab.network.Network
+    5. codegen           — emit <office>/build/run.py from a compiled
+                           Network
+    6. office_run_context — runtime environment injected into
+                           ``nl_role`` system prompts
+
+The runtime that executes the produced Network lives in
+``dissyslab.network`` (``run_network()`` / ``process_network()``).
 """
 from dissyslab.office.agent_spec import AgentSpec
 from dissyslab.office.office_spec_constants import EXTERNAL
