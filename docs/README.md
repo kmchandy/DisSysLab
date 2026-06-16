@@ -12,20 +12,37 @@ The documents below assume DisSysLab is already installed and that
 
 ## Where to start
 
-A reader new to DisSysLab will find the path of least friction is:
+A reader new to DisSysLab has two on-ramps. Pick the one that
+matches whether you already have an LLM API key.
 
-1. Run [`periodic_brief`](../dissyslab/gallery/apps/periodic_brief/)
-   and a second office from the
-   [gallery](../dissyslab/gallery/README.md). Two examples are
-   enough to recognise the structure of an office.
-2. Read **[BUILD_APPS.md](BUILD_APPS.md)**, which works through the
-   full grammar of `office.md` and a substantial example role.
-3. Browse **[SOURCES_AND_SINKS.md](SOURCES_AND_SINKS.md)** for
-   sources and sinks the framework ships with. Most new offices can
-   be assembled from existing components.
-4. Edit a copy of a gallery office (`dsl init <name> my_office`)
-   and modify it until it does what you want. Many users never need
-   to write an office from scratch.
+**No key yet — explore the gallery first:**
+
+1. Run [periodic_brief](../dissyslab/gallery/apps/periodic_brief/).
+   It produces a styled morning HTML brief with zero LLM calls
+   — news headlines, weather, stock tickers — in about ten
+   seconds. This shows the framework running without any setup.
+2. Browse the [gallery](../dissyslab/gallery/README.md). Each
+   office in `apps/` is a working example you can read.
+
+**Have an LLM API key — let Claude draft an office for you:**
+
+1. `dsl new my_office` — describe what you want; Claude drafts
+   `office.md` plus the role files.
+2. `dsl run my_office` to see Claude's draft execute.
+3. Iterate by editing the English in `office.md` or `roles/*.md`.
+   Nine times out of ten the office you want is one or two edits
+   away from Claude's first draft.
+
+**Then, for either reader:**
+
+- [BUILD_APPS.md](BUILD_APPS.md) — the `office.md` grammar and
+  what each piece does.
+- [SOURCES_AND_SINKS.md](SOURCES_AND_SINKS.md) — the sources and
+  sinks the framework ships with. Most new offices can be
+  assembled from existing components.
+- `dsl init <name> my_office` to copy a gallery office close to
+  what you want and modify it. Many users never need to write an
+  office from scratch.
 
 When something does not work, [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 indexes the common errors by their exact text. The command
