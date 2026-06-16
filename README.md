@@ -149,6 +149,17 @@ See [docs/](docs/README.md) for the full grammar and examples.
 
 ---
 
+## Offices contain offices
+
+Each office is a black box: the surrounding network only sees what
+goes in and what comes out. You can build an office whose agents
+are themselves offices, structuring a complex system as a network
+of sub-offices — like a corporation has sub-departments. See
+[docs/BUILD_APPS.md](docs/BUILD_APPS.md) section 7 for the worked
+example.
+
+---
+
 ## Mix and match AI per agent
 
 Each specialist agent has a stable contract on its inputs and
@@ -318,6 +329,10 @@ Jayadev Misra (Addison-Wesley, 1988).
   here when you're ready to design your own office.
 - **[gallery/README.md](dissyslab/gallery/README.md)** — the full
   app catalog with annotations.
+- **[Sources and sinks reference](docs/SOURCES_AND_SINKS.md)** —
+  the full catalog of inputs and outputs, including MCP-server
+  integration: any tool with an MCP server (file system, GitHub,
+  Brave search, etc.) can be a source or sink.
 - **[Sample digest](dev/experiments/situation_room_sample_day_1.md)**
   — what a real morning's `situation_room` output looks like.
 - **[CHANGELOG.md](CHANGELOG.md)** — what is new in each release,
