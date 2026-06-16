@@ -3,6 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/dissyslab)](https://pypi.org/project/dissyslab/)
 [![Python](https://img.shields.io/pypi/pyversions/dissyslab)](https://pypi.org/project/dissyslab/)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![Tests](https://github.com/kmchandy/DisSysLab/actions/workflows/test.yml/badge.svg)](https://github.com/kmchandy/DisSysLab/actions/workflows/test.yml)
 
 **Build offices of small specialist agents that watch your world and react.**
 

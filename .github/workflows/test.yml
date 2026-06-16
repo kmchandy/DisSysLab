@@ -1,0 +1,37 @@
+# Run the test suite on every push to main and every pull request.
+# pyproject.toml declares Python >=3.10; we test the three currently-
+# supported minors. Run on ubuntu-latest — Pillow, numpy, and scipy
+# ship binary wheels for x86_64 Linux so no apt deps are needed.
+
+name: Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+
+      - name: Install package + dev deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .[dev]
+
+      - name: Run the test suite
+        run: pytest tests/ -q
