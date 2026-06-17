@@ -127,6 +127,11 @@ examples/**/results/
 # sinks; this output should never be committed even if a developer runs
 # `dsl run` from inside the source tree.
 dissyslab/gallery/**/*.jsonl
+# ...except problems.jsonl in the debate office. That file is fixture
+# *input*, not runtime output — the gate role reads it at construction
+# time, so it must ship with the package or the office fails to import
+# (and the test_compiles[debate] test fails in CI).
+!dissyslab/gallery/apps/debate/problems.jsonl
 
 # periodic_brief and similar offices write a markdown artifact to the
 # directory dsl was run from. If that happens to be the source tree,

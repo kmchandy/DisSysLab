@@ -1,0 +1,31 @@
+# Minimal problem bank for the debate office — one problem of each
+# kind we want the office to handle. Designed for cheap end-to-end
+# testing of the wiring: full convergence on all five should fire
+# ~20-40 LLM calls in total, depending on how quickly Riley calls
+# agreement.
+#
+# Lines beginning with # are ignored. Each non-comment line is a JSON
+# object with at minimum a "problem" field. Optional "id" and
+# "answer_key" fields are passed through to all agents and the
+# moderator; the moderator is instructed to ignore answer_key while
+# deciding, so you can use it for after-the-fact accuracy scoring.
+#
+# For a larger problem bank (10+ items across the same five types),
+# see the previous version of this file in git history, or place
+# your own problems.jsonl in the directory you run `dsl run` from
+# — that path overrides this shipped default.
+
+# ── Arithmetic with clear ground truth ────────────────────────────
+{"id": "math-01", "problem": "What is 13 * 19?", "answer_key": "247"}
+
+# ── Tricky factual (small models often wrong, frontier model right)
+{"id": "fact-01", "problem": "Which programming language was originally designed by Guido van Rossum?", "answer_key": "Python"}
+
+# ── Multiple-choice with subtle right answer ──────────────────────
+{"id": "mcq-01", "problem": "A study finds that students who sleep 8 hours score higher on exams than those who sleep 6 hours. Which of the following is the MOST cautious conclusion to draw? (a) Sleeping more causes better exam scores. (b) The two are associated, but the direction and cause are not established. (c) Six hours of sleep is harmful. (d) Eight hours is the optimal amount of sleep for everyone.", "answer_key": "b"}
+
+# ── Open-ended judgement (no answer key; tests agreement quality) ─
+{"id": "open-01", "problem": "A small engineering team of four people is choosing between Python and Rust for a new backend service. Give one short recommendation and the single strongest reason for it."}
+
+# ── Trick / ambiguous (good for studying convergence failures) ────
+{"id": "trick-01", "problem": "Which is heavier: a pound of feathers or a pound of bricks?", "answer_key": "neither — they weigh the same"}
