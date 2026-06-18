@@ -88,8 +88,11 @@ exclude = ["tests*", "examples*", "gallery*", "dev*", "site*", "micro_course*"]
 #   compile time with "no such role is in the library". This was
 #   the cause of issue #126 (v1.3.1 wheel shipped no library roles).
 #
-# Globs are deliberately narrow so internal design docs at the
-# dissyslab package root (architecture.md, core.md, etc.) do not ship.
+# Globs are deliberately narrow. Internal design docs that used to
+# live at the dissyslab package root have moved to docs/internals/
+# (architecture.md, core_overview.md, network_overview.md, etc.) and
+# are out of the package tree entirely, so they cannot ship by
+# accident regardless of glob shape.
 [tool.setuptools.package-data]
 "dissyslab" = [
   "py.typed",

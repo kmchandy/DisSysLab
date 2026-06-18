@@ -107,7 +107,11 @@ the documentation are easier to fix when they are reported.
 
 ---
 
-Notes used during the development of the framework itself, rather
+For framework internals — design and implementation notes for each
+core module — see [internals/](internals/). Those documents are for
+developers reading the source, not for users building offices.
+
+Notes used during the day-to-day development of the framework, rather
 than for running offices, live in the `dev/` folder at the repo
 root. Those notes change frequently and are not part of the user
 guide.
