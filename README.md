@@ -5,16 +5,19 @@
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Tests](https://github.com/kmchandy/DisSysLab/actions/workflows/test.yml/badge.svg)](https://github.com/kmchandy/DisSysLab/actions/workflows/test.yml)
 
-**Build offices of small specialist agents that watch your world and react.**
+**Use plain English to build a network of agents that monitor your world and react to it.**
 
 DisSysLab is a framework for **sense-and-respond systems** that
-monitor your environment and respond proactively. An app built with DisSysLab is an
-office of specialist agents. Each agent has one well-defined job
-and a stable contract on its inputs and outputs. An office runs
+monitor your environment and respond to changes in it. An app built with DisSysLab is an
+**office** populated by agents. Each agent has one well-defined job. An office runs
 continuously — sources monitor your environment (sensors, news, calendars, weather, 
 audio, images); processing agents transform data streams; sinks (actuators, databases,
-messages) receive data streams. Unlike chatbots, an office never waits for a
-prompt.
+messages) receive data streams. 
+
+Almost everybody has an idea of an office, job descriptions, 
+and org charts. So I use the office and workers as analogies for networks and agents.
+Unlike chatbots, an office doesn't wait for a prompt; after it is configured an
+office runs continuously forever or until it receives done signals on all its inputs.
 
 ```mermaid
 flowchart LR
@@ -36,11 +39,11 @@ flowchart LR
   classDef sink fill:#fef3c7,stroke:#92400e
 ```
 
-*The `situation_room` office. Each block is a specialist agent:
-three news-feed sources fan into a deduplicator; four specialists
+*The `situation_room` office. Each block in the diagram is an agent:
+three news-feed sources fan into a deduplicator; four agents
 enrich each article in parallel; a synchronizer merges their
-outputs; a writer assembles and emits the briefing. Office
-topologies can have loops, branches, and arbitrary structure.*
+outputs; a writer assembles and emits a report. Office
+networks -- org charts -- can have loops, branches, and arbitrary structure.*
 
 ---
 
