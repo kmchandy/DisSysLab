@@ -78,7 +78,7 @@ dsl run .
 
 Modify `office.md` or the role files inside `my_brief/roles/` and
 rerun.
-To see an interactive slide intro open [office_microcourse.html](office_microcourse.html).
+See an [**interactive slide intro**](https://kmchandy.github.io/DisSysLab/office_microcourse.html).
 
 ---
 
@@ -269,9 +269,11 @@ files and executes the app.
 What DisSysLab does **not** do in this release, named honestly so
 new users do not infer promises the framework does not keep:
 
-- **Single machine.** An office runs in one process (or one
-  process per agent with `dsl run --processes`). Multi-machine
-  distribution is on the v2.x roadmap.
+- **Single machine.** An office either runs in one process with each agent
+  in its own thread or you can specify that each agent runs in its own process.
+  The current implementation does not allow you to select some agents to run
+  in threads and others as separate processes.  Multi-machine
+  distribution is on the v2.x roadmap. 
 - **Checkpoint-recovery is opt-in.** New in v1.6, the framework
   implements the Chandy-Lamport distributed snapshot algorithm;
   the `recovery_demo` gallery office demonstrates the protocol
@@ -302,23 +304,24 @@ detection see *Sensor Networks for the Detection and Tracking of Radiation
 and Other Threats in Cities* -  Information Processing in Sensor Networks (IPSN), 2011 
 
 I saw the power of S&R systems. I want individuals — students,
-small businesses, researchers — to harness that power.
+small businesses, researchers — to use that power.
 S&R systems were used primarily by institutions because only they
-had the expertise.
+had the expertise and the compute power.
 LLMs allow individuals to use English job descriptions to build 
 and connect special-purpose agents to form offices.
-LLMs can also write Python for special-purpose agents whose job
-is deterministic — a sliding-window RMS, a deduplicator, an
-ML-model wrapper. An individual does not have to be a programmer.
+Non-programmers can also use LLMs to write Python programs
+for agents whose job is well-defined and small — a sliding-window RMS, 
+a deduplicator, an ML-model wrapper. An individual with limited programming
+experience can describe an office and its org chart, and specify job
+descriptions, in plain English.
 
 
 I am using DisSysLab to teach distributed system algorithms to
-undergraduates, including students in disciplines
-other than CS and first-year students. Each student uses DisSysLab to build
+undergraduates, including first-year students. Each student uses DisSysLab to build
 an S&R app for the student's specific interests. And then we study the
 algorithms underlying the students' apps. The student's own app provides
 added motivation to study topics such as termination detection,
-global snapshots, block chain, and distributed consensus. For the
+global snapshots, and distributed consensus. For the
 formal treatment of concurrent algorithms that informs the course,
 see *Parallel Program Design: A Foundation*, K. Mani Chandy and
 Jayadev Misra (Addison-Wesley, 1988).
