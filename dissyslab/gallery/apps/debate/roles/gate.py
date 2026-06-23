@@ -15,10 +15,12 @@ two upstream channels into Sasha:
 This guarantees the four solvers only ever see one problem at a
 time, even though they're connected in an iterative loop with Riley.
 
-When the problems file is exhausted, Sasha emits one final message
-with ``{"end_of_stream": true}`` and then stops. Downstream sinks
-can use that as a shutdown signal; the framework also handles the
-no-more-messages case cleanly on its own.
+When the problems file is exhausted, Sasha stops emitting messages
+but keeps its run loop alive (``continue`` instead of ``return``)
+so that os_agent can keep polling it. The framework's termination
+detection — which requires every non-source agent to remain
+responsive on ``recv()`` until it receives ``_Shutdown`` — then
+shuts the whole network down cleanly.
 
 Problems file format (JSONL, one record per line)::
 
@@ -124,8 +126,21 @@ class _Gate(Agent):
         while True:
             _ = self.recv("in_")  # wait for starter, then Riley's finish
             if self._cursor >= len(self._bank):
-                self.send({"end_of_stream": True}, "out_")
-                return
+                # Problems exhausted. Do NOT return — that would kill
+                # this agent's thread, leaving os_agent unable to poll
+                # us and termination detection stuck. Instead, keep
+                # looping: recv() blocks on the next signal (none will
+                # come once Riley stops emitting finishes) while still
+                # transparently responding to os_agent's
+                # _GiveMeCounts polls. When os_agent sees all edges
+                # balanced and all agents idle, it sends _Shutdown;
+                # recv() turns that into _ShutdownSignal; _run_wrapper
+                # catches it and this thread exits cleanly.
+                #
+                # This matches the convention used by every other
+                # non-source agent in DSL (Role, Synchronizer, etc.):
+                # ``while True: recv()`` with no voluntary return.
+                continue
             # Pause between problems (not before the first one).
             if self._step and self._cursor > 0:
                 self._pause_for_user()
