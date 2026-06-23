@@ -4,6 +4,21 @@ All notable changes to DisSysLab are documented here. The format
 loosely follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/).
 
+
+## [1.6.1] — 2026-06-23
+
+### Fixed
+
+- `gallery/apps/debate/roles/gate.py`: when the problem bank is
+  exhausted, the gate role now `continue`s in its `recv()` loop
+  instead of returning. Returning voluntarily killed the agent's
+  thread before `os_agent` could finish polling it; termination
+  detection stayed blocked indefinitely. Also dropped the now-
+  unnecessary `{"end_of_stream": True}` sentinel emission, which
+  was being mis-processed as a real problem by downstream
+  panellists. Net effect: the gallery debate office terminates
+  cleanly when its bank is exhausted.
+  
 ## [Unreleased] — will become 1.6.0
 
 ### Added
