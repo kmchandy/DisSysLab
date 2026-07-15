@@ -132,8 +132,8 @@ class Transform(Agent):
                         msg, state=self._state, **self._params
                     )
             except Exception as e:
-                print(f"[Transform '{self.name}'] Error in fn: {e}")
-                print(traceback.format_exc())
+                print(f"[Transform '{self.name}'] Error in fn: {e}", flush=True)
+                print(traceback.format_exc(), flush=True)
                 return
             self.send(result, "out_")
 

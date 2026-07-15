@@ -52,8 +52,16 @@ class _OsMessage:
 
 
 class _GiveMeCounts(_OsMessage):
-    """Sent by os_agent to request current sent/received counts from a client."""
-    pass
+    """Sent by os_agent to request current sent/received counts from a client.
+
+    ``round_id`` tags the polling round this request belongs to. An agent
+    echoes it back in its reply, which lets os_agent tell that every
+    non-source agent is *currently* blocked in recv (i.e. passive) — a
+    precondition for declaring termination. ``None`` for legacy callers.
+    """
+
+    def __init__(self, round_id: Optional[int] = None):
+        self.round_id = round_id
 
 
 class _Shutdown(_OsMessage):
@@ -457,12 +465,19 @@ class Agent(ABC):
             msg = q.get()
 
             if isinstance(msg, _GiveMeCounts):
-                # Respond with current counts — framework handles this
-                self.send_os({
+                # Respond with current counts — framework handles this.
+                # The reply echoes round_id (proving this agent is right
+                # now blocked in recv, i.e. passive) and folds in any
+                # subclass termination info — a Coordinator reports the
+                # inport it will read next as "waiting_on".
+                resp = {
                     "agent":    self.name,
                     "sent":     dict(self.sent),
                     "received": dict(self.received),
-                })
+                    "round_id": getattr(msg, "round_id", None),
+                }
+                resp.update(self._termination_info())
+                self.send_os(resp)
 
             elif isinstance(msg, _Shutdown):
                 # Unwind run() cleanly
@@ -564,6 +579,23 @@ class Agent(ABC):
         """
         pass
 
+    def _termination_info(self) -> Dict[str, Any]:
+        """Extra fields to include in this agent's _GiveMeCounts reply.
+
+        The base agent adds nothing. A Coordinator overrides this to
+        report ``{"waiting_on": <inport>}`` — the single inport it will
+        read next, a pure function of its checkpointed state. os_agent
+        uses that to disregard messages buffered on the coordinator's
+        *other* inports: the coordinator is not reading them and can
+        never consume them, so they are not "work remaining" and must
+        not hold up termination. Without this, an office with a
+        coordinator whose inputs are uneven (a merge_synch with an
+        unpaired leftover, a gate waiting on its control inport, a
+        select blocked on a reply) would hang forever instead of
+        terminating. See os_agent._terminated.
+        """
+        return {}
+
     def _poll_os(self, blocking: bool = False, timeout: Optional[float] = None) -> Any:
         """For sources only: poll the OS input queue for one message
         and dispatch it through the appropriate internal handler.
@@ -629,6 +661,7 @@ class Agent(ABC):
                 "agent":    self.name,
                 "sent":     dict(self.sent),
                 "received": dict(self.received),
+                "round_id": getattr(msg, "round_id", None),
             })
         return msg
 

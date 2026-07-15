@@ -86,6 +86,20 @@ class OsAgent:
         # heard_from: agents os_agent has received at least one message from
         self.heard_from: Set[str] = set()
 
+        # ── Passivity + coordinator tracking (coordinator TD fix, #47) ──
+        # Monotonic poll-round counter. Each poll cycle bumps it and
+        # stamps every _GiveMeCounts with it; an agent's reply echoes the
+        # round it answered. When a non-source agent's latest reply is for
+        # the current round, that agent is *right now* blocked in recv —
+        # i.e. passive. All non-sources passive + reachable channels empty
+        # + sources exhausted == termination.
+        self._round: int = 0
+        self._round_responded: Dict[str, int] = {}
+        # For each coordinator, the inport it will read next (from its
+        # reply's "waiting_on"). Absent for ordinary agents, which must
+        # have *every* inport empty to be considered done.
+        self.waiting_on: Dict[str, str] = {}
+
         # Edge counts — latest known values from any received messages
         # Keyed by (agent_name, port_name)
         self.edge_sent:     Dict[Tuple[str, str], int] = {}
@@ -150,8 +164,12 @@ class OsAgent:
         the existing count responses.
         """
         while True:
-            time.sleep(self.poll_interval)
+            # Send this round's poll, THEN wait, THEN collect — so the
+            # replies we drain answer the round we just sent. That lets
+            # the passivity check (reply round == current round) mean
+            # "this agent is blocked in recv right now."
             self._send_give_me_counts()
+            time.sleep(self.poll_interval)
             self._drain_responses()
 
             # Periodic snapshot trigger (v1.6).
@@ -170,13 +188,23 @@ class OsAgent:
 
     def _send_give_me_counts(self) -> None:
         """
-        Send _GiveMeCounts to all non-source agents.
-        Sends to the first inport queue only — one worker picks it up
-        and responds with the agent's full counts.
+        Poll every non-source agent for its counts, tagging this round.
+
+        Sends to *all* of an agent's inport queues, not just the first.
+        A coordinator blocks on whichever inport its state selects, so a
+        poll placed only on inport[0] would never be seen while it waits
+        on a different inport — and we would never learn it is stuck.
+        Putting one _GiveMeCounts on every inport guarantees the agent
+        reads it from whichever inport it is currently blocked on,
+        replies (echoing this round), and blocks again. (_GiveMeCounts is
+        an OS message: intercepted in recv, never counted, never recorded
+        into channel state.)
         """
-        msg = _GiveMeCounts()
+        self._round += 1
+        msg = _GiveMeCounts(round_id=self._round)
         for name, queues in self.client_queues.items():
-            queues[0].put(msg)
+            for q in queues:
+                q.put(msg)
 
     def _drain_responses(self) -> None:
         """
@@ -216,6 +244,15 @@ class OsAgent:
         agent_name = response["agent"]
         self.heard_from.add(agent_name)
 
+        # Passivity: record which poll round this reply answers. A reply
+        # for the current round means the agent is blocked in recv now.
+        rid = response.get("round_id")
+        if rid is not None:
+            self._round_responded[agent_name] = rid
+        # Coordinators report the inport they will read next.
+        if "waiting_on" in response:
+            self.waiting_on[agent_name] = response["waiting_on"]
+
         for port, count in response["sent"].items():
             key = (agent_name, port)
             if key in self.edge_sent:
@@ -230,19 +267,54 @@ class OsAgent:
 
     def _terminated(self) -> bool:
         """
-        Return True iff:
-          (1) heard from every agent (sources via termination msg,
-              non-sources via at least one _GiveMeCounts response), AND
-          (2) all edges balanced: sent == received on every edge.
+        Return True iff the office is quiescent — no message anywhere can
+        be received by any agent, so no further progress is possible.
+
+        Three conditions, all required:
+
+        (1) **Sources exhausted.** Every agent has been heard from; a
+            source is heard from only when it finishes and sends its
+            termination message, so this subsumes "no new external input."
+
+        (2) **Every non-source agent is passive** — blocked in recv right
+            now. We know this because its most recent reply answered the
+            current poll round: an agent that is mid-processing (not in
+            recv) cannot have answered this round's _GiveMeCounts. This
+            guards against a false "done" while, say, an LLM worker is
+            still thinking with balanced counts.
+
+        (3) **Every reachable channel is empty.** For an ordinary agent,
+            *every* inbound channel must be empty (it reads its one inbox
+            unconditionally, so anything buffered there is live work). For
+            a **coordinator**, only the channel into the inport it is
+            waiting on must be empty; messages buffered on its *other*
+            inports are unreachable from where it stands and do not count
+            (this is the coordinator fix — otherwise a merge_synch with an
+            unpaired leftover, or a gate/select blocked elsewhere, hangs
+            forever). ``waiting_on`` names that inport; absent for
+            ordinary agents, so the strict rule applies to them.
         """
+        # (1) sources exhausted / everyone heard from.
         if self.heard_from != set(self.all_agents.keys()):
             return False
 
+        # (2) every non-source agent is currently passive (answered this round).
+        for name in self.non_source_agents:
+            if self._round_responded.get(name) != self._round:
+                return False
+
+        # (3) every reachable channel empty.
         for (fa, fp, ta, tp) in self.graph_connections:
             sent = self.edge_sent.get((fa, fp), 0)
             received = self.edge_received.get((ta, tp), 0)
-            if sent != received:
-                return False
+            if sent == received:
+                continue                       # channel empty — fine
+            waiting = self.waiting_on.get(ta)  # None for ordinary agents
+            if waiting is not None and waiting != tp:
+                continue                       # buffered on a coordinator
+                                               # inport it is not reading →
+                                               # unreachable, not live work
+            return False                       # a reachable channel is nonempty
 
         return True
 

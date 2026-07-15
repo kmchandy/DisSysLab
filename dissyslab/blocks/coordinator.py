@@ -219,6 +219,26 @@ class Coordinator(Agent):
         if isinstance(saved, dict) and "state" in saved:
             self._state = saved["state"]
 
+    def _termination_info(self) -> Dict[str, Any]:
+        """Report the inport this coordinator will read next.
+
+        A coordinator reads exactly one inport per step, chosen by
+        ``_get_inport(state)`` — a pure function of its state. That
+        inport (``waiting_on``) is the only one that can currently
+        unblock it; messages sitting in its other inports are not work
+        it will ever consume from where it stands now. os_agent uses
+        this to decide termination correctly for coordinators (see
+        ``Agent._termination_info`` and ``OsAgent._terminated``).
+
+        Best-effort: if the policy cannot name an inport (e.g. an
+        ambiguous state mid-round), omit the field and fall back to the
+        strict "every inport must be empty" rule for this agent.
+        """
+        try:
+            return {"waiting_on": self._get_inport(self._state)}
+        except Exception:
+            return {}
+
     # ========== Policy + step (override in subclasses) ==========
 
     def _get_inport(self, state: Optional[Dict[str, Any]]) -> str:
@@ -285,8 +305,8 @@ class Coordinator(Agent):
             try:
                 sends = self._step(msg, self._state, inport)
             except Exception as e:
-                print(f"[Coordinator '{self.name}'] Error in step: {e}")
-                print(traceback.format_exc())
+                print(f"[Coordinator '{self.name}'] Error in step: {e}", flush=True)
+                print(traceback.format_exc(), flush=True)
                 return
             for outport, out_msg in (sends or []):
                 self.send(out_msg, outport)
