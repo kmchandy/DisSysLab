@@ -821,6 +821,130 @@ def synchronizer_role(inports: "list[str] | tuple[str, ...]") -> AgentRoleEntry:
     )
 
 
+# ── router_role ───────────────────────────────────────────────────────
+
+
+def router_role(routes: "list[dict]") -> AgentRoleEntry:
+    """Build a router role that forwards a message to named outports by rule.
+
+    A *router* is the framework's canonical post-merge routing primitive:
+    it receives one message at a time and, for each of its ``routes``,
+    decides whether to emit a copy of that message on the route's
+    outport. It is the structural counterpart of the ``if/elif`` a
+    student writes after merging a pipeline's results::
+
+        send_to(enriched, "digest")                 # unconditional
+        if enriched.get("severity") == "critical":  # conditional
+            send_to(enriched, "alert")
+
+    The conditional ``send_to`` calls become a router: one route per
+    ``if`` branch. The unconditional ``send_to`` does not need the
+    router — it stays wired straight from the merge.
+
+    A single incoming message may match several routes, so it can be
+    emitted on several outports (the ``if`` branches are independent,
+    not mutually exclusive). A message that matches no route is
+    dropped — matching the "nothing happens unless a condition fires"
+    reading of the student's code.
+
+    Parameters
+    ----------
+    routes
+        A non-empty list of rule dicts. Each rule has:
+
+        * ``outport`` (required): the name of the outport this rule
+          emits on. Outport names must be unique across routes and
+          non-empty.
+        * ``field`` (optional): the message key to test. When omitted
+          or ``None``, the route is *unconditional* — every message is
+          emitted on its outport.
+        * ``equals`` (optional): the value ``message[field]`` must
+          equal for the route to fire. Defaults to ``None``.
+
+        Example (situation-room "alert on critical")::
+
+            routes = [{"outport": "critical",
+                       "field": "severity",
+                       "equals": "critical"}]
+
+    Returns
+    -------
+    AgentRoleEntry
+        With ``name="router"``, ``in_ports=("in_",)``, ``out_ports``
+        set to the route outports (in order), and a factory that
+        builds a :class:`dissyslab.blocks.role.Role` on demand. The
+        ``Role`` handles the semantic-name → runtime-port mapping, so
+        multi-outport routers get ``out_0``/``out_1``/… automatically.
+
+    Raises
+    ------
+    ValueError
+        If ``routes`` is empty, a rule lacks a non-empty ``outport``,
+        or two rules share an outport name.
+
+    Examples
+    --------
+    >>> entry = router_role([{"outport": "critical",
+    ...                       "field": "severity",
+    ...                       "equals": "critical"}])
+    >>> entry.out_ports
+    ('critical',)
+    """
+    if not routes:
+        raise ValueError("router_role requires at least one route")
+
+    outports: list[str] = []
+    norm_routes: list[dict] = []
+    for r in routes:
+        if not isinstance(r, dict):
+            raise ValueError(
+                f"router_role routes must be dicts, got {type(r).__name__}"
+            )
+        outport = r.get("outport")
+        if not isinstance(outport, str) or not outport:
+            raise ValueError(
+                f"router_role route needs a non-empty 'outport', got {r!r}"
+            )
+        if outport in outports:
+            raise ValueError(
+                f"router_role outports must be unique, got duplicate "
+                f"{outport!r}"
+            )
+        outports.append(outport)
+        norm_routes.append({
+            "outport": outport,
+            "field": r.get("field"),
+            "equals": r.get("equals"),
+        })
+
+    outports_tuple = tuple(outports)
+
+    def factory() -> Agent:
+        def route_fn(msg: Any):
+            results = []
+            for rule in norm_routes:
+                field = rule["field"]
+                if field is None:
+                    # Unconditional route: always forward.
+                    results.append((msg, rule["outport"]))
+                elif isinstance(msg, dict) and msg.get(field) == rule["equals"]:
+                    results.append((msg, rule["outport"]))
+            return results
+
+        return Role(fn=route_fn, statuses=list(outports_tuple))
+
+    return AgentRoleEntry(
+        name="router",
+        in_ports=("in_",),
+        out_ports=outports_tuple,
+        factory=factory,
+        description=(
+            f"Route each message to the matching outport(s) among "
+            f"{list(outports_tuple)}."
+        ),
+    )
+
+
 # ── PARAMETERIZED_LIBRARY ─────────────────────────────────────────────
 
 
@@ -849,6 +973,7 @@ def synchronizer_role(inports: "list[str] | tuple[str, ...]") -> AgentRoleEntry:
 # a local ``roles/synchronizer.py`` and the framework will prefer it.
 PARAMETERIZED_LIBRARY: Dict[str, Callable[..., "AgentRoleEntry"]] = {
     "synchronizer": synchronizer_role,
+    "router": router_role,
 }
 
 

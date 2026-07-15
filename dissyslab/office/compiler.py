@@ -86,6 +86,7 @@ from dissyslab.office._internals import (
     CompileError,
     CompileWarning,
     _BlockTable,
+    _load_local_sources,
     _load_office_library,
     _resolve_subpath,
     _runtime_inport,
@@ -192,14 +193,32 @@ def _construct_or_pat_error(
         raise CompileError(" ".join(parts)) from exc
 
 
-def _build_source(spec: SourceSpec) -> Source:
-    """Materialise a ``Source`` from a ``SourceSpec`` using COMPONENT_REGISTRY.
+def _build_source(spec: SourceSpec, local_sources: Optional[dict] = None) -> Source:
+    """Materialise a ``Source`` from a ``SourceSpec``.
 
-    Looks the name up in the unified registry and validates that
-    its ``kind`` is ``"source"``. If Pat used a sink or agent name
-    in the ``Sources:`` declaration, the compiler raises a
+    App-local sources (from ``<office>/sources/<name>.py``) are checked
+    first, so an office can define its own feeds — mirroring how
+    ``roles/`` override the built-in role library. Anything not found
+    there is looked up in the unified ``COMPONENT_REGISTRY`` and its
+    ``kind`` validated as ``"source"``. If Pat used a sink or agent
+    name in the ``Sources:`` declaration, the compiler raises a
     Pat-readable error naming the correction.
     """
+    name = spec.name
+
+    # App-local sources win over the framework registry, matching the
+    # roles/ precedence rule. The module's ``build_source()`` is
+    # self-contained (its feed URL is baked in), so graph ``params``
+    # are not forwarded to it.
+    if local_sources and name in local_sources:
+        try:
+            obj = local_sources[name]()
+        except Exception as exc:
+            raise CompileError(
+                f"app-local source {name!r} failed to build: {exc}"
+            ) from exc
+        return Source(fn=obj.run, name=name)
+
     # Imported lazily so the compiler does not pull in feedparser etc.
     # at import time.
     from dissyslab.office.utils import (
@@ -208,7 +227,6 @@ def _build_source(spec: SourceSpec) -> Source:
         lookup_component,
     )
 
-    name = spec.name
     args = dict(spec.args)
     entry = lookup_component(name)
 
@@ -391,6 +409,10 @@ def _emit_network(
     blocks: Dict[str, Union[Agent, Network]] = {}
     table = _BlockTable()
 
+    # App-local sources (``<office>/sources/*.py``) are discovered
+    # once and take precedence over the framework registry.
+    local_sources = _load_local_sources(office_dir)
+
     # Sources first — connection statements may reference them by
     # name, and the v1 grammar lets sources fan out.
     for src_spec in spec.sources:
@@ -398,7 +420,7 @@ def _emit_network(
             raise CompileError(
                 f"duplicate block name {src_spec.name!r} in {spec.name!r}"
             )
-        blocks[src_spec.name] = _build_source(src_spec)
+        blocks[src_spec.name] = _build_source(src_spec, local_sources)
         table.sources[src_spec.name] = None
 
     # Sinks.
@@ -542,7 +564,18 @@ def _resolve_role_ref(
     entry = library.get(ref.role_name)
 
     if isinstance(entry, AgentRoleEntry):
-        block = entry()
+        # Forward per-agent kwargs (from office.md ``role(k=v)`` or a
+        # graph vertex's ``params``) to the role factory. Without this,
+        # ``Bryn is a threshold_detector(db_threshold=-30)`` silently
+        # fell back to the role's defaults. Factories that don't accept
+        # a given kwarg raise a Pat-readable CompileError.
+        user_kwargs = dict(ref.args)
+        if user_kwargs:
+            block = _construct_or_pat_error(
+                entry, user_kwargs, kind="role", name=ref.role_name
+            )
+        else:
+            block = entry()
         return block, "role", entry.out_ports
 
     if isinstance(entry, OfficeRoleEntry):

@@ -21,6 +21,9 @@ Cross-cutting:
 - [architecture.md](architecture.md) — the framework's overall design.
 - [making_a_component.md](making_a_component.md) — how to add a new
   component (source, transform, sink, or other block) to the framework.
+- [common_gotchas.md](common_gotchas.md) — footguns to avoid when
+  writing custom Python roles or research extensions. Grown as new
+  ones are found.
 
 For the layered framework surface and the *"fn_lib vs library.py"*
 decision rule, see [../EXTENDING.md](../EXTENDING.md). That document

@@ -44,6 +44,7 @@ from dissyslab.office.library import (
     RoleEntry,
     load_roles_dir,
     nl_role,
+    router_role,
     specialist_role,
     synchronizer_role,
 )
@@ -85,5 +86,6 @@ __all__ = [
     "parse_office_dir",
     "render_run_py",
     "specialist_role",
+    "router_role",
     "synchronizer_role",
 ]

@@ -165,6 +165,62 @@ def _load_office_library(office_dir: Path) -> Dict[str, Any]:
     return merged
 
 
+# ── App-local source discovery ────────────────────────────────────────
+
+
+def _load_local_sources(office_dir: Path) -> Dict[str, Any]:
+    """Discover app-local sources under ``<office_dir>/sources/``.
+
+    The counterpart of ``<office_dir>/roles/`` for *sources*. Each
+    ``sources/<name>.py`` module defines a single feed the graph
+    references by the unique block name ``<name>``. This lets one app
+    use several distinct RSS feeds without their block names
+    colliding — DSL's single generic ``rss`` component can only be one
+    block per office, but a per-feed module gives each feed its own
+    name, exactly like the framework's built-in ``bbc_world`` /
+    ``npr_news`` factories.
+
+    Discovery contract (mirrors ``load_roles_dir``):
+
+    * Files whose names start with ``_`` (e.g. ``_impl.py``) or ``.``
+      are skipped.
+    * Each module must expose a module-level ``build_source()``
+      callable returning a component object with a ``run`` method
+      (e.g. an ``RSSNormalizer``). The compiler wraps that object in a
+      ``Source`` named after the file stem.
+
+    Returns a mapping ``{name: build_source_callable}``. When there is
+    no ``sources/`` directory, returns an empty dict — the common case
+    for offices that only use framework-registered sources.
+    """
+    import importlib.util
+
+    sources_dir = office_dir / "sources"
+    if not sources_dir.is_dir():
+        return {}
+
+    builders: Dict[str, Any] = {}
+    for py_path in sorted(sources_dir.glob("*.py")):
+        stem = py_path.stem
+        if stem.startswith("_") or stem.startswith("."):
+            continue
+        spec = importlib.util.spec_from_file_location(
+            f"office_source_{stem}", py_path
+        )
+        if spec is None or spec.loader is None:
+            raise ImportError(f"could not load source module {py_path}")
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        builder = getattr(module, "build_source", None)
+        if not callable(builder):
+            raise ImportError(
+                f"app-local source {py_path} must define a module-level "
+                f"'build_source()' callable"
+            )
+        builders[stem] = builder
+    return builders
+
+
 # ── Block-kind table for port translation ─────────────────────────────
 
 
@@ -262,6 +318,7 @@ __all__ = [
     "CompileError",
     "CompileWarning",
     "_BlockTable",
+    "_load_local_sources",
     "_load_office_library",
     "_resolve_subpath",
     "_runtime_inport",

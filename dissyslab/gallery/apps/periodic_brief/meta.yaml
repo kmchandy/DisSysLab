@@ -1,0 +1,71 @@
+# Metadata for the periodic_brief example.
+# This file is what Claudette reads first during precedent search
+# (Stage 2 of the builder pipeline). It is intentionally compact
+# so Claudette can scan many examples cheaply, then pull the
+# fuller files (task.md, office.md, rationale.md) only for
+# matches worth reading in depth.
+
+name: periodic_brief
+one_liner: >
+  A daily HTML dashboard combining news headlines, weather, and
+  stock tickers. No LLM calls, no API keys, runs in ~10 seconds.
+
+task_family: daily_aggregation
+task_subfamily: multi_source_dashboard
+
+# Cadence + duration characterise when this design pattern is
+# appropriate. Claudette uses these to filter examples for a
+# new task's cadence.
+cadence: any           # runs on demand; designed for ~daily
+runtime_seconds: ~10
+persistent: false      # one-shot per invocation; the user re-runs
+
+# Complexity is a coarse signal for "how much like situation_room
+# is this vs how much like a one-line script."
+complexity: trivial    # trivial | simple | moderate | complex
+
+# The patterns this office demonstrates. These are the most
+# important tags for precedent search — Claudette matches new
+# tasks against patterns to find relevant examples.
+patterns:
+  - multi_source_fan_in
+  - sink_does_routing
+  - no_llm_required
+  - no_agents_required
+  - polling_sources_with_max_readings
+
+source_types:
+  - rss_feed              # bbc_world, npr_news
+  - weather_api           # weather
+  - stock_quote_api       # stocks, stocks_2, stocks_3
+
+agent_count: 0            # this office has no transformer agents
+llm_calls_per_run: 0
+
+sinks:
+  - html_dashboard         # periodic_brief_html_sink
+
+# Output is a single artifact; downstream tooling reads it as a
+# file or via a browser.
+output_type: html_file
+output_path: brief.html
+
+# When a new task should remind Claudette of this office.
+applies_when:
+  - "user wants a periodic digest combining heterogeneous sources"
+  - "user wants a self-contained artifact (HTML, markdown) per run"
+  - "user wants something runnable without API keys"
+  - "user wants to verify the framework works end-to-end with minimal complexity"
+
+# When Claudette should NOT treat this as a strong precedent.
+does_not_apply_when:
+  - "task requires reasoning over individual items (use situation_room instead)"
+  - "task requires deduplication, classification, or summarisation"
+  - "task requires storing items in a queryable form (use jsonl_recorder)"
+  - "task requires interactive UI (this produces a static file)"
+
+# Related examples that often pair with or extend this one.
+see_also:
+  - periodic_brief_pro   # adds per-article LLM analysis
+  - situation_room       # adds enrichment + writer for richer briefing
+  - stocks_monitor       # numerical-only version with alerts
