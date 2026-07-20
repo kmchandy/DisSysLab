@@ -168,11 +168,24 @@ def _format_source_or_sink(s) -> str:
 
 
 def _format_agent_line(ref: RoleRef) -> str:
-    """Render a ``RoleRef`` as ``X is a Y.`` or ``X is an office at P.``."""
+    """Render a ``RoleRef`` as ``X is a Y.``, ``X is a Y(args).``, or
+    ``X is an office at P.``.
+
+    Bug fix: this used to drop ``ref.args`` entirely, silently breaking the
+    round-trip for every parameterized role (``synchronizer``, ``select``,
+    ``gate``, ``record``, ``deduplicator(by=...)``, anything with kwargs) --
+    ``_format_source_or_sink`` already rendered args correctly; this brings
+    the agent-line formatter in line with it, using the same ``!r``
+    rendering (parseable back via ``ast.literal_eval``, matching how args
+    are read at parse time).
+    """
     if ref.path is not None:
         return f"{ref.agent_name} is an office at {ref.path}."
     article = "an" if ref.role_name[:1].lower() in "aeiou" else "a"
-    return f"{ref.agent_name} is {article} {ref.role_name}."
+    if not ref.args:
+        return f"{ref.agent_name} is {article} {ref.role_name}."
+    args_str = ", ".join(f"{k}={v!r}" for k, v in ref.args)
+    return f"{ref.agent_name} is {article} {ref.role_name}({args_str})."
 
 
 def _format_connection(stmt: ConnectionStmt) -> str:

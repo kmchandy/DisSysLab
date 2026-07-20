@@ -1,0 +1,15 @@
+"Build an office for me. 
+It has two types of sources: (1) BBC news, Al Jazeera,and NPR, and 
+(2) subscriber_messages.
+Each item from a news source is analyzed in parallel by a team of workers, 
+one of whom extracts entities, another scores severity and so on.
+The news item, enriched by the information extracted by this worker team
+is sent to a worker - a subscriber handler.
+The office interacts with subscribers who are not part of the office.
+A subscriber sends request-subscription and cancel-subscription through the 
+subscriber_messages source; these requests are sent to the suscriber handler.
+A subscription request specifies the news sources that the subscriber wants to monitor
+and the kinds of enriched information the subscriber wants to receive.
+A subscription request also has the email of the subscriber
+When the subscriber handler gets an item of enriched news it sends the news,
+with the information requested by subscribers to each active subscriber.

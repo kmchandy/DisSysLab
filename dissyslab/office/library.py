@@ -73,6 +73,8 @@ from typing import Any, Callable, Dict, List, Mapping, Tuple, Union
 
 from dissyslab.backends import get_backend
 from dissyslab.blocks.role import Role
+from dissyslab.blocks.select import Select
+from dissyslab.blocks.gate import Gate
 from dissyslab.core import Agent
 
 
@@ -945,6 +947,316 @@ def router_role(routes: "list[dict]") -> AgentRoleEntry:
     )
 
 
+# ── select_role ──────────────────────────────────────────────────────
+
+
+def select_role(
+    inports: "list[str] | tuple[str, ...]",
+    command: str = "command",
+) -> AgentRoleEntry:
+    """Build a select role: a commanded traffic-controller for one worker.
+
+    OfficeSpeak's ``select`` reads whichever inport its state points to,
+    may forward it, and updates which inport it reads next. To keep
+    ``select`` a *registered*, trusted primitive — no office-specific
+    judgment baked in — this implementation never decides on its own
+    which inport to read next: one inport is reserved as the
+    **command** inport, and only a message arriving there (a dict
+    ``{"next": "<data-inport-name>"}``) changes what select reads next.
+    Every message on any other (*data*) inport is forwarded, unchanged,
+    to the single outport, and select then waits for the next command.
+
+    This is the "ask-and-wait, frozen" pattern: a worker downstream of
+    ``select`` gets exactly one thing at a time and decides, by sending
+    a command, whether the *next* thing should be fresh input or a
+    reply it's waiting on — so nothing else can reach it while it
+    waits. See ``start_gallery/trading_room.md``, Case 2, where a
+    trader commands its own ``select`` to bring the ledger's reply
+    next after proposing a trade, and to bring the next news item
+    otherwise.
+
+    Parameters
+    ----------
+    inports
+        The data inports select watches (not including ``command``,
+        which is added automatically). Must be non-empty, unique
+        strings.
+    command
+        Name of the reserved command inport. Must not also appear in
+        ``inports``.
+
+    Returns
+    -------
+    AgentRoleEntry
+        With ``name="select"``, ``in_ports`` = ``inports`` + the
+        command port, ``out_ports=("out",)`` (the framework's usual
+        single-outport semantic name — see ``synchronizer_role``).
+
+    Raises
+    ------
+    ValueError
+        If ``inports`` is empty, contains duplicates or non-strings,
+        or collides with ``command``.
+
+    Examples
+    --------
+    >>> entry = select_role(["info", "reply"], command="command")
+    >>> entry.in_ports
+    ('info', 'reply', 'command')
+    >>> entry.out_ports
+    ('out',)
+    """
+    if not inports:
+        raise ValueError("select_role requires at least one data inport")
+    data_inports = tuple(inports)
+    if len(set(data_inports)) != len(data_inports):
+        raise ValueError(
+            f"select_role inports must be unique, got {list(data_inports)}"
+        )
+    if not all(isinstance(p, str) and p for p in data_inports):
+        raise ValueError(
+            f"select_role inports must all be non-empty strings, "
+            f"got {list(data_inports)}"
+        )
+    if not isinstance(command, str) or not command:
+        raise ValueError(f"select_role command must be a non-empty string, got {command!r}")
+    if command in data_inports:
+        raise ValueError(
+            f"select_role command port {command!r} must not also be "
+            f"one of the data inports {list(data_inports)}"
+        )
+
+    all_inports = list(data_inports) + [command]
+    # Single declared outport -> the compiler always maps it to the
+    # literal runtime port "out_" (see office/_internals.py
+    # _runtime_outport: "one declared outport -> out_"). The real
+    # Select agent's own outport must therefore literally be "out_",
+    # regardless of what semantic name office.md uses to refer to it.
+    _RUNTIME_OUT = "out_"
+
+    def _step(msg, state, inport):
+        if inport == command:
+            if not isinstance(msg, dict) or "next" not in msg:
+                raise ValueError(
+                    "select: a command message must be a dict with a "
+                    f"'next' key naming which inport to read next; got {msg!r}"
+                )
+            nxt = msg["next"]
+            if nxt not in data_inports:
+                raise ValueError(
+                    f"select: command named next={nxt!r}, which is not "
+                    f"one of this select's data inports {list(data_inports)}"
+                )
+            state["next"] = nxt
+            return None
+        # A data message: forward it untouched, then wait for a command
+        # before reading anything else.
+        state["next"] = command
+        return [(_RUNTIME_OUT, msg)]
+
+    def factory() -> Agent:
+        return Select(
+            inports=list(all_inports),
+            outports=[_RUNTIME_OUT],
+            fn=_step,
+            start=data_inports[0],
+        )
+
+    return AgentRoleEntry(
+        name="select",
+        in_ports=tuple(all_inports),
+        out_ports=("out",),
+        factory=factory,
+        description=(
+            f"Forward whichever of {list(data_inports)} the last "
+            f"'{command}' message named, unchanged, to 'out'; "
+            f"read '{command}' in between."
+        ),
+    )
+
+
+# ── gate_role ────────────────────────────────────────────────────────
+
+
+def gate_role(
+    data: str = "data",
+    control: str = "control",
+) -> AgentRoleEntry:
+    """Build a gate role: admit one item at a time.
+
+    Thin, office.md-facing wrapper around the framework's
+    :class:`dissyslab.blocks.gate.Gate` coordinator, which already
+    implements OfficeSpeak's ``gate`` exactly: take one message from
+    ``data``, forward it to the outport, then wait for a message on
+    ``control`` before admitting the next. Use when more than one
+    agent reads *and* writes the same shared record and the whole
+    office must finish handling one item before starting the next.
+    Pair with a registered ``record`` — see
+    ``start_gallery/investment_club.md``.
+
+    Parameters
+    ----------
+    data, control
+        Inport names. The defaults match OfficeSpeak's own worked
+        examples; override only if an office needs different names.
+
+    Returns
+    -------
+    AgentRoleEntry
+        With ``name="gate"``, ``in_ports=(data, control)``,
+        ``out_ports=("out",)`` (the framework's usual single-outport
+        semantic name — see ``synchronizer_role``).
+
+    Examples
+    --------
+    >>> entry = gate_role()
+    >>> entry.in_ports
+    ('data', 'control')
+    >>> entry.out_ports
+    ('out',)
+    """
+    # Single declared outport -> the compiler always maps it to the
+    # literal runtime port "out_" (office/_internals.py
+    # _runtime_outport). Gate's own outport must therefore literally
+    # be "out_", regardless of the semantic name office.md uses.
+    _RUNTIME_OUT = "out_"
+
+    def factory() -> Agent:
+        return Gate(in_port=data, done_port=control, out_port=_RUNTIME_OUT)
+
+    return AgentRoleEntry(
+        name="gate",
+        in_ports=(data, control),
+        out_ports=("out",),
+        factory=factory,
+        description=(
+            f"Admit one item at a time from '{data}', forwarded to "
+            f"'out'; wait for '{control}' before admitting the next."
+        ),
+    )
+
+
+# ── record_role ──────────────────────────────────────────────────────
+
+
+def record_role(initial: "dict | None" = None) -> AgentRoleEntry:
+    """Build a record role: a shared keeper, plain store-and-reply.
+
+    OfficeSpeak's ``record(holds: …)``: an agent that keeps shared data;
+    other agents read and update it by sending requests and receiving
+    replies on its single inbox/outbox, so no agent needs shared
+    memory. This implementation holds one dict, deep-copied per agent
+    from ``initial`` so two record agents from the same template are
+    independent.
+
+    Request shape (a dict) on the single inbox:
+
+    - ``{"action": "read"}`` — reply with the whole held dict.
+    - ``{"action": "read", "fields": [...]}`` — reply with only those
+      fields.
+    - ``{"action": "write", "data": {...}}`` — shallow-merge ``data``
+      into the held dict (last writer wins per key, same caveat as
+      ``synchronizer_role``'s dict-merge). **Silent — no reply.**
+
+    Writes are fire-and-forget on purpose, not an oversight: ``record``
+    has exactly one outbox, so if a write produced a reply it would be
+    broadcast to *every* connected reader, not just the writer that
+    asked — there is no way to route a reply to "only the one that
+    asked" with a single outbox. Every worked OfficeSpeak example
+    already assumes this: "the ledger's reply to the manager's write
+    isn't wired anywhere — nobody needs to see it. Only the reply to a
+    lookup is connected" (``investment_club.md``, ``case_06`` transcript).
+    A future record with per-requester outboxes could acknowledge
+    writes; this plain version doesn't need to.
+
+    The outbox's semantic name is ``"out"``, matching ``select``/``gate``/
+    ``synchronizer`` — not ``"reply"``, even though the instructions call
+    it "a reply outbox" descriptively. Unlike ``gate``'s ``data``/
+    ``control``, which the instructions mandate as literal names,
+    ``record``'s wording isn't a naming rule, so there's no reason for it
+    to be the one coordinator that breaks the "single outport is named
+    out" pattern every generator-side check relies on.
+
+    No internal locking: one request is fully handled before the next
+    is read (an ordinary single-inbox agent already serializes that
+    much), but nothing stops two *different* agents from interleaving a
+    read and a write across several of their own messages. **Pair with
+    a registered ``gate`` when more than one agent reads and writes
+    this record as part of the same multi-step unit of work** — see
+    ``start_gallery/investment_club.md``, where the manager writes and
+    the accountant reads within the same period and a gate keeps
+    periods from overlapping. A fancier reader/writer lock was
+    designed and deliberately deferred (see HANDOFF.md) — this plain
+    version is the one to reach for until a real case needs more.
+
+    Parameters
+    ----------
+    initial
+        Seeds the held dict. Defaults to empty.
+
+    Returns
+    -------
+    AgentRoleEntry
+        With ``name="record"``, ``in_ports=("in_",)``,
+        ``out_ports=("out",)``.
+
+    Examples
+    --------
+    >>> entry = record_role(initial={"shares": 0})
+    >>> entry.in_ports
+    ('in_',)
+    >>> entry.out_ports
+    ('out',)
+    """
+    if initial is not None and not isinstance(initial, dict):
+        raise ValueError(
+            f"record_role initial must be a dict or None, got "
+            f"{type(initial).__name__}"
+        )
+    seed = dict(initial) if initial else {}
+
+    def factory() -> Agent:
+        state = dict(seed)
+
+        def record_fn(msg: Any):
+            if not isinstance(msg, dict) or "action" not in msg:
+                raise ValueError(
+                    "record: request must be a dict with an 'action' "
+                    f"field ('read' or 'write'), got {msg!r}"
+                )
+            action = msg["action"]
+            if action == "write":
+                data = msg.get("data")
+                if not isinstance(data, dict):
+                    raise ValueError(
+                        "record: a 'write' request needs a dict 'data' "
+                        f"field, got {data!r}"
+                    )
+                state.update(data)
+                return None  # silent -- see docstring on why writes don't reply
+            if action == "read":
+                fields = msg.get("fields")
+                if fields is None:
+                    return [(dict(state), "out")]
+                return [({k: state.get(k) for k in fields}, "out")]
+            raise ValueError(
+                f"record: action must be 'read' or 'write', got {action!r}"
+            )
+
+        return Role(fn=record_fn, statuses=["out"])
+
+    return AgentRoleEntry(
+        name="record",
+        in_ports=("in_",),
+        out_ports=("out",),
+        factory=factory,
+        description=(
+            "Hold a shared dict; reply to 'read'/'write' requests on its "
+            "single inbox."
+        ),
+    )
+
+
 # ── PARAMETERIZED_LIBRARY ─────────────────────────────────────────────
 
 
@@ -974,6 +1286,9 @@ def router_role(routes: "list[dict]") -> AgentRoleEntry:
 PARAMETERIZED_LIBRARY: Dict[str, Callable[..., "AgentRoleEntry"]] = {
     "synchronizer": synchronizer_role,
     "router": router_role,
+    "select": select_role,
+    "gate": gate_role,
+    "record": record_role,
 }
 
 
