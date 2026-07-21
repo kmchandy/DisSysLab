@@ -1,9 +1,10 @@
 # Decision: first-line debugging aids for Pat (2026-07-12)
 
-Recorded for later. Not designed or coded yet. Two aids, one per bug class; both
-work on a **normal run** (no debug-mode replay needed), so they are the right
-things to build before the first pilot. Concerns both DisSysLab (instrumentation)
-and OfficeSpeak (the Pat-facing explanation).
+Recorded for later. Three aids, one per bug class. Aids (a) and (b) work on a
+**normal run** (no debug-mode replay needed). Aid (c), added 2026-07-21, works
+on a **`--trace` run** (opt-in, see below) and is designed but not yet built.
+Concerns both DisSysLab (instrumentation) and OfficeSpeak (the Pat-facing
+explanation).
 
 ## (a) Test each agent by itself — catches *agent-specification / body* bugs
 
@@ -47,6 +48,28 @@ stuck waiting on it.
   several channels, so faithful *per-channel* backlog needs per-channel counters,
   not just per-port. The raw material exists; the granularity needs a look.
 
+## (c) Show the real run — catches nothing new by itself, but shows what actually happened
+
+Aids (a) and (b) both work on **synthetic** cases: (a) hand-picked inputs fed
+to one isolated worker, (b) aggregate counts. Neither shows Pat an actual
+worker doing its actual job on the actual messages that flowed during a real
+run. Aid (c) is that: a per-agent log of the real messages each worker sent
+and received, timestamped with a Lamport logical clock so every agent's log
+can be merged into one ordered, cross-agent playback and narrated action by
+action in English — "here is the message the accountant received, here is
+what it sent."
+
+- Full design: `docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md`.
+- Opt-in and off by default (`--trace` on `dsl run`), same "normal mode is
+  cheap" principle as debug-mode replay — but **not the same feature as
+  debug-mode replay** (`replay_debug_mode_decision.md`). Aid (c) never
+  re-executes anything; it only narrates one run that already happened, so
+  it doesn't need that feature's harder completeness condition over
+  nondeterminism.
+- Works uniformly for **both** computational and LLM workers, unlike aid
+  (a) — it's descriptive (what happened), not evaluative (was it right),
+  so the LLM-judgment restriction below doesn't apply to it.
+
 ## Scope: computational workers only; LLM workers are prompt-only
 
 Aid (a) applies to **computational** workers (Python bodies) — their behaviour is a
@@ -61,10 +84,14 @@ honest and bounds it to where checking is meaningful.
 
 ## Mapping
 
-(a) is the **content** check (is each computational worker doing its job?); (b) is
-the **liveness / wiring** check (is every message getting where it needs to go, or
-is someone waiting forever?). Together they mirror the paper's "two layers, one
-seam."
+(a) is the **content** check (is each computational worker doing its job, on
+cases it didn't actually see?); (b) is the **liveness / wiring** check (is
+every message getting where it needs to go, or is someone waiting forever?);
+(c) is the **real-execution narration** (what did each worker actually do, on
+the messages that actually flowed, in the order they actually happened?).
+None of the three requires debug-mode replay. Together they mirror the
+paper's "two layers, one seam" plus a third, orthogonal axis: synthetic vs.
+real data.
 
 ## Worked example built (2026-07-12)
 
@@ -73,4 +100,10 @@ with a planted body bug in a computational worker (`Alerter` compares the raw
 reading instead of the rise above baseline → floods with alerts). `per_agent_tests.py`
 isolates each worker and localizes the bug (Baseline fine, Alerter wrong);
 `debugging_walkthrough.md` is the Pat-facing story. Verified: buggy = 10 alerts,
-fixed = 1. This is aid (a) end to end; aid (b) (channel counts) is still to build.
+fixed = 1. This is aid (a) end to end.
+
+## Status
+
+- **(a)** built and verified (`debug_demo`, above).
+- **(b)** scoped, not built.
+- **(c)** designed (`docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md`), not built.
