@@ -180,11 +180,17 @@ def _build_office_spec(spec: OfficeSpeakSpec) -> Tuple[OfficeSpec, Dict[str, str
             raise GeneratorError(f"connection references unknown agent {c.sender!r}")
         if receiver_name is None:
             raise GeneratorError(f"connection references unknown agent {c.receiver!r}")
-        if c.sender in source_names and c.sender_port != "destination":
+        if c.sender in source_names and c.sender_port not in ("destination", "out"):
             raise GeneratorError(
                 f"connection from source {c.sender!r} must use sender_port "
-                f'"destination" (DisSysLab\'s fixed v1 convention for every '
-                f"source), got {c.sender_port!r}"
+                f'"destination" or "out" (checked directly against the '
+                f"compiler: dissyslab/office/_internals.py's "
+                f"_runtime_outport maps *any* string a source's outport is "
+                f"called to the literal runtime \"out_\", so both are "
+                f"equally valid -- \"destination\" for existing hand-written "
+                f"offices, \"out\" for consistency with every other agent "
+                f"kind and with Track A's own bare-outbox-naming rule), got "
+                f"{c.sender_port!r}"
             )
         if c.receiver in sink_names and c.receiver_port != "in_":
             raise GeneratorError(
