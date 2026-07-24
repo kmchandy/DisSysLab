@@ -52,7 +52,10 @@ def _resolve_status_to_port(agent, status, edge_index):
             f"Edge {edge_index}: Only Role agents support named statuses. Use 'all'.")
     if len(agent.outports) != 1:
         raise ValueError(
-            f"Edge {edge_index}: Agent '{agent.name}' needs explicit port.")
+            f"Edge {edge_index}: Agent '{agent.name}' has {len(agent.outports)} "
+            f"outports ({list(agent.outports)}), so a bare status doesn't say "
+            f"which one to use. Use dot notation instead: "
+            f"{agent.name}.port_name.")
     return agent.outports[0]
 
 
@@ -96,7 +99,11 @@ def _parse_from_node(node, edge_index):
         port = node.default_outport
         if port is None:
             raise ValueError(
-                f"Edge {edge_index}: Agent '{node.name}' has no default outport."
+                f"Edge {edge_index}: Agent '{node.name}' has no default "
+                f"outport (its single outport isn't named 'out_', so a "
+                f"bare reference can't guess which one you mean). Its "
+                f"outports are {list(node.outports)} -- use dot notation: "
+                f"{node.name}.port_name."
             )
         return node, port
 
@@ -134,7 +141,11 @@ def _parse_to_node(node, edge_index):
         port = node.default_inport
         if port is None:
             raise ValueError(
-                f"Edge {edge_index}: Agent '{node.name}' has no default inport."
+                f"Edge {edge_index}: Agent '{node.name}' has no default "
+                f"inport (its single inport isn't named 'in_', so a bare "
+                f"reference can't guess which one you mean). Its inports "
+                f"are {list(node.inports)} -- use dot notation: "
+                f"{node.name}.port_name."
             )
         return node, port
 

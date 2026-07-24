@@ -268,8 +268,18 @@ def _build_agent_spec(agent: Dict[str, Any]) -> Tuple[AgentSpec, str, str, str]:
         old_out = out_ports[0]
         out_ports = ("out",)
 
+    # Rule 2 used to mean the approved fn's code had to say "out" itself,
+    # even though Track A's own description called this port e.g. "alert" --
+    # a real, documented footgun (phase3_approval.md). status_aliases lets
+    # the generated Role accept either name, so the approved code can keep
+    # using whichever name Track A gave it.
+    status_aliases = {old_out: "out"} if old_out else {}
+
     return (
-        AgentSpec(name=name, kind=kind, in_ports=in_ports, out_ports=out_ports, body=body),
+        AgentSpec(
+            name=name, kind=kind, in_ports=in_ports, out_ports=out_ports,
+            body=body, status_aliases=status_aliases,
+        ),
         name, old_out, old_in,
     )
 

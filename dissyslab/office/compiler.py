@@ -588,7 +588,10 @@ def _resolve_role_ref(
         raise CompileError(
             f"role {ref.role_name!r} in library is neither an "
             f"AgentRoleEntry nor an OfficeRoleEntry "
-            f"(got {type(entry).__name__})"
+            f"(got {type(entry).__name__}). This isn't something an office "
+            f"author can fix by editing office.md -- it means the library "
+            f"entry itself is malformed. See docs/EXTENDING.md for the "
+            f"shape a registered role must have."
         )
 
     # Not in the static library. Try PARAMETERIZED_LIBRARY — roles
@@ -602,13 +605,32 @@ def _resolve_role_ref(
         try:
             entry = constructor(**user_kwargs)
         except TypeError as exc:
-            raise CompileError(
-                f"agent {ref.agent_name!r}: bad arguments to "
-                f"parameterized role {ref.role_name!r}: {exc}"
-            ) from exc
+            msg = str(exc)
+            accepted = _accepted_kwargs(constructor)
+            m = _UNEXPECTED_KW_RE.search(msg)
+            if m is not None:
+                bad = m.group(1)
+                hint = _suggest(bad, accepted)
+                parts = [
+                    f"Argument {bad!r} is not valid for parameterized role "
+                    f"{ref.role_name!r} (agent {ref.agent_name!r})."
+                ]
+                if hint:
+                    parts.append(hint)
+                if accepted:
+                    parts.append(f"Valid arguments: {', '.join(accepted)}.")
+                raise CompileError(" ".join(parts)) from exc
+            parts = [
+                f"agent {ref.agent_name!r}: bad arguments to parameterized "
+                f"role {ref.role_name!r}: {exc}"
+            ]
+            if accepted:
+                parts.append(f"Valid arguments: {', '.join(accepted)}.")
+            raise CompileError(" ".join(parts)) from exc
         except ValueError as exc:
             raise CompileError(
-                f"agent {ref.agent_name!r}: {exc}"
+                f"agent {ref.agent_name!r}: parameterized role "
+                f"{ref.role_name!r} rejected these arguments: {exc}"
             ) from exc
         block = entry()
         return block, "role", entry.out_ports

@@ -775,9 +775,10 @@ def synchronizer_role(inports: "list[str] | tuple[str, ...]") -> AgentRoleEntry:
     The dict-merge step is order-independent only when each upstream
     branch preserves the original message fields and adds its own.
     That's the situation_room pattern (each parallel extractor adds
-    one new field and passes the rest through). If your upstream
-    branches produce overlapping keys with different values, the last
-    one wins — caller's responsibility to design around that.
+    one new field and passes the rest through). If two branches supply
+    the same key in the same round, this raises loudly (naming the
+    inport and the colliding field) instead of silently letting one
+    value overwrite the other -- give each branch distinct field names.
     """
     if not inports:
         raise ValueError("synchronizer_role requires at least one inport")
@@ -808,6 +809,16 @@ def synchronizer_role(inports: "list[str] | tuple[str, ...]") -> AgentRoleEntry:
                 for p in self.inports:
                     msg = self.recv(p)
                     if isinstance(msg, dict):
+                        collisions = set(merged) & set(msg)
+                        if collisions:
+                            raise ValueError(
+                                f"synchronizer '{self.name}': inport {p!r} "
+                                f"supplied field(s) {sorted(collisions)!r} "
+                                f"already set by an earlier inport this "
+                                f"round -- one value would silently "
+                                f"overwrite the other. Give each branch "
+                                f"distinct field names before merging."
+                            )
                         merged.update(msg)
                 self.send(merged, "out_")
 

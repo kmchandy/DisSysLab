@@ -112,6 +112,14 @@ class AgentSpec:
         Required for ``transform``; must be ``None`` otherwise (registered
         agents need no body -- "you need not describe a registered agent;
         its behaviour is fixed").
+    status_aliases
+        Only set for a ``transform`` whose single outbox was renamed by
+        ``assemble.py``'s normalization rule 2 (Track A's original name,
+        e.g. ``"alert"``, forced to the runtime name ``"out"``). Maps the
+        original name to the runtime name, so the generator can let the
+        approved worker's code keep returning the readable name Track A
+        gave it -- ``"out"`` still works too, but the code no longer has
+        to say it. Empty for every agent this rename didn't touch.
     """
 
     name: str
@@ -121,6 +129,7 @@ class AgentSpec:
     registered_as: Optional[str] = None
     registered_args: Dict[str, Any] = field(default_factory=dict)
     body: Optional[WorkerBody] = None
+    status_aliases: Dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "in_ports", tuple(self.in_ports))

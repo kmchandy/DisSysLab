@@ -12,7 +12,7 @@ by recv(). No explicit STOP handling needed.
 """
 
 from __future__ import annotations
-from typing import Callable, Any, Optional, List, Tuple
+from typing import Callable, Any, Optional, List, Tuple, Dict
 import traceback
 
 from dissyslab.core import Agent
@@ -43,6 +43,7 @@ class Role(Agent):
         *,
         fn: Callable[[Any], List[Tuple[Any, str]]],
         statuses: List[str],
+        status_aliases: Optional[Dict[str, str]] = None,
         name: Optional[str] = None
     ):
         if not callable(fn):
@@ -71,6 +72,27 @@ class Role(Agent):
                 for i, status in enumerate(statuses)
             }
 
+        # Optional extra names for an existing status -- e.g. a generator
+        # normalized a transform's single outbox to "out" at build time, but
+        # the approved fn's code was written against the original name it
+        # was given (e.g. "alert"). Both then route to the same port; this
+        # never creates a new port, only a second spelling for one that
+        # already exists.
+        self.status_aliases = dict(status_aliases or {})
+        for alias, canonical in self.status_aliases.items():
+            if alias in self._status_to_port:
+                raise ValueError(
+                    f"Role status_aliases: {alias!r} is already a declared "
+                    f"status ({statuses}); an alias can't shadow a real one."
+                )
+            if canonical not in self._status_to_port:
+                raise ValueError(
+                    f"Role status_aliases: alias {alias!r} points at "
+                    f"{canonical!r}, which isn't a declared status "
+                    f"({statuses})."
+                )
+            self._status_to_port[alias] = self._status_to_port[canonical]
+
         super().__init__(name=name, inports=["in_"], outports=outports)
         self._fn = fn
         self.statuses = list(statuses)
@@ -98,9 +120,10 @@ class Role(Agent):
 
                 for out_msg, status in results:
                     if status not in self._status_to_port:
+                        accepted = list(self.statuses) + list(self.status_aliases)
                         raise ValueError(
                             f"Role '{self.name}' returned undeclared status "
-                            f"'{status}'. Declared statuses: {self.statuses}"
+                            f"'{status}'. Accepted statuses: {accepted}"
                         )
                     self.send(out_msg, self._status_to_port[status])
 

@@ -563,14 +563,21 @@ def parse_office_dir(office_dir: Path) -> OfficeSpec:
     """
     office_dir = Path(office_dir)
     if not office_dir.is_dir():
-        raise FileNotFoundError(f"{office_dir} is not a directory")
+        raise FileNotFoundError(
+            f"{office_dir} is not a directory -- check the path you passed "
+            f"to dsl build/run points at an office folder, not a file."
+        )
 
     md_path = office_dir / "office.md"
     if not md_path.exists():
         md_path = office_dir / "network.md"
     if not md_path.exists():
         raise FileNotFoundError(
-            f"{office_dir} has no office.md or network.md"
+            f"{office_dir} has no office.md or network.md. If this is a "
+            f"Stage 1 hand-off file that hasn't been generated yet, run "
+            f"`python -m dissyslab.office.assemble <draft.py> {office_dir}` "
+            f"first (phase3_al_howto.md, step 5) -- dsl build/run need the "
+            f"generated office.md, not the draft."
         )
 
     text = md_path.read_text(encoding="utf-8")
