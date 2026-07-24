@@ -105,6 +105,14 @@ class Network:
         self.resume_from_N: Optional[int] = None
         self.office_name: str = name if name is not None else "office"
 
+        # ── Trace configuration (v1.7) ───────────────────────────────
+        # Default None — purely additive, same "inert unless set"
+        # pattern as the checkpoint-resume attributes above. When None,
+        # every agent's _trace_dir stays None and send()/recv() take
+        # exactly the pre-v1.7 code path. See
+        # docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md.
+        self.trace_dir: Optional[Path] = None
+
         # Process compilation state (populated by compile_for_processes())
         self.compiled_for_processes: bool = False
         self.mp_queues: List[multiprocessing.Queue] = []
@@ -444,6 +452,11 @@ class Network:
         - Propagate self.snapshot_dir to every agent's
           _snapshot_dir attribute so _load_checkpoint_from_disk()
           can find the snapshot files on resume.
+
+        v1.7 addition: propagate self.trace_dir to every agent's
+        _trace_dir attribute the same way, so send()/recv() know
+        whether (and where) to write per-agent activity-log entries.
+        See docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md.
         """
         from dissyslab.os_agent import OsAgent
 
@@ -484,6 +497,12 @@ class Network:
         # _load_checkpoint_from_disk short-circuits in that case.
         for agent in self.agents.values():
             agent._snapshot_dir = self.snapshot_dir
+
+        # v1.7: propagate trace_dir to every agent the same way. None
+        # is fine — send()/recv() short-circuit to their pre-v1.7
+        # behaviour whenever an agent's _trace_dir is None.
+        for agent in self.agents.values():
+            agent._trace_dir = self.trace_dir
 
     def _wire_queues(self) -> None:
         """Wire communication queues between agents."""

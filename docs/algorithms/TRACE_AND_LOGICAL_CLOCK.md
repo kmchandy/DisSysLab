@@ -47,52 +47,141 @@ LLM-response logging, or the RNG/clock/external-call problem that debug-mode
 replay has to solve. It only needs a faithful record of one real execution,
 which is strictly easier.
 
-## Part 1 — Logical clock (Lamport timestamp)
+## User-facing workflow (Mani, 2026-07-21)
 
-Mani's rule, as stated: sources timestamp messages starting at 0,
-increasing with each message a source emits. Each agent keeps its own
-timestamp. On receiving a message with timestamp `t`, an agent sets its own
-timestamp to the larger of `t+1` and its current timestamp. An agent
-timestamps its outgoing messages with its own current timestamp.
+The steps a person actually goes through, end to end:
 
-This is Lamport's logical clock algorithm (Lamport, *Time, Clocks, and the
-Ordering of Events in a Distributed System*, CACM, 1978) — the same Lamport
-as in Chandy-Lamport snapshots, already in the paper via the checkpoint
-explainer. One 1978→1985 theoretical throughline under both features.
+1. **Turn on debug execution from a checkpoint.** The checkpoint could be
+   the initial state — i.e. this is the existing `--resume <N>` mechanism
+   (or no `--resume` at all, for a fresh run from the initial state),
+   combined with the new `--trace` flag from Part 2. Starting a trace run
+   from a resume point is already consistent with this document's earlier
+   decision that a trace covers one uninterrupted stretch: resuming and
+   then tracing just begins a new stretch (a new logical-time segment) at
+   the resume point, exactly as already decided.
+2. **Stop execution from the command line.** Manual only — Ctrl-C, or
+   natural completion. (Already decided in Part 2; restated here as the
+   step in the workflow it belongs to.)
+3. **Get Claude to explain the trace.** Important clarification: the English
+   narration is **not** a hard-coded template-printing script. DisSysLab's
+   job stops at producing a faithful, complete, machine-readable record (the
+   `trace/*.jsonl` files from Part 2). Turning that record into English for
+   Pat is OfficeSpeak's job, done by Claude reading the raw trace and
+   narrating it — the same division of labor as everywhere else in this
+   project (DisSysLab is the mechanism; OfficeSpeak/Claude is the English
+   translation layer), and the same pattern already used for office
+   structure, "Things I assumed," and the `debug_demo` walkthrough. See
+   Part 3, revised accordingly.
+4. **Fix bugs.** Ordinary edit-and-rebuild, informed by what the explanation
+   surfaced.
+5. **Start a fresh run** — debug/traced or not, as needed — and repeat.
 
-### Corrected update rule
+## Part 1 — Logical clock, grounded in physical time (revised 2026-07-21)
 
-As stated, the rule is `new_clock = max(t+1, current_clock)`. This only
-moves the clock when an incoming timestamp forces it higher — if the
-agent's clock is already ≥ `t+1`, a receive leaves it unchanged. Two
-different actions by the same agent can then land on the identical
-timestamp, which breaks a clean "playback, action by action" (no way to
-tell, from the timestamp alone, which of that agent's own two actions came
+**This section replaces the pure-Lamport-counter version below it.** Mani's
+revised rule: use the physical clock (`time()`) as the timestamp, corrected
+so that every message's receive-timestamp is later than its send-timestamp
+— i.e., real wall-clock time as the base, with a Lamport-style correction
+layered on top to guarantee causal ordering regardless of clock skew or
+timing jitter between agents.
+
+This is (a version of) a **Hybrid Logical Clock** (Kulkarni et al., *Logical
+Physical Clocks and Consistent Snapshots in Globally Distributed Databases*,
+2014) — physical time for human-meaningful values, Lamport's correction for
+distributed-systems correctness. It extends the paper's theoretical
+throughline one step further: Lamport 1978 (happened-before) →
+global snapshots (1985) → hybrid logical clocks (2014, physical +
+logical) all under one roof.
+
+### The rule — one rule, applied identically to every agent
+
+On receiving **one** message timestamped `t`, when the receiving agent's own
+clock currently reads `x`:
+
+```
+x := max(t, x + 1)
+```
+
+Every outgoing message is tagged with the agent's current clock value `x`
+at the moment it is sent.
+
+**This is the entire algorithm. There are no special cases:**
+
+- **Sources need no special rule.** A source has no inbox, so it never
+  applies the receive-side correction — it simply tags each successive
+  message with its own advancing clock, and since physical time only moves
+  forward, each successive message from a source already has an increasing
+  timestamp.
+- **Coordinators with multiple inports (e.g. `merge_synch`) need no special
+  rule either.** A `Coordinator` reads one inport at a time via one blocking
+  `recv()` per step (see `coordinator_design.md`) — it never receives two
+  messages in a single combined event. So `merge_synch` waiting on
+  `in_0` then `in_1` just applies the ordinary single-message rule twice, in
+  sequence: the first `recv()` (say, timestamp `t_a`) updates the clock to
+  `max(t_a, x+1)`; the second `recv()` (timestamp `t_b`) updates *that*
+  result to `max(t_b, x'+1)`. The causal dependency on both inputs falls out
+  automatically from applying the same rule twice — no separate "max over
+  several incoming timestamps" formula is needed. (An earlier draft of this
+  document proposed exactly such a special case; it's unnecessary and has
+  been removed.)
+- **Sends need no special rule.** An outgoing message is simply tagged with
+  whatever the agent's clock currently reads — the clock was already updated
+  by the most recent receive (or, for a source, by its own last send).
+
+One rule, applied the same way everywhere, covers the whole system.
+
+### Why this specific formula (`max(t, x+1)`, not `max(t+1, x)`)
+
+An earlier draft of this document used `max(t+1, x)` — incrementing the
+*incoming* timestamp before comparing. That formula does **not** guarantee
+the clock strictly increases: if the agent's own clock is already `≥ t+1`,
+a receive leaves it completely unchanged, and two different actions at the
+same agent can end up with the identical timestamp (breaking "playback,
+action by action" — no way to tell which of that agent's two actions came
 first).
 
-**Fix — increment on every event, not only when forced:**
+Mani's formula, `max(t, x+1)`, increments the *agent's own* clock instead,
+and this is always at least `x+1` — strictly greater than `x`, unconditionally,
+on every single receive. It also has a nicer property for a *physical*
+clock specifically: it only advances as far as necessary (either to `t`, if
+the incoming message is from further ahead in time, or to `x+1`, the
+minimum needed to stay strictly increasing) — so the clock tracks true wall
+time closely rather than drifting arbitrarily ahead the way an
+always-add-1 rule would over a long-running office.
 
-```
-On receive of a message timestamped t:
-    clock := max(clock, t) + 1        # always increments
+**A nice side effect worth noting:** this same correction also protects
+against a physical clock that occasionally reads backwards (e.g. an NTP
+time adjustment) — even if the raw reading dips, `max(t, x+1)` guarantees
+each agent's own sequence of timestamps never decreases. Worth deciding,
+but not blocking: whether the underlying physical reading should be
+`time.time_ns()` (real epoch time, human-meaningful, occasionally
+non-monotonic on its own) or `time.monotonic_ns()` (guaranteed monotonic,
+but not anchored to a real time-of-day Pat could read). Given the goal is
+showing Pat something that looks like real time, `time.time_ns()` plus this
+correction is probably the right choice — flagging for confirmation, not
+deciding unilaterally.
 
-On any other action that produces an outgoing message
-(no incoming message drove it directly — sources; a coordinator
-emitting without having just consumed, if that ever occurs):
-    clock := clock + 1                # bump first, then tag the outgoing message
-```
+### Truncation is a display concern only, not an arithmetic one
 
-This guarantees every action at a given agent gets a strictly higher
-timestamp than its last action, so one agent's own actions are always
-totally ordered by timestamp alone.
+Physical timestamps (nanoseconds or milliseconds since epoch) are long
+numbers — too long to show Pat directly. Keep full precision for every
+stored clock value and every `max(...)` comparison; truncate only at the
+final step, when rendering a timestamp for a human to read (e.g. show
+`14:32:07.114` instead of the raw epoch integer). If the *stored* value
+itself were truncated to something coarse (say, whole seconds) rather than
+just its on-screen rendering, the collision risk the correction rule is
+built to avoid comes right back — two messages a few milliseconds apart
+could round to the identical displayed second, and then it's genuinely
+ambiguous which happened first. Precision internally, brevity only on the
+page.
 
-### Coordinators with multiple inbound messages
+### [Superseded] Coordinators with multiple inbound messages
 
-`merge_synch` (and any `Coordinator` subclass whose `_step` combines
-messages from more than one inport — see `synchronizer_role`'s dict-merge)
-can produce one combined receive-event from several incoming messages.
-Generalize: `clock := max(clock, t_1, t_2, ..., t_k) + 1`, taking the max
-over all contributing incoming timestamps, not just one.
+*(Kept for the record, since a decision log should show what changed —
+resolved above: no special case is needed. A `Coordinator` never actually
+receives multiple messages in one combined event; it reads one inport at a
+time, so the single-message rule already composes correctly across
+sequential reads.)*
 
 ### Total order needs a tie-break
 
@@ -111,6 +200,29 @@ asynchronous system without synchronized clocks. Being honest with a
 non-programmer about exactly what ordering guarantee she's looking at is a
 correct and worthwhile thing to say explicitly, not just an implementation
 footnote.
+
+**Found during implementation (2026-07-22): plain `(timestamp,
+agent_name)` isn't quite enough — a send and its own matching receive
+can tie.** The clock rule `x := max(t, x+1)` guarantees each *agent's
+own* sequence strictly increases, but makes no such promise between a
+sent message's timestamp and the timestamp its receiver assigns to
+receiving it: whenever the receiver's clock was already behind the
+sender's (the common case for a physical-time-grounded clock, since
+most agents are idle most of the time relative to nanosecond
+resolution), `max(t, x+1)` reduces to exactly `t` — the receive gets
+the *identical* timestamp as the send. Verified against a real
+`--trace` run of `recovery_demo`: roughly a third of all timestamps
+were exactly this kind of send/receive tie. Plain `agent_name` as the
+tie-break has no reason to sort a "sent" action before the "received"
+action for the very same message — it depends entirely on which
+agent's name happens to sort first alphabetically, which is exactly
+backwards about a third of the time. `dsl explain-trace` now breaks
+ties by `(timestamp, sent-before-received, agent_name)` — sent sorts
+before received when timestamps tie, which is correct for the common
+case (a message's own send/receive pair) and remains an arbitrary but
+harmless fixed choice for the rarer case of two truly unrelated
+actions that happen to tie. This is a display-ordering fix only —
+it does not change the clock algorithm in Part 1, which is unmodified.
 
 ## Part 2 — Recording the per-agent activity log
 
@@ -156,7 +268,7 @@ message" branch today (`core.py` `recv()`, the `else:` branch around line
 **This must happen before existing channel-state recording sees the
 message.** `recv()` already copies in-flight messages into
 `self._recording["channels"][inport]` during a checkpoint (for
-Chandy-Lamport channel-state). If unwrapping happens first, that recording
+global-snapshot channel-state). If unwrapping happens first, that recording
 path is unaffected — it keeps storing plain payloads exactly as it does
 today, no change needed there. Get this ordering right and the two features
 don't interact at all.
@@ -239,24 +351,41 @@ directories by hand if they want to.
 
 ## Part 3 — Running (playing back) a recorded trace
 
-### Design: a decoupled, read-only narration tool
+### Design: DisSysLab produces the record; Claude produces the English
 
 Not a re-execution of the office — the office already ran, and finished, or
 you wouldn't have a complete trace to play back. "Running a recorded trace"
-means: read the `trace/*.jsonl` files written during a `--trace` run,
-merge all agents' entries, order them by `(t, agent_name)` (Part 1's
-tie-break), and walk through them one at a time, each rendered in English.
+splits into two genuinely separate jobs, on two sides of the DisSysLab /
+OfficeSpeak boundary:
 
-This can be a standalone script/CLI command with no dependency on the live
-runtime, the OS agent, or the checkpoint machinery — it only reads JSONL
-files and prints/steps through English sentences. Proposed CLI surface,
-consistent with existing subcommands: `dsl explain-trace <office_dir>/trace/`.
+- **DisSysLab's job** (mechanical, deterministic, no LLM involved): read the
+  `trace/*.jsonl` files written during a `--trace` run, merge every agent's
+  entries, and order them by `(t, agent_name)` (Part 1's tie-break) into one
+  linear sequence. This can be a small standalone tool with no dependency on
+  the live runtime, the OS agent, or the checkpoint machinery — it only
+  reads JSONL and produces one ordered, still-structured sequence of
+  actions. Proposed CLI surface, consistent with existing subcommands: `dsl
+  explain-trace <office_dir>/trace/` — though note per the point below, this
+  command's own job is to hand the ordered structured trace to Claude, not
+  to print English itself.
+- **OfficeSpeak's job** (Claude reads the ordered structured trace and
+  narrates it): turning "agent Alex received `(0.31, 0.88)` on inport `in_`
+  at t=41" into the kind of sentence Pat can read is exactly the same
+  translation move already used for office structure, "Things I assumed,"
+  and the `debug_demo` walkthrough — done by Claude, not by a fixed template
+  string. This means the explanation can adapt (more or less detail, answer
+  a follow-up question about one specific step, connect an action back to
+  the worker's plain-English job description) the way every other
+  OfficeSpeak explanation already does, rather than being frozen into
+  whatever a template author anticipated.
 
 ### English rendering, worked example (recovery_demo)
 
 Using the same office as the checkpoint explainer's worked example
 (`dissyslab/gallery/apps/recovery_demo` — five-agent Monte Carlo π
-estimator), a few consecutive playback steps might read:
+estimator), a few consecutive narrated steps might read (illustrative — the
+actual wording is Claude's, generated fresh from the structured trace, not
+a fixed string):
 
 > "[t=41] Alex received a point from the source: (0.31, 0.88)."
 > "[t=42] Alex decided the point is inside the circle, and sent that count
@@ -266,7 +395,9 @@ estimator), a few consecutive playback steps might read:
 > 3.14179."
 
 Exactly the same translation move as the checkpoint explainer and the
-office-structure explainer: formal object in, plain English out.
+office-structure explainer: formal object in, plain English out — except
+here the "formal object" is an ordered log rather than a single structure or
+a single snapshot.
 
 ### Why this is safe to build
 
@@ -307,3 +438,50 @@ One question remains open, not yet decided:
   the terminal; an automatic stop condition (e.g. after N actions by an
   agent) was considered and rejected as unneeded complexity.
 - 2026-07-21 — Mani: no reason for trace-file retention policy.
+- 2026-07-21 (later same day) — Mani replaced the pure Lamport-counter clock
+  with a physical-time-grounded hybrid clock: `x := max(t, x+1)` on every
+  single-message receive, one uniform rule for every agent (sources,
+  transforms, sinks, and multi-inport coordinators alike — no special
+  cases). Removed the earlier "coordinators with multiple inbound messages"
+  generalization as unnecessary. Clarified the workflow (turn on tracing
+  from a checkpoint or the initial state; stop manually; Claude explains
+  the trace; fix bugs; start fresh) and that the English narration in Part 3
+  is produced by Claude reading the structured trace, not a fixed template
+  — DisSysLab produces the record, OfficeSpeak/Claude produces the English,
+  same division of labor as the rest of the project.
+- 2026-07-22 — Implemented: `_Timestamped` wrapper and clock/trace hooks in
+  `core.py`, `trace_dir` propagation in `network.py`, `--trace` flag and
+  `DSL_TRACE` env var in `cli.py`/`codegen.py`, and `dsl explain-trace` to
+  merge and sort the per-agent JSONL files. Verified against a real
+  `--trace` run of `recovery_demo` (copied out of the repo to avoid
+  touching its tracked snapshot fixtures): every agent's own clock is
+  strictly monotonically increasing, as designed; a normal (non-`--trace`)
+  run is behaviorally unchanged. Found and fixed one real issue during this
+  verification — see "Total order needs a tie-break" above for the
+  send/receive tie-break refinement. Also found and fixed a latent
+  cross-platform bug before it could ship: agent names contain `::`, which
+  is invalid in Windows filenames, so trace files now go through
+  `snapshot.py`'s existing `safe_filename` sanitizer (`::` → `__`), the
+  same convention already used for checkpoint files, instead of using
+  `self.name` raw. Full pytest suite could not be run in this sandbox (no
+  network access to install pytest or the runtime's third-party
+  dependencies) — real end-to-end verification was done instead by
+  building and running a live office with stub modules standing in for
+  the unavailable dependencies (anthropic, requests, feedparser), none of
+  which `recovery_demo`'s actual code path touches.
+- 2026-07-22 (later same day) — Mani ran the real pytest suite on his own
+  machine (`.venv`, not this sandbox): all tests pass. Regression-tested,
+  closing the one open item from the entry above.
+- 2026-07-22 (later still) — Built the checkpoint-explainer counterpart:
+  `dsl show-checkpoint <office_dir> <N|latest>`, mirroring `dsl
+  explain-trace`'s division of labor for a snapshot instead of a run. See
+  `docs/algorithms/CHECKPOINT_RESUME.md`'s new "Showing a checkpoint's
+  contents (v1.7)" section for the design and verification notes. Also
+  wrote OfficeSpeak's `DEBUG_TRACE_AND_CHECKPOINT_WALKTHROUGH.md` — a
+  Pat-facing, extreme-step-by-step teaching document covering both this
+  trace feature and the new checkpoint explainer, using `recovery_demo`.
+  Every command and every JSON/JSONL excerpt in that document was run for
+  real and copy-pasted from actual output, not hand-typed — including
+  catching and fixing one drafting mistake (a wrong π arithmetic check,
+  and an example that had spliced two different checkpoints' data
+  together) before publishing it.

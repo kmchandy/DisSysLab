@@ -9,7 +9,7 @@ on them, and produce streams of outputs. A network of agents
 is represented in DisSysLab as an office of agents, and the
 network structure is represented by an org chart.
 A long-running office must recover from crashes. 
-This document describes how DisSysLab uses the Chandy-Lamport
+This document describes how DisSysLab uses a global snapshot
 algorithm to take a distributed snapshot. 
 (Chandy and Lamport, *Distributed Snapshots:
 Determining Global States of Distributed Systems*, ACM TOCS,
@@ -18,7 +18,7 @@ The document also describes an algorithm for restarting an
 office from its most recent checkpoint.
 
 
-## Adapting the Chandy-Lamport algorithm for sense & respond systems.
+## Adapting the global snapshot algorithm for sense & respond systems.
 
 We use three adaptations to the protocol:
 
@@ -362,7 +362,7 @@ For a single snapshot N, the recorded global state is a
 *consistent cut* of the office's execution: for every data
 message `m`, if the receive of `m` is in the cut, then the send
 of `m` is also in the cut. The proof is the standard one for
-Chandy-Lamport; the OS-broadcast initiation does not affect the
+global snapshots; the OS-broadcast initiation does not affect the
 property because:
 
 - Each agent records its state on its first checkpoint(N),
@@ -401,7 +401,7 @@ in real-time delivery during the playback-and-skip phase
 
 ## Sources and Sinks at the Office Boundary
 
-The Chandy-Lamport algorithm above captures the office's internal
+The global snapshot algorithm above captures the office's internal
 state — the agents and the channels between them. Sources and
 sinks stand at the boundary of the office, with one end inside
 and one end in the world. To preserve correctness across the
@@ -537,6 +537,65 @@ This is a property of the office, not of the algorithm. The
 framework cannot detect the condition statically. The framework
 should log buffer depth during catchup so the office author can
 observe whether the office is converging back to real time.
+
+## Showing a checkpoint's contents (v1.7)
+
+Snapshot files are two things: `manifest.json` (human-readable —
+office name, checkpoint number, timestamp, agent list, edges) and a
+set of `pickle` files under `agents/` and `channels/` holding the
+actual saved state and any in-flight messages. The pickle files are
+not readable without a Python script, which made "explain a checkpoint
+to Pat" impossible to actually build — until now, the honest status
+of that feature was "designed in `PAPER_NOTES.md`, not built."
+
+`dsl show-checkpoint <office_dir> <N|latest>` closes that gap the same
+way `dsl explain-trace` (see `TRACE_AND_LOGICAL_CLOCK.md`) closes the
+equivalent gap for a debug trace: it reads `manifest.json` plus every
+agent's state pickle and every channel's in-flight-message pickle
+(via `snapshot.py`'s existing reader helpers — `read_manifest`,
+`load_agent_state`, `load_channel_state`), and merges them into one
+JSON document:
+
+```json
+{
+  "office": "recovery_demo",
+  "N": 5,
+  "timestamp": "...",
+  "agents": {
+    "recovery_demo::Alex": {"user": {"count": 4010}, "sent": {"out_": 4010}, "received": {"in_": 5107}},
+    ...
+  },
+  "in_flight_messages": {
+    "merge_0::in_0": [{"kind": "inside", "running_count": 3340}]
+  }
+}
+```
+
+Same division of labor as the trace command: this command's job stops
+at producing that structured JSON. Turning it into a sentence like
+"at checkpoint 5, Alex had classified 4010 points as inside the
+circle, and one message — a count of 3340 — was still in flight to
+the merge step" is Claude's job, done by reading this command's
+output, not by a template baked into the CLI.
+
+Agent state is almost always plain data (a dict of numbers, as
+above), since that's what every real gallery office's `save_state()`
+actually returns. For the rare case of a more exotic picklable value
+(a custom class instance, a `datetime`, etc.), the command falls back
+to a truncated `repr()` (300-char cutoff, mirroring the trace
+feature's message-truncation policy) rather than failing — the value
+shows up as readable text instead of structured JSON, but the command
+never crashes on it.
+
+Verified 2026-07-22 against `recovery_demo`'s own real checkpoint
+files (both the tracked fixtures already in the repo and a fresh
+`--snapshot-interval` run), including a checkpoint caught with a real
+in-flight message. Read-only — this command never writes anything,
+so it's safe to run against a live office's checkpoints at any time.
+
+Pat-facing, extreme-step-by-step instructions for both this and the
+trace feature (using `recovery_demo`) are in OfficeSpeak's
+`DEBUG_TRACE_AND_CHECKPOINT_WALKTHROUGH.md`.
 
 ## Out of scope for v1.6
 

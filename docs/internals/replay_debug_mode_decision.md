@@ -66,3 +66,19 @@ work later.
   which overclaims (it says the runtime always records fair-merge order and
   "replays the exact same execution" — it does not; see
   `DisSysLab/docs/algorithms/CHECKPOINT_RESUME.md`, "Determinism is not required").
+
+## Decision (2026-07-23): not pursuing this
+
+Mani's call, and the reasoning behind it is worth keeping. What a user actually
+wants while debugging isn't "replay the same run again" — it's closer to
+step-control: "next, make agent X receive a message," chosen on demand, not
+predetermined by a log. Giving a user that kind of control means the substrate
+would have to run its own scheduler — deciding, one step at a time, which
+agent's next action fires — rather than handing agents to Python's thread
+scheduler and letting the OS interleave them. That's a materially different
+runtime architecture, not an incremental addition to what exists, and the
+assessment is that it's too much implementation cost for the value here.
+**Exact bit-for-bit replay-from-a-log is off the roadmap.** What stays (and is
+already built): read-only narration of a run that already happened
+(`dsl explain-trace`) and of a saved checkpoint (`dsl show-checkpoint`) —
+neither needs a custom scheduler, because neither re-executes anything.

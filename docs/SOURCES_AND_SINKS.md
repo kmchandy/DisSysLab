@@ -592,8 +592,50 @@ are planned:
 Beyond that, you can also use `mcp_sink` and `mcp_source` to
 reach any service with an MCP server, or write your own.
 
-To add your own source or sink, write a Python class with a
-`run()` method (generator for sources, regular function for
-sinks) and register it in
+**The biggest lever you already have: MCP.** `mcp_source`/`mcp_sink`
+can already reach any server in the official [MCP
+Registry](https://modelcontextprotocol.info/tools/registry/) — 500+
+community servers as of 2026 (Google Drive, Notion, Postgres, and
+hundreds more), plus the small set of official reference servers
+(fetch, filesystem, git, memory, time, sequential-thinking). If a
+prospective office needs a connector, check there before assuming it
+needs new DisSysLab code — it very often doesn't.
+
+**Candidates for new first-class registered sources/sinks** — not
+built, but easy, because each mirrors an existing entry above almost
+exactly (surveyed 2026-07-22, for prospective testers who ask for one
+of these by name):
+
+*Sources, same shape as `weather`/`stocks` (free, no signup, no key,
+one public JSON/GeoJSON endpoint):*
+- USGS real-time earthquake feed
+- NOAA / National Weather Service severe-weather alerts (US)
+- arXiv's own API — would turn the `arxiv_radar` gallery app's ad-hoc
+  fetch into a first-class registered source
+- CoinGecko or CoinCap crypto prices — parallels `stocks` exactly
+- Wikipedia's recent-changes feed
+- GitHub's public events API
+- Any additional RSS feed at all — the 10 named feeds already share
+  one generic implementation; adding a new one is close to a one-line
+  change
+
+*Sinks, same shape as `slack_sink`:*
+- **Discord webhook sink** — Discord's incoming webhooks work
+  identically to Slack's (one URL, POST JSON)
+- **Telegram bot sink** — one HTTP POST with a bot token, no OAuth
+- **CSV or SQLite sink** — parallels `jsonl_recorder`, no new
+  dependency
+
+None of these are built. They're recorded here because they come up
+naturally when someone describes a real office (e.g. "post alerts to
+our Discord," "track a crypto price," "email me when there's a big
+earthquake near the site") and the honest answer today is "not
+supported yet" even though the actual implementation effort is small —
+each is a Python class with a `run()` method and a registry entry, the
+same pattern as every entry above.
+
+To add your own source or sink (this list's items included), write a
+Python class with a `run()` method (generator for sources, regular
+function for sinks) and register it in
 `dissyslab/office/utils.py:SOURCE_REGISTRY` or `SINK_REGISTRY`.
 The existing entries are the simplest reference.

@@ -17,6 +17,8 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
 import sys
+import time
+import json
 import multiprocessing
 
 
@@ -153,6 +155,32 @@ class _StartRecover(_OsMessage):
 
     def __init__(self, N: int):
         self.N = N
+
+
+# ── Trace-mode message wrapper (added v1.7) ───────────────────────────────
+# See docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md. Data-plane, not control
+# plane — unlike the _OsMessage subclasses above, this wraps a *client*
+# message so its logical-clock timestamp can travel with it on the wire.
+# send() wraps a client message in _Timestamped(msg, clock) right before
+# q.put(); recv() unwraps it immediately after q.get() (or after the
+# recovery-buffer pop), before any of the existing OS-message dispatch or
+# checkpoint channel-state recording sees it. Only present when tracing
+# is enabled (self._trace_dir is not None) — a normal run never
+# constructs or sees one of these, so behaviour is unchanged when tracing
+# is off.
+
+class _Timestamped:
+    """Wraps a client message with its sender's logical-clock value.
+
+    Not an _OsMessage — this travels through the same queues as ordinary
+    client data, invisible to client code (send()/recv() add and remove
+    the wrapper transparently).
+    """
+    __slots__ = ("payload", "clock")
+
+    def __init__(self, payload: Any, clock: int):
+        self.payload = payload
+        self.clock = clock
 
 
 # ── No-op lock for single-threaded agents (added v1.6) ────────────────────
@@ -360,6 +388,22 @@ class Agent(ABC):
         # known. None means this run is not checkpoint-enabled.
         self._snapshot_dir: Optional[Path] = None
 
+        # ── Trace / logical-clock bookkeeping (v1.7) ──────────────────────
+        # See docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md. Set by
+        # network.py at compile time, mirroring _snapshot_dir above.
+        # None (the default) means tracing is off for this run — send()/
+        # recv() then take the same code path as before v1.7, with zero
+        # added overhead.
+        self._trace_dir: Optional[Path] = None
+
+        # The agent's own hybrid logical clock (Part 1 of the design
+        # doc): a physical-time-grounded counter, updated by the single
+        # rule `x := max(ref, x + 1)` on every send or receive, where
+        # `ref` is the incoming message's timestamp (receive) or the
+        # current physical time in nanoseconds (send, and the recovery-
+        # replay path — see recv()). Unused when tracing is off.
+        self._clock: int = 0
+
     # ========== Lifecycle Methods ==========
 
     def startup(self) -> None:
@@ -386,6 +430,54 @@ class Agent(ABC):
         except _ShutdownSignal:
             pass  # clean exit — os_agent declared termination
 
+    # ========== Trace / logical clock (v1.7) ==========
+    # See docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md Part 1 and Part 2.
+    # Both helpers are no-ops in cost/effect when self._trace_dir is
+    # None (tracing off) — _tick() still runs but is cheap, and
+    # _trace_write() returns immediately without touching disk.
+
+    def _tick(self, ref: int) -> int:
+        """Advance this agent's hybrid logical clock: x := max(ref, x+1).
+
+        ``ref`` is the incoming message's timestamp for a receive, or the
+        current physical time (nanoseconds since epoch) for a send —
+        see the design doc's "one rule" section. Guarded by
+        ``self._snapshot_lock`` because MergeAsynch runs one worker
+        thread per inport and this state is shared across them (the
+        same lock already used for its other shared state).
+        """
+        with self._snapshot_lock:
+            self._clock = max(ref, self._clock + 1)
+            return self._clock
+
+    def _trace_write(self, direction: str, port: str, msg: Any, ts: int) -> None:
+        """Append one JSONL line to this agent's trace file, if tracing
+        is enabled. Truncates the message summary at a fixed cutoff
+        (300 chars) per the design doc's decided truncation policy.
+        """
+        if self._trace_dir is None:
+            return
+
+        summary = repr(msg)
+        _CUTOFF = 300
+        if len(summary) > _CUTOFF:
+            extra = len(summary) - _CUTOFF
+            summary = summary[:_CUTOFF] + f"... (truncated, {extra} more chars)"
+
+        entry = {"t": ts, "dir": direction, "port": port, "msg": summary}
+
+        # Reuse snapshot.py's filename sanitizer: flattened agent names
+        # contain "::" (DSL's nested-network path separator), which is
+        # invalid in Windows filenames. Same convention as checkpoint
+        # files, for the same reason.
+        from dissyslab.snapshot import safe_filename
+
+        with self._snapshot_lock:
+            self._trace_dir.mkdir(parents=True, exist_ok=True)
+            path = self._trace_dir / f"{safe_filename(self.name)}.jsonl"
+            with open(path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(entry) + "\n")
+
     # ========== Message Passing ==========
 
     def send(self, msg: Any, outport: str) -> None:
@@ -408,7 +500,18 @@ class Agent(ABC):
         if msg is None:
             return
 
-        q.put(msg)
+        # Trace mode (v1.7): wrap client messages with the agent's
+        # current logical-clock value before they go on the wire, so the
+        # receiving agent can apply the causal-ordering correction.
+        # OS messages are never wrapped, mirroring how they're never
+        # counted below. No-op (msg goes straight to q.put) when tracing
+        # is off for this run.
+        if self._trace_dir is not None and not isinstance(msg, _OsMessage):
+            ts = self._tick(time.time_ns())
+            self._trace_write("sent", outport, msg, ts)
+            q.put(_Timestamped(msg, ts))
+        else:
+            q.put(msg)
 
         # Count only client messages
         if not isinstance(msg, _OsMessage):
@@ -459,10 +562,28 @@ class Agent(ABC):
                     ):
                         self._recording["channels"][inport].append(msg)
                 self.received[inport] += 1
+                # Trace mode (v1.7): recovery-buffer messages are plain
+                # payloads with no in-flight logical timestamp (the
+                # design doc's decided v1 scoping — logical time does
+                # not survive a checkpoint/resume). Re-timestamp as if
+                # newly arriving, using physical time as the reference.
+                if self._trace_dir is not None:
+                    ts = self._tick(time.time_ns())
+                    self._trace_write("received", inport, msg, ts)
                 return msg
 
             # ── Normal queue read path ───────────────────────────
             msg = q.get()
+
+            # Trace mode (v1.7): unwrap a _Timestamped client message
+            # before any of the OS-message dispatch below, so every
+            # later branch sees the same plain payload it always has.
+            # Only client messages are ever wrapped (see send()), so
+            # this can never fire for _GiveMeCounts/_Shutdown/etc.
+            _incoming_ts: Optional[int] = None
+            if isinstance(msg, _Timestamped):
+                _incoming_ts = msg.clock
+                msg = msg.payload
 
             if isinstance(msg, _GiveMeCounts):
                 # Respond with current counts — framework handles this.
@@ -510,6 +631,16 @@ class Agent(ABC):
                     ):
                         self._recording["channels"][inport].append(msg)
                 self.received[inport] += 1
+                # Trace mode (v1.7): apply the one clock-update rule —
+                # x := max(ref, x+1) — using the sender's timestamp as
+                # ref when the message arrived wrapped (the normal
+                # case), or physical time if it somehow didn't (e.g. a
+                # source's very first message, or tracing turned on
+                # mid-flight for an already-in-transit message).
+                if self._trace_dir is not None:
+                    ref = _incoming_ts if _incoming_ts is not None else time.time_ns()
+                    ts = self._tick(ref)
+                    self._trace_write("received", inport, msg, ts)
                 return msg
 
     def send_os(self, msg: Any) -> None:

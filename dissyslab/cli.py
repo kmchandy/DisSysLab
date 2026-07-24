@@ -24,13 +24,14 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import json
 import os
 import runpy
 import shutil
 import sys
 import traceback
 from pathlib import Path
-from typing import Callable
+from typing import Any, Callable
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -444,6 +445,11 @@ def cmd_run(args: argparse.Namespace) -> int:
     if getattr(args, "resume", None) is not None:
         os.environ["DSL_RESUME"] = str(args.resume)
 
+    # v1.7: opt-in per-agent activity-log trace. Off by default (no env
+    # var set, no cost). See docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md.
+    if getattr(args, "trace", False):
+        os.environ["DSL_TRACE"] = "1"
+
     from dissyslab.office.cli_helpers import cli_run
 
     try:
@@ -473,6 +479,236 @@ def cmd_build(args: argparse.Namespace) -> int:
     except Exception as exc:  # noqa: BLE001
         _eprint(_explain_failure("dsl build", exc))
         return 1
+
+
+# ── Subcommand: explain-trace ─────────────────────────────────────────────────
+
+def cmd_explain_trace(args: argparse.Namespace) -> int:
+    """Merge a run's per-agent trace files into one ordered, structured record.
+
+    Reads <trace_dir>/*.jsonl (one file per agent, written by `dsl run
+    --trace`) and merges every agent's entries into a single sequence,
+    sorted by (t, sent-before-received, agent_name) -- see the sort
+    call below for why "sent-before-received" was added to Part 1's
+    (t, agent_name) tie-break during implementation.
+
+    This command's job stops here: it emits the ordered record as JSONL,
+    it does not narrate it in English. Per the design doc's division of
+    labor ("DisSysLab produces the record; Claude produces the English"),
+    turning this into a sentence-by-sentence explanation for Pat is
+    OfficeSpeak/Claude's job, done by reading this command's output --
+    the same pattern already used for office-structure explanations and
+    the debug_demo walkthrough.
+    """
+    trace_dir = Path(args.trace_dir)
+    if not trace_dir.is_dir():
+        _eprint(f"Error: trace_dir '{trace_dir}' is not a directory.")
+        _eprint(
+            "Run an office with `dsl run --trace` first -- trace files "
+            "are written to <office_dir>/trace/."
+        )
+        return 2
+
+    files = sorted(trace_dir.glob("*.jsonl"))
+    if not files:
+        _eprint(f"No *.jsonl trace files found in '{trace_dir}'.")
+        _eprint(
+            "Run an office with `dsl run --trace` first, then point "
+            "this command at the resulting trace/ directory."
+        )
+        return 2
+
+    entries = []
+    for f in files:
+        agent_name = f.stem
+        with open(f, "r", encoding="utf-8") as fh:
+            for line_no, line in enumerate(fh, start=1):
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except json.JSONDecodeError as exc:
+                    _eprint(
+                        f"Warning: skipping malformed line {line_no} in "
+                        f"{f.name}: {exc}"
+                    )
+                    continue
+                entries.append({
+                    "t": rec.get("t"),
+                    "agent": agent_name,
+                    "dir": rec.get("dir"),
+                    "port": rec.get("port"),
+                    "msg": rec.get("msg"),
+                })
+
+    # Part 1's tie-break, with one refinement found during real testing:
+    # sort by (t, sent-before-received, agent_name).
+    #
+    # The design doc's rule (x := max(t, x+1) on receive) guarantees
+    # each *agent's own* sequence strictly increases, but does not
+    # guarantee a receive's timestamp is strictly greater than the
+    # timestamp of the very message it just received -- when the
+    # receiver's clock is behind the sender's, max(t, x+1) == t exactly,
+    # so a "sent" action and the matching "received" action can land on
+    # the identical timestamp. Plain agent_name is not a safe tie-break
+    # for that case: two names could easily sort the wrong way, showing
+    # a receive before its own send. Breaking ties "sent" before
+    # "received" first (and only then by agent_name) keeps every
+    # message's send ahead of its receive without changing the clock
+    # algorithm itself -- this is purely a display-ordering refinement.
+    # Ties between *unrelated* actions at different agents remain an
+    # arbitrary but fixed choice, per the design doc's honest framing:
+    # this is *a* valid causally-consistent linearization, not *the*
+    # one true real-time order.
+    entries.sort(key=lambda e: (e["t"], 0 if e["dir"] == "sent" else 1, e["agent"]))
+
+    out_text = "".join(json.dumps(e) + "\n" for e in entries)
+
+    if getattr(args, "output", None):
+        out_path = Path(args.output)
+        out_path.write_text(out_text, encoding="utf-8")
+        print(f"Wrote {len(entries)} ordered actions to {out_path}")
+    else:
+        sys.stdout.write(out_text)
+
+    return 0
+
+
+# ── Subcommand: show-checkpoint ───────────────────────────────────────────────
+
+def _json_safe(value: Any, _cutoff: int = 300) -> Any:
+    """Best-effort conversion of a pickled value into something
+    json.dumps can serialize.
+
+    Plain dict/list/tuple/str/number/bool/None pass through
+    recursively unchanged -- the common case, since agent state
+    (``save_state()``'s return value) is almost always simple data, as
+    every gallery office's actually is. Anything else (a custom class
+    instance, a datetime, etc.) falls back to a truncated ``repr()``,
+    mirroring core.py's trace-message truncation policy (same 300-char
+    cutoff), so an exotic picklable value never crashes this command --
+    it just shows up as readable-but-not-structured text instead of
+    structured JSON.
+    """
+    if value is None or isinstance(value, (bool, int, float, str)):
+        return value
+    if isinstance(value, dict):
+        return {str(k): _json_safe(v, _cutoff) for k, v in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_safe(v, _cutoff) for v in value]
+    text = repr(value)
+    if len(text) > _cutoff:
+        extra = len(text) - _cutoff
+        text = text[:_cutoff] + f"... (truncated, {extra} more chars)"
+    return text
+
+
+def cmd_show_checkpoint(args: argparse.Namespace) -> int:
+    """Merge one checkpoint's manifest, per-agent state, and in-flight
+    channel messages into a single human-readable JSON document.
+
+    Reads files written by `dsl run --snapshot-interval` (see
+    docs/algorithms/CHECKPOINT_RESUME.md for the on-disk layout) via
+    dissyslab.snapshot's existing reader helpers -- this command adds
+    no new file format, it only merges what's already there.
+
+    Same division of labor as `dsl explain-trace`: this command's job
+    stops at producing the structured record. Turning it into an
+    English explanation for Pat ("at this checkpoint, Alex had
+    classified 4010 points as inside...") is OfficeSpeak/Claude's job,
+    done by reading this command's output.
+    """
+    office_dir = _resolve_office_arg(args.office_dir, "office_dir")
+    if office_dir is None:
+        return 2
+
+    from dissyslab.snapshot import (
+        read_manifest,
+        load_agent_state,
+        load_channel_state,
+        list_snapshots,
+        latest_snapshot,
+    )
+
+    snapshot_dir = (
+        Path(args.snapshot_dir) if getattr(args, "snapshot_dir", None)
+        else office_dir / "snapshots"
+    )
+
+    if args.N == "latest":
+        N = latest_snapshot(snapshot_dir)
+        if N is None:
+            _eprint(f"No checkpoints found under '{snapshot_dir / 'checkpoints'}'.")
+            _eprint(
+                "Run the office with `dsl run --snapshot-interval SECONDS` "
+                "first to produce checkpoints."
+            )
+            return 2
+    else:
+        try:
+            N = int(args.N)
+        except ValueError:
+            _eprint(f"Error: N must be an integer or 'latest', got {args.N!r}.")
+            return 2
+
+    try:
+        manifest = read_manifest(snapshot_dir, N)
+    except FileNotFoundError:
+        available = list_snapshots(snapshot_dir)
+        _eprint(f"Error: no checkpoint {N} found under '{snapshot_dir / 'checkpoints'}'.")
+        if available:
+            _eprint(f"Available checkpoint numbers: {available}")
+        else:
+            _eprint(
+                "No checkpoints found at all. Run the office with "
+                "`dsl run --snapshot-interval SECONDS` first."
+            )
+        return 2
+
+    agents_out: dict = {}
+    for agent_name in manifest.get("agents", []):
+        state = load_agent_state(snapshot_dir, N, agent_name)
+        agents_out[agent_name] = _json_safe(state)
+
+    # In-flight messages, keyed by (destination agent, destination
+    # port) -- see snapshot.py's module docstring for why that pair
+    # uniquely identifies a channel. Each edge is
+    # [from_block, from_port, to_block, to_port]; multiple edges can
+    # share a destination (e.g. a fan-in), so dedupe on (to_block,
+    # to_port) to avoid reading + printing the same channel file twice.
+    channels_out: dict = {}
+    seen: set = set()
+    for edge in manifest.get("edges", []):
+        if len(edge) != 4:
+            continue
+        _from_block, _from_port, to_block, to_port = edge
+        key = (to_block, to_port)
+        if key in seen:
+            continue
+        seen.add(key)
+        msgs = load_channel_state(snapshot_dir, N, to_block, to_port)
+        if msgs:
+            channels_out[f"{to_block}::{to_port}"] = [_json_safe(m) for m in msgs]
+
+    doc = {
+        "office": manifest.get("office"),
+        "N": manifest.get("N", N),
+        "timestamp": manifest.get("timestamp"),
+        "agents": agents_out,
+        "in_flight_messages": channels_out,
+    }
+
+    out_text = json.dumps(doc, indent=2) + "\n"
+
+    if getattr(args, "output", None):
+        out_path = Path(args.output)
+        out_path.write_text(out_text, encoding="utf-8")
+        print(f"Wrote checkpoint {N} to {out_path}")
+    else:
+        sys.stdout.write(out_text)
+
+    return 0
 
 
 # ── Subcommand: list ──────────────────────────────────────────────────────────
@@ -1159,7 +1395,95 @@ def build_parser() -> argparse.ArgumentParser:
             "that the office's sources are checkpoint-aware."
         ),
     )
+    # v1.7: opt-in per-agent activity-log trace, for the "explain a
+    # debug trace to Pat" feature.
+    p_run.add_argument(
+        "--trace",
+        action="store_true",
+        help=(
+            "Record every message each agent sends and receives to "
+            "<office_dir>/trace/<agent_name>.jsonl, ordered by a "
+            "physical-time-grounded logical clock. Off by default — "
+            "logging has a real cost (a disk write per message). "
+            "Stop the run manually (Ctrl-C or natural completion), "
+            "then run `dsl explain-trace <office_dir>/trace/` to get "
+            "one merged, ordered record. See "
+            "docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md."
+        ),
+    )
     p_run.set_defaults(handler=cmd_run)
+
+    # v1.7: merge a `--trace` run's per-agent JSONL files into one
+    # ordered, structured record. This command only merges and sorts --
+    # turning the record into English for Pat is OfficeSpeak/Claude's
+    # job (see docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md Part 3).
+    p_explain_trace = sub.add_parser(
+        "explain-trace",
+        help="merge a --trace run's per-agent logs into one ordered record",
+        description=(
+            "Merge every agent's trace/<agent_name>.jsonl file (written "
+            "by `dsl run --trace`) into one sequence of actions, ordered "
+            "by (logical timestamp, agent name). Emits JSONL -- this "
+            "command does not produce an English explanation itself; "
+            "that's done by reading its output."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  dsl explain-trace path/to/office/trace\n"
+            "  dsl explain-trace path/to/office/trace --output merged.jsonl"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_explain_trace.add_argument(
+        "trace_dir", help="path to a trace/ directory produced by `dsl run --trace`"
+    )
+    p_explain_trace.add_argument(
+        "--output", "-o",
+        metavar="FILE",
+        help="write the merged JSONL record to FILE instead of stdout",
+    )
+    p_explain_trace.set_defaults(handler=cmd_explain_trace)
+
+    # v1.7: merge one checkpoint's manifest + per-agent/channel state
+    # into one human-readable JSON document. Mirrors explain-trace's
+    # division of labor -- this command only merges what's already on
+    # disk; the English explanation is Claude's job (see
+    # docs/algorithms/CHECKPOINT_RESUME.md).
+    p_show_checkpoint = sub.add_parser(
+        "show-checkpoint",
+        help="show one checkpoint's saved state as human-readable JSON",
+        description=(
+            "Merge one checkpoint's manifest.json, per-agent saved "
+            "state, and any in-flight channel messages (written by "
+            "`dsl run --snapshot-interval`) into a single JSON "
+            "document. Emits JSON -- this command does not produce an "
+            "English explanation itself; that's done by reading its "
+            "output."
+        ),
+        epilog=(
+            "Examples:\n"
+            "  dsl show-checkpoint path/to/office latest\n"
+            "  dsl show-checkpoint path/to/office 5 --output checkpoint5.json"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_show_checkpoint.add_argument(
+        "office_dir", help="path to an office directory (or a packaged office name)"
+    )
+    p_show_checkpoint.add_argument(
+        "N", help="checkpoint number, or 'latest' for the most recent"
+    )
+    p_show_checkpoint.add_argument(
+        "--snapshot-dir",
+        metavar="DIR",
+        help="override the checkpoint directory (default: <office_dir>/snapshots)",
+    )
+    p_show_checkpoint.add_argument(
+        "--output", "-o",
+        metavar="FILE",
+        help="write the merged JSON to FILE instead of stdout",
+    )
+    p_show_checkpoint.set_defaults(handler=cmd_show_checkpoint)
 
     # `dsl build` emits the readable Python artifact at
     # <office_dir>/build/run.py. `dsl run` calls it automatically when

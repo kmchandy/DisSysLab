@@ -597,6 +597,12 @@ def _emit_main(root: _OfficeNode) -> str:
     environment variable. Pat does not see this choice; ``dsl run``
     exposes ``--processes`` as a power-user flag that sets the env
     var before invoking the artifact.
+
+    Also wires up ``DSL_SNAPSHOT_DIR``/``DSL_SNAPSHOT_INTERVAL``/
+    ``DSL_RESUME`` (checkpoint-resume, v1.6) and ``DSL_TRACE`` (the
+    per-agent activity-log trace, v1.7) the same way — env vars set by
+    ``dsl run``'s flags, all unset by default so a plain ``dsl run``
+    behaves exactly as before either feature existed.
     """
     if root.spec.is_open():
         return ""
@@ -632,6 +638,11 @@ def _emit_main(root: _OfficeNode) -> str:
         "            )\n"
         "        else:\n"
         "            _office.resume_from_N = int(_r)\n"
+        "    # v1.7: activity-log trace opt-in via `dsl run --trace`.\n"
+        "    # Unset (the common case) means every agent's _trace_dir\n"
+        "    # stays None and send()/recv() are byte-identical to before.\n"
+        "    if os.environ.get(\"DSL_TRACE\"):\n"
+        "        _office.trace_dir = _HERE.parent / \"trace\"\n"
         "    if os.environ.get(\"DSL_PROCESS_MODE\") == \"process\":\n"
         "        _office.process_network()\n"
         "    else:\n"

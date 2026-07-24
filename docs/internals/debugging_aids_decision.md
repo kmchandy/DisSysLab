@@ -105,5 +105,18 @@ fixed = 1. This is aid (a) end to end.
 ## Status
 
 - **(a)** built and verified (`debug_demo`, above).
-- **(b)** scoped, not built.
-- **(c)** designed (`docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md`), not built.
+- **(b)** **decided not to pursue (2026-07-23).** The reasoning: "nothing
+  moving" on a channel is not, by itself, a reliable bug signal — a
+  Coordinator blocked on one inbox by design (merge_synch waiting for a
+  slot, gate waiting for `done`) looks identical, from sent/received
+  counts alone, to a Coordinator that's genuinely stuck. Turning that into
+  a trustworthy diagnostic needs more context (expected wait patterns,
+  or a human judgment call) than the raw counts give for free, and isn't
+  worth building until a real case makes the ambiguity concrete. We're
+  living with the gap: today, "why is nothing moving" is answered
+  after the fact via aid (c) (`dsl explain-trace` / `dsl show-checkpoint`),
+  not by a live stuck-office diagnostic.
+- **(c)** built and verified (2026-07-22): `dsl run --trace` records it,
+  `dsl explain-trace` merges/sorts it, Claude narrates it. See
+  `docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md` for the design and
+  implementation/verification notes.
