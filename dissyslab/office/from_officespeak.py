@@ -39,7 +39,8 @@ from dissyslab.office.office_spec import (
     SinkSpec,
     SourceSpec,
 )
-from dissyslab.office.officespeak_spec import AgentSpec, OfficeSpeakSpec
+from dissyslab.office.office_spec import EXTERNAL as _RUNTIME_EXTERNAL
+from dissyslab.office.officespeak_spec import EXTERNAL, AgentSpec, OfficeSpeakSpec
 
 _IMPLICIT_INPORT = "in_"  # every office-specific agent's one inbox
 
@@ -161,6 +162,16 @@ def _build_office_spec(spec: OfficeSpeakSpec) -> Tuple[OfficeSpec, Dict[str, str
             role_name, kwargs = translator(agent)
             agent_refs.append(RoleRef(agent_name=agent.name, role_name=role_name, args=tuple(kwargs.items())))
             name_map[agent.name] = agent.name
+        elif agent.kind == "department":
+            # role_name is just this agent's own name -- there's no
+            # pre-registered library entry to look up (that's the whole
+            # point: a department isn't one of DisSysLab's trusted,
+            # registered things). Setting `path` is what tells the
+            # compiler, at build time, to auto-register an OfficeRoleEntry
+            # on the fly and recurse into the referenced office -- see
+            # RoleRef.path's docstring in office_spec.py.
+            agent_refs.append(RoleRef(agent_name=agent.name, role_name=agent.name, path=agent.office_path))
+            name_map[agent.name] = agent.name
         else:  # "transform"
             # role_name is this agent's own name, lowercased -- a fresh
             # role file is written for every transform, one-to-one, so
@@ -174,12 +185,22 @@ def _build_office_spec(spec: OfficeSpeakSpec) -> Tuple[OfficeSpec, Dict[str, str
 
     connections = []
     for c in spec.connections:
-        sender_name = name_map.get(c.sender)
-        receiver_name = name_map.get(c.receiver)
-        if sender_name is None:
-            raise GeneratorError(f"connection references unknown agent {c.sender!r}")
-        if receiver_name is None:
-            raise GeneratorError(f"connection references unknown agent {c.receiver!r}")
+        # "external" means this connection's end touches the office's own
+        # boundary (OfficeSpeakSpec.inputs/.outputs), not a real agent --
+        # only meaningful for an office being opened up. It's never looked
+        # up in name_map (it was never one of spec.agents to begin with).
+        if c.sender == EXTERNAL:
+            sender_name = _RUNTIME_EXTERNAL
+        else:
+            sender_name = name_map.get(c.sender)
+            if sender_name is None:
+                raise GeneratorError(f"connection references unknown agent {c.sender!r}")
+        if c.receiver == EXTERNAL:
+            receiver_name = _RUNTIME_EXTERNAL
+        else:
+            receiver_name = name_map.get(c.receiver)
+            if receiver_name is None:
+                raise GeneratorError(f"connection references unknown agent {c.receiver!r}")
         if c.sender in source_names and c.sender_port not in ("destination", "out"):
             raise GeneratorError(
                 f"connection from source {c.sender!r} must use sender_port "
@@ -224,6 +245,8 @@ def _build_office_spec(spec: OfficeSpeakSpec) -> Tuple[OfficeSpec, Dict[str, str
         sinks=tuple(sinks),
         agents=tuple(agent_refs),
         connections=tuple(connections),
+        inputs=spec.inputs,
+        outputs=spec.outputs,
     )
     return office_spec, name_map
 

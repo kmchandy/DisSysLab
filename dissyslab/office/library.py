@@ -775,10 +775,14 @@ def synchronizer_role(inports: "list[str] | tuple[str, ...]") -> AgentRoleEntry:
     The dict-merge step is order-independent only when each upstream
     branch preserves the original message fields and adds its own.
     That's the situation_room pattern (each parallel extractor adds
-    one new field and passes the rest through). If two branches supply
-    the same key in the same round, this raises loudly (naming the
-    inport and the colliding field) instead of silently letting one
-    value overwrite the other -- give each branch distinct field names.
+    one new field and passes the rest through). Two branches agreeing on
+    a shared field (e.g. a paired timestamp both sides carry, as in
+    room_climate_monitor's TEMP_SENSOR/HUMIDITY_SENSOR) is fine and
+    expected. If two branches supply the *same key with different
+    values* in the same round, this raises loudly (naming the inport and
+    the field) instead of silently letting one value overwrite the other
+    -- give each branch distinct field names when they genuinely
+    disagree.
     """
     if not inports:
         raise ValueError("synchronizer_role requires at least one inport")
@@ -809,15 +813,29 @@ def synchronizer_role(inports: "list[str] | tuple[str, ...]") -> AgentRoleEntry:
                 for p in self.inports:
                     msg = self.recv(p)
                     if isinstance(msg, dict):
-                        collisions = set(merged) & set(msg)
-                        if collisions:
+                        # Only a genuine *disagreement* is the bug this
+                        # guards against -- two branches intentionally
+                        # agreeing on a shared field (e.g. a paired
+                        # timestamp both sides carry, as in
+                        # room_climate_monitor's TEMP_SENSOR/HUMIDITY_SENSOR)
+                        # is the normal, correct case, not a collision.
+                        # Checking key presence alone (an earlier version
+                        # of this check) broke exactly that real, already
+                        # -shipped example -- caught by actually running it,
+                        # not assumed from the field name.
+                        mismatched = {
+                            k for k in (set(merged) & set(msg))
+                            if merged[k] != msg[k]
+                        }
+                        if mismatched:
                             raise ValueError(
                                 f"synchronizer '{self.name}': inport {p!r} "
-                                f"supplied field(s) {sorted(collisions)!r} "
-                                f"already set by an earlier inport this "
-                                f"round -- one value would silently "
-                                f"overwrite the other. Give each branch "
-                                f"distinct field names before merging."
+                                f"supplied field(s) {sorted(mismatched)!r} "
+                                f"with a different value than an earlier "
+                                f"inport this round already set -- one "
+                                f"value would silently overwrite the "
+                                f"other. Give each branch distinct field "
+                                f"names before merging."
                             )
                         merged.update(msg)
                 self.send(merged, "out_")

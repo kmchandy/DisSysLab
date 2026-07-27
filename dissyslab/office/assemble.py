@@ -62,6 +62,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from dissyslab.office.officespeak_spec import (
+    EXTERNAL,
     AgentSpec,
     ConnectionSpec,
     OfficeSpeakSpec,
@@ -153,10 +154,10 @@ def _build_agent_spec(agent: Dict[str, Any]) -> Tuple[AgentSpec, str, str, str]:
     kind = agent.get("kind")
     if not name or not isinstance(name, str):
         raise AssemblyError(f"an agent dict is missing a valid 'name': {agent!r}")
-    if kind not in ("source", "sink", "transform", "coordinator"):
+    if kind not in ("source", "sink", "transform", "coordinator", "department"):
         raise AssemblyError(
             f"agent {name!r}: 'kind' must be one of source/sink/transform/"
-            f"coordinator, got {kind!r}"
+            f"coordinator/department, got {kind!r}"
         )
 
     in_ports = tuple(agent.get("in_ports", ()))
@@ -229,6 +230,28 @@ def _build_agent_spec(agent: Dict[str, Any]) -> Tuple[AgentSpec, str, str, str]:
             name, old_out, old_in,
         )
 
+    if kind == "department":
+        office_path = agent.get("office_path")
+        if not office_path:
+            raise AssemblyError(
+                f"agent {name!r} (department) still has office_path=None -- "
+                f"Al needs to point it at an already-built, open office "
+                f"(one that declares its own Inputs:/Outputs:) before this "
+                f"can run. See phase3_composition.md."
+            )
+        # Like a coordinator, a department keeps its real, semantic
+        # inport/outport names -- it's the same shape (an arbitrary
+        # number of named ports, no body), just a different kind of
+        # trust: nothing here has been formally specified, only tested
+        # by Al before it was turned into a department.
+        return (
+            AgentSpec(
+                name=name, kind=kind, in_ports=in_ports, out_ports=out_ports,
+                office_path=office_path,
+            ),
+            name, old_out, old_in,
+        )
+
     # kind == "transform"
     if not agent.get("approved"):
         raise AssemblyError(
@@ -285,10 +308,20 @@ def _build_agent_spec(agent: Dict[str, Any]) -> Tuple[AgentSpec, str, str, str]:
 
 
 def build_spec_from_draft(module) -> OfficeSpeakSpec:
-    """Turn a loaded draft module into a real, validated OfficeSpeakSpec."""
+    """Turn a loaded draft module into a real, validated OfficeSpeakSpec.
+
+    ``INPUTS``/``OUTPUTS`` are optional top-level lists (absent or empty
+    for an ordinary, closed office -- the common case). Non-empty means
+    this office is being *opened up*: at least one connection uses the
+    reserved sender/receiver name ``"external"`` instead of a real agent,
+    with the port slot naming which declared input/output it is. See
+    ``OfficeSpeakSpec.inputs``/``.outputs`` and ``phase3_composition.md``.
+    """
     office_name = _require_attr(module, "OFFICE_NAME", Path(module.__file__))
     raw_agents = _require_attr(module, "AGENTS", Path(module.__file__))
     raw_connections = _require_attr(module, "CONNECTIONS", Path(module.__file__))
+    inputs = tuple(getattr(module, "INPUTS", ()))
+    outputs = tuple(getattr(module, "OUTPUTS", ()))
 
     agents: List[AgentSpec] = []
     # agent_name -> (original outport name, original inport name) wherever
@@ -305,17 +338,34 @@ def build_spec_from_draft(module) -> OfficeSpeakSpec:
 
     connections: List[ConnectionSpec] = []
     for sender, sender_port, receiver, receiver_port in raw_connections:
-        if sender in out_renames and sender_port == out_renames[sender]:
+        if sender == EXTERNAL:
+            if sender_port not in inputs:
+                raise AssemblyError(
+                    f"connection from {EXTERNAL!r} names port {sender_port!r}, "
+                    f"which isn't in this draft's INPUTS {list(inputs)!r} -- "
+                    f"add it to INPUTS or fix the connection."
+                )
+        elif sender in out_renames and sender_port == out_renames[sender]:
             # The new name is always "destination" for a source, "out"
             # for a transform -- look it up off the agent we just built
             # rather than re-deriving it, to avoid the two rules drifting
             # out of sync with each other.
             sender_port = next(a.out_ports[0] for a in agents if a.name == sender)
-        if receiver in in_renames and receiver_port == in_renames[receiver]:
+        if receiver == EXTERNAL:
+            if receiver_port not in outputs:
+                raise AssemblyError(
+                    f"connection to {EXTERNAL!r} names port {receiver_port!r}, "
+                    f"which isn't in this draft's OUTPUTS {list(outputs)!r} -- "
+                    f"add it to OUTPUTS or fix the connection."
+                )
+        elif receiver in in_renames and receiver_port == in_renames[receiver]:
             receiver_port = "in_"
         connections.append(ConnectionSpec(sender, sender_port, receiver, receiver_port))
 
-    return OfficeSpeakSpec(name=office_name, agents=tuple(agents), connections=tuple(connections))
+    return OfficeSpeakSpec(
+        name=office_name, agents=tuple(agents), connections=tuple(connections),
+        inputs=inputs, outputs=outputs,
+    )
 
 
 # ── Public entry point ──────────────────────────────────────────────────

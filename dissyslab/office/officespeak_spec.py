@@ -33,7 +33,14 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Optional, Tuple
 
-_VALID_KINDS = {"source", "sink", "transform", "coordinator"}
+_VALID_KINDS = {"source", "sink", "transform", "coordinator", "department"}
+
+# Reserved sender/receiver name in a CONNECTIONS 4-tuple, meaning "this
+# office's own boundary" -- mirrors DisSysLab's own reserved name
+# (dissyslab.office.office_spec_constants.EXTERNAL) so the same word means
+# the same thing at both layers; Al who later reads or writes office.md
+# directly never has to learn a second vocabulary for the same idea.
+EXTERNAL = "external"
 
 
 @dataclass(frozen=True)
@@ -120,6 +127,20 @@ class AgentSpec:
         approved worker's code keep returning the readable name Track A
         gave it -- ``"out"`` still works too, but the code no longer has
         to say it. Empty for every agent this rename didn't touch.
+    office_path
+        Required for, and only for, ``kind="department"``. A path to an
+        already-built, *open* office (one that declares its own
+        ``Inputs:``/``Outputs:`` -- see ``OfficeSpeakSpec.inputs``/
+        ``.outputs``) that this agent stands in for. Unlike a
+        ``coordinator``, a department's behaviour is not one of
+        DisSysLab's small, trusted, formally-specified primitives -- it's
+        whatever office is at that path, written by whoever built it. Same
+        shape as a coordinator in this file (a name, a list of in/out
+        ports, no body), different kind of trust: nothing here vouches for
+        what the referenced office actually does, only that Al already
+        tested it before turning it into a department (see
+        ``phase3_composition.md``). Reuse only -- there is currently no way
+        to pass arguments into the referenced office from here.
     """
 
     name: str
@@ -130,6 +151,7 @@ class AgentSpec:
     registered_args: Dict[str, Any] = field(default_factory=dict)
     body: Optional[WorkerBody] = None
     status_aliases: Dict[str, str] = field(default_factory=dict)
+    office_path: Optional[str] = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "in_ports", tuple(self.in_ports))
@@ -138,16 +160,36 @@ class AgentSpec:
             raise ValueError(f"AgentSpec.name must be a non-empty string, got {self.name!r}")
         if self.kind not in _VALID_KINDS:
             raise ValueError(f"AgentSpec {self.name!r}.kind must be one of {_VALID_KINDS}, got {self.kind!r}")
-        if self.kind == "transform":
+        if self.kind == "department":
+            if self.office_path is None or not str(self.office_path).strip():
+                raise ValueError(
+                    f"AgentSpec {self.name!r} is a department and needs "
+                    f"office_path (a path to an already-built, open office)"
+                )
             if self.registered_as is not None:
-                raise ValueError(f"AgentSpec {self.name!r} is a transform; transforms are office-specific, not registered")
-            if self.body is None:
-                raise ValueError(f"AgentSpec {self.name!r} is a transform and needs an approved body (see phase3_approval.md)")
-        else:
+                raise ValueError(
+                    f"AgentSpec {self.name!r} is a department; departments "
+                    f"aren't registered (they're not one of DisSysLab's "
+                    f"trusted primitives), so registered_as must be None"
+                )
             if self.body is not None:
-                raise ValueError(f"AgentSpec {self.name!r} is a {self.kind!r}; registered agents need no body")
-            if self.registered_as is None:
-                raise ValueError(f"AgentSpec {self.name!r} is a {self.kind!r} and needs registered_as")
+                raise ValueError(f"AgentSpec {self.name!r} is a department; departments need no body")
+        else:
+            if self.office_path is not None:
+                raise ValueError(
+                    f"AgentSpec {self.name!r} is a {self.kind!r}; only a "
+                    f"department has office_path"
+                )
+            if self.kind == "transform":
+                if self.registered_as is not None:
+                    raise ValueError(f"AgentSpec {self.name!r} is a transform; transforms are office-specific, not registered")
+                if self.body is None:
+                    raise ValueError(f"AgentSpec {self.name!r} is a transform and needs an approved body (see phase3_approval.md)")
+            else:
+                if self.body is not None:
+                    raise ValueError(f"AgentSpec {self.name!r} is a {self.kind!r}; registered agents need no body")
+                if self.registered_as is None:
+                    raise ValueError(f"AgentSpec {self.name!r} is a {self.kind!r} and needs registered_as")
 
 
 @dataclass(frozen=True)
@@ -158,7 +200,17 @@ class ConnectionSpec:
     office-specific agent (every such agent has exactly one inbox, always
     named ``in_`` -- "a coordinator is the only kind with more than one
     inbox"); use the real semantic name for a registered coordinator's
-    named inport (e.g. ``"data"``, ``"command"``, ``"val"``).
+    named inport (e.g. ``"data"``, ``"command"``, ``"val"``), or for a
+    department's named port.
+
+    ``sender`` (or ``receiver``) may be the reserved name ``"external"``
+    (see ``EXTERNAL``) instead of a real agent name -- meaning this
+    connection's other end touches this *office's own* boundary, not
+    another agent. The port slot then holds the name of the declared
+    ``OfficeSpeakSpec.inputs``/``.outputs`` entry it corresponds to. This
+    is only meaningful for an office being "opened up" to become reusable
+    as a department elsewhere -- see ``phase3_composition.md``; a normal,
+    closed office never mentions ``"external"`` at all.
     """
 
     sender: str
@@ -175,20 +227,51 @@ class ConnectionSpec:
 
 @dataclass(frozen=True)
 class OfficeSpeakSpec:
-    """The whole office, in OfficeSpeak's own vocabulary -- the generator's input."""
+    """The whole office, in OfficeSpeak's own vocabulary -- the generator's input.
+
+    Parameters
+    ----------
+    inputs, outputs
+        Empty for an ordinary, *closed* office (the common case -- every
+        inbox traces back to a real source, every outbox to a real sink).
+        Non-empty means this office is *open*: it declares one or more
+        named boundary ports so it can later be used as a department
+        (``AgentSpec(kind="department")``) inside some other office. Each
+        name here must appear as the port on at least one connection whose
+        sender or receiver is ``"external"``. Opening an office up means
+        replacing a real source or sink agent with one of these instead --
+        never a transform or coordinator; see ``phase3_composition.md``
+        for the full "test it closed, then open it up" workflow.
+    """
 
     name: str
     agents: Tuple[AgentSpec, ...] = ()
     connections: Tuple[ConnectionSpec, ...] = ()
+    inputs: Tuple[str, ...] = ()
+    outputs: Tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "agents", tuple(self.agents))
         object.__setattr__(self, "connections", tuple(self.connections))
+        object.__setattr__(self, "inputs", tuple(self.inputs))
+        object.__setattr__(self, "outputs", tuple(self.outputs))
         if not isinstance(self.name, str) or not self.name:
             raise ValueError(f"OfficeSpeakSpec.name must be a non-empty string, got {self.name!r}")
         names = [a.name for a in self.agents]
         if len(set(names)) != len(names):
             raise ValueError(f"OfficeSpeakSpec {self.name!r} has duplicate agent names: {names}")
+        if EXTERNAL in names:
+            raise ValueError(
+                f"OfficeSpeakSpec {self.name!r}: {EXTERNAL!r} is reserved "
+                f"for this office's own boundary and cannot be used as an "
+                f"agent name"
+            )
+        for label, port_names in (("inputs", self.inputs), ("outputs", self.outputs)):
+            if len(set(port_names)) != len(port_names):
+                raise ValueError(f"OfficeSpeakSpec {self.name!r}.{label} has duplicates: {list(port_names)}")
+            for p in port_names:
+                if not isinstance(p, str) or not p:
+                    raise ValueError(f"OfficeSpeakSpec {self.name!r}.{label} has an empty name")
 
     def agent(self, name: str) -> AgentSpec:
         for a in self.agents:
@@ -197,4 +280,4 @@ class OfficeSpeakSpec:
         raise KeyError(f"OfficeSpeakSpec {self.name!r} has no agent named {name!r}")
 
 
-__all__ = ["WorkerBody", "AgentSpec", "ConnectionSpec", "OfficeSpeakSpec"]
+__all__ = ["WorkerBody", "AgentSpec", "ConnectionSpec", "OfficeSpeakSpec", "EXTERNAL"]
