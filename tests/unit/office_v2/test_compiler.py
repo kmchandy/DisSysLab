@@ -560,7 +560,7 @@ class TestParameterizedLibraryResolution:
             "hacker_news's destination is Sync's a.\n"
             "Sync's out is discard.\n"
         ))
-        with pytest.raises(CompileError, match=r"synchronizer.*unknown"):
+        with pytest.raises(CompileError, match=r"unknown.*synchronizer"):
             compile_office(tmp_path, library={})
 
     def test_local_roles_py_still_overrides(self, tmp_path):
