@@ -10,10 +10,15 @@
 # variant -- BACKTESTER and EVALUATOR are shared, strategy-agnostic
 # machinery; see roles/_signal_common.py and roles/_backtester_core.py for
 # the reuse contract this depends on). Source data: 5 real SP100 tickers
-# from local CSV files (DisSysLab/sp100_data) -- run `dsl run` from the
-# DisSysLab repo root so this relative `directory` resolves correctly.
+# from local CSV files (DisSysLab/sp100_data). `dsl run`'s generated
+# build/run.py chdirs into this office's own directory before running
+# (the framework convention -- see that file's __main__ block -- so that
+# relative paths like an audio_clip's "./samples/..." resolve next to the
+# office regardless of where `dsl run` was invoked from). That means this
+# `directory` argument must be relative to *this office folder*, not the
+# repo root, hence the four "../" below to climb back up to DisSysLab/.
 
-Sources: csv_stock_history(tickers=['AMD', 'NFLX', 'NVDA', 'PLTR', 'TSLA'], directory='sp100_data')
+Sources: csv_stock_history(tickers=['AMD', 'NFLX', 'NVDA', 'PLTR', 'TSLA'], directory='../../../../sp100_data')
 Sinks: console_printer
 
 Agents:
