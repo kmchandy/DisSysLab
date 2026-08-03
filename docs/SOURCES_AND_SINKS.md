@@ -125,6 +125,132 @@ other markets, pass the full Stooq symbol (e.g. `"ntt.jp"`,
 Sources: stocks(ticker="AAPL", poll_interval=300)
 ```
 
+### `stock_history` — bulk historical daily prices (no key)
+
+The backtest-friendly counterpart to `stocks` above. `stocks` polls
+Stooq's *live-quote* endpoint forever, one ticker at a time, for
+"alert me when AAPL moves" style offices. `stock_history` hits
+Stooq's *historical daily-bar* CSV endpoint once per ticker and
+yields a single combined message covering every ticker requested,
+then stops — for "backtest a strategy on the SP100" style offices.
+
+One HTTP request per ticker (Stooq has no bulk "all these tickers in
+one call" endpoint), made in sequence with a small pause between
+requests. A ticker Stooq can't serve (typo, delisted, no history in
+range) doesn't crash the fetch — its error is recorded under
+`errors[ticker]` in the outgoing message and every other ticker's
+data still comes through.
+
+**Arguments:**
+- `tickers` *(list of str, required)* — e.g. `["AAPL", "MSFT",
+  "GOOGL"]`. Bare US tickers get `.us` appended automatically; for
+  other markets pass the full Stooq symbol (e.g. `"ntt.jp"`).
+- `start` *(str, default `"2026-01-01"`)* — first date to include,
+  as `"YYYY-MM-DD"` or `"YYYYMMDD"`. Deliberately a small, recent
+  default rather than "as far back as Stooq has," so a first run
+  fetches quickly. Pass `start=None` explicitly for Stooq's full
+  available history, or any other date for your own window.
+- `end` *(str, default `None`)* — last date to include, same
+  formats. Omit for through Stooq's most recent close.
+- `request_pause` *(float seconds, default `0.25`)* — pause between
+  each ticker's request; a polite pace, not a documented Stooq rate
+  limit.
+
+**Message shape** (one message, not one per ticker):
+```
+{
+    "type":    "stock_history",
+    "tickers": ["AAPL", "MSFT", ...],
+    "start":   "20150101",
+    "end":     "20250101",
+    "history": {
+        "AAPL": [{"date": "2015-01-02", "open": ..., "high": ...,
+                  "low": ..., "close": ..., "volume": ...}, ...],
+        "MSFT": [...],
+    },
+    "errors": {"BAD.T": "Stooq returned no data for 'bad.t.us'."},
+    "timestamp": "2026-07-28T21:34:56+00:00",
+}
+```
+
+**Example `office.md`:**
+```
+Sources: stock_history(tickers=["AAPL", "MSFT", "GOOGL"],
+                        start="2015-01-01", end="2025-01-01")
+```
+
+**Known limitation:** as of 2026-07-28 this endpoint 404s — confirmed
+by hand, including opening Stooq's own linked download URL directly
+in a browser. Something changed or was discontinued on Stooq's side;
+the real fix needs more investigation than this doc currently has.
+Until then, use `synthetic_stock_history` below to build and test a
+backtest office's plumbing.
+
+### `synthetic_stock_history` — fake daily prices, no network (prototyping only)
+
+Generates a per-ticker geometric random walk (independent, normally
+distributed daily log-returns) and yields it in the exact same
+message shape as `stock_history` above, with one added key:
+`"synthetic": true`. No network call at all — exists specifically to
+unblock building and testing a backtest office's downstream agents
+(backtester, portfolio-builder, robustness-selector, ...) while
+`stock_history`'s real endpoint is broken (see above). Swap in
+`stock_history` later with no downstream changes once real data is
+reachable again.
+
+**This is not real market data** — no real correlation structure, no
+real regime changes, no connection to any actual company. Don't use
+it to draw conclusions about an actual trading strategy.
+
+**Arguments:**
+- `tickers` *(list of str, required)*.
+- `start` *(str, default `"2015-01-01"`)* — a decade-long default
+  window, unlike `stock_history`'s short recent default, since this
+  exists specifically to unblock multi-year backtests.
+- `end` *(str, default: today)*.
+- `initial_price` *(float or `{ticker: float}`, default `100.0`)*.
+- `annual_drift` *(float, default `0.08`)* — generic long-run
+  assumption, not a forecast.
+- `annual_volatility` *(float, default `0.25`)*.
+- `seed` *(int, default `None`)* — same seed + tickers + dates ->
+  identical output every run; omit for a fresh random run each time.
+
+**Example `office.md`:**
+```
+Sources: synthetic_stock_history(tickers=["AAPL", "MSFT", "GOOGL"],
+                                  start="2015-01-01", seed=42)
+```
+
+### `csv_stock_history` — real daily prices from local CSV files (no network, no key)
+
+Third option alongside `stock_history` (live Stooq fetch, currently
+404ing) and `synthetic_stock_history` (fake data): reads one CSV file
+per ticker from a local directory and yields it in the exact same
+`stock_history` message shape, so a backtest office built against
+synthetic data can point at this instead with no downstream changes.
+
+Each file needs a header row and, case-insensitively, `Date`, `Open`,
+`High`, `Low`, `Close` columns (`Volume` optional; `Adj Close`, if
+present, is ignored — `Close` is used throughout, matching the other
+two stock-history sources). A ticker whose file is missing or
+unparseable lands in the output's `errors` dict instead of crashing
+the whole batch.
+
+**Arguments:**
+- `tickers` *(list of str, required)*.
+- `directory` *(str, required)* — relative paths resolve against the
+  current working directory the office is run from.
+- `filename_pattern` *(str, default `"{ticker}_1year.csv"`)* — must
+  contain `{ticker}`.
+- `start` / `end` *(str, default: no bound)* — optionally filter rows
+  to a date range after loading.
+
+**Example `office.md`:**
+```
+Sources: csv_stock_history(tickers=["AMD", "NFLX", "NVDA", "PLTR", "TSLA"],
+                            directory="sp100_data")
+```
+
 ### `bluesky` — live BlueSky posts (no key)
 
 Streams posts from BlueSky's public Jetstream WebSocket. Posts

@@ -147,6 +147,53 @@ SOURCE_REGISTRY = {
         "class":  "StocksSource",
     },
 
+    # ── Stock history (first-class, no key) ───────────────────────────
+    # Bulk, one-shot daily OHLCV history for one or more tickers --
+    # the backtest-friendly counterpart to `stocks` above. `stocks`
+    # polls Stooq's live-quote endpoint forever, one ticker at a time;
+    # `stock_history` hits Stooq's historical-CSV endpoint once per
+    # ticker and yields a single combined message covering every
+    # ticker requested, then stops. Use this for "backtest a strategy
+    # on the SP100" style requests; use `stocks` for "alert me when
+    # AAPL moves" style requests.
+    #     Sources: stock_history(tickers=["AAPL", "MSFT", "GOOGL"],
+    #                            start="2015-01-01", end="2025-01-01")
+    "stock_history": {
+        "type":   "stock_history",
+        "import": "from dissyslab.components.sources.stock_history_source import StockHistorySource",
+        "class":  "StockHistorySource",
+    },
+
+    # ── Synthetic stock history (no network, not real data) ───────────
+    # Prototyping stand-in for `stock_history` while Stooq's historical
+    # endpoint is unreachable / 404ing (see stock_history_source.py's
+    # module docstring). Same message shape (a "stock_history" typed
+    # message, marked synthetic=True), so a backtest office built
+    # against this can swap in the real source later with zero
+    # downstream changes.
+    #     Sources: synthetic_stock_history(tickers=["AAPL","MSFT"],
+    #                                       start="2015-01-01", seed=42)
+    "synthetic_stock_history": {
+        "type":   "synthetic_stock_history",
+        "import": "from dissyslab.components.sources.synthetic_stock_history_source import SyntheticStockHistorySource",
+        "class":  "SyntheticStockHistorySource",
+    },
+
+    # ── Real stock history from local CSV files (no network) ──────────
+    # Third option alongside `stock_history` (live Stooq fetch, 404ing
+    # as of 2026-07-28) and `synthetic_stock_history` (fake data): real
+    # market data already saved locally as one CSV file per ticker.
+    # Same "stock_history" message shape, so a backtest office built
+    # against synthetic data can point at this instead with zero
+    # downstream changes.
+    #     Sources: csv_stock_history(tickers=["AMD","NFLX","NVDA"],
+    #                                 directory="sp100_data")
+    "csv_stock_history": {
+        "type":   "csv_stock_history",
+        "import": "from dissyslab.components.sources.csv_stock_history_source import CSVStockHistorySource",
+        "class":  "CSVStockHistorySource",
+    },
+
     # ── Full MCP source (advanced users) ──────────────────────────────
     "mcp_source": {
         "type":   "mcp",
