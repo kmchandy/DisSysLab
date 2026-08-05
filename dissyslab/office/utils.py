@@ -330,6 +330,35 @@ SOURCE_REGISTRY = {
         "import": "from dissyslab.components.sources.csv_points_source import CSVPointsSource",
         "class":  "CSVPointsSource",
     },
+
+    # ── Session starter (parameterized one-shot kickoff, no network) ──
+    # Generic cousin of `starter` (which only emits a bare
+    # {"signal": "start"}): this one forwards whatever office.md kwargs
+    # it's given as {"kind": "start", **kwargs}. Built for adaptive_tutor
+    # (`session_starter(variant="easy")` kicks PLANNER off with a named
+    # difficulty variant) but usable by any office needing a one-shot,
+    # parameterized start signal.
+    "session_starter": {
+        "type":   "session_starter",
+        "import": "from dissyslab.components.sources.session_starter_source import SessionStarterSource",
+        "class":  "SessionStarterSource",
+    },
+    # Alias for a second instance in the same office.md with different
+    # kwargs (e.g. two subjects' sessions started side by side) --
+    # same convention as stocks/stocks_2/stocks_3.
+    "session_starter_2": {
+        "type":   "session_starter",
+        "import": "from dissyslab.components.sources.session_starter_source import SessionStarterSource",
+        "class":  "SessionStarterSource",
+    },
+    # Alias for a third instance (e.g. a third adaptive_tutor subject,
+    # such as telling_time, started side by side with fractions and
+    # multiplication_facts) -- same convention as stocks_3.
+    "session_starter_3": {
+        "type":   "session_starter",
+        "import": "from dissyslab.components.sources.session_starter_source import SessionStarterSource",
+        "class":  "SessionStarterSource",
+    },
 }
 
 
@@ -508,6 +537,15 @@ SINK_REGISTRY = {
     "debate_display": {
         "import": "from dissyslab.gallery.apps.debate.sinks.debate_display import DebateDisplay",
         "class":  "DebateDisplay",
+        "args":   "named",
+        "call":   "run",
+    },
+    # adaptive_tutor: renders tutor_session_report messages as a
+    # readable per-session card (subject/variant/score + per-item
+    # checkmarks), instead of a raw dict via console_printer.
+    "tutor_session_display": {
+        "import": "from dissyslab.gallery.apps.adaptive_tutor.sinks.tutor_session_display import TutorSessionDisplay",
+        "class":  "TutorSessionDisplay",
         "args":   "named",
         "call":   "run",
     },
