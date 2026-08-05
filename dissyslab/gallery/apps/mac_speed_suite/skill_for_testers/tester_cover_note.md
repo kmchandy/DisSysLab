@@ -16,10 +16,17 @@ anyone needing to touch the underlying Python framework.
 
 ## Setup (two things, both one-time)
 
-1. **Install the skill.** Open the attached `backtest-strategy-builder.skill`
-   file -- it should show a "Save skill" button.
-2. **Connect the DisSysLab repo.** Clone `https://github.com/kmchandy/DisSysLab`
+1. **Connect the DisSysLab repo.** Clone `https://github.com/kmchandy/DisSysLab`
    (it's public) and connect that folder to Cowork.
+2. **Install the skill from your own session.** With that folder connected,
+   just ask Claude something like "show me the backtest-strategy-builder
+   skill" -- it'll find
+   `dissyslab/gallery/apps/mac_speed_suite/skill_for_testers/backtest-strategy-builder.skill`
+   in the repo and show you a "Save skill" button right there; click it.
+   (If you got the `.skill` file as an email attachment instead, don't
+   double-click it in Finder -- depending on your file associations that
+   can open an unrelated app. Drop the file into a Cowork chat instead and
+   use the "Save skill" button that appears on the card there.)
 
 ## What to do
 
