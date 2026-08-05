@@ -16,11 +16,18 @@ anyone needing to touch the underlying Python.
 
 ## Setup (three things, all one-time)
 
-1. **Install the skill.** Open the attached `tutor-subject-builder.skill`
-   file -- it should show a "Save skill" button.
-2. **Connect the DisSysLab repo.** Clone
+1. **Connect the DisSysLab repo.** Clone
    `https://github.com/kmchandy/DisSysLab` (it's public) and connect that
    folder to Cowork.
+2. **Install the skill from your own session.** With that folder connected,
+   just ask Claude something like "show me the tutor-subject-builder
+   skill" -- it'll find
+   `dissyslab/gallery/apps/adaptive_tutor/skill_for_testers/tutor-subject-builder.skill`
+   in the repo and show you a "Save skill" button right there; click it.
+   (If you got the `.skill` file as an email attachment instead, don't
+   double-click it in Finder -- depending on your file associations that
+   can open an unrelated app. Drop the file into a Cowork chat instead and
+   use the "Save skill" button that appears on the card there.)
 3. **Add an Anthropic API key.** Unlike some of our other demos, this one
    needs a real LLM call to grade free-text answers (so it can accept
    "one half" and "0.5" as the same answer, for instance). In the
