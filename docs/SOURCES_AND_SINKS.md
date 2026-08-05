@@ -251,6 +251,52 @@ Sources: csv_stock_history(tickers=["AMD", "NFLX", "NVDA", "PLTR", "TSLA"],
                             directory="sp100_data")
 ```
 
+### `salton_wind` — NASA/JPL Salton Sea buoy wind (real, no key)
+
+One-shot fetch of the two NASA/JPL buoys (SS1, SS1A) moored on the
+Salton Sea, CA, from `https://saltonsea.jpl.nasa.gov/get_met_weather`
+— wind speed, wind direction, air temp, humidity, and pressure, each
+as `{"min":..., "avg":..., "max":...}` over the previous 30 minutes.
+Built for the `salton_sea_dashboard` gallery app. JPL's own caveat
+("raw data, not quality-checked... informational purposes only") is
+passed through on every message as `quality_note`.
+
+Output is nested under a single `"wind"` key (not flattened) so it
+merges into `synchronizer` alongside `synthetic_salton_h2s` (nested
+under `"h2s"`) without any key collision — see
+`jpl_saltonsea_buoy_source.py`'s docstring.
+
+**Arguments:**
+- `url` *(str, default JPL's live page)*.
+- `timeout` *(float seconds, default `15.0`)*.
+
+```
+Sources: salton_wind
+```
+
+### `synthetic_salton_h2s` — synthetic Salton Sea H2S readings (no network, not real data)
+
+Prototyping stand-in for four named CARB hydrogen-sulfide monitoring
+sites near the Salton Sea (Salton Sea Park, Torres-Martinez,
+Mecca-Saul Martinez, Niland English), while the mapping from those
+sites' public "ARB codes" to CARB AQMIS2's own internal `site=` query
+parameter is unresolved (queries return "No Data Available" even for
+old, settled dates — looks like an id-namespace mismatch, not an
+actual data gap; CARB's download tool and the `H2S` parameter code
+are otherwise confirmed working). Every message is stamped
+`"synthetic": True`. Same `"h2s"`-nested message shape a real
+CARB-backed source would use, so `salton_sea_dashboard` can swap this
+out with zero downstream changes once the real site ids are found.
+
+**Arguments:**
+- `spike_probability` *(float, default `0.15`)* — chance any one
+  site shows a synthetic odor-event spike this run.
+- `seed` *(int, default `None`)* — set for reproducible output.
+
+```
+Sources: synthetic_salton_h2s
+```
+
 ### `bluesky` — live BlueSky posts (no key)
 
 Streams posts from BlueSky's public Jetstream WebSocket. Posts
