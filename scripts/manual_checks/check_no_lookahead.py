@@ -33,13 +33,31 @@ particular strategy:
    before that must equal a declared placeholder value (e.g. 0.0), not
    a crash or garbage/NaN.
 
-Tier 2 -- the honest limitation of everything above: none of these five
-checks can catch a strategy that is consistently, deterministically
-computing the *wrong thing* (a sign error, the wrong window, price where
-you meant volume). They all still pass for a confidently wrong
-implementation. The only thing that can catch that class of bug is:
+Tier 1.5 -- a zero-manual-effort middle ground, for when a full golden
+example (below) is more rigor than someone wants to spend ten minutes
+on, but "the LLM says it looks right" is too little:
 
-6. assert_matches_golden_example -- a tiny, hand-computed example where
+6. check_trend_sanity -- generates a purely synthetic price series
+   where the close changes by the same fixed `delta` every single day
+   (see `make_monotonic_bars`), once trending up and once trending
+   down, and asserts a trend-following strategy eventually agrees with
+   the obvious direction on each. Needs no hand arithmetic at all --
+   nobody has to work out an expected number -- but it does catch a
+   real, common bug class: comparison logic that's backwards (e.g.
+   going short on a breakout *above* the recent high instead of long).
+   It cannot catch a subtly wrong formula the way a golden example can
+   (a strategy that's off by a constant factor, or uses the wrong
+   window length, can still agree with the obvious trend direction) --
+   it's a real check, just a weaker one, and it's honest about that
+   trade rather than pretending to be a golden example's equivalent.
+
+Tier 2 -- the honest limitation of everything above, tier 1.5 included:
+none of it can catch a strategy that is consistently, deterministically
+computing the *wrong thing* (a sign error, the wrong window, price where
+you meant volume) as long as it still happens to agree with an obvious
+trend's direction. The only thing that can catch that class of bug is:
+
+7. assert_matches_golden_example -- a tiny, hand-computed example where
    a human works out the expected signal by hand (using "nice" parameter
    values chosen specifically to make hand arithmetic easy, not the
    strategy's real production variants) and the function is asserted to
@@ -48,6 +66,14 @@ implementation. The only thing that can catch that class of bug is:
    "deliberately does NOT re-derive whether the arithmetic itself is
    correct" -- here, the golden example is what fills that gap, because
    nothing mechanical can.
+
+Checks 1-5 are cheap enough that every strategy should run all of them,
+every time -- there's no real reason to skip them. Checks 6 and 7 trade
+rigor for effort along the same one dimension ("is the formula actually
+right, not just well-behaved"), so `backtest-strategy-builder`'s SKILL.md
+now asks which of golden-example / trend-sanity / neither the person
+wants, rather than silently forcing the most expensive option -- see
+that file's Step 2 and Step 4.
 
 `assert_strategy_contract` runs whichever of 1-6 apply (skipping any
 whose optional arguments are omitted) in one call -- the backtesting
@@ -278,7 +304,84 @@ def assert_warmup(compute_fn, params, bars, min_bars_required, warmup_value: flo
         )
 
 
-# ── 6. Golden example (the one check that catches "confidently wrong") ──
+# ── 6. Trend sanity (zero-manual-effort middle ground) ──────────────
+
+def make_monotonic_bars(
+    start_price: float, delta: float, n_days: int, start_date: str = "2025-01-01",
+) -> List[dict]:
+    """A purely synthetic price series where the close changes by
+    exactly `delta` every day -- open/high/low set equal to close, same
+    simplifying convention as this module's golden-example bars.
+    delta > 0 is a pure uptrend, delta < 0 a pure downtrend, delta == 0
+    perfectly flat. No hand arithmetic required to use this -- that's
+    the point of tier 1.5, see this module's docstring."""
+    import datetime
+
+    d0 = datetime.date.fromisoformat(start_date)
+    bars = []
+    price = start_price
+    for i in range(n_days):
+        bars.append(_bar((d0 + datetime.timedelta(days=i)).isoformat(), price))
+        price += delta
+    return bars
+
+
+def check_trend_sanity(
+    compute_fn,
+    params,
+    signal_type: str,
+    n_days: int = 100,
+    delta: float = 1.0,
+    start_price: float = 100.0,
+    tail: int = 5,
+    tol: float = 1e-9,
+) -> dict:
+    """On a long enough pure uptrend, a trend-following strategy's
+    signal must eventually, consistently agree the trend is up; on a
+    pure downtrend, it must agree the trend is down. `n_days` should
+    comfortably clear the strategy's own longest lookback window --
+    100 is enough for every strategy currently in this office (longest
+    is Turtle's 55-day entry breakout); a strategy with a longer window
+    should pass a larger `n_days`. `tail`: how many of the final days
+    must all agree (more than 1 to avoid a lucky single-day coincidence,
+    but small since a monotonic series has no noise to average out)."""
+    up_bars = make_monotonic_bars(start_price, delta, n_days)
+    down_bars = make_monotonic_bars(start_price, -delta, n_days)
+    up_tail = compute_fn(up_bars, params)[-tail:]
+    down_tail = compute_fn(down_bars, params)[-tail:]
+
+    if signal_type == "directional":
+        up_ok = all(v == 1.0 for v in up_tail)
+        down_ok = all(v == -1.0 for v in down_tail)
+    elif signal_type == "sizing":
+        up_ok = all(v > tol for v in up_tail)
+        down_ok = all(v < -tol for v in down_tail)
+    else:
+        raise ValueError(f'signal_type must be "directional" or "sizing", got {signal_type!r}')
+
+    return {
+        "passed": up_ok and down_ok,
+        "uptrend_tail_signal": up_tail,
+        "downtrend_tail_signal": down_tail,
+    }
+
+
+def assert_trend_sanity(compute_fn, params, signal_type: str, **kwargs) -> None:
+    result = check_trend_sanity(compute_fn, params, signal_type, **kwargs)
+    if not result["passed"]:
+        raise AssertionError(
+            f"Trend-sanity check failed. On a long pure uptrend the last "
+            f"{len(result['uptrend_tail_signal'])} signal values were "
+            f"{result['uptrend_tail_signal']!r} (expected consistently "
+            f"positive/long); on a long pure downtrend they were "
+            f"{result['downtrend_tail_signal']!r} (expected consistently "
+            f"negative/short). This usually means comparison logic is "
+            f"backwards -- e.g. going short on an upward breakout instead "
+            f"of long."
+        )
+
+
+# ── 7. Golden example (the one check that catches "confidently wrong") ──
 
 def assert_matches_golden_example(
     compute_fn,
@@ -327,15 +430,26 @@ def assert_strategy_contract(
     warmup_value: float = 0.0,
     golden_bars: Optional[List[dict]] = None,
     golden_expected: Optional[Sequence[float]] = None,
+    trend_sanity: bool = False,
+    trend_sanity_kwargs: Optional[dict] = None,
     sample_every: int = 1,
 ) -> None:
     """Runs check_no_lookahead, check_deterministic, and check_finite
-    unconditionally (every strategy must satisfy these three); runs
-    check_signal_range if `signal_type` is given; runs check_warmup if
-    `min_bars_required` is given; runs the golden-example check if both
-    `golden_bars` and `golden_expected` are given. Raises on the first
-    failure, same convention as assert_subject_contract in
-    check_problem_ground_truth.py."""
+    unconditionally -- every strategy must satisfy these three, no
+    reason to ever skip them. Runs check_signal_range if `signal_type`
+    is given; runs check_warmup if `min_bars_required` is given.
+
+    For the one remaining dimension -- "is the formula actually right,
+    not just well-behaved" -- the caller picks at most one of:
+      - `golden_bars` + `golden_expected`: the most rigorous, requires
+        the caller to have hand-computed an expected answer.
+      - `trend_sanity=True`: zero manual effort, weaker (see
+        check_trend_sanity's docstring).
+      - neither: skip this dimension entirely and rely on judgment.
+    This mirrors the choice `backtest-strategy-builder`'s SKILL.md now
+    offers explicitly rather than silently forcing the most expensive
+    option. Raises on the first failure, same convention as
+    assert_subject_contract in check_problem_ground_truth.py."""
     assert_no_lookahead(compute_fn, params, bars, sample_every=sample_every)
     assert_deterministic(compute_fn, params, bars)
     assert_finite(compute_fn, params, bars)
@@ -345,6 +459,10 @@ def assert_strategy_contract(
         assert_warmup(compute_fn, params, bars, min_bars_required, warmup_value)
     if golden_bars is not None and golden_expected is not None:
         assert_matches_golden_example(compute_fn, params, golden_bars, golden_expected)
+    elif trend_sanity:
+        if signal_type is None:
+            raise ValueError("trend_sanity=True requires signal_type to be declared")
+        assert_trend_sanity(compute_fn, params, signal_type, **(trend_sanity_kwargs or {}))
 
 
 def _bar(date: str, price: float) -> dict:
@@ -424,6 +542,17 @@ if __name__ == "__main__":
     except AssertionError as exc:
         all_passed = False
         print(f"FAIL: donchian_signal golden example: {exc}")
+
+    # Turtle demonstrated via the cheaper tier-1.5 path instead of a
+    # golden example -- no hand arithmetic, just the two-sided
+    # monotonic-trend check. n_days=100 comfortably clears Turtle s2's
+    # 55-day entry window.
+    try:
+        assert_trend_sanity(_turtle_compute_variant_signal, TURTLE_VARIANTS["s1"], "sizing", n_days=100)
+        print("PASS: turtle_signal trend-sanity check (tier 1.5, no golden example needed)")
+    except AssertionError as exc:
+        all_passed = False
+        print(f"FAIL: turtle_signal trend-sanity check: {exc}")
 
     print()
     print("ALL CHECKS PASSED" if all_passed else "SOME CHECKS FAILED")
