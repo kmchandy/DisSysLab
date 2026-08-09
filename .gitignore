@@ -205,4 +205,8 @@ build/
 # so gallery offices may write brief.html / *.jsonl into their own dir.
 dissyslab/gallery/apps/*/brief.html
 dissyslab/gallery/apps/*/snapshots/
-dissyslab/gallery/apps/recovery_demo/samples/points.txt
+# recovery_demo/samples/points.txt is deliberately tracked. Ignoring
+# it meant every fresh clone got a demo that printed nothing and
+# exited 0 -- the headline checkpoint feature, broken for every new
+# user. It is deterministic (seed=42, samples/make_points.py), so it
+# is a fixture rather than a build artifact.
