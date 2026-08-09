@@ -7,13 +7,13 @@ Termination is handled by os_agent — no STOP signals needed.
 """
 
 import pytest
-from dissyslab import network
+from dissyslab import network, OfficeRunError
 from dissyslab.blocks import Source, Transform, Sink, Broadcast, MergeAsynch, Split
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
-def make_source(items):
+def make_source(items, **kwargs):
     """Return a Source that emits items then exhausts."""
     data = list(items)
     index = [0]
@@ -25,7 +25,7 @@ def make_source(items):
         index[0] += 1
         return val
 
-    return Source(fn=fn)
+    return Source(fn=fn, **kwargs)
 
 
 def collect_sink():
@@ -53,8 +53,61 @@ class TestSource:
         """Source with zero messages terminates immediately."""
         sink, results = collect_sink()
         g = network([(make_source([]), sink)])
+        # This source is empty on purpose: the assertion is about the
+        # block-level exhaustion contract, not about whether an office
+        # did anything useful. run_network's office-level check would
+        # otherwise (correctly) call an all-empty run a failure.
+        g.run_network(timeout=5, require_source_output=False)
+        assert results == []
+
+
+class TestEmptyAndFailingSources:
+    """A source that produces nothing, or dies, must not look like success.
+
+    Both used to end in clean termination and exit 0: a source signals
+    exhaustion by returning None, and the error paths returned None too.
+    """
+
+    def test_empty_source_raises(self):
+        sink, _ = collect_sink()
+        g = network([(make_source([]), sink)])
+        with pytest.raises(OfficeRunError, match="no messages at all"):
+            g.run_network(timeout=5)
+
+    def test_allow_empty_suppresses_the_error(self):
+        sink, results = collect_sink()
+        g = network([(make_source([], allow_empty=True), sink)])
         g.run_network(timeout=5)
         assert results == []
+
+    def test_require_source_output_false_suppresses_the_error(self):
+        sink, _ = collect_sink()
+        g = network([(make_source([]), sink)])
+        g.run_network(timeout=5, require_source_output=False)
+
+    def test_source_that_raises_is_reported(self):
+        def boom():
+            raise FileNotFoundError("no such file: 'points.txt'")
+
+        sink, _ = collect_sink()
+        g = network([(Source(fn=boom, name="broken"), sink)])
+        with pytest.raises(OfficeRunError, match="broken.*no such file"):
+            g.run_network(timeout=5)
+
+    def test_a_working_source_still_passes(self):
+        sink, results = collect_sink()
+        g = network([(make_source([1, 2, 3]), sink)])
+        g.run_network(timeout=5)
+        assert results == [1, 2, 3]
+
+    def test_run_report_counts_messages(self):
+        sink, _ = collect_sink()
+        g = network([(make_source([1, 2, 3]), sink)])
+        g.run_network(timeout=5)
+        report = g.run_report()
+        assert report["failed_sources"] == []
+        assert report["empty_sources"] == []
+        assert sum(a["sent"] for a in report["agents"].values()) >= 3
 
     def test_source_has_default_outport(self):
         src = Source(fn=lambda: None)

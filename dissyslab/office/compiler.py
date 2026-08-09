@@ -206,6 +206,14 @@ def _build_source(spec: SourceSpec, local_sources: Optional[dict] = None) -> Sou
     """
     name = spec.name
 
+    # `allow_empty` is a framework-level property of the source agent,
+    # not an argument to the component class, so it is removed from the
+    # args before construction. It marks a source for which producing
+    # no messages is a legitimate outcome (a feed with nothing new)
+    # rather than the misconfiguration it usually indicates.
+    args_all = dict(spec.args)
+    allow_empty = bool(args_all.pop("allow_empty", False))
+
     # App-local sources win over the framework registry, matching the
     # roles/ precedence rule. The module's ``build_source()`` is
     # self-contained (its feed URL is baked in), so graph ``params``
@@ -217,7 +225,7 @@ def _build_source(spec: SourceSpec, local_sources: Optional[dict] = None) -> Sou
             raise CompileError(
                 f"app-local source {name!r} failed to build: {exc}"
             ) from exc
-        return Source(fn=obj.run, name=name)
+        return Source(fn=obj.run, name=name, allow_empty=allow_empty)
 
     # Imported lazily so the compiler does not pull in feedparser etc.
     # at import time.
@@ -227,7 +235,7 @@ def _build_source(spec: SourceSpec, local_sources: Optional[dict] = None) -> Sou
         lookup_component,
     )
 
-    args = dict(spec.args)
+    args = args_all
     entry = lookup_component(name)
 
     if entry is None:
@@ -289,7 +297,7 @@ def _build_source(spec: SourceSpec, local_sources: Optional[dict] = None) -> Sou
             cls, args, kind="source", name=name
         )
 
-    return Source(fn=obj.run, name=name)
+    return Source(fn=obj.run, name=name, allow_empty=allow_empty)
 
 
 def _build_sink(spec: SinkSpec) -> Sink:

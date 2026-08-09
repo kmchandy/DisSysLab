@@ -18,9 +18,9 @@ See the docs/ folder for the user guide.
 """
 
 from dissyslab.core import Agent
-from dissyslab.network import Network
+from dissyslab.network import Network, OfficeRunError
 from dissyslab.builder import network
 
-__all__ = ['Agent', 'Network', 'network']
+__all__ = ['Agent', 'Network', 'OfficeRunError', 'network']
 
 __version__ = '1.6.1'

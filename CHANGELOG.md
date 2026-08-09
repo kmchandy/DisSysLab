@@ -21,6 +21,36 @@ versions follow [SemVer](https://semver.org/).
   
 ## [Unreleased] — will become 1.6.0
 
+### Changed
+
+- **An office that produces nothing now fails instead of reporting
+  success.** A source signals exhaustion by returning `None`, and
+  error paths returned `None` too, so a source pointed at a file that
+  did not exist was indistinguishable from one read to completion: the
+  office terminated correctly, printed nothing, and exited 0. For
+  anything numeric this is worse than a crash — all-zero output looks
+  like a result. `run_network()` now raises `OfficeRunError` when a
+  source crashed or emitted no messages at all. Mark a source
+  `allow_empty=true` in `office.md` where producing nothing is a
+  legitimate outcome (a feed with nothing new), or pass
+  `require_source_output=False` to disable the check for a run.
+  Reported by an outside tester on `recovery_demo`.
+- `dsl run` prints a per-agent message-count summary when the run
+  finishes, so "everything produced nothing" is visible at a glance.
+  Suppress with `dsl run --quiet`.
+- `Source` records a failure rather than swallowing it. `run()` still
+  sends its termination message on error — `os_agent` would otherwise
+  wait forever — but the failure is now visible to `run_network()`.
+
+### Fixed
+
+- `recovery_demo` ran on a fresh clone printing nothing and exiting 0:
+  `samples/points.txt` was gitignored, so every clone got a broken
+  demo of the framework's headline feature. The file is deterministic
+  (seed=42) and is now committed.
+- `CSVPointsSource` raised nothing on a missing file; it now raises
+  `FileNotFoundError` naming the path and the fix.
+
 ### Added
 
 - **Distributed snapshot checkpoint-recovery** for offices —

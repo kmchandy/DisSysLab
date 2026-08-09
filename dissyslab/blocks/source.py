@@ -25,6 +25,7 @@ case.
 
 from __future__ import annotations
 import inspect
+import os
 import traceback
 import time
 from copy import deepcopy
@@ -83,6 +84,7 @@ class Source(Agent):
         interval: float = 0,
         params: Optional[Dict[str, Any]] = None,
         state: Optional[Dict[str, Any]] = None,
+        allow_empty: bool = False,
     ):
         if not callable(fn):
             raise TypeError(
@@ -117,6 +119,25 @@ class Source(Agent):
             self._fn = fn
 
         self._interval = interval
+
+        # A source that emits nothing across a whole run is almost
+        # always misconfigured -- a path that does not exist, a feed
+        # whose credentials expired. The office still terminates
+        # correctly and reports success, so the mistake is invisible.
+        # Network.run_network() treats it as an error unless the source
+        # says empty is a legitimate outcome (an RSS feed with no new
+        # items since the last poll, say).
+        self.allow_empty = allow_empty
+
+        # Set when run() catches an exception from fn. Distinct from
+        # exhaustion: without it, "the source failed" and "the source
+        # finished" are the same observable event.
+        self.failure: Optional[str] = None
+
+    @property
+    def total_sent(self) -> int:
+        """Messages this source emitted across the whole run."""
+        return sum(self.sent.values())
 
     @property
     def default_outport(self) -> str:
@@ -185,8 +206,19 @@ class Source(Agent):
                     time.sleep(self._interval)
 
         except Exception as e:
-            print(f"[Source '{self.name}'] Error in fn: {e}")
-            print(traceback.format_exc())
+            # Record before terminating. The termination message still
+            # has to go out or os_agent waits forever for a source that
+            # is never coming back -- but sending it is what used to
+            # make a crashed source indistinguishable from a finished
+            # one, so the whole office reported success. run_network()
+            # reads self.failure afterwards and raises.
+            self.failure = f"{type(e).__name__}: {e}"
+            print(f"[Source '{self.name}'] {type(e).__name__}: {e}")
+            # The traceback is for whoever is debugging the framework,
+            # not for the student who mistyped a path. Same convention
+            # as the CLI's error mapper.
+            if os.environ.get("DSL_DEBUG"):
+                print(traceback.format_exc())
             self._send_termination()
 
     # v1.6: save_state and load_state delegate to the wrapped

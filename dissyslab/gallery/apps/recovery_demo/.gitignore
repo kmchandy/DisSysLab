@@ -1,5 +1,10 @@
+# samples/points.txt is deliberately NOT ignored. It used to be,
+# which meant every fresh clone got an office that printed nothing
+# and exited 0 -- the demo for the framework's headline feature,
+# broken for every new user. The file is deterministic (seed=42,
+# see samples/make_points.py), so committing it is committing a
+# fixture, not a build artifact.
 build/
 snapshots/
-samples/points.txt
 
 !samples/make_points.py

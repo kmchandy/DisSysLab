@@ -248,6 +248,16 @@ def _explain_failure_message(command: str, exc: BaseException) -> str:
     """The actual exception → user-message mapper. See _explain_failure."""
     msg = str(exc)
 
+    # OfficeRunError is raised by the framework specifically to be read
+    # by the person running the office -- it already names the source,
+    # the reason, and the fix. Wrapping it in a traceback would bury
+    # the one useful part. (DSL_DEBUG still appends the traceback.)
+    from dissyslab.network import OfficeRunError
+    if isinstance(exc, OfficeRunError):
+        return (
+            f"{command}: the office ran but produced nothing.\n\n{msg}"
+        )
+
     # Missing Python module — almost always a stale build/run.py or
     # a package the user forgot to install in this venv.
     if isinstance(exc, ModuleNotFoundError):
@@ -463,6 +473,13 @@ def cmd_run(args: argparse.Namespace) -> int:
     # var set, no cost). See docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md.
     if getattr(args, "trace", False):
         os.environ["DSL_TRACE"] = "1"
+
+    # Print per-agent message counts when the run finishes. On by
+    # default: an office that produced nothing used to look exactly
+    # like one that worked, and the counts make that visible without
+    # the reader having to know what to expect.
+    if not getattr(args, "quiet", False):
+        os.environ["DSL_RUN_SUMMARY"] = "1"
 
     from dissyslab.office.cli_helpers import cli_run
 
@@ -1495,6 +1512,14 @@ def build_parser() -> argparse.ArgumentParser:
             "checkpoint-aware sources (those that call _poll_os "
             "from their run loop) participate. See "
             "docs/algorithms/CHECKPOINT_RESUME.md."
+        ),
+    )
+    p_run.add_argument(
+        "--quiet",
+        action="store_true",
+        help=(
+            "Suppress the per-agent message-count summary printed when "
+            "the run finishes."
         ),
     )
     p_run.add_argument(

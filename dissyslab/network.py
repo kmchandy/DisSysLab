@@ -15,7 +15,21 @@ from queue import SimpleQueue
 from collections import deque
 from pathlib import Path
 import multiprocessing
+import os
 from dissyslab.core import Agent, ExceptionThread, ExceptionProcess
+
+
+class OfficeRunError(RuntimeError):
+    """A run finished, but produced nothing it was supposed to produce.
+
+    Raised when a source crashed, or when a source emitted no messages
+    at all. Both conditions previously ended in a clean shutdown and a
+    zero exit code, because a source signals exhaustion by returning
+    ``None`` and an error path returned ``None`` too. An office reading
+    a file that is not there behaved exactly like one that read the file
+    to the end -- and for anything numeric, silent zeros look like a
+    result rather than a failure.
+    """
 
 
 # ============================================================================
@@ -702,7 +716,11 @@ class Network:
             msgs = "; ".join(f"{n}: {repr(e)}" for n, e in errors)
             raise RuntimeError(f"Shutdown failed for agent(s): {msgs}")
 
-    def run_network(self, timeout: Optional[float] = None) -> None:
+    def run_network(
+        self,
+        timeout: Optional[float] = None,
+        require_source_output: bool = True,
+    ) -> None:
         """
         Compile (if needed), startup, run, and shutdown the network.
 
@@ -720,6 +738,16 @@ class Network:
 
         Hung agents surface as "nothing is happening" — Pat presses
         Ctrl-C, sees which thread had the input, and reports it.
+
+        ``require_source_output`` (default ``True``) raises
+        :class:`OfficeRunError` when a source crashed, or when a source
+        emitted nothing at all over the whole run. Both used to be
+        silent: the office terminated correctly, printed nothing, and
+        reported success, which for anything numeric is worse than a
+        crash — all-zero output looks exactly like a real result. Mark
+        individual sources ``allow_empty=True`` where producing nothing
+        is legitimate, or pass ``require_source_output=False`` to
+        disable the check for a whole run.
         """
         if not self.compiled:
             self.compile()
@@ -732,6 +760,84 @@ class Network:
                 self.shutdown()
             except Exception:
                 pass
+
+        if os.environ.get("DSL_RUN_SUMMARY"):
+            self.print_run_summary()
+        if require_source_output:
+            self._raise_if_no_source_produced_output()
+
+
+
+    # ── Run reporting ─────────────────────────────────────────────────
+
+    def run_report(self) -> Dict[str, Any]:
+        """Per-agent message counts and source health after a run.
+
+        ``{"agents": {name: {"sent": int, "received": int}},
+           "failed_sources": [(name, reason)],
+           "empty_sources":  [name]}``
+        """
+        from dissyslab.blocks.source import Source as _Source
+
+        agents: Dict[str, Dict[str, int]] = {}
+        failed: List[Tuple[str, str]] = []
+        empty: List[str] = []
+
+        for name, agent in self.agents.items():
+            sent = sum(getattr(agent, "sent", {}).values())
+            received = sum(getattr(agent, "received", {}).values())
+            agents[name] = {"sent": sent, "received": received}
+            if isinstance(agent, _Source):
+                if getattr(agent, "failure", None):
+                    failed.append((name, agent.failure))
+                elif sent == 0 and not getattr(agent, "allow_empty", False):
+                    empty.append(name)
+
+        return {"agents": agents, "failed_sources": failed,
+                "empty_sources": empty}
+
+    def print_run_summary(self) -> None:
+        """Print per-agent message counts. Makes "everything produced
+        nothing" visible at a glance instead of looking like success."""
+        report = self.run_report()
+        rows = sorted(report["agents"].items())
+        if not rows:
+            return
+        width = max(len(n) for n, _ in rows)
+        print()
+        print("Run summary (messages):")
+        for name, counts in rows:
+            print(f"  {name.ljust(width)}   sent {counts['sent']:>6}"
+                  f"   received {counts['received']:>6}")
+
+    def _raise_if_no_source_produced_output(self) -> None:
+        """Turn a silently empty run into a loud failure."""
+        report = self.run_report()
+        failed, empty = report["failed_sources"], report["empty_sources"]
+        if not failed and not empty:
+            return
+
+        lines: List[str] = []
+        if failed:
+            lines.append("These sources failed while running:")
+            for name, reason in failed:
+                lines.append(f"  - {name}: {reason}")
+        if empty:
+            lines.append(
+                "These sources produced no messages at all, so nothing "
+                "downstream of them ran:"
+            )
+            for name in empty:
+                lines.append(f"  - {name}")
+            lines.append(
+                "A source that emits nothing is usually pointed at data "
+                "that is not there -- a path that does not exist, a feed "
+                "that returned empty, credentials that expired. If "
+                "producing nothing is a legitimate outcome for this "
+                "source, mark it allow_empty=true in office.md, or pass "
+                "require_source_output=False to run_network()."
+            )
+        raise OfficeRunError("\n".join(lines))
 
     # ========== Process-based Execution ==========
 

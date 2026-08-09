@@ -93,7 +93,18 @@ class CSVPointsSource:
             try:
                 self._file = self.path.open("r", encoding="utf-8")
             except FileNotFoundError:
-                return None
+                # Returning None here would mean "end of stream" -- the
+                # framework's exhaustion signal -- so a missing file was
+                # indistinguishable from a file read to completion. The
+                # office terminated cleanly, printed nothing, and exited
+                # 0. Raise instead; Network turns this into a failed run.
+                raise FileNotFoundError(
+                    f"{type(self).__name__}: no such file "
+                    f"{str(self.path)!r} (resolved from the office "
+                    f"directory). The office cannot produce anything "
+                    f"without it. If this is recovery_demo, generate the "
+                    f"sample data with: python samples/make_points.py"
+                ) from None
             # Skip to the saved cursor position. Comment lines do not
             # count toward the cursor (the cursor counts data lines).
             skipped_data = 0
