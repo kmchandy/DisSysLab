@@ -58,6 +58,7 @@ indexes the common errors by their exact text. The command
 | [PATTERN_sense_think_respond.md](PATTERN_sense_think_respond.md) | The canonical multi-stage pattern that most gallery offices instantiate. Includes a Python helper for generating new instances of the pattern. | When the office you want resembles `sense → think → respond`. |
 | [EXTENDING.md](EXTENDING.md) | When to use English (Claude), when to write Python, when to promote to the framework library. The layered framework surface, named for the three audiences. | When you are unsure where your changes belong (local office vs. framework). |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Error messages from `dsl run` and `dsl build`, with the cause and the remedy for each. | When something goes wrong. The companion command is `dsl doctor`. |
+| [WINDOWS.md](WINDOWS.md) | Installing and running on Windows: the manual install, `PYTHONUTF8=1`, the one known broken feature, and what to report. Windows is not yet verified. | If you are on Windows. |
 
 ## Recipes
 

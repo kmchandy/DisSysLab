@@ -425,9 +425,11 @@ have.
   because Windows will not delete a file that another handle still has
   open. Everything else a tester reported on Windows — `periodic_brief`
   crashing on glibc-only date formats, and cp1252 errors on files
-  containing an em dash — is fixed. If you hit something else on
-  Windows, please open an issue; the gap is named here rather than
-  papered over precisely so it gets closed.
+  containing an em dash — is fixed, though not yet verified on
+  Windows. See [docs/WINDOWS.md](docs/WINDOWS.md) for setup, the
+  `PYTHONUTF8=1` recommendation, and what to report. If you hit
+  something else on Windows, please open an issue; the gap is named
+  here rather than papered over precisely so it gets closed.
 - For running `situation_room` locally on Ollama: a Mac with 32 GB
   RAM (or comparable PC) and ~20 GB free disk. Smaller machines
   can still run the lighter offices or point `DSL_BACKEND` at
