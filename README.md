@@ -67,6 +67,10 @@ tickers:
   <img src="docs/brief_hero.png" alt="brief.html produced by the periodic_brief office" width="472">
 </p>
 
+If anything looks wrong, run `dsl doctor`. It checks your Python version,
+dependencies, and backend, then builds and runs a small office as a
+self-test, so you get a straight answer about whether the install works.
+
 `dsl list` shows every office that ships with DisSysLab. To make
 your own editable copy of any of them:
 
@@ -356,6 +360,10 @@ python3 -m venv .venv
 source .venv/bin/activate   # Windows: .venv\Scripts\activate
 pip install dissyslab
 
+# Confirm the install works. Checks dependencies and the backend,
+# then builds and runs a small office as a self-test:
+dsl doctor
+
 # periodic_brief runs immediately with no model or key:
 dsl run periodic_brief
 open brief.html
@@ -379,6 +387,30 @@ export ANTHROPIC_API_KEY=sk-ant-...
 
 dsl run situation_room
 ```
+
+---
+
+## Install from source (contributors and testers)
+
+```bash
+git clone https://github.com/kmchandy/DisSysLab.git
+cd DisSysLab
+python3 -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -e ".[dev]"
+```
+
+Then confirm the install is sound:
+
+```bash
+dsl doctor        # deps, backend, credentials, and a built-in self-test
+pytest tests/     # the full regression suite, about 30 seconds
+```
+
+Note the `[dev]` on the install line. A plain `pip install -e .` is enough
+to *run* offices, but the test tools are in the `[dev]` extra, so `pytest`
+will not be found without it. `dsl doctor` reports which of the two you
+have.
 
 ---
 

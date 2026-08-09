@@ -11,7 +11,7 @@ subcommands aimed at first-year undergraduates:
     dsl edit <office_dir>         modify an existing office by chatting with Claude
     dsl run <office_dir>          run a closed office end-to-end
     dsl build <office_dir>        generate build/run.py for an office
-    dsl doctor                    sanity-check Python, deps, and API key
+    dsl doctor                    check Python, deps, backend, and run a self-test
     dsl --version                 print the installed dissyslab version
 
 This module is intentionally small: it dispatches to the real
@@ -1106,6 +1106,49 @@ def _env_file_advice(status: str) -> list[str]:
     return []
 
 
+# Expected output of the built-in self-test office. Kept next to the
+# helper so that changing one is obviously changing the other.
+_SMOKE_EXPECTED = [2, 4, 6]
+
+
+def _smoke_test_office() -> list:
+    """Build and run a tiny three-agent office, in process.
+
+    Source -> Transform -> Sink, with no network access, no
+    credentials, and nothing written to disk. This is the cheapest
+    end-to-end proof that the *installed package* actually works:
+    importing the third-party dependencies says nothing about whether
+    DisSysLab itself can build and run a network. A wheel missing its
+    packaged role library, for example, imports perfectly well and
+    fails here.
+
+    Returns the list collected by the sink, for the caller to compare
+    against _SMOKE_EXPECTED.
+    """
+    import contextlib
+    import io as _io
+
+    from dissyslab import network
+    from dissyslab.blocks import Sink, Source, Transform
+
+    results: list = []
+    pending = [1, 2, 3]
+
+    def emit():
+        # A source function returns None to signal "no more data".
+        return pending.pop(0) if pending else None
+
+    src = Source(fn=emit, name="selftest_src")
+    dbl = Transform(fn=lambda x: x * 2, name="selftest_double")
+    out = Sink(fn=results.append, name="selftest_sink")
+
+    # Offices are chatty on stdout; the doctor report should not be.
+    with contextlib.redirect_stdout(_io.StringIO()):
+        network([(src, dbl), (dbl, out)]).run_network()
+
+    return results
+
+
 def cmd_doctor(args: argparse.Namespace) -> int:
     """Check Python, key deps, .env file format, and ANTHROPIC_API_KEY."""
     ok = True
@@ -1128,6 +1171,21 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         except Exception as exc:  # noqa: BLE001
             check(mod, False, f"not importable ({exc.__class__.__name__})")
 
+    # The test suite lives in the [dev] extra, so a plain `pip install`
+    # leaves pytest absent. That is correct packaging but surprising, so
+    # answer the question here rather than making people find the docs.
+    # Never a failure: running offices does not require pytest.
+    print()
+    print("Test tools (optional):")
+    try:
+        importlib.import_module("pytest")
+        print("  [SET ] pytest: available \u2014 run `pytest tests/` "
+              "from a source checkout")
+    except ImportError:
+        print("  [    ] pytest: not installed")
+        print("         The test tools live in the [dev] extra. From a source")
+        print("         checkout:  pip install -e \".[dev]\"")
+
     print()
     print("Local .env:")
     env_status, env_detail = _diagnose_env_file()
@@ -1148,19 +1206,38 @@ def cmd_doctor(args: argparse.Namespace) -> int:
 
     print()
     print("Credentials:")
-    key = os.environ.get("ANTHROPIC_API_KEY", "")
-    if key:
-        # Never print the key itself; a length + prefix is enough.
-        check("ANTHROPIC_API_KEY", True, f"set (prefix {key[:7]}…, len {len(key)})")
+    # Which credential matters depends on the backend selected above --
+    # checking ANTHROPIC_API_KEY unconditionally reported a FAIL on
+    # perfectly healthy Ollama and OpenRouter installs.
+    #
+    # A missing key is reported as information, never as a failure. An
+    # office whose roles are all plain Python needs no credential at all,
+    # and that includes the offices the README tells a new user to run
+    # first, so failing here called a working install broken.
+    required_key = {
+        "anthropic":  "ANTHROPIC_API_KEY",
+        "claude":     "ANTHROPIC_API_KEY",
+        "openrouter": "OPENROUTER_API_KEY",
+        "ollama":     None,          # local model, no credential needed
+    }.get(active, "ANTHROPIC_API_KEY")
+
+    if required_key is None:
+        print(f"  [    ] no credential needed for backend '{active}'")
     else:
-        check(
-            "ANTHROPIC_API_KEY",
-            False,
-            "not set in environment (put it in .env or export in your shell)",
-        )
-        # If there's no key in the env AND no usable .env, nudge the student.
-        if env_status == "absent":
-            env_advice = _env_file_advice("absent")
+        key = os.environ.get(required_key, "")
+        if key:
+            # Never print the key itself; a length + prefix is enough.
+            print(f"  [SET ] {required_key}: set "
+                  f"(prefix {key[:7]}…, len {len(key)})")
+        else:
+            print(f"  [    ] {required_key}: not set")
+            print(f"         Needed only by offices with LLM roles on "
+                  f"backend '{active}'.")
+            print("         Key-free offices (periodic_brief, recovery_demo)")
+            print("         run without it.")
+            # Only nudge about .env when a key is actually wanted.
+            if env_status == "absent":
+                env_advice = _env_file_advice("absent")
 
     # Print fix suggestions after the table, so the check list stays scannable.
     if env_advice:
@@ -1195,6 +1272,26 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             print(f"  [SET ] {name}: {detail}")
         else:
             print(f"  [    ] {name}: not set — {what}")
+
+    # Everything above checks the environment around DisSysLab. This
+    # checks DisSysLab. It is a real failure if it does not pass.
+    print()
+    print("Self-test:")
+    try:
+        produced = _smoke_test_office()
+        passed = produced == _SMOKE_EXPECTED
+        check(
+            "build and run a 3-agent office",
+            passed,
+            "source -> transform -> sink" if passed
+            else f"produced {produced!r}, expected {_SMOKE_EXPECTED!r}",
+        )
+    except Exception as exc:  # noqa: BLE001
+        check(
+            "build and run a 3-agent office",
+            False,
+            f"{exc.__class__.__name__}: {exc}",
+        )
 
     print()
     if ok:
@@ -1522,9 +1619,12 @@ def build_parser() -> argparse.ArgumentParser:
         "doctor",
         help="check your setup if something breaks",
         description=(
-            "Check your Python version, your dependencies, your Anthropic "
-            "API key, and any optional integrations (Gmail, Slack, webhook "
-            "URLs) you've configured. Run this first when something breaks."
+            "Check your Python version, your dependencies, the credential "
+            "your selected backend actually needs, and any optional "
+            "integrations (Gmail, Slack, webhook URLs) you've configured. "
+            "Finishes by building and running a small office as a "
+            "self-test, so you get a straight answer about whether the "
+            "install works. Run this first when something breaks."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
