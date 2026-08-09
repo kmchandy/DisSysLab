@@ -416,9 +416,18 @@ have.
 
 ## Requirements
 
-- macOS or Linux. Windows works for the core framework; the shell
-  installer assumes a Unix-like environment.
-- Python 3.10 or newer.
+- Python 3.10 or newer. CI runs the suite on 3.10 through 3.14.
+- **Linux and macOS** are the supported platforms and both run in CI.
+  The one-line shell installer assumes a Unix-like environment; on
+  other platforms use the manual install above.
+- **Windows** runs the framework and the gallery, and is now in CI, but
+  the job is not green yet: the checkpoint/resume tests fail there
+  because Windows will not delete a file that another handle still has
+  open. Everything else a tester reported on Windows — `periodic_brief`
+  crashing on glibc-only date formats, and cp1252 errors on files
+  containing an em dash — is fixed. If you hit something else on
+  Windows, please open an issue; the gap is named here rather than
+  papered over precisely so it gets closed.
 - For running `situation_room` locally on Ollama: a Mac with 32 GB
   RAM (or comparable PC) and ~20 GB free disk. Smaller machines
   can still run the lighter offices or point `DSL_BACKEND` at
