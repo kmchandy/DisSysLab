@@ -16,6 +16,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.gallery_support import gallery_params
+
 from dissyslab.backends import register_backend
 from dissyslab.network import Network
 from dissyslab.office import (
@@ -800,8 +802,7 @@ class TestGalleryCompiles:
 
     @pytest.mark.parametrize(
         "office_dir",
-        _gallery_office_dirs(),
-        ids=lambda p: p.name,
+        gallery_params(_gallery_office_dirs()),
     )
     def test_compiles(self, office_dir, monkeypatch):
         # Test wiring, not the developer's shell DSL_BACKEND. If the

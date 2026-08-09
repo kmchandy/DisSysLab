@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+from tests.gallery_support import gallery_params
+
 from dissyslab.office import (
     Endpoint,
     EXTERNAL,
@@ -269,7 +271,7 @@ def _gallery_office_dirs():
 class TestGalleryEndToEnd:
     """Each office in dissyslab/gallery/ must parse without error."""
 
-    @pytest.mark.parametrize("office_dir", _gallery_office_dirs(), ids=lambda p: p.name)
+    @pytest.mark.parametrize("office_dir", gallery_params(_gallery_office_dirs()))
     def test_parses(self, office_dir):
         spec = parse_office_dir(office_dir)
         assert isinstance(spec, OfficeSpec)
