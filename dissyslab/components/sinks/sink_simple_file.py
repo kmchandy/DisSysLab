@@ -20,7 +20,7 @@ class FileLineWriter:
             filename: Path to file to write to
         """
         self.filename = filename
-        self.file = open(filename, 'w')
+        self.file = open(filename, 'w', encoding="utf-8")
 
     def run(self, msg):
         """
@@ -33,6 +33,30 @@ class FileLineWriter:
         self.file.flush()
 
     def finalize(self):
-        """Close the file."""
-        self.file.close()
-        print(f"[FileLineWriter] Closed {self.filename}")
+        """Close the file. Safe to call more than once."""
+        if self.file is not None and not self.file.closed:
+            self.file.close()
+            print(f"[FileLineWriter] Closed {self.filename}")
+
+    def close(self):
+        """Alias for finalize(), for callers that expect close()."""
+        self.finalize()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.finalize()
+        return False
+
+    def __del__(self):
+        # Last-resort close. An office that is killed mid-run -- exactly
+        # what the checkpoint/resume tests do -- never reaches
+        # finalize(), so without this the handle stays open until the
+        # process exits. POSIX hides that (you may unlink an open file);
+        # Windows does not, and a test that writes into a temp dir then
+        # tries to remove it fails on the still-open handle.
+        try:
+            self.finalize()
+        except Exception:  # noqa: BLE001 - never raise from __del__
+            pass

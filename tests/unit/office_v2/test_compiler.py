@@ -56,14 +56,14 @@ def _stub_default_send_to(out_port: str = "brief") -> str:
 
 def _write_office_md(office_dir: Path, body: str) -> None:
     office_dir.mkdir(parents=True, exist_ok=True)
-    (office_dir / "office.md").write_text(body)
+    (office_dir / "office.md").write_text(body, encoding="utf-8")
 
 
 def _write_role_md(office_dir: Path, role_name: str, prompt_body: str) -> None:
     """Drop a prompt file into ``<office_dir>/roles/`` for nl_role pickup."""
     roles_dir = office_dir / "roles"
     roles_dir.mkdir(parents=True, exist_ok=True)
-    (roles_dir / f"{role_name}.md").write_text(prompt_body)
+    (roles_dir / f"{role_name}.md").write_text(prompt_body, encoding="utf-8")
 
 
 # ── Closed-office happy path ──────────────────────────────────────────
@@ -205,7 +205,7 @@ class TestSubOffices:
             "from dissyslab.office import nl_role\n"
             "role = nl_role('You analyse. Send to brief.', "
             "AI='stub-sub-explicit')\n"
-        )
+        , encoding="utf-8")
 
         # Parent office that wires news_monitor as a sub-office.
         _write_office_md(tmp_path, (
@@ -243,7 +243,7 @@ class TestSubOffices:
             "from dissyslab.office import nl_role\n"
             "role = nl_role('You analyse. Send to brief.', "
             "AI='stub-sugar')\n"
-        )
+        , encoding="utf-8")
 
         # Legacy form: "X is an office at <path>." — no library entry.
         _write_office_md(tmp_path, (
@@ -355,7 +355,7 @@ class TestLibraryScoping:
         (sub / "roles" / "analyst.py").write_text(
             "from dissyslab.office import nl_role\n"
             "role = nl_role('Send to brief.', AI='stub-iso')\n"
-        )
+        , encoding="utf-8")
 
         # Parent that wires the child as an OfficeRoleEntry
         _write_office_md(tmp_path, (
@@ -448,7 +448,7 @@ class TestFnLibResolution:
             "from dissyslab.office import nl_role\n"
             "role = nl_role('Drop spam. Send to out.', "
             "AI='stub-fn-override')\n"
-        )
+        , encoding="utf-8")
 
         net, _ = compile_office(tmp_path)
         from dissyslab.blocks.role import Role
@@ -576,7 +576,7 @@ class TestParameterizedLibraryResolution:
         (roles_dir / "synchronizer.py").write_text(
             "from dissyslab.office import synchronizer_role\n"
             'role = synchronizer_role(["fixed_x", "fixed_y"])\n'
-        )
+        , encoding="utf-8")
         _write_office_md(tmp_path, (
             "# Office: override_sync\n\n"
             "Sources: hacker_news\n"

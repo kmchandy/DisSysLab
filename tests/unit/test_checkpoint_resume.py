@@ -41,7 +41,7 @@ class _MockReply:
 
 def _make_points_file(path: Path, n: int = 100) -> None:
     """Write n deterministic (x, y) pairs to a CSV file."""
-    with path.open("w") as f:
+    with path.open("w", encoding="utf-8") as f:
         # A mix of clearly inside and clearly outside points so the
         # counters split roughly half-half.
         for i in range(n):
@@ -475,7 +475,7 @@ class TestRaceFreeResume:
             # (cursor=5, sum=15). Resume run should emit
             # {"sum": 21, "x": 6} as the FIRST message.
             points = tmpdir / "points.txt"
-            with points.open("w") as f:
+            with points.open("w", encoding="utf-8") as f:
                 for i in range(1, 31):
                     f.write(f"{i},0\n")
             snapshot_root = tmpdir / "snapshots"
@@ -556,7 +556,7 @@ class TestRaceFreeResume:
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
             points = tmpdir / "points.txt"
-            with points.open("w") as f:
+            with points.open("w", encoding="utf-8") as f:
                 for i in range(1, 31):
                     f.write(f"{i},0\n")
             snapshot_root = tmpdir / "snapshots"

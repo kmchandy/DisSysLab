@@ -52,6 +52,6 @@ _FRAMEWORK_WRITER = (
 )
 
 role = nl_role(
-    _FRAMEWORK_WRITER.read_text(),
+    _FRAMEWORK_WRITER.read_text(encoding="utf-8"),
     AI="claude",
 )

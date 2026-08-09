@@ -709,7 +709,7 @@ def emit_run_py(
     out_path.write_text(text, encoding="utf-8")
     init = out_dir / "__init__.py"
     if not init.exists():
-        init.write_text("")
+        init.write_text("", encoding="utf-8")
     return out_path
 
 

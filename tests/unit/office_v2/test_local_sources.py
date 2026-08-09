@@ -40,7 +40,7 @@ def _write_source(dir_: Path, name: str, label: str) -> None:
     (dir_ / "sources").mkdir(parents=True, exist_ok=True)
     (dir_ / "sources" / f"{name}.py").write_text(
         _MODULE.replace("__LABEL__", label)
-    )
+    , encoding="utf-8")
 
 
 def test_no_sources_dir_returns_empty(tmp_path: Path):
@@ -59,7 +59,7 @@ def test_discovers_modules_and_skips_underscored(tmp_path: Path):
 
 def test_missing_build_source_raises(tmp_path: Path):
     (tmp_path / "sources").mkdir()
-    (tmp_path / "sources" / "bad.py").write_text("X = 1\n")
+    (tmp_path / "sources" / "bad.py").write_text("X = 1\n", encoding="utf-8")
     with pytest.raises(ImportError):
         _load_local_sources(tmp_path)
 

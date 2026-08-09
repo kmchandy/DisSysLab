@@ -40,7 +40,7 @@ def _load_claude_context() -> str:
     ]
     for path in candidates:
         if path.exists():
-            _CLAUDE_CONTEXT = path.read_text()
+            _CLAUDE_CONTEXT = path.read_text(encoding="utf-8")
             return _CLAUDE_CONTEXT
 
     _CLAUDE_CONTEXT = (
@@ -121,7 +121,7 @@ def _write_files(target_dir: Path, files: dict[str, str]) -> list[Path]:
             # Unexpected path — skip silently rather than risk a write
             # outside target_dir.
             continue
-        dest.write_text(content)
+        dest.write_text(content, encoding="utf-8")
         written.append(dest)
 
     return written
@@ -178,7 +178,7 @@ def _system_prompt_edit(office_dir: Path) -> str:
         "\n---\n\n## You are editing an existing office",
         "\nHere are the current files:\n",
         "```office.md",
-        office_md.read_text().rstrip(),
+        office_md.read_text(encoding="utf-8").rstrip(),
         "```\n",
     ]
 
@@ -187,7 +187,7 @@ def _system_prompt_edit(office_dir: Path) -> str:
         for role_file in sorted(roles_dir.glob("*.md")):
             parts.extend([
                 f"```roles/{role_file.name}",
-                role_file.read_text().rstrip(),
+                role_file.read_text(encoding="utf-8").rstrip(),
                 "```\n",
             ])
 

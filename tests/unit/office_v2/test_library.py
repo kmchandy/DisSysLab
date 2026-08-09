@@ -489,10 +489,10 @@ class TestLoadRolesDir:
     def test_loads_md_files(self, tmp_path):
         (tmp_path / "analyst.md").write_text(
             "You are an analyst. Send to brief.\n"
-        )
+        , encoding="utf-8")
         (tmp_path / "editor.md").write_text(
             "You edit. Send to publish or to revise.\n"
-        )
+        , encoding="utf-8")
         out = load_roles_dir(tmp_path)
         assert set(out) == {"analyst", "editor"}
 
@@ -505,14 +505,14 @@ class TestLoadRolesDir:
         assert editor.out_ports == ("publish", "revise")
 
     def test_underscore_md_skipped(self, tmp_path):
-        (tmp_path / "_template.md").write_text("Send to anywhere.")
+        (tmp_path / "_template.md").write_text("Send to anywhere.", encoding="utf-8")
         assert load_roles_dir(tmp_path) == {}
 
     def test_loads_py_files(self, tmp_path):
         (tmp_path / "rss.py").write_text(
             "from dissyslab.office.library import OfficeRoleEntry\n"
             "role = OfficeRoleEntry(name='', path='./somewhere')\n"
-        )
+        , encoding="utf-8")
         out = load_roles_dir(tmp_path)
         assert set(out) == {"rss"}
         rss = out["rss"]
@@ -523,34 +523,34 @@ class TestLoadRolesDir:
         (tmp_path / "x.py").write_text(
             "from dissyslab.office.library import OfficeRoleEntry\n"
             "role = OfficeRoleEntry(name='custom', path='./p')\n"
-        )
+        , encoding="utf-8")
         out = load_roles_dir(tmp_path)
         # The dict key follows the filename; the entry's own .name
         # field is whatever the module set.
         assert out["x"].name == "custom"
 
     def test_py_missing_role_attribute(self, tmp_path):
-        (tmp_path / "broken.py").write_text("x = 1\n")
+        (tmp_path / "broken.py").write_text("x = 1\n", encoding="utf-8")
         with pytest.raises(ValueError, match="no top-level 'role'"):
             load_roles_dir(tmp_path)
 
     def test_py_wrong_type_rejected(self, tmp_path):
-        (tmp_path / "wrong.py").write_text("role = 42\n")
+        (tmp_path / "wrong.py").write_text("role = 42\n", encoding="utf-8")
         with pytest.raises(TypeError, match="AgentRoleEntry or OfficeRoleEntry"):
             load_roles_dir(tmp_path)
 
     def test_underscore_py_skipped(self, tmp_path):
-        (tmp_path / "__init__.py").write_text("")
+        (tmp_path / "__init__.py").write_text("", encoding="utf-8")
         assert load_roles_dir(tmp_path) == {}
 
     def test_duplicate_stem_md_md(self, tmp_path):
         # Two .md files with the same stem can't co-exist; let's
         # simulate via .md and .py with the same stem.
-        (tmp_path / "x.md").write_text("Send to out.")
+        (tmp_path / "x.md").write_text("Send to out.", encoding="utf-8")
         (tmp_path / "x.py").write_text(
             "from dissyslab.office.library import OfficeRoleEntry\n"
             "role = OfficeRoleEntry(name='x', path='./p')\n"
-        )
+        , encoding="utf-8")
         with pytest.raises(ValueError, match="duplicate"):
             load_roles_dir(tmp_path)
 
@@ -670,7 +670,7 @@ class TestRoleFrontMatter:
             "---\n"
             "# Role: agent\n\n"
             "You answer. Send to out.\n"
-        )
+        , encoding="utf-8")
         lib = load_roles_dir(roles)
         entry = lib["agent"]
         agent = entry()
@@ -690,7 +690,7 @@ class TestRoleFrontMatter:
         (roles / "agent.md").write_text(
             "# Role: agent\n\n"
             "You answer. Send to out.\n"
-        )
+        , encoding="utf-8")
         lib = load_roles_dir(roles)
         # No explicit AI in this file; tell the factory directly.
         agent = lib["agent"](AI="stub-fm-none")
@@ -716,7 +716,7 @@ class TestRoleFrontMatter:
             "---\n"
             "# Role: agent\n\n"
             "You answer. Send to out.\n"
-        )
+        , encoding="utf-8")
         lib = load_roles_dir(roles)
         assert "agent" in lib  # didn't raise
 
@@ -735,7 +735,7 @@ class TestRoleFrontMatter:
             "contract: structured\n"
             "# Role: agent\n\n"
             "You answer. Send to out.\n"
-        )
+        , encoding="utf-8")
         # Should still load; the would-be front matter is treated as
         # part of the prompt body.
         lib = load_roles_dir(roles)
@@ -752,6 +752,6 @@ class TestRoleFrontMatter:
             "---\n"
             "# Role: agent\n\n"
             "Send to out.\n"
-        )
+        , encoding="utf-8")
         with pytest.raises((ValueError,)):
             load_roles_dir(roles)

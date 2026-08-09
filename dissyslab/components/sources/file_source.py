@@ -211,7 +211,7 @@ if __name__ == "__main__":
     
     # Create a test CSV file
     test_csv = "test_data.csv"
-    with open(test_csv, 'w') as f:
+    with open(test_csv, 'w', encoding="utf-8") as f:
         f.write("id,name,age\n")
         f.write("1,Alice,28\n")
         f.write("2,Bob,34\n")
@@ -230,7 +230,7 @@ if __name__ == "__main__":
     
     # Create a test JSON file
     test_json = "test_data.json"
-    with open(test_json, 'w') as f:
+    with open(test_json, 'w', encoding="utf-8") as f:
         json.dump([
             {"id": 1, "name": "Alice", "age": 28},
             {"id": 2, "name": "Bob", "age": 34}
@@ -249,7 +249,7 @@ if __name__ == "__main__":
     
     # Create a test JSONL file
     test_jsonl = "test_data.jsonl"
-    with open(test_jsonl, 'w') as f:
+    with open(test_jsonl, 'w', encoding="utf-8") as f:
         f.write('{"id": 1, "name": "Alice"}\n')
         f.write('{"id": 2, "name": "Bob"}\n')
     

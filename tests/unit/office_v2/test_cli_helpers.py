@@ -31,13 +31,13 @@ from dissyslab.office.cli_helpers import (
 
 def _write_office(office_dir: Path, body: str) -> None:
     office_dir.mkdir(parents=True, exist_ok=True)
-    (office_dir / "office.md").write_text(body)
+    (office_dir / "office.md").write_text(body, encoding="utf-8")
 
 
 def _write_role(office_dir: Path, role_name: str, prompt: str) -> None:
     rl = office_dir / "roles"
     rl.mkdir(parents=True, exist_ok=True)
-    (rl / f"{role_name}.md").write_text(prompt)
+    (rl / f"{role_name}.md").write_text(prompt, encoding="utf-8")
 
 
 def _make_tiny_office(office_dir: Path) -> None:
@@ -86,7 +86,7 @@ class TestCliBuild:
 
     def test_parse_error_returns_one(self, tmp_path, capsys):
         # Missing the # Office: header → ParseError.
-        (tmp_path / "office.md").write_text("Sources: rss\n")
+        (tmp_path / "office.md").write_text("Sources: rss\n", encoding="utf-8")
         rc = cli_build(tmp_path)
         assert rc == 1
         captured = capsys.readouterr()

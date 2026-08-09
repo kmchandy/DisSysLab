@@ -615,7 +615,7 @@ def _load_generated_components():
             name = path.stem.replace(f"_{kind}", "")
             if name in registry:
                 continue
-            code = path.read_text()
+            code = path.read_text(encoding="utf-8")
             match = re.search(r"^class\s+(\w+)", code, re.MULTILINE)
             if not match:
                 continue

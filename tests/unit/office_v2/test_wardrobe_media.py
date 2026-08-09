@@ -35,7 +35,7 @@ def test_resolve_legacy_media_alias(tmp_path: Path) -> None:
 def test_inventory_digest_contains_resolved_upload_url(tmp_path: Path) -> None:
     slug = tmp_path / "my_office_slug"
     slug.mkdir()
-    (slug / "office.md").write_text("# Office: x\nweatherapi()\n")
+    (slug / "office.md").write_text("# Office: x\nweatherapi()\n", encoding="utf-8")
     (slug / "media" / "uploads").mkdir(parents=True)
     (slug / "media" / "uploads" / "snap.jpg").write_bytes(b"a")
     inv = {

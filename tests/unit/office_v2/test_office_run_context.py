@@ -23,7 +23,7 @@ def wardrobe_office_dir(tmp_path: Path) -> Path:
         "# Office: wardrobe_demo\n"
         'Sources: web_scraper(url="https://forecast.weather.gov/MapClick.php?lat=1&lon=2"),\n'
         "weatherapi(key=stub)\n"
-    )
+    , encoding="utf-8")
     return root
 
 
@@ -33,7 +33,7 @@ def test_forecast_digest_skips_when_weatherapi_marker_present(
     """When office declares ``weatherapi(``, NOAA scrape must not prefetch."""
     from dissyslab.office.office_run_context import forecast_digest_for_office_md
 
-    txt = wardrobe_office_dir.joinpath("office.md").read_text()
+    txt = wardrobe_office_dir.joinpath("office.md").read_text(encoding="utf-8")
     assert forecast_digest_for_office_md(txt) == ""
 
 
@@ -44,9 +44,9 @@ def test_wardrobe_inventory_digest_roundtrip(tmp_path: Path) -> None:
 
     d = tmp_path / "wf"
     d.mkdir()
-    (d / "office.md").write_text("# Office: x\nweatherapi()\n")
+    (d / "office.md").write_text("# Office: x\nweatherapi()\n", encoding="utf-8")
     inv = {"items": [{"id": "item_test", "category": "top", "description": "unit"}]}
-    (d / "wardrobe_inventory.json").write_text(json.dumps(inv))
+    (d / "wardrobe_inventory.json").write_text(json.dumps(inv), encoding="utf-8")
     ctx = build_office_run_context_env(d)
     blob = ctx.get("OFFICE_WARDROBE_INVENTORY_DIGEST", "")
     assert "`item_test`" in blob

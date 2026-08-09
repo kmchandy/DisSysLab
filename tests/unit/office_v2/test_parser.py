@@ -388,14 +388,14 @@ class TestParseErrors:
             parse_office_dir(tmp_path)
 
     def test_missing_office_header(self, tmp_path):
-        (tmp_path / "office.md").write_text("Sources: rss\n")
+        (tmp_path / "office.md").write_text("Sources: rss\n", encoding="utf-8")
         with pytest.raises(ParseError, match="missing.*Office.*header"):
             parse_office_dir(tmp_path)
 
     def test_unknown_section(self, tmp_path):
         (tmp_path / "office.md").write_text(
             "# Office: x\n\nWhatever:\n  foo\n"
-        )
+        , encoding="utf-8")
         with pytest.raises(ParseError, match="Unknown section header"):
             parse_office_dir(tmp_path)
 
@@ -403,7 +403,7 @@ class TestParseErrors:
         """``Source:`` (missing 's') hints at ``Sources:``."""
         (tmp_path / "office.md").write_text(
             "# Office: x\n\nSource: hacker_news\n"
-        )
+        , encoding="utf-8")
         with pytest.raises(ParseError) as exc:
             parse_office_dir(tmp_path)
         msg = str(exc.value)
@@ -430,7 +430,7 @@ class TestParseErrors:
             "Connections:\n"
             "hacker_news's destination is Alex.\n"
             "Alex's brief is hacker_news.\n"
-        )
+        , encoding="utf-8")
         spec = parse_office_dir(tmp_path)
         assert spec.name == "comment_test"
         assert [s.name for s in spec.sources] == ["hacker_news"]
@@ -450,7 +450,7 @@ class TestParseErrors:
             "Connections:\n"
             "hacker_news's destination is Alex.\n"
             "Alex's briefing is console_printer.\n"
-        )
+        , encoding="utf-8")
         spec = parse_office_dir(tmp_path)
         assert spec.name == "wardrobe_yaml_fm"
 
@@ -464,7 +464,7 @@ class TestParseErrors:
     def test_bad_kw_arg(self, tmp_path):
         (tmp_path / "office.md").write_text(
             "# Office: x\n\nSources: rss(arg=undefined_identifier)\n"
-        )
+        , encoding="utf-8")
         with pytest.raises(ParseError, match="Python literal"):
             parse_office_dir(tmp_path)
 
@@ -489,7 +489,7 @@ class TestAgentKwargs:
             "Connections:\n"
             "hacker_news's destination is Alex.\n"
             "Alex's briefing is discard.\n"
-        )
+        , encoding="utf-8")
         spec = parse_office_dir(tmp_path)
         assert spec.agents[0].args == ()
 
@@ -502,7 +502,7 @@ class TestAgentKwargs:
             "Connections:\n"
             "hacker_news's destination is Sasha.\n"
             "Sasha's out is discard.\n"
-        )
+        , encoding="utf-8")
         spec = parse_office_dir(tmp_path)
         sasha = spec.agents[0]
         assert sasha.role_name == "deduplicator"
@@ -519,7 +519,7 @@ class TestAgentKwargs:
             "Connections:\n"
             "hacker_news's destination is Felix.\n"
             "Felix's out is discard.\n"
-        )
+        , encoding="utf-8")
         spec = parse_office_dir(tmp_path)
         felix = spec.agents[0]
         assert felix.role_name == "keyword_filter"
@@ -534,6 +534,6 @@ class TestAgentKwargs:
             "Sources: hacker_news\n"
             "Sinks: discard\n\n"
             "Agents:\nSasha is a deduplicator(by=undefined_ident).\n"
-        )
+        , encoding="utf-8")
         with pytest.raises(ParseError, match="Python literal"):
             parse_office_dir(tmp_path)

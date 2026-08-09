@@ -29,13 +29,13 @@ from dissyslab.office.codegen import emit_run_py, render_run_py
 
 def _write(office_dir: Path, body: str) -> None:
     office_dir.mkdir(parents=True, exist_ok=True)
-    (office_dir / "office.md").write_text(body)
+    (office_dir / "office.md").write_text(body, encoding="utf-8")
 
 
 def _write_role(office_dir: Path, role_name: str, prompt: str) -> None:
     rl = office_dir / "roles"
     rl.mkdir(parents=True, exist_ok=True)
-    (rl / f"{role_name}.md").write_text(prompt)
+    (rl / f"{role_name}.md").write_text(prompt, encoding="utf-8")
 
 
 # ── Closed-office happy path ──────────────────────────────────────────
@@ -96,7 +96,7 @@ class TestClosedOffice:
         assert out.exists()
         assert (office_dir / "build" / "__init__.py").exists()
         # The text on disk equals what render_run_py returned.
-        assert out.read_text() == render_run_py(office_dir)
+        assert out.read_text(encoding="utf-8") == render_run_py(office_dir)
 
 
 # ── Connection comments ───────────────────────────────────────────────
