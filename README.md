@@ -257,8 +257,9 @@ and patterns beyond the shipped slate.
 
 Every specialist agent runs in its own thread by default. 
 The framework manages messages between agents.
-You can also run each agent in its own OS process if your
-app is CPU intensive.
+Process-level parallelism is planned at the granularity of a whole
+office rather than a single agent; per-agent process mode
+(`dsl run --processes`) does not work yet — see Current limitations.
 
 DisSysLab has no Python DAG definition step unlike some other
 frameworks. Moreover, the network of agents need not be a DAG — it
@@ -273,11 +274,15 @@ files and executes the app.
 What DisSysLab does **not** do in this release, named honestly so
 new users do not infer promises the framework does not keep:
 
-- **Single machine.** An office either runs in one process with each agent
-  in its own thread or you can specify that each agent runs in its own process.
-  The current implementation does not allow you to select some agents to run
-  in threads and others as separate processes.  Multi-machine
-  distribution is on the v2.x roadmap. 
+- **Single machine; threads within an office.** Today an office runs in a
+  single process with each agent in its own thread. Per-agent process
+  parallelism (`dsl run --processes`) does not currently work on any
+  platform — agents hold un-picklable queues and closures, so spawning a
+  process per agent fails. The intended unit of process parallelism is a
+  whole office, not a single agent, which also composes with cross-office
+  termination detection and snapshots; see
+  [`docs/internals/process_parallelism_decision.md`](docs/internals/process_parallelism_decision.md).
+  Multi-machine distribution is on the v2.x roadmap.
 - **Checkpoint-recovery is opt-in.** New in v1.6, the framework
   implements the Chandy-Lamport distributed snapshot algorithm;
   the `recovery_demo` gallery office demonstrates the protocol

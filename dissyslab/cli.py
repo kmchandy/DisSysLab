@@ -801,6 +801,40 @@ def cmd_list(args: argparse.Namespace) -> int:
 
 # ── Subcommand: init ──────────────────────────────────────────────────────────
 
+def _office_uses_llm_roles(office_dir: Path) -> bool:
+    """Whether an office references any natural-language (LLM-backed) role.
+
+    Natural-language roles come from ``.md`` role files (``nl_role``); ``.py``
+    role files are deterministic and need no model backend. A role name
+    resolves against the office's own ``roles/`` directory first, then the
+    framework's built-in ``dissyslab/roles/`` library, so a local ``.py`` role
+    shadowing a built-in ``.md`` counts as deterministic.
+
+    Errs toward ``True`` (assume a key is needed) when the office cannot be
+    parsed, so a genuine key requirement is never silently hidden.
+    """
+    try:
+        from dissyslab.office.parser import parse_office_dir
+        from dissyslab.office._internals import _builtin_roles_dir
+        spec = parse_office_dir(Path(office_dir))
+    except Exception:
+        return True
+    local = Path(office_dir) / "roles"
+    builtin = _builtin_roles_dir()
+    for ref in spec.agents:
+        # A sub-office may hide LLM roles we cannot cheaply inspect here.
+        if getattr(ref, "path", None):
+            return True
+        name = ref.role_name
+        if (local / f"{name}.py").exists():
+            continue  # deterministic local role
+        if (local / f"{name}.md").exists():
+            return True  # local natural-language role
+        if (builtin / f"{name}.md").exists():
+            return True  # built-in natural-language role
+    return False
+
+
 def cmd_init(args: argparse.Namespace) -> int:
     """Copy a gallery office into a new folder the user owns."""
     source = _find_packaged_office(args.office_name)
@@ -833,7 +867,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     print("Next steps:")
     print(f"  cd {target}")
     print("  dsl run .")
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    if _office_uses_llm_roles(target) and not os.environ.get("ANTHROPIC_API_KEY"):
         print()
         print("Tip: this office needs ANTHROPIC_API_KEY to run.")
         print("     Put it in a .env file in your office folder, or export")

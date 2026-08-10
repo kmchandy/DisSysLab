@@ -376,7 +376,7 @@ office's `roles/` folder:
 
 ```python
 # my_office/roles/correspondent_slm.py
-from dissyslab.office_v2 import nl_role
+from dissyslab.office import nl_role
 
 role = nl_role(
     prompt="""You are a correspondent. You receive an article and

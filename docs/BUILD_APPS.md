@@ -558,7 +558,7 @@ running average — write the role as a Python file in
 
 ```python
 # my_office/roles/extract_ticker.py
-from dissyslab.office_v2 import AgentRoleEntry
+from dissyslab.office import AgentRoleEntry
 from dissyslab.blocks.role import Role
 import re
 
