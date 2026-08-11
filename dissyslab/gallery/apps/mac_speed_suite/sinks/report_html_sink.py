@@ -188,6 +188,8 @@ class ReportHtmlSink:
 
 {self._walk_forward_section(msg)}
 
+{self._monte_carlo_section(msg)}
+
 <h2>Full-Window Comparison (whole history, in-sample)</h2>
 {self._portfolio_table(portfolio_variants, portfolio_stats)}
 
@@ -334,6 +336,43 @@ class ReportHtmlSink:
             "<table><thead><tr><th>Rank</th><th>Strategy / Variant</th>"
             "<th>OOS Sharpe</th><th>In-sample Sharpe</th>"
             "<th>OOS Return</th><th>In-sample Return</th></tr></thead>"
+            f"<tbody>{''.join(rows)}</tbody></table>"
+        )
+
+    def _monte_carlo_section(self, msg: Dict[str, Any]) -> str:
+        mc = msg.get("monte_carlo") or {}
+        ranked = mc.get("ranked_by_median") or []
+        per = mc.get("per_variant") or {}
+        if not ranked:
+            return ""
+        n = mc.get("n_samples")
+        rows = []
+        for pos, v in enumerate(ranked, start=1):
+            d = per.get(v, {})
+            css = ' class="best-row"' if pos == 1 else ""
+            band = f"{_pct(d.get('return_p5'))} &hellip; {_pct(d.get('return_p95'))}"
+            pl = d.get("prob_loss")
+            pl_str = f"{pl * 100:.0f}%" if isinstance(pl, (int, float)) else "n/a"
+            rows.append(
+                f'<tr{css}><td>{pos}</td><td>{html.escape(_label(v))}</td>'
+                f'<td>{_pct(d.get("return_p50"))}</td>'
+                f'<td>{band}</td>'
+                f'<td>{_num(d.get("sharpe_p50"))}</td>'
+                f'<td>{_pct(d.get("drawdown_worst"))}</td>'
+                f'<td>{pl_str}</td></tr>'
+            )
+        return (
+            "<h2>Monte Carlo robustness</h2>"
+            f"<p>Each variant run over {n} seeded block-bootstrap resamples of the "
+            "history &mdash; plausible alternative paths that preserve short-run "
+            "autocorrelation and the daily cross-section. The spread shows how much "
+            "of the result is luck: a wide 5th&ndash;95th band, a poor worst-case "
+            "drawdown, or a high probability of loss means the single backtest "
+            "number is fragile.</p>"
+            "<table><thead><tr><th>Rank</th><th>Strategy / Variant</th>"
+            "<th>Median Return</th><th>5th&ndash;95th Return</th>"
+            "<th>Median Sharpe</th><th>Worst-case Drawdown</th>"
+            "<th>Prob. of Loss</th></tr></thead>"
             f"<tbody>{''.join(rows)}</tbody></table>"
         )
 

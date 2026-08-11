@@ -43,6 +43,24 @@ tickers — edit that list, re-run the downloader (it reads the same list, so it
 fetches exactly what the office uses), then `dsl run .`. The office and the
 downloader read the one list, so they can't drift.
 
+## Validation: walk-forward and Monte Carlo
+
+By default the office runs **walk-forward out-of-sample validation**: it ranks
+the variants on earlier windows and measures them on later windows they had no
+part in choosing, so the report's headline is the out-of-sample ranking. Change
+the number of folds with `window_gate(n_folds=...)` in `office.md`.
+
+To run a **Monte Carlo robustness** pass instead, swap the gate line in
+`office.md`:
+
+    GATE is a monte_carlo_gate(n_samples=200).
+
+Everything else stays the same -- that is the point: the same in-office loop with
+a resampled bank instead of time slices. The report then shows an outcome
+distribution per variant (median return, a 5th-95th band, worst-case drawdown,
+and probability of loss), so you can see how much of the result is luck. More
+samples give a smoother distribution but take longer.
+
 ## Add a strategy
 
 Add one role file under `roles/` (a per-day compute function plus a small

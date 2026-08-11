@@ -22,6 +22,8 @@ Sources: csv_stock_history(tickers=['AMD', 'NFLX', 'NVDA', 'PLTR', 'TSLA'], dire
 Sinks: console_printer, report_html(path="report.html")
 
 Agents:
+# For a Monte Carlo robustness pass instead of walk-forward, replace the next
+# line with:  GATE is a monte_carlo_gate(n_samples=200).
 GATE is a window_gate(n_folds=4).
 MKT is a market_context.
 MAC_SIGNAL is a mac_signal.

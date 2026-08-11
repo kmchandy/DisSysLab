@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Backtest Report</title>
+<title>Trend-Following Strategy Suite — Backtest Report</title>
 <style>
   body { font-family: -apple-system, Helvetica, Arial, sans-serif; max-width: 950px;
          margin: 40px auto; padding: 0 20px; color: #1a1a1a; line-height: 1.5; }
@@ -28,7 +28,7 @@
 </head>
 <body>
 
-<h1>Backtest Report</h1>
+<h1>Trend-Following Strategy Suite — Backtest Report</h1>
 <p class="subtitle">Backtest of 11 strategy variant(s) on real daily price data &middot; generated 2026-08-11</p>
 
 <div class="banner">
@@ -48,6 +48,8 @@
 </div>
 
 <h2>Walk-Forward (out-of-sample) validation</h2><p>Each variant ranked over 4 expanding train/test fold(s): ranked on an earlier window, then measured on a later window it had no part in choosing. <strong>Out-of-sample</strong> is the number to trust &mdash; a variant whose out-of-sample Sharpe falls well short of its in-sample Sharpe was likely overfit. The full-window tables below are in-sample (the whole history), shown for detail.</p><table><thead><tr><th>Rank</th><th>Strategy / Variant</th><th>OOS Sharpe</th><th>In-sample Sharpe</th><th>OOS Return</th><th>In-sample Return</th></tr></thead><tbody><tr class="best-row"><td>1</td><td>RS · fast</td><td>1.15</td><td>1.56</td><td>+11.5%</td><td>+15.6%</td></tr><tr><td>2</td><td>RS · slow</td><td>1.13</td><td>1.50</td><td>+11.3%</td><td>+15.0%</td></tr><tr><td>3</td><td>MAC · slow</td><td>0.83</td><td>1.18</td><td>+8.3%</td><td>+11.8%</td></tr><tr><td>4</td><td>Equal blend (all variants)</td><td>0.72</td><td>0.92</td><td>+5.4%</td><td>+6.9%</td></tr><tr><td>5</td><td>TURTLE · s1</td><td>0.45</td><td>0.57</td><td>+4.5%</td><td>+5.7%</td></tr><tr><td>6</td><td>MAC · med slow</td><td>0.42</td><td>0.70</td><td>+4.2%</td><td>+7.0%</td></tr><tr><td>7</td><td>MAC · med fast</td><td>0.40</td><td>0.13</td><td>+4.0%</td><td>+1.3%</td></tr><tr><td>8</td><td>MAC · med</td><td>0.39</td><td>0.49</td><td>+3.9%</td><td>+4.9%</td></tr><tr><td>9</td><td>TURTLE · s2</td><td>0.39</td><td>0.57</td><td>+3.9%</td><td>+5.7%</td></tr><tr><td>10</td><td>DONCHIAN · 55</td><td>0.36</td><td>0.69</td><td>+3.6%</td><td>+6.9%</td></tr><tr><td>11</td><td>MAC · fast</td><td>0.22</td><td>-0.08</td><td>+2.2%</td><td>-0.8%</td></tr><tr><td>12</td><td>DONCHIAN · 20</td><td>0.05</td><td>0.24</td><td>+0.5%</td><td>+2.4%</td></tr></tbody></table>
+
+
 
 <h2>Full-Window Comparison (whole history, in-sample)</h2>
 <table><thead><tr><th>Rank</th><th>Strategy / Variant</th><th>Ann. Return</th><th>Ann. Volatility</th><th>Sharpe</th><th>Max Drawdown</th><th>Calmar</th><th>Sortino</th><th>Turnover</th></tr></thead><tbody><tr class="best-row"><td>1</td><td>RS · slow</td><td>+14.0%</td><td>+10.0%</td><td>1.40</td><td>-14.3%</td><td>0.98</td><td>2.14</td><td>596.0</td></tr><tr><td>2</td><td>RS · fast</td><td>+13.0%</td><td>+10.0%</td><td>1.30</td><td>-18.6%</td><td>0.70</td><td>2.03</td><td>888.0</td></tr><tr><td>3</td><td>MAC · slow</td><td>+10.4%</td><td>+10.0%</td><td>1.04</td><td>-12.3%</td><td>0.85</td><td>1.51</td><td>197.0</td></tr><tr><td>4</td><td>Equal blend (all variants)</td><td>+6.2%</td><td>+7.5%</td><td>0.83</td><td>-11.6%</td><td>0.54</td><td>1.20</td><td class="muted">n/a</td></tr><tr><td>5</td><td>TURTLE · s2</td><td>+5.7%</td><td>+10.0%</td><td>0.57</td><td>-17.5%</td><td>0.33</td><td>0.83</td><td>273.0</td></tr><tr><td>6</td><td>MAC · med slow</td><td>+5.7%</td><td>+10.0%</td><td>0.57</td><td>-17.3%</td><td>0.33</td><td>0.80</td><td>419.0</td></tr><tr><td>7</td><td>DONCHIAN · 55</td><td>+5.6%</td><td>+10.0%</td><td>0.56</td><td>-25.6%</td><td>0.22</td><td>0.78</td><td>187.0</td></tr><tr><td>8</td><td>TURTLE · s1</td><td>+4.6%</td><td>+10.0%</td><td>0.46</td><td>-13.0%</td><td>0.36</td><td>0.67</td><td>492.0</td></tr><tr><td>9</td><td>MAC · med</td><td>+3.7%</td><td>+10.0%</td><td>0.37</td><td>-12.0%</td><td>0.31</td><td>0.53</td><td>849.0</td></tr><tr><td>10</td><td>MAC · med fast</td><td>+2.3%</td><td>+10.0%</td><td>0.23</td><td>-17.4%</td><td>0.13</td><td>0.32</td><td>1727.0</td></tr><tr><td>11</td><td>DONCHIAN · 20</td><td>+1.0%</td><td>+10.0%</td><td>0.10</td><td>-17.6%</td><td>0.05</td><td>0.13</td><td>559.0</td></tr><tr><td>12</td><td>MAC · fast</td><td>+0.9%</td><td>+10.0%</td><td>0.09</td><td>-17.5%</td><td>0.05</td><td>0.13</td><td>3373.0</td></tr></tbody></table>

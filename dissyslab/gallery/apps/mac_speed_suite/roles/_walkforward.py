@@ -39,6 +39,7 @@ so the comparator can label each evaluation.
 
 from __future__ import annotations
 
+import random
 from typing import Any, Dict, List, Optional, Tuple
 
 from dissyslab.core import Agent
@@ -150,6 +151,123 @@ def aggregate_scorecard(
     }
 
 
+# ── Monte Carlo: same machine, resampled bank ─────────────────────────
+
+
+def resample_history(
+    full_msg: Dict[str, Any], seed: int, block_size: int = 20
+) -> Dict[str, Any]:
+    """A block-bootstrap resample of the price history, for Monte Carlo.
+
+    Resamples blocks of consecutive days from the shared date grid -- the SAME
+    days for every ticker -- so short-run autocorrelation and the daily
+    cross-section (which relative strength depends on) are both preserved. Each
+    ticker's daily return and intraday shape (open/high/low relative to close)
+    for the chosen source day are replayed onto a synthetic, monotonically
+    dated price path. Seeded: a given seed always yields the same resample.
+    """
+    history = full_msg.get("history", {}) or {}
+    all_dates = _all_dates(history)
+    n = len(all_dates)
+    if n < 2:
+        return {"type": full_msg.get("type", "stock_history"),
+                "tickers": full_msg.get("tickers", []), "history": dict(history)}
+
+    # Per-ticker shape by source date: (return, open/close, high/close,
+    # low/close, volume).
+    shapes: Dict[str, Dict[str, Tuple[float, float, float, float, float]]] = {}
+    for t, bars in history.items():
+        ub = [b for b in bars if b.get("close") is not None]
+        if len(ub) < 2:
+            continue
+        by_date: Dict[str, Tuple[float, float, float, float, float]] = {}
+        for i in range(1, len(ub)):
+            prev_c, c = ub[i - 1]["close"], ub[i]["close"]
+            if not prev_c or not c:
+                continue
+            by_date[ub[i]["date"]] = (
+                c / prev_c - 1.0,
+                (ub[i].get("open") or c) / c,
+                (ub[i].get("high") or c) / c,
+                (ub[i].get("low") or c) / c,
+                ub[i].get("volume") or 0,
+            )
+        if by_date:
+            shapes[t] = by_date
+
+    rng = random.Random(seed)
+    hi = max(0, n - block_size)
+    seq: List[int] = []
+    while len(seq) < n:
+        start = rng.randint(0, hi)
+        seq.extend(range(start, min(start + block_size, n)))
+    seq = seq[:n]
+
+    new_history: Dict[str, List[dict]] = {}
+    for t, by_date in shapes.items():
+        prev_close = 100.0
+        bars = []
+        for j, si in enumerate(seq):
+            shape = by_date.get(all_dates[si])
+            if shape is None:      # ticker not trading on that source day
+                continue
+            ret, o_r, h_r, l_r, vol = shape
+            close = prev_close * (1.0 + ret)
+            prev_close = close
+            bars.append({
+                "date": f"S{j:05d}", "open": close * o_r, "high": close * h_r,
+                "low": close * l_r, "close": close, "volume": vol,
+            })
+        if len(bars) >= 2:
+            new_history[t] = bars
+
+    return {"type": full_msg.get("type", "stock_history"),
+            "tickers": list(new_history.keys()), "history": new_history}
+
+
+def _percentile(values: List[Optional[float]], q: float) -> Optional[float]:
+    nums = sorted(v for v in values if isinstance(v, (int, float)))
+    if not nums:
+        return None
+    idx = min(len(nums) - 1, max(0, int(round(q * (len(nums) - 1)))))
+    return nums[idx]
+
+
+def aggregate_distribution(mc_evals: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Per-variant outcome distribution across the Monte Carlo resamples: the
+    median and a 5th-95th band on annualized return, the median Sharpe, a
+    worst-case (5th-percentile) drawdown, and the probability of a losing
+    outcome. Ranked by median return."""
+    variants: Dict[str, None] = {}
+    for e in mc_evals:
+        for v in (e.get("portfolio_stats", {}) or {}):
+            variants.setdefault(v, None)
+
+    def col(v, key):
+        return [e.get("portfolio_stats", {}).get(v, {}).get(key) for e in mc_evals]
+
+    per: Dict[str, Dict[str, Optional[float]]] = {}
+    for v in variants:
+        rets = col(v, "annualized_return")
+        nums = [x for x in rets if isinstance(x, (int, float))]
+        per[v] = {
+            "return_p5":  _percentile(rets, 0.05),
+            "return_p50": _percentile(rets, 0.50),
+            "return_p95": _percentile(rets, 0.95),
+            "sharpe_p50": _percentile(col(v, "sharpe_ratio"), 0.50),
+            "drawdown_worst": _percentile(col(v, "max_drawdown"), 0.05),
+            "prob_loss": (sum(1 for x in nums if x < 0) / len(nums)) if nums else None,
+        }
+
+    def median_return(v):
+        m = per[v]["return_p50"]
+        return m if isinstance(m, (int, float)) else float("-inf")
+
+    ranked = sorted(per, key=median_return, reverse=True)
+    return {"per_variant": per, "ranked_by_median": ranked,
+            "n_samples": len(mc_evals)}
+
+
 # ── Stateful agents (thin run() wrappers over testable step methods) ──
 
 
@@ -198,6 +316,50 @@ class _WindowGate(Agent):
             # so os_agent can poll us and shut the office down cleanly.
 
 
+class _MonteCarloGate(Agent):
+    """Release a full-history span, then ``n_samples`` seeded block-bootstrap
+    resamples of it, one per signal -- the same loop as WINDOW_GATE, but the
+    bank is resampled histories instead of time slices. Drop-in replacement:
+    same wiring, same comparator (which builds a distribution from the
+    ``mc``-tagged spans), same pipeline."""
+
+    def __init__(self, n_samples: int = 200, seed: int = 42,
+                 block_size: int = 20, name=None):
+        super().__init__(name=name, inports=["in_"], outports=["out_"])
+        self._n = n_samples
+        self._seed = seed
+        self._block = block_size
+        self._full: Optional[Dict[str, Any]] = None
+        self._cursor = 0
+
+    def next_span(self, msg: Any) -> Optional[Dict[str, Any]]:
+        if self._full is None and isinstance(msg, dict) and msg.get("history"):
+            self._full = msg
+            self._cursor = 0
+        if self._full is None:
+            return None
+        total = 1 + self._n
+        if self._cursor >= total:
+            return None
+        i = self._cursor
+        self._cursor += 1
+        if i == 0:
+            span = dict(self._full)      # full-history span (detailed report)
+            span["_wf_tag"] = {"fold": "full", "role": "full", "total_spans": total}
+        else:
+            span = resample_history(self._full, seed=self._seed + i,
+                                    block_size=self._block)
+            span["_wf_tag"] = {"fold": i - 1, "role": "mc", "total_spans": total}
+        return span
+
+    def run(self) -> None:
+        while True:
+            msg = self.recv("in_")
+            span = self.next_span(msg)
+            if span is not None:
+                self.send(span, "out_")
+
+
 class _Comparator(Agent):
     """Accumulate each span's evaluation; loop the gate until the schedule is
     done, then emit the out-of-sample scorecard to the report.
@@ -211,6 +373,7 @@ class _Comparator(Agent):
         self._full_eval: Optional[Dict[str, Any]] = None
         self._train: List[Dict[str, Any]] = []
         self._test: List[Dict[str, Any]] = []
+        self._mc: List[Dict[str, Any]] = []
         self._count = 0
         self._total: Optional[int] = None
 
@@ -229,10 +392,15 @@ class _Comparator(Agent):
             self._train.append(msg)
         elif role == "test":
             self._test.append(msg)
+        elif role == "mc":
+            self._mc.append(msg)
 
         if self._total is not None and self._count >= self._total:
             base = dict(self._full_eval or msg)   # renders the detailed report
-            base["walk_forward"] = aggregate_scorecard(self._train, self._test)
+            if self._train or self._test:
+                base["walk_forward"] = aggregate_scorecard(self._train, self._test)
+            if self._mc:
+                base["monte_carlo"] = aggregate_distribution(self._mc)
             return ("scorecard", base)
         return ("next", {"walkforward_next": True})
 

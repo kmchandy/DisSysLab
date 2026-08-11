@@ -16,9 +16,12 @@ from __future__ import annotations
 
 from dissyslab.gallery.apps.mac_speed_suite.roles._walkforward import (
     _Comparator,
+    _MonteCarloGate,
     _WindowGate,
+    aggregate_distribution,
     aggregate_scorecard,
     build_schedule,
+    resample_history,
     slice_history,
 )
 
@@ -117,3 +120,62 @@ def test_comparator_loops_until_schedule_done_then_scorecards():
     # the scorecard also carries the full-window fields so the detailed report
     # still renders
     assert "table" in out and "correlation" in out
+
+
+# ── Monte Carlo (D4): same machine, resampled bank ────────────────────
+
+
+def test_resample_is_deterministic_and_produces_valid_bars():
+    hist = {"A": [{"date": f"2020-{m:02d}-01", "open": 10 + i, "high": 11 + i,
+                   "low": 9 + i, "close": 10 + i, "volume": 100}
+                  for i, m in enumerate(range(1, 13))]}
+    full = {"type": "stock_history", "tickers": ["A"], "history": hist}
+    a = resample_history(full, seed=3, block_size=3)
+    b = resample_history(full, seed=3, block_size=3)
+    c = resample_history(full, seed=4, block_size=3)
+    ca = [x["close"] for x in a["history"]["A"]]
+    assert ca == [x["close"] for x in b["history"]["A"]]     # same seed -> identical
+    assert ca != [x["close"] for x in c["history"]["A"]]     # different seed -> different
+    for bar in a["history"]["A"]:
+        assert bar["low"] <= bar["close"] <= bar["high"] and bar["close"] > 0
+
+
+def test_aggregate_distribution_percentiles_and_prob_of_loss():
+    def ev(r, s):
+        return {"portfolio_stats": {"x": {"annualized_return": r, "sharpe_ratio": s,
+                                          "max_drawdown": -0.2}}}
+    evals = [ev(-0.1, -0.5), ev(0.0, 0.0), ev(0.1, 1.0), ev(0.2, 1.5), ev(0.3, 2.0)]
+    d = aggregate_distribution(evals)["per_variant"]["x"]
+    assert d["return_p50"] == 0.1
+    assert d["return_p5"] == -0.1 and d["return_p95"] == 0.3
+    assert abs(d["prob_loss"] - 0.2) < 1e-9   # exactly one of five outcomes < 0
+    assert d["sharpe_p50"] == 1.0
+
+
+def test_monte_carlo_gate_emits_full_then_samples_then_none():
+    hist = {"A": [{"date": f"d{i:02d}", "open": 1, "high": 1, "low": 1,
+                   "close": 1 + i, "volume": 0} for i in range(10)]}
+    full = {"type": "stock_history", "tickers": ["A"], "history": hist}
+    g = _MonteCarloGate(n_samples=3, seed=1, block_size=3)
+    roles = [g.next_span(full)["_wf_tag"]["role"]]
+    for _ in range(3):
+        roles.append(g.next_span({"walkforward_next": True})["_wf_tag"]["role"])
+    assert roles == ["full", "mc", "mc", "mc"]
+    assert g.next_span({"walkforward_next": True}) is None
+
+
+def test_comparator_builds_a_distribution_from_mc_spans():
+    comp = _Comparator()
+
+    def ev(role, r):
+        return {"_wf_tag": {"role": role, "total_spans": 3},
+                "portfolio_stats": {"x": {"annualized_return": r, "sharpe_ratio": 1.0,
+                                          "max_drawdown": -0.1}},
+                "table": {}, "correlation": {}}
+
+    assert comp.accept(ev("full", 0.1))[0] == "next"
+    assert comp.accept(ev("mc", 0.2))[0] == "next"
+    kind, out = comp.accept(ev("mc", 0.0))
+    assert kind == "scorecard"
+    assert "monte_carlo" in out and out["monte_carlo"]["n_samples"] == 2
+    assert out["monte_carlo"]["ranked_by_median"] == ["x"]
