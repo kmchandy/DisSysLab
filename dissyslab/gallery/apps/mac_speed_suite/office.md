@@ -22,9 +22,11 @@ Sources: csv_stock_history(tickers=['AMD', 'NFLX', 'NVDA', 'PLTR', 'TSLA'], dire
 Sinks: console_printer, report_html(path="report.html")
 
 Agents:
+MKT is a market_context.
 MAC_SIGNAL is a mac_signal.
 DONCHIAN_SIGNAL is a donchian_signal.
 TURTLE_SIGNAL is a turtle_signal.
+RS_SIGNAL is a rs_trend.
 
 BT_MAC_FAST is a backtester(speed_name='mac_fast').
 BT_MAC_MED_FAST is a backtester(speed_name='mac_med_fast').
@@ -35,16 +37,21 @@ BT_DON_20 is a backtester(speed_name='donchian_20').
 BT_DON_55 is a backtester(speed_name='donchian_55').
 BT_TURTLE_S1 is a backtester(speed_name='turtle_s1').
 BT_TURTLE_S2 is a backtester(speed_name='turtle_s2').
+BT_RS_FAST is a backtester(speed_name='rs_fast').
+BT_RS_SLOW is a backtester(speed_name='rs_slow').
 
-JOIN is a synchronizer(inports=['mac_fast', 'mac_med_fast', 'mac_med', 'mac_med_slow', 'mac_slow', 'donchian_20', 'donchian_55', 'turtle_s1', 'turtle_s2']).
+JOIN is a synchronizer(inports=['mac_fast', 'mac_med_fast', 'mac_med', 'mac_med_slow', 'mac_slow', 'donchian_20', 'donchian_55', 'turtle_s1', 'turtle_s2', 'rs_fast', 'rs_slow']).
 EVAL is a evaluator.
 
 Connections:
-csv_stock_history's out are MAC_SIGNAL, DONCHIAN_SIGNAL and TURTLE_SIGNAL.
+csv_stock_history's out is MKT.
+
+MKT's out are MAC_SIGNAL, DONCHIAN_SIGNAL, TURTLE_SIGNAL and RS_SIGNAL.
 
 MAC_SIGNAL's out are BT_MAC_FAST, BT_MAC_MED_FAST, BT_MAC_MED, BT_MAC_MED_SLOW and BT_MAC_SLOW.
 DONCHIAN_SIGNAL's out are BT_DON_20 and BT_DON_55.
 TURTLE_SIGNAL's out are BT_TURTLE_S1 and BT_TURTLE_S2.
+RS_SIGNAL's out are BT_RS_FAST and BT_RS_SLOW.
 
 BT_MAC_FAST's out is JOIN's mac_fast.
 BT_MAC_MED_FAST's out is JOIN's mac_med_fast.
@@ -55,6 +62,8 @@ BT_DON_20's out is JOIN's donchian_20.
 BT_DON_55's out is JOIN's donchian_55.
 BT_TURTLE_S1's out is JOIN's turtle_s1.
 BT_TURTLE_S2's out is JOIN's turtle_s2.
+BT_RS_FAST's out is JOIN's rs_fast.
+BT_RS_SLOW's out is JOIN's rs_slow.
 
 JOIN's out is EVAL.
 EVAL's out are console_printer and report_html.

@@ -81,9 +81,29 @@ Output message shape:
     }
 """
 
+import inspect
 from typing import Any, Callable, Dict, List, Optional
 
 TRADING_DAYS_PER_YEAR = 252.0
+
+
+def _accepts_context(fn: Callable) -> bool:
+    """Whether a strategy's compute function opts into cross-sectional
+    context. Existing per-ticker strategies keep the two-argument signature
+    ``(bars, params)`` and are called exactly as before; a strategy that
+    declares ``(bars, params, context)`` (or a ``context`` keyword) is handed
+    a per-ticker context dict (market series + this ticker's relative-strength
+    rank/percentile), enabling relative-strength rules without touching any
+    other strategy or the shared machinery downstream."""
+    try:
+        params = list(inspect.signature(fn).parameters.values())
+    except (TypeError, ValueError):
+        return False
+    if any(p.name == "context" for p in params):
+        return True
+    positional = [p for p in params
+                  if p.kind in (p.POSITIONAL_ONLY, p.POSITIONAL_OR_KEYWORD)]
+    return len(positional) >= 3
 
 
 def _daily_returns(closes: List[float]) -> List[Optional[float]]:
@@ -124,9 +144,14 @@ def make_signal_computer(
             function -- see module docstring's 3-part contract.
     """
 
+    accepts_context = _accepts_context(compute_variant_signal)
+
     def signal_computer(msg: Dict[str, Any]):
         """Worker body: (message) -> [(message, outport_name), ...]."""
         history = msg.get("history", {}) or {}
+        context = msg.get("context") or {}
+        market_return_by_date = context.get("market_return_by_date", {}) or {}
+        context_per_ticker = context.get("per_ticker", {}) or {}
         series: Dict[str, dict] = {}
         ticker_volatility: Dict[str, float] = {}
         variant_names = [f"{strategy_name}_{v}" for v in variants]
@@ -142,11 +167,32 @@ def make_signal_computer(
             dates = [b["date"] for b in usable_bars]
             returns = _daily_returns(closes)
 
+            # Per-ticker cross-sectional context, aligned to THIS ticker's
+            # usable bars by date so signal[t] and context[t] index the same
+            # day. Built only for strategies that opted in; MARKET_CONTEXT
+            # upstream computes the values causally.
+            ticker_context: Optional[Dict[str, Any]] = None
+            if accepts_context and context:
+                tp = context_per_ticker.get(ticker, {})
+                rank_by_date = tp.get("rs_rank_by_date", {})
+                pct_by_date = tp.get("rs_percentile_by_date", {})
+                rel_by_date = tp.get("rel_strength_by_date", {})
+                ticker_context = {
+                    "market_returns": [market_return_by_date.get(d) for d in dates],
+                    "rs_rank":        [rank_by_date.get(d) for d in dates],
+                    "rs_percentile":  [pct_by_date.get(d) for d in dates],
+                    "rel_strength":   [rel_by_date.get(d) for d in dates],
+                    "n_tickers":      context.get("n_tickers"),
+                    "lookback":       context.get("lookback"),
+                }
+
             signals: Dict[str, List[float]] = {}
             for variant_name, params in variants.items():
-                signals[f"{strategy_name}_{variant_name}"] = (
-                    compute_variant_signal(usable_bars, params)
-                )
+                if accepts_context:
+                    sig = compute_variant_signal(usable_bars, params, ticker_context)
+                else:
+                    sig = compute_variant_signal(usable_bars, params)
+                signals[f"{strategy_name}_{variant_name}"] = sig
 
             series[ticker] = {
                 "dates": dates,
