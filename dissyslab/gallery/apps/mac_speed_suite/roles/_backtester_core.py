@@ -126,6 +126,8 @@ def make_backtester(speed_name: str) -> Callable[[Dict[str, Any]], list]:
         """Worker body: (message) -> [(message, outport_name), ...]."""
         series = msg.get("series", {}) or {}
         per_ticker_returns: Dict[str, list] = {}
+        per_ticker_days_in_market: Dict[str, int] = {}
+        per_ticker_turnover: Dict[str, float] = {}
 
         for ticker, data in series.items():
             returns = data.get("returns", [])
@@ -139,6 +141,9 @@ def make_backtester(speed_name: str) -> Callable[[Dict[str, Any]], list]:
             # Day 0: no prior-day signal exists yet, so no position is
             # held and the strategy return is 0 by definition.
             strat_returns = [0.0]
+            days_in_market = 0     # trading days holding a non-zero position
+            turnover = 0.0         # sum of |position change|, entry from flat
+            prev_position = 0.0
             for t in range(1, len(returns)):
                 prior_signal = signal[t - 1]   # decided at close of day t-1
                 today_return = returns[t]      # day t's actual return
@@ -146,8 +151,19 @@ def make_backtester(speed_name: str) -> Callable[[Dict[str, Any]], list]:
                     strat_returns.append(0.0)
                 else:
                     strat_returns.append(prior_signal * today_return)
+                # Exposure / trading accounting for the position actually
+                # held on day t. A strategy that never holds a position
+                # (signal flat at 0) ends with days_in_market == 0 and
+                # turnover == 0 -- which the return series alone cannot
+                # distinguish from a strategy that traded to a flat P&L.
+                if prior_signal != 0:
+                    days_in_market += 1
+                turnover += abs(prior_signal - prev_position)
+                prev_position = prior_signal
 
             per_ticker_returns[ticker] = strat_returns
+            per_ticker_days_in_market[ticker] = days_in_market
+            per_ticker_turnover[ticker] = turnover
 
         # No portfolio-level combining here on purpose: BACKTESTER's
         # job stops at "what happened to each stock." How the stocks
@@ -165,6 +181,8 @@ def make_backtester(speed_name: str) -> Callable[[Dict[str, Any]], list]:
             "ticker_volatility": msg.get("ticker_volatility", {}),
             speed_name: {
                 "per_ticker_returns": per_ticker_returns,
+                "per_ticker_days_in_market": per_ticker_days_in_market,
+                "per_ticker_turnover": per_ticker_turnover,
             },
         }
         return [(out_msg, "out")]

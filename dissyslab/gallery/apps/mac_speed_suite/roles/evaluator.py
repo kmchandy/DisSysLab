@@ -339,8 +339,15 @@ def make_evaluator(
         # ---- 1. Per-stock x per-speed table (Vikram's actual ask) ----
         table: Dict[str, Dict[str, dict]] = {}
         for speed, result in speed_results.items():
-            for ticker, returns in result.get("per_ticker_returns", {}).items():
-                table.setdefault(ticker, {})[speed] = compute_stats(returns)
+            per_returns = result.get("per_ticker_returns", {})
+            per_dim = result.get("per_ticker_days_in_market", {})
+            per_turn = result.get("per_ticker_turnover", {})
+            for ticker, returns in per_returns.items():
+                cell = compute_stats(returns)
+                cell["n_days"] = len(returns)
+                cell["days_in_market"] = per_dim.get(ticker, 0)
+                cell["turnover"] = per_turn.get(ticker, 0.0)
+                table.setdefault(ticker, {})[speed] = cell
 
         # ---- 2. Portfolio-level ranking (anticipated future ask) ----
         speed_portfolio_returns: Dict[str, List[float]] = {}
@@ -358,6 +365,16 @@ def make_evaluator(
             speed: compute_stats(returns)
             for speed, returns in speed_portfolio_returns.items()
         }
+        # Carry trade activity up so a variant that never entered on any
+        # ticker reads as "no trades", not a flat 0% that looks like a loss.
+        for speed, result in speed_results.items():
+            if speed in portfolio_stats:
+                portfolio_stats[speed]["days_in_market"] = sum(
+                    result.get("per_ticker_days_in_market", {}).values()
+                )
+                portfolio_stats[speed]["turnover"] = sum(
+                    result.get("per_ticker_turnover", {}).values()
+                )
         portfolio_stats["equal_blend"] = compute_stats(
             _equal_blend(speed_portfolio_returns)
         )

@@ -152,6 +152,8 @@ class ReportHtmlSink:
   th {{ background: #f5f5f5; text-align: right; }}
   td:first-child, th:first-child {{ text-align: left; }}
   tr.best-row {{ background: #e8f5e9; font-weight: 600; }}
+  tr.no-trades td {{ color: #999; font-style: italic; }}
+  .muted {{ color: #999; }}
   .summary-box {{ background: #f4f7fb; border-radius: 8px; padding: 16px 20px; }}
   .caveats {{ font-size: 13.5px; color: #444; }}
   .caveats li {{ margin-bottom: 8px; }}
@@ -193,6 +195,10 @@ class ReportHtmlSink:
       stocks, then scaled to a common annualized-volatility target, so variants
       are compared on equal footing.</li>
   <li><strong>Risk-free rate:</strong> Sharpe and related ratios assume 0%.</li>
+  <li><strong>Trade activity:</strong> the <em>Days in mkt</em> and
+      <em>Turnover</em> columns show how much each variant actually traded; a
+      variant marked <em>no trades</em> never took a position, which is different
+      from one that traded to a flat result.</li>
   <li><strong>Sample size:</strong> {html.escape(sample_line)} &mdash; small; the
       same pipeline scales to more tickers and a longer window as more data is
       loaded.</li>
@@ -223,15 +229,20 @@ class ReportHtmlSink:
         rows = []
         for rank_pos, name in enumerate(variants, start=1):
             s = portfolio_stats.get(name, {})
-            css = ' class="best-row"' if rank_pos == 1 else ""
-            cells = "".join(_cell(s.get(k), kind) for k, _, kind in _METRIC_COLUMNS)
+            cells, no_trades = _metric_cells_or_notrades(s)
+            label = html.escape(_label(name)) + (
+                ' <span class="muted">(no trades)</span>' if no_trades else "")
+            css = (
+                ' class="no-trades"' if no_trades
+                else (' class="best-row"' if rank_pos == 1 else "")
+            )
             rows.append(
                 f'<tr{css}><td>{rank_pos}</td>'
-                f'<td>{html.escape(_label(name))}</td>{cells}</tr>'
+                f'<td>{label}</td>{cells}{_turnover_cell(s)}</tr>'
             )
         return (
             "<table><thead><tr><th>Rank</th><th>Strategy / Variant</th>"
-            f"{head}</tr></thead><tbody>{''.join(rows)}</tbody></table>"
+            f"{head}<th>Turnover</th></tr></thead><tbody>{''.join(rows)}</tbody></table>"
         )
 
     def _per_stock_tables(self, tickers, table, variant_order) -> str:
@@ -246,19 +257,50 @@ class ReportHtmlSink:
                 s = per_variant.get(variant)
                 if not s:
                     continue
-                cells = "".join(_cell(s.get(k), kind) for k, _, kind in _METRIC_COLUMNS)
+                cells, no_trades = _metric_cells_or_notrades(s)
+                label = html.escape(_label(variant)) + (
+                    ' <span class="muted">(no trades)</span>' if no_trades else "")
+                css = ' class="no-trades"' if no_trades else ""
                 rows.append(
-                    f"<tr><td>{html.escape(_label(variant))}</td>{cells}</tr>"
+                    f"<tr{css}><td>{label}</td>{cells}"
+                    f"{_exposure_cell(s)}{_turnover_cell(s)}</tr>"
                 )
             sections.append(
                 f"<h3>{html.escape(ticker)}</h3>"
                 "<table><thead><tr><th>Strategy / Variant</th>"
-                f"{head}</tr></thead><tbody>{''.join(rows)}</tbody></table>"
+                f"{head}<th>Days in mkt</th><th>Turnover</th></tr>"
+                f"</thead><tbody>{''.join(rows)}</tbody></table>"
             )
         return "".join(sections)
 
 
 # ── Formatting helpers (module-level; no strategy knowledge) ───────────
+
+
+def _metric_cells_or_notrades(stats: Dict[str, Any]):
+    """Return (cells_html, no_trades).
+
+    When a variant never took a position (days_in_market == 0), the metric
+    columns become muted dashes, so a never-entered variant is visibly
+    distinct from one that traded to a flat result (item 3)."""
+    if stats.get("days_in_market") == 0:
+        return "".join('<td class="muted">&mdash;</td>' for _ in _METRIC_COLUMNS), True
+    return "".join(_cell(stats.get(k), kind) for k, _, kind in _METRIC_COLUMNS), False
+
+
+def _exposure_cell(stats: Dict[str, Any]) -> str:
+    dim = stats.get("days_in_market")
+    n_days = stats.get("n_days")
+    if dim is None:
+        return '<td class="muted">n/a</td>'
+    return f"<td>{dim} / {n_days}</td>" if n_days else f"<td>{dim}</td>"
+
+
+def _turnover_cell(stats: Dict[str, Any]) -> str:
+    to = stats.get("turnover")
+    if not isinstance(to, (int, float)):
+        return '<td class="muted">n/a</td>'
+    return f"<td>{_num(to, 1)}</td>"
 
 
 def _pct(x: Optional[float], digits: int = 1) -> str:
