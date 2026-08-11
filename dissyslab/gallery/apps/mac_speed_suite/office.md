@@ -18,7 +18,7 @@
 # `directory` argument must be relative to *this office folder*, not the
 # repo root, hence the four "../" below to climb back up to DisSysLab/.
 
-Sources: csv_stock_history(tickers=['AMD', 'NFLX', 'NVDA', 'PLTR', 'TSLA'], directory='../../../../sp100_data')
+Sources: csv_stock_history(tickers=['AMD', 'NFLX', 'NVDA', 'PLTR', 'TSLA'], directory='../../../../sp100_data', filename_pattern='{ticker}_10_year.csv')
 Sinks: console_printer, report_html(path="report.html")
 
 Agents:
