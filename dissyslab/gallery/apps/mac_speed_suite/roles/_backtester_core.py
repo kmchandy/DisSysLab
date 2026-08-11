@@ -190,6 +190,7 @@ def make_backtester(
         out_msg = {
             "type": "mac_backtest",
             "ticker_volatility": msg.get("ticker_volatility", {}),
+            "_wf_tag": msg.get("_wf_tag"),
             speed_name: {
                 "per_ticker_returns": per_ticker_returns,
                 "per_ticker_dates": per_ticker_dates,

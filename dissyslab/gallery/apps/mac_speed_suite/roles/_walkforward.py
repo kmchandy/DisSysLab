@@ -1,0 +1,246 @@
+# dissyslab/gallery/apps/mac_speed_suite/roles/_walkforward.py
+# Shared helpers + stateful agents for walk-forward out-of-sample validation.
+# Underscore prefix so load_roles_dir skips it as a role file (the role
+# registrations live in window_gate.py and comparator.py).
+
+"""
+Walk-forward (out-of-sample) validation, done as an in-office feedback loop.
+
+Why a loop, and why in the office
+=================================
+
+Ranking many strategy variants on one window and bolding the winner is how you
+pick the luckiest, not the best. Walk-forward guards against that: rank the
+variants on an earlier *train* span, then measure those same variants on a
+later *test* span they had no part in choosing, and roll that split forward.
+
+We do it *inside* the office as a feedback loop, on the same pattern as the
+debate office (a gate that releases one item at a time, a moderator that either
+loops back or finishes). Here:
+
+  * WINDOW_GATE holds the full history and a schedule of labelled spans (one
+    full-history span for the detailed report, then train/test spans for each
+    walk-forward fold). It releases one span at a time -- a sliced copy of the
+    history, tagged with its fold and role -- into the *unchanged* pipeline
+    (market_context -> signals -> backtest -> evaluate).
+  * COMPARATOR receives each span's evaluation, accumulates it, and either
+    signals the gate to release the next span (the feedback edge) or, once the
+    whole schedule is done, builds the out-of-sample scorecard and emits it to
+    the report.
+
+Because it is one office, it is one `dsl run`, one termination, one
+checkpointable computation -- and the same machine generalizes to Monte Carlo
+(D4): the gate's "bank" becomes resampled histories instead of time slices.
+
+Everything between the gate and the comparator is untouched; the only added
+plumbing is a small ``_wf_tag`` (fold / role / total_spans) the workers forward
+so the comparator can label each evaluation.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional, Tuple
+
+from dissyslab.core import Agent
+
+WALKFORWARD_DEFAULT_FOLDS = 4
+
+# A span is (fold, role, start_date, end_date). `fold` is an int for
+# train/test folds, or the string "full" for the whole-history span.
+Span = Tuple[Any, str, str, str]
+
+
+# ── Pure helpers (unit-tested without the runtime) ────────────────────
+
+
+def _all_dates(history: Dict[str, List[dict]]) -> List[str]:
+    """Sorted union of every bar date across tickers."""
+    dates = {b["date"] for bars in history.values() for b in bars if b.get("date")}
+    return sorted(dates)
+
+
+def build_schedule(history: Dict[str, List[dict]], n_folds: int) -> List[Span]:
+    """Build the span schedule: one full-history span (for the detailed
+    report), then, for each of ``n_folds`` folds, an expanding train span and
+    the next chunk as its test span.
+
+    The dates are split into ``n_folds + 1`` equal chunks. Fold i trains on
+    everything up to the end of chunk i and tests on chunk i+1, so chunk 0 is
+    the initial train seed and every later chunk is tested out-of-sample
+    exactly once.
+    """
+    dates = _all_dates(history)
+    spans: List[Span] = []
+    if len(dates) < 2:
+        return spans
+    spans.append(("full", "full", dates[0], dates[-1]))
+
+    n = len(dates)
+    if n_folds < 1 or n < n_folds + 1:
+        return spans  # not enough data to fold; just the full span
+    cut = [j * n // (n_folds + 1) for j in range(n_folds + 2)]
+    for i in range(n_folds):
+        train_end = dates[cut[i + 1] - 1]
+        test_lo, test_hi = cut[i + 1], cut[i + 2]
+        if test_hi <= test_lo:
+            continue
+        spans.append((i, "train", dates[0], train_end))
+        spans.append((i, "test", dates[test_lo], dates[test_hi - 1]))
+    return spans
+
+
+def slice_history(full_msg: Dict[str, Any], start: str, end: str) -> Dict[str, Any]:
+    """A stock_history message restricted to bars in [start, end] (inclusive).
+    ISO dates compare lexicographically, so string comparison is correct."""
+    history = full_msg.get("history", {}) or {}
+    sliced = {
+        t: [b for b in bars if start <= b.get("date", "") <= end]
+        for t, bars in history.items()
+    }
+    return {
+        "type": full_msg.get("type", "stock_history"),
+        "tickers": full_msg.get("tickers", list(sliced.keys())),
+        "history": sliced,
+        "start": start,
+        "end": end,
+    }
+
+
+def _mean(values: List[Optional[float]]) -> Optional[float]:
+    nums = [v for v in values if isinstance(v, (int, float))]
+    return sum(nums) / len(nums) if nums else None
+
+
+def aggregate_scorecard(
+    train_evals: List[Dict[str, Any]], test_evals: List[Dict[str, Any]]
+) -> Dict[str, Any]:
+    """Per-variant in-sample vs out-of-sample summary across folds.
+
+    For each variant, average its portfolio Sharpe and annualized return over
+    the train spans (in-sample) and over the test spans (out-of-sample), then
+    rank by out-of-sample Sharpe -- the number a trader should actually trust.
+    """
+    variants: Dict[str, None] = {}
+    for e in train_evals + test_evals:
+        for v in (e.get("portfolio_stats", {}) or {}):
+            variants.setdefault(v, None)
+
+    def avg(evals, variant, key):
+        return _mean([e.get("portfolio_stats", {}).get(variant, {}).get(key)
+                      for e in evals])
+
+    per_variant: Dict[str, Dict[str, Optional[float]]] = {}
+    for v in variants:
+        per_variant[v] = {
+            "is_sharpe":  avg(train_evals, v, "sharpe_ratio"),
+            "oos_sharpe": avg(test_evals, v, "sharpe_ratio"),
+            "is_return":  avg(train_evals, v, "annualized_return"),
+            "oos_return": avg(test_evals, v, "annualized_return"),
+        }
+
+    def oos_key(v):
+        s = per_variant[v]["oos_sharpe"]
+        return s if isinstance(s, (int, float)) else float("-inf")
+
+    ranked = sorted(per_variant, key=oos_key, reverse=True)
+    return {
+        "per_variant": per_variant,
+        "ranked_by_oos": ranked,
+        "n_folds": len(test_evals),
+    }
+
+
+# ── Stateful agents (thin run() wrappers over testable step methods) ──
+
+
+class _WindowGate(Agent):
+    """Release one labelled span at a time into the pipeline.
+
+    First inbound message is the full history from the source; every later
+    message is a "next" signal from the comparator. Emits the next scheduled
+    span on each; when the schedule is exhausted it keeps looping (so
+    termination detection can close the office), exactly like the debate gate.
+    """
+
+    def __init__(self, n_folds: int = WALKFORWARD_DEFAULT_FOLDS, name=None):
+        super().__init__(name=name, inports=["in_"], outports=["out_"])
+        self._n_folds = n_folds
+        self._full: Optional[Dict[str, Any]] = None
+        self._spans: Optional[List[Span]] = None
+        self._cursor = 0
+
+    def next_span(self, msg: Any) -> Optional[Dict[str, Any]]:
+        """Update state from an inbound message and return the next span to
+        send, or None when uninitialized/exhausted. Pure enough to unit-test
+        without the runtime."""
+        if (self._spans is None and isinstance(msg, dict)
+                and msg.get("history")):
+            self._full = msg
+            self._spans = build_schedule(msg.get("history", {}), self._n_folds)
+            self._cursor = 0
+        if not self._spans or self._cursor >= len(self._spans):
+            return None
+        fold, role, start, end = self._spans[self._cursor]
+        self._cursor += 1
+        span = slice_history(self._full, start, end)
+        span["_wf_tag"] = {
+            "fold": fold, "role": role, "total_spans": len(self._spans),
+        }
+        return span
+
+    def run(self) -> None:
+        while True:
+            msg = self.recv("in_")
+            span = self.next_span(msg)
+            if span is not None:
+                self.send(span, "out_")
+            # else: not yet initialized, or schedule exhausted -> keep looping
+            # so os_agent can poll us and shut the office down cleanly.
+
+
+class _Comparator(Agent):
+    """Accumulate each span's evaluation; loop the gate until the schedule is
+    done, then emit the out-of-sample scorecard to the report.
+
+    Outports (semantic -> runtime): "out" -> out_0 (report/console),
+    "next" -> out_1 (feedback to the gate).
+    """
+
+    def __init__(self, name=None):
+        super().__init__(name=name, inports=["in_"], outports=["out_0", "out_1"])
+        self._full_eval: Optional[Dict[str, Any]] = None
+        self._train: List[Dict[str, Any]] = []
+        self._test: List[Dict[str, Any]] = []
+        self._count = 0
+        self._total: Optional[int] = None
+
+    def accept(self, msg: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
+        """Fold one evaluation in; return ("next", signal) to release the next
+        span, or ("scorecard", message) once every span has been seen. Pure
+        enough to unit-test without the runtime."""
+        tag = (msg.get("_wf_tag") or {}) if isinstance(msg, dict) else {}
+        role = tag.get("role")
+        if tag.get("total_spans") is not None:
+            self._total = tag["total_spans"]
+        self._count += 1
+        if role == "full":
+            self._full_eval = msg
+        elif role == "train":
+            self._train.append(msg)
+        elif role == "test":
+            self._test.append(msg)
+
+        if self._total is not None and self._count >= self._total:
+            base = dict(self._full_eval or msg)   # renders the detailed report
+            base["walk_forward"] = aggregate_scorecard(self._train, self._test)
+            return ("scorecard", base)
+        return ("next", {"walkforward_next": True})
+
+    def run(self) -> None:
+        while True:
+            msg = self.recv("in_")
+            kind, out = self.accept(msg)
+            if kind == "scorecard":
+                self.send(out, "out_0")      # semantic "out" -> report + console
+            else:
+                self.send(out, "out_1")      # semantic "next" -> gate

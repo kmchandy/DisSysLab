@@ -392,7 +392,7 @@ def make_evaluator(
         # docstring for why BACKTESTER's message is shaped this way.
         speed_results = {
             k: v for k, v in msg.items()
-            if k not in ("type", "ticker_volatility")
+            if k not in ("type", "ticker_volatility", "_wf_tag")
         }
 
         # ---- 1. Per-stock x per-speed table (Vikram's actual ask) ----
@@ -473,6 +473,7 @@ def make_evaluator(
             "portfolio_stats": portfolio_stats,
             "ranked":          ranked,
             "correlation":     correlation,
+            "_wf_tag":         msg.get("_wf_tag"),
         }
         return [(out_msg, "out")]
 

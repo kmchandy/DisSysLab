@@ -186,7 +186,9 @@ class ReportHtmlSink:
   {self._summary_best(best_name, best, rank_by)}
 </div>
 
-<h2>Portfolio-Level Comparison (ranked best to worst)</h2>
+{self._walk_forward_section(msg)}
+
+<h2>Full-Window Comparison (whole history, in-sample)</h2>
 {self._portfolio_table(portfolio_variants, portfolio_stats)}
 
 {self._correlation_section(msg)}
@@ -300,6 +302,38 @@ class ReportHtmlSink:
             "are effectively one bet; low or negative values (green) mean they "
             "diversify each other.</p>"
             f"<table><thead><tr><th></th>{head}</tr></thead>"
+            f"<tbody>{''.join(rows)}</tbody></table>"
+        )
+
+    def _walk_forward_section(self, msg: Dict[str, Any]) -> str:
+        wf = msg.get("walk_forward") or {}
+        ranked = wf.get("ranked_by_oos") or []
+        per = wf.get("per_variant") or {}
+        if not ranked:
+            return ""
+        n_folds = wf.get("n_folds")
+        rows = []
+        for pos, v in enumerate(ranked, start=1):
+            d = per.get(v, {})
+            css = ' class="best-row"' if pos == 1 else ""
+            rows.append(
+                f'<tr{css}><td>{pos}</td><td>{html.escape(_label(v))}</td>'
+                f'<td>{_num(d.get("oos_sharpe"))}</td>'
+                f'<td>{_num(d.get("is_sharpe"))}</td>'
+                f'<td>{_pct(d.get("oos_return"))}</td>'
+                f'<td>{_pct(d.get("is_return"))}</td></tr>'
+            )
+        return (
+            "<h2>Walk-Forward (out-of-sample) validation</h2>"
+            f"<p>Each variant ranked over {n_folds} expanding train/test fold(s): "
+            "ranked on an earlier window, then measured on a later window it had no "
+            "part in choosing. <strong>Out-of-sample</strong> is the number to "
+            "trust &mdash; a variant whose out-of-sample Sharpe falls well short of "
+            "its in-sample Sharpe was likely overfit. The full-window tables below "
+            "are in-sample (the whole history), shown for detail.</p>"
+            "<table><thead><tr><th>Rank</th><th>Strategy / Variant</th>"
+            "<th>OOS Sharpe</th><th>In-sample Sharpe</th>"
+            "<th>OOS Return</th><th>In-sample Return</th></tr></thead>"
             f"<tbody>{''.join(rows)}</tbody></table>"
         )
 

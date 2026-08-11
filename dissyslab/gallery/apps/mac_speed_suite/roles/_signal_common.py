@@ -207,6 +207,7 @@ def make_signal_computer(
             "variants":          variant_names,
             "series":            series,
             "ticker_volatility": ticker_volatility,
+            "_wf_tag":           msg.get("_wf_tag"),
         }
         return [(out_msg, "out")]
 

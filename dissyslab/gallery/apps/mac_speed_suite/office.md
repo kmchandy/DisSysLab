@@ -22,6 +22,7 @@ Sources: csv_stock_history(tickers=['AMD', 'NFLX', 'NVDA', 'PLTR', 'TSLA'], dire
 Sinks: console_printer, report_html(path="report.html")
 
 Agents:
+GATE is a window_gate(n_folds=4).
 MKT is a market_context.
 MAC_SIGNAL is a mac_signal.
 DONCHIAN_SIGNAL is a donchian_signal.
@@ -42,9 +43,12 @@ BT_RS_SLOW is a backtester(speed_name='rs_slow').
 
 JOIN is a synchronizer(inports=['mac_fast', 'mac_med_fast', 'mac_med', 'mac_med_slow', 'mac_slow', 'donchian_20', 'donchian_55', 'turtle_s1', 'turtle_s2', 'rs_fast', 'rs_slow']).
 EVAL is a evaluator.
+CMP is a comparator.
 
 Connections:
-csv_stock_history's out is MKT.
+csv_stock_history's out is GATE.
+
+GATE's out is MKT.
 
 MKT's out are MAC_SIGNAL, DONCHIAN_SIGNAL, TURTLE_SIGNAL and RS_SIGNAL.
 
@@ -66,4 +70,7 @@ BT_RS_FAST's out is JOIN's rs_fast.
 BT_RS_SLOW's out is JOIN's rs_slow.
 
 JOIN's out is EVAL.
-EVAL's out are console_printer and report_html.
+EVAL's out is CMP.
+
+CMP's next is GATE.
+CMP's out are console_printer and report_html.
