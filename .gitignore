@@ -210,3 +210,12 @@ dissyslab/gallery/apps/*/snapshots/
 # exited 0 -- the headline checkpoint feature, broken for every new
 # user. It is deterministic (seed=42, samples/make_points.py), so it
 # is a fixture rather than a build artifact.
+
+# Vendor-sourced market data (Yahoo Finance via yfinance): do NOT commit --
+# redistributing a provider's history in a public repo likely violates their
+# terms of service, even though the raw daily numbers are facts. Regenerate
+# locally with dissyslab/gallery/apps/mac_speed_suite/download_stock_history_from_yf.py
+sp100_data/
+*_1year.csv
+*_10_year.csv
+*_stock_data.csv
