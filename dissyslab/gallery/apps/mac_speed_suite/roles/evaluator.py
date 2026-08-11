@@ -251,13 +251,38 @@ def _inverse_volatility_weights(
 
 
 def _weighted_portfolio_returns(
-    per_ticker_returns: Dict[str, List[float]], weights: Dict[str, float]
+    per_ticker_returns: Dict[str, List[float]],
+    weights: Dict[str, float],
+    per_ticker_dates: Optional[Dict[str, List[str]]] = None,
 ) -> List[float]:
     """Combine each ticker's own daily return series into one weighted
-    portfolio return series, day by day."""
+    portfolio return series.
+
+    When ``per_ticker_dates`` is given (the real pipeline always passes it),
+    the tickers are aligned **by date**, and on each date the weights are
+    renormalized across whichever tickers actually trade that day -- so a
+    basket whose members have different histories (e.g. a stock that IPO'd
+    partway through the window) combines correctly instead of assuming every
+    ticker shares one day grid. Without dates it falls back to the legacy
+    positional combine (equal-length series)."""
     tickers = [t for t in per_ticker_returns if t in weights]
     if not tickers:
         return []
+    if per_ticker_dates:
+        by_date: Dict[str, Dict[str, float]] = {}
+        for t in tickers:
+            dates = per_ticker_dates.get(t) or []
+            for d, r in zip(dates, per_ticker_returns[t]):
+                by_date.setdefault(d, {})[t] = r
+        out: List[float] = []
+        for d in sorted(by_date):
+            present = by_date[d]
+            wsum = sum(weights[t] for t in present)
+            out.append(
+                sum(weights[t] * present[t] for t in present) / wsum
+                if wsum > 0 else 0.0
+            )
+        return out
     n_days = len(per_ticker_returns[tickers[0]])
     return [
         sum(weights[t] * per_ticker_returns[t][day] for t in tickers)
@@ -390,7 +415,9 @@ def make_evaluator(
             weights = _inverse_volatility_weights(
                 ticker_volatility, list(per_ticker_returns.keys())
             )
-            weighted = _weighted_portfolio_returns(per_ticker_returns, weights)
+            weighted = _weighted_portfolio_returns(
+                per_ticker_returns, weights, result.get("per_ticker_dates")
+            )
             speed_portfolio_returns[speed] = _scale_to_target_volatility(
                 weighted, target_annual_vol
             )

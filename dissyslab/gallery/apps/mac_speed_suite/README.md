@@ -9,9 +9,11 @@ view, so you can see which "different" strategies are actually the same bet.
 ## Get the data (one time)
 
 The price history is **not shipped with the repository** — it's vendor data from
-Yahoo Finance, so each user downloads their own copy. From this folder:
+Yahoo Finance, so each user downloads their own copy. From the repository root, change into
+this office's folder and run:
 
 ```
+cd dissyslab/gallery/apps/mac_speed_suite
 pip install yfinance
 python3 download_stock_history_from_yf.py
 dsl run .

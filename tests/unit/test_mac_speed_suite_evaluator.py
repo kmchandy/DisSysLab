@@ -151,3 +151,17 @@ def test_scale_to_target_volatility_is_a_noop_on_zero_volatility_series():
 def test_equal_blend_averages_every_speed_day_by_day():
     blend = _equal_blend({"fast": [0.10, 0.20], "slow": [0.00, 0.00]})
     assert blend == [0.05, 0.10]
+
+
+def test_weighted_portfolio_aligns_by_date_with_unequal_length_tickers():
+    """A basket member with a shorter history (e.g. a later IPO) must combine
+    by date, not by position: on a date where only some tickers trade, the
+    weights are renormalized across those present."""
+    per_ticker = {"A": [0.10, 0.20], "B": [0.02, 0.04, 0.06]}
+    per_ticker_dates = {"A": ["d1", "d2"], "B": ["d0", "d1", "d2"]}
+    weights = {"A": 0.5, "B": 0.5}
+    out = _weighted_portfolio_returns(per_ticker, weights, per_ticker_dates)
+    # d0: only B present -> renorm to 1.0 -> 0.02
+    # d1: A 0.10, B 0.04, equal weights -> 0.07
+    # d2: A 0.20, B 0.06 -> 0.13
+    assert out == [0.02, 0.07, 0.13]

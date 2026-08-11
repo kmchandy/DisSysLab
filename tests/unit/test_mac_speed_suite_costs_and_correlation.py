@@ -114,3 +114,23 @@ def test_evaluator_output_carries_correlation_and_cost():
     # x and y are exact negatives, so their portfolio series are anti-correlated
     r = out["correlation"]["matrix"]["x"]["y"]
     assert r is not None and r < 0
+
+
+def test_evaluator_handles_unequal_length_tickers_without_crashing():
+    """The bug 10-year data exposed: PLTR (a later IPO) has a shorter series
+    than the rest, and the positional portfolio combine raised IndexError.
+    The evaluator must align by date instead."""
+    merged = {
+        "type": "mac_backtest", "ticker_volatility": {"A": 0.2, "B": 0.2},
+        "s": {
+            "per_ticker_returns": {"A": [0.0, 0.01, -0.01], "B": [0.0, 0.02]},
+            "per_ticker_dates": {"A": ["d0", "d1", "d2"], "B": ["d1", "d2"]},
+            "per_ticker_days_in_market": {"A": 2, "B": 1},
+            "per_ticker_turnover": {"A": 2.0, "B": 1.0},
+            "cost_bps": 5.0,
+        },
+    }
+    out = make_evaluator()(merged)[0][0]          # must not raise
+    assert "s" in out["portfolio_stats"]
+    assert out["table"]["A"]["s"]["n_days"] == 3   # each ticker over its own history
+    assert out["table"]["B"]["s"]["n_days"] == 2

@@ -134,6 +134,7 @@ def make_backtester(
         per_ticker_returns: Dict[str, list] = {}
         per_ticker_days_in_market: Dict[str, int] = {}
         per_ticker_turnover: Dict[str, float] = {}
+        per_ticker_dates: Dict[str, list] = {}
 
         for ticker, data in series.items():
             returns = data.get("returns", [])
@@ -173,6 +174,7 @@ def make_backtester(
             per_ticker_returns[ticker] = strat_returns
             per_ticker_days_in_market[ticker] = days_in_market
             per_ticker_turnover[ticker] = turnover
+            per_ticker_dates[ticker] = data.get("dates", [])
 
         # No portfolio-level combining here on purpose: BACKTESTER's
         # job stops at "what happened to each stock." How the stocks
@@ -190,6 +192,7 @@ def make_backtester(
             "ticker_volatility": msg.get("ticker_volatility", {}),
             speed_name: {
                 "per_ticker_returns": per_ticker_returns,
+                "per_ticker_dates": per_ticker_dates,
                 "per_ticker_days_in_market": per_ticker_days_in_market,
                 "per_ticker_turnover": per_ticker_turnover,
                 "cost_bps": cost_bps,
