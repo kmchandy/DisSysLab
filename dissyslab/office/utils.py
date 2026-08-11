@@ -530,6 +530,15 @@ SINK_REGISTRY = {
         "args":   "named",
         "call":   "run",
     },
+    # mac_speed_suite: backtest report, rendered from the evaluator's real
+    # message so report.html can never disagree with `dsl run` about which
+    # strategies exist.
+    "report_html": {
+        "import": "from dissyslab.gallery.apps.mac_speed_suite.sinks.report_html_sink import ReportHtmlSink",
+        "class":  "ReportHtmlSink",
+        "args":   "named",
+        "call":   "run",
+    },
     # Debate office: situation_room-style console display of each
     # round's panellist + moderator output. Receives messages from
     # Sync's out AND Riley's continue/finish; discriminates by

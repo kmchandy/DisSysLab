@@ -368,9 +368,19 @@ def make_evaluator(
 
         ranked = sorted(portfolio_stats, key=sort_key, reverse=True)
 
+        n_days = 0
+        for result in speed_results.values():
+            for series in result.get("per_ticker_returns", {}).values():
+                if series:
+                    n_days = len(series)
+                    break
+            if n_days:
+                break
+
         out_msg = {
             "type":            "mac_evaluation",
             "rank_by":         rank_by,
+            "n_days":          n_days,
             "table":           table,
             "portfolio_stats": portfolio_stats,
             "ranked":          ranked,

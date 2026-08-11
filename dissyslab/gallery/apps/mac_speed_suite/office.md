@@ -19,7 +19,7 @@
 # repo root, hence the four "../" below to climb back up to DisSysLab/.
 
 Sources: csv_stock_history(tickers=['AMD', 'NFLX', 'NVDA', 'PLTR', 'TSLA'], directory='../../../../sp100_data')
-Sinks: console_printer
+Sinks: console_printer, report_html(path="report.html")
 
 Agents:
 MAC_SIGNAL is a mac_signal.
@@ -57,4 +57,4 @@ BT_TURTLE_S1's out is JOIN's turtle_s1.
 BT_TURTLE_S2's out is JOIN's turtle_s2.
 
 JOIN's out is EVAL.
-EVAL's out is console_printer.
+EVAL's out are console_printer and report_html.
