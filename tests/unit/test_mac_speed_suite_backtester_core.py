@@ -22,7 +22,7 @@ from dissyslab.gallery.apps.mac_speed_suite.roles._backtester_core import make_b
 
 
 def _run(speed_name: str, series: dict, ticker_volatility: dict | None = None) -> dict:
-    backtester = make_backtester(speed_name)
+    backtester = make_backtester(speed_name, cost_bps=0.0)  # test lag accounting, not costs
     msg = {"ticker_volatility": ticker_volatility or {}, "series": series}
     out_msgs = backtester(msg)
     assert len(out_msgs) == 1

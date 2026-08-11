@@ -116,6 +116,11 @@ class ReportHtmlSink:
         portfolio_stats = msg.get("portfolio_stats") or {}
         rank_by = msg.get("rank_by", "sharpe_ratio")
         n_days = msg.get("n_days")
+        cost_bps = msg.get("cost_bps")
+        cost_note = (
+            f" (assumed {cost_bps:.0f} bps per unit traded)"
+            if isinstance(cost_bps, (int, float)) else ""
+        )
         tickers = sorted(table.keys())
 
         portfolio_variants = self._portfolio_variants(msg)
@@ -184,6 +189,8 @@ class ReportHtmlSink:
 <h2>Portfolio-Level Comparison (ranked best to worst)</h2>
 {self._portfolio_table(portfolio_variants, portfolio_stats)}
 
+{self._correlation_section(msg)}
+
 <h2>Per-Stock Detail (each strategy variant, each stock)</h2>
 {self._per_stock_tables(tickers, table, per_stock_variants)}
 
@@ -191,6 +198,8 @@ class ReportHtmlSink:
 <ul class="caveats">
   <li><strong>No look-ahead:</strong> each day's signal is decided using only
       prices known by that day's close and applied to the next day's return.</li>
+  <li><strong>Transaction costs:</strong> returns are net of a cost charged on
+      every change of position{cost_note}.</li>
   <li><strong>Portfolio construction:</strong> inverse-volatility weighted across
       stocks, then scaled to a common annualized-volatility target, so variants
       are compared on equal footing.</li>
@@ -273,6 +282,27 @@ class ReportHtmlSink:
             )
         return "".join(sections)
 
+    def _correlation_section(self, msg: Dict[str, Any]) -> str:
+        corr = msg.get("correlation") or {}
+        names = corr.get("variants") or []
+        matrix = corr.get("matrix") or {}
+        if len(names) < 2:
+            return ""
+        head = "".join(f"<th>{html.escape(_label(n))}</th>" for n in names)
+        rows = []
+        for a in names:
+            cells = "".join(_corr_cell(matrix.get(a, {}).get(b)) for b in names)
+            rows.append(f"<tr><td>{html.escape(_label(a))}</td>{cells}</tr>")
+        return (
+            "<h2>Strategy Correlation &mdash; are these the same bet?</h2>"
+            "<p>Correlation of each variant's portfolio return series. Values near "
+            "<strong>+1</strong> (shaded red) mean two variants move together and "
+            "are effectively one bet; low or negative values (green) mean they "
+            "diversify each other.</p>"
+            f"<table><thead><tr><th></th>{head}</tr></thead>"
+            f"<tbody>{''.join(rows)}</tbody></table>"
+        )
+
 
 # ── Formatting helpers (module-level; no strategy knowledge) ───────────
 
@@ -314,6 +344,23 @@ def _num(x: Optional[float], digits: int = 2) -> str:
 def _cell(value: Any, kind: str) -> str:
     text = _pct(value) if kind == "pct" else _num(value)
     return f"<td>{text}</td>"
+
+
+def _corr_cell(v: Any) -> str:
+    """One correlation cell, shaded so a strongly-correlated pair (the
+    'same bet' warning) stands out and a diversifying pair reads calm."""
+    if not isinstance(v, (int, float)):
+        return '<td class="muted">n/a</td>'
+    if v >= 0.8:
+        bg = "#f8d7da"
+    elif v >= 0.5:
+        bg = "#fff3cd"
+    elif v <= -0.3:
+        bg = "#d1e7dd"
+    else:
+        bg = ""
+    style = f' style="background:{bg}"' if bg else ""
+    return f'<td{style}>{v:+.2f}</td>'
 
 
 def _label(name: str) -> str:

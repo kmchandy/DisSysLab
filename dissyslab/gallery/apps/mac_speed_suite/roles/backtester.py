@@ -36,7 +36,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _backtester_core import make_backtester  # noqa: E402
+from _backtester_core import DEFAULT_COST_BPS, make_backtester  # noqa: E402
 
 from dissyslab.blocks.role import Role
 from dissyslab.office.library import AgentRoleEntry
@@ -45,7 +45,7 @@ role = AgentRoleEntry(
     name="backtester",
     in_ports=("in_",),
     out_ports=("out",),
-    factory=lambda speed_name: Role(
-        fn=make_backtester(speed_name), statuses=["out"]
+    factory=lambda speed_name, cost_bps=DEFAULT_COST_BPS: Role(
+        fn=make_backtester(speed_name, cost_bps), statuses=["out"]
     ),
 )

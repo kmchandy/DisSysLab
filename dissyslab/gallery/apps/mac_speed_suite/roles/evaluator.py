@@ -304,6 +304,40 @@ def _equal_blend(speed_portfolio_returns: Dict[str, List[float]]) -> List[float]
 # ── Worker body ──────────────────────────────────────────────────────────
 
 
+def _pearson(x: List[float], y: List[float]) -> Optional[float]:
+    """Pearson correlation of two aligned return series, or None when
+    either has no variance (e.g. a flat / never-trading variant)."""
+    n = min(len(x), len(y))
+    if n < 2:
+        return None
+    xs, ys = x[:n], y[:n]
+    mx = sum(xs) / n
+    my = sum(ys) / n
+    dx = [a - mx for a in xs]
+    dy = [b - my for b in ys]
+    sx = sum(a * a for a in dx)
+    sy = sum(b * b for b in dy)
+    if sx <= 0 or sy <= 0:
+        return None
+    cov = sum(a * b for a, b in zip(dx, dy))
+    return cov / (sx ** 0.5 * sy ** 0.5)
+
+
+def _correlation_matrix(
+    speed_portfolio_returns: Dict[str, List[float]]
+) -> Dict[str, Any]:
+    """Correlation of every pair of variants' portfolio return series -- the
+    "are these the same bet?" view. Diagonal is 1.0 for any variant with
+    variance (None for a flat one)."""
+    names = list(speed_portfolio_returns.keys())
+    matrix = {
+        a: {b: _pearson(speed_portfolio_returns[a], speed_portfolio_returns[b])
+            for b in names}
+        for a in names
+    }
+    return {"variants": names, "matrix": matrix}
+
+
 def make_evaluator(
     rank_by: str = "sharpe_ratio",
     target_annual_vol: float = 0.10,
@@ -394,13 +428,24 @@ def make_evaluator(
             if n_days:
                 break
 
+        correlation = _correlation_matrix(speed_portfolio_returns)
+        costs = {
+            result.get("cost_bps")
+            for result in speed_results.values()
+            if isinstance(result, dict)
+        }
+        costs.discard(None)
+        cost_bps = costs.pop() if len(costs) == 1 else None
+
         out_msg = {
             "type":            "mac_evaluation",
             "rank_by":         rank_by,
             "n_days":          n_days,
+            "cost_bps":        cost_bps,
             "table":           table,
             "portfolio_stats": portfolio_stats,
             "ranked":          ranked,
+            "correlation":     correlation,
         }
         return [(out_msg, "out")]
 

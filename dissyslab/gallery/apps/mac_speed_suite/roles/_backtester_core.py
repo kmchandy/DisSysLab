@@ -110,8 +110,12 @@ which is also the exact shape EVALUATOR wants to read.
 
 from typing import Any, Callable, Dict
 
+DEFAULT_COST_BPS = 5.0  # one-way transaction cost per unit of position, in bps
 
-def make_backtester(speed_name: str) -> Callable[[Dict[str, Any]], list]:
+
+def make_backtester(
+    speed_name: str, cost_bps: float = DEFAULT_COST_BPS
+) -> Callable[[Dict[str, Any]], list]:
     """
     Build a BACKTESTER worker body for exactly one MAC speed.
 
@@ -121,6 +125,8 @@ def make_backtester(speed_name: str) -> Callable[[Dict[str, Any]], list]:
     ``speed_name``'s signal column, which is what lets all five run
     concurrently with no shared state between them.
     """
+
+    cost_rate = cost_bps / 10000.0  # bps -> fraction
 
     def backtester(msg: Dict[str, Any]):
         """Worker body: (message) -> [(message, outport_name), ...]."""
@@ -147,10 +153,13 @@ def make_backtester(speed_name: str) -> Callable[[Dict[str, Any]], list]:
             for t in range(1, len(returns)):
                 prior_signal = signal[t - 1]   # decided at close of day t-1
                 today_return = returns[t]      # day t's actual return
-                if today_return is None:
-                    strat_returns.append(0.0)
-                else:
-                    strat_returns.append(prior_signal * today_return)
+                change = abs(prior_signal - prev_position)
+                # Net return: the day's gross P&L minus a transaction cost
+                # charged on the traded change of position (entering, exiting,
+                # or flipping). A high-turnover rule now pays for its churn
+                # instead of looking free.
+                gross = 0.0 if today_return is None else prior_signal * today_return
+                strat_returns.append(gross - cost_rate * change)
                 # Exposure / trading accounting for the position actually
                 # held on day t. A strategy that never holds a position
                 # (signal flat at 0) ends with days_in_market == 0 and
@@ -158,7 +167,7 @@ def make_backtester(speed_name: str) -> Callable[[Dict[str, Any]], list]:
                 # distinguish from a strategy that traded to a flat P&L.
                 if prior_signal != 0:
                     days_in_market += 1
-                turnover += abs(prior_signal - prev_position)
+                turnover += change
                 prev_position = prior_signal
 
             per_ticker_returns[ticker] = strat_returns
@@ -183,6 +192,7 @@ def make_backtester(speed_name: str) -> Callable[[Dict[str, Any]], list]:
                 "per_ticker_returns": per_ticker_returns,
                 "per_ticker_days_in_market": per_ticker_days_in_market,
                 "per_ticker_turnover": per_ticker_turnover,
+                "cost_bps": cost_bps,
             },
         }
         return [(out_msg, "out")]
