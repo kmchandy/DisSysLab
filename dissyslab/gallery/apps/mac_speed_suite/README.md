@@ -45,21 +45,29 @@ downloader read the one list, so they can't drift.
 
 ## Validation: walk-forward and Monte Carlo
 
-By default the office runs **walk-forward out-of-sample validation**: it ranks
-the variants on earlier windows and measures them on later windows they had no
-part in choosing, so the report's headline is the out-of-sample ranking. Change
-the number of folds with `window_gate(n_folds=...)` in `office.md`.
+By default the office runs **both** validations in a single pass -- no editing.
+The `validation_gate` first runs **walk-forward out-of-sample validation**
+(rank the variants on earlier windows, measure them on later windows they had
+no part in choosing, so the report's headline is the out-of-sample ranking),
+and then a **Monte Carlo robustness** pass (resample the history many times and
+re-run, to see how much of the result is luck). The report shows both sections:
+the out-of-sample scorecard and a per-variant outcome distribution (median
+return, a 5th-95th band, worst-case drawdown, and probability of loss).
 
-To run a **Monte Carlo robustness** pass instead, swap the gate line in
-`office.md`:
+The Monte Carlo sample count is modest by default so the run stays quick.
+Everything is adjustable on the gate line in `office.md` (or just by asking
+Cowork in plain English):
 
-    GATE is a monte_carlo_gate(n_samples=200).
+    GATE is a validation_gate(n_samples=100).        # the default: both
+    GATE is a validation_gate(n_samples=500).        # tighter distribution
+    GATE is a validation_gate(monte_carlo=False).    # walk-forward only (fast)
+    GATE is a validation_gate(walk_forward=False).   # Monte Carlo only
 
-Everything else stays the same -- that is the point: the same in-office loop with
-a resampled bank instead of time slices. The report then shows an outcome
-distribution per variant (median return, a 5th-95th band, worst-case drawdown,
-and probability of loss), so you can see how much of the result is luck. More
-samples give a smoother distribution but take longer.
+More samples give a smoother distribution but take longer. The point of the
+design is that both validations drive the *same* in-office loop -- time slices
+for walk-forward, a resampled bank for Monte Carlo -- so the pipeline, the
+comparator, and the report are identical either way. (`window_gate` and
+`monte_carlo_gate` remain available if you want a single-purpose run.)
 
 ## Add a strategy
 
