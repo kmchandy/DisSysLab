@@ -6,6 +6,17 @@ speeds), Donchian channels, the Turtle system, and a relative-strength trend
 rule. Results are net of transaction costs and shown with a strategy-correlation
 view, so you can see which "different" strategies are actually the same bet.
 
+## New here? Try it by talking to Cowork
+
+If you are not a programmer — or just want the guided path — you can drive the
+whole thing in plain English through **Claude Cowork** instead of the command
+line: describe a trading strategy in your own words and it gets added, run, and
+validated for you. A step-by-step walk-through (get the repo, connect the folder,
+install the `dsl` engine, install the skill, download the data, then run and read
+the report) is in
+[`skill_for_testers/VIKRAM_TEST_INSTRUCTIONS.md`](skill_for_testers/VIKRAM_TEST_INSTRUCTIONS.md).
+The rest of this README is the command-line reference for those steps.
+
 ## Get the data (one time)
 
 The price history is **not shipped with the repository** — it's vendor data from
