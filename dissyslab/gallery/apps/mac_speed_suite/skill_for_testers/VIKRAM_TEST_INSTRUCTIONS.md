@@ -15,9 +15,8 @@ minutes. Then on the day, keep it open beside you and follow along.
 
 ---
 
-## What we're really asking you to judge
+## What we're asking you to judge
 
-We are **not** asking "is this a good trading strategy?" We're asking:
 
 1. Could you describe a strategy in your own words and have it understood?
 2. When the tool told you what it *assumed* you meant, was it right — and if not,
@@ -74,7 +73,7 @@ Start simple, before you get creative. In Cowork, say:
 > "Run the backtester as it's currently set up and show me the report."
 
 Give it a minute or two. When it finishes, it produces a file called
-**`report.html`** — open it. Have a look around. You should see, roughly:
+**`report.html`** — open it. That single run does the *whole* check for you: it validates the strategies on history they weren't tuned on (walk-forward) and then stress-tests them (Monte Carlo), so the report is complete without you editing anything. If a run ever feels slow you can say "use fewer Monte Carlo samples" or "just do the fast walk-forward"; for a more thorough check, "use more Monte Carlo samples." Have a look around. You should see, roughly:
 
 - a short **summary** at the top,
 - a **Walk-Forward (out-of-sample) validation** section — treat this as the

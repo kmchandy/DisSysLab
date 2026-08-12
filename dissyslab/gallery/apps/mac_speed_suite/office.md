@@ -22,9 +22,15 @@ Sources: csv_stock_history(tickers=['AMD', 'NFLX', 'NVDA', 'PLTR', 'TSLA'], dire
 Sinks: console_printer, report_html(path="report.html")
 
 Agents:
-# For a Monte Carlo robustness pass instead of walk-forward, replace the next
-# line with:  GATE is a monte_carlo_gate(n_samples=200).
-GATE is a window_gate(n_folds=4).
+# GATE runs BOTH validations in one pass: walk-forward (out-of-sample folds)
+# followed by a Monte Carlo robustness distribution. The report shows both
+# sections; no editing needed. The Monte Carlo sample count is modest by
+# default so the run stays quick -- raise it for a tighter distribution, or
+# turn either half off:
+#   GATE is a validation_gate(n_samples=500).      # tighter Monte Carlo
+#   GATE is a validation_gate(monte_carlo=False).  # walk-forward only (fast)
+#   GATE is a validation_gate(walk_forward=False). # Monte Carlo only
+GATE is a validation_gate(n_samples=100).
 MKT is a market_context.
 MAC_SIGNAL is a mac_signal.
 DONCHIAN_SIGNAL is a donchian_signal.

@@ -412,3 +412,90 @@ class _Comparator(Agent):
                 self.send(out, "out_0")      # semantic "out" -> report + console
             else:
                 self.send(out, "out_1")      # semantic "next" -> gate
+
+
+# ── One gate that runs BOTH validations in a single office pass ────────
+
+
+class _ValidationGate(Agent):
+    """Release the walk-forward schedule *and then* the Monte Carlo resamples
+    into the unchanged pipeline, so one ``dsl run`` produces a report with both
+    an out-of-sample scorecard and a robustness distribution -- with no
+    office.md editing.
+
+    The schedule is: a full-history span (for the detailed report), then the
+    expanding train/test folds (walk-forward), then ``n_samples`` seeded
+    block-bootstrap resamples (Monte Carlo). Each span is tagged so the
+    unchanged COMPARATOR builds ``walk_forward`` from the train/test spans and
+    ``monte_carlo`` from the ``mc`` spans off the same ``total_spans`` count.
+
+    Flags let a caller -- or Cowork, in plain English -- shape the run without
+    touching code:
+
+      * ``n_samples`` -- how many Monte Carlo resamples (modest by default;
+        raise it for a tighter distribution).
+      * ``monte_carlo=False`` -- walk-forward only (fast).
+      * ``walk_forward=False`` -- Monte Carlo only (still emits one full span
+        so the detailed report renders).
+    """
+
+    def __init__(self, n_folds: int = WALKFORWARD_DEFAULT_FOLDS,
+                 n_samples: int = 100, seed: int = 42, block_size: int = 20,
+                 walk_forward: bool = True, monte_carlo: bool = True,
+                 name=None):
+        super().__init__(name=name, inports=["in_"], outports=["out_"])
+        self._n_folds = n_folds
+        self._n = n_samples
+        self._seed = seed
+        self._block = block_size
+        self._walk_forward = walk_forward
+        self._monte_carlo = monte_carlo
+        self._full: Optional[Dict[str, Any]] = None
+        self._plan: Optional[List[Tuple]] = None
+        self._cursor = 0
+
+    def _build_plan(self, history: Dict[str, List[dict]]) -> List[Tuple]:
+        """Ordered list of span descriptors: ("wf", fold, role, start, end) or
+        ("mc", i). Always includes exactly one full-history span."""
+        plan: List[Tuple] = []
+        if self._walk_forward:
+            for (fold, role, start, end) in build_schedule(history, self._n_folds):
+                plan.append(("wf", fold, role, start, end))
+        if not any(d[0] == "wf" and d[2] == "full" for d in plan):
+            all_d = _all_dates(history)
+            if len(all_d) >= 2:
+                plan.append(("wf", "full", "full", all_d[0], all_d[-1]))
+        if self._monte_carlo:
+            for i in range(self._n):
+                plan.append(("mc", i))
+        return plan
+
+    def next_span(self, msg: Any) -> Optional[Dict[str, Any]]:
+        if (self._plan is None and isinstance(msg, dict) and msg.get("history")):
+            self._full = msg
+            self._plan = self._build_plan(msg.get("history", {}))
+            self._cursor = 0
+        if not self._plan or self._cursor >= len(self._plan):
+            return None
+        desc = self._plan[self._cursor]
+        self._cursor += 1
+        total = len(self._plan)
+        if desc[0] == "wf":
+            _, fold, role, start, end = desc
+            span = slice_history(self._full, start, end)
+            span["_wf_tag"] = {"fold": fold, "role": role, "total_spans": total}
+        else:  # ("mc", i)
+            i = desc[1]
+            span = resample_history(self._full, seed=self._seed + i + 1,
+                                    block_size=self._block)
+            span["_wf_tag"] = {"fold": i, "role": "mc", "total_spans": total}
+        return span
+
+    def run(self) -> None:
+        while True:
+            msg = self.recv("in_")
+            span = self.next_span(msg)
+            if span is not None:
+                self.send(span, "out_")
+            # else: not yet initialized, or plan exhausted -> keep looping so
+            # os_agent can shut the office down cleanly.
