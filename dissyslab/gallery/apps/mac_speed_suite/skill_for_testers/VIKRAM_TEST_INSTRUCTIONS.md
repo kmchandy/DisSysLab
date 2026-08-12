@@ -10,13 +10,20 @@ we built called the **backtester**. A backtester takes a trading rule (for
 example, "hold a stock while it's trending up, step aside when it isn't") and
 replays it over years of real historical prices to see how it *would* have done.
 
+*Although this guide is addressed to Vikram, anyone who wants to try the
+backtester can follow exactly the same steps — it doubles as a getting-started
+guide.*
+
 Please read this once end to end before Wednesday. It should take about ten
-minutes. Then on the day, keep it open beside you and follow along.
+minutes. Then on the day, keep it open beside you and follow along. Setup is the
+only fiddly part; once it's done, everything is a conversation.
 
 ---
 
 ## What we're asking you to judge
 
+We're **not** asking "is this a good trading strategy?" We're asking whether the
+*experience* works for someone who isn't a programmer:
 
 1. Could you describe a strategy in your own words and have it understood?
 2. When the tool told you what it *assumed* you meant, was it right — and if not,
@@ -31,38 +38,134 @@ Please don't smooth it over — a confused moment from you is a bug in our desig
 
 ---
 
-## Part 1 — One-time setup (about 15 minutes)
+## A 60-second orientation to Cowork (skip if you already know it)
 
-You only do this once. If you get stuck on any step, that itself is a finding —
-note where, and either ask Cowork ("I'm stuck on step 3, can you help?") or send
-us a message and move on.
+Cowork is the mode of the Claude desktop app that can actually *do things on your
+computer* — run programs, read and write files in folders you point it at — not
+just chat. A few things worth knowing before you start:
 
-**1. Get the code.** We'll send you a link to the project (a GitHub repository)
-and a one-line instruction to download it. If you already have it from us, skip
-ahead.
+- **You drive it in plain English.** You type what you want ("download the data
+  for this app," "run the backtester," "add a strategy that…") and it does the
+  work. You don't run commands yourself unless you want to.
+- **It asks permission for anything consequential.** Before it installs software,
+  changes files, or downloads data, it shows you what it's about to do and waits
+  for you to approve. If you're ever unsure, it's safe to say "explain what that
+  will do first."
+- **It works inside folders you connect.** For it to see the project files, you
+  "connect" the project folder to your session (Step 2 below). After that it can
+  read and edit everything in that folder.
+- **When in doubt, just ask it.** "How do I connect a folder?", "I'm stuck — what
+  do I do?", "did that work?" are all fair questions. Getting unstuck by asking
+  Cowork (instead of asking us) is exactly what we're hoping to see.
 
-**2. Open the project in Cowork and connect the folder.** In the Claude desktop
-app, start a Cowork task and connect the project folder so Claude can see the
-files. (There's a folder-connect button in the app; if you can't find it, ask
-Cowork "how do I connect my project folder?")
+---
 
-**3. Install the skill.** In the project there's a file ending in `.skill`
-called `backtest-strategy-builder.skill`, inside the `skill_for_testers` folder.
-When you open it, the app should offer a **"Save skill"** button — click it. This
-teaches Cowork the specific vocabulary of this tool. If you don't see the button,
-tell us — that's a finding too.
+## Part 1 — One-time setup (about 15–20 minutes)
 
-**4. Get the market data.** The tool needs real historical stock prices, and for
-legal reasons we don't ship those with the code — you download them yourself, the
-exact same way a real user would. You don't need to know how; just say to Cowork:
+You only do this once. Do the steps in order. **If you get stuck on any step,
+that itself is a finding** — note where you stuck, then either ask Cowork for help
+in your own words or message us, and move on.
+
+There are five steps: (1) get the project files, (2) connect the folder,
+(3) install the backtester engine, (4) install the skill, (5) download the data.
+
+### Step 1 — Get the project files onto your computer
+
+The project lives in a public repository on GitHub:
+**https://github.com/kmchandy/DisSysLab**. You need a copy of it on your Mac.
+Pick whichever of these feels easier:
+
+- **The no-typing way (download a ZIP).** Open
+  https://github.com/kmchandy/DisSysLab in your browser, click the green
+  **"Code"** button near the top right, choose **"Download ZIP,"** then
+  double-click the downloaded file to unzip it. Move the resulting **DisSysLab**
+  folder somewhere easy to find, like your **Documents** folder.
+- **The let-Cowork-do-it way.** In a Cowork session, say:
+
+  > "Clone the public GitHub repository https://github.com/kmchandy/DisSysLab into
+  > my Documents folder."
+
+  Approve it when it asks. (If it reports that `git` isn't installed, either use
+  the ZIP method above, or say "please install git and then clone it" and approve
+  that too.)
+
+Either way, you should end up with a folder called **DisSysLab** on your computer.
+
+### Step 2 — Connect the DisSysLab folder to Cowork
+
+So Claude can see the files, connect that folder to your session. In the Claude
+desktop app there's a control to add/connect a folder to a Cowork task; point it
+at the **DisSysLab** folder you just created. If you can't find the control, ask:
+
+> "How do I connect the DisSysLab folder to this session?"
+
+To confirm it worked, ask: *"What's in the DisSysLab folder you can see?"* — it
+should list files like `README.md` and folders like `dissyslab`.
+
+### Step 3 — Install the backtester engine (`dsl`)
+
+The backtester runs on a small open-source tool called DisSysLab, which provides a
+command named `dsl`. Installing it is the one step that touches a terminal — but
+you can hand even that to Cowork. Try this first:
+
+> "Please install DisSysLab on my computer so I can run its offices. You can run
+> the official installer. When it asks me to pick an AI model or for an API key,
+> we don't need one for the backtester, so choose a lightweight option and skip
+> the key."
+
+If you'd rather do it yourself, the project's README has a one-line installer
+under the heading **"Try it in 60 seconds"** (see `README.md` in the DisSysLab
+folder). Open the **Terminal** app (press ⌘-Space, type "Terminal," press Enter),
+then paste this line and press Enter:
+
+```
+curl -sSf https://raw.githubusercontent.com/kmchandy/DisSysLab/main/install.sh | bash
+```
+
+It will ask which AI backend you want and (optionally) for an API key. **The
+backtester does its math in plain Python and does not call an AI model to compute
+results**, so you don't need one: when prompted, pick **Claude** or **OpenRouter**
+and just skip the API key (press Enter). Avoid the **Ollama** option — it works
+fine, but it downloads a very large model file you won't need for this.
+
+To check it worked, ask Cowork *"is the `dsl` command available?"* or, in Terminal,
+type `dsl --help` and press Enter — you should see a help message rather than
+"command not found." If anything about this step is confusing, tell us *exactly*
+where — the install step is the part most likely to trip up a non-programmer, and
+that's precisely what we want to learn.
+
+### Step 4 — Install the skill
+
+Inside the project there's a file named **`backtest-strategy-builder.skill`**, in
+the folder `dissyslab/gallery/apps/mac_speed_suite/skill_for_testers/`. This is
+what teaches Cowork the specific vocabulary of the backtester (so "describe a
+strategy" turns into a real change). With the DisSysLab folder connected, just ask:
+
+> "Show me the backtest-strategy-builder skill in this repo."
+
+Cowork will find the `.skill` file and show a card with a **"Save skill"** button
+— click it. (If you happened to receive the `.skill` file as an email attachment
+instead, don't double-click it in Finder — depending on your settings that can
+open an unrelated app. Drag it into a Cowork chat and use the "Save skill" button
+on the card that appears.) If you don't see a "Save skill" button anywhere, tell
+us — that's a finding too.
+
+### Step 5 — Get the market data
+
+The tool needs real historical stock prices. For legal reasons we don't ship those
+with the code — each user downloads their own copy, the same way a real user would.
+You don't need to know how; just say to Cowork:
 
 > "Please download the stock data this app needs."
 
 It will fetch about ten years of daily prices for a basket of five stocks (AMD,
-Netflix, Nvidia, Palantir, Tesla) and save them where the tool expects. If it
-asks you to install one small thing first (a package called `yfinance`), say yes.
+Netflix, Nvidia, Palantir, Tesla) and save them where the tool expects. If it asks
+to install one small helper first (a package called `yfinance`), say yes. (The
+exact commands, if you're curious, are in the app's own README under **"Get the
+data"** — the file `dissyslab/gallery/apps/mac_speed_suite/README.md`.)
 
-That's setup. You now have a working research tool.
+That's setup. You now have a working research tool, and from here on it's all
+conversation.
 
 ---
 
@@ -73,7 +176,12 @@ Start simple, before you get creative. In Cowork, say:
 > "Run the backtester as it's currently set up and show me the report."
 
 Give it a minute or two. When it finishes, it produces a file called
-**`report.html`** — open it. That single run does the *whole* check for you: it validates the strategies on history they weren't tuned on (walk-forward) and then stress-tests them (Monte Carlo), so the report is complete without you editing anything. If a run ever feels slow you can say "use fewer Monte Carlo samples" or "just do the fast walk-forward"; for a more thorough check, "use more Monte Carlo samples." Have a look around. You should see, roughly:
+**`report.html`** — open it. That single run does the *whole* check for you: it
+validates the strategies on history they weren't tuned on (walk-forward) and then
+stress-tests them (Monte Carlo), so the report is complete without you editing
+anything. If a run ever feels slow you can say "use fewer Monte Carlo samples" or
+"just do the fast walk-forward"; for a more thorough check, "use more Monte Carlo
+samples." Have a look around. You should see, roughly:
 
 - a short **summary** at the top,
 - a **Walk-Forward (out-of-sample) validation** section — treat this as the
@@ -190,7 +298,8 @@ If you're enjoying it, push harder. Some things that would teach us a lot:
 Whenever you're done — even if you stopped early — please tell us, in whatever
 form is easiest (a note, a voice memo, screenshots):
 
-1. **Did it work?** Where did it stall, if anywhere?
+1. **Did it work?** Where did it stall, if anywhere? (Setup especially — which of
+   the five steps, if any, gave you trouble?)
 2. **Did you trust the results?** Was there a number you didn't believe, or an
    answer that didn't match your question?
 3. **Where were you confused?** The exact moment, even if small.
