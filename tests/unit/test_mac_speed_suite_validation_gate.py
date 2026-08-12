@@ -99,3 +99,48 @@ def test_comparator_builds_both_sections_from_one_pass():
     assert result["monte_carlo"]["n_samples"] == 3
     # the detailed full-window fields survive so report.html still renders
     assert "table" in result and "correlation" in result
+
+
+# ── run-settings receipt (step 1: conversational params + provenance) ──
+
+
+def test_full_span_carries_a_run_config_receipt():
+    gate = _ValidationGate(n_folds=3, n_samples=4)
+    dates = [f"2016-{(i % 12) + 1:02d}-{(i // 12) + 1:02d}" for i in range(48)]
+    full_span = gate.next_span(_full(dates))
+    rc = full_span["_wf_tag"].get("run_config")
+    assert rc is not None
+    assert rc["n_folds"] == 3 and rc["n_samples"] == 4
+    assert rc["start"] == dates[0] and rc["end"] == dates[-1]
+    assert rc["n_bars"] == 48
+    assert rc["walk_forward"] and rc["monte_carlo"]
+    # the receipt rides only on the full span, not every later span
+    nxt = gate.next_span({"walkforward_next": True})
+    assert "run_config" not in nxt["_wf_tag"]
+
+
+def test_comparator_surfaces_run_settings_with_cost():
+    gate = _ValidationGate(n_folds=2, n_samples=3)
+    dates = [f"2016-{(i % 12) + 1:02d}-{(i // 12) + 1:02d}" for i in range(40)]
+    comp = _Comparator()
+
+    def ev(tag):
+        return {"_wf_tag": tag, "n_days": len(dates), "cost_bps": 7.5,
+                "portfolio_stats": {"x": {"sharpe_ratio": 1.0,
+                                          "annualized_return": 0.1,
+                                          "max_drawdown": -0.2}},
+                "table": {"A": {}}, "correlation": {}}
+
+    span = gate.next_span(_full(dates))
+    result = None
+    while span is not None:
+        kind, out = comp.accept(ev(span["_wf_tag"]))
+        if kind == "scorecard":
+            result = out
+        span = gate.next_span({"walkforward_next": True})
+
+    rs = result.get("run_settings")
+    assert rs is not None
+    assert rs["cost_bps"] == 7.5
+    assert rs["n_folds"] == 2 and rs["n_samples"] == 3
+    assert rs["tickers"] == ["A"]

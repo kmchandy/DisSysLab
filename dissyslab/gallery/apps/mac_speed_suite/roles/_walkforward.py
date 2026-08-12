@@ -376,6 +376,7 @@ class _Comparator(Agent):
         self._mc: List[Dict[str, Any]] = []
         self._count = 0
         self._total: Optional[int] = None
+        self._run_config: Optional[Dict[str, Any]] = None
 
     def accept(self, msg: Dict[str, Any]) -> Tuple[str, Dict[str, Any]]:
         """Fold one evaluation in; return ("next", signal) to release the next
@@ -388,6 +389,8 @@ class _Comparator(Agent):
         self._count += 1
         if role == "full":
             self._full_eval = msg
+            if tag.get("run_config") is not None:
+                self._run_config = tag["run_config"]
         elif role == "train":
             self._train.append(msg)
         elif role == "test":
@@ -397,6 +400,12 @@ class _Comparator(Agent):
 
         if self._total is not None and self._count >= self._total:
             base = dict(self._full_eval or msg)   # renders the detailed report
+            if self._run_config is not None:
+                base["run_settings"] = {
+                    **self._run_config,
+                    "cost_bps": base.get("cost_bps"),
+                    "n_days": base.get("n_days"),
+                }
             if self._train or self._test:
                 base["walk_forward"] = aggregate_scorecard(self._train, self._test)
             if self._mc:
@@ -453,6 +462,7 @@ class _ValidationGate(Agent):
         self._full: Optional[Dict[str, Any]] = None
         self._plan: Optional[List[Tuple]] = None
         self._cursor = 0
+        self._run_config: Optional[Dict[str, Any]] = None
 
     def _build_plan(self, history: Dict[str, List[dict]]) -> List[Tuple]:
         """Ordered list of span descriptors: ("wf", fold, role, start, end) or
@@ -470,11 +480,30 @@ class _ValidationGate(Agent):
                 plan.append(("mc", i))
         return plan
 
+    def _make_run_config(self, full: Dict[str, Any]) -> Dict[str, Any]:
+        """The exact parameters this run used -- a receipt carried inside the
+        full span's `_wf_tag` (which is forwarded end to end) so the comparator
+        and report can show what produced a given result."""
+        history = full.get("history", {}) or {}
+        dates = _all_dates(history)
+        return {
+            "tickers": full.get("tickers") or sorted(history.keys()),
+            "start": dates[0] if dates else None,
+            "end": dates[-1] if dates else None,
+            "n_bars": len(dates),
+            "walk_forward": self._walk_forward,
+            "monte_carlo": self._monte_carlo,
+            "n_folds": self._n_folds if self._walk_forward else 0,
+            "n_samples": self._n if self._monte_carlo else 0,
+            "block_size": self._block,
+        }
+
     def next_span(self, msg: Any) -> Optional[Dict[str, Any]]:
         if (self._plan is None and isinstance(msg, dict) and msg.get("history")):
             self._full = msg
             self._plan = self._build_plan(msg.get("history", {}))
             self._cursor = 0
+            self._run_config = self._make_run_config(msg)
         if not self._plan or self._cursor >= len(self._plan):
             return None
         desc = self._plan[self._cursor]
@@ -483,7 +512,10 @@ class _ValidationGate(Agent):
         if desc[0] == "wf":
             _, fold, role, start, end = desc
             span = slice_history(self._full, start, end)
-            span["_wf_tag"] = {"fold": fold, "role": role, "total_spans": total}
+            tag = {"fold": fold, "role": role, "total_spans": total}
+            if role == "full" and self._run_config is not None:
+                tag["run_config"] = self._run_config
+            span["_wf_tag"] = tag
         else:  # ("mc", i)
             i = desc[1]
             span = resample_history(self._full, seed=self._seed + i + 1,

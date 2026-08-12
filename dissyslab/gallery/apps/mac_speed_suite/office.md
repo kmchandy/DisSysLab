@@ -18,6 +18,15 @@
 # `directory` argument must be relative to *this office folder*, not the
 # repo root, hence the four "../" below to climb back up to DisSysLab/.
 
+# ── RUN SETTINGS (the knobs Sebu/Vikram tune, usually just by asking Cowork) ──
+#   Basket ............ the tickers=[...] list on the Sources line below
+#   History window .... which *_10_year.csv files exist (re-run the downloader
+#                       after changing the basket); filename_pattern below
+#   Validation ........ n_samples / n_folds / walk_forward / monte_carlo on the
+#                       GATE line (validation_gate)
+#   Transaction cost .. cost_bps (defaults to 5; pass cost_bps=... to backtester)
+# Whatever a run actually used is echoed back in report.html's "Run settings"
+# panel, so every report says exactly which parameters produced it.
 Sources: csv_stock_history(tickers=['AMD', 'NFLX', 'NVDA', 'PLTR', 'TSLA'], directory='../../../../sp100_data', filename_pattern='{ticker}_10_year.csv')
 Sinks: console_printer, report_html(path="report.html")
 

@@ -150,6 +150,14 @@ class ReportHtmlSink:
   .banner {{ background: #eef6ff; border: 1px solid #a9cdeb; border-radius: 8px;
              padding: 14px 18px; margin: 20px 0; font-size: 14px; }}
   .banner strong {{ color: #205081; }}
+  .run-settings {{ border: 1px solid #d7dbe0; border-radius: 8px; padding: 12px 16px;
+                   margin: 18px 0; font-size: 13.5px; background: #fbfcfd; }}
+  .run-settings .rs-title {{ font-weight: 600; margin-bottom: 6px; color: #205081; }}
+  .run-settings .rs-sub {{ font-weight: 400; color: #888; font-size: 12px; }}
+  .rs-table {{ width: auto; margin: 0; }}
+  .rs-table td {{ border: none; padding: 2px 14px 2px 0; text-align: left; }}
+  .rs-table td.rs-k {{ color: #666; white-space: nowrap; }}
+  .rs-table td.rs-v {{ color: #1a1a1a; font-weight: 500; }}
   h2 {{ border-bottom: 2px solid #eee; padding-bottom: 6px; margin-top: 36px; }}
   h3 {{ margin-top: 24px; margin-bottom: 6px; color: #333; }}
   table {{ border-collapse: collapse; width: 100%; margin: 12px 0 24px 0; font-size: 13.5px; }}
@@ -177,6 +185,8 @@ class ReportHtmlSink:
   recommendation &mdash; a short window and a handful of tickers cannot separate
   a real edge from luck.
 </div>
+
+{self._run_settings_panel(msg)}
 
 <h2>Executive Summary</h2>
 <div class="summary-box">
@@ -223,6 +233,54 @@ class ReportHtmlSink:
 """
 
     # ── Rendering helpers ─────────────────────────────────────────────
+
+    def _run_settings_panel(self, msg: Dict[str, Any]) -> str:
+        """A receipt of the exact parameters this run used, so any report is
+        reproducible: which stocks, what window, how many folds/samples, what
+        cost. Reads `run_settings` (stamped by the validation gate) and falls
+        back to whatever is present for other gates."""
+        rs = msg.get("run_settings") or {}
+        table = msg.get("table") or {}
+        wf = msg.get("walk_forward") or {}
+        mc = msg.get("monte_carlo") or {}
+        tickers = rs.get("tickers") or sorted(table.keys())
+        cost_bps = rs.get("cost_bps", msg.get("cost_bps"))
+        start, end = rs.get("start"), rs.get("end")
+        n_bars = rs.get("n_bars") or msg.get("n_days")
+        n_folds = rs.get("n_folds", wf.get("n_folds"))
+        n_samples = rs.get("n_samples", mc.get("n_samples"))
+        walk_forward = rs.get("walk_forward", bool(wf))
+        monte_carlo = rs.get("monte_carlo", bool(mc))
+
+        rows = [("Basket",
+                 f"{len(tickers)} ticker(s): " + (", ".join(tickers) if tickers else "n/a"))]
+        if start and end:
+            span = f"{start} \u2192 {end}"
+            if n_bars:
+                span += f" ({n_bars} trading days)"
+            rows.append(("History window", span))
+        elif n_bars:
+            rows.append(("History window", f"{n_bars} trading days"))
+        val = [
+            f"walk-forward: {n_folds} folds" if walk_forward and n_folds else "walk-forward: off",
+            f"Monte Carlo: {n_samples} samples" if monte_carlo and n_samples else "Monte Carlo: off",
+        ]
+        rows.append(("Validation", " \u00b7 ".join(val)))
+        if isinstance(cost_bps, (int, float)):
+            rows.append(("Transaction cost", f"{cost_bps:.0f} bps per unit traded"))
+
+        cells = "".join(
+            f"<tr><td class='rs-k'>{html.escape(k)}</td>"
+            f"<td class='rs-v'>{html.escape(str(v))}</td></tr>"
+            for k, v in rows
+        )
+        return (
+            '<div class="run-settings">\n'
+            '  <div class="rs-title">Run settings '
+            '<span class="rs-sub">(the exact parameters this run used)</span></div>\n'
+            f'  <table class="rs-table">{cells}</table>\n'
+            '</div>'
+        )
 
     def _summary_best(self, name, stats, rank_by) -> str:
         if not name:
