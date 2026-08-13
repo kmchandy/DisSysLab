@@ -158,6 +158,12 @@ class ReportHtmlSink:
   .rs-table td {{ border: none; padding: 2px 14px 2px 0; text-align: left; }}
   .rs-table td.rs-k {{ color: #666; white-space: nowrap; }}
   .rs-table td.rs-v {{ color: #1a1a1a; font-weight: 500; }}
+  details {{ margin: 6px 0 16px 0; }}
+  summary {{ cursor: pointer; color: #205081; font-size: 13px; }}
+  .badge {{ background: #e8f5e9; color: #2e7d32; border-radius: 4px;
+           padding: 1px 6px; font-size: 11px; margin-left: 6px; }}
+  .callout {{ background: #fff8e1; border: 1px solid #f0d98c; border-radius: 8px;
+             padding: 10px 14px; margin: 8px 0 14px 0; font-size: 13.5px; }}
   h2 {{ border-bottom: 2px solid #eee; padding-bottom: 6px; margin-top: 36px; }}
   h3 {{ margin-top: 24px; margin-bottom: 6px; color: #333; }}
   table {{ border-collapse: collapse; width: 100%; margin: 12px 0 24px 0; font-size: 13.5px; }}
@@ -202,6 +208,8 @@ class ReportHtmlSink:
 
 <h2>Full-Window Comparison (whole history, in-sample)</h2>
 {self._portfolio_table(portfolio_variants, portfolio_stats)}
+
+{self._trade_stats_section(msg)}
 
 {self._correlation_section(msg)}
 
@@ -268,6 +276,9 @@ class ReportHtmlSink:
         rows.append(("Validation", " \u00b7 ".join(val)))
         if isinstance(cost_bps, (int, float)):
             rows.append(("Transaction cost", f"{cost_bps:.0f} bps per unit traded"))
+        stop_pct = rs.get("stop_pct")
+        if isinstance(stop_pct, (int, float)):
+            rows.append(("Stop (for R)", f"{stop_pct * 100:.0f}% move against entry"))
 
         cells = "".join(
             f"<tr><td class='rs-k'>{html.escape(k)}</td>"
@@ -281,6 +292,109 @@ class ReportHtmlSink:
             f'  <table class="rs-table">{cells}</table>\n'
             '</div>'
         )
+
+    def _trade_stats_section(self, msg: Dict[str, Any]) -> str:
+        """Trade-level statistics (Sebu's reframe): properties of trades, not of
+        a daily return series. R multiples appear only when a stop is set, and
+        always alongside -- never as the primary lens."""
+        ts = msg.get("trade_stats") or {}
+        if not ts:
+            return ""
+        trades = msg.get("trades") or {}
+        stop_pct = msg.get("stop_pct")
+        show_r = isinstance(stop_pct, (int, float)) and bool(stop_pct)
+        ordered = [v for v in self._portfolio_variants(msg) if v in ts]
+        ordered += [v for v in ts if v not in ordered]
+
+        rcols = "<th>Expectancy (R)</th><th>Total R</th>" if show_r else ""
+        n_dash = 6 + (2 if show_r else 0)
+        rows = []
+        for v in ordered:
+            st = ts.get(v, {})
+            n = st.get("n_trades", 0)
+            if not n:
+                openn = st.get("n_open", 0)
+                note = f' <span class="muted">({openn} open)</span>' if openn else ""
+                dashes = '<td class="muted">&mdash;</td>' * n_dash
+                rows.append(
+                    f'<tr class="no-trades"><td>{html.escape(_label(v))}'
+                    f'<span class="muted"> (no trades)</span>{note}</td>'
+                    f'<td>0</td>{dashes}</tr>'
+                )
+                continue
+            open_note = (f' <span class="muted">(+{st["n_open"]} open)</span>'
+                         if st.get("n_open") else "")
+            rcells = ""
+            if show_r:
+                rcells = (f'<td>{_rmult(st.get("expectancy_r"))}</td>'
+                          f'<td>{_rmult(st.get("total_r"))}</td>')
+            rows.append(
+                f'<tr><td>{html.escape(_label(v))}{open_note}</td>'
+                f'<td>{n}</td>'
+                f'<td>{_num(st.get("avg_hold"), 1)}</td>'
+                f'<td>{_rate(st.get("win_rate"))}</td>'
+                f'<td>{_pct(st.get("avg_win"))}</td>'
+                f'<td>{_pct(st.get("avg_loss"))}</td>'
+                f'<td>{_pct(st.get("expectancy"))}</td>'
+                f'<td>{_num(st.get("rr"), 2)}</td>'
+                f'{rcells}</tr>'
+            )
+
+        stop_note = ""
+        if show_r:
+            stop_note = (f" R multiples use a disclosed {stop_pct * 100:.0f}% stop "
+                         "(R = trade return &divide; stop distance); change it just by "
+                         "asking, e.g. &ldquo;use a tighter stop.&rdquo;")
+        drill = self._trade_list_details(ordered, ts, trades, stop_pct)
+        return (
+            "<h2>Trade statistics &mdash; properties of trades, not the return series</h2>"
+            "<p>How many trades, how long held, how often they won, and the size of "
+            "the average winner versus loser &mdash; two rules with the same Sharpe "
+            "can trade completely differently. A variant with <strong>0 trades</strong> "
+            f"never took a position (not a flat loss).{stop_note}</p>"
+            "<table><thead><tr><th>Strategy / Variant</th><th>Trades</th>"
+            "<th>Avg hold (d)</th><th>Win rate</th><th>Avg win</th><th>Avg loss</th>"
+            f"<th>Expectancy</th><th>RR</th>{rcols}</tr></thead>"
+            f"<tbody>{''.join(rows)}</tbody></table>"
+            f"{drill}"
+        )
+
+    def _trade_list_details(self, ordered, ts, trades, stop_pct) -> str:
+        """A collapsible per-variant list of the actual trades -- "if a number is
+        built on twelve trades I want to see the twelve" (Sebu)."""
+        show_r = isinstance(stop_pct, (int, float)) and bool(stop_pct)
+        blocks = []
+        for v in ordered:
+            lst = trades.get(v) or []
+            if not lst:
+                continue
+            rows = []
+            for tr in lst:
+                ret = tr.get("return")
+                r = (ret / stop_pct) if (show_r and isinstance(ret, (int, float))) else None
+                rcell = f"<td>{_rmult(r)}</td>" if show_r else ""
+                openmark = ' <span class="muted">(open)</span>' if tr.get("open") else ""
+                rows.append(
+                    f'<tr><td>{html.escape(str(tr.get("ticker", "")))}</td>'
+                    f'<td>{html.escape(str(tr.get("entry", "")))}</td>'
+                    f'<td>{html.escape(str(tr.get("exit", "")))}{openmark}</td>'
+                    f'<td>{html.escape(str(tr.get("direction", "")))}</td>'
+                    f'<td>{tr.get("hold", "")}</td>'
+                    f'<td>{_pct(ret)}</td>{rcell}</tr>'
+                )
+            trunc = ts.get(v, {}).get("n_truncated")
+            note = (f'<p class="muted">(+{trunc} more not shown)</p>' if trunc else "")
+            rhead = "<th>R</th>" if show_r else ""
+            blocks.append(
+                f"<details><summary>{html.escape(_label(v))} &mdash; show "
+                f"{len(lst)} trades</summary>"
+                "<table><thead><tr><th>Ticker</th><th>Entry</th><th>Exit</th>"
+                f"<th>Dir</th><th>Hold (d)</th><th>Return</th>{rhead}</tr></thead>"
+                f"<tbody>{''.join(rows)}</tbody></table>{note}</details>"
+            )
+        if not blocks:
+            return ""
+        return "<h3>Every trade behind the numbers</h3>" + "".join(blocks)
 
     def _summary_best(self, name, stats, rank_by) -> str:
         if not name:
@@ -372,17 +486,51 @@ class ReportHtmlSink:
         if not ranked:
             return ""
         n_folds = wf.get("n_folds")
+        n = len(ranked)
+
+        def _isk(v):
+            sh = per.get(v, {}).get("is_sharpe")
+            return sh if isinstance(sh, (int, float)) else float("-inf")
+
+        in_ranked = sorted(ranked, key=_isk, reverse=True)
+        topk = max(1, n // 3)
+        both = set(ranked[:topk]) & set(in_ranked[:topk])   # top of BOTH halves
+        is_winner = in_ranked[0] if in_ranked else None
+        oos_rank = (ranked.index(is_winner) + 1) if is_winner in ranked else None
+
         rows = []
         for pos, v in enumerate(ranked, start=1):
             d = per.get(v, {})
             css = ' class="best-row"' if pos == 1 else ""
+            badge = (' <span class="badge">strong in both halves</span>'
+                     if v in both else "")
             rows.append(
-                f'<tr{css}><td>{pos}</td><td>{html.escape(_label(v))}</td>'
+                f'<tr{css}><td>{pos}</td><td>{html.escape(_label(v))}{badge}</td>'
                 f'<td>{_num(d.get("oos_sharpe"))}</td>'
                 f'<td>{_num(d.get("is_sharpe"))}</td>'
                 f'<td>{_pct(d.get("oos_return"))}</td>'
                 f'<td>{_pct(d.get("is_return"))}</td></tr>'
             )
+
+        callout = ""
+        if is_winner and oos_rank:
+            names = [v for v in ranked if v in both]
+            extra = ""
+            if names:
+                verb = "is" if len(names) == 1 else "are"
+                joined = ", ".join(html.escape(_label(v)) for v in names)
+                extra = (f" The most consistent &mdash; strong in <em>both</em> "
+                         f"halves &mdash; {verb}: <strong>{joined}</strong>.")
+            flatter = " In other words, the in-sample ranking flattered it." \
+                if oos_rank > topk else ""
+            callout = (
+                '<div class="callout"><strong>Pick vs. outcome:</strong> if you had '
+                'picked the in-sample winner '
+                f'(<em>{html.escape(_label(is_winner))}</em>), it actually ranked '
+                f'<strong>#{oos_rank} of {n}</strong> out-of-sample.{flatter}{extra}'
+                '</div>'
+            )
+
         return (
             "<h2>Walk-Forward (out-of-sample) validation</h2>"
             f"<p>Each variant ranked over {n_folds} expanding train/test fold(s): "
@@ -391,6 +539,7 @@ class ReportHtmlSink:
             "trust &mdash; a variant whose out-of-sample Sharpe falls well short of "
             "its in-sample Sharpe was likely overfit. The full-window tables below "
             "are in-sample (the whole history), shown for detail.</p>"
+            f"{callout}"
             "<table><thead><tr><th>Rank</th><th>Strategy / Variant</th>"
             "<th>OOS Sharpe</th><th>In-sample Sharpe</th>"
             "<th>OOS Return</th><th>In-sample Return</th></tr></thead>"
@@ -436,6 +585,14 @@ class ReportHtmlSink:
 
 
 # ── Formatting helpers (module-level; no strategy knowledge) ───────────
+
+
+def _rmult(x: Optional[float]) -> str:
+    return f"{x:+.2f}R" if isinstance(x, (int, float)) else "n/a"
+
+
+def _rate(x: Optional[float]) -> str:
+    return f"{x * 100:.0f}%" if isinstance(x, (int, float)) else "n/a"
 
 
 def _metric_cells_or_notrades(stats: Dict[str, Any]):
