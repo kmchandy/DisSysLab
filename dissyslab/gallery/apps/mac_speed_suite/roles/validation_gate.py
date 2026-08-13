@@ -32,8 +32,8 @@ role = AgentRoleEntry(
     in_ports=("in_",),
     out_ports=("out",),
     factory=lambda n_folds=4, n_samples=100, seed=42, block_size=20,
-    walk_forward=True, monte_carlo=True: _ValidationGate(
+    walk_forward=True, monte_carlo=True, stop_pct=0.10: _ValidationGate(
         n_folds=n_folds, n_samples=n_samples, seed=seed, block_size=block_size,
-        walk_forward=walk_forward, monte_carlo=monte_carlo,
+        walk_forward=walk_forward, monte_carlo=monte_carlo, stop_pct=stop_pct,
     ),
 )

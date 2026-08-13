@@ -363,6 +363,73 @@ def _correlation_matrix(
     return {"variants": names, "matrix": matrix}
 
 
+def _trade_stats(trades: List[dict], stop_pct: Optional[float]) -> Dict[str, Any]:
+    """Per-variant trade statistics -- the properties of *trades*, not of a
+    daily return series. Open trades (still on at the window end) are counted
+    but kept out of the win/loss stats, which are round-trip only. When a stop
+    is given, each trade also gets an R multiple = trade_return / stop_pct, so
+    outcomes read in the risk units a trader thinks in ("+2.1R") -- shown
+    alongside, never as the primary lens.
+    """
+    closed = [t for t in trades if not t.get("open")]
+    n_open = sum(1 for t in trades if t.get("open"))
+    n = len(closed)
+    if n == 0:
+        return {"n_trades": 0, "n_open": n_open}
+    rets = [t["return"] for t in closed]
+    holds = [t["hold"] for t in closed]
+    wins = [r for r in rets if r > 0]
+    losses = [r for r in rets if r <= 0]
+    avg_win = sum(wins) / len(wins) if wins else None
+    avg_loss = sum(losses) / len(losses) if losses else None
+    rr = (avg_win / abs(avg_loss)) if (avg_win is not None
+                                       and avg_loss not in (None, 0)) else None
+    stats: Dict[str, Any] = {
+        "n_trades": n,
+        "n_open": n_open,
+        "avg_hold": sum(holds) / n,
+        "win_rate": len(wins) / n,
+        "avg_win": avg_win,
+        "avg_loss": avg_loss,
+        "worst": min(rets),
+        "expectancy": sum(rets) / n,
+        "rr": rr,
+    }
+    if stop_pct:
+        r_mult = [r / stop_pct for r in rets]
+        win_r = [x for x in r_mult if x > 0]
+        loss_r = [x for x in r_mult if x <= 0]
+        stats.update({
+            "stop_pct": stop_pct,
+            "total_r": sum(r_mult),
+            "expectancy_r": sum(r_mult) / n,
+            "avg_win_r": sum(win_r) / len(win_r) if win_r else None,
+            "avg_loss_r": sum(loss_r) / len(loss_r) if loss_r else None,
+        })
+    return stats
+
+
+_MAX_TRADES_SHOWN = 250  # cap the per-variant drill-down list; note if exceeded
+
+
+def _aggregate_trades(speed_results, stop_pct):
+    """Pool each variant's trades across tickers -> (stats, capped lists)."""
+    trade_stats: Dict[str, Any] = {}
+    trades_by_variant: Dict[str, list] = {}
+    for speed, result in speed_results.items():
+        pooled = []
+        for tk, trs in (result.get("per_ticker_trades", {}) or {}).items():
+            for tr in trs:
+                pooled.append({**tr, "ticker": tk})
+        pooled.sort(key=lambda t: (t.get("entry") or "", t.get("ticker") or ""))
+        trade_stats[speed] = _trade_stats(pooled, stop_pct)
+        shown = pooled[:_MAX_TRADES_SHOWN]
+        if len(pooled) > _MAX_TRADES_SHOWN:
+            trade_stats[speed]["n_truncated"] = len(pooled) - _MAX_TRADES_SHOWN
+        trades_by_variant[speed] = shown
+    return trade_stats, trades_by_variant
+
+
 def make_evaluator(
     rank_by: str = "sharpe_ratio",
     target_annual_vol: float = 0.10,
@@ -464,6 +531,10 @@ def make_evaluator(
         costs.discard(None)
         cost_bps = costs.pop() if len(costs) == 1 else None
 
+        tag = msg.get("_wf_tag") or {}
+        stop_pct = (tag.get("run_config") or {}).get("stop_pct")
+        trade_stats, trades_by_variant = _aggregate_trades(speed_results, stop_pct)
+
         out_msg = {
             "type":            "mac_evaluation",
             "rank_by":         rank_by,
@@ -473,6 +544,9 @@ def make_evaluator(
             "portfolio_stats": portfolio_stats,
             "ranked":          ranked,
             "correlation":     correlation,
+            "trade_stats":     trade_stats,
+            "trades":          trades_by_variant,
+            "stop_pct":        stop_pct,
             "_wf_tag":         msg.get("_wf_tag"),
         }
         return [(out_msg, "out")]

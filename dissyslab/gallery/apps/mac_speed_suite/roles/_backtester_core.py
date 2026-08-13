@@ -113,6 +113,52 @@ from typing import Any, Callable, Dict
 DEFAULT_COST_BPS = 5.0  # one-way transaction cost per unit of position, in bps
 
 
+def _sign(x: float) -> int:
+    return 1 if x > 0 else (-1 if x < 0 else 0)
+
+
+def _reconstruct_trades(signal, strat_returns, dates):
+    """Cut a position series into discrete trades -- the unit a trader judges.
+
+    The position held on day t is ``signal[t-1]`` (decided at the close of
+    t-1) and it earns ``strat_returns[t]`` (already net of cost). A trade is a
+    maximal run of consecutive days whose position is non-zero and keeps one
+    sign; it closes when the position goes flat or flips sign. The trade's
+    return compounds the daily strategy returns over that run. A run still open
+    on the final day is flagged ``open=True`` (mark-to-market, not a realized
+    round trip). This is what tells 20 trades apart from 200 behind an
+    identical-looking Sharpe, and what makes a never-traded variant read as
+    ``0 trades`` rather than a flat 0%.
+    """
+    trades = []
+    n = len(strat_returns)
+    t = 1
+    while t < n:
+        pos = signal[t - 1] if t - 1 < len(signal) else 0
+        s = _sign(pos)
+        if s == 0:
+            t += 1
+            continue
+        t0 = t
+        wealth = 1.0
+        while t < n:
+            pos_t = signal[t - 1] if t - 1 < len(signal) else 0
+            if _sign(pos_t) != s:
+                break
+            wealth *= 1.0 + (strat_returns[t] or 0.0)
+            t += 1
+        t1 = t - 1
+        trades.append({
+            "entry": dates[t0 - 1] if 0 <= t0 - 1 < len(dates) else None,
+            "exit": dates[t1] if t1 < len(dates) else None,
+            "hold": t1 - t0 + 1,
+            "return": wealth - 1.0,
+            "direction": "long" if s > 0 else "short",
+            "open": t1 == n - 1,
+        })
+    return trades
+
+
 def make_backtester(
     speed_name: str, cost_bps: float = DEFAULT_COST_BPS
 ) -> Callable[[Dict[str, Any]], list]:
@@ -135,6 +181,7 @@ def make_backtester(
         per_ticker_days_in_market: Dict[str, int] = {}
         per_ticker_turnover: Dict[str, float] = {}
         per_ticker_dates: Dict[str, list] = {}
+        per_ticker_trades: Dict[str, list] = {}
 
         for ticker, data in series.items():
             returns = data.get("returns", [])
@@ -174,7 +221,11 @@ def make_backtester(
             per_ticker_returns[ticker] = strat_returns
             per_ticker_days_in_market[ticker] = days_in_market
             per_ticker_turnover[ticker] = turnover
-            per_ticker_dates[ticker] = data.get("dates", [])
+            dates = data.get("dates", [])
+            per_ticker_dates[ticker] = dates
+            per_ticker_trades[ticker] = _reconstruct_trades(
+                signal, strat_returns, dates
+            )
 
         # No portfolio-level combining here on purpose: BACKTESTER's
         # job stops at "what happened to each stock." How the stocks
@@ -196,6 +247,7 @@ def make_backtester(
                 "per_ticker_dates": per_ticker_dates,
                 "per_ticker_days_in_market": per_ticker_days_in_market,
                 "per_ticker_turnover": per_ticker_turnover,
+                "per_ticker_trades": per_ticker_trades,
                 "cost_bps": cost_bps,
             },
         }

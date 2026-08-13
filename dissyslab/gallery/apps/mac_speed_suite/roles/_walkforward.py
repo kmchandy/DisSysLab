@@ -451,7 +451,7 @@ class _ValidationGate(Agent):
     def __init__(self, n_folds: int = WALKFORWARD_DEFAULT_FOLDS,
                  n_samples: int = 100, seed: int = 42, block_size: int = 20,
                  walk_forward: bool = True, monte_carlo: bool = True,
-                 name=None):
+                 stop_pct: float = 0.10, name=None):
         super().__init__(name=name, inports=["in_"], outports=["out_"])
         self._n_folds = n_folds
         self._n = n_samples
@@ -459,6 +459,7 @@ class _ValidationGate(Agent):
         self._block = block_size
         self._walk_forward = walk_forward
         self._monte_carlo = monte_carlo
+        self._stop_pct = stop_pct
         self._full: Optional[Dict[str, Any]] = None
         self._plan: Optional[List[Tuple]] = None
         self._cursor = 0
@@ -496,6 +497,7 @@ class _ValidationGate(Agent):
             "n_folds": self._n_folds if self._walk_forward else 0,
             "n_samples": self._n if self._monte_carlo else 0,
             "block_size": self._block,
+            "stop_pct": self._stop_pct,
         }
 
     def next_span(self, msg: Any) -> Optional[Dict[str, Any]]:
