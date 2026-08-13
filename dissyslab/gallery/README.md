@@ -23,6 +23,18 @@ from any directory.
 
 ---
 
+## ⭐ Featured: apps you drive by talking to Cowork
+
+Most offices here are things you *run*. A few are complete apps you *talk to*:
+you describe what you want in plain English to **Claude Cowork** and it does the
+rest — no code, no office to build. The flagship is
+**[`mac_speed_suite`](apps/mac_speed_suite/)**, a trend-following backtester.
+Describe a trading strategy in your own words; it implements, validates
+out-of-sample, stress-tests with Monte Carlo, accounts for trades and costs, and
+writes a ranked report. See **[what to say to it](apps/mac_speed_suite/skill_for_testers/COWORK_EXAMPLES.md)**.
+
+---
+
 ## Apps that run on any laptop, no keys
 
 These apps make zero or at most one LLM call per cycle. Pat installs
@@ -32,6 +44,7 @@ output in seconds.
 
 | App | What it does | Why it's fast |
 |---|---|---|
+| [`mac_speed_suite`](apps/mac_speed_suite/) | **Talk-to-it** trend-following backtester: describe a strategy in English to Cowork and get out-of-sample + Monte Carlo validation, trade stats, R multiples, and a ranked report. | No LLM in the pipeline — deterministic backtest math on local CSV price data. |
 | [`periodic_brief`](apps/periodic_brief/) | Morning briefing combining BBC + NPR news, Pasadena weather, and stock tickers (AAPL, NVDA, MSFT) into one HTML page. | Zero LLM calls. Pure orchestration of public APIs into a styled brief. |
 | [`weather_monitor`](apps/weather_monitor/) | Hourly plain-English weather briefing for a city you pick. | One LLM call per reading; ~30 s on Ollama, instant on OpenRouter. |
 | [`stocks_monitor`](apps/stocks_monitor/) | One-line read of a stock ticker's movement every few minutes. | One LLM call per reading; same latency as weather_monitor. |

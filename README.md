@@ -47,6 +47,22 @@ networks -- org charts -- can have loops, branches, and arbitrary structure.*
 
 ---
 
+## Two ways to use DisSysLab
+
+**1. Use a finished app — just talk to it.** No building, no code. Some offices
+are complete apps you drive by describing what you want to **Claude Cowork** in
+plain English. The flagship is the
+**[trend-following backtester](dissyslab/gallery/apps/mac_speed_suite/)**:
+describe a trading strategy in your own words and it implements the rule,
+validates it out-of-sample, stress-tests it with Monte Carlo, accounts for
+trades and costs, and writes a ranked report — you never touch the framework.
+Start with **[what you can say to it](dissyslab/gallery/apps/mac_speed_suite/skill_for_testers/COWORK_EXAMPLES.md)**.
+
+**2. Build your own office.** Assemble your own network of agents — the rest of
+this page.
+
+---
+
 ## Try it in 60 seconds
 
 ```bash
