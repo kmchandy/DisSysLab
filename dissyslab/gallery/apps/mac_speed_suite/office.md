@@ -25,6 +25,8 @@
 #   Validation ........ n_samples / n_folds / walk_forward / monte_carlo on the
 #                       GATE line (validation_gate)
 #   Transaction cost .. cost_bps (defaults to 5; pass cost_bps=... to backtester)
+#   Stop for R ........ stop_pct on the GATE line (default 0.10 = a 10% stop);
+#                       R multiple of a trade = its return / stop_pct
 # Whatever a run actually used is echoed back in report.html's "Run settings"
 # panel, so every report says exactly which parameters produced it.
 Sources: csv_stock_history(tickers=['AMD', 'NFLX', 'NVDA', 'PLTR', 'TSLA'], directory='../../../../sp100_data', filename_pattern='{ticker}_10_year.csv')
@@ -39,7 +41,8 @@ Agents:
 #   GATE is a validation_gate(n_samples=500).      # tighter Monte Carlo
 #   GATE is a validation_gate(monte_carlo=False).  # walk-forward only (fast)
 #   GATE is a validation_gate(walk_forward=False). # Monte Carlo only
-GATE is a validation_gate(n_samples=100).
+#   GATE is a validation_gate(stop_pct=0.05).      # tighter stop for R multiples
+GATE is a validation_gate(n_samples=100, stop_pct=0.10).
 MKT is a market_context.
 MAC_SIGNAL is a mac_signal.
 DONCHIAN_SIGNAL is a donchian_signal.

@@ -219,3 +219,6 @@ sp100_data/
 *_1year.csv
 *_10_year.csv
 *_stock_data.csv
+
+# stray synthetic report preview (generated during review; safe to delete)
+.report_preview_synthetic.html
