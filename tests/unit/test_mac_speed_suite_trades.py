@@ -2,7 +2,7 @@
 """
 Regression tests for trade-level metrics (Phase 2, E) and R multiples (G).
 
-Sebu's reframe: the table measured a daily return series; a trader judges
+The trader's reframe: the table measured a daily return series; a trader judges
 *trades*. These lock in trade reconstruction (round trips from the position
 series), the per-variant trade statistics, and the R multiple = trade return /
 stop distance (a disclosed stop, shown alongside -- never imposed).

@@ -1,6 +1,6 @@
 # Office: mac_speed_suite
 
-# Vikram's original ask (OfficeSpeak/paper/transcript_sp100_trend_following.md):
+# The tester's original ask (OfficeSpeak/paper/transcript_sp100_trend_following.md):
 # several traditional trend-following rules (Man/AQR/Mulvaney-style moving-
 # average crossover, the Turtle system, Donchian channels), backtested and
 # ranked on SP100 stocks with return/volatility/Sharpe/Calmar/etc.
@@ -18,7 +18,7 @@
 # `directory` argument must be relative to *this office folder*, not the
 # repo root, hence the four "../" below to climb back up to DisSysLab/.
 
-# ── RUN SETTINGS (the knobs Sebu/Vikram tune, usually just by asking Cowork) ──
+# ── RUN SETTINGS (the knobs testers tune, usually just by asking Cowork) ──
 #   Basket ............ the tickers=[...] list on the Sources line below
 #   History window .... which *_10_year.csv files exist (re-run the downloader
 #                       after changing the basket); filename_pattern below

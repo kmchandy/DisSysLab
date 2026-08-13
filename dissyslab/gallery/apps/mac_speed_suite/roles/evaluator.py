@@ -14,7 +14,7 @@ speed's rule have earned, day by day" -- but deliberately stops there
 (see backtester.py's docstring). EVALUATOR does two distinct jobs on
 top of that:
 
-1. **The per-stock table (Vikram's actual, stated goal).** For every
+1. **The per-stock table (the tester's actual, stated goal).** For every
    stock and every one of the five speeds, turn that stock's own
    day-by-day story into the same six summary numbers (defined below).
    With 100 stocks and 5 speeds that's a 500-row table -- the direct
@@ -26,7 +26,7 @@ top of that:
    traded this one speed's rule across the whole portfolio, day by
    day, what would have happened" -- and rank the five speeds (plus a
    blend of all five) against each other. This needs a real decision
-   Vikram hasn't made yet: how much of each stock is "in" the
+   The tester hasn't made yet: how much of each stock is "in" the
    portfolio. See "Portfolio weighting" below for the default used
    here.
 
@@ -56,7 +56,7 @@ background assumed):
 - **Sortino ratio** -- like Sharpe, but only penalizes *downside*
   bumpiness (bad days), not upside. A rule that sometimes has a big
   *good* day looks unfairly "risky" under Sharpe; Sortino doesn't ding
-  it for that. (Beyond Vikram's named list -- added for the same
+  it for that. (Beyond the tester's named list -- added for the same
   reason Sharpe is useful.)
 
 Portfolio weighting (the "how do you build one portfolio out of 100
@@ -462,7 +462,7 @@ def make_evaluator(
             if k not in ("type", "ticker_volatility", "_wf_tag")
         }
 
-        # ---- 1. Per-stock x per-speed table (Vikram's actual ask) ----
+        # ---- 1. Per-stock x per-speed table (the tester's actual ask) ----
         table: Dict[str, Dict[str, dict]] = {}
         for speed, result in speed_results.items():
             per_returns = result.get("per_ticker_returns", {})

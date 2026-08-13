@@ -294,7 +294,7 @@ class ReportHtmlSink:
         )
 
     def _trade_stats_section(self, msg: Dict[str, Any]) -> str:
-        """Trade-level statistics (Sebu's reframe): properties of trades, not of
+        """Trade-level statistics (the trader's reframe): properties of trades, not of
         a daily return series. R multiples appear only when a stop is set, and
         always alongside -- never as the primary lens."""
         ts = msg.get("trade_stats") or {}
@@ -361,7 +361,7 @@ class ReportHtmlSink:
 
     def _trade_list_details(self, ordered, ts, trades, stop_pct) -> str:
         """A collapsible per-variant list of the actual trades -- "if a number is
-        built on twelve trades I want to see the twelve" (Sebu)."""
+        built on twelve trades I want to see the twelve" (the trader)."""
         show_r = isinstance(stop_pct, (int, float)) and bool(stop_pct)
         blocks = []
         for v in ordered:

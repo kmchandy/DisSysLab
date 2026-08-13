@@ -1,6 +1,6 @@
-# Testing the Backtester — a walk-through for Vikram
+# Testing the Backtester — a walk-through for the tester
 
-Hi Vikram — thanks for helping us test this. You don't need to be a programmer,
+Hi there — thanks for helping us test this. You don't need to be a programmer,
 and you won't be asked to write any code. The whole point of this test is to see
 whether someone who *thinks about markets* — not about Python — can describe a
 trading idea in plain English and get a trustworthy answer back.
@@ -10,7 +10,7 @@ we built called the **backtester**. A backtester takes a trading rule (for
 example, "hold a stock while it's trending up, step aside when it isn't") and
 replays it over years of real historical prices to see how it *would* have done.
 
-*Although this guide is addressed to Vikram, anyone who wants to try the
+*Although this guide is addressed to the tester, anyone who wants to try the
 backtester can follow exactly the same steps — it doubles as a getting-started
 guide.*
 
@@ -311,5 +311,5 @@ If it's easy, the single most useful thing you can share is **the transcript of
 your conversation with Cowork** — that shows us exactly what you asked and what it
 did. Cowork can help you export it; just ask.
 
-Thank you, Vikram. Every confusing moment you report makes this usable for the
+Thank you for testing this. Every confusing moment you report makes this usable for the
 next person who isn't a programmer either.

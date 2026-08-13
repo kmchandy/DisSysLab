@@ -6,7 +6,7 @@ what/why) — this is the how/when, plus the two decisions we locked. Last updat
 
 ## What we're building, and for whom
 
-A backtesting framework that two domain experts (Sebu, Vikram) drive entirely in
+A backtesting framework that two domain experts (the trader, the tester) drive entirely in
 English: **they describe strategies and set parameters by talking to Cowork;
 everything else — implementation, wiring, validation, reporting — is done for
 them.** This is the worked example of the project thesis: a tested library
@@ -16,8 +16,8 @@ re-synthesising the hard, error-prone distributed substrate each time.
 
 ## Two decisions (locked)
 
-**1. The parameter interface is conversational, with a settings receipt.** Sebu
-and Vikram set parameters by talking to Cowork ("use these eight stocks, five
+**1. The parameter interface is conversational, with a settings receipt.** the trader
+and the tester set parameters by talking to Cowork ("use these eight stocks, five
 years, 500 Monte Carlo samples, a 2×ATR stop") — the strongest showcase of Cowork
 itself, and no form to maintain. They never edit a settings file by hand. But
 every run **records the exact parameters it used** as a receipt — stamped into the
@@ -53,7 +53,7 @@ acceptance corpus (L3). The conversational interface examples live in
    in bps; R-stop knobs added in step 4) into one clearly-labeled place the office
    already reads, and make each run stamp the parameters it used into the report
    (and a settings file). Update the skill so Cowork can set any knob in English
-   and echo the settings back. Ships something Sebu/Vikram can poke day one.
+   and echo the settings back. Ships something testers can poke day one.
 2. **E — trade-level metrics** (`PHASE2_DESIGN.md` §E). Trade count, hold, win
    rate, avg win/loss, worst, expectancy, RR, plus the per-strategy trade-list
    drill-down. Fixes the zero-trade-row bug at its root. Biggest gap; unblocks R.
@@ -62,8 +62,8 @@ acceptance corpus (L3). The conversational interface examples live in
    value. Can land alongside E.
 4. **G — R multiples (MVP, alongside)** (§G). Per-trade R and expectancy-in-R on
    top of E's trade list, with the ATR stop as a disclosed knob; add the R-stop
-   knobs to the settings surface. Completes the parameter list Sebu asked for.
-5. **L1 — strategy expressiveness**, driven by the first real Sebu/Vikram
+   knobs to the settings surface. Completes the parameter list the trader asked for.
+5. **L1 — strategy expressiveness**, driven by the first real testers
    requests (candidates: short/negative positions, portfolio caps like "at most
    three names," regime filters). Fill gaps they actually hit, not speculatively.
 6. **L3/L4 — acceptance corpus + skill/doc updates.** Run ~15–20 real

@@ -1,15 +1,15 @@
 # mac_speed_suite — Phase 2 design
 
 *From return-series stats to trade-level truth. Design doc for review; no code
-written yet. Last updated 2026-08-12. Driven by Sebu's second round of feedback
+written yet. Last updated 2026-08-12. Driven by the trader's second round of feedback
 (logged verbatim in `TESTER_FEEDBACK.md`, 2026-08-12).*
 
-## Where Phase 1 landed, and what Sebu is now telling us
+## Where Phase 1 landed, and what the trader is now telling us
 
 Phase 1 built the research-grade trust layer: one report, relative strength,
 transaction costs, and — the big one — **out-of-sample validation and Monte
 Carlo robustness, on by default** (now a single `validation_gate` that runs both
-in one pass). Two of Sebu's five new asks are therefore *already shipped*:
+in one pass). Two of the trader's five new asks are therefore *already shipped*:
 
 - **"Out-of-sample by default, not a flag."** Done. The default run ranks by
   out-of-sample performance. His hand-done 50/50 experiment — the current winner
@@ -18,7 +18,7 @@ in one pass). Two of Sebu's five new asks are therefore *already shipped*:
 - **"Costs as a dial, with turnover shown."** The dial is done (`cost_bps` is a
   settable parameter, default 5); turnover is computed. What's missing is
   *surfacing* turnover in the report, and (optional, deferred) a cost-sensitivity
-  sweep. Sebu himself deprioritizes this.
+  sweep. The trader himself deprioritizes this.
 
 The rest of his feedback is one deep reframe plus its consequences.
 
@@ -48,7 +48,7 @@ trade is a contiguous in-market run: it opens when the position goes from flat t
 in-market and closes when it returns to flat (or the window ends, which marks an
 *open* trade). For each trade we record entry date, exit date, hold length (bars),
 and trade return (the compounded daily return over the hold). From that one list,
-all of Sebu's numbers fall out:
+all of the trader's numbers fall out:
 
 - trade **count**, average **hold**, **win rate** (fraction with positive return),
 - **average win** and **average loss**, **worst single trade**,
@@ -79,14 +79,14 @@ Purely rendering; the numbers already exist (`is_sharpe`, `oos_sharpe`,
   "2nd → 10th" movement made explicit next to the ranking, not implied.
 - **"Consistent in both halves" flag.** Mark variants that rank near the top
   in-sample *and* out-of-sample (the quiet variant that wins both is the one worth
-  trusting). This is the signal Sebu found by hand.
+  trusting). This is the signal the trader found by hand.
 - **Turnover in the table.** Put turnover next to each row so the activity level
   is visible where the return is.
 
 ### G. R-multiple sizing — HIGH VALUE, depends on E  *(new modeling assumption)*
 
 Trade-level by nature, so it sequences *after* E. Today we account in constant
-notional (±1 unit) and report annualized return. Sebu wants **R multiples**:
+notional (±1 unit) and report annualized return. The trader wants **R multiples**:
 risk a fixed amount per trade, let the distance to the stop set the size, and
 report outcomes as multiples of that risk — "made 14R over 60 trades, average
 winner 2.1R, average loser −0.8R."
@@ -118,15 +118,15 @@ R accounting sits on top of the trade list from E without rebuilding portfolio
 aggregation. Full (later): a genuinely R-sized equity curve where each position is
 sized to a fixed risk budget, replacing constant notional as the primary lens.
 
-### H. Cost sensitivity — DEFERRED  *(small; Sebu deprioritized)*
+### H. Cost sensitivity — DEFERRED  *(small; the trader deprioritized)*
 
 "Watch the number move as I turn costs up." A small sweep (result at 0 / 5 / 10 /
 20 bps) is more convincing than one figure. Explicitly deferred: the dial and
-turnover already exist; this is a nice-to-have Sebu told us to skip for now.
+turnover already exist; this is a nice-to-have the trader told us to skip for now.
 
 ## The second app: "what do I hold tomorrow" — SEPARATE OFFICE, scoped not built
 
-Sebu: *"I'd want that, but it's a different app."* We agree, and it fits the
+The trader: *"I'd want that, but it's a different app."* We agree, and it fits the
 framework rather than fighting it. "Is this strategy any good?" wants history,
 statistics, and out-of-sample discipline (this app). "Given what I hold, what do I
 do tomorrow?" wants today's state — current positions, what changed since
@@ -143,7 +143,7 @@ computer roles* (the reuse contract pays off here) but swaps:
 This is strong framework and paper material: the same roles recomposed for a live
 decision instead of a backtest, and a clean illustration that the office, not the
 app, is the unit of reuse. Phase 1's doc already earmarked a "daily live-operating
-office" as future work; this is that, scoped by Sebu's separation-of-questions
+office" as future work; this is that, scoped by the trader's separation-of-questions
 argument. **Out of scope for Phase 2 build; tracked here as the next office.**
 
 ## Files: new vs edited vs untouched (anticipated)
@@ -172,7 +172,7 @@ argument. **Out of scope for Phase 2 build; tracked here as the next office.**
    Can land in parallel with E since it touches only the sink.
 3. **G — R multiples, MVP** (per-trade R on top of E's trade list; stop as a
    disclosed assumption).
-4. **G — full R-sized equity curve**, if Sebu wants R as the primary lens.
+4. **G — full R-sized equity curve**, if the trader wants R as the primary lens.
 5. **H — cost sensitivity**, only if asked.
 6. **Second office** — separate design doc when we pick it up.
 
@@ -188,6 +188,6 @@ argument. **Out of scope for Phase 2 build; tracked here as the next office.**
   whether some strategies (e.g. Turtle) should use their *own* native stop instead
   of a common ATR stop.
 - **Primary unit.** Do we keep annualized return as the headline with R alongside,
-  or make R the headline once G lands? (Sebu prefers R.)
+  or make R the headline once G lands? (the trader prefers R.)
 - **Ranking with mixed trade counts.** How to rank a 12-trade strategy against a
   200-trade one — flag low-sample strategies rather than hide them?

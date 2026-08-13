@@ -6,7 +6,7 @@ live in `PHASE1_DESIGN.md` and follow-on design notes, not here.
 
 ---
 
-## 2026-08-12 — Sebu (trader)
+## 2026-08-12 — the trader
 
 > On the table, it's not wrong, it's measuring the wrong unit. Every number in it
 > is a property of a daily return series. What I need in order to decide whether

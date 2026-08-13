@@ -5,13 +5,13 @@ no code written yet. Last updated 2026-08-11.*
 
 ## Goal and audience
 
-Turn the existing `mac_speed_suite` batch backtester into something Sebu — and a
+Turn the existing `mac_speed_suite` batch backtester into something the trader — and a
 four-person firm — would use for **research**: express strategies naturally
 (including relative strength), trust the results (out-of-sample validation and
 robustness), and see honest comparisons. The goal is not to beat a big firm's
 console; it is to be the smallest thing a small firm keeps and returns to.
 
-Audience for the *app*: a finance-literate, Python-comfortable user (Sebu). The
+Audience for the *app*: a finance-literate, Python-comfortable user (the trader). The
 step-by-step first-year tutorial is a separate deliverable.
 
 Phase 1 is the **research-grade layer**. The **daily live-operating office**
@@ -55,7 +55,7 @@ Facts confirmed in the code that shape this design:
 Promote report generation into an office **sink** (`report_html`), fed by the
 evaluator's (later the comparator's) real message. It derives the strategy list
 and labels from the message itself (`variants` / `ranked`), so it can never
-disagree with `dsl run`, including any strategy Sebu just added. Retire
+disagree with `dsl run`, including any strategy the trader just added. Retire
 `make_report.py`'s private pipeline. **This is the foundation — built first —**
 because relative strength and the trust layer all write to the report.
 
@@ -67,7 +67,7 @@ position) and `turnover` (count of position changes). The evaluator carries
 them; the report shows "no trades" as a distinct state, not a flat row that
 looks like a loss. No downstream contract change.
 
-### C. Relative strength  (Sebu's wall) — CORE, the headline unblocker
+### C. Relative strength  (the trader's wall) — CORE, the headline unblocker
 
 The one real architectural addition, designed to keep the per-ticker contract
 intact:
@@ -84,7 +84,7 @@ intact:
   because they still take `(bars, params)`.
 - **New example strategy `rs_trend.py`**: long only when the stock's own trend is
   up *and* its relative-strength rank is in the top half of the basket — exactly
-  the sentence Sebu couldn't express. Because the context carries each ticker's
+  the sentence the trader couldn't express. Because the context carries each ticker's
   rank, "hold the top N" becomes a one-line per-ticker test, so the
   joint-selection case falls out for free.
 - Backtester and evaluator are **untouched** — they never learn any of this
@@ -97,11 +97,11 @@ you pick the luckiest, not the best. This layer answers "is the edge real, and
 how fragile is it?"
 
 - **D1. Transaction costs — CORE.** The backtester charges a cost on `turnover`
-  (basis points per unit of position change). Kills the 0%-cost fantasy Sebu
+  (basis points per unit of position change). Kills the 0%-cost fantasy the trader
   flagged and penalizes over-trading. Deterministic; a `cost_bps` parameter.
 - **D2. Strategy correlation matrix — CORE.** The evaluator emits the
   correlation matrix of the variants' portfolio return series; the report shows
-  it. Answers Sebu's "are my 'different' strategies secretly the same bet?"
+  it. Answers the trader's "are my 'different' strategies secretly the same bet?"
 - **D3. Out-of-sample validation with walk-forward — CORE, required.** The
   single hold-out is just the one-fold case; the full walk-forward schedule is
   in scope for the app. Detailed below.
@@ -114,7 +114,7 @@ how fragile is it?"
 ### What "train" and "test" mean
 
 If you rank a dozen variants on one stretch of history and bold the winner, you
-have very likely picked the luckiest, not the best — Sebu's rule fell from #2 to
+have very likely picked the luckiest, not the best — the trader's rule fell from #2 to
 #10 on the second half of the same data. So you hold data back. Rank the variants
 on an earlier **in-sample (train)** stretch, then measure how those *same*
 variants do on a later **out-of-sample (test)** stretch that had no part in
@@ -254,14 +254,14 @@ preferred precisely because it reuses the walk-forward machine.
 context stage, add `rs_trend`, swap in the `report_html` sink, add the
 gate/comparator loop).
 
-**Untouched by design:** the strategies Sebu already has (MAC/Donchian/Turtle),
+**Untouched by design:** the strategies the trader already has (MAC/Donchian/Turtle),
 and the core backtester/evaluator math and message contract.
 
 ## Build order
 
 1. Report sink (A) — the foundation everything writes to.
 2. Never-traded (B) — small, honesty-critical.
-3. Relative strength (C) — the unblocker; get it into Sebu's hands here.
+3. Relative strength (C) — the unblocker; get it into the trader's hands here.
 4. Transaction costs (D1) + correlation matrix (D2).
 5. Out-of-sample loop (D3): single hold-out first, then the full walk-forward
    schedule. **Build the gate generically here** — "hold a list of input
