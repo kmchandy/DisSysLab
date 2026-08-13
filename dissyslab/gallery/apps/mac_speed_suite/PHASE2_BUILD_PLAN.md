@@ -37,6 +37,15 @@ English, e.g. "what does this look like with a tighter stop?"). Full risk-sizing
 stays available as something a trader can *invoke* later — an option they reach
 for, never a default handed to them.
 
+## Status (2026-08-13)
+
+Built and committed, all tests green: step 1 (conversational params + run-settings
+receipt), E (trade-level metrics + drill-down + zero-trade fix), F (honest
+out-of-sample presentation), G (R multiples via a disclosed stop). Remaining
+before the next tester round: L1 expressiveness gaps as they arise, and the
+acceptance corpus (L3). The conversational interface examples live in
+`skill_for_testers/COWORK_EXAMPLES.md`.
+
 ## Build order (roughly two weeks, feedback-driven)
 
 1. **Conversational parameter layer + settings receipt.** Consolidate the tunable
