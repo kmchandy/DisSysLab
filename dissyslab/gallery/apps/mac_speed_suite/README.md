@@ -80,6 +80,31 @@ for walk-forward, a resampled bank for Monte Carlo -- so the pipeline, the
 comparator, and the report are identical either way. (`window_gate` and
 `monte_carlo_gate` remain available if you want a single-purpose run.)
 
+## Trade statistics and R multiples
+
+Beyond the return-series metrics (Sharpe, annualized return, drawdown), the
+report shows the properties of **trades** -- for each variant: number of trades,
+average hold, win rate, average win vs average loss, expectancy, and
+reward:risk -- plus a collapsible list of the actual trades. Two rules with the
+same Sharpe can trade completely differently, and a variant that never took a
+position now reads as an explicit **0 trades**, not a flat 0%.
+
+Results are also shown in **R multiples**: each trade's return divided by a
+disclosed stop distance (`stop_pct` on the `GATE` line, default a 10% stop), so
+outcomes read in the risk units traders use ("+2.1R"). R is shown *alongside*
+the other numbers, never as an imposed position-sizing methodology -- the stop
+is an assumption you set, not advice. Change it on the gate line, e.g.
+`validation_gate(stop_pct=0.05)`.
+
+The walk-forward section also stages the honest comparison directly: if you had
+picked the in-sample winner, where did it actually rank out-of-sample, and which
+variants are strong in *both* halves.
+
+Every run stamps a **Run settings** panel at the top of the report recording the
+exact basket, window, validation, stop, and cost that produced it. For the
+plain-English way to drive all of this through Cowork, see
+[`skill_for_testers/COWORK_EXAMPLES.md`](skill_for_testers/COWORK_EXAMPLES.md).
+
 ## Add a strategy
 
 Add one role file under `roles/` (a per-day compute function plus a small
