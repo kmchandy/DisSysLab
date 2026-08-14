@@ -362,6 +362,22 @@ A skill in the shape of the backtester's, teaching Cowork to operate this app:
 - FIFO lots as an alternative to average-cost, if per-lot tax treatment is ever
   wanted (average-cost is the MVP choice).
 
+## Backtester consistency backlog (the §4 shared-definitions pass)
+
+For live to be provably consistent with the backtest, these definitions must be
+the SAME code both offices import. Bundle them into one pass *with* the execution
+build; do NOT do them piecemeal now, since each shifts the backtester's numbers
+and would perturb the in-flight tester round.
+
+- **Fill convention:** move the backtester from close-fill to decide-at-close /
+  fill-at-next-open (§3), so realized entries exist and match live.
+- **No-trade band:** apply the same band in the backtester so its turnover and
+  cost match live.
+- **Sizing:** factor the inverse-vol weighting currently inline in the
+  backtester's `evaluator.py` into the shared sizing module (`risk_sizer`), so
+  both offices size identically. `inverse_vol` is the default *because* it is
+  already what the backtester does.
+
 ## Known simplification
 
 Corporate actions: using split/dividend-adjusted price series (as the backtester
