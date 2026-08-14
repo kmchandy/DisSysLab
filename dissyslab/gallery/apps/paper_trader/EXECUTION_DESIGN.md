@@ -45,7 +45,7 @@ A single office; a DAG that terminates each run.
 
 ```
 Sources:
-  market_today   — recent bars up to today for the basket (lookback enough to warm the signal)
+  market_today   — recent bars up to today for the universe (lookback enough to warm the signal)
   current_book   — reads the durable book (positions, cash, open lots, ledger) at run start
 
 Agents:
@@ -245,13 +245,122 @@ backtest-vs-live consistency surface.
   and safe to freeform; ship a tiny example of the parts that are common-shaped or
   correctness-adjacent; keep the tested core small.**
 
+## Ledger schema and book config
+
+Two files per book, in the book's own directory (the strategy tag *is* the
+directory, so independent books never share state):
+
+- **`book.json`** — the human-audited, Cowork-edited **config** (genesis) plus the
+  derived snapshot cache. Deliberately *not* in `office.md`: keep the book config
+  (universe, cash, holdings, policy) separate from the office wiring.
+- **`ledger.jsonl`** — the append-only event log (the source of truth).
+
+**Genesis** (the book's config / first ledger line):
+
+```json
+{ "type": "genesis", "schema_version": 1,
+  "book_id": "paper:rs_fast", "strategy": "rs_fast",
+  "first_trade_date": "2026-08-15",
+  "starting_cash": 100000.0,                          // default $100k
+  "universe": ["...SP100..."],                        // tradable set (default: SP100)
+  "initial_positions": {                              // OPTIONAL; default {} = start flat
+     "AMD": {"shares": 100, "cost_basis": 138.20}     // seed real holdings; cost_basis optional
+  },                                                   //   (defaults to first-run open, disclosed)
+  "policy": { "cost_bps": 5.0, "slippage_bps": 0.0, "stop_pct": 0.10,
+              "exit_policy": "market_defined", "no_trade_band": 0.005,
+              "sizing": "inverse_vol",
+              "fill_convention": "decide_close_tminus1__fill_open_t",
+              "mark_convention": "open_t", "cost_basis": "average" } }
+```
+
+`universe` is the tradable set (default SP100); `initial_positions` is what you
+start holding (default flat — a cash+universe default is fine even though a real
+trader usually seeds real holdings); `starting_cash` defaults to $100k. Allocation
+is never seeded equal-weight — that is the strategy + sizing policy's job;
+equal-weight is available only as a *named sizing policy*.
+
+**Run** (one appended ledger line per processed trading day, in date order — the
+day-atomic commit):
+
+```json
+{ "type": "run", "trade_date": "2026-08-16",
+  "prices_as_of": { "close_tminus1": {"AMD": 142.10}, "open_t": {"AMD": 143.00} },
+  "decisions": { "AMD": {"signal":1,"target_shares":70,"current_shares":0,
+                         "order":{"side":"buy","qty":70},"reason":"rs_fast long; entry"} },
+  "fills": [ {"order_id":"2026-08-16:AMD:buy:70","ticker":"AMD","side":"buy",
+              "qty":70,"fill_price":143.07,"cost":5.01,"cash_delta":-10020.11} ],
+  "equity_after": {"cash":89979.89,"positions_value":10010.00,"total":99989.89,
+                   "day_pnl":-10.11,"cum_pnl":-10.11},                  // DERIVED cache
+  "receipt": { "cost_bps":5.0,"slippage_bps":0.0,"stop_pct":0.10,
+               "exit_policy":"market_defined","no_trade_band":0.005 } }
+```
+
+**Compensation** (rare correction): `{"type":"compensation","reverses":"<order_id>", ...}`
+— append, never edit.
+
+Conventions, each a disclosed knob: one appended event per trading day →
+**day-level idempotency** keyed by `trade_date`; **mark-to-market at `open_t`**
+(open-to-open equity/P&L); **average-cost basis** for realized P&L;
+`order_id = {trade_date}:{ticker}:{side}:{qty}`; **zero-trade days still write a
+run record** (liveness + trace). Everything in the book — positions, cash, average
+cost, realized P&L, equity — is a pure function of replaying genesis + runs;
+`equity_after` is only a cache the invariant recomputes and checks. MVP: slippage
+**0 bps** (exactly the backtester's cost model), committed strategy **`rs_fast`**,
+data via the backtester's CSV mechanism refreshed daily.
+
+## Configuration is a conversation
+
+The paper trader is not a shrink-wrapped app with a settings screen; it is a
+tested office plus a skill that makes Cowork fluent in operating it. **The user
+configures anything by talking to Cowork, which edits `book.json` / `office.md`
+and drives the office.** We build the minimum; Cowork does the flexible last mile.
+
+Envisaged conversations across a book's life: create a book (defaults disclosed);
+seed real holdings; change any policy param in English (with the realized-entry
+exit gate surfaced if the backtester is still close-fill); run / schedule (the
+schedule *is* the tiny supervisor); catch up after time away; spin up more
+strategies as independent books; compare them ("which is ahead out-of-sample?" →
+Cowork reads the ledgers and builds the comparison on the fly — no shipped
+aggregator); interrogate ("why did we exit NVDA?" → Cowork reads the trace);
+correct a mistake ("that fill was wrong" → Cowork appends a compensation event).
+
+**Division of labor / why this is safe.** Cowork may configure and drive anything,
+because the tested office enforces the guardrails no matter what Cowork does: the
+append-only ledger, the day-atomic commit, the `snapshot == replay` invariant with
+fail-stop-out, idempotent re-runs, and the hard paper-only boundary. The worst a
+misunderstanding produces is a wrong *configuration* visible in the disclosed
+receipt — never a corrupted book or a real order.
+
+**Build / don't-build.** Build: the office (roles, ledger, invariant, brief); the
+documented, Cowork-editable file formats (`book.json`, `office.md`) and structured
+outputs (ledger, book, decision trace); the paper-trader skill; the tiny
+supervisor example. Don't build: a config UI, a settings CLI, parameter-management
+code, an aggregator, or a scheduler of our own — Cowork + the file formats + the
+skill replace all of it.
+
+## The paper_trader skill (the primary "value added to Cowork")
+
+A skill in the shape of the backtester's, teaching Cowork to operate this app:
+
+- **Create / configure a book:** write `book.json` (universe, cash, holdings,
+  strategy, policy) from an English description, using the defaults, and echo the
+  assumptions back before the first run.
+- **Change policy:** edit any policy field; re-stamp the receipt; surface the
+  realized-entry-exit gate when it's selected against a close-fill backtester.
+- **Run / schedule / catch up:** trigger a run; set up one scheduled run per book
+  (the supervisor pattern); process missed days in order.
+- **Multiple books:** create additional independent book directories + schedules.
+- **Read & compare:** answer questions from `ledger.jsonl` / `book.json` / the
+  decision trace; build ad-hoc comparisons across books.
+- **Guardrails-as-behavior:** disclose assumptions; correct via compensation
+  events, never edits; never bypass the invariant; paper-only, never a real order.
+
 ## Still open
 
-- **Ledger schema:** the exact event record — complete enough to satisfy the §1
-  derivability constraint (every book field reconstructable from the log) and to
-  carry the strategy tag, the prices-as-of, and the order id.
-- **Slippage magnitude:** the actual bps for the shared cost / slippage model —
-  the *mechanism* is settled; the number is a parameter to choose and disclose.
+- Live data cadence: the exact mechanism / refresh for "recent bars up to today"
+  (the run for date *t* needs `close[t-1]` and `open[t]`).
+- FIFO lots as an alternative to average-cost, if per-lot tax treatment is ever
+  wanted (average-cost is the MVP choice).
 
 ## Known simplification
 
