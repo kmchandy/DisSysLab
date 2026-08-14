@@ -54,7 +54,8 @@ def _equal_weight(active, equity, prices, vols, policy):
 
 
 def _inverse_vol(active, equity, prices, vols, policy):
-    inv = {t: 1.0 / vols[t] for t in active if vols.get(t, 0.0) > 0}
+    inv = {t: 1.0 / vols[t] for t in active
+           if isinstance(vols.get(t), (int, float)) and vols[t] > 0}
     if not inv:                                    # no vols -> equal weight fallback
         return _equal_weight(active, equity, prices, vols, policy)
     total = sum(inv.values())

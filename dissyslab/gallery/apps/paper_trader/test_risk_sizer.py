@@ -99,3 +99,12 @@ def test_signals_to_book_end_to_end():
     assert book.positions["A"] == pytest.approx(500.0)
     assert book.positions["B"] == pytest.approx(1000.0)
     assert book.cash == pytest.approx(0.0, abs=1e-6)           # fully invested
+
+
+def test_inverse_vol_tolerates_none_vols():
+    # a ticker with unknown (None) vol must be excluded, not crash
+    t = target_positions({"A": 1, "B": 1}, EQ, PRICES, {"A": 0.2, "B": None}, {})
+    assert t["A"] > 0 and t["B"] == pytest.approx(0.0)
+    # all-None -> equal-weight fallback
+    t2 = target_positions({"A": 1, "B": 1}, EQ, PRICES, {"A": None, "B": None}, {})
+    assert t2["A"] == pytest.approx(500.0) and t2["B"] == pytest.approx(1000.0)

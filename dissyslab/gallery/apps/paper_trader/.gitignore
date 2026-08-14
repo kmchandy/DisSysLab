@@ -1,0 +1,5 @@
+# Paper-trading book runtime state (per-book; not committed)
+book/
+*_book/
+ledger.jsonl
+book.json
