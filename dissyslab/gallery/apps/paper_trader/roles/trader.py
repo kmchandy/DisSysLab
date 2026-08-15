@@ -75,14 +75,25 @@ def make_trader(book_dir, strategy, as_of):
         compute_fn, params = resolve(strategy)
         briefs = run_through(history_msg, d, compute_fn, through=as_of, params=params)
         latest = briefs[-1] if briefs else None
-        return {
+
+        summary = "no trading days to process"
+        if latest:
+            from brief import render_html, render_text
+            summary = render_text(latest)
+            with open(os.path.join(d, "brief.html"), "w", encoding="utf-8") as f:
+                f.write(render_html(latest))
+            with open(os.path.join(d, "brief.txt"), "w", encoding="utf-8") as f:
+                f.write(summary)
+
+        brief_msg = {
             "type": "paper_trader_brief",
             "book_dir": d, "strategy": strategy,
             "days_processed": len(briefs),
             "latest_trade_date": latest.get("trade_date") if latest else None,
-            "holdings": latest.get("holdings") if latest else None,
+            "summary": summary,
             "equity": latest.get("equity") if latest else None,
         }
+        return [(brief_msg, "out")]      # Role fn returns [(message, outport)]
     return trader_fn
 
 
