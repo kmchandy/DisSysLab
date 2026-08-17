@@ -199,9 +199,10 @@ installed package* rather than the user's folder, and they will not find it.
 
 ## What `dsl check` catches, and what it cannot
 
-It reads the org chart and reports every fault at once: agents nothing can
-reach, work that reaches no sink, sinks nothing feeds, roles with no file
-behind them, unknown names in connections, and feedback loops with no gate.
+It reads the org chart and reports every fault at once: a declared inport
+nothing writes to, agents nothing can reach, work that reaches no sink, sinks
+nothing feeds, roles with no file behind them, unknown names in connections,
+and feedback loops with no gate.
 
 It is **structural**. It cannot see faults that depend on what happens at run
 time. An office whose diagram is perfectly correct can still get stuck,

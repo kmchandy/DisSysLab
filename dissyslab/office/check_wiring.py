@@ -28,19 +28,19 @@ lesson; this module is the structural half and says so.
 
 Codes
 -----
+W1  declared inport nothing writes to -- a guaranteed block
 W3  unreachable agent -- nothing upstream can reach it
 W4  dead end -- its output reaches no sink and no office output
 W6  missing role file -- named a role with no ``.md`` or ``.py`` behind it
 W7  cycle (note, not an error) -- legal and often intended
 W8  source with no destination, or sink nothing feeds
 
-W1 (an inport nothing writes to) and W2 (an outport nothing reads) need each
-role's declared port shape, which the parser does not resolve -- for most
-office.md agents the ports are *inferred from the connections themselves*, so
-an unwired port cannot arise. They are meaningful only for roles with an
-intrinsic shape (a Python role declaring its ports, or a built-in kind such as
-``gate`` that requires specific ones). Left for a later pass rather than
-implemented half-way.
+W1 applies only where an agent *declares* its inports in ``office.md`` --
+``Sync is a synchronizer(inports=["entities", "severity", "topic"])``. Where
+ports are not declared they are inferred from the connections themselves, so
+an unwired port cannot arise and there is nothing to check. W2 (an outport
+nothing reads) would need the role's resolved shape, which the parser does not
+provide; not implemented.
 """
 
 from __future__ import annotations
@@ -226,6 +226,20 @@ def _looping_groups(
 # --------------------------------------------------------------------------
 
 
+def _declared_inports(agent_spec) -> List[str]:
+    """Inports an agent spells out in office.md, if any.
+
+    ``Sync is a synchronizer(inports=["entities", "severity"])`` parses to
+    ``args=(("inports", ["entities", "severity"]),)``. Agents that do not
+    declare inports return an empty list, and are not checked -- their ports
+    are whatever gets wired to them.
+    """
+    for key, value in getattr(agent_spec, "args", ()) or ():
+        if key == "inports" and isinstance(value, (list, tuple)):
+            return [str(port) for port in value]
+    return []
+
+
 def _local_role_names(office_dir: Path) -> Set[str]:
     roles_dir = office_dir / "roles"
     if not roles_dir.is_dir():
@@ -307,6 +321,43 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
     report = WiringReport(office_name=spec.name, office_path=office_dir)
 
     named = graph.nodes | {EXTERNAL}
+
+    # W1 -- a declared inport that no connection writes to.
+    #
+    # Only agents that spell their inports out in office.md can have this
+    # fault. Where the ports are not declared they are defined by whatever is
+    # wired, so an unwired one cannot exist. When it does exist it is not a
+    # style problem: the agent blocks on that port and never proceeds.
+    for agent_spec in spec.agents:
+        declared = _declared_inports(agent_spec)
+        if not declared:
+            continue
+        agent = agent_spec.agent_name
+        written_to: Dict[str, Set[str]] = {}
+        for conn in spec.connections:
+            for dest in conn.destinations:
+                if dest.name == agent:
+                    written_to.setdefault(dest.port, set()).add(conn.source.name)
+        for port in declared:
+            if port in written_to:
+                continue
+            wired = ", ".join(
+                f"{p} (from {', '.join(sorted(s))})"
+                for p, s in sorted(written_to.items())
+            )
+            report.findings.append(
+                Finding(
+                    "W1",
+                    "error",
+                    agent,
+                    f"{agent!r} declares inport {port!r}, but nothing writes "
+                    f"to it -- {agent} will block on it and never proceed.",
+                    f"Declared inports: {', '.join(declared)}. "
+                    + (f"Wired: {wired}." if wired else "None are wired.")
+                    + f" Either wire something to {port!r}, or remove it from "
+                    "the inports list.",
+                )
+            )
 
     # W8 -- sources and sinks that are not actually plugged in.
     for source in sorted(graph.sources):
