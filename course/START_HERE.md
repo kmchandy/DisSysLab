@@ -66,7 +66,43 @@ You are set up. Bring a laptop that does this to the first class.
 
 ---
 
-## 3. How to work with the skill
+## 3. Getting the skill
+
+A **skill** is a folder of instructions that teaches your AI agent how to do
+something specific — here, how to build offices correctly. Without it your
+agent will improvise, and improvised concurrency is exactly what this course
+is trying to spare you.
+
+There are two ways to give it to your agent. Try the first; if anything about
+it is unclear, the second always works.
+
+**Either — install the bundle.** Download
+[`office-builder.skill`](../skills/office-builder.skill) from the repository
+and add it to Cowork as a skill. Your agent then picks it up automatically
+whenever you ask for something that sounds like an office.
+
+**Or — point your agent at it.** Clone the repository (you will want it anyway
+for the examples) and say:
+
+> Clone https://github.com/kmchandy/DisSysLab. Read
+> `skills/office-builder/SKILL.md` and its `references/` folder, and follow it
+> when you build offices for me.
+
+Either way, check it took:
+
+> What does `dsl check` do, and when should you run it?
+
+If your agent answers *"it reports structural faults in an office's org chart,
+and you run it before every `dsl run`"* — it has the skill. If it guesses or
+says it does not know, it has not, and nothing after this will go well. Go
+back and try the other route.
+
+*Building sensing offices — classifying photos, recordings, or sensor
+readings? Also add [`sensor-office-builder.skill`](../skills/sensor-office-builder.skill).*
+
+---
+
+## 4. How to work with the skill
 
 The `office-builder` skill teaches your AI agent how offices are built. You do
 not read it — you talk, and it does the assembling. What is worth knowing is
@@ -130,7 +166,7 @@ model every time.
 
 ---
 
-## 4. The catalogue — 38 working examples
+## 5. The catalogue — 38 working examples
 
 These all run. Read the ones near what you want to build, copy the shape, and
 change it. Copying a working shape beats composing from scratch.
@@ -219,7 +255,7 @@ first project, but they are there if markets are your thing.
 
 ---
 
-## 5. Choosing your project
+## 6. Choosing your project
 
 You will build one office of your own and keep improving it all term. Choose
 by this test: **is it something you would actually check?**
@@ -237,7 +273,7 @@ management."
 
 ---
 
-## 6. What we study, and why in that order
+## 7. What we study, and why in that order
 
 Once your office runs, you have a small distributed system you understand
 completely, because you built it. Then the questions get sharp:
