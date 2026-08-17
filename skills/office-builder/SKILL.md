@@ -111,6 +111,25 @@ Notes that save debugging time:
 - Keep `max_articles=N` / `max_readings=N` limits in place. They stop a
   student running up an LLM bill by accident. Remove only when asked.
 
+## Before you write a role, check the thirteen you have
+
+`dissyslab/roles/` ships thirteen ready-made roles. **Read
+`references/roles.md` before writing any role.** Most requests are one of
+them, sometimes with its criteria edited:
+
+- **annotators** that add a field and pass the item on — `topic_tagger`,
+  `category_classifier`, `severity_classifier`, `urgency_classifier`,
+  `sentiment_classifier`, `entity_extractor`, `geolocator`, `summarizer`
+- **writers** — `writer`, `summary_writer`
+- **filters with two outports** — `relevance_filter` (`keep` / `discard`),
+  `evaluator` (`publish` / `revise`)
+- **a Python gate** — `confidence_filter`
+
+When the user says *"keep only the items about X"*, the answer is
+`relevance_filter` with its criteria block rewritten — not a Python role with
+a keyword list. Wire its `discard` port to a recorder while developing so the
+user can see what is being dropped.
+
 ## English role or Python role
 
 Each agent's job lives in `roles/<role_name>.md` (English, run by a language
