@@ -152,6 +152,27 @@ model every time.
 Prefer Python whenever the job can be stated exactly. It is cheaper, faster,
 deterministic, and testable.
 
+**But exactness is a property of the criterion, not of the implementation.**
+This is where the rule is most often misapplied. "Keep the items about
+computer science" *feels* exactly statable — write a keyword list — and it is
+not. A keyword list is an exact implementation of a fuzzy criterion, and the
+gap between the two is where the failures live: a word boundary that refuses
+to match a plural, a synonym nobody listed, a casing difference. The office
+runs clean and quietly keeps too little, and no check can see it, because
+nothing knows what you meant.
+
+Ask what the *criterion* is before choosing the implementation:
+
+| Criterion | Implementation |
+|---|---|
+| fuzzy — "about X", "worth reading", "urgent", "positive" | a shipped English role, criteria block edited |
+| exact — a threshold, a ticker in a fixed list, a URL prefix, a field equality | Python, and plain string operations before regex |
+| exact but linguistically hard, at volume | then a library — and tell the user what the dependency costs |
+
+A first-year on a laptop should not be downloading an NLP corpus to decide
+whether an article is about computer science. `relevance_filter` already does
+it.
+
 ### An English role
 
 `roles/topic_tagger.md`:
