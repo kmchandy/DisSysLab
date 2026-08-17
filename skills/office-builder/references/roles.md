@@ -1,12 +1,30 @@
 # Roles you already have
 
-**Read this before writing a role.** Thirteen roles ship with the framework in
-`dissyslab/roles/`. They need no file in the office's own `roles/` folder —
-name one in `Agents:` and it resolves.
+**Read this before writing a role.** **Nineteen names resolve without any
+file in the office's own `roles/` folder** — thirteen *semantic* roles that
+decide or describe something, and six *structural* ones that route, join, gate
+or store. Name one in `Agents:` and it works.
 
 Most user requests are one of these, possibly with its criteria edited. Writing
 a fresh role for a job one of these already does costs the user time and
 introduces bugs the shipped role does not have.
+
+## Get the live list from the install
+
+This file can go stale; the install cannot. Give an office a role name that
+exists nowhere and the error prints every resolvable name:
+
+```bash
+dsl build <office_dir>     # after putting `X is a nonesuch.` in Agents:
+```
+
+```
+roles_lib keys:              [category_classifier, confidence_filter, ...]
+fn_lib keys:                 [deduplicator]
+PARAMETERIZED_LIBRARY keys:  [synchronizer, router, select, gate, record]
+```
+
+If this page and that output disagree, believe the output.
 
 ## The shape they share
 
@@ -76,6 +94,25 @@ audio, sentiment, anomaly. Use it rather than putting a threshold inside a
 classifier role — one agent, one job, and the user can then change the
 threshold without touching the model.
 
+## The other six — structural roles
+
+These have no `.md` file. They are built by the framework from the arguments
+given in `office.md`, and they are what make an office anything other than a
+straight line.
+
+| Name | Declared as | Does |
+|---|---|---|
+| `synchronizer` | `synchronizer(inports=["a","b"])` | waits for one message on each named inport and joins them into a single message. The fan-in half of a fan-out |
+| `gate` | `gate(data="data", control="control")` | admits one item at a time, releasing the next only when told. **This is what lets a loop terminate** — `dsl check`'s W7 warns about a loop with no gate |
+| `select` | `select(inports=[...], command="command")` | a commanded traffic controller: reads whichever inport its state points at |
+| `router` | `router(routes=[...])` | forwards each message to a named outport by rule |
+| `record` | `record(initial={...})` | a shared keeper — store and reply, for state several agents consult |
+| `deduplicator` | `deduplicator(by="url")` | drops repeats by a named field |
+
+`synchronizer` and `gate` are the two worth knowing cold. A fan-out to four
+enrichers needs a `synchronizer` to recombine them (`situation_room`), and any
+loop needs a `gate` or it never stops (`debate`).
+
 ## Always wire the reject port somewhere readable
 
 ```
@@ -101,11 +138,30 @@ Write a new role when the job is genuinely not on this list:
 Then follow the English-or-Python guidance in `SKILL.md`. But say which of
 these applies — if you cannot, one of the thirteen above probably fits.
 
-## Editing a shipped role
+## Editing a shipped role — and the name-collision trap
 
 Copy it into the office's `roles/` folder under the same name and edit. A
 local file wins over the shipped one, so the office gets your version and
-every other office keeps the original.
+every other office keeps the original. The precedence, from
+`dissyslab/office/library.py`:
+
+```
+1. the office's own roles/X.md or roles/X.py
+2. the framework's dissyslab/roles/X.md
+3. PARAMETERIZED_LIBRARY[X]        (synchronizer, router, select, gate, record)
+4. dissyslab.fn_lib[X]             (deduplicator)
+```
+
+**That override is a feature when deliberate and a trap when accidental.**
+Writing a new role and giving it one of the nineteen names *silently replaces*
+the shipped one for that office. A hand-written `roles/topic_tagger.md` does
+not sit alongside the framework's 55-line version — it displaces it. The
+office builds clean, `dsl check` passes, the run succeeds, and the tagging is
+quietly worse, with nothing anywhere to say why.
+
+**So: never give a new role one of the nineteen names.** Override only when
+you mean to override — when you have copied a shipped role and edited it — and
+say plainly to the user that you have done so.
 
 ```bash
 cp $(python3 -c "import dissyslab,pathlib;print(pathlib.Path(dissyslab.__file__).parent/'roles'/'relevance_filter.md')") my_office/roles/

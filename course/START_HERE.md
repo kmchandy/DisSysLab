@@ -88,14 +88,22 @@ for the examples) and say:
 > `skills/office-builder/SKILL.md` and its `references/` folder, and follow it
 > when you build offices for me.
 
-Either way, check it took:
+**Then check it took — and check properly.** Installing a skill can fail
+quietly: the button reports success, or offers to update again, and the old
+version stays loaded. Ask your agent:
 
-> What does `dsl check` do, and when should you run it?
+> Does your office-builder skill list the roles that ship with dissyslab, and
+> what does it say to do if `dsl check` is missing from my installed version?
 
-If your agent answers *"it reports structural faults in an office's org chart,
-and you run it before every `dsl run`"* — it has the skill. If it guesses or
-says it does not know, it has not, and nothing after this will go well. Go
-back and try the other route.
+You want **both** halves. It should name roles like `relevance_filter` and
+`synchronizer` and say there are nineteen; and it should say to report the
+missing command and carry on **without patching your installation**. If you
+get only vague agreement, or an answer to one half, it has an old version or
+none. Remove the skill and add it again, or use the clone route above.
+
+Ask something only the current skill knows. "What does `dsl check` do?" is a
+bad test — every version answers that, so it tells you a skill is loaded, not
+which one.
 
 *Building sensing offices — classifying photos, recordings, or sensor
 readings? Also add [`sensor-office-builder.skill`](../skills/sensor-office-builder.skill).*

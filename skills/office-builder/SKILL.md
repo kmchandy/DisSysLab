@@ -61,9 +61,15 @@ In a class of thirty, this is far worse than the missing feature.
 
 1. Draft `office.md` and the role files.
 2. **Run `dsl check <office_dir>`.** Before running anything — every time,
-   without being asked. If the probe above showed no `check` subcommand, say
-   so once and go to step 4; you may read the wiring yourself and describe
-   what you see, but say plainly that a manual reading is not the same thing.
+   without being asked. If the probe above showed no `check` subcommand:
+   run `dsl build <office_dir>` instead, which catches **syntax errors and
+   unknown role names without running the office** — and say plainly that it
+   catches nothing about the graph. Verified against 1.6.1: `dsl build`
+   happily wrote `run.py` for an office whose `Connections` named an agent
+   that does not exist, and for offices with unreachable agents, dead ends,
+   and an unfed synchronizer inport. There is no substitute for the
+   structural check; read the org chart yourself and say that is what you
+   did.
 3. Fix what it reports. Show the user what it found — do not silently repair.
 4. `dsl run <office_dir>`.
 5. Read the per-agent message counts printed at the end. The first agent
@@ -113,9 +119,9 @@ Notes that save debugging time:
 
 ## Before you write a role, check the thirteen you have
 
-`dissyslab/roles/` ships thirteen ready-made roles. **Read
-`references/roles.md` before writing any role.** Most requests are one of
-them, sometimes with its criteria edited:
+**Nineteen names resolve without writing any file. Read
+`references/roles.md` before writing a role.** Most requests are one of them,
+sometimes with its criteria edited:
 
 - **annotators** that add a field and pass the item on — `topic_tagger`,
   `category_classifier`, `severity_classifier`, `urgency_classifier`,
@@ -124,11 +130,20 @@ them, sometimes with its criteria edited:
 - **filters with two outports** — `relevance_filter` (`keep` / `discard`),
   `evaluator` (`publish` / `revise`)
 - **a Python gate** — `confidence_filter`
+- **six structural roles** with no file at all, built from `office.md`
+  arguments — `synchronizer`, `gate`, `select`, `router`, `record`,
+  `deduplicator`. `synchronizer` recombines a fan-out; `gate` is what lets a
+  loop terminate
 
 When the user says *"keep only the items about X"*, the answer is
 `relevance_filter` with its criteria block rewritten — not a Python role with
 a keyword list. Wire its `discard` port to a recorder while developing so the
 user can see what is being dropped.
+
+**Never give a new role one of these nineteen names.** A local
+`roles/X.md` does not sit alongside the shipped `X` — it replaces it, silently
+and only for that office. Reuse deliberately or name differently; there is no
+third option.
 
 ## English role or Python role
 
@@ -173,26 +188,48 @@ A first-year on a laptop should not be downloading an NLP corpus to decide
 whether an article is about computer science. `relevance_filter` already does
 it.
 
-### An English role
+### An English role — when none of the nineteen fit
 
-`roles/topic_tagger.md`:
+Note the name: `event_details` is **not** one of the nineteen. Writing
+`roles/topic_tagger.md` would have replaced the shipped `topic_tagger`
+instead of adding anything.
+
+`roles/event_details.md`:
 
 ```
-# Role: topic_tagger
+# Role: event_details
 
-You read one news article at a time and assign it to one of:
-politics, business, technology, science, health, sports,
-entertainment, other.
+You read one event listing at a time and pull out when and
+where it happens.
 
-Preserve the original article. Add one new field, "topic",
-whose value is one of the eight labels above.
+Input shape. Each listing is a JSON object with at least:
+
+- "title" — the event name (string)
+- "text"  — the listing body (string)
+- "url"   — link to the listing (string)
+
+Other fields may be present; preserve them.
+
+Your job. Add three new fields. Preserve every existing field
+exactly; only add these three.
+
+- "starts_at" — ISO 8601 when a date and time are both given,
+  a bare date when only a date is, "" when neither.
+- "venue"     — the building or room as written, "" if not
+  stated. Do not normalise or expand abbreviations.
+- "price"     — a number of dollars, 0 for free, null when not
+  stated. Do not guess from context.
+
+When the listing is ambiguous, prefer the empty value over a
+guess — a wrong time is worse than a missing one.
 
 Always send to out.
 ```
 
-Rules that make English roles behave: say what arrives, what to preserve, what
-to add, and **always where to send it**. Models are literal — a vague job
-description produces vague output. Name the exact allowed values.
+That shape is what the shipped roles use, and it is why they behave: **input
+shape, the job, the exact permitted values, and where to send.** Models are
+literal — a vague job description produces vague output, and an unstated
+default gets invented. Say what to do when the answer is not there.
 
 ### A Python role
 
