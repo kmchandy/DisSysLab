@@ -171,9 +171,10 @@ model every time.
 
 ---
 
-## 5. The catalogue — 38 working examples
+## 5. The catalogue — every example that ships
 
-These all run. Read the ones near what you want to build, copy the shape, and
+About forty, and they all run. `dsl list` is the authority — if this page and
+`dsl list` disagree, believe `dsl list`. Read the ones near what you want to build, copy the shape, and
 change it. Copying a working shape beats composing from scratch.
 
 `dsl list` shows them all. To take one:
@@ -256,7 +257,9 @@ tests it against history, stress-tests it, and ranks the results
 real order
 
 These two have their own skills and their own libraries. They are more than a
-first project, but they are there if markets are your thing.
+first project, but they are there if markets are your thing. **They need the
+repository cloned** — both read ten years of price CSVs that do not travel in
+the installed package.
 
 ---
 

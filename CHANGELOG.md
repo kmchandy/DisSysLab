@@ -5,21 +5,61 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/).
 
 
-## [1.6.1] — 2026-06-23
+## [1.7.0] — 2026-08-17
 
-### Fixed
+*(This section was previously headed "Unreleased — will become 1.6.0",
+which was never accurate: 1.6.1 shipped on 2026-06-23 while this content
+was still unreleased. It is 1.7.0.)*
 
-- `gallery/apps/debate/roles/gate.py`: when the problem bank is
-  exhausted, the gate role now `continue`s in its `recv()` loop
-  instead of returning. Returning voluntarily killed the agent's
-  thread before `os_agent` could finish polling it; termination
-  detection stayed blocked indefinitely. Also dropped the now-
-  unnecessary `{"end_of_stream": True}` sentinel emission, which
-  was being mis-processed as a real problem by downstream
-  panellists. Net effect: the gallery debate office terminates
-  cleanly when its bank is exhausted.
-  
-## [Unreleased] — will become 1.6.0
+### Added — office checking, skills, and course material
+
+- **`dsl check <office_dir>`** — structural checks over an office's whole
+  org chart, without running it. Reports every fault at once: a declared
+  inport nothing writes to (W1), unreachable agents (W3), dead ends (W4),
+  missing role files (W6), feedback loops and whether they are gated (W7),
+  unfed sinks and destination-less sources (W8), and names in connections
+  that are not declared anywhere (W9). Exit 0 clean, 1 on faults, 2 on a
+  bad path. Implemented in `dissyslab/office/check_wiring.py`; the analysis
+  is importable as `check_office_dir()` / `format_report()`.
+  Explicitly *structural*: it cannot see deadlock, since whether a buffered
+  message is ever readable depends on execution history rather than on the
+  graph.
+- **`skills/office-builder/`** — an Agent Skill (the `SKILL.md` open format)
+  that teaches an AI agent to build offices: the `office.md` grammar, the
+  thirteen shipped roles, sources and sinks, worked examples, the Python
+  role contract, and the build loop. Ships as `skills/office-builder.skill`.
+- **`skills/sensor-office-builder/`** — the same for offices that classify
+  audio, images, or sensor signals.
+- **`course/`** — `START_HERE.md` (what the course builds, how to set up by
+  talking to Cowork, and the full catalogue of shipped examples) and
+  `SETUP.md`.
+
+### Known limitations in this release
+
+- **`mac_speed_suite` and `paper_trader` ship but do not run from a wheel
+  install.** Both read `directory='../../../../sp100_data'`, which resolves
+  to the repository root — outside the installed package. The CSVs are also
+  `.csv`, which no `package-data` glob matches. Clone the repository to run
+  either. Deferred rather than fixed: outside testers currently hold links
+  to those two offices at their present paths.
+- **The `stocks` source is dead upstream.** Stooq's free CSV quote endpoint
+  now returns HTTP 404, so `periodic_brief`'s Markets section is empty and
+  `stocks_monitor` reports errors. The source catches the failure and emits
+  a `stocks_error` message, which nothing consumes and no sink renders — so
+  the office exits 0 and says nothing. Both the endpoint and the
+  unconsumed-error path are open issues; see
+  `docs/internals/ISSUES_walkthrough_2026-08-17.md`.
+
+### Fixed — gallery offices that produced nothing
+
+- `stocks_monitor`, `weather_monitor` and `kalshi_market_watch` each declared
+  a `jsonl_recorder` that no connection ever wrote to, so the `.jsonl` file
+  each names stayed empty. The analyst's briefing now goes to both the
+  console and the recorder. Found by `dsl check` on its first run across all
+  31 shipped offices.
+- `wardrobe_assistant` declared a `discard` sink with nothing routed to it —
+  no filter, no gate, no reject port in any of its agents. Declaration
+  removed rather than wired.
 
 ### Changed
 
@@ -132,6 +172,20 @@ versions follow [SemVer](https://semver.org/).
 - Encrypted snapshots
 - Schema evolution across snapshots
 
+## [1.6.1] — 2026-06-23
+
+### Fixed
+
+- `gallery/apps/debate/roles/gate.py`: when the problem bank is
+  exhausted, the gate role now `continue`s in its `recv()` loop
+  instead of returning. Returning voluntarily killed the agent's
+  thread before `os_agent` could finish polling it; termination
+  detection stayed blocked indefinitely. Also dropped the now-
+  unnecessary `{"end_of_stream": True}` sentinel emission, which
+  was being mis-processed as a real problem by downstream
+  panellists. Net effect: the gallery debate office terminates
+  cleanly when its bank is exhausted.
+  
 ## [1.4.0] — pre-1.6 baseline
 
 Tagged at commit `547827d`. Pre-checkpoint-recovery snapshot of

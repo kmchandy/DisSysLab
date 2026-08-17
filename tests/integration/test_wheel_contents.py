@@ -77,6 +77,41 @@ REQUIRED_FILE_GLOBS = [
     "dissyslab/gallery/apps/situation_room_pro/office.md",
     "dissyslab/gallery/apps/situation_room_pro/roles/writer.py",
 
+    # --- Gallery: every shipped office ------------------------------------
+    # Generated 2026-08-17. A wheel that omits an office breaks `dsl init`
+    # for it and makes the course catalogue a lie -- 10 offices were absent
+    # from 1.6.1 this way. One line per office so a regression names which.
+    "dissyslab/gallery/apps/adaptive_tutor/office.md",
+    "dissyslab/gallery/apps/arxiv_radar/office.md",
+    "dissyslab/gallery/apps/backyard_birds/office.md",
+    "dissyslab/gallery/apps/competitor_watch/office.md",
+    "dissyslab/gallery/apps/debate/office.md",
+    "dissyslab/gallery/apps/inbox_triage/office.md",
+    "dissyslab/gallery/apps/investment_club/office.md",
+    "dissyslab/gallery/apps/job_hunter/office.md",
+    "dissyslab/gallery/apps/kalshi_market_watch/office.md",
+    "dissyslab/gallery/apps/lead_qualifier/office.md",
+    "dissyslab/gallery/apps/loudness_monitor/office.md",
+    "dissyslab/gallery/apps/mac_speed_suite/office.md",
+    "dissyslab/gallery/apps/new_grad_jobs/office.md",
+    "dissyslab/gallery/apps/paper_trader/office.md",
+    "dissyslab/gallery/apps/periodic_brief/office.md",
+    "dissyslab/gallery/apps/periodic_brief_pro/office.md",
+    "dissyslab/gallery/apps/recovery_demo/office.md",
+    "dissyslab/gallery/apps/returns_desk/office.md",
+    "dissyslab/gallery/apps/room_climate_monitor/office.md",
+    "dissyslab/gallery/apps/salton_sea_dashboard/office.md",
+    "dissyslab/gallery/apps/shipment_release/office.md",
+    "dissyslab/gallery/apps/situation_room/office.md",
+    "dissyslab/gallery/apps/situation_room_pro/office.md",
+    "dissyslab/gallery/apps/situation_room_requests/office.md",
+    "dissyslab/gallery/apps/stocks_monitor/office.md",
+    "dissyslab/gallery/apps/ticket_router/office.md",
+    "dissyslab/gallery/apps/trading_room/office.md",
+    "dissyslab/gallery/apps/wardrobe_assistant/office.md",
+    "dissyslab/gallery/apps/weather_monitor/office.md",
+    "dissyslab/gallery/apps/wildlife_watcher/office.md",
+
     # --- Components shipped as Python modules (not data) ------------------
     "dissyslab/components/sources/__init__.py",
 
