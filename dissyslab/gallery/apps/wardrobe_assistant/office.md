@@ -9,7 +9,6 @@ Sources: calendar(url="https://calendar.google.com/calendar/ical/en.usa%23holida
 
 Sinks: intelligence_display(max_items=14),
        jsonl_recorder(path="wardrobe_outfits.jsonl"),
-       discard,
        gmail_sink(to="you@example.com", subject="Your outfit guide — wardrobe + calendar digest")
 
 Agents:
