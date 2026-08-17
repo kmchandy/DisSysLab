@@ -149,6 +149,38 @@ FORBIDDEN_PATH_FRAGMENTS = [
     ".pytest_cache/",
     ".ruff_cache/",
     ".mypy_cache/",
+
+    # --- Generated / runtime output inside gallery apps -------------------
+    # Added after v1.7.0 shipped 71 of these. They are gitignored, but
+    # package-data globs read the working tree, so any machine that has
+    # run an office had them sitting in the package tree at build time.
+    # See GENERATED_ARTIFACTS below for the test that actually plants them.
+    "/build/run.py",
+    "/build/__init__.py",
+    "/snapshots/",
+    "/book/book.json",
+]
+
+
+# Generated files a real developer machine accumulates, as
+# (path relative to the source root, contents) pairs. The
+# ``dirty_tree_wheel`` fixture plants these before building so the
+# exclusion is tested against the condition that actually caused the
+# v1.7.0 leak — rather than against a clean checkout, where every such
+# assertion passes vacuously.
+GENERATED_ARTIFACTS = [
+    ("dissyslab/gallery/apps/recovery_demo/build/run.py", "# generated\n"),
+    ("dissyslab/gallery/apps/recovery_demo/build/__init__.py", ""),
+    (
+        "dissyslab/gallery/apps/recovery_demo/snapshots/checkpoints"
+        "/000000/manifest.json",
+        '{"office": "recovery_demo", "N": 0}\n',
+    ),
+    (
+        "dissyslab/gallery/apps/paper_trader/book/book.json",
+        '{"cash": 1.0, "positions": {}}\n',
+    ),
+    ("dissyslab/gallery/apps/situation_room/build/run.py", "# generated\n"),
 ]
 
 
@@ -192,18 +224,32 @@ def _copy_source_tree(src: Path, dst: Path) -> None:
         ".git",
         ".venv",
         "venv",
-        "build",
-        "dist",
         "__pycache__",
         ".pytest_cache",
         ".ruff_cache",
         ".mypy_cache",
     }
 
-    def ignore(_dir: str, names: list[str]) -> list[str]:
+    # ``build`` and ``dist`` are skipped only at the TOP level. That is
+    # the whole of the original reason for skipping them: setuptools'
+    # staging directory and prior wheel output, both at the source root.
+    #
+    # Skipping them at every depth — which this function used to do —
+    # silently deleted ``dissyslab/gallery/apps/*/build/`` on the way
+    # into the test, so the wheel under test was always clean even when
+    # a real ``python -m build`` in the same tree shipped those files.
+    # That is why the forbidden-path test did not catch v1.7.0. The test
+    # was sanitising the exact input it existed to inspect.
+    TOP_LEVEL_SKIP = {"build", "dist"}
+    src_resolved = src.resolve()
+
+    def ignore(directory: str, names: list[str]) -> list[str]:
+        at_top = Path(directory).resolve() == src_resolved
         return [
             n for n in names
-            if n in SKIP or n.endswith(".egg-info")
+            if n in SKIP
+            or n.endswith(".egg-info")
+            or (at_top and n in TOP_LEVEL_SKIP)
         ]
 
     shutil.copytree(src, dst, ignore=ignore, symlinks=True)
@@ -329,3 +375,109 @@ def test_wheel_has_minimum_gallery_office_count(built_wheel):
         f"Wheel ships only {len(office_files)} gallery offices; "
         f"expected at least 12. Names found: {office_files}"
     )
+
+
+# ---------------------------------------------------------------------------
+# The v1.7.0 leak, tested against the condition that caused it
+# ---------------------------------------------------------------------------
+#
+# Every assertion above runs against a clean checkout, where no generated
+# output exists and "the wheel contains no build/run.py" is true for the
+# uninteresting reason. The release that broke was built on a machine
+# that had run the offices. So we plant that state and build again.
+
+
+@pytest.fixture(scope="module")
+def dirty_tree_wheel(tmp_path_factory):
+    """Build a wheel from a tree that contains generated output.
+
+    Plants the files a developer machine accumulates from running the
+    gallery — ``build/run.py``, ``snapshots/``, ``book/book.json`` — and
+    builds. They are all gitignored, which is precisely why they were
+    invisible: setuptools' package-data globs read the working tree and
+    have never consulted git.
+    """
+    if not _has_build():
+        pytest.skip("python -m build not available (install: pip install build)")
+
+    work_root = tmp_path_factory.mktemp("dirty-wheel-build")
+    src_copy = work_root / "src"
+    out_dir = work_root / "dist"
+    out_dir.mkdir()
+
+    _copy_source_tree(REPO_ROOT, src_copy)
+
+    for rel, contents in GENERATED_ARTIFACTS:
+        target = src_copy / rel
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(contents)
+
+    result = subprocess.run(
+        [sys.executable, "-m", "build", "--wheel", "--outdir", str(out_dir)],
+        cwd=str(src_copy),
+        capture_output=True,
+        text=True,
+        timeout=180,
+    )
+    if result.returncode != 0:
+        pytest.fail(
+            f"python -m build failed (exit {result.returncode}).\n\n"
+            f"STDOUT:\n{result.stdout}\n\nSTDERR:\n{result.stderr}"
+        )
+
+    wheels = sorted(out_dir.glob("dissyslab-*.whl"))
+    assert wheels, f"build produced no wheel in {out_dir}"
+
+    with zipfile.ZipFile(wheels[-1]) as zf:
+        names = zf.namelist()
+
+    return {"path": wheels[-1], "names": names, "planted": GENERATED_ARTIFACTS}
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize(
+    "planted_path", [rel for rel, _ in GENERATED_ARTIFACTS]
+)
+def test_generated_output_does_not_ship(dirty_tree_wheel, planted_path):
+    """A build from a tree with generated output must not carry it.
+
+    Guarded by ``[tool.setuptools.exclude-package-data]`` in
+    pyproject.toml. If this fails, check that block first — and note
+    that adding a *new* kind of generated directory under a gallery app
+    needs a new exclusion, since the include globs match everything.
+    """
+    if planted_path in dirty_tree_wheel["names"]:
+        pytest.fail(
+            f"Wheel ships generated output: {planted_path!r}.\n"
+            f"This is the v1.7.0 bug — that release shipped 71 such "
+            f"files, and `dsl init` copied them into every student's "
+            f"folder. Fix the [tool.setuptools.exclude-package-data] "
+            f"globs in pyproject.toml."
+        )
+
+
+@pytest.mark.slow
+def test_dirty_tree_wheel_still_complete(dirty_tree_wheel):
+    """The exclusions must not overshoot.
+
+    ``gallery/apps/*/build/*`` and friends sit next to files we very
+    much do ship. A too-greedy exclusion that also dropped office.md
+    would pass every test above (they run on the clean build) while
+    breaking `dsl init` for real users.
+    """
+    offices = [
+        n for n in dirty_tree_wheel["names"]
+        if n.startswith("dissyslab/gallery/") and n.endswith("/office.md")
+    ]
+    assert len(offices) >= 12, (
+        f"Exclusions overshot: dirty-tree wheel ships only "
+        f"{len(offices)} offices."
+    )
+    for required in (
+        "dissyslab/gallery/apps/recovery_demo/office.md",
+        "dissyslab/gallery/apps/paper_trader/office.md",
+        "dissyslab/gallery/apps/wardrobe_assistant/wardrobe_inventory.json",
+    ):
+        assert required in dirty_tree_wheel["names"], (
+            f"Exclusions dropped a file we ship: {required!r}"
+        )

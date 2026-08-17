@@ -1,6 +1,6 @@
 [project]
 name = "dissyslab"
-version = "1.7.0"
+version = "1.7.1"
 description = "DisSysLab — build continuous offices of specialist agents in plain English."
 readme = "README.pypi.md"
 requires-python = ">=3.10"
@@ -77,7 +77,18 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["dissyslab*"]
-exclude = ["tests*", "examples*", "gallery*", "dev*", "site*", "micro_course*"]
+exclude = [
+  "tests*", "examples*", "gallery*", "dev*", "site*", "micro_course*",
+  # `dsl build` writes <office>/build/__init__.py next to run.py, which
+  # makes the codegen output look like a real sub-package to
+  # packages.find. It is then shipped as *source*, where
+  # exclude-package-data cannot reach it -- that rule only governs data
+  # files inside packages, not the packages themselves. This is why
+  # v1.7.0 shipped 64 build/*.py files. Both patterns are needed:
+  # the first drops the build package, the second anything under it.
+  "dissyslab.gallery.apps.*.build",
+  "dissyslab.gallery.apps.*.build.*",
+]
 
 # Package data shipped inside the wheel.
 #
@@ -90,11 +101,20 @@ exclude = ["tests*", "examples*", "gallery*", "dev*", "site*", "micro_course*"]
 #   compile time with "no such role is in the library". This was
 #   the cause of issue #126 (v1.3.1 wheel shipped no library roles).
 #
-# Globs are deliberately narrow. Internal design docs that used to
-# live at the dissyslab package root have moved to docs/internals/
-# (architecture.md, core_overview.md, network_overview.md, etc.) and
-# are out of the package tree entirely, so they cannot ship by
-# accident regardless of glob shape.
+# Internal design docs that used to live at the dissyslab package root
+# have moved to docs/internals/ (architecture.md, core_overview.md,
+# network_overview.md, etc.) and are out of the package tree entirely,
+# so they cannot ship by accident.
+#
+# The globs below are NOT narrow, and an earlier version of this comment
+# claimed they were. They read the *working tree*, not git, so any
+# untracked file matching them ships -- .gitignore is irrelevant here.
+# v1.7.0 was built from a tree containing generated output and shipped
+# 71 files that do not belong in a wheel: 32 offices' worth of generated
+# build/run.py, paper_trader's book/book.json (a live trading book), and
+# six recovery_demo checkpoints. `dsl init` then copied them into every
+# student's folder. See exclude-package-data below, which is what makes
+# the claim true rather than the glob shape.
 [tool.setuptools.package-data]
 "dissyslab" = [
   "py.typed",
@@ -105,6 +125,27 @@ exclude = ["tests*", "examples*", "gallery*", "dev*", "site*", "micro_course*"]
   "gallery/**/*.md",
   "gallery/**/*.py",
   "roles/**/*.md",
+]
+
+# Generated and runtime output that lives inside gallery app folders.
+# These are gitignored, but package-data globs read the working tree,
+# so a build on a machine that has ever *run* an office would ship them
+# without this. Each entry names something a run produces:
+#
+# - build/     — `dsl build` / `dsl run` codegen output (run.py). Stale
+#                copies trigger cli.py's "old import path" failure.
+# - snapshots/ — checkpoint-recovery output. Shipping these means a
+#                student's `dsl run recovery_demo --resume latest`
+#                silently resumes someone else's June checkpoint
+#                instead of reporting that no snapshot exists.
+# - book/      — paper_trader's persistent ledger (cash, positions,
+#                realized P&L). Not ours to ship.
+[tool.setuptools.exclude-package-data]
+"dissyslab" = [
+  "gallery/apps/*/build/*",
+  "gallery/apps/*/snapshots/*",
+  "gallery/apps/*/snapshots/**/*",
+  "gallery/apps/*/book/*",
 ]
 
 [tool.pytest.ini_options]

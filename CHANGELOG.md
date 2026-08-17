@@ -5,6 +5,51 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/).
 
 
+## [1.7.1] — 2026-08-17
+
+### Fixed — the wheel no longer ships generated output
+
+1.7.0 was built from a working tree that had run the gallery, and shipped
+71 files that do not belong in a release. `dsl init` copied them into
+every student's folder:
+
+- **`paper_trader/book/book.json`** — a live paper-trading ledger (cash,
+  five open positions, a realized P&L of −$51.7M). Every `dsl init
+  paper_trader` started from someone else's book instead of a fresh one.
+- **`recovery_demo/snapshots/checkpoints/000000`–`000005`** — six
+  checkpoints from 2026-06-15. `dsl run recovery_demo --resume latest`
+  would silently resume one of them rather than reporting that no
+  snapshot exists, which inverts the lesson the office exists to teach:
+  you take a checkpoint, then you resume from *it*.
+- **64 `build/run.py` and `build/__init__.py` files** — stale codegen.
+  `dsl run` regenerates these, so the practical risk was low, but
+  `cli.py` already carries a dedicated error for "stale build/run.py".
+
+Root cause, in two parts. `[tool.setuptools.package-data]` globs read the
+working tree and have never consulted git, so `.gitignore` did nothing to
+stop them; fixed with `[tool.setuptools.exclude-package-data]`. And
+`dsl build` writes a `build/__init__.py`, which made the codegen output
+look like a real sub-package to `packages.find` — so it shipped as
+*source*, where `exclude-package-data` has no effect; fixed by excluding
+`dissyslab.gallery.apps.*.build` in `packages.find`.
+
+No source file changed between 1.7.0 and 1.7.1. If you have 1.7.0
+installed and have not run `dsl init paper_trader` or `dsl init
+recovery_demo`, upgrading changes nothing you can observe.
+
+### Fixed — the test that should have caught it
+
+`tests/integration/test_wheel_contents.py` had a forbidden-paths test,
+and it passed, because `_copy_source_tree` skipped every directory named
+`build` at any depth on its way into the test. The test was sanitising
+the exact input it existed to inspect. It now skips `build/` and `dist/`
+only at the source root, and a new `dirty_tree_wheel` fixture plants
+generated output before building — so the guard runs against the
+condition that caused the leak rather than against a clean checkout,
+where it passed vacuously. A companion test checks the exclusions do not
+overshoot into `office.md` and the files we do ship.
+
+
 ## [1.7.0] — 2026-08-17
 
 *(This section was previously headed "Unreleased — will become 1.6.0",
