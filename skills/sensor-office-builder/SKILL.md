@@ -6,7 +6,9 @@ description: Build DisSysLab offices that classify audio, images, or sensor sign
 # Sensing offices
 
 This is the `office-builder` skill applied to one recurring shape. Read that
-skill first — `office.md`, roles, `dsl check`, and the build loop all work the
+skill first — including its rule on checking what the install actually has
+and never repairing it, which applies here unchanged and matters more, since
+these offices also depend on model libraries that may be absent — `office.md`, roles, `dsl check`, and the build loop all work the
 same way here. This adds only what is specific to classifying a signal.
 
 ## The shape

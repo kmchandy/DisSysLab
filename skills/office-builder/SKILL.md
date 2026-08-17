@@ -16,16 +16,61 @@ checkpoint/resume. Never reimplement any of that. If you find yourself writing
 queues, threads, locks, or completion flags, stop — the framework already did
 it, and yours will be subtly wrong in ways that only show up under load.
 
+## Check what this install actually has
+
+**Do this once, at the start of a session, before promising anything:**
+
+```bash
+dsl --version && dsl --help
+```
+
+`dsl --help` prints the subcommands this install offers. Read that list. It is
+the authority on what exists here — not this file, not the repository, not the
+documentation.
+
+**These instructions describe the current source. A user's `pip install
+dissyslab` may be an older release that lacks something described here.** When
+that happens:
+
+1. **Say so, once, plainly**, naming the version: *"your installed dissyslab
+   is 1.6.1, which has no `dsl check` — it exists in the repository but is not
+   in a release yet."*
+2. **Carry on.** A missing convenience is not a reason to stop working.
+3. **Offer the two legitimate routes**, and let the user choose: install the
+   current source with `pip install git+https://github.com/kmchandy/DisSysLab`,
+   or continue without that capability.
+4. **Report the version in your first substantive message.** When a student
+   reports a problem, the version is the first thing anyone will need.
+
+### Never repair the installation
+
+If something documented is missing, that is a fact to report, not a defect to
+fix. **Do not:**
+
+- edit or add files under the installed package (`site-packages`)
+- copy modules from a clone into the installed package
+- monkeypatch anything at run time
+- `pip install` a local path to supply a missing feature unless the user
+  explicitly asks
+
+A patched install works for one user, diverges silently from everyone else's,
+vanishes on the next upgrade, and produces bug reports nobody can reproduce.
+In a class of thirty, this is far worse than the missing feature.
+
 ## The loop you must follow
 
 1. Draft `office.md` and the role files.
-2. **Run `dsl check <office_dir>`.** Always. Before running anything.
+2. **Run `dsl check <office_dir>`.** Before running anything — every time,
+   without being asked. If the probe above showed no `check` subcommand, say
+   so once and go to step 4; you may read the wiring yourself and describe
+   what you see, but say plainly that a manual reading is not the same thing.
 3. Fix what it reports. Show the user what it found — do not silently repair.
 4. `dsl run <office_dir>`.
 5. Read the per-agent message counts printed at the end. The first agent
    showing zero is where the flow stops.
 
-Skipping step 2 wastes the user's time on faults that take one second to find.
+Skipping step 2 when the command exists wastes the user's time on faults that
+take one second to find.
 
 ## An office.md
 
@@ -232,6 +277,8 @@ real ideas in this subject.
   often the lesson.
 - Do not remove `max_articles` / `max_readings` limits unless asked.
 - Do not put a model wrapper or a heavy dependency in an English role.
+- Do not repair or patch the installed package when something documented
+  is missing. Report the gap and carry on.
 
 ## Requires
 

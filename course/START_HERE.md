@@ -124,7 +124,12 @@ happen:
 
 > Run `dsl check` on my office.
 
-Do this every time. It reads your org chart and reports every structural
+Do this every time. If your agent tells you `dsl check` is not in your
+installed version, that is expected and not your fault — it is newer than the
+last release. Ask it to carry on without the check, or to install the current
+version from GitHub. **Do not let it "fix" your installation by editing the
+installed package**; that gives you a copy of the tool nobody else has, and
+problems nobody else can reproduce. It reads your org chart and reports every structural
 problem at once — an agent nothing can reach, work that reaches no sink, a
 sink nothing feeds, a port nothing writes to. It takes a second and it saves
 afternoons.
