@@ -136,7 +136,7 @@ Write a new role when the job is genuinely not on this list:
 - reshaping records into a form a specific sink needs
 
 Then follow the English-or-Python guidance in `SKILL.md`. But say which of
-these applies — if you cannot, one of the thirteen above probably fits.
+these applies — if you cannot, one of the nineteen above probably fits.
 
 ## Editing a shipped role — and the name-collision trap
 

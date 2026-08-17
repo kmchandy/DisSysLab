@@ -50,6 +50,48 @@ A doc may describe something unbuilt, as long as it says so: a heading
 carrying "not yet registered" is exempt, and the marker must be in the
 heading rather than buried in the body.
 
+### Added — `dsl check` W5: no such source or sink (E5)
+
+Found by running E5, the acceptance test that had never been run. It is
+the worst gap the checker had:
+
+```
+Sources: bbc_wolrd
+```
+
+`dsl check` reported *no problems*, exit 0. `dsl build` then wrote
+`run.py` without complaint. `dsl run` died with
+`NameError: name 'bbc_wolrd' is not defined`, pointing at line 52 of
+generated code the student never wrote. Check clean, build clean,
+traceback — the exact sequence the checker exists to prevent, and the
+one a first-year is least equipped to read.
+
+W6 covered *role* names only, and the skill's promise that the check
+catches unknown names read as though it covered these too. W5 now
+resolves every name in `Sources:` and `Sinks:` against the registries
+and suggests the nearest spelling (`bbc_wolrd` → "Did you mean
+'bbc_world'?"). Skipped entirely if the registries cannot be read —
+same rule as W6, since a false "no such source" on a working office is
+worse than the gap.
+
+It found a real one on its first run: `salton_sea_dashboard` names two
+unregistered sources, so the gallery is 29/30 rather than 30/30 clean.
+That is correct — the office genuinely does not compile, which is why
+it is already an xfail. Two independent instruments now agree about it.
+
+### Fixed — three things the E5 trials tripped over
+
+- **`allow_empty=true` is a parse error.** Arguments are Python
+  literals, so it must be `allow_empty=True`. The lowercase form was in
+  the skill reference *and* in two `OfficeRunError` messages added
+  earlier today — advice that fails if followed.
+- **The role count contradicted itself** in adjacent lines: a heading
+  saying "the thirteen you have" above a sentence saying "Nineteen names
+  resolve". Nineteen is right — thirteen semantic plus six structural.
+  Both trials wasted effort counting tables to find out.
+- **B3: "empty output is now an error" gave false comfort.** True, and
+  silent about the case C3 just fixed. The reference now states both.
+
 ### Added — skills can say which version they are
 
 Both `SKILL.md` files now carry `**Skill version: \`2026-08-17b\`.**`

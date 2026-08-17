@@ -128,4 +128,14 @@ to authenticate, run `dsl doctor`.
 **Empty output is now an error.** A source that produces nothing raises
 `OfficeRunError` rather than exiting 0, because an all-zero result that looks
 like success is worse than a crash. When producing nothing is legitimate — a
-feed with nothing new — mark the source `allow_empty=true`.
+feed with nothing new — mark the source `allow_empty=True`.
+
+**And so is output that is entirely error reports.** A source that catches a
+bad fetch and emits `{"type": "<name>_error", ...}` stays alive through a
+transient failure, which is right — but it *sent* messages, so the check above
+used to be satisfied, and sinks ignore types they don't recognise, so nothing
+printed. Three HTTP 404s from `stocks` once produced a clean, silent, empty
+morning brief that reported success. A source whose output is *all* errors is
+now as loud as a dead one; a source with *some* errors is reported in the run
+summary without failing the run. Read the summary's `errors` column — it only
+appears when it is non-zero.

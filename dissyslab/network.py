@@ -869,7 +869,7 @@ class Network:
                 "looked healthy while producing nothing. Check the feed "
                 "the source points at -- an endpoint that has moved is the "
                 "usual cause. If a run of pure errors is an acceptable "
-                "outcome here, mark the source allow_empty=true in "
+                "outcome here, mark the source allow_empty=True in "
                 "office.md."
             )
         if failed:
@@ -888,7 +888,7 @@ class Network:
                 "that is not there -- a path that does not exist, a feed "
                 "that returned empty, credentials that expired. If "
                 "producing nothing is a legitimate outcome for this "
-                "source, mark it allow_empty=true in office.md, or pass "
+                "source, mark it allow_empty=True in office.md, or pass "
                 "require_source_output=False to run_network()."
             )
         raise OfficeRunError("\n".join(lines))

@@ -160,6 +160,60 @@ def test_exit_code_is_nonzero_only_for_errors(tmp_path):
     assert main([str(bad)]) != 0
 
 
+# ── W5: a source or sink that does not exist ────────────────────────────
+#
+# Found by the E5 acceptance trial. Before this, `Sources: bbc_wolrd`
+# passed `dsl check` clean, passed `dsl build` clean, and died at run time
+# with `NameError: name 'bbc_wolrd' is not defined` pointing into
+# generated code the student never wrote. W6 covered role names only, and
+# the skill's promise that the check catches unknown names read as though
+# it covered these too. Check clean, build clean, traceback is the exact
+# sequence the checker exists to prevent.
+
+
+TYPO_SOURCE = """\
+# Office: t
+
+Sources: bbc_wolrd
+Sinks: console_printer
+
+Agents:
+A is a summarizer.
+
+Connections:
+bbc_wolrd sends its out to A.
+A sends its out to console_printer.
+"""
+
+
+def test_w5_catches_a_misspelled_source(tmp_path):
+    report = check_office_dir(write_office(tmp_path, TYPO_SOURCE))
+    assert "W5" in codes(report), format_report(report)
+
+
+def test_w5_suggests_the_right_spelling(tmp_path):
+    """A typo's whole value as a diagnostic is that the answer is one
+    character away. Saying only 'no such source' wastes that."""
+    report = check_office_dir(write_office(tmp_path, TYPO_SOURCE))
+    assert "bbc_world" in format_report(report)
+
+
+def test_w5_catches_an_invented_sink(tmp_path):
+    text = OK_OFFICE.replace(
+        "Sinks: console_printer", "Sinks: totally_fake_sink"
+    ).replace("console_printer.", "totally_fake_sink.")
+    report = check_office_dir(write_office(tmp_path, text))
+    w5 = [f for f in report.findings if f.code == "W5"]
+    assert [f.subject for f in w5] == ["totally_fake_sink"], format_report(report)
+
+
+def test_w5_does_not_fire_on_real_components(tmp_path):
+    """The cost of a false W5 is a student deleting a line that was
+    right, so this is the assertion that matters most."""
+    report = check_office_dir(write_office(tmp_path, OK_OFFICE))
+    assert not [f for f in report.findings if f.code == "W5"], format_report(report)
+
+
 @pytest.mark.parametrize("office_name", ["periodic_brief", "situation_room"])
 def test_shipped_offices_pass(office_name):
     """The gallery is the free regression suite: every shipped office

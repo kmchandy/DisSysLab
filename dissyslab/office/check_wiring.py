@@ -31,6 +31,7 @@ Codes
 W1  declared inport nothing writes to -- a guaranteed block
 W3  unreachable agent -- nothing upstream can reach it
 W4  dead end -- its output reaches no sink and no office output
+W5  no such source or sink -- a name that is in no registry
 W6  missing role file -- named a role with no ``.md`` or ``.py`` behind it
 W7  cycle (note, not an error) -- legal and often intended
 W8  source with no destination, or sink nothing feeds
@@ -310,6 +311,34 @@ def _builtin_role_names() -> Set[str]:
     return names
 
 
+def _registered_component_names() -> Tuple[Set[str], Set[str]]:
+    """``(source_names, sink_names)`` from the registries, or two empty sets.
+
+    Empty means "could not read the registries", and W5 is skipped rather
+    than guessed at — same rule as W6. A false "no such source" on an
+    office that works would be worse than the gap it closes.
+    """
+    try:
+        from dissyslab.office import utils  # noqa: WPS433
+
+        sources = getattr(utils, "SOURCE_REGISTRY", None)
+        sinks = getattr(utils, "SINK_REGISTRY", None)
+        return (
+            {str(k) for k in sources} if isinstance(sources, dict) else set(),
+            {str(k) for k in sinks} if isinstance(sinks, dict) else set(),
+        )
+    except Exception:  # pragma: no cover - defensive
+        return set(), set()
+
+
+def _closest(name: str, candidates: Set[str]) -> List[str]:
+    """Up to three plausible spellings of ``name``. A typo's whole value
+    as a diagnostic is that the right answer is one character away."""
+    import difflib
+
+    return difflib.get_close_matches(name, sorted(candidates), n=3, cutoff=0.6)
+
+
 # --------------------------------------------------------------------------
 # the checks
 # --------------------------------------------------------------------------
@@ -461,6 +490,44 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                 hint,
             )
         )
+
+    # W5 -- a source or sink name that is in no registry.
+    #
+    # Found by the E5 acceptance trial, 2026-08-17, and it is the worst
+    # gap the checker had. `Sources: bbc_wolrd` passed `dsl check` clean,
+    # passed `dsl build` clean, and then died at run time with
+    # `NameError: name 'bbc_wolrd' is not defined` pointing into
+    # generated code the student never wrote. Check clean, build clean,
+    # traceback: the exact sequence the checker exists to prevent.
+    #
+    # W6 covers *role* names only, and the skill's promise that the check
+    # catches unknown names read as though it covered these too.
+    reg_sources, reg_sinks = _registered_component_names()
+    for kind, declared, registered in (
+        ("source", graph.sources, reg_sources),
+        ("sink", graph.sinks, reg_sinks),
+    ):
+        if not registered:
+            continue  # registries unreadable; say nothing
+        for name in sorted(declared):
+            if name in registered:
+                continue
+            suggestions = _closest(name, registered)
+            hint = (
+                f"Did you mean {' or '.join(repr(s) for s in suggestions)}?"
+                if suggestions
+                else f"No {kind} by that name is registered."
+            )
+            report.findings.append(
+                Finding(
+                    "W5",
+                    "error",
+                    name,
+                    f"there is no {kind} called {name!r}.",
+                    hint + f"  Run `dsl list` to see every shipped {kind}, "
+                    f"or see docs/SOURCES_AND_SINKS.md.",
+                )
+            )
 
     # W6 -- named a role with nothing behind it.
     builtins = _builtin_role_names()

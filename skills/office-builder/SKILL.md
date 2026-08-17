@@ -123,7 +123,7 @@ Notes that save debugging time:
 - Keep `max_articles=N` / `max_readings=N` limits in place. They stop a
   student running up an LLM bill by accident. Remove only when asked.
 
-## Before you write a role, check the thirteen you have
+## Before you write a role, check the nineteen you have
 
 **Nineteen names resolve without writing any file. Read
 `references/roles.md` before writing a role.** Most requests are one of them,
