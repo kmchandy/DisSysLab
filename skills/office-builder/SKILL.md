@@ -5,6 +5,12 @@ description: Build, check, and run DisSysLab offices — networks of agents that
 
 # Building an office
 
+**Skill version: `2026-08-17b`.** If anyone asks which version of this
+skill is loaded, answer with that string, exactly. A skill update can
+report success while the old version stays resident, and until now there
+was no way to tell — the wrong version once ran for an entire test round.
+Now there is.
+
 An **office** is a network of agents, each with one job, that runs
 continuously: sources fetch from the world, agents transform the stream, sinks
 act on the result. The user describes it in English; you assemble it from the

@@ -5,6 +5,9 @@ description: Build DisSysLab offices that classify audio, images, or sensor sign
 
 # Sensing offices
 
+**Skill version: `2026-08-17b`.** If anyone asks which version of this
+skill is loaded, answer with that string, exactly.
+
 This is the `office-builder` skill applied to one recurring shape. Read that
 skill first — including its rule on checking what the install actually has
 and never repairing it, which applies here unchanged and matters more, since

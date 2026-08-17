@@ -50,6 +50,23 @@ A doc may describe something unbuilt, as long as it says so: a heading
 carrying "not yet registered" is exempt, and the marker must be in the
 heading rather than buried in the body.
 
+### Added — skills can say which version they are
+
+Both `SKILL.md` files now carry `**Skill version: \`2026-08-17b\`.**`
+near the top, with an instruction to answer with it when asked. A skill
+update can report success while the previous version stays resident;
+without a marker in the text there was no way to tell from the outside,
+and the wrong version once ran for a whole test round. Bump the string
+whenever a skill changes.
+
+Two tests enforce the pair: every `.skill` bundle must match the
+directory it was built from, byte for byte, and every skill must declare
+a version. Editing a reference and forgetting to repackage produced a
+bundle that existed nowhere in git, with no error, because both files
+were individually fine — the same two-artifacts-nobody-compares shape as
+§F above. The first run of the bundle test caught exactly that, on the
+version strings added in this entry.
+
 ### Added — tests for `dsl check` (E1 regression)
 
 `tests/unit/test_check_wiring.py`. The checker shipped in 1.7.0 with no

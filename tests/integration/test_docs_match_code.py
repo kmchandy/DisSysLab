@@ -383,6 +383,95 @@ def test_start_here_catalogue_matches_the_gallery():
     )
 
 
+# ---------------------------------------------------------------------------
+# 4. Every .skill bundle must match the directory it was built from
+# ---------------------------------------------------------------------------
+#
+# The bundle is a zip of the source directory, built by hand. Edit a
+# reference, forget to repackage, send the bundle, and the installed
+# skill is a version that exists nowhere in git -- with no error, because
+# both files are individually fine. This already cost a full test round
+# once: an old bundle was installed and the wrong skill ran throughout.
+#
+# Same shape as everything else in this file. Two artifacts that are
+# supposed to say the same thing, and nothing checking that they do.
+
+
+def _skill_bundles() -> list[Path]:
+    d = REPO_ROOT / "skills"
+    return sorted(d.glob("*.skill")) if d.is_dir() else []
+
+
+def test_there_is_at_least_one_skill_bundle():
+    """Guards the parametrisation below: zero bundles would make every
+    bundle test pass by having nothing to run."""
+    assert _skill_bundles(), "no .skill bundles found under skills/"
+
+
+@pytest.mark.parametrize(
+    "bundle", _skill_bundles(), ids=lambda p: p.name
+)
+def test_skill_bundle_matches_its_source_directory(bundle):
+    import zipfile
+
+    source_dir = bundle.with_suffix("")
+    assert source_dir.is_dir(), (
+        f"{bundle.name} has no matching source directory "
+        f"{source_dir.name}/"
+    )
+
+    with zipfile.ZipFile(bundle) as zf:
+        bundled = {
+            i.filename: zf.read(i.filename)
+            for i in zf.infolist()
+            if not i.is_dir()
+        }
+
+    on_disk = {
+        f"{source_dir.name}/{p.relative_to(source_dir).as_posix()}": p.read_bytes()
+        for p in sorted(source_dir.rglob("*"))
+        if p.is_file() and "__pycache__" not in p.parts
+        and p.name != ".DS_Store"
+    }
+
+    missing = sorted(set(on_disk) - set(bundled))
+    extra = sorted(set(bundled) - set(on_disk))
+    stale = sorted(
+        n for n in set(bundled) & set(on_disk) if bundled[n] != on_disk[n]
+    )
+
+    assert not (missing or extra or stale), (
+        f"{bundle.name} is out of date with {source_dir.name}/.\n"
+        + (f"  missing from bundle: {missing}\n" if missing else "")
+        + (f"  in bundle but not on disk: {extra}\n" if extra else "")
+        + (f"  contents differ: {stale}\n" if stale else "")
+        + f"\nRepackage:  cd skills && rm -f {bundle.name} && "
+        f"zip -r {bundle.name} {source_dir.name} "
+        f'-x "*.DS_Store" "*__pycache__*"'
+    )
+
+
+@pytest.mark.parametrize(
+    "bundle", _skill_bundles(), ids=lambda p: p.name
+)
+def test_skill_declares_a_version_string(bundle):
+    """A skill must be able to say which version it is.
+
+    An install can report success while the previous version stays
+    resident, and without a marker in the text there is no way to tell
+    from the outside — you can only guess from behaviour. The marker
+    makes "did the update take?" a question with an answer.
+    """
+    skill_md = bundle.with_suffix("") / "SKILL.md"
+    assert skill_md.exists(), f"{bundle.name}: no SKILL.md in source dir"
+    text = skill_md.read_text(encoding="utf-8")
+    assert re.search(r"Skill version: `\d{4}-\d{2}-\d{2}", text), (
+        f"{skill_md.relative_to(REPO_ROOT)} declares no version string.\n"
+        "Add a line near the top:  **Skill version: `YYYY-MM-DD`.**  "
+        "and bump it whenever the skill changes."
+    )
+
+
 def test_start_here_catalogue_is_not_silently_incomplete():
     """The reverse direction, as a floor rather than an equality.
 
