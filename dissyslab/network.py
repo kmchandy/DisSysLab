@@ -773,28 +773,49 @@ class Network:
     def run_report(self) -> Dict[str, Any]:
         """Per-agent message counts and source health after a run.
 
-        ``{"agents": {name: {"sent": int, "received": int}},
-           "failed_sources": [(name, reason)],
-           "empty_sources":  [name]}``
+        ``{"agents": {name: {"sent": int, "received": int, "errors": int}},
+           "failed_sources":     [(name, reason)],
+           "empty_sources":      [name],
+           "all_error_sources":  [(name, count)],
+           "some_error_sources": [(name, errors, sent)]}``
+
+        The two error categories are separate because they need
+        different answers. ``all_error_sources`` sent messages and every
+        one was a failure report -- indistinguishable from a dead feed,
+        and treated as such. ``some_error_sources`` had real output too,
+        so the run is not a failure; the count is reported and nothing
+        is raised.
         """
         from dissyslab.blocks.source import Source as _Source
 
         agents: Dict[str, Dict[str, int]] = {}
         failed: List[Tuple[str, str]] = []
         empty: List[str] = []
+        all_errors: List[Tuple[str, int]] = []
+        some_errors: List[Tuple[str, int, int]] = []
 
         for name, agent in self.agents.items():
             sent = sum(getattr(agent, "sent", {}).values())
             received = sum(getattr(agent, "received", {}).values())
-            agents[name] = {"sent": sent, "received": received}
+            errors = sum(getattr(agent, "errors", {}).values())
+            agents[name] = {
+                "sent": sent, "received": received, "errors": errors,
+            }
             if isinstance(agent, _Source):
                 if getattr(agent, "failure", None):
                     failed.append((name, agent.failure))
                 elif sent == 0 and not getattr(agent, "allow_empty", False):
                     empty.append(name)
+                elif errors and errors == sent:
+                    if not getattr(agent, "allow_empty", False):
+                        all_errors.append((name, errors))
+                elif errors:
+                    some_errors.append((name, errors, sent))
 
         return {"agents": agents, "failed_sources": failed,
-                "empty_sources": empty}
+                "empty_sources": empty,
+                "all_error_sources": all_errors,
+                "some_error_sources": some_errors}
 
     def print_run_summary(self) -> None:
         """Print per-agent message counts. Makes "everything produced
@@ -807,17 +828,50 @@ class Network:
         print()
         print("Run summary (messages):")
         for name, counts in rows:
-            print(f"  {name.ljust(width)}   sent {counts['sent']:>6}"
-                  f"   received {counts['received']:>6}")
+            line = (f"  {name.ljust(width)}   sent {counts['sent']:>6}"
+                    f"   received {counts['received']:>6}")
+            # Only shown when non-zero. A column of zeros on every
+            # healthy run teaches people to stop reading the column.
+            if counts.get("errors"):
+                line += f"   errors {counts['errors']:>6}"
+            print(line)
+
+        noisy = report.get("some_error_sources", [])
+        if noisy:
+            print()
+            for name, errors, sent in noisy:
+                print(f"  note: {name} reported {errors} error(s) among "
+                      f"{sent} message(s). The office ran; that feed was "
+                      f"partly unavailable.")
 
     def _raise_if_no_source_produced_output(self) -> None:
         """Turn a silently empty run into a loud failure."""
         report = self.run_report()
         failed, empty = report["failed_sources"], report["empty_sources"]
-        if not failed and not empty:
+        all_errors = report["all_error_sources"]
+        if not failed and not empty and not all_errors:
             return
 
         lines: List[str] = []
+        if all_errors:
+            lines.append(
+                "These sources sent messages, but every one was an error "
+                "report, so nothing usable reached the rest of the office:"
+            )
+            for name, count in all_errors:
+                lines.append(f"  - {name}: {count} error message(s)")
+            lines.append(
+                "A source that reports failure as data (the "
+                "'{\"type\": \"<name>_error\"}' convention) keeps the office "
+                "running through a bad fetch, which is what you want. But "
+                "sinks route on 'type' and ignore what they do not "
+                "recognise, so those messages went nowhere and the office "
+                "looked healthy while producing nothing. Check the feed "
+                "the source points at -- an endpoint that has moved is the "
+                "usual cause. If a run of pure errors is an acceptable "
+                "outcome here, mark the source allow_empty=true in "
+                "office.md."
+            )
         if failed:
             lines.append("These sources failed while running:")
             for name, reason in failed:

@@ -107,7 +107,82 @@ class TestEmptyAndFailingSources:
         report = g.run_report()
         assert report["failed_sources"] == []
         assert report["empty_sources"] == []
+        assert report["all_error_sources"] == []
+        assert report["some_error_sources"] == []
         assert sum(a["sent"] for a in report["agents"].values()) >= 3
+
+    # ── Failure reported as data ─────────────────────────────────────
+    #
+    # A polling source that catches a bad fetch and emits
+    # {"type": "<name>_error"} keeps the office alive, which is right.
+    # But it also defeats every guard we had: `sent` is non-zero so the
+    # empty-source check passes, and sinks ignore types they don't
+    # recognise so nothing prints. Three 404s from the stocks source
+    # produced a clean, silent, empty morning brief that reported
+    # success. These tests pin the distinction that makes it visible.
+
+    def test_source_emitting_only_errors_is_treated_as_dead(self):
+        """All output is failure reports — indistinguishable from a
+        dead feed, so it must be as loud as one."""
+        sink, _ = collect_sink()
+        errs = [{"type": "stocks_error", "error": "HTTP 404"}] * 3
+        g = network([(make_source(errs), sink)])
+        with pytest.raises(OfficeRunError, match="every one was an error"):
+            g.run_network(timeout=5)
+
+    def test_source_with_some_errors_does_not_raise(self):
+        """Partial failure is not run failure. One flaky feed must not
+        abort an office whose other output is fine."""
+        sink, results = collect_sink()
+        msgs = [
+            {"type": "quote", "price": 1},
+            {"type": "stocks_error", "error": "HTTP 404"},
+            {"type": "quote", "price": 3},
+        ]
+        g = network([(make_source(msgs), sink)])
+        g.run_network(timeout=5)
+        assert len(results) == 3
+        report = g.run_report()
+        assert report["all_error_sources"] == []
+        assert report["some_error_sources"]
+        _name, errors, sent = report["some_error_sources"][0]
+        assert (errors, sent) == (1, 3)
+
+    def test_allow_empty_suppresses_the_all_error_case(self):
+        """`allow_empty` already means 'producing nothing useful is
+        legitimate here'. A run of pure errors is that same claim, so
+        the same escape hatch covers it — someone who has already opted
+        out should not have to opt out twice."""
+        sink, _ = collect_sink()
+        errs = [{"type": "weather_error", "error": "timeout"}] * 2
+        g = network([(make_source(errs, allow_empty=True), sink)])
+        g.run_network(timeout=5)
+        assert g.run_report()["all_error_sources"] == []
+
+    def test_error_counting_is_narrow(self):
+        """Only a string `type` ending in `_error` counts. A payload
+        that merely mentions an error is data, not a failure report —
+        an office summarising bug tickets must not read as broken."""
+        sink, _ = collect_sink()
+        msgs = [
+            {"type": "article", "title": "Error rates fall at Boeing"},
+            {"type": "article", "error_count": 12},
+            {"type": "ticket", "body": "stocks_error"},
+        ]
+        g = network([(make_source(msgs), sink)])
+        g.run_network(timeout=5)
+        report = g.run_report()
+        assert report["all_error_sources"] == []
+        assert report["some_error_sources"] == []
+        assert all(a["errors"] == 0 for a in report["agents"].values())
+
+    def test_non_dict_messages_never_count_as_errors(self):
+        """Most offices send strings, numbers, and dataclasses. The
+        predicate must not raise or misfire on any of them."""
+        sink, _ = collect_sink()
+        g = network([(make_source(["a", 7, ("x",), {"no_type": 1}]), sink)])
+        g.run_network(timeout=5)
+        assert g.run_report()["all_error_sources"] == []
 
     def test_source_has_default_outport(self):
         src = Source(fn=lambda: None)

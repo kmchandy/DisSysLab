@@ -25,10 +25,28 @@ somewhere new.
 A source is an agent that generates messages. You declare the sources in 
 an office in the `Sources:` line.
 
-### RSS feeds (10 named, no key)
+### `rss` — any RSS or Atom feed at all (no key)
 
-Ten named RSS feeds share one implementation. Each is a free,
-public feed; no signups, no API keys.
+**Start here.** If a site publishes a feed, you can read it, and you
+do not need us to add it. Pass the URL:
+
+```
+Sources: rss(url="https://example.com/feed.xml", name="my_feed",
+             max_articles=5)
+```
+
+`name` is what the feed calls itself in each message's `source`
+field and in the run summary — pick something you will recognise.
+The named feeds in the next section are shortcuts for this: same
+implementation, URL filled in.
+
+Nothing about adding a feed requires editing the framework. If you
+find yourself about to, you want `rss(url=...)`.
+
+### RSS feeds (12 named, no key)
+
+Twelve named feeds share the `rss` implementation above, with the URL
+already filled in. Each is free and public; no signups, no API keys.
 
 | Name in `office.md` | What it streams                         |
 |---------------------|-----------------------------------------|
@@ -42,6 +60,8 @@ public feed; no signups, no API keys.
 | `venturebeat_ai`    | VentureBeat AI                          |
 | `nasa_news`         | NASA breaking news                      |
 | `python_jobs`       | python.org jobs board                   |
+| `remoteok`          | RemoteOK job listings                   |
+| `we_work_remotely`  | We Work Remotely job listings           |
 
 **Arguments (all optional):**
 - `max_articles` *(int)* — how many articles per fetch. Defaults
@@ -239,7 +259,12 @@ the whole batch.
 **Arguments:**
 - `tickers` *(list of str, required)*.
 - `directory` *(str, required)* — relative paths resolve against the
-  current working directory the office is run from.
+  **office folder**, not the directory you typed the command in.
+  `build/run.py` chdirs there first; see `jsonl_recorder`'s `path`
+  argument below for the full explanation. This is why
+  `paper_trader` and `mac_speed_suite` reach the shared data with
+  `directory='../../../../sp100_data'` — that path is counted from
+  the office's own folder.
 - `filename_pattern` *(str, default `"{ticker}_1year.csv"`)* — must
   contain `{ticker}`.
 - `start` / `end` *(str, default: no bound)* — optionally filter rows
@@ -251,7 +276,14 @@ Sources: csv_stock_history(tickers=["AMD", "NFLX", "NVDA", "PLTR", "TSLA"],
                             directory="sp100_data")
 ```
 
-### `salton_wind` — NASA/JPL Salton Sea buoy wind (real, no key)
+### `salton_wind` — NASA/JPL Salton Sea buoy wind (real, no key, not yet registered)
+
+> **Not yet registered.** The implementation exists
+> (`components/sources/jpl_saltonsea_buoy_source.py`) but has no entry
+> in `SOURCE_REGISTRY`, so `Sources: salton_wind` in an `office.md`
+> does not compile yet. Until it does, wrap it directly:
+> `Source(fn=JPLSaltonSeaBuoySource().run, name="salton_wind")`.
+> This is why `salton_sea_dashboard` is an xfail in the compiler tests.
 
 One-shot fetch of the two NASA/JPL buoys (SS1, SS1A) moored on the
 Salton Sea, CA, from `https://saltonsea.jpl.nasa.gov/get_met_weather`
@@ -274,7 +306,10 @@ under `"h2s"`) without any key collision — see
 Sources: salton_wind
 ```
 
-### `synthetic_salton_h2s` — synthetic Salton Sea H2S readings (no network, not real data)
+### `synthetic_salton_h2s` — synthetic Salton Sea H2S readings (no network, not real data, not yet registered)
+
+> **Not yet registered.** As with `salton_wind` above: the
+> implementation exists, the registry entry does not.
 
 Prototyping stand-in for four named CARB hydrogen-sulfide monitoring
 sites near the Salton Sea (Salton Sea Park, Torres-Martinez,
@@ -517,6 +552,108 @@ Sources: mcp_source(server="github",
                     poll_interval=3600)
 ```
 
+### arXiv category feeds (5 named, no key)
+
+New-submission listings for five CS categories, scraped and
+normalised into the same message shape as the RSS feeds. Used by
+`arxiv_radar`.
+
+| Name in `office.md` | Category                          |
+|---------------------|-----------------------------------|
+| `arxiv_cs_ai`       | Artificial Intelligence (cs.AI)   |
+| `arxiv_cs_lg`       | Machine Learning (cs.LG)          |
+| `arxiv_cs_cl`       | Computation and Language (cs.CL)  |
+| `arxiv_cs_cv`       | Computer Vision (cs.CV)           |
+| `arxiv_cs_ro`       | Robotics (cs.RO)                  |
+
+**Arguments (all optional):** `max_articles`, `poll_interval` — as
+for the RSS feeds.
+
+### `weatherapi` — multi-day forecast (needs a free key)
+
+Use `weather` for *current* conditions with no key. Use
+`weatherapi` when the office needs a 1–14 day forecast; it returns
+one message per run holding the whole forecast. Needs a free
+WeatherAPI.com key in `WEATHERAPI_KEY`.
+
+```
+Sources: weatherapi(city="Pasadena", days=3)
+```
+
+### `kalshi` — prediction-market prices (no key for public data)
+
+Polls the Kalshi Trade API. Two modes: name tickers explicitly, or
+give a keyword and let it discover matching open events and
+markets. Used by `kalshi_market_watch`.
+
+```
+Sources: kalshi(tickers=["KXBTC-25DEC31-B100000"])
+Sources: kalshi(keyword="hurricane", poll_interval=300)
+```
+
+Kalshi's default market listing is dominated by sports, so keyword
+discovery searches events as well as markets.
+
+### `file_source` — read a local CSV or JSON file
+
+One message per row (CSV) or per top-level item (JSON). The plain
+way to get your own data into an office.
+
+```
+Sources: file_source(path="data/readings.csv")
+```
+
+### `starter` and `session_starter` — one message, to start a loop
+
+`starter` emits exactly one message at startup and then stops. An
+office built as a cycle — a debate, a negotiation, anything that
+runs until it converges — needs one bootstrap message to set the
+first round going; after that the feedback edges keep it moving.
+Used by `debate`, `trading_room`, `returns_desk`,
+`shipment_release`.
+
+```
+Sources: starter
+```
+
+`session_starter` (and the numbered `session_starter_2`,
+`session_starter_3`) do the same for offices that open a
+multi-turn session rather than a single round.
+
+Because a starter is *meant* to send one message and stop, it is
+the usual reason to reach for `allow_empty` — not because it
+produces nothing, but because offices built around it often want
+the empty-source guard relaxed elsewhere. See the guard's own
+message when it fires.
+
+### Audio and images (sensor sources)
+
+Four sources feed offices that classify signals rather than text.
+All four are used by the sensor gallery apps; see the
+`sensor-office-builder` skill for how to wrap a model as a role.
+
+| Name              | What it emits                                   |
+|-------------------|-------------------------------------------------|
+| `audio_mic`       | Chunks of live microphone audio, one per chunk  |
+| `audio_clip`      | The same chunks, replayed from one audio file   |
+| `audio_folder`    | One message per audio file in a folder          |
+| `image_folder`    | One message per image in a folder               |
+
+`audio_mic` and `audio_clip` emit the *same* message shape on
+purpose: develop a streaming office against a recorded clip, then
+swap in the microphone without touching anything downstream.
+`audio_mic` needs portaudio installed; `audio_clip` does not.
+
+`audio_folder` sends the file *path*, not the audio bytes — each
+downstream agent opens what it needs, so the queue stays light.
+`image_folder` does load pixels, since the analysers all want them.
+
+```
+Sources: audio_folder(folder="recordings/")
+Sources: image_folder(folder="camera_trap/")
+Sources: audio_mic(chunk_seconds=1.0)
+```
+
 ---
 
 ## Sinks
@@ -589,12 +726,23 @@ later.
 **Arguments:**
 - `path` *(str, default `"anomaly_stream.jsonl"`)* — output file.
   A bare filename like `"briefings.jsonl"` is **relative to the
-  directory you ran `dsl run` from**, not the office folder. If
-  you ran `dsl run path/to/briefing` from your home directory, the
-  file lands in your home directory. Pass an absolute path
-  (`"/Users/you/briefings.jsonl"`) or a path under the office
-  folder (`"./briefings.jsonl"`) if you want it somewhere
-  predictable.
+  office folder**, not to wherever you were standing when you typed
+  the command. The generated `build/run.py` does
+  `os.chdir(<office folder>)` before starting, so an office's output
+  lands next to its `office.md` no matter where you ran it from.
+  That is usually what you want: the office and its results stay
+  together.
+
+  `"./briefings.jsonl"` means the same thing as `"briefings.jsonl"`.
+  An **absolute path** (`"/Users/you/briefings.jsonl"`) is the one
+  form that escapes the office folder — use it when you deliberately
+  want output somewhere else.
+
+  One consequence worth knowing: running a *shipped* gallery office
+  in place writes into your `site-packages`, because that is where
+  that office's folder is. `dsl init <office> <folder>` copies it
+  somewhere of your own first, which is why the course tells you to
+  start there.
 - `mode` *(str, default `"w"`)* — `"w"` overwrites at start,
   `"a"` appends.
 - `flush_every` *(int, default `1`)* — flush after every N
@@ -787,9 +935,8 @@ one public JSON/GeoJSON endpoint):*
 - CoinGecko or CoinCap crypto prices — parallels `stocks` exactly
 - Wikipedia's recent-changes feed
 - GitHub's public events API
-- Any additional RSS feed at all — the 10 named feeds already share
-  one generic implementation; adding a new one is close to a one-line
-  change
+- *(An additional RSS feed is **not** on this list: you already have
+  `rss(url=...)`. Nothing needs building. See the `rss` section above.)*
 
 *Sinks, same shape as `slack_sink`:*
 - **Discord webhook sink** — Discord's incoming webhooks work

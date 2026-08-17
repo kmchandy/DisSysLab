@@ -31,8 +31,8 @@ should detect the absence, say so, and continue — never patch.
 
 | # | Issue | Location |
 |---|---|---|
-| B1 | **Output-path direction is reversed.** Doc says a bare filename resolves against the invoking directory; `codegen.py` emits `os.chdir(_HERE.parent)` so it resolves against the *office* folder. The doc's remedy — "pass an absolute path for predictability" — now describes the one form that escapes it | `docs/SOURCES_AND_SINKS.md:591` vs `codegen.py:~618` |
-| B2 | **RSS is undersold, then mis-signposted.** Section reads "RSS feeds (10 named)"; the generic `rss(url="...")` appears only in the code docstring. A later line — "Any additional RSS feed at all … adding a new one is close to a one-line change" — reads to a student as *the framework needs changing*, when they just need `rss(url=...)` in their own `office.md` | `docs/SOURCES_AND_SINKS.md:28`, `:790` |
+| B1 | ~~**Output-path direction is reversed.**~~ **DONE.** Doc says a bare filename resolves against the invoking directory; `codegen.py` emits `os.chdir(_HERE.parent)` so it resolves against the *office* folder. The doc's remedy — "pass an absolute path for predictability" — now describes the one form that escapes it | `docs/SOURCES_AND_SINKS.md:591` vs `codegen.py:~618` |
+| B2 | ~~**RSS is undersold, then mis-signposted.**~~ **DONE.** Section reads "RSS feeds (10 named)"; the generic `rss(url="...")` appears only in the code docstring. A later line — "Any additional RSS feed at all … adding a new one is close to a one-line change" — reads to a student as *the framework needs changing*, when they just need `rss(url=...)` in their own `office.md` | `docs/SOURCES_AND_SINKS.md:28`, `:790` |
 | B3 | **"Empty output is now an error" gives false comfort.** True, and it does not fire when a source emits *error* messages — which is the common case | `skills/office-builder/references/sources_and_sinks.md` |
 | B4 | **`START_HERE` promises stock prices** that do not appear (see C1) | `course/START_HERE.md` §2 |
 | B5 | **`START_HERE` catalogues 38 examples**; a wheel install can reach 28 | `course/START_HERE.md` §5 |
@@ -47,8 +47,8 @@ as working.
 | # | Issue |
 |---|---|
 | C1 | **The Stooq quote endpoint returns 404.** `https://stooq.com/q/l/?...` → `HTTP Error 404`. All three `stocks` sources are dead. Unauthenticated free feed; it will break again |
-| C2 | **`stocks_error` has no consumer.** `StocksSource` catches failures and yields `{"type": "stocks_error", ...}` — the string appears exactly once in the repository, at the line that emits it. The brief sink's own docstring: *"messages with no recognised source or type are silently ignored"*. The mechanism written to surface failure is what buries it |
-| C3 | **The health check counts messages, not health.** `OfficeRunError` fires when a source sends zero. These sent three — three errors. The guard built for exactly this class of silent failure is defeated by a source that reports failure as data. Counting `*_error` messages separately would have made it visible in the first run |
+| C2 | ~~**`stocks_error` has no consumer.**~~ **DONE** — the run summary is now its consumer. `StocksSource` catches failures and yields `{"type": "stocks_error", ...}` — the string appears exactly once in the repository, at the line that emits it. The brief sink's own docstring: *"messages with no recognised source or type are silently ignored"*. The mechanism written to surface failure is what buries it |
+| C3 | ~~**The health check counts messages, not health.**~~ **DONE.** `OfficeRunError` fires when a source sends zero. These sent three — three errors. The guard built for exactly this class of silent failure is defeated by a source that reports failure as data. Counting `*_error` messages separately would have made it visible in the first run |
 | C4 | **Running a shipped office writes into `site-packages`.** Same `chdir` mechanism as B1: a shipped office's folder *is* the install. `dsl init` avoids it; nothing warns |
 
 C2 and C3 are framework-level, not `periodic_brief`-level. Any source using
@@ -75,7 +75,7 @@ architecture and names the hole precisely:
   `strategy_selfcheck.py`, `check_no_lookahead.py`,
   `check_problem_ground_truth.py`. The foundation skill ships none, and the
   agent improvised one. Improvised tests will vary per student.
-- **D3 — The design rule that makes tier 3 visible is undocumented.**
+- **D3 — DONE.** ~~The design rule that makes tier 3 visible is undocumented.~~
   `examples/org_news_filter` already does it: `Felix's discard is
   jsonl_recorder.` — rejects go to a *readable* file, not to `discard`. Run
   the buggy filter that way and the dropped headline is sitting in the
@@ -109,8 +109,7 @@ architecture and names the hole precisely:
 
 ## E. Carried over, not from the walk-through
 
-- **E1** W4 reports a cascade — seven dead ends for one missing wire. Report
-  the frontier
+- ~~**E1** W4 reports a cascade~~ **DONE** — frontier only, casualties counted
 - **E2** W2 (outport nothing reads) not implemented; needs resolved role shapes
 - **E3** `sensor-office-builder` has no `references/`
 - **E4** Three skills still under `gallery/apps/*/skill*/` — move after 25 Aug
@@ -137,6 +136,55 @@ not do. Three would be caught mechanically by a cheap test —
 
 `dsl check` does this for offices. Nothing does it for prose, and this session
 is the argument that something should.
+
+---
+
+## Update — 2026-08-17, later the same day
+
+Done: **B1, B2, C2, C3, D3, E1, F**, plus the release (A1/A2/A3/B5 via
+1.7.0, then 1.7.1 to fix the packaging leak that release introduced —
+see `CHANGELOG.md`).
+
+**F landed and immediately earned its keep.** The first run of
+`tests/integration/test_docs_match_code.py` found two divergences the
+walk-through had not: `salton_wind` and `synthetic_salton_h2s` are
+documented sources with no registry entry, and *eighteen* registered
+sources appeared nowhere in the catalogue — including `rss` itself,
+which is B2. Six issues in this file are the "prose asserts what the
+code does not do" pattern; the test found two more of the same in
+under a second, which is the argument §F was making.
+
+### C1 is worse than recorded, and needs a decision
+
+The issue says the Stooq **quote** endpoint returns 404. Re-checked
+2026-08-17: still 404, and it is not a ticker-format problem — `aapl`,
+`aapl.us` and `AAPL.US` all 404. The whole `/q/l/` path is gone.
+
+The **history** endpoint `/q/d/l/` is no longer usable
+programmatically either: it now serves a JavaScript proof-of-work
+browser challenge instead of CSV. That is presumably the same symptom
+`synthetic_stock_history` was added for on 2026-07-28.
+
+So every Stooq-backed source is dead, not only quotes. Replacing the
+provider is a durable choice for a course rather than a bug fix, so it
+is left open deliberately:
+
+- **Yahoo's chart endpoint** (`query1.finance.yahoo.com/v8/finance/chart/`)
+  works today with no key — verified. It is undocumented and
+  unofficial, which is the same class of fragility that has now broken
+  twice in two months.
+- **A keyed provider** (Alpha Vantage, Finnhub, Twelve Data) is stable
+  and free at low volume, but adds a signup to the on-ramp — and the
+  no-key property is most of why `periodic_brief` is the first thing a
+  student runs.
+- **Offline-first**, extending what `csv_stock_history` and
+  `synthetic_stock_history` already do: ship the data, treat live
+  quotes as opt-in. Nothing to break during a lecture. Costs the
+  liveness that makes a market office feel real.
+
+C3 makes the failure loud either way: a stocks source returning nothing
+but `stocks_error` now raises instead of producing a silent empty
+brief. That buys time to choose rather than forcing it.
 
 ---
 

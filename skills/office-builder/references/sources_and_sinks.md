@@ -85,6 +85,32 @@ use a distinct name per destination.
 you say "deliberately dropped" rather than leaving an outport unwired. An
 unwired outport is a fault; `discard` is a decision.
 
+**But `discard` also destroys your only evidence.** A filter that drops the
+wrong thing produces an office that checks clean, runs clean, and answers
+wrong — and there is nothing left to look at, because the dropped messages
+went to `discard`. `dsl check` cannot catch this; nothing can. A regex of
+`\bneural operator\b` silently dropped every paper titled "Neural Operators",
+and the only way to see it was to look at what was rejected.
+
+**So while you are developing, send rejects somewhere readable:**
+
+```
+Sinks: jsonl_recorder_keep(path="kept.jsonl"),
+       jsonl_recorder_discard(path="rejected.jsonl")
+
+Felix's keep is jsonl_recorder_keep.
+Felix's discard is jsonl_recorder_discard.
+```
+
+Now the mistake is a file you can open. `examples/org_news_filter` is built
+this way; copy the shape. Switch to `discard` when you are confident the
+criterion is right — or never, since a rejects file costs almost nothing.
+
+This is the general rule, and it is worth stating as one: **you cannot
+automate a check for "the answer is wrong", so build offices whose wrong
+answers are visible.** Anywhere a message is dropped, filtered, deduplicated,
+or defaulted, ask what a student would look at to find out it happened.
+
 **`rss` takes any feed.** Before asking for a new named source, check whether
 `rss(url=...)` covers it.
 

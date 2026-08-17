@@ -5,6 +5,108 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/).
 
 
+## [Unreleased]
+
+Work from the 2026-08-17 student walk-through issue list
+(`docs/internals/ISSUES_walkthrough_2026-08-17.md`).
+
+### Added — the run summary can see failure reported as data (C2, C3)
+
+A source that catches a bad fetch and emits
+`{"type": "<name>_error", ...}` keeps the office alive through a
+transient failure, which is right. It also defeated every guard we had.
+`sent` was non-zero, so the empty-source check passed. Sinks route on
+`type` and ignore what they don't recognise, so nothing printed. Three
+consecutive HTTP 404s from the stocks source produced a clean, silent,
+entirely empty morning brief that reported success.
+
+- `Agent.errors` counts messages matching that convention, per outport.
+- `Network.run_report()` gains `all_error_sources` and
+  `some_error_sources`. The split matters: a source whose output was
+  *entirely* error reports is indistinguishable from a dead feed and is
+  now as loud as one — `OfficeRunError`, naming the source and the
+  count. A source with *some* errors is reported and does not raise,
+  because one flaky feed must not abort an office whose other output is
+  fine.
+- `allow_empty` covers the all-errors case too. It already means
+  "producing nothing useful is legitimate here"; nobody should have to
+  opt out twice.
+- The predicate is deliberately narrow — a string `type` ending in
+  `_error`, nothing else. An office summarising bug tickets does not
+  read as broken.
+
+### Added — mechanical checks that the prose matches the code (F)
+
+`tests/integration/test_docs_match_code.py`. Six of the eleven
+walk-through issues were one failure: a document asserted something the
+system does not do, and nothing detected the divergence. Three of the
+six are decidable by machine, and now are — every component the
+catalogue promises exists in the registry; every registry entry is
+findable in the catalogue; every `dsl` subcommand named in a skill or
+course doc exists in `cli.py`; every office in START_HERE's catalogue
+ships. The first run found two real divergences (below).
+
+A doc may describe something unbuilt, as long as it says so: a heading
+carrying "not yet registered" is exempt, and the marker must be in the
+heading rather than buried in the body.
+
+### Added — tests for `dsl check` (E1 regression)
+
+`tests/unit/test_check_wiring.py`. The checker shipped in 1.7.0 with no
+unit tests; its acceptance was four deliberate breaks run by hand. Good
+acceptance, no regression value. Now pinned.
+
+### Changed — W4 reports the cascade frontier, not every casualty (E1)
+
+Cutting one wire into the sinks of `situation_room` reported seven dead
+ends, one per upstream agent. Correct, and for a first-year worse than
+useless: seven findings for one missing wire reads as seven problems and
+none of them says where to look. Every successor of a dead agent is
+itself dead, so the frontier is exactly the dead agents with no dead
+successor — that is where the path to a sink actually stops. The rest
+are counted and named in the hint rather than listed as faults. A dead
+cycle has no frontier, and is reported whole.
+
+### Fixed — documentation that contradicted the code
+
+- **B1: the output-path direction was reversed.** `SOURCES_AND_SINKS.md`
+  said a bare filename resolves against the directory you ran `dsl run`
+  from. It resolves against the *office folder* — `build/run.py` does
+  `os.chdir()` there before starting. The doc's remedy ("pass an
+  absolute path for predictability") described the one form that
+  escapes the office folder. Both the `jsonl_recorder` `path` entry and
+  the `csv_stock_history` `directory` entry are corrected, and the
+  consequence C4 named — running a *shipped* office in place writes
+  into `site-packages` — is now stated where it will be read.
+- **B2: `rss` was undocumented.** The generic `rss(url=...)` existed,
+  worked, and appeared only in a Python docstring, while the catalogue
+  said "adding a new one is close to a one-line change" — which reads to
+  a student as *the framework needs changing*. `rss` now leads the
+  sources section, and that line is gone.
+- **`salton_wind` and `synthetic_salton_h2s` were documented but never
+  registered.** The implementations exist; the registry entries do not,
+  which is why `salton_sea_dashboard` is an xfail. Both headings now say
+  so and give the direct-wrapping workaround.
+- **Eighteen registered sources appeared nowhere in the catalogue** —
+  the five arXiv feeds, `starter` / `session_starter`, the four audio
+  and image sensor sources, `file_source`, `kalshi`, `weatherapi`,
+  `remoteok`, `we_work_remotely`. All documented. A component a student
+  cannot find is worse than one that does not exist: the catalogue's
+  silence reads as "not possible" rather than "look elsewhere".
+
+### Fixed — the skill taught `discard` without its cost (D3)
+
+`discard` is a real sink and wiring rejects to it is a decision rather
+than a fault — that much the reference said. It did not say that
+`discard` destroys the only evidence of a filter dropping the wrong
+thing, which is exactly the tier-3 failure the walk-through hit: a
+`\bneural operator\b` regex silently dropped every paper titled "Neural
+Operators". The reference now teaches routing rejects to a readable file
+while developing, and states the general rule — you cannot automate a
+check for "the answer is wrong", so build offices whose wrong answers
+are visible.
+
+
 ## [1.7.1] — 2026-08-17
 
 ### Fixed — the wheel no longer ships generated output

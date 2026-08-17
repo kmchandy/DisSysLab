@@ -48,6 +48,36 @@ class QueueLike(Protocol):
 # OS Message Classes
 # ============================================================================
 
+ERROR_TYPE_SUFFIX = "_error"
+
+
+def is_error_message(msg: Any) -> bool:
+    """True when ``msg`` is a component reporting a failure as data.
+
+    The convention, used by ``StocksSource`` and ``WeatherSource`` and
+    open to any component: catch the exception, keep running, and emit
+    ``{"type": "<component>_error", "error": "..."}`` downstream instead
+    of crashing the office.
+
+    That is the right shape -- a polling source should survive one bad
+    fetch -- but on its own it converts a loud failure into a quiet one.
+    Sinks route on ``type`` and ignore what they don't recognise, so the
+    error message is dropped; the source sent messages, so the
+    empty-source guard is satisfied. Nothing is left to notice. This
+    predicate is what lets the run summary notice.
+
+    Deliberately narrow. It matches the ``type`` field only, and only a
+    string ending in ``_error`` -- not a payload that merely *contains*
+    the word, and not an exception object, which would have crashed the
+    agent rather than arriving here as a message.
+    """
+    return (
+        isinstance(msg, dict)
+        and isinstance(msg.get("type"), str)
+        and msg["type"].endswith(ERROR_TYPE_SUFFIX)
+    )
+
+
 class _OsMessage:
     """Base class for all OS messages. Never counted in sent/received."""
     pass
@@ -349,6 +379,18 @@ class Agent(ABC):
         self.sent:     Dict[str, int] = {p: 0 for p in self.outports}
         self.received: Dict[str, int] = {p: 0 for p in self.inports}
 
+        # Error-report counter — a subset of `sent`, not a separate total.
+        # Sources that catch a failure and report it as data (the
+        # `{"type": "<name>_error"}` convention) otherwise look healthy:
+        # they sent messages, so the empty-source guard stays quiet, and
+        # sinks ignore types they don't recognise, so nothing prints.
+        # That is how three consecutive HTTP 404s from the stocks source
+        # produced a clean, silent, entirely empty morning brief.
+        # Not included in checkpoint state, deliberately: it is a
+        # diagnostic for one run, and adding a field to the snapshot
+        # format would break resume against older checkpoints.
+        self.errors:   Dict[str, int] = {p: 0 for p in self.outports}
+
         # Queue to os_agent — injected by network.py during _create_os_agent()
         # Always set before threads start, never None at runtime
         self.os_q: Optional[QueueLike] = None
@@ -516,6 +558,8 @@ class Agent(ABC):
         # Count only client messages
         if not isinstance(msg, _OsMessage):
             self.sent[outport] += 1
+            if is_error_message(msg):
+                self.errors[outport] += 1
 
     def recv(self, inport: str) -> Any:
         """

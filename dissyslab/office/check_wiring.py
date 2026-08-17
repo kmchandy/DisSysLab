@@ -408,21 +408,59 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
             )
 
     # W4 -- work that reaches no sink and no office output.
+    #
+    # Report the *frontier*, not every affected agent. Deleting one wire
+    # into the sinks of a seven-agent office makes all seven dead ends,
+    # and reporting seven faults for one missing wire is, for a
+    # first-year, worse than reporting none: it reads as seven separate
+    # things to fix and buries the one place to look.
+    #
+    # Every successor of a dead agent is itself dead -- if any successor
+    # reached an exit, so would the agent. So the frontier is exactly
+    # the dead agents with no dead successor, which is where the path to
+    # a sink actually stops. The rest are consequences, and are counted
+    # rather than listed.
     exits = graph.sinks | ({EXTERNAL} if graph.outputs else set())
     reverse_edges = [(b, a) for a, b in graph.edges]
     reaches_exit = _reachable(exits, reverse_edges)
-    for agent in sorted(graph.agents):
-        if agent in reachable and agent not in reaches_exit:
-            report.findings.append(
-                Finding(
-                    "W4",
-                    "error",
-                    agent,
-                    f"{agent!r} is a dead end -- its output reaches no sink.",
-                    "Whatever it computes is discarded. Wire its out to a sink "
-                    "or to an agent that leads to one.",
-                )
+    dead = {
+        a for a in graph.agents
+        if a in reachable and a not in reaches_exit
+    }
+    dead_successors: Dict[str, Set[str]] = {a: set() for a in dead}
+    for src, dst in graph.edges:
+        if src in dead and dst in dead:
+            dead_successors[src].add(dst)
+
+    frontier = {a for a in dead if not dead_successors[a]}
+    # A dead cycle has no frontier -- every member has a dead successor.
+    # Report the whole cycle rather than nothing.
+    if dead and not frontier:
+        frontier = dead
+
+    for agent in sorted(frontier):
+        upstream = sorted(dead - frontier)
+        hint = (
+            "Whatever it computes is discarded. Wire its out to a sink "
+            "or to an agent that leads to one."
+        )
+        if upstream:
+            shown = ", ".join(upstream[:5])
+            more = f", and {len(upstream) - 5} more" if len(upstream) > 5 else ""
+            hint += (
+                f"\n      {len(upstream)} agent(s) upstream are dead ends "
+                f"only because of this one ({shown}{more}); fixing this "
+                f"should clear them."
             )
+        report.findings.append(
+            Finding(
+                "W4",
+                "error",
+                agent,
+                f"{agent!r} is a dead end -- its output reaches no sink.",
+                hint,
+            )
+        )
 
     # W6 -- named a role with nothing behind it.
     builtins = _builtin_role_names()
