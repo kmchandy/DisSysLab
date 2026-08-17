@@ -28,6 +28,9 @@ and describe what you want watched.
 **I want to build offices by hand** → **[`docs/BUILD_APPS.md`](docs/BUILD_APPS.md)**
 The full grammar, the component catalogue, and worked examples.
 
+**I'm picking this up cold** → **[`docs/internals/HANDOFF_2026-08-17.md`](docs/internals/HANDOFF_2026-08-17.md)**
+Where things stand, what to do next, and the decisions not to relitigate.
+
 **I want to contribute** → **[`CONTRIBUTING.md`](CONTRIBUTING.md)**
 Install from source, run the suite, and the internals under
 [`docs/internals/`](docs/internals/).
