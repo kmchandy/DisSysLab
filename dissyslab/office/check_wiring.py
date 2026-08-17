@@ -154,32 +154,71 @@ def _reachable(starts: Iterable[str], edges: Sequence[Tuple[str, str]]) -> Set[s
     return seen
 
 
-def _find_cycles(nodes: Iterable[str], edges: Sequence[Tuple[str, str]]) -> List[List[str]]:
-    """Every elementary cycle, as node lists. Small graphs -- plain DFS is fine."""
+def _looping_groups(
+    nodes: Iterable[str], edges: Sequence[Tuple[str, str]]
+) -> List[List[str]]:
+    """Groups of agents that can loop -- strongly connected components, size > 1.
+
+    Deliberately *not* every elementary cycle. The ``debate`` office has three
+    panellists feeding one synchronizer, which produces six elementary cycles
+    over what is really one loop; reporting six notes for one structure trains
+    a reader to skip the notes. One component, one note.
+
+    It also fixes a wrong answer. Three of those six cycles do not pass through
+    the gate, so a per-cycle check calls them non-terminating -- on an office
+    that terminates correctly. What matters is whether a gate exists *anywhere
+    in the component*, since that is what can break the loop.
+
+    Tarjan's algorithm, iterative so a deep graph cannot blow the stack.
+    """
     adj: Dict[str, List[str]] = {}
     for a, b in edges:
         adj.setdefault(a, []).append(b)
 
-    cycles: List[List[str]] = []
-    seen_signatures: Set[frozenset] = set()
+    index_of: Dict[str, int] = {}
+    low: Dict[str, int] = {}
+    on_stack: Set[str] = set()
+    stack: List[str] = []
+    counter = 0
+    groups: List[List[str]] = []
 
-    def walk(start: str, node: str, path: List[str], on_path: Set[str]) -> None:
-        for nxt in adj.get(node, ()):
-            if nxt == start:
-                signature = frozenset(path)
-                if signature not in seen_signatures:
-                    seen_signatures.add(signature)
-                    cycles.append(list(path))
-            elif nxt not in on_path:
-                path.append(nxt)
-                on_path.add(nxt)
-                walk(start, nxt, path, on_path)
-                path.pop()
-                on_path.discard(nxt)
+    for root in sorted(nodes):
+        if root in index_of:
+            continue
+        work: List[Tuple[str, int]] = [(root, 0)]
+        while work:
+            node, child_i = work[-1]
+            if child_i == 0:
+                index_of[node] = low[node] = counter
+                counter += 1
+                stack.append(node)
+                on_stack.add(node)
 
-    for start in sorted(nodes):
-        walk(start, start, [start], {start})
-    return cycles
+            children = adj.get(node, ())
+            if child_i < len(children):
+                work[-1] = (node, child_i + 1)
+                child = children[child_i]
+                if child not in index_of:
+                    work.append((child, 0))
+                elif child in on_stack:
+                    low[node] = min(low[node], index_of[child])
+            else:
+                work.pop()
+                if work:
+                    parent = work[-1][0]
+                    low[parent] = min(low[parent], low[node])
+                if low[node] == index_of[node]:
+                    component: List[str] = []
+                    while True:
+                        member = stack.pop()
+                        on_stack.discard(member)
+                        component.append(member)
+                        if member == node:
+                            break
+                    if len(component) > 1 or node in adj.get(node, ()):
+                        groups.append(sorted(component))
+
+    return groups
 
 
 # --------------------------------------------------------------------------
@@ -355,20 +394,23 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
     else:  # pragma: no cover - defensive
         report.skipped.append("W6 (could not determine the built-in role names)")
 
-    # W7 -- cycles. Legal, frequently intended, always worth naming.
-    for cycle in _find_cycles(graph.agents, graph.edges):
-        has_gate = any(graph.roles.get(n, "").endswith("gate") for n in cycle)
-        path = " -> ".join(cycle + [cycle[0]])
-        if has_gate:
-            message = f"cycle {path} (has a gate, so it can terminate)."
+    # W7 -- feedback loops. Legal, frequently intended, always worth naming.
+    for group in _looping_groups(graph.agents, graph.edges):
+        gates = [n for n in group if "gate" in graph.roles.get(n, "")]
+        members = ", ".join(group)
+        if gates:
+            message = (
+                f"{members} form a feedback loop, gated by "
+                f"{' and '.join(gates)} -- so it can terminate."
+            )
             hint = ""
         else:
-            message = f"cycle {path}."
+            message = f"{members} form a feedback loop with no gate."
             hint = (
-                "Cycles are legal, but this one has no gate, so nothing in it "
+                "Loops are legal and often intended, but nothing in this one "
                 "decides when to stop. Confirm that is what you meant."
             )
-        report.findings.append(Finding("W7", "note", cycle[0], message, hint))
+        report.findings.append(Finding("W7", "note", group[0], message, hint))
 
     # Names used in connections that are nothing at all. The compiler catches
     # this too, but catching it here means one report instead of two runs.
@@ -415,7 +457,7 @@ def format_report(report: WiringReport) -> str:
 
     lines = [f"check_wiring: {report.office_path}/office.md -- {summary}"]
     if not errors and not notes:
-        return lines[0]
+        return lines[0] + "\n"
 
     lines.append("")
     for finding in errors + notes:

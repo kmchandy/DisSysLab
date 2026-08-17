@@ -512,6 +512,26 @@ def cmd_build(args: argparse.Namespace) -> int:
         return 1
 
 
+# ── Subcommand: check ─────────────────────────────────────────────────────────
+
+def cmd_check(args: argparse.Namespace) -> int:
+    """Report structural faults in an office's wiring without running it."""
+    office_dir = _resolve_office_arg(args.office_dir, "office_dir")
+    if office_dir is None:
+        return 2
+
+    from dissyslab.office.check_wiring import check_office_dir, format_report
+
+    try:
+        report = check_office_dir(office_dir)
+    except Exception as exc:  # noqa: BLE001
+        _eprint(_explain_failure("dsl check", exc))
+        return 1
+
+    print(format_report(report), end="")
+    return 0 if report.ok else 1
+
+
 # ── Subcommand: explain-trace ─────────────────────────────────────────────────
 
 def cmd_explain_trace(args: argparse.Namespace) -> int:
@@ -1673,6 +1693,26 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_build.add_argument("office_dir", help="path to an office directory")
     p_build.set_defaults(handler=cmd_build)
+
+    p_check = sub.add_parser(
+        "check",
+        help="check an office's wiring without running it",
+        description=(
+            "Read <office_dir>/office.md and report faults in the org chart "
+            "as a whole: agents nothing can reach, work that reaches no "
+            "sink, sinks nothing feeds, roles with no file behind them, and "
+            "cycles. Reports every fault it finds, not just the first, and "
+            "never runs the office.\n\n"
+            "This is a structural check. It cannot see faults that depend "
+            "on what actually happens at run time -- a coordinator blocked "
+            "on one inbox while another holds a message it will never read "
+            "is a deadlock, not a wiring fault, and no static check reaches "
+            "it."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_check.add_argument("office_dir", help="path to an office directory")
+    p_check.set_defaults(handler=cmd_check)
 
     p_doc = sub.add_parser(
         "doctor",
