@@ -1,7 +1,35 @@
 # Issues from the student walk-through — 2026-08-17
 
 Found by playing a first-year against `course/START_HERE.md` with the
-`office-builder` skill installed. Nothing here has been changed.
+`office-builder` skill installed.
+
+> **Status as of 2026-08-18.** The per-issue text below is the original
+> diagnosis, kept as written; resolved items are struck through in place.
+> This table is the summary — read it first.
+>
+> | Closed | How |
+> |---|---|
+> | A1, A2, A3, B5 | released — 1.7.0, then 1.7.1 for the packaging leak it introduced |
+> | A4 | `26abd4a` — the skill's version guard |
+> | B1, B2, B3, C4 | documentation corrected against the code |
+> | C2, C3 | error-message counting in the run summary |
+> | D3, D5, D6 | skill references |
+> | E1 | W4 reports the cascade frontier |
+> | E5 | run — see `E5_acceptance_2026-08-17.md`; produced W5 |
+> | §F | `tests/integration/test_docs_match_code.py` |
+>
+> | Open | Why it is still open |
+> |---|---|
+> | **Release 1.7.2** | W5 and C3 are in the repo, not in the wheel a student installs. Highest priority: W5 is a prerequisite-for-course fix |
+> | **C1 / B4** | needs a data-provider decision, not a patch — three options costed in the update section below |
+> | **D1** | tier-2 hang diagnosis — plan item 2, days |
+> | **D2 / D4** | tier-3 instrument in the foundation skill |
+> | **E2** | W2 — needs resolved role shapes |
+> | **E3** | `sensor-office-builder` has no `references/` |
+> | **E4** | move the three `gallery/apps/*/skill*/` bundles — after 25 Aug |
+> | **E6** | retire OfficeSpeak |
+> | **E7** | `\b` will bite again on possessives and hyphenation |
+> | **E5 leftovers** | closed 2026-08-18 (`c183e32`); nothing outstanding |
 
 **One pattern runs through most of it:** a document asserts something about
 the system that the system does not do, and nothing detects the divergence.
@@ -16,9 +44,9 @@ The docs and the skill describe the repo; a student installs the wheel.
 
 | # | Issue | Evidence |
 |---|---|---|
-| A1 | **`dsl check` does not exist in PyPI 1.6.1** — and the skill mandates it before every run | `dsl: error: invalid choice: 'check' (choose from list, init, show, new, edit, run, build, doctor)` |
-| A2 | **10 of 30 apps are not in the wheel** — `adaptive_tutor`, `investment_club`, `mac_speed_suite`, `paper_trader`, `returns_desk`, `room_climate_monitor`, `salton_sea_dashboard`, `shipment_release`, `situation_room_requests`, `trading_room` | `dsl list` shows 20 apps; repo has 30 |
-| A3 | **The four unfed-sink fixes are not in the wheel** — a student's `stocks_monitor` still writes an empty `.jsonl` | committed `08bfe4c`, unreleased |
+| A1 | ~~**`dsl check` does not exist in PyPI 1.6.1**~~ **DONE — 1.7.0.** — and the skill mandates it before every run | `dsl: error: invalid choice: 'check' (choose from list, init, show, new, edit, run, build, doctor)` |
+| A2 | ~~**10 of 30 apps are not in the wheel**~~ **DONE — 1.7.0 ships all 30.** — `adaptive_tutor`, `investment_club`, `mac_speed_suite`, `paper_trader`, `returns_desk`, `room_climate_monitor`, `salton_sea_dashboard`, `shipment_release`, `situation_room_requests`, `trading_room` | `dsl list` shows 20 apps; repo has 30 |
+| A3 | ~~**The four unfed-sink fixes are not in the wheel**~~ **DONE — 1.7.0.** — a student's `stocks_monitor` still writes an empty `.jsonl` | committed `08bfe4c`, unreleased |
 | A4 | ~~**The skill has no version guard.**~~ **DONE — 26abd4a.** Mandating a possibly-absent command led the agent to try patching `site-packages` | student session: *"the installed wheel lacks it, so let me fix that here"* |
 
 **A4 is the one to fix even if you release today.** Thirty students each
@@ -33,9 +61,9 @@ should detect the absence, say so, and continue — never patch.
 |---|---|---|
 | B1 | ~~**Output-path direction is reversed.**~~ **DONE.** Doc says a bare filename resolves against the invoking directory; `codegen.py` emits `os.chdir(_HERE.parent)` so it resolves against the *office* folder. The doc's remedy — "pass an absolute path for predictability" — now describes the one form that escapes it | `docs/SOURCES_AND_SINKS.md:591` vs `codegen.py:~618` |
 | B2 | ~~**RSS is undersold, then mis-signposted.**~~ **DONE.** Section reads "RSS feeds (10 named)"; the generic `rss(url="...")` appears only in the code docstring. A later line — "Any additional RSS feed at all … adding a new one is close to a one-line change" — reads to a student as *the framework needs changing*, when they just need `rss(url=...)` in their own `office.md` | `docs/SOURCES_AND_SINKS.md:28`, `:790` |
-| B3 | **"Empty output is now an error" gives false comfort.** True, and it does not fire when a source emits *error* messages — which is the common case | `skills/office-builder/references/sources_and_sinks.md` |
+| B3 | ~~**"Empty output is now an error" gives false comfort."**~~ **DONE** — the reference now states the error-message case too. True, and it does not fire when a source emits *error* messages — which is the common case | `skills/office-builder/references/sources_and_sinks.md` |
 | B4 | **`START_HERE` promises stock prices** that do not appear (see C1) | `course/START_HERE.md` §2 |
-| B5 | **`START_HERE` catalogues 38 examples**; a wheel install can reach 28 | `course/START_HERE.md` §5 |
+| B5 | ~~**`START_HERE` catalogues 38 examples**~~ **DONE — 1.7.0, and now tested mechanically (§F).**; a wheel install can reach 28 | `course/START_HERE.md` §5 |
 
 B4 and B5 are mine. I had the failing output in front of me and described it
 as working.
@@ -49,7 +77,7 @@ as working.
 | C1 | **The Stooq quote endpoint returns 404.** `https://stooq.com/q/l/?...` → `HTTP Error 404`. All three `stocks` sources are dead. Unauthenticated free feed; it will break again |
 | C2 | ~~**`stocks_error` has no consumer.**~~ **DONE** — the run summary is now its consumer. `StocksSource` catches failures and yields `{"type": "stocks_error", ...}` — the string appears exactly once in the repository, at the line that emits it. The brief sink's own docstring: *"messages with no recognised source or type are silently ignored"*. The mechanism written to surface failure is what buries it |
 | C3 | ~~**The health check counts messages, not health.**~~ **DONE.** `OfficeRunError` fires when a source sends zero. These sent three — three errors. The guard built for exactly this class of silent failure is defeated by a source that reports failure as data. Counting `*_error` messages separately would have made it visible in the first run |
-| C4 | **Running a shipped office writes into `site-packages`.** Same `chdir` mechanism as B1: a shipped office's folder *is* the install. `dsl init` avoids it; nothing warns |
+| C4 | ~~**Running a shipped office writes into `site-packages`.**~~ **DONE** — stated in SOURCES_AND_SINKS.md and the skill, where it is read. Same `chdir` mechanism as B1: a shipped office's folder *is* the install. `dsl init` avoids it; nothing warns |
 
 C2 and C3 are framework-level, not `periodic_brief`-level. Any source using
 the `<type>_error` convention fails the same way.
@@ -82,7 +110,7 @@ architecture and names the hole precisely:
   rejects file. Nothing states this. My own reference says "`discard` is a
   decision, not an unwired port" and misses that `discard` still hides the
   data
-- **D5 — The skill has no catalogue of the shipped roles.** `dissyslab/roles/`
+- **D5 — DONE (fc42b08).** ~~The skill has no catalogue of the shipped roles.~~ `dissyslab/roles/`
   holds 13 ready-made roles — `relevance_filter`, `topic_tagger`,
   `category_classifier`, `sentiment_classifier`, `urgency_classifier`,
   `evaluator`, `summarizer`, `summary_writer`, `entity_extractor`,
@@ -93,7 +121,7 @@ architecture and names the hole precisely:
   English, has no plural bug, and already sends to `keep` / `discard` (the
   D3 pattern). **This one caused the D2 episode.** Cheapest fix in the whole
   list relative to what it prevents
-- **D6 — The English-vs-Python rule needs one refinement.** The skill says
+- **D6 — DONE (10aa9d3).** ~~The English-vs-Python rule needs one refinement.~~ The skill says
   "prefer Python whenever the job can be stated exactly." *Exactness is a
   property of the criterion, not of the implementation.* "About computer
   science" feels exactly statable as a keyword list and is not — a keyword
@@ -113,7 +141,7 @@ architecture and names the hole precisely:
 - **E2** W2 (outport nothing reads) not implemented; needs resolved role shapes
 - **E3** `sensor-office-builder` has no `references/`
 - **E4** Three skills still under `gallery/apps/*/skill*/` — move after 25 Aug
-- **E5** The acceptance test never ran: hand the skill a description of
+- ~~**E5** The acceptance test never ran~~ **DONE** — see `E5_acceptance_2026-08-17.md`. The test as written could not work (`situation_room` is a worked example inside the skill); two sandboxed trials were run instead, and produced W5. Original text: hand the skill a description of
   `situation_room`, diff against the real one
 - **E6** OfficeSpeak not yet retired — `guides/` (six walkthroughs incl. the
   tester manual), `course/COURSE_MEDIA_STRATEGY.md`, `paper/` still only there
