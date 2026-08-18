@@ -5,10 +5,84 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/).
 
 
-## [Unreleased]
+## [1.7.2] — 2026-08-18
 
-Work from the 2026-08-17 student walk-through issue list
-(`docs/internals/ISSUES_walkthrough_2026-08-17.md`).
+### Changed — market data comes from Yahoo via yfinance, and you fetch your own
+
+Stooq is gone. Its quote endpoint was removed (404 for every ticker
+spelling) and its historical endpoint now answers with a JavaScript
+proof-of-work browser challenge, so every Stooq-backed source was dead —
+not only quotes, as issue C1 had recorded. `stocks` now reads Yahoo
+Finance through `yfinance`.
+
+**The licensing constraint is now the design, stated everywhere it is
+read.** Yahoo's terms do not permit redistributing their market data, so
+this project ships none: no prices, no cached quotes, no sample market
+CSVs. Every user fetches their own. `mac_speed_suite` already worked this
+way with `download_stock_history_from_yf.py`; that is now the only way,
+and the reason is written down rather than implied.
+
+- **`yfinance` is an optional extra, not a core dependency** —
+  `pip install "dissyslab[market]"`. Two reasons, the second
+  load-bearing: it pulls pandas, and the offices a first-year runs first
+  need no market data at all; and a tool whose whole point is that the
+  user fetches their own data should be installed deliberately rather
+  than arriving by accident.
+- **The import is deferred to the first fetch.** `SOURCE_REGISTRY`
+  imports the module to resolve the name `stocks`, so a top-level
+  `import yfinance` would break `dsl check` for every office in the
+  gallery, market or not, on any machine without the extra. A student who
+  wires up `stocks` without it gets the `pip install` line, not an
+  ImportError at module load.
+- **Message shape is unchanged**, so no sink or downstream agent had to
+  move. Two deliberate differences: `previous_close` is new, and
+  `change` / `change_pct` are measured against the previous close rather
+  than the session open — "up 2% today" means since yesterday's close
+  everywhere else a student will meet it.
+- Tickers are written as Yahoo writes them (`AAPL`, `BP.L`, `7203.T`). A
+  trailing `.us`, the Stooq convention that appeared in this repository's
+  own examples for months, is stripped rather than rejected.
+
+### Removed — `stock_history` and `synthetic_stock_history`
+
+The first read Stooq's historical endpoint; the second existed only as a
+stand-in while the first was broken. Neither was used by any office.
+`csv_stock_history` is now the only history source, and reading from disk
+is the design rather than a fallback — a backtest that re-downloads on
+every run is slow, non-reproducible, and hostage to a vendor's uptime.
+
+An `office.md` naming either one now fails `dsl check` with W5 and a
+spelling suggestion, which is the fix.
+
+### Changed — `periodic_brief` drops its stock tickers
+
+Three of its six sources were the dead Stooq ones, so half the office
+produced nothing. Rather than move them to yfinance, they are gone:
+`periodic_brief` is the office that has to run with **nothing** installed
+beyond `dissyslab`, no key and no account, because its job is being the
+thirty seconds that show the framework works before anyone believes
+anything else about it. It is news + weather, and it runs clean.
+
+The README shows the one-line edit to add `stocks` back once yfinance is
+installed — which is a better lesson than shipping it wired.
+
+Synthetic prices were considered and rejected. `periodic_brief` renders
+real headlines and a real forecast; fabricated numbers in the next column
+of the same page, with nothing saying which is which, is the exact defect
+the rest of this changelog is about, pointed at the student.
+
+### Changed — the empty-run guard quotes the component instead of guessing
+
+The message added by the error counting below told a student whose problem
+was an uninstalled package that "an endpoint that has moved is the usual
+cause" — confidently wrong, which is worse than silent. `Agent` now keeps
+the first error report's own text, and the guard prints it. A missing
+`yfinance` now ends the run with the `pip install` command in the failure
+message.
+
+
+Also in 1.7.2, from the 2026-08-17 student walk-through issue list
+(`docs/internals/ISSUES_walkthrough_2026-08-17.md`):
 
 ### Added — the run summary can see failure reported as data (C2, C3)
 

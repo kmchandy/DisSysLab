@@ -391,6 +391,14 @@ class Agent(ABC):
         # format would break resume against older checkpoints.
         self.errors:   Dict[str, int] = {p: 0 for p in self.outports}
 
+        # The first error report's own text, kept so the run summary can
+        # quote the component instead of guessing at the cause. Counting
+        # alone produced a guard that said "an endpoint that has moved is
+        # the usual cause" to someone whose actual problem was an
+        # uninstalled package -- confidently wrong, which is worse than
+        # silent. One string, first writer wins, never cleared.
+        self.first_error: Optional[str] = None
+
         # Queue to os_agent — injected by network.py during _create_os_agent()
         # Always set before threads start, never None at runtime
         self.os_q: Optional[QueueLike] = None
@@ -560,6 +568,11 @@ class Agent(ABC):
             self.sent[outport] += 1
             if is_error_message(msg):
                 self.errors[outport] += 1
+                if self.first_error is None:
+                    detail = msg.get("error")
+                    self.first_error = (
+                        str(detail) if detail else str(msg.get("type"))
+                    )
 
     def recv(self, inport: str) -> Any:
         """

@@ -18,7 +18,7 @@ The full prose catalogue, with each component's arguments and message shapes, is
 `docs/SOURCES_AND_SINKS.md` in the repo. Read it before writing a custom
 source — the answer is usually already there.
 
-## Snapshot (dissyslab 1.6.1 — 42 sources, 24 sinks)
+## Snapshot (dissyslab 1.7.2 — 46 sources, 26 sinks)
 
 ### Sources
 
@@ -31,7 +31,8 @@ source — the answer is usually already there.
 
 **Jobs** — `python_jobs`, `remoteok`, `we_work_remotely`
 
-**Markets and weather** — `stocks`, `stocks_2` … `stocks_5` (one per ticker),
+**Markets and weather** — `stocks`, `stocks_2` … `stocks_5` (one per ticker,
+needs `pip install "dissyslab[market]"`),
 `kalshi`, `weather`, `weatherapi`
 
 **Media and sensors** — `image_folder`, `audio_folder`, `audio_clip`,
@@ -59,12 +60,16 @@ source — the answer is usually already there.
 
 **Other** — `mcp_sink` (any MCP server), `discard` (throw it away, explicitly)
 
-### Also in the repo, not yet in 1.6.1
+**History** — `csv_stock_history` (reads local CSV files; see the market
+note below)
 
-Sources `csv_stock_history`, `stock_history`, `synthetic_stock_history`,
-`session_starter` (+ `_2`, `_3`), `passthrough`, `arg_map`; sinks
-`report_html`, `tutor_session_display`. Run the live query above to see what
-the user's install actually has.
+### Removed in 1.7.2
+
+`stock_history` and `synthetic_stock_history`. The first read Stooq's
+historical endpoint, which stopped serving data; the second was a stand-in
+while that was broken. Use `csv_stock_history` and download your own data.
+If a user's `office.md` names either one, `dsl check` reports it as W5 with
+a suggestion — that is the fix, not a reason to reinstate them.
 
 ## Sink arguments
 
@@ -164,11 +169,24 @@ GitHub, a search provider — can be an office's input or output. This is
 usually the answer when a user wants to connect something the registry has
 never heard of.
 
-**Credentials.** `gmail`, `calendar`, `slack_sink`, `weatherapi` and the
-market sources need credentials; `bbc_world`, `npr_news`, `weather`,
-`stocks` and the file sources do not. `periodic_brief` runs with no key at
-all, which makes it the right first thing to show someone. If a source fails
-to authenticate, run `dsl doctor`.
+**Credentials.** `gmail`, `calendar`, `slack_sink` and `weatherapi` need
+credentials; `bbc_world`, `npr_news`, `weather` and the file sources do not.
+`periodic_brief` runs with no key and no optional install at all, which makes
+it the right first thing to show someone. If a source fails to authenticate,
+run `dsl doctor`.
+
+**Market data is an optional install, and users fetch their own.** `stocks`
+needs `pip install "dissyslab[market]"` (yfinance). `csv_stock_history` needs
+no extra install to *read* — but the script that produces the files it reads
+does.
+Say so *before* writing an office that uses them, and never install it
+without asking. Nothing in the package ships prices: Yahoo's terms do not
+permit redistributing them, so backtests read local CSVs the user downloads
+once with
+`gallery/apps/mac_speed_suite/download_stock_history_from_yf.py`. If a
+`stocks` source produces nothing but `stocks_error`, read the run summary —
+it prints the source's own reason, and "yfinance is not installed" is the
+usual one.
 
 **Empty output is now an error.** A source that produces nothing raises
 `OfficeRunError` rather than exiting 0, because an all-zero result that looks

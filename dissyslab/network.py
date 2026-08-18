@@ -776,7 +776,7 @@ class Network:
         ``{"agents": {name: {"sent": int, "received": int, "errors": int}},
            "failed_sources":     [(name, reason)],
            "empty_sources":      [name],
-           "all_error_sources":  [(name, count)],
+           "all_error_sources":  [(name, count, first_error_text)],
            "some_error_sources": [(name, errors, sent)]}``
 
         The two error categories are separate because they need
@@ -808,7 +808,9 @@ class Network:
                     empty.append(name)
                 elif errors and errors == sent:
                     if not getattr(agent, "allow_empty", False):
-                        all_errors.append((name, errors))
+                        all_errors.append(
+                            (name, errors, getattr(agent, "first_error", None))
+                        )
                 elif errors:
                     some_errors.append((name, errors, sent))
 
@@ -858,19 +860,30 @@ class Network:
                 "These sources sent messages, but every one was an error "
                 "report, so nothing usable reached the rest of the office:"
             )
-            for name, count in all_errors:
+            for entry in all_errors:
+                name, count = entry[0], entry[1]
+                detail = entry[2] if len(entry) > 2 else None
                 lines.append(f"  - {name}: {count} error message(s)")
+                # Quote the component rather than guessing at the cause.
+                # An earlier version of this message asserted that "an
+                # endpoint that has moved is the usual cause", which it
+                # said just as confidently to someone whose real problem
+                # was an uninstalled package. The component already knows
+                # what went wrong; the guard's job is to carry it up, not
+                # to theorise.
+                if detail:
+                    for i, chunk in enumerate(str(detail).splitlines()):
+                        lines.append(f"      {chunk}" if i else f"    {chunk}")
             lines.append(
                 "A source that reports failure as data (the "
                 "'{\"type\": \"<name>_error\"}' convention) keeps the office "
                 "running through a bad fetch, which is what you want. But "
                 "sinks route on 'type' and ignore what they do not "
                 "recognise, so those messages went nowhere and the office "
-                "looked healthy while producing nothing. Check the feed "
-                "the source points at -- an endpoint that has moved is the "
-                "usual cause. If a run of pure errors is an acceptable "
-                "outcome here, mark the source allow_empty=True in "
-                "office.md."
+                "looked healthy while producing nothing. The reason above "
+                "is the source's own. If a run of pure errors is an "
+                "acceptable outcome here, mark the source allow_empty=True "
+                "in office.md."
             )
         if failed:
             lines.append("These sources failed while running:")

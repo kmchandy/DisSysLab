@@ -2,19 +2,26 @@
 
 """
 CSVStockHistorySource: reads real daily OHLCV price history for one or
-more tickers from local CSV files, in the same message shape
-``StockHistorySource``/``SyntheticStockHistorySource`` use.
+more tickers from local CSV files.
 
 Why this exists
 ================
 
-``StockHistorySource`` wraps Stooq's historical-data endpoint, which
-has been returning 404s since 2026-07-28 (root cause undiagnosed).
-``SyntheticStockHistorySource`` unblocks pipeline development with
-fake data in the meantime. This class is the third option: real market
-data, supplied as CSV files already on disk (e.g. exported from Yahoo
-Finance) rather than fetched over the network -- for when real data is
-available locally but the live network path to a provider isn't.
+Since 2026-08-18 this is the *only* history source, and reading from
+disk is the design rather than a fallback.
+
+Two sources preceded it. ``StockHistorySource`` wrapped Stooq's
+historical endpoint, which stopped serving data (404, then a JavaScript
+browser challenge); ``SyntheticStockHistorySource`` generated fake bars
+to unblock development while that was broken. Both were removed.
+
+Fetching is now a separate, explicit step the user runs once --
+``gallery/apps/mac_speed_suite/download_stock_history_from_yf.py``
+builds the CSVs this class reads. That separation is deliberate on two
+counts. Yahoo's terms do not permit us to redistribute their prices, so
+each user must fetch their own; and a backtest that re-downloads on
+every run is slow, non-reproducible, and hostage to a vendor's uptime,
+while one that reads a file gives the same answer next month.
 
 Expected CSV format
 ====================
@@ -22,8 +29,8 @@ Expected CSV format
 One file per ticker, with a header row and at least the columns
 ``Date, Open, High, Low, Close, Volume`` (case-insensitive; an
 ``Adj Close`` column, if present, is ignored -- ``Close`` is used
-throughout this office, matching ``StockHistorySource`` and
-``SyntheticStockHistorySource``'s own convention). Dates may be in any
+throughout this office, and the download script already writes
+split/dividend-adjusted prices into ``Close``). Dates may be in any
 format ``datetime`` can parse (``YYYY-MM-DD`` is typical); rows are
 sorted by date before being returned, so file row order doesn't matter.
 
@@ -32,8 +39,8 @@ By default, a ticker's filename is ``{TICKER}_1year.csv`` in
 ``DisSysLab/sp100_data/``); pass ``filename_pattern`` to match a
 different naming convention (must contain ``{ticker}``).
 
-Message shape (identical to ``StockHistorySource``/
-``SyntheticStockHistorySource``, so nothing downstream -- SIGNAL_COMPUTER,
+Message shape (unchanged from the two removed sources, so nothing
+downstream -- SIGNAL_COMPUTER,
 BACKTESTER, EVALUATOR -- needs to know or care which source produced it):
     {
         "type":      "stock_history",
@@ -51,7 +58,7 @@ BACKTESTER, EVALUATOR -- needs to know or care which source produced it):
 
 A ticker whose file is missing or unparseable lands in ``errors``
 instead of crashing the whole batch -- same per-ticker error isolation
-convention as ``StockHistorySource``.
+convention the removed history sources used.
 
 Design notes:
     - One-shot generator (yields once, then stops) -- same "send once"
@@ -72,8 +79,13 @@ from typing import Dict, List, Optional, Sequence
 class CSVStockHistorySource:
     """
     Reads per-ticker daily-bar CSV files from a local directory and
-    yields them as a single bulk dict, in the shape
-    ``StockHistorySource``/``SyntheticStockHistorySource`` use.
+    yields them as a single bulk dict.
+
+    Get the files with
+    ``gallery/apps/mac_speed_suite/download_stock_history_from_yf.py``
+    (needs ``pip install "dissyslab[market]"``). Nothing in this
+    repository ships market data -- Yahoo's terms do not permit
+    redistributing it, so every user fetches their own.
 
     Args:
         tickers:           Ticker symbols whose files should be loaded,

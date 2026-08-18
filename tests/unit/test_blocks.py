@@ -130,6 +130,39 @@ class TestEmptyAndFailingSources:
         with pytest.raises(OfficeRunError, match="every one was an error"):
             g.run_network(timeout=5)
 
+    def test_the_failure_message_quotes_the_component(self):
+        """The guard must carry the component's own reason up, not
+        theorise about the cause.
+
+        An earlier version asserted "an endpoint that has moved is the
+        usual cause" — and said it just as confidently to someone whose
+        actual problem was an uninstalled package. Confidently wrong is
+        worse than silent. The source already knows what went wrong.
+        """
+        sink, _ = collect_sink()
+        errs = [{
+            "type": "stocks_error",
+            "error": "needs yfinance: pip install \"dissyslab[market]\"",
+        }] * 2
+        g = network([(make_source(errs), sink)])
+        with pytest.raises(OfficeRunError) as caught:
+            g.run_network(timeout=5)
+        assert "dissyslab[market]" in str(caught.value)
+
+    def test_first_error_is_the_first_one(self):
+        """Later failures are usually consequences of the first."""
+        sink, _ = collect_sink()
+        errs = [
+            {"type": "a_error", "error": "the original cause"},
+            {"type": "a_error", "error": "a later symptom"},
+        ]
+        g = network([(make_source(errs), sink)])
+        with pytest.raises(OfficeRunError) as caught:
+            g.run_network(timeout=5)
+        text = str(caught.value)
+        assert "the original cause" in text
+        assert "a later symptom" not in text
+
     def test_source_with_some_errors_does_not_raise(self):
         """Partial failure is not run failure. One flaky feed must not
         abort an office whose other output is fine."""

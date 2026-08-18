@@ -1,202 +1,226 @@
 # dissyslab/components/sources/stocks_source.py
 
 """
-StocksSource: Emits current stock-price dicts into a DisSysLab pipeline.
+StocksSource — one price reading per poll, from Yahoo Finance via yfinance.
 
-StocksSource polls Stooq (https://stooq.com/), a free financial data
-service that returns quotes as CSV over plain HTTP. No API key is
-required, there are no signups, and it works from home networks,
-school networks, and cloud IPs alike.
+Why yfinance, and why you fetch your own data
+---------------------------------------------
 
-Each message looks like:
-    {
-        "type":         "stocks",
-        "ticker":       "AAPL",
-        "market":       "US",
-        "price":        187.42,      # most recent trade
-        "open":         185.10,      # today's open
-        "high":         188.30,      # today's high so far
-        "low":          184.90,      # today's low so far
-        "change":       2.32,        # price - open
-        "change_pct":   1.253,       # (price - open) / open * 100
-        "currency":     "USD",
-        "market_date":  "2026-04-21",
-        "market_time":  "15:30:45",
-        "timestamp":    "2026-04-21T21:34:56+00:00",
-    }
+This source used to read Stooq's free CSV quote endpoint. That endpoint
+was removed — every request returns 404, for every ticker spelling — and
+Stooq's daily-history endpoint now answers with a JavaScript
+proof-of-work browser challenge rather than data. Both were free, both
+needed no key, and both broke inside two months. Nothing in the framework
+noticed, because this source caught each failure and reported it as a
+``stocks_error`` message that no sink recognised. See
+``docs/internals/ISSUES_walkthrough_2026-08-17.md``, C1 to C3.
 
-Usage:
-    from dissyslab.components.sources.stocks_source import StocksSource
-    from dissyslab.blocks import Source
+``yfinance`` replaces it, and brings one constraint worth stating plainly
+here rather than leaving to be discovered:
 
-    stocks = StocksSource(ticker="AAPL", poll_interval=300)
-    source = Source(fn=stocks.run, name="stocks")
+**Every user fetches their own data. We ship none of it.** Yahoo's terms
+do not permit redistributing their market data, so this repository
+contains no prices, no cached quotes, and no sample market CSVs. The
+backtesting offices already work this way — ``mac_speed_suite`` ships a
+``download_stock_history_from_yf.py`` that each user runs once to build
+their own local copy. That is not an inconvenience to route around; it is
+the condition on which the data is available at all.
 
-For testing (fire immediately, stop after one reading):
-    stocks = StocksSource(ticker="AAPL", poll_interval=0, max_readings=1)
+**yfinance is an optional dependency.** ``pip install dissyslab`` does not
+install it, because the offices a first-year runs first need no market
+data. Offices that do need it say so::
 
-Design notes:
-    - First reading fires *immediately* when `run()` is first called, so
-      a newly started office produces a briefing in the first few seconds
-      instead of making the student wait a full poll interval.
-    - If the network request fails (offline, unknown ticker), the source
-      yields an error dict instead of crashing. The pipeline stays alive.
-    - `change` and `change_pct` are relative to today's open, not the
-      previous day's close. This is a single-request metric — faithful
-      to the intraday direction of the stock without the second HTTP call
-      that a "vs previous close" metric would require.
-    - Stooq uses `.us` suffix for US tickers (e.g. aapl.us, googl.us).
-      This class adds the suffix automatically when the user passes a
-      bare ticker. For non-US markets, pass the full Stooq symbol
-      (e.g. ticker="ntt.jp" for Japan, ticker="bp.uk" for the UK).
+    pip install "dissyslab[market]"
+
+The import is deferred to the first fetch so that ``SOURCE_REGISTRY`` —
+and therefore ``dsl check``, ``dsl list``, and every non-market office —
+keeps working on a machine that has never installed yfinance. A student
+who wires up ``stocks`` without the extra gets one clear sentence naming
+the command to run, not an ImportError at module load.
+
+**Yahoo's endpoints are unofficial.** yfinance is a community wrapper
+around them: maintained, widely used, and still not an API with a
+contract. Expect it to need an occasional upgrade. That is better than
+what it replaces, where the break was ours to diagnose from scratch.
+
+Message shape
+-------------
+
+Unchanged from the Stooq version, so no sink or downstream agent had to
+change::
+
+    {"type": "stocks", "ticker": "AAPL", "market": "NMS",
+     "price": 305.59, "open": 306.21, "high": 307.66, "low": 302.94,
+     "previous_close": 305.77, "change": -0.18, "change_pct": -0.059,
+     "currency": "USD", "market_date": "2026-08-18",
+     "market_time": "03:41:02", "timestamp": "2026-08-18T03:41:02+00:00"}
+
+Two deliberate changes. ``previous_close`` is new. And ``change`` /
+``change_pct`` are now measured against the previous close rather than
+against the session open — "up 2% today" means since yesterday's close in
+every other context a student will meet, and reading against the open
+silently meant something else.
+
+A failed fetch yields ``{"type": "stocks_error", ...}`` and keeps polling,
+so one bad request does not end the office. Since 1.7.2 the run summary
+counts those: a source whose output is *all* errors fails the run loudly
+instead of producing an empty brief that reports success.
 """
 
-import time
 from datetime import datetime, timezone
-from typing import Optional
-
-import requests
+import time
+from typing import Any, Optional
 
 
 class StocksSource:
     """
-    Polls Stooq for a ticker's latest price and yields one dict per reading.
+    Polls Yahoo Finance for a ticker's latest price, yielding one dict
+    per reading.
 
     Args:
-        ticker:        Ticker symbol. Bare US tickers like "AAPL" work —
-                       `.us` is appended automatically. For other markets,
-                       pass the full Stooq symbol (e.g. "ntt.jp", "bp.uk").
-        poll_interval: Seconds between readings. Default: 300 (5 min).
-        max_readings:  Stop after this many readings. None = run forever.
-                       Set to a small number for testing.
+        ticker:        Symbol as Yahoo spells it — ``"AAPL"``, ``"BP.L"``,
+                       ``"7203.T"``. A trailing ``.us`` (the Stooq
+                       convention this source used to require) is
+                       stripped, so old ``office.md`` files keep working.
+        poll_interval: Seconds between readings. Default 300 (5 min).
+                       Yahoo is not a subscription feed; polling it hard
+                       earns a rate limit, and no brief needs tick data.
+        max_readings:  Stop after this many. ``None`` runs forever. Keep a
+                       small value in gallery offices, so a student trying
+                       something out gets an office that ends.
+        session:       Optional ``requests.Session``. Not settable from
+                       ``office.md``, which takes Python literals only —
+                       this is for tests, and for users behind a proxy
+                       that rejects yfinance's default HTTP client.
 
     Example:
-        >>> stocks = StocksSource(ticker="AAPL", poll_interval=300)
+        >>> stocks = StocksSource(ticker="AAPL", max_readings=1)
         >>> source = Source(fn=stocks.run, name="stocks")
     """
-
-    _QUOTE_URL = "https://stooq.com/q/l/"
 
     def __init__(
         self,
         ticker: str = "AAPL",
         poll_interval: int = 300,
         max_readings: Optional[int] = None,
+        session: Any = None,
     ):
         self.ticker = self._normalize_ticker(ticker)
         self.poll_interval = poll_interval
         self.max_readings = max_readings
+        self.session = session
 
     @staticmethod
     def _normalize_ticker(ticker: str) -> str:
-        """Append `.us` to bare US tickers; leave fully-qualified symbols alone."""
-        t = ticker.strip().lower()
-        if "." in t:
-            return t
-        return f"{t}.us"
+        """Yahoo spells US tickers bare. Strip the Stooq-era ``.us``.
 
-    def _market_code(self) -> str:
-        """Return the market suffix in uppercase ('US', 'JP', 'UK', ...)."""
-        _, _, suffix = self.ticker.partition(".")
-        return suffix.upper() or "US"
+        Kept rather than dropped: ``stocks(ticker="aapl.us")`` appeared in
+        this repository's own examples for months, and a student who
+        copied one should get a price, not a confusing "no data". Other
+        suffixes (``.L``, ``.T``) are Yahoo's own market codes and are
+        preserved untouched.
+        """
+        t = ticker.strip()
+        if t.lower().endswith(".us"):
+            t = t[: -len(".us")]
+        return t.upper() if "." not in t else t
 
-    @staticmethod
-    def _guess_currency(market: str) -> str:
-        return {
-            "US": "USD",
-            "UK": "GBP",
-            "DE": "EUR",
-            "FR": "EUR",
-            "JP": "JPY",
-            "HK": "HKD",
-            "CA": "CAD",
-        }.get(market, "")
+    def _yf(self):
+        """Import yfinance, or explain how to get it.
 
-    # ── HTTP helper ───────────────────────────────────────────────────────
+        Deferred on purpose. The registry imports this module to resolve
+        the name ``stocks``, so a top-level ``import yfinance`` would
+        break ``dsl check`` for every office in the gallery, market or
+        not, on any machine without the extra.
+        """
+        try:
+            import yfinance  # noqa: WPS433 — deliberately deferred
+        except ImportError as exc:
+            raise ImportError(
+                "The 'stocks' source needs yfinance, which is not "
+                "installed.\n"
+                '  Fix: pip install "dissyslab[market]"\n'
+                "       (or: pip install yfinance)\n"
+                "yfinance is optional on purpose -- the offices you run "
+                "first need no market data, and Yahoo's terms mean each "
+                "user fetches their own."
+            ) from exc
+        return yfinance
+
+    # ── Fetch ─────────────────────────────────────────────────────────────
 
     def _fetch(self) -> dict:
-        """Fetch one price reading from Stooq and parse the CSV."""
-        resp = requests.get(
-            self._QUOTE_URL,
-            params={
-                "s": self.ticker,
-                "f": "sd2t2ohlc",   # symbol, date, time, open, high, low, close
-                "h": "",            # include header row
-                "e": "csv",         # CSV format
-            },
-            timeout=10,
-        )
-        resp.raise_for_status()
+        """Fetch one price reading. Raises on anything unusable."""
+        yf = self._yf()
+        kwargs = {"session": self.session} if self.session is not None else {}
+        info = yf.Ticker(self.ticker, **kwargs).fast_info
 
-        lines = [ln.strip() for ln in resp.text.splitlines() if ln.strip()]
-        if len(lines) < 2:
-            raise ValueError(f"Stooq returned no data for '{self.ticker}'.")
-
-        # Expected header: Symbol,Date,Time,Open,High,Low,Close
-        fields = lines[1].split(",")
-        if len(fields) < 7:
-            raise ValueError(f"Unexpected Stooq row for '{self.ticker}': {lines[1]!r}")
-
-        symbol, date, stime, open_s, high_s, low_s, close_s = fields[:7]
-
-        def _to_float(s: str) -> Optional[float]:
-            s = s.strip()
-            if not s or s.upper() in {"N/D", "N/A"}:
-                return None
+        def _number(attr: str) -> Optional[float]:
+            """``fast_info`` raises rather than returning ``None`` for
+            several fields when Yahoo has no data for a symbol. Every
+            such signal means the same thing here: absent."""
             try:
-                return float(s)
-            except ValueError:
+                value = getattr(info, attr)
+            except Exception:  # noqa: BLE001 — absence, however signalled
                 return None
+            return float(value) if isinstance(value, (int, float)) else None
 
-        price = _to_float(close_s)
-        open_ = _to_float(open_s)
-        high = _to_float(high_s)
-        low = _to_float(low_s)
+        def _text(attr: str, default: str = "") -> str:
+            try:
+                value = getattr(info, attr)
+            except Exception:  # noqa: BLE001
+                return default
+            return str(value) if value else default
 
+        price = _number("last_price")
         if price is None:
             raise ValueError(
-                f"Stooq returned no price for '{self.ticker}'. "
-                "The ticker may not exist or the market may be closed."
+                f"Yahoo returned no price for {self.ticker!r}. Check the "
+                f"symbol as Yahoo spells it (AAPL, BP.L, 7203.T) -- a "
+                f"symbol that does not exist looks exactly like this."
             )
 
-        change = None
-        change_pct = None
-        if open_ is not None and open_ != 0 and price is not None:
-            change = round(price - open_, 4)
-            change_pct = round((price - open_) / open_ * 100, 3)
+        previous_close = _number("previous_close")
+        change = change_pct = None
+        if previous_close:
+            change = round(price - previous_close, 4)
+            change_pct = round(
+                (price - previous_close) / previous_close * 100, 3
+            )
 
-        market = self._market_code()
+        now = datetime.now(timezone.utc)
         return {
             "type": "stocks",
-            "ticker": self.ticker.split(".")[0].upper(),
-            "market": market,
-            "price": price,
-            "open": open_,
-            "high": high,
-            "low": low,
+            "ticker": self.ticker,
+            "market": _text("exchange"),
+            "price": round(price, 4),
+            "open": _number("open"),
+            "high": _number("day_high"),
+            "low": _number("day_low"),
+            "previous_close": previous_close,
             "change": change,
             "change_pct": change_pct,
-            "currency": self._guess_currency(market),
-            "market_date": date,
-            "market_time": stime,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "currency": _text("currency", "USD"),
+            "market_date": now.strftime("%Y-%m-%d"),
+            "market_time": now.strftime("%H:%M:%S"),
+            "timestamp": now.isoformat(),
         }
 
     # ── Generator ─────────────────────────────────────────────────────────
 
     def run(self):
         """
-        Generator that yields one price dict per poll.
+        Yield one price dict per poll.
 
-        Compatible with Source(fn=stocks.run, name="stocks") directly —
-        Source() in dsl/blocks/source.py auto-wraps generators.
+        Compatible with ``Source(fn=stocks.run, name="stocks")`` --
+        ``Source`` auto-wraps generators.
         """
         readings = 0
 
         while True:
             try:
                 yield self._fetch()
-            except Exception as exc:  # noqa: BLE001 — surface any failure cleanly
+            except Exception as exc:  # noqa: BLE001 — surface, do not crash
                 yield {
                     "type": "stocks_error",
                     "ticker": self.ticker,

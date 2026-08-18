@@ -147,37 +147,17 @@ SOURCE_REGISTRY = {
         "class":  "StocksSource",
     },
 
-    # ── Stock history (first-class, no key) ───────────────────────────
-    # Bulk, one-shot daily OHLCV history for one or more tickers --
-    # the backtest-friendly counterpart to `stocks` above. `stocks`
-    # polls Stooq's live-quote endpoint forever, one ticker at a time;
-    # `stock_history` hits Stooq's historical-CSV endpoint once per
-    # ticker and yields a single combined message covering every
-    # ticker requested, then stops. Use this for "backtest a strategy
-    # on the SP100" style requests; use `stocks` for "alert me when
-    # AAPL moves" style requests.
-    #     Sources: stock_history(tickers=["AAPL", "MSFT", "GOOGL"],
-    #                            start="2015-01-01", end="2025-01-01")
-    "stock_history": {
-        "type":   "stock_history",
-        "import": "from dissyslab.components.sources.stock_history_source import StockHistorySource",
-        "class":  "StockHistorySource",
-    },
-
-    # ── Synthetic stock history (no network, not real data) ───────────
-    # Prototyping stand-in for `stock_history` while Stooq's historical
-    # endpoint is unreachable / 404ing (see stock_history_source.py's
-    # module docstring). Same message shape (a "stock_history" typed
-    # message, marked synthetic=True), so a backtest office built
-    # against this can swap in the real source later with zero
-    # downstream changes.
-    #     Sources: synthetic_stock_history(tickers=["AAPL","MSFT"],
-    #                                       start="2015-01-01", seed=42)
-    "synthetic_stock_history": {
-        "type":   "synthetic_stock_history",
-        "import": "from dissyslab.components.sources.synthetic_stock_history_source import SyntheticStockHistorySource",
-        "class":  "SyntheticStockHistorySource",
-    },
+    # ── Removed 2026-08-18: the two Stooq history sources ─────────────
+    # `stock_history` read Stooq's historical-CSV endpoint, which now
+    # answers with a JavaScript proof-of-work browser challenge instead
+    # of data. `synthetic_stock_history` existed only as a stand-in
+    # while that was broken. Neither was used by any office.
+    #
+    # For daily history, use `csv_stock_history` below and fetch your
+    # own data with gallery/apps/mac_speed_suite/
+    # download_stock_history_from_yf.py. Yahoo's terms do not permit us
+    # to redistribute prices, so every user downloads their own -- that
+    # is the condition on which the data is available, not a workaround.
 
     # ── Real stock history from local CSV files (no network) ──────────
     # Third option alongside `stock_history` (live Stooq fetch, 404ing

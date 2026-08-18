@@ -128,118 +128,95 @@ signup, no key.
 Sources: weather(city="London", poll_interval=600)
 ```
 
-### `stocks` — stock-ticker prices (no key)
+### `stocks` — live ticker prices (needs `dissyslab[market]`)
 
-Polls [Stooq](https://stooq.com/), a free CSV-over-HTTP financial
-data service. Bare US tickers (e.g. `"AAPL"`) work directly; for
-other markets, pass the full Stooq symbol (e.g. `"ntt.jp"`,
-`"bp.uk"`).
+Polls Yahoo Finance through [yfinance](https://pypi.org/project/yfinance/)
+and yields one price reading per poll.
+
+> **You install this one, and you fetch your own data.** yfinance is not
+> part of `pip install dissyslab`:
+>
+> ```
+> pip install "dissyslab[market]"
+> ```
+>
+> Yahoo's terms do not permit redistributing their market data, so this
+> project ships none of it — no prices, no cached quotes, no sample
+> market CSVs. Every user fetches their own. That is the condition on
+> which the data is available, not an obstacle to route around.
+>
+> Until 2026-08-18 this source read Stooq, which needed no install and no
+> key. Stooq's quote endpoint was removed and its history endpoint now
+> answers with a JavaScript browser challenge. Yahoo's endpoints are
+> unofficial too; yfinance is a maintained community wrapper around them,
+> and it will occasionally need upgrading.
+
+Tickers are written the way Yahoo writes them: `"AAPL"`, `"BP.L"`,
+`"7203.T"`. A trailing `.us` (the old Stooq convention) is stripped, so
+`office.md` files written against the previous version still work.
 
 **Arguments:**
 - `ticker` *(str, default `"AAPL"`)*.
-- `poll_interval` *(int seconds, default `300`)*.
-- `max_readings` *(int, default `None`)*.
+- `poll_interval` *(int seconds, default `300`)* — Yahoo is not a
+  subscription feed. Polling it hard earns a rate limit, and no briefing
+  needs tick data.
+- `max_readings` *(int, default `None`)* — `None` polls forever.
 
 **Example `office.md`:**
 ```
-Sources: stocks(ticker="AAPL", poll_interval=300)
+Sources: stocks(ticker="AAPL", poll_interval=300, max_readings=1)
 ```
 
-### `stock_history` — bulk historical daily prices (no key)
-
-The backtest-friendly counterpart to `stocks` above. `stocks` polls
-Stooq's *live-quote* endpoint forever, one ticker at a time, for
-"alert me when AAPL moves" style offices. `stock_history` hits
-Stooq's *historical daily-bar* CSV endpoint once per ticker and
-yields a single combined message covering every ticker requested,
-then stops — for "backtest a strategy on the SP100" style offices.
-
-One HTTP request per ticker (Stooq has no bulk "all these tickers in
-one call" endpoint), made in sequence with a small pause between
-requests. A ticker Stooq can't serve (typo, delisted, no history in
-range) doesn't crash the fetch — its error is recorded under
-`errors[ticker]` in the outgoing message and every other ticker's
-data still comes through.
-
-**Arguments:**
-- `tickers` *(list of str, required)* — e.g. `["AAPL", "MSFT",
-  "GOOGL"]`. Bare US tickers get `.us` appended automatically; for
-  other markets pass the full Stooq symbol (e.g. `"ntt.jp"`).
-- `start` *(str, default `"2026-01-01"`)* — first date to include,
-  as `"YYYY-MM-DD"` or `"YYYYMMDD"`. Deliberately a small, recent
-  default rather than "as far back as Stooq has," so a first run
-  fetches quickly. Pass `start=None` explicitly for Stooq's full
-  available history, or any other date for your own window.
-- `end` *(str, default `None`)* — last date to include, same
-  formats. Omit for through Stooq's most recent close.
-- `request_pause` *(float seconds, default `0.25`)* — pause between
-  each ticker's request; a polite pace, not a documented Stooq rate
-  limit.
-
-**Message shape** (one message, not one per ticker):
-```
+**Each message yielded:**
+```python
 {
-    "type":    "stock_history",
-    "tickers": ["AAPL", "MSFT", ...],
-    "start":   "20150101",
-    "end":     "20250101",
-    "history": {
-        "AAPL": [{"date": "2015-01-02", "open": ..., "high": ...,
-                  "low": ..., "close": ..., "volume": ...}, ...],
-        "MSFT": [...],
-    },
-    "errors": {"BAD.T": "Stooq returned no data for 'bad.t.us'."},
-    "timestamp": "2026-07-28T21:34:56+00:00",
+    "type":           "stocks",
+    "ticker":         "AAPL",
+    "market":         "NMS",
+    "price":          305.59,
+    "open":           306.21,
+    "high":           307.66,
+    "low":            302.94,
+    "previous_close": 305.77,
+    "change":         -0.18,     # against the previous close
+    "change_pct":     -0.059,
+    "currency":       "USD",
+    "market_date":    "2026-08-18",
+    "market_time":    "03:41:02",
+    "timestamp":      "2026-08-18T03:41:02+00:00",
 }
 ```
 
-**Example `office.md`:**
+A failed fetch yields `{"type": "stocks_error", "error": ...}` and keeps
+polling, so one bad request does not end the office. The run summary
+counts those messages: if *every* message a source sends is an error, the
+run fails loudly and prints the source's own reason — including the
+`pip install` line if the cause is simply that yfinance is missing.
+
+### Historical daily prices — `csv_stock_history`, and how to get the data
+
+There is one history source, and it reads local files. Two earlier ones,
+`stock_history` and `synthetic_stock_history`, were removed on 2026-08-18:
+the first read Stooq's historical endpoint, which no longer serves data,
+and the second existed only as a stand-in while the first was broken.
+Neither was used by any office.
+
+To backtest, download your own data once and read it from disk:
+
+```bash
+pip install "dissyslab[market]"
+python3 dissyslab/gallery/apps/mac_speed_suite/download_stock_history_from_yf.py
 ```
-Sources: stock_history(tickers=["AAPL", "MSFT", "GOOGL"],
-                        start="2015-01-01", end="2025-01-01")
-```
 
-**Known limitation:** as of 2026-07-28 this endpoint 404s — confirmed
-by hand, including opening Stooq's own linked download URL directly
-in a browser. Something changed or was discontinued on Stooq's side;
-the real fix needs more investigation than this doc currently has.
-Until then, use `synthetic_stock_history` below to build and test a
-backtest office's plumbing.
+That script reads the ticker list, the data directory and the filename
+pattern straight out of `office.md`, so the download always matches what
+the office expects. Prices are split- and dividend-adjusted and written
+as plain `Date,Open,High,Low,Close,Volume` CSV.
 
-### `synthetic_stock_history` — fake daily prices, no network (prototyping only)
-
-Generates a per-ticker geometric random walk (independent, normally
-distributed daily log-returns) and yields it in the exact same
-message shape as `stock_history` above, with one added key:
-`"synthetic": true`. No network call at all — exists specifically to
-unblock building and testing a backtest office's downstream agents
-(backtester, portfolio-builder, robustness-selector, ...) while
-`stock_history`'s real endpoint is broken (see above). Swap in
-`stock_history` later with no downstream changes once real data is
-reachable again.
-
-**This is not real market data** — no real correlation structure, no
-real regime changes, no connection to any actual company. Don't use
-it to draw conclusions about an actual trading strategy.
-
-**Arguments:**
-- `tickers` *(list of str, required)*.
-- `start` *(str, default `"2015-01-01"`)* — a decade-long default
-  window, unlike `stock_history`'s short recent default, since this
-  exists specifically to unblock multi-year backtests.
-- `end` *(str, default: today)*.
-- `initial_price` *(float or `{ticker: float}`, default `100.0`)*.
-- `annual_drift` *(float, default `0.08`)* — generic long-run
-  assumption, not a forecast.
-- `annual_volatility` *(float, default `0.25`)*.
-- `seed` *(int, default `None`)* — same seed + tickers + dates ->
-  identical output every run; omit for a fresh random run each time.
-
-**Example `office.md`:**
-```
-Sources: synthetic_stock_history(tickers=["AAPL", "MSFT", "GOOGL"],
-                                  start="2015-01-01", seed=42)
-```
+Separating *fetch* from *read* is not only a licensing matter. A backtest
+that re-downloads on every run is slow, non-reproducible, and at the
+mercy of a vendor's uptime; one that reads a file on disk gives the same
+answer today and next month.
 
 ### `csv_stock_history` — real daily prices from local CSV files (no network, no key)
 

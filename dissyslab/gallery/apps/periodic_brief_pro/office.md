@@ -1,6 +1,6 @@
 # Office: periodic_brief_pro
 
-Sources: bbc_world(max_articles=5), npr_news(max_articles=5), weather(city="Pasadena", max_readings=1), stocks(ticker="AAPL", max_readings=1), stocks_2(ticker="NVDA", max_readings=1), stocks_3(ticker="MSFT", max_readings=1), calendar(days_ahead=1), gmail(unread_only=True, max_emails=20)
+Sources: bbc_world(max_articles=5), npr_news(max_articles=5), weather(city="Pasadena", max_readings=1), calendar(days_ahead=1), gmail(unread_only=True, max_emails=20)
 Sinks: periodic_brief_html_sink(path="brief.html"), discard
 
 Agents:
@@ -33,7 +33,4 @@ Mail's keep is periodic_brief_html_sink.
 Mail's discard is discard.
 
 weather's destination is periodic_brief_html_sink.
-stocks's destination is periodic_brief_html_sink.
-stocks_2's destination is periodic_brief_html_sink.
-stocks_3's destination is periodic_brief_html_sink.
 calendar's destination is periodic_brief_html_sink.

@@ -36,25 +36,24 @@ Open [`office.md`](office.md). It's about ten lines:
 
 ```
 Sources: bbc_world(max_articles=5), npr_news(max_articles=5),
-         weather(city="Pasadena", max_readings=1),
-         stocks(ticker="AAPL", max_readings=1),
-         stocks_2(ticker="NVDA", max_readings=1),
-         stocks_3(ticker="MSFT", max_readings=1)
+         weather(city="Pasadena", max_readings=1)
 Sinks: periodic_brief_html_sink(path="brief.html")
 
 Connections:
 bbc_world's destination is periodic_brief_html_sink.
 npr_news's destination is periodic_brief_html_sink.
 weather's destination is periodic_brief_html_sink.
-stocks's destination is periodic_brief_html_sink.
-stocks_2's destination is periodic_brief_html_sink.
-stocks_3's destination is periodic_brief_html_sink.
 ```
 
-Six sources, one sink. Every source emits messages with a
+Three sources, one sink. Every source emits messages with a
 recognisable `type` or `source` field; the HTML sink routes each
 into the right section of the page. There are *no agents* in this
 default config — that's why it's instant, no LLM dependency.
+
+That is also the whole point of this office: it runs with nothing
+installed beyond `dissyslab` itself, no API key, and no account. It
+is the thirty seconds that show you the framework works, before you
+believe anything else about it.
 
 ## Make it yours
 
@@ -67,7 +66,25 @@ weather(city="San Francisco", max_readings=1)
 Use the city's English name with proper spacing — Open-Meteo's
 geocoder is strict.
 
-**Change the stock tickers.** Replace `AAPL` / `NVDA` / `MSFT`:
+**Add stock prices.** Not included by default, because they need one
+extra install:
+
+```bash
+pip install "dissyslab[market]"
+```
+
+Then add a source and a connection — one line each:
+
+```
+Sources: bbc_world(max_articles=5), npr_news(max_articles=5),
+         weather(city="Pasadena", max_readings=1),
+         stocks(ticker="AAPL", max_readings=1)
+...
+stocks's destination is periodic_brief_html_sink.
+```
+
+`stocks` through `stocks_5` ship as aliases, so you can watch up to
+five tickers — one source per ticker:
 
 ```
 stocks(ticker="TSLA", max_readings=1),
@@ -75,8 +92,11 @@ stocks_2(ticker="META", max_readings=1),
 stocks_3(ticker="GOOGL", max_readings=1)
 ```
 
-For more than five tickers, ask in an issue — we ship
-`stocks` through `stocks_5` as aliases out of the box.
+Prices come from Yahoo Finance via `yfinance`. It is an optional
+dependency rather than a core one for two reasons: this office should
+run with nothing installed, and Yahoo's terms mean each user fetches
+their own data — so the tool that fetches it is something you install
+deliberately, not something that arrives by accident.
 
 **Change the news feeds.** Replace `bbc_world` / `npr_news` with
 any combination from the built-in source library: `al_jazeera`,
@@ -94,9 +114,10 @@ Sinks: console_printer                         # terminal stream
 
 ## What you should expect
 
-- **Quality:** news headlines pass through verbatim; weather is a
-  factual one-liner from Open-Meteo; stock quotes come straight
-  from Stooq. Nothing here is AI-generated.
+- **Quality:** news headlines pass through verbatim and weather is a
+  factual one-liner from Open-Meteo. Nothing here is AI-generated, and
+  nothing here is simulated — every number on the page came from the
+  source named next to it.
 - **Speed:** about 10 seconds end-to-end. Pat opens her laptop, runs
   `dsl run periodic_brief`, the page is ready before her coffee.
 - **Cost:** $0. No API keys.

@@ -1,6 +1,6 @@
 [project]
 name = "dissyslab"
-version = "1.7.1"
+version = "1.7.2"
 description = "DisSysLab — build continuous offices of specialist agents in plain English."
 readme = "README.pypi.md"
 requires-python = ">=3.10"
@@ -51,6 +51,21 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# Market data. Deliberately NOT a core dependency.
+#
+# Two reasons, and the second is the load-bearing one. yfinance pulls
+# pandas, and the offices a first-year runs first -- periodic_brief,
+# my_first_office, situation_room -- need no market data at all; making
+# every student carry it to run a news brief is the wrong default.
+#
+# And Yahoo's terms do not permit redistributing their data, so we ship
+# none of it: no prices, no cached quotes, no sample market CSVs. Every
+# user fetches their own, which means the fetching tool has to be
+# something they install deliberately rather than something that arrives
+# by accident. See mac_speed_suite/download_stock_history_from_yf.py.
+market = [
+  "yfinance>=0.2.40",
+]
 dev = [
   "pytest>=8.0.0",
   "pytest-cov>=4.0.0",
