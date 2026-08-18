@@ -50,6 +50,29 @@ A doc may describe something unbuilt, as long as it says so: a heading
 carrying "not yet registered" is exempt, and the marker must be in the
 heading rather than buried in the body.
 
+### Fixed — the skill version is now derived, not typed
+
+The version marker added earlier the same day did not work, and failed
+in the way it existed to prevent. The skill was edited three times on
+2026-08-17 and the string stayed `2026-08-17b` throughout, so a marker
+whose entire purpose was answering *"did the update take?"* could not
+distinguish the three versions — and the test suite stayed green,
+because the test asserted a string was **present**, which it was.
+
+An assertion that cannot fail usefully is the same defect §F is about,
+wearing a test's clothes.
+
+So the version is now `YYYY-MM-DD.<7-hex>`, where the hash is computed
+over the skill's own bytes with the version line excluded (otherwise it
+would never converge). `scripts/stamp_skills.py` writes it;
+`--check` reports staleness without rewriting.
+`test_skill_version_matches_its_content` recomputes and fails by name
+if a skill was edited without re-stamping — verified by appending a
+blank line to a reference and watching it fire.
+
+The date half stays hand-written, for humans reading a changelog. The
+hash half is what proves an install took.
+
 ### Fixed — the three gaps E5 reported but did not close
 
 - **Sink arguments are now in the skill**, as a signature table, because

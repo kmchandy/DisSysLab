@@ -45,6 +45,7 @@ prose is a promise to a first-year", not "the code is right".
 from __future__ import annotations
 
 import re
+import sys
 from pathlib import Path
 
 import pytest
@@ -477,10 +478,51 @@ def test_skill_declares_a_version_string(bundle):
     skill_md = bundle.with_suffix("") / "SKILL.md"
     assert skill_md.exists(), f"{bundle.name}: no SKILL.md in source dir"
     text = skill_md.read_text(encoding="utf-8")
-    assert re.search(r"Skill version: `\d{4}-\d{2}-\d{2}", text), (
+    assert re.search(r"Skill version: `\d{4}-\d{2}-\d{2}[a-z]?\.[0-9a-f]{7}`", text), (
         f"{skill_md.relative_to(REPO_ROOT)} declares no version string.\n"
-        "Add a line near the top:  **Skill version: `YYYY-MM-DD`.**  "
-        "and bump it whenever the skill changes."
+        "Expected a line near the top of the form\n"
+        "  **Skill version: `YYYY-MM-DD.<7-hex>`.**\n"
+        "Generate it with:  python scripts/stamp_skills.py"
+    )
+
+
+@pytest.mark.parametrize(
+    "bundle", _skill_bundles(), ids=lambda p: p.name
+)
+def test_skill_version_matches_its_content(bundle):
+    """The version must be *derived*, not merely present.
+
+    The previous test asserts a string exists. That is not enough, and
+    the gap was demonstrated the day it was written: the skill was edited
+    three times on 2026-08-17 and the string stayed `2026-08-17b`
+    throughout, so the marker added that morning to make installs
+    verifiable could not distinguish the three versions — and this
+    suite stayed green, because a string was indeed present.
+
+    An assertion that cannot fail usefully is the same defect as the
+    documents §F is about, wearing a test's clothes. So the hash half of
+    the version is computed from the skill's own bytes, and this checks
+    it. Edit anything, forget to re-stamp, and the failure names the
+    skill.
+    """
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    try:
+        from stamp_skills import content_hash, current_stamp
+    finally:
+        sys.path.pop(0)
+
+    source_dir = bundle.with_suffix("")
+    found = current_stamp(source_dir / "SKILL.md")
+    assert found is not None, f"{source_dir.name}: no version line"
+    date, declared = found
+    expected = content_hash(source_dir)
+    assert declared == expected, (
+        f"{source_dir.name}'s version is stale: declares "
+        f"{date}.{declared}, content hashes to {expected}.\n"
+        f"Run:  python scripts/stamp_skills.py && "
+        f"cd skills && rm -f {bundle.name} && "
+        f"zip -r {bundle.name} {source_dir.name} "
+        f'-x "*.DS_Store" "*__pycache__*"'
     )
 
 

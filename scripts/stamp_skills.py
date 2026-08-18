@@ -1,0 +1,134 @@
+#!/usr/bin/env python3
+"""Stamp each skill's SKILL.md with a version derived from its content.
+
+Why derived rather than typed
+-----------------------------
+
+A hand-typed version string answers "which version is loaded?" only if
+somebody remembers to change it. On 2026-08-17 the skill was edited three
+times and the string stayed ``2026-08-17b`` throughout, so the marker
+added that morning *specifically* to make installs verifiable could not
+tell those three versions apart. A test asserting the string exists
+passed the whole time.
+
+So the version carries a hash of the skill's own content. Edit anything
+and the hash changes; forget to re-stamp and
+``test_skill_version_matches_its_content`` fails by name. The date half
+stays hand-written because it is for humans reading a changelog; the
+hash half is what proves an install took.
+
+Usage
+-----
+
+    python scripts/stamp_skills.py           # rewrite the version lines
+    python scripts/stamp_skills.py --check   # exit 1 if any is stale
+
+Re-zip the bundles afterwards; the bundle test will tell you if you
+forget that too.
+"""
+from __future__ import annotations
+
+import argparse
+import hashlib
+import re
+import sys
+from pathlib import Path
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+SKILLS_DIR = REPO_ROOT / "skills"
+
+VERSION_LINE = re.compile(
+    r"^\*\*Skill version: `(?P<date>[0-9]{4}-[0-9]{2}-[0-9]{2}[a-z]?)"
+    r"(?:\.(?P<hash>[0-9a-f]{7}))?`\.\*\*",
+    re.M,
+)
+
+SKIP_NAMES = {".DS_Store"}
+
+
+def skill_dirs() -> list[Path]:
+    if not SKILLS_DIR.is_dir():
+        return []
+    return sorted(d for d in SKILLS_DIR.iterdir() if (d / "SKILL.md").is_file())
+
+
+def content_hash(skill_dir: Path) -> str:
+    """SHA-256 over every file in the skill, version line excluded.
+
+    The exclusion is what makes this well-defined: the hash lives inside
+    one of the files it hashes, so hashing it raw would never converge.
+    Paths are included so a rename counts as a change.
+    """
+    h = hashlib.sha256()
+    for path in sorted(
+        p for p in skill_dir.rglob("*")
+        if p.is_file() and p.name not in SKIP_NAMES
+        and "__pycache__" not in p.parts
+    ):
+        h.update(path.relative_to(skill_dir).as_posix().encode())
+        h.update(b"\0")
+        data = path.read_bytes()
+        if path.name == "SKILL.md":
+            data = VERSION_LINE.sub("", data.decode("utf-8")).encode("utf-8")
+        h.update(data)
+        h.update(b"\0")
+    return h.hexdigest()[:7]
+
+
+def current_stamp(skill_md: Path) -> tuple[str, str | None] | None:
+    m = VERSION_LINE.search(skill_md.read_text(encoding="utf-8"))
+    return (m.group("date"), m.group("hash")) if m else None
+
+
+def stamp(skill_dir: Path, write: bool) -> tuple[str, bool]:
+    """Returns (message, ok). ``ok`` is False when a rewrite was needed."""
+    skill_md = skill_dir / "SKILL.md"
+    found = current_stamp(skill_md)
+    if found is None:
+        return (
+            f"{skill_dir.name}: no '**Skill version: `YYYY-MM-DD`.**' line",
+            False,
+        )
+    date, old_hash = found
+    want = content_hash(skill_dir)
+    if old_hash == want:
+        return f"{skill_dir.name}: {date}.{want} (current)", True
+
+    if not write:
+        shown = old_hash or "none"
+        return f"{skill_dir.name}: STALE — has {shown}, content is {want}", False
+
+    text = skill_md.read_text(encoding="utf-8")
+    text = VERSION_LINE.sub(
+        f"**Skill version: `{date}.{want}`.**", text, count=1
+    )
+    skill_md.write_text(text, encoding="utf-8")
+    # Rewriting SKILL.md changes nothing the hash covers (the version
+    # line is excluded), so one pass is always enough.
+    return f"{skill_dir.name}: stamped {date}.{want}", True
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--check", action="store_true",
+                    help="report staleness without rewriting")
+    args = ap.parse_args(argv)
+
+    dirs = skill_dirs()
+    if not dirs:
+        print("no skills found under skills/", file=sys.stderr)
+        return 2
+
+    failed = False
+    for d in dirs:
+        message, ok = stamp(d, write=not args.check)
+        print(message)
+        failed = failed or not ok
+    if failed and args.check:
+        print("\nRun: python scripts/stamp_skills.py", file=sys.stderr)
+        return 1
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
