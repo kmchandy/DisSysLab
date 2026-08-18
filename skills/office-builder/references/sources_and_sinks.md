@@ -66,6 +66,51 @@ Sources `csv_stock_history`, `stock_history`, `synthetic_stock_history`,
 `report_html`, `tutor_session_display`. Run the live query above to see what
 the user's install actually has.
 
+## Sink arguments
+
+Names alone are not enough — a sink you cannot configure is a sink you
+will configure wrongly. These are the constructor signatures, so you do
+not have to guess. Everything after the first argument is optional.
+
+| Sink | Arguments |
+|---|---|
+| `console_printer` | `verbose=False` |
+| `discard` | *(none)* |
+| `jsonl_recorder` *(and `_briefing`, `_archive`, `_raw`, `_discard`)* | `path="anomaly_stream.jsonl"`, `mode="w"`, `flush_every=1`, `ensure_ascii=False`, `sort_keys=False` |
+| `markdown_digest` | `path="morning_digest.md"`, `mode="w"`, `title=None` |
+| `periodic_brief_sink` | `path="brief.md"`, `title=None` |
+| `periodic_brief_html_sink` | `path="brief.html"`, `title=None`, `accent_color="#3b82f6"`, `auto_refresh=True`, `print_to_console=True`, `auto_open=True` |
+| `job_html_sink` | `path="matched_jobs.html"`, `max_items=50`, `title="Job Matches"` |
+| `report_html` | `path="report.html"`, `title="Backtest Report"` |
+| `intelligence_display` | `max_items=None` |
+| `debate_display` | `show_reasoning=True`, `max_reasoning_lines=4` |
+| `slack_sink` *(and `_alerts`, `_archive`, `_briefing`)* | `webhook_url_env="SLACK_WEBHOOK_URL"`, `username=None`, `icon_emoji=None`, `timeout=5.0` |
+| `gmail_sink` *(and `_match`, `_research`, `_tailor`, `_cover_letter`)* | `to` **(required)**, `subject="DisSysLab Alert"`, `user_env="GMAIL_USER"`, `password_env="GMAIL_APP_PASSWORD"` |
+| `webhook_sink` | `url=None` *or* `webhook_url_env=None`, `headers=None`, `timeout=10.0`, `retry_count=3` |
+| `mcp_sink` | `server`, `tool`, `args=None`, `auth_env_var=None` |
+
+Two that bite:
+
+- **`title` defaults to a date-stamped "Morning digest"** on
+  `markdown_digest` and the brief sinks. Correct for a morning brief,
+  wrong on anything else. Set it.
+- **A bare `path` is relative to the office folder**, not to where the
+  user typed the command — `build/run.py` chdirs there first. That is
+  usually what you want, and it means running a *shipped* gallery office
+  in place writes into `site-packages`. `dsl init` first.
+
+To confirm any of the above against the actual install, ask it:
+
+```bash
+python3 -c "
+import inspect, importlib
+from dissyslab.office.utils import SINK_REGISTRY
+e = SINK_REGISTRY['markdown_digest']
+m = e['import'].replace('from ','').split(' import ')[0]
+print(inspect.signature(getattr(importlib.import_module(m), e['class']).__init__))
+"
+```
+
 ## Notes that save time
 
 **Why numbered variants exist.** `stocks`, `stocks_2`, `stocks_3` … are

@@ -779,6 +779,34 @@ Sinks: jsonl_recorder_discard(path="discards.jsonl"),
        jsonl_recorder_briefing(path="briefings.jsonl")
 ```
 
+### `markdown_digest` — one markdown file, one section per message
+
+Appends each message to a markdown file as it arrives, line-buffered,
+so you can `tail -f` the file while the office is still running. Used
+by `competitor_watch`.
+
+**Arguments:**
+- `path` *(str, default `"morning_digest.md"`)* — output file, resolved
+  against the office folder like every other sink path.
+- `title` *(str, default `None`)* — the document heading. **When left
+  unset it becomes `"Morning digest — <today's date>"`**, which is right
+  for a morning brief and wrong for anything else. Set it whenever the
+  office is not a morning brief.
+- `mode` *(str, default `"w"`)* — `"w"` overwrites at start, `"a"`
+  appends across runs.
+
+**Example `office.md`:**
+```
+Sinks: markdown_digest(path="competitors.md",
+                       title="Competitor watch")
+```
+
+### `report_html` — a single styled HTML report
+
+**Arguments:** `path` *(str, default `"report.html"`)*, `title` *(str,
+default `"Backtest Report"`)*. Built for `salton_sea_dashboard` and the
+backtesting apps; usable anywhere you want one self-contained page.
+
 ### `gmail_sink` — send emails via Gmail (credentialed)
 
 Sends each incoming message as an email via SMTP, using the same

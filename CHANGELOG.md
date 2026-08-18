@@ -50,6 +50,37 @@ A doc may describe something unbuilt, as long as it says so: a heading
 carrying "not yet registered" is exempt, and the marker must be in the
 heading rather than buried in the body.
 
+### Fixed — the three gaps E5 reported but did not close
+
+- **Sink arguments are now in the skill**, as a signature table, because
+  a wheel install cannot reach `docs/SOURCES_AND_SINKS.md` and the skill
+  is what the agent has. Trial B needed `markdown_digest`, found only
+  its name, and guessed `path=`. It guessed right and would still have
+  shipped a competitor report headed *"Morning digest — 2026-08-17"*,
+  because `title` defaults to that and nothing said so.
+- **`markdown_digest` and `report_html` are documented** in
+  `SOURCES_AND_SINKS.md` and off the `UNDOCUMENTED_BY_DESIGN` allowlist.
+  Putting them there as "app-local" was a mistake made the same morning:
+  a sink belonging to an app students are told to copy is not app-local,
+  and the allowlist hid exactly the gap the trial then walked into.
+- **`deduplicator` now says what it does not catch.** A user asking to
+  "drop duplicate stories" means something `by="url"` cannot do — the
+  same event from two publishers has two URLs, so both pass. All three
+  `by=` options are described by real behaviour, with the honest
+  conclusion that no option deduplicates by *story*; that needs a role.
+  Also recorded: a non-dict message or a missing field passes through
+  silently, so a typo in `by=` makes the agent a no-op that still checks
+  clean, and `deduplicator` has no reject port, so the "wire rejects
+  somewhere readable" rule cannot be applied to it — the message counts
+  either side are the only evidence it worked.
+- **The custom-sink examples are findable.** They do ship, at
+  `<site-packages>/dissyslab/gallery/apps/...`, but the skill printed
+  bare relative paths, so an agent running `cat gallery/apps/...` from
+  the student's folder concluded they did not exist. Replaced with a
+  snippet that resolves the package location, verified against the PyPI
+  wheel. `docs/SOURCES_AND_SINKS.md` genuinely does not ship, and the
+  skill now says so and links it instead of sending students hunting.
+
 ### Added — `dsl check` W5: no such source or sink (E5)
 
 Found by running E5, the acceptance test that had never been run. It is

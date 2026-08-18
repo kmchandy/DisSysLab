@@ -83,14 +83,26 @@ UNDOCUMENTED_BY_DESIGN: dict[str, str] = {
     # App-local sinks: registered so one gallery office can name them,
     # not offered as general-purpose building blocks. A student meets
     # these by reading the app that uses them.
-    "debate_display": "app-local to debate",
-    "job_html_sink": "app-local to job_hunter / new_grad_jobs",
-    "markdown_digest": "app-local to competitor_watch",
+    #
+    # Note on how narrow "app-local" has to be. `markdown_digest` and
+    # `report_html` were on this list, justified as app-local to
+    # competitor_watch and salton_sea_dashboard. That was wrong, and the
+    # E5 trial proved it: an agent building a competitor digest reached
+    # for `markdown_digest`, found no arguments documented anywhere, and
+    # guessed `path=`. It guessed right and still shipped a report
+    # headed "Morning digest", because `title` defaults to that and
+    # nothing said so. A sink belonging to an app students are told to
+    # copy is not app-local. Both are documented now.
+    #
+    # The remaining entries are sinks whose output shape only makes
+    # sense inside one office -- a student meets them by reading that
+    # office, not by choosing from a catalogue.
+    "debate_display": "renders debate's turn structure; meaningless elsewhere",
+    "job_html_sink": "renders job_hunter's match records",
+    "tutor_session_display": "renders adaptive_tutor's session state",
+    "intelligence_display": "renders situation_room's briefing records",
     "periodic_brief_sink": "app-local to periodic_brief",
     "periodic_brief_html_sink": "app-local to periodic_brief",
-    "report_html": "app-local to salton_sea_dashboard",
-    "tutor_session_display": "app-local to adaptive_tutor",
-    "intelligence_display": "app-local to situation_room / recovery_demo",
     # Test and demo scaffolding, not something to build with.
     "csv_points_source": "fixture for recovery_demo's pi estimate",
     "session_starter": "internal: seeds a session-shaped office",

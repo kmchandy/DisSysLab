@@ -294,18 +294,42 @@ Points that are easy to get wrong:
 ### A custom sink
 
 When no shipped sink produces the artifact the user wants — a styled HTML
-page, a particular report layout — write one in `<office_dir>/sinks/`. Model
-it on `gallery/apps/periodic_brief/sinks/periodic_brief_html_sink.py` or
-`gallery/apps/job_hunter/sinks/job_html_sink.py`; read one before writing one.
+page, a particular report layout — write one in `<office_dir>/sinks/`. Read a
+shipped one first; two good models ship inside the installed package. Find
+them, since they are not in the working directory:
+
+```bash
+python3 -c "
+import dissyslab, pathlib
+g = pathlib.Path(dissyslab.__file__).parent / 'gallery' / 'apps'
+for p in (g/'periodic_brief/sinks/periodic_brief_html_sink.py',
+          g/'job_hunter/sinks/job_html_sink.py'):
+    print(p, p.exists())
+"
+```
+
+They live under `<site-packages>/dissyslab/gallery/apps/...`, **not** at a
+bare relative path — an earlier version of this file printed the relative
+form, and an agent that ran `cat gallery/apps/...` from the student's folder
+concluded the examples did not exist. Read them; do not edit them in place
+(see "Never repair the installation").
+
 Several offices fan multiple sources into a single sink that routes each
 message into the right section by its `source` field.
 
 ## Sources and sinks
 
-`dsl list` shows every shipped office. The full catalogue of sources and sinks
-is `docs/SOURCES_AND_SINKS.md` — read it before writing a custom source. It
-includes MCP-server integration, so any tool with an MCP server can be a
-source or a sink.
+`dsl list` shows every shipped office. `references/sources_and_sinks.md` in
+this bundle has the component list and the sink argument signatures — read it
+before writing a custom source, since the answer is usually already there. It
+covers MCP-server integration, so any tool with an MCP server can be a source
+or a sink.
+
+**`docs/SOURCES_AND_SINKS.md` is the fuller prose catalogue, but it does not
+ship** — it exists in the GitHub repository and in no `pip install`. Do not
+send a student looking for it on their disk. Link it
+(https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md) or
+query the registry directly.
 
 Common ones: RSS/news feeds, weather, stock tickers, an image or audio folder,
 a webhook listener, Gmail; and for sinks, console, JSONL recorder, HTML

@@ -113,6 +113,39 @@ straight line.
 enrichers needs a `synchronizer` to recombine them (`situation_room`), and any
 loop needs a `gate` or it never stops (`debate`).
 
+### `deduplicator` — say what it does *not* catch
+
+`by="url"` means *drop a message whose `url` field I have seen before*.
+Nothing more. When a user says **"drop duplicate stories"**, they usually
+mean something `by="url"` will not do: the same event covered by two
+publishers has two different URLs, so both pass through. Tell them that
+rather than letting them discover it in the output.
+
+The options, and their real behaviour:
+
+- `by="url"` — same link twice. Catches a feed repeating itself between
+  polls, which is the common case and why it is the default.
+- `by="title"` — same headline twice. Catches syndicated copy that ran
+  verbatim. Misses anything reworded, and will wrongly drop two genuinely
+  different items that share a generic headline.
+- `by="id"` / `by="message_id"` — for sources that carry an explicit
+  identifier. Exact, when it exists.
+
+There is **no option that deduplicates by story**. That needs a semantic
+judgment, so it needs a role — an English one, comparing an item against
+what came before. Do not pretend `by=` covers it.
+
+Two more things to say out loud:
+
+- A message that is **not a dict, or has no such field, passes through
+  untouched.** No error. A typo in `by=` means the deduplicator silently
+  does nothing, and the office still checks clean.
+- `deduplicator` has **no reject port**, so the "wire rejects somewhere
+  readable" rule below cannot be applied to it. What it drops is gone. If
+  it matters whether dedup is behaving, compare the message counts either
+  side of it in the run summary — that difference is the only evidence
+  there is.
+
 ## Always wire the reject port somewhere readable
 
 ```
