@@ -68,7 +68,6 @@ actually happened.
 
 ## One more thing
 
-This is part of an ongoing research project on the DisSysLab/OfficeSpeak
-framework, and your feedback may be referenced in a paper about it. If
+This is part of an ongoing research project on DisSysLab, and your feedback may be referenced in a paper about it. If
 you're fine being named, say so; otherwise your feedback will be kept
 anonymous. Either way, thank you for trying this.

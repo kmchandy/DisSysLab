@@ -1,6 +1,6 @@
 # Office: mac_speed_suite
 
-# The tester's original ask (OfficeSpeak/paper/transcript_sp100_trend_following.md):
+# The tester's original ask (paper/transcript_sp100_trend_following.md):
 # several traditional trend-following rules (Man/AQR/Mulvaney-style moving-
 # average crossover, the Turtle system, Donchian channels), backtested and
 # ranked on SP100 stocks with return/volatility/Sharpe/Calmar/etc.

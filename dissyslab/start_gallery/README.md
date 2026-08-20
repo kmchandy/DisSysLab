@@ -2,8 +2,7 @@
 
 Curated teaching examples for the Claude chat loop behind `dsl new` and
 `dsl edit` (`dissyslab/cli_chat.py`), loaded alongside
-`start_instructions.md`. Named to match OfficeSpeak's `start_gallery/`
-— same role, same name, different repo.
+`start_instructions.md`.
 
 ## Why this exists, and why it isn't just the real gallery
 
@@ -65,8 +64,7 @@ accumulated context, not between a non-technical Pat and a Claude
 grounded only on these two files). Neither is a substitute for an
 actual cold test: a fresh Claude with only `start_instructions.md` +
 `start_gallery` loaded, talking to something playing a genuinely
-non-technical Pat, the way OfficeSpeak already cold-tests its own
-instructions. Until that's been done, treat every Type B example's
+non-technical Pat. Until that's been done, treat every Type B example's
 *structural* content as trustworthy and its register/pacing as
 unverified — see the caveat at the top of `02` for the long version.
 
@@ -98,7 +96,7 @@ shared `record`, per-role backend override.
 Type B: more disambiguation examples as real ones surface.
 
 But it's worth questioning the plan itself before adding much more.
-OfficeSpeak's own gallery is deliberately small — three combined
+A gallery is better small — a few combined
 examples, each demonstrating several techniques together (`investment_club`
 alone covers `merge_synch`, a shared record, a gate, *and* a
 wrong-reading-corrected beat, all in one), not one isolated example

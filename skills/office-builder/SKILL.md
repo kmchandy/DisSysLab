@@ -5,7 +5,7 @@ description: Build, check, and run DisSysLab offices — networks of agents that
 
 # Building an office
 
-**Skill version: `2026-08-18.7c1d278`.** If anyone asks which version of this
+**Skill version: `2026-08-19.638fc17`.** If anyone asks which version of this
 skill is loaded, answer with that string, exactly. A skill update can
 report success while the old version stays resident, and until now there
 was no way to tell — the wrong version once ran for an entire test round.
@@ -321,9 +321,41 @@ message into the right section by its `source` field.
 
 `dsl list` shows every shipped office. `references/sources_and_sinks.md` in
 this bundle has the component list and the sink argument signatures — read it
-before writing a custom source, since the answer is usually already there. It
-covers MCP-server integration, so any tool with an MCP server can be a source
-or a sink.
+before writing a custom source, since the answer is usually already there.
+
+### When the data the user wants is not in the registry
+
+**Ask for `mcp_source` before you write anything.** Any service with an MCP
+server — a database, a broker, a file store, a search provider, hundreds in
+the public registry — can be an office's input or output without a single
+new line in the framework:
+
+```
+Sources: mcp_source(server="...", tool="...", args={...})
+Sinks:   mcp_sink(server="...", tool="...")
+```
+
+This is the answer most of the time, and it is the one users do not find on
+their own. A tester who wanted two market-data feeds instead wrote two
+registered sources, had to provision an API key for each, and concluded the
+framework was harder than just asking Claude — which, for what he was doing,
+it was. `mcp_source` would have avoided both.
+
+So, in order:
+
+1. **`mcp_source`** — the service has an MCP server. No framework change, and
+   often no credential the user does not already have.
+2. **`rss(url=...)`** — the service publishes a feed. Nothing to build.
+3. **`web_scraper` / `web`** — it is a page.
+4. **A registered source in the package** — only when the office needs it
+   repeatedly, the shape is stable, and it is worth someone else maintaining.
+   This is the most expensive option and the last one to reach for. Say so
+   before starting.
+5. **Do not build it at all** — if the user wants one answer to one question,
+   an office is the wrong shape and you should say so plainly.
+
+Being honest about (5) costs you nothing and buys the user's trust in the
+other four.
 
 **`docs/SOURCES_AND_SINKS.md` is the fuller prose catalogue, but it does not
 ship** — it exists in the GitHub repository and in no `pip install`. Do not

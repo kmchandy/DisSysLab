@@ -13,7 +13,7 @@ proof-of-work browser challenge rather than data. Both were free, both
 needed no key, and both broke inside two months. Nothing in the framework
 noticed, because this source caught each failure and reported it as a
 ``stocks_error`` message that no sink recognised. See
-``docs/internals/ISSUES_walkthrough_2026-08-17.md``, C1 to C3.
+``archive/ISSUES_walkthrough_2026-08-17.md``, C1 to C3.
 
 ``yfinance`` replaces it, and brings one constraint worth stating plainly
 here rather than leaving to be discovered:

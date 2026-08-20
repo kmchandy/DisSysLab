@@ -2,10 +2,10 @@
 
 # Validation fixture for the generic `select` coordinator
 # (dissyslab.office.library.select_role), added to close task #31: does the
-# generic implementation match OfficeSpeak's own worked example,
+# generic implementation match the original worked example,
 # start_gallery/trading_room.md, Case 2 (the "freeze while waiting for the
 # ledger's reply" correction)? One trader only -- a second trader watching
-# market data (as OfficeSpeak's own example has) would exercise the exact
+# market data (as the original example has) would exercise the exact
 # same select mechanism a second time, not new coverage, so it's omitted here
 # to keep this fixture small and fast.
 #

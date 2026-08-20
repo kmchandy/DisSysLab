@@ -2,7 +2,7 @@
 """
 Accountant — accountant.
 
-The corrected version from OfficeSpeak's own worked example
+The corrected version from the original worked example
 (start_gallery/investment_club.md, "The famous correction"): before
 pricing a proposed trade, ask the ledger for the *current* holdings
 and wait for them -- taxes/fees depend on what the club currently

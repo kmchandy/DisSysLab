@@ -1,7 +1,7 @@
 # Office: salton_sea_dashboard
 
 # Initial demo for Professor Sinclair's Salton Sea H2S / wind
-# monitoring request (see OfficeSpeak/PAPER_NOTES.md and the
+# monitoring request (see the project notes and the
 # conversation this app came out of). Two sources feed one merged
 # snapshot:
 #

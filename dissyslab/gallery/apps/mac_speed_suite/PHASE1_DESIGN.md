@@ -185,7 +185,7 @@ Key points:
   `comparator`.
 - Because it is one office, it is one `dsl run`, one termination, one
   checkpointable computation — you can checkpoint between folds and resume
-  mid-walk-forward — and OfficeSpeak can explain the loop in English.
+  mid-walk-forward — and Cowork can explain the loop in English.
 
 ## Monte Carlo — a small increment, not a second effort
 

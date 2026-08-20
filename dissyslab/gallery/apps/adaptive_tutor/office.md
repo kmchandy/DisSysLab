@@ -1,6 +1,6 @@
 # Office: adaptive_tutor
 
-# Ports the tutoring app from OfficeSpeak/offices/phase2_demo/tutor_multi.py
+# Ports the tutoring app from the pre-DisSysLab prototype
 # onto the current office.md/roles framework, and -- unlike that version --
 # formalizes what varies between subjects into an explicit, documented
 # contract (roles/_subject_common.py), the same way mac_speed_suite

@@ -57,10 +57,15 @@ Then see one work:
 > Make me my own copy of the `periodic_brief` office in a folder called
 > `my_brief`, then run it and open the result.
 
-Ten to twenty seconds later you have an HTML page with real news, real
-weather, and a few stock prices. **No API key, no account, no model
-download.** If anything goes wrong, say *"run `dsl doctor` and tell me what it
-says."*
+Ten to twenty seconds later you have an HTML page with real news and real
+weather. **No API key, no account, no model download, and nothing to install
+beyond `dissyslab` itself.** If anything goes wrong, say *"run `dsl doctor`
+and tell me what it says."*
+
+(Stock prices are one line away — `stocks(ticker="AAPL")` — but they need
+`pip install "dissyslab[market]"` first, because market data comes from
+Yahoo and every user fetches their own. Not needed for anything in this
+course unless you choose a markets project.)
 
 You are set up. Bring a laptop that does this to the first class.
 
@@ -176,6 +181,16 @@ or `roles/<name>.py` (Python, exact and free). Use English when the job needs
 judgment. Use Python when the job is exact — a threshold, an average, a
 deduplication. Python roles cost nothing per message; English roles call a
 model every time.
+
+### Writing `office.md` yourself
+
+You never have to. But reading one is how you check the agent's work, and by
+the end of the course you should be able to write one without help — that is
+most of what "you understand your own office" means.
+
+**[`docs/BUILD_APPS.md`](../docs/BUILD_APPS.md)** has the full grammar, the
+component catalogue and worked examples. Reach for it when the agent has built
+something and you want to know why it wired it that way.
 
 ---
 

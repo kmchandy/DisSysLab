@@ -4,7 +4,7 @@ Feed — period_feed.
 
 Validation fixture for `record` + `gate`
 (dissyslab.office.library.record_role / gate_role), mirroring
-OfficeSpeak's start_gallery/investment_club.md, Case 2. Fires once on
+the original start_gallery/investment_club.md, Case 2. Fires once on
 the office's single `starter` kick, then emits a fixed sequence of
 period-start signals and stops. `Gate` (fed from these) admits one
 period at a time regardless of how quickly they're all sent -- see

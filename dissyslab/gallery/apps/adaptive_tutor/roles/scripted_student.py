@@ -12,7 +12,7 @@ judgment rather than a literal string match) with a deliberately wrong
 one, by problem index -- no subject-specific knowledge baked in here.
 
 A real deployment would swap this for a live terminal/UI worker (see
-OfficeSpeak/offices/phase2_demo/tutor_multi.py's TERMINAL for that
+the pre-DisSysLab prototype's TERMINAL for that
 shape) without touching PLANNER, BANK, or CHECKER.
 
 Input:  {"kind": "ask", "index": 0, "text": "...",

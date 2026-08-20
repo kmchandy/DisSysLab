@@ -547,7 +547,7 @@ def cmd_explain_trace(args: argparse.Namespace) -> int:
     it does not narrate it in English. Per the design doc's division of
     labor ("DisSysLab produces the record; Claude produces the English"),
     turning this into a sentence-by-sentence explanation for Pat is
-    OfficeSpeak/Claude's job, done by reading this command's output --
+    Cowork's job, done by reading this command's output --
     the same pattern already used for office-structure explanations and
     the debug_demo walkthrough.
     """
@@ -667,7 +667,7 @@ def cmd_show_checkpoint(args: argparse.Namespace) -> int:
     Same division of labor as `dsl explain-trace`: this command's job
     stops at producing the structured record. Turning it into an
     English explanation for Pat ("at this checkpoint, Alex had
-    classified 4010 points as inside...") is OfficeSpeak/Claude's job,
+    classified 4010 points as inside...") is Cowork's job,
     done by reading this command's output.
     """
     office_dir = _resolve_office_arg(args.office_dir, "office_dir")
@@ -1605,7 +1605,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     # v1.7: merge a `--trace` run's per-agent JSONL files into one
     # ordered, structured record. This command only merges and sorts --
-    # turning the record into English for Pat is OfficeSpeak/Claude's
+    # turning the record into English for Pat is Cowork's
     # job (see docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md Part 3).
     p_explain_trace = sub.add_parser(
         "explain-trace",

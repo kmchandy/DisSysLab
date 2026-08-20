@@ -4,8 +4,7 @@
 deliberately playing Al, as a plausible example of what someone who
 already thinks in terms of workers and wiring (but isn't a distributed-
 systems expert) would say. That's a legitimate way to build a teaching
-example — `01`'s Pat line and OfficeSpeak's own gallery examples are
-authored the same way. What it is *not* is a cold test: no separate
+example — `01`'s Pat line is authored the same way. What it is *not* is a cold test: no separate
 person played Al, and no fresh Claude (grounded only on
 `start_instructions.md` + `start_gallery`) produced the draft below —
 this session's Claude did, with everything already learned building
@@ -72,8 +71,8 @@ silently picked:
 And one thing worth surfacing even though Al didn't ask: nothing here
 deduplicates the same story appearing on more than one feed. Not added
 — it wasn't asked for, and adding it unprompted would be the kind of
-over-engineering `start_instructions_v3.md` already warns against on
-the OfficeSpeak side. Flagged instead, the same way a "Things I
+over-engineering `start_instructions_v3.md` already warns against.
+Flagged instead, the same way a "Things I
 assumed —" list would flag it to Pat.
 
 ## The office (verified — `dsl build` succeeds)

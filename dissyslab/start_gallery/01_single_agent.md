@@ -12,13 +12,13 @@ agent that writes one sentence about each story, and a sink that
 shows me the results."
 
 Note the register: Pat is already naming source/agent/sink, even
-though loosely. That's DSL Pat-speak, not OfficeSpeak Pat-speak — in
-OfficeSpeak, Pat would say "I want something that watches Hacker News
+though loosely. That is already office-shaped. A Pat with no such
+vocabulary would say "I want something that watches Hacker News
 and tells me, in one sentence, what each new story is about and why
 I'd care," and never mention a source, an agent, or a sink at all.
 DSL's job is to take Pat's own (possibly incomplete or ambiguous)
-office-shaped sketch to a correct, unambiguous one; OfficeSpeak's job
-is to invent the office-shaped structure from a goal she never
+office-shaped sketch to a correct, unambiguous one. The harder job —
+inventing the office-shaped structure from a goal she never
 describes in those terms. This example is too small to show the
 "incomplete or ambiguous, resolved through iteration" half of that —
 there's barely anything here to disambiguate. See the note in

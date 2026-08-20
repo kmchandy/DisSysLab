@@ -22,8 +22,7 @@ side's lines as evidence of what a real Pat conversation sounds like.
 A genuinely representative version of this file still needs to come
 from an actual cold test — a fresh Claude grounded only on
 `start_instructions.md` + `start_gallery`, talking to something playing
-an actually non-technical Pat, the same discipline OfficeSpeak already
-uses for its own cold tests. That hasn't been done yet.
+an actually non-technical Pat. That hasn't been done yet.
 
 `01_single_agent.md` shows the destination: a correct, unambiguous
 office, with nothing to disambiguate. This one shows what resolving a

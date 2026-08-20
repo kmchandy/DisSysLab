@@ -5,7 +5,7 @@ Trader — trader_news.
 Reads one thing at a time from ``SelectNews``: either a news item or
 the ledger's reply to a proposed trade — never both at once, because
 ``SelectNews`` withholds anything else until this role tells it what
-to bring next. That command is exactly OfficeSpeak's Case 2 correction
+to bring next. That command is exactly the Case 2 correction
 in ``start_gallery/trading_room.md``: "while a trader is waiting for
 the ledger's answer it should stop looking at new information
 entirely."

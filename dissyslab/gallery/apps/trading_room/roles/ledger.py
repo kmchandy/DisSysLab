@@ -6,7 +6,7 @@ A single-inbox keeper: approves or rejects one proposed trade at a
 time and replies to whichever trader sent it. Because it reads one
 proposal at a time from its single inbox and processes each
 atomically, it needs no gate and no shared memory to stay consistent
-— matching OfficeSpeak's own "What this example teaches" note for
+— matching the original "What this example teaches" note for
 ``trading_room``. State (how many trades approved so far) is held in
 a closure, per the framework's convention for stateful custom roles.
 

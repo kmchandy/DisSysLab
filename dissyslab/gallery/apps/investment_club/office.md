@@ -2,7 +2,7 @@
 
 # Validation fixture for the generic `record` + `gate` roles
 # (dissyslab.office.library.record_role / gate_role), added to close task
-# #32: does the generic implementation match OfficeSpeak's own worked
+# #32: does the generic implementation match the original worked
 # example, start_gallery/investment_club.md, Case 2 (the "famous
 # correction" -- the accountant must read current holdings before pricing
 # a trade, not just the proposed move)?

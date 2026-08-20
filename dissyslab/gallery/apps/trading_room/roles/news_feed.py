@@ -3,7 +3,7 @@
 News — news_feed.
 
 Validation fixture for the generic ``select`` coordinator
-(``dissyslab.office.library.select_role``), mirroring OfficeSpeak's
+(``dissyslab.office.library.select_role``), mirroring the original
 ``start_gallery/trading_room.md``. Fires once on the office's single
 ``starter`` kick, then emits a small, fixed sequence of news items —
 some that warrant a trade, one that doesn't — and stops. Deterministic

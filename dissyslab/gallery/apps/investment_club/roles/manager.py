@@ -2,7 +2,7 @@
 """
 Manager — manager.
 
-Single inbox, two message shapes to tell apart -- exactly OfficeSpeak's
+Single inbox, two message shapes to tell apart -- exactly the original
 own investment_club design (MANAGER's one inbox receives both JOIN's
 paired recommendations and ACCOUNTANT's reply):
 

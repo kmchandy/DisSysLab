@@ -10,7 +10,7 @@ A backtesting framework that two domain experts (the trader, the tester) drive e
 English: **they describe strategies and set parameters by talking to Cowork;
 everything else — implementation, wiring, validation, reporting — is done for
 them.** This is the worked example of the project thesis: a tested library
-(DisSysLab functions + OfficeSpeak prompts + the `.skill`) added to Cowork lets a
+(DisSysLab functions + the `.skill`) added to Cowork lets a
 non-programmer build and tune a real, trustworthy app in English, without
 re-synthesising the hard, error-prone distributed substrate each time.
 
