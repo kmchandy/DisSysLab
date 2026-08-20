@@ -157,8 +157,8 @@ def _one_line_description(office_dir: Path) -> str:
 def _read_tags(office_dir: Path) -> list[str]:
     """Read the `**Tags:**` line from an office's README.md.
 
-    Convention (see dev/PATH_A_FRICTION_SEQUENCE.md, item #34): every
-    gallery office has a single line of the form
+    The convention, which `dsl list` relies on: every gallery office
+    has a single line of the form
 
         **Tags:** tag1, tag2, tag3
 

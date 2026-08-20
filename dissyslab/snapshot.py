@@ -17,10 +17,9 @@ Layout:
 Naming convention for channel files: keyed by the destination
 agent + destination port. Each edge in DSL's flattened graph
 ``(src_agent, src_port, dst_agent, dst_port)`` has exactly one
-sender, so ``(dst, port)`` uniquely identifies the channel. When
-``MergeAsynch`` is eliminated in v2.0 (see
-``dev/POST_HN_BACKLOG.md``), the convention will gain a sender
-prefix.
+sender, so ``(dst, port)`` uniquely identifies the channel. If
+``MergeAsynch`` is ever removed, a destination port could take more
+than one sender and the convention would need a sender prefix.
 
 Agent names that contain ``::`` (DSL's flattened-path separator
 for nested networks) are sanitized by ``safe_filename`` to

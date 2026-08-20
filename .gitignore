@@ -109,13 +109,22 @@ config/secrets/
 student_work/
 my_projects/
 
-# Scratch dirs created when running recipe examples (e.g.
-# `dsl init org_news_filter my_filter`).
-my_filter/
-my_feed/
-my_office/
-my_stocks/
-my_briefing/
+# Scratch dirs created by `dsl init <office> <folder>` when it is run
+# from inside a checkout — which the docs tell people to do.
+#
+# This used to be a list of five names, grown one incident at a time.
+# The docs name twelve targets, so seven were unignored, including
+# `my_brief` -- the folder in the README's own Sixty-seconds
+# quickstart, and the one course/SETUP.md says Cowork will create.
+# Meanwhile `my_stocks/` was on the list and is named by no document
+# at all. A list of names could only ever be as current as the last
+# person who remembered to extend it.
+#
+# The property is "a scratch folder at the repository root", so the
+# rule says that. Anchored with a leading slash on purpose: an
+# unanchored `my_*/` would match any depth and swallow the tracked
+# gallery office `dissyslab/gallery/examples/my_first_office/`.
+/my_*/
 
 for_instructors/
 
@@ -187,8 +196,17 @@ examples/try.py
 
 # Logs
 logs/
+
+# Maintainer scratch. `dev/app_test/` is tracked and stays tracked --
+# git never un-tracks a file because a later rule ignores it.
+#
+# There was a `!dev/experiments/specialist_agents/` exception here. It
+# could never have worked: once a directory is excluded git does not
+# descend into it, so a negation below an excluded directory is inert
+# unless the parent is un-ignored too. The path it named has also
+# never existed in this repository's history. Removed rather than
+# repaired, since it was defending nothing.
 dev/
-!dev/experiments/specialist_agents/
 
 # Internal planning docs (not for public repo)
 ACTION_PLAN.md
@@ -210,9 +228,17 @@ custom_app-for-nyasha.tar.gz
 build/
 
 # v1.6: codegen chdir means offices write artifacts next to office.md,
-# so gallery offices may write brief.html / *.jsonl into their own dir.
-dissyslab/gallery/apps/*/brief.html
-dissyslab/gallery/apps/*/snapshots/
+# so a gallery office may write brief.html or snapshots/ into its own
+# directory.
+#
+# `gallery/**` rather than `gallery/apps/*`, because the mechanism is
+# generic: `dsl run --snapshot-interval` works on any office, and
+# gallery/examples/ holds offices too. The *.jsonl rule three screens
+# up already reads `gallery/**` -- these two lines were written for
+# the folder where the artifact was first seen, and the sibling was
+# uncovered for as long as they have existed.
+dissyslab/gallery/**/brief.html
+dissyslab/gallery/**/snapshots/
 # recovery_demo/samples/points.txt is deliberately tracked. Ignoring
 # it meant every fresh clone got a demo that printed nothing and
 # exited 0 -- the headline checkpoint feature, broken for every new

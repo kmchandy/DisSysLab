@@ -367,6 +367,17 @@ def _catalogue_names() -> set[str]:
 
 
 def _shipped_offices() -> set[str]:
+    """Every office a student can reach, by the same rule the CLI uses.
+
+    `network.md` counts as well as `office.md`. A multi-office app --
+    `org_two_office_news` is the one that exists -- has a `network.md`
+    at its root and the individual `office.md` files one level further
+    down, so a check that looks only for `office.md` does not see it at
+    all. `dissyslab/cli.py`'s `_find_packaged_office` accepts both, so
+    a rule here that accepts only one is narrower than the thing it is
+    checking, and would report the app as uncatalogued the moment
+    anyone added it to START_HERE.
+    """
     import dissyslab.gallery as gallery
     root = Path(gallery.__file__).parent
     names = set()
@@ -374,7 +385,8 @@ def _shipped_offices() -> set[str]:
         d = root / sub
         if d.is_dir():
             names |= {
-                c.name for c in d.iterdir() if (c / "office.md").exists()
+                c.name for c in d.iterdir()
+                if (c / "office.md").exists() or (c / "network.md").exists()
             }
     return names
 
@@ -686,6 +698,84 @@ def test_every_relative_link_resolves():
         )
         + "\n\nA dead link is worse than no link: it reads as though the "
         "document exists and the reader simply cannot find it."
+    )
+
+
+# ---------------------------------------------------------------------------
+# 7. Source comments point at documents too, and nothing was checking those
+# ---------------------------------------------------------------------------
+#
+# Section 6 reads markdown. But a docstring saying "see
+# docs/internals/design/termination_detection_design.md §6" is a link
+# with the same job and the same failure mode, and a reorganisation
+# breaks it just as silently -- more silently, in fact, since nobody
+# clicks a docstring and finds a 404. The reader goes looking and gives
+# up. (That path is written out in full on purpose: this check reads
+# its own explanation, so the example has to be a live one.)
+#
+# The rule is deliberately narrow, because a noisy check gets deleted.
+# Only a reference that begins with one of the repository's top-level
+# directories is judged: those are unambiguously repo-rooted, so
+# "does it exist" is a well-posed question. Prose like `roles/<name>.md`,
+# `office.md`, or a hypothetical `my_office/roles/entity_extractor.py`
+# is not a claim about this repository and is left alone.
+
+_SOURCE_REF = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_./-]*\.(?:md|py)")
+
+# A reference is checkable only if it starts with one of these.
+_REPO_TOP_LEVEL = (
+    "docs/", "course/", "skills/", "scripts/", "tests/", "archive/",
+    "dissyslab/",
+    # dev/ is maintainer scratch and is not in the repository. That is
+    # exactly why a shipped docstring must not send a reader there.
+    "dev/",
+)
+
+
+def _is_a_checkable_reference(token: str) -> bool:
+    if not token.startswith(_REPO_TOP_LEVEL):
+        return False
+    if "..." in token or "<" in token or ">" in token:
+        return False                       # an elision or a placeholder
+    if re.search(r"(^|/)build/", token):
+        return False                       # codegen output; never on disk
+    # `dissyslab/roles/X.md` and friends: a single-letter stem is the
+    # library's way of writing "some role", not a filename.
+    if any(len(seg) == 1 and seg.isupper() for seg in token.split("/")):
+        return False
+    if len(Path(token).stem) == 1:
+        return False
+    return True
+
+
+def test_every_document_referenced_from_source_exists():
+    import subprocess
+
+    sources = subprocess.run(
+        ["git", "ls-files", "*.py"],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+    ).stdout.split()
+
+    broken: dict[str, list[str]] = {}
+    for rel in sources:
+        path = REPO_ROOT / rel
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for token in sorted(set(_SOURCE_REF.findall(text))):
+            if not _is_a_checkable_reference(token):
+                continue
+            if not (REPO_ROOT / token).exists():
+                broken.setdefault(rel, []).append(token)
+
+    assert not broken, (
+        "These source files point at documents that do not exist:\n"
+        + "\n".join(
+            f"  {f}\n" + "\n".join(f"      -> {t}" for t in targets)
+            for f, targets in sorted(broken.items())
+        )
+        + "\n\nEither the file moved and the comment did not, or it was "
+        "never written. Update the comment, or delete the pointer -- a "
+        "reader who goes looking and finds nothing learns only that the "
+        "comments are not maintained."
     )
 
 

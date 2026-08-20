@@ -1,4 +1,3 @@
-# tests/test_termination.py
 """
 Tests for os_agent termination detection.
 

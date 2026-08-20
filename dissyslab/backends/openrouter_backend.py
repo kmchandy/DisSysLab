@@ -6,9 +6,9 @@ OpenRouter backend — a single gateway to many open-source SLMs.
 OpenRouter (https://openrouter.ai) is a hosted API that proxies to
 dozens of models — Qwen, Llama, Mistral, DeepSeek, plus the closed
 ones — behind a single OpenAI-compatible endpoint. We use it as the
-*experimental* backend for the SLM-viability work described in
-``dev/PLAN_free_ai_for_pat.md``: it lets us iterate cheaply on
-prompts and compare models without each one needing its own SDK.
+*experimental* backend for finding out which small models can carry a
+role well enough to recommend: it lets us iterate cheaply on prompts
+and compare models without each one needing its own SDK.
 
 In production, Pat runs Ollama locally with the same model. Same
 prompts, same model name, different inference path.
