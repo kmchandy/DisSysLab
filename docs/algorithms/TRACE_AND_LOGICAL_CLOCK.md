@@ -9,7 +9,7 @@ designs" below before assuming any overlap.
 ## Why this document exists
 
 Mani wants two Pat-facing explainer features, in addition to the checkpoint
-explainer already scoped in `PAPER_NOTES.md` (OfficeSpeak repo):
+explainer already scoped in the project notes:
 
 1. **A per-agent activity log** — each agent records, in order, the
    messages it received and the messages it sent. Explained in English:
@@ -27,7 +27,7 @@ snapshot; this does it for a run's message history.
 Two existing internal docs use similar words for a **different** feature.
 Do not conflate them.
 
-- **`docs/internals/replay_debug_mode_decision.md`** — "debug mode" is an
+- **`docs/internals/decisions/replay_debug_mode_decision.md`** — "debug mode" is an
   **exact-reproduction** tool for engineers (Al-facing): it logs *every*
   source of nondeterminism (fair_merge's forward order, LLM responses, any
   RNG/clock/external call) so a run can be **replayed bit-for-bit** from a
@@ -66,9 +66,9 @@ The steps a person actually goes through, end to end:
    narration is **not** a hard-coded template-printing script. DisSysLab's
    job stops at producing a faithful, complete, machine-readable record (the
    `trace/*.jsonl` files from Part 2). Turning that record into English for
-   Pat is OfficeSpeak's job, done by Claude reading the raw trace and
+   Pat is Cowork's job, done by reading the raw trace and
    narrating it — the same division of labor as everywhere else in this
-   project (DisSysLab is the mechanism; OfficeSpeak/Claude is the English
+   project (DisSysLab is the mechanism; Cowork is the English
    translation layer), and the same pattern already used for office
    structure, "Things I assumed," and the `debug_demo` walkthrough. See
    Part 3, revised accordingly.
@@ -356,7 +356,7 @@ directories by hand if they want to.
 Not a re-execution of the office — the office already ran, and finished, or
 you wouldn't have a complete trace to play back. "Running a recorded trace"
 splits into two genuinely separate jobs, on two sides of the DisSysLab /
-OfficeSpeak boundary:
+Cowork boundary:
 
 - **DisSysLab's job** (mechanical, deterministic, no LLM involved): read the
   `trace/*.jsonl` files written during a `--trace` run, merge every agent's
@@ -368,7 +368,7 @@ OfficeSpeak boundary:
   explain-trace <office_dir>/trace/` — though note per the point below, this
   command's own job is to hand the ordered structured trace to Claude, not
   to print English itself.
-- **OfficeSpeak's job** (Claude reads the ordered structured trace and
+- **Cowork's job** (Claude reads the ordered structured trace and
   narrates it): turning "agent Alex received `(0.31, 0.88)` on inport `in_`
   at t=41" into the kind of sentence Pat can read is exactly the same
   translation move already used for office structure, "Things I assumed,"
@@ -376,7 +376,7 @@ OfficeSpeak boundary:
   string. This means the explanation can adapt (more or less detail, answer
   a follow-up question about one specific step, connect an action back to
   the worker's plain-English job description) the way every other
-  OfficeSpeak explanation already does, rather than being frozen into
+  Cowork's explanation already does, rather than being frozen into
   whatever a template author anticipated.
 
 ### English rendering, worked example (recovery_demo)
@@ -447,7 +447,7 @@ One question remains open, not yet decided:
   from a checkpoint or the initial state; stop manually; Claude explains
   the trace; fix bugs; start fresh) and that the English narration in Part 3
   is produced by Claude reading the structured trace, not a fixed template
-  — DisSysLab produces the record, OfficeSpeak/Claude produces the English,
+  — DisSysLab produces the record, Cowork produces the English,
   same division of labor as the rest of the project.
 - 2026-07-22 — Implemented: `_Timestamped` wrapper and clock/trace hooks in
   `core.py`, `trace_dir` propagation in `network.py`, `--trace` flag and
@@ -477,7 +477,7 @@ One question remains open, not yet decided:
   explain-trace`'s division of labor for a snapshot instead of a run. See
   `docs/algorithms/CHECKPOINT_RESUME.md`'s new "Showing a checkpoint's
   contents (v1.7)" section for the design and verification notes. Also
-  wrote OfficeSpeak's `DEBUG_TRACE_AND_CHECKPOINT_WALKTHROUGH.md` — a
+  wrote the earlier `DEBUG_TRACE_AND_CHECKPOINT_WALKTHROUGH.md` — a
   Pat-facing, extreme-step-by-step teaching document covering both this
   trace feature and the new checkpoint explainer, using `recovery_demo`.
   Every command and every JSON/JSONL excerpt in that document was run for

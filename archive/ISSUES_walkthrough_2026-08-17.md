@@ -20,6 +20,7 @@ Found by playing a first-year against `course/START_HERE.md` with the
 >
 > | Open | Why it is still open |
 > |---|---|
+> | **A timed-out office cannot be shut down** | found 2026-08-19; next in the queue. `run_network(timeout=T)` raises `TimeoutError`, but nothing tells the agents to stop — os_agent sends `_Shutdown` only when it *declares termination*, and the timeout path does not. Agent threads are `daemon=False`, so they stay parked in `recv` and **the process cannot exit**. Confirmed with `faulthandler`. Not alarm-specific; any office that times out does it. Also means Ctrl-C on a hung office appears not to work. Fix: send `_Shutdown` to every agent on the timeout path before raising. See the note at the foot of `tests/unit/test_alarm.py` |
 > | **Release 1.7.2** | W5 and C3 are in the repo, not in the wheel a student installs. Highest priority: W5 is a prerequisite-for-course fix |
 > | **C1 / B4** | needs a data-provider decision, not a patch — three options costed in the update section below |
 > | **D1** | tier-2 hang diagnosis — plan item 2, days |

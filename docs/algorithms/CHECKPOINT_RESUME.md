@@ -594,7 +594,7 @@ in-flight message. Read-only — this command never writes anything,
 so it's safe to run against a live office's checkpoints at any time.
 
 Pat-facing, extreme-step-by-step instructions for both this and the
-trace feature (using `recovery_demo`) are in OfficeSpeak's
+trace feature (using `recovery_demo`) are in the earlier project's
 `DEBUG_TRACE_AND_CHECKPOINT_WALKTHROUGH.md`.
 
 ## Out of scope for v1.6

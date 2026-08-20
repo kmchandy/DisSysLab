@@ -147,6 +147,11 @@ dissyslab/gallery/**/*.jsonl
 # any other nested JSONL we legitimately ship.
 /*.jsonl
 
+# ...and when enough of them accumulate, the repository root stops
+# being readable. `out/` is where they are swept. Nothing in it is
+# ever an input, so it can be deleted at any time.
+/out/
+
 # periodic_brief now also produces a styled HTML brief, and
 # competitor_watch writes a markdown digest of the day.
 /brief.html

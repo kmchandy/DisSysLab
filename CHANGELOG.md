@@ -82,7 +82,7 @@ message.
 
 
 Also in 1.7.2, from the 2026-08-17 student walk-through issue list
-(`docs/internals/ISSUES_walkthrough_2026-08-17.md`):
+(`archive/ISSUES_walkthrough_2026-08-17.md`):
 
 ### Added — the run summary can see failure reported as data (C2, C3)
 
@@ -382,7 +382,7 @@ was still unreleased. It is 1.7.0.)*
   a `stocks_error` message, which nothing consumes and no sink renders — so
   the office exits 0 and says nothing. Both the endpoint and the
   unconsumed-error path are open issues; see
-  `docs/internals/ISSUES_walkthrough_2026-08-17.md`.
+  `archive/ISSUES_walkthrough_2026-08-17.md`.
 
 ### Fixed — gallery offices that produced nothing
 
