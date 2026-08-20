@@ -13,6 +13,7 @@ Available blocks:
 - MergeSynch: Synchronizing join (merge_synch)
 - Gate: One-at-a-time gate
 - Select: Read whichever inport the state points to (ask-and-wait)
+- Alarm: Wake an agent up later, so no agent ever needs to sleep
 """
 
 from dissyslab.blocks.source import Source
@@ -26,6 +27,7 @@ from dissyslab.blocks.coordinator import Coordinator
 from dissyslab.blocks.merge_synch import MergeSynch
 from dissyslab.blocks.gate import Gate
 from dissyslab.blocks.select import Select
+from dissyslab.blocks.alarm import Alarm
 
 __all__ = [
     "Source",
@@ -39,4 +41,5 @@ __all__ = [
     "MergeSynch",
     "Gate",
     "Select",
+    "Alarm",
 ]

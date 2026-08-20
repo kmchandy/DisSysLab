@@ -83,6 +83,23 @@ class _OsMessage:
     pass
 
 
+class _TimerFired(_OsMessage):
+    """An Alarm's worker thread reporting that its wait has expired.
+
+    Put directly on the alarm's own inport queue with ``q.put`` -- not
+    via ``send()``, which is for outports. It is an ``_OsMessage`` for
+    one specific reason: OS messages are never counted, so it does not
+    inflate the alarm's ``received`` total and the alarm's idleness test
+    (``accepted == discharged``) stays honest.
+
+    The worker's *only* action is to put this message. It never calls
+    ``send``, because a snapshot requires a process to record its state
+    atomically with respect to its own send and receive events, and a
+    second thread sending would break that.
+    """
+    pass
+
+
 class _GiveMeCounts(_OsMessage):
     """Sent by os_agent to request current sent/received counts from a client.
 
@@ -653,6 +670,8 @@ class Agent(ABC):
                     "sent":     dict(self.sent),
                     "received": dict(self.received),
                     "round_id": getattr(msg, "round_id", None),
+                    "idle":     self.is_idle(),
+                    "final":    self.is_final(),
                 }
                 resp.update(self._termination_info())
                 self.send_os(resp)
@@ -669,6 +688,9 @@ class Agent(ABC):
 
             elif isinstance(msg, _StartRecover):
                 self._handle_start_recover(msg)
+
+            elif self._handle_os_extension(msg, inport):
+                pass                      # a subclass recognised and handled it
 
             else:
                 # Client data message.
@@ -766,6 +788,90 @@ class Agent(ABC):
             pickle round-trip.
         """
         pass
+
+    # ── Activity, for termination detection ───────────────────────────────
+    #
+    # The standard vocabulary: an agent is **active** when it has an
+    # outstanding obligation -- it will send at some future point without
+    # needing to receive anything first -- and **idle** otherwise.
+    #
+    # The two kinds of agent differ in how idleness can be *known*, and
+    # that asymmetry is the whole of the design:
+    #
+    #   A **reactive** agent sends only in response to a message. It can
+    #   only answer a poll from inside recv(), where by construction it
+    #   owes nothing -- so answering is itself the proof of idleness, and
+    #   the base implementation below can simply return True.
+    #
+    #   A **non-reactive** agent -- a Source, an Alarm, anything with its
+    #   own thread of control -- can answer a poll while active.
+    #   Answering proves nothing, so it must override these and report.
+    #
+    # See docs/internals/design/termination_detection_design.md.
+
+    def is_idle(self) -> bool:
+        """True when this agent owes no future send.
+
+        Constant ``True`` for a reactive agent: the only place it can
+        answer a poll is inside ``recv``, and there it owes nothing.
+        Redundant, and worth paying for the uniformity -- os_agent then
+        reads one field for every agent instead of classifying by kind,
+        and a new kind of agent needs no change to the detector.
+
+        **Override conservatively.** Report active unless you can prove
+        you owe nothing. A false ``idle`` terminates the office early and
+        silently discards work; a false ``active`` only delays the
+        verdict. That asymmetry is what makes new agent kinds safe to
+        add: an author who has never read the detector gets it right if
+        the default errs active.
+
+        **Define idleness over messages processed, not over the world.**
+        An Alarm is idle iff it has not yet *received* its worker's
+        finished message -- not iff the worker has finished. The two
+        differ for the microseconds that message is in flight, and the
+        message-based definition errs conservative and makes the agent's
+        state a function of its own message history, which is what makes
+        it snapshottable at all.
+        """
+        return True
+
+    def is_final(self) -> bool:
+        """True when this agent will never be active again.
+
+        A final agent stops replying -- an exhausted Source ends its
+        thread -- so os_agent records it as permanently idle and stops
+        expecting fresh replies. Without this, "gone" and "slow" are the
+        same observation.
+
+        A Source is final when exhausted; a reactive agent is final only
+        at shutdown, so the base returns False.
+        """
+        return False
+
+    def _handle_os_extension(self, msg: Any, inport: str) -> bool:
+        """Let a subclass handle an OS message kind of its own.
+
+        Return ``True`` if the message was recognised and handled, in
+        which case ``recv`` continues waiting; ``False`` to let it fall
+        through to the client-data path. The base recognises nothing.
+
+        This is the incoming counterpart to ``_termination_info``, which
+        lets a subclass extend the poll *reply*. ``Alarm`` uses it to
+        catch ``_TimerFired``.
+
+        The alternative — a subclass reading its queue directly instead
+        of calling ``recv`` — was rejected. ``recv`` is not a thin
+        wrapper: it handles the recovery-buffer fast path, the logical
+        clock, four OS message kinds, the RECOVER_WAITING discard,
+        snapshot channel-state recording under a lock, and counting. A
+        second implementation would diverge the first time any of those
+        changed, and the symptom would be a corrupted cut rather than a
+        wrong number.
+
+        Note that a handler runs on the agent's own thread, which is
+        what lets ``Alarm`` do its sending from here.
+        """
+        return False
 
     def _termination_info(self) -> Dict[str, Any]:
         """Extra fields to include in this agent's _GiveMeCounts reply.

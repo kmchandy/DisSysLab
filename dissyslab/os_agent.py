@@ -3,21 +3,36 @@
 OsAgent: Termination detector for DSL networks.
 
 OsAgent runs alongside the client network and declares termination when:
-  (1) every agent has been heard from, AND
-  (2) for every edge, sent count == received count.
+  (1) every agent is idle and said so this round (or has reported that
+      it will never be active again), AND
+  (2) for every reachable edge, sent count == received count.
 
-Two kinds of agents are handled differently:
+**active** means the agent has an outstanding obligation -- it will send
+at some future point without needing to receive anything first.
+**idle** is the negation. Every agent reports which it is; os_agent does
+not classify agents by kind, so a new kind of agent needs no change here.
+
+How agents come to answer differs, though:
 
   Sources (no inports):
-    Cannot be polled. Instead, a source sends ONE termination message to
-    os_agent when its run() method completes. The message contains the
-    source's final sent counts.
+    Cannot be polled -- they are not sitting in recv where a poll could
+    reach them. A source sends ONE message to os_agent when its run()
+    completes, carrying its final counts and ``final=True``.
 
-  Non-source agents (have inports):
-    Polled periodically via _GiveMeCounts. They respond with current
-    sent/received counts via send_os(). os_agent does NOT wait for all
-    responses per cycle — it drains whatever has arrived and uses the
-    latest known counts.
+  Agents with inports:
+    Polled periodically via _GiveMeCounts, which is intercepted inside
+    recv. They respond with current counts, their idle bit, and the
+    round they are answering. os_agent does NOT wait for all responses
+    per cycle -- it drains whatever has arrived.
+
+    For a *reactive* agent -- one that sends only in response to a
+    message -- answering is itself the proof of idleness, since recv is
+    the only place it can answer from and there it owes nothing. For a
+    *non-reactive* agent with its own thread of control, such as an
+    Alarm, answering proves nothing and the idle bit carries the weight.
+
+See docs/internals/reference/os_agent_overview.md for the full picture and
+docs/internals/design/termination_detection_design.md for the design.
 
 OsAgent is created automatically by network.py during compilation.
 It is not part of the user's network — it is a framework component.
@@ -83,16 +98,28 @@ class OsAgent:
             else:
                 self.non_source_agents.add(name)
 
-        # heard_from: agents os_agent has received at least one message from
-        self.heard_from: Set[str] = set()
+        # ── Activity, as reported by each agent ──────────────────────
+        # ``idle`` is what an agent said in its most recent reply.
+        # ``final`` is sticky and means "will never be active again" —
+        # how an exhausted Source tells os_agent to stop waiting for
+        # replies from a thread that has ended.
+        #
+        # Reading these instead of classifying agents by kind is what
+        # keeps the detector closed to modification. An Alarm, an agent
+        # with an HTTP request in flight, or a kind nobody has written
+        # yet reports its own activity, and os_agent needs no branch for
+        # it. See docs/internals/design/termination_detection_design.md §3.
+        self.idle:  Dict[str, bool] = {}
+        self.final: Set[str] = set()
 
         # ── Passivity + coordinator tracking (coordinator TD fix, #47) ──
         # Monotonic poll-round counter. Each poll cycle bumps it and
         # stamps every _GiveMeCounts with it; an agent's reply echoes the
-        # round it answered. When a non-source agent's latest reply is for
-        # the current round, that agent is *right now* blocked in recv —
-        # i.e. passive. All non-sources passive + reachable channels empty
-        # + sources exhausted == termination.
+        # round it answered. A reply for the current round proves the
+        # answer is *current* — an agent mid-computation cannot have sent
+        # it. That is a separate fact from the idle bit above, and both
+        # are required: the round tag says "recently", the bit says
+        # "owes nothing".
         self._round: int = 0
         self._round_responded: Dict[str, int] = {}
         # For each coordinator, the inport it will read next (from its
@@ -242,13 +269,22 @@ class OsAgent:
             }
         """
         agent_name = response["agent"]
-        self.heard_from.add(agent_name)
 
         # Passivity: record which poll round this reply answers. A reply
         # for the current round means the agent is blocked in recv now.
         rid = response.get("round_id")
         if rid is not None:
             self._round_responded[agent_name] = rid
+
+        # Activity. The default for a missing "idle" is **False**, not
+        # True: an agent whose reply does not say is treated as active,
+        # so a kind that forgets to report delays termination rather
+        # than causing a premature one. See the conservative-default
+        # rule in Agent.is_idle.
+        self.idle[agent_name] = bool(response.get("idle", False))
+        if response.get("final"):
+            self.final.add(agent_name)      # sticky
+
         # Coordinators report the inport they will read next.
         if "waiting_on" in response:
             self.waiting_on[agent_name] = response["waiting_on"]
@@ -270,20 +306,31 @@ class OsAgent:
         Return True iff the office is quiescent — no message anywhere can
         be received by any agent, so no further progress is possible.
 
-        Three conditions, all required:
+        Two conditions, all required:
 
-        (1) **Sources exhausted.** Every agent has been heard from; a
-            source is heard from only when it finishes and sends its
-            termination message, so this subsumes "no new external input."
+        (1) **Every agent is idle, and said so recently.** For each
+            agent, either it has reported ``final`` — it will never be
+            active again, which is how an exhausted source bows out —
+            or its most recent reply answered *this* poll round and
+            said ``idle``.
 
-        (2) **Every non-source agent is passive** — blocked in recv right
-            now. We know this because its most recent reply answered the
-            current poll round: an agent that is mid-processing (not in
-            recv) cannot have answered this round's _GiveMeCounts. This
-            guards against a false "done" while, say, an LLM worker is
-            still thinking with balanced counts.
+            Both halves are needed and they do different jobs. The
+            **round tag** proves the reply is current: a reactive agent
+            that is mid-processing does not reply at all, and without
+            the tag its previous reply — which said ``idle``, because it
+            was sent from inside ``recv`` — would be believed while the
+            agent is busy. The **idle bit** says whether the agent owes
+            a future send, which the round tag cannot establish for a
+            non-reactive agent, since a Source or an Alarm can reply
+            while active.
 
-        (3) **Every reachable channel is empty.** For an ordinary agent,
+            This replaces the older formulation of "sources exhausted
+            plus every non-source passive". That worked, but it named
+            the two kinds of agent that existed rather than the property
+            they differ on, so every new kind meant another branch here.
+            See docs/internals/design/termination_detection_design.md.
+
+        (2) **Every reachable channel is empty.** For an ordinary agent,
             *every* inbound channel must be empty (it reads its one inbox
             unconditionally, so anything buffered there is live work). For
             a **coordinator**, only the channel into the inport it is
@@ -294,16 +341,16 @@ class OsAgent:
             forever). ``waiting_on`` names that inport; absent for
             ordinary agents, so the strict rule applies to them.
         """
-        # (1) sources exhausted / everyone heard from.
-        if self.heard_from != set(self.all_agents.keys()):
-            return False
-
-        # (2) every non-source agent is currently passive (answered this round).
-        for name in self.non_source_agents:
+        # (1) every agent idle, and said so this round (or is final).
+        for name in self.all_agents:
+            if name in self.final:
+                continue                       # permanently idle
             if self._round_responded.get(name) != self._round:
-                return False
+                return False                   # not a current answer
+            if not self.idle.get(name, False):
+                return False                   # active
 
-        # (3) every reachable channel empty.
+        # (2) every reachable channel empty.
         for (fa, fp, ta, tp) in self.graph_connections:
             sent = self.edge_sent.get((fa, fp), 0)
             received = self.edge_received.get((ta, tp), 0)

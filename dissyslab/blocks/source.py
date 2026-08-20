@@ -162,11 +162,25 @@ class Source(Agent):
         return self._fn(state=self._state, **self._params)
 
     def _send_termination(self) -> None:
-        """Send final sent counts to os_agent on exhaustion or error."""
+        """Send final sent counts to os_agent on exhaustion or error.
+
+        This is the only message a Source ever sends os_agent — it is
+        never polled, because it is not sitting in ``recv`` where a poll
+        could reach it. So this message carries the activity fields as
+        well as the counts, and ``final`` is what tells os_agent to stop
+        waiting for replies from a thread that has ended.
+
+        A Source is *active* for its whole life and then final in one
+        step; there is no state in which it is idle but still running.
+        That is why it does not override ``is_idle`` — this message is
+        the entire report.
+        """
         self.send_os({
             "agent":    self.name,
             "sent":     dict(self.sent),
             "received": {},
+            "idle":     True,
+            "final":    True,
         })
 
     def run(self) -> None:
