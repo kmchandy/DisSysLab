@@ -171,7 +171,7 @@ describes every office in the gallery.
 > wiring. It adds one LLM call per article; the default office
 > skips it so Pat sees raw output.
 
-When you're ready to write your own, [`docs/BUILD_APPS.md`](../../../docs/BUILD_APPS.md)
+When you're ready to write your own, [`docs/BUILD_APPS.md`](../../../../docs/BUILD_APPS.md)
 walks through it from scratch.
 
 ## Make it yours
@@ -355,9 +355,9 @@ Felix's discard is discard.
 After re-running, only articles mentioning the competitor flow
 through the rest of the pipeline. The full guide for writing
 new roles is at
-[`docs/BUILD_APPS.md`](../../../docs/BUILD_APPS.md) and the
-SLM-friendly prompt patterns at
-[`dev/PROMPTING_FOR_SLMS.md`](../../../dev/PROMPTING_FOR_SLMS.md).
+[`docs/BUILD_APPS.md`](../../../../docs/BUILD_APPS.md), and
+[`docs/LANGUAGE_MODELS.md`](../../../../docs/LANGUAGE_MODELS.md)
+covers choosing a backend per role.
 
 **Example: a brand-new office.**
 
@@ -365,16 +365,16 @@ Once you can read `office.md` and write a role, you can compose
 a different office entirely — an inbox-triage office, a
 calendar-prep office, a competitor-watch office. The same
 patterns apply: pick sources, name agents, wire connections.
-[`docs/BUILD_APPS.md`](../../../docs/BUILD_APPS.md) walks
+[`docs/BUILD_APPS.md`](../../../../docs/BUILD_APPS.md) walks
 through this from scratch.
 
 **Where to get help:**
 
 - A weird error → start at `office.md` and see if the syntax
   matches the gallery examples.
-- A role behaves oddly →
-  [`dev/PROMPTING_FOR_SLMS.md`](../../../dev/PROMPTING_FOR_SLMS.md)
-  explains the patterns that make prompts work on local SLMs.
+- A role behaves oddly → read its prompt out loud. A small local
+  model needs the output shape stated explicitly; the shipped
+  roles in `dissyslab/roles/` are the worked examples.
 - A bigger change → open an issue at
   [github.com/kmchandy/DisSysLab](https://github.com/kmchandy/DisSysLab).
 
@@ -403,11 +403,13 @@ through this from scratch.
 ## See also
 
 - [`office.md`](office.md) — the wiring.
-- [`roles/synchronizer.py`](roles/synchronizer.py) — the only
-  office-specific Python role; the five library-shipped roles
+- `synchronizer_role` in
+  [`dissyslab/office/library.py`](../../../office/library.py) —
+  the fan-in primitive this office uses; the five LLM roles
   (entity_extractor, severity_classifier, topic_tagger,
-  geolocator, writer) come from `dissyslab/roles/`.
-- [`docs/BUILD_APPS.md`](../../../docs/BUILD_APPS.md) — how to
+  geolocator, writer) come from `dissyslab/roles/`. This office
+  ships no Python of its own.
+- [`docs/BUILD_APPS.md`](../../../../docs/BUILD_APPS.md) — how to
   build your own office.
-- [`docs/LANGUAGE_MODELS.md`](../../../docs/LANGUAGE_MODELS.md) —
+- [`docs/LANGUAGE_MODELS.md`](../../../../docs/LANGUAGE_MODELS.md) —
   how to switch or mix backends.

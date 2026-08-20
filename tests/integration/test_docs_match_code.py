@@ -526,6 +526,169 @@ def test_skill_version_matches_its_content(bundle):
     )
 
 
+# ---------------------------------------------------------------------------
+# 5. Every substantial module has an entry in the internals README
+# ---------------------------------------------------------------------------
+#
+# `docs/internals/README.md` pairs an overview and an implementation note
+# with each module, and is the map a maintainer reads first. `os_agent.py`
+# -- 450 lines, and the module that decides when an office stops -- was
+# missing from it for months, which nobody noticed because nothing looks.
+#
+# Same shape as everything else in this file: a document that claims to
+# list the modules, and no check that it does.
+
+
+# Modules that need no entry, each with a reason. Small, obvious, or
+# covered by another module's note.
+MODULES_WITHOUT_DOCS: dict[str, str] = {
+    "__init__.py": "re-exports only",
+    "cli.py": "the user-facing surface; documented in course/ and README",
+    "cli_chat.py": "thin wrapper over cli",
+    "snapshot.py": "covered by os_agent_implementation and the algorithm docs",
+    "utils.py": "grab-bag; no single subject to document",
+    "builder.py": "has its own pair already",
+}
+
+
+def _top_level_modules() -> list[str]:
+    pkg = REPO_ROOT / "dissyslab"
+    return sorted(
+        p.name for p in pkg.glob("*.py")
+        if not p.name.startswith("_") or p.name == "__init__.py"
+    )
+
+
+def test_internals_readme_lists_every_substantial_module():
+    readme = REPO_ROOT / "docs" / "internals" / "README.md"
+    text = readme.read_text(encoding="utf-8")
+
+    missing = []
+    for name in _top_level_modules():
+        if name in MODULES_WITHOUT_DOCS:
+            continue
+        if f"dissyslab/{name}" not in text:
+            missing.append(name)
+
+    assert not missing, (
+        f"docs/internals/README.md does not mention: {missing}.\n"
+        f"It is the map a maintainer reads first, so a module absent "
+        f"from it is a module nobody is told exists. Write the pair, or "
+        f"— if it genuinely needs none — add it to MODULES_WITHOUT_DOCS "
+        f"in this file with the reason."
+    )
+
+
+def test_the_internals_readme_does_not_point_at_missing_files():
+    """The other direction: a link to a document that was never written
+    is worse than no link, because it reads as though the document is
+    somewhere and the reader simply cannot find it."""
+    readme = REPO_ROOT / "docs" / "internals" / "README.md"
+    text = readme.read_text(encoding="utf-8")
+    linked = set(re.findall(r"\]\((?!\.\./|https?:)([A-Za-z0-9_./-]+\.md)\)", text))
+
+    broken = sorted(
+        name for name in linked
+        if not (readme.parent / name).exists()
+    )
+    assert not broken, (
+        f"docs/internals/README.md links to files that do not exist: "
+        f"{broken}"
+    )
+
+
+# ---------------------------------------------------------------------------
+# 6. Every relative link in every document must resolve
+# ---------------------------------------------------------------------------
+#
+# The README's link check (section 5) covers one file. This covers all of
+# them, and it exists because the folders are about to be reorganised: a
+# move that breaks a link should fail here rather than be discovered by a
+# student following it.
+#
+# It found sixteen already broken before a single file moved — including
+# `situation_room/README.md` pointing at `../../../docs/BUILD_APPS.md`
+# when the gallery app is four levels down, not three. That link has been
+# dead for as long as the file has existed, and it is in the README of the
+# office the course calls its workhorse.
+
+
+_DOC_EXTENSIONS = {
+    ".md", ".py", ".png", ".gif", ".jpg", ".html", ".csv", ".txt",
+    ".sh", ".toml", ".yml", ".yaml", ".jsonl", ".json", ".ics",
+}
+
+_MD_LINK = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+
+# GitHub renders raw HTML inside markdown, and the README uses an <img>
+# tag rather than `![]()` so it can set a width. A moved image breaks it
+# *silently* — the page still renders, with a broken-image box — which is
+# worse than a dead text link, so it is checked too.
+_HTML_SRC = re.compile(r"""<img\b[^>]*\bsrc\s*=\s*["']([^"']+)["']""", re.I)
+
+
+def _looks_like_a_path(target: str) -> bool:
+    """Distinguish a file link from prose in brackets.
+
+    Role prompts contain things like ``[label](url)`` as a *template* for
+    a model to fill in, and `wardrobe_assistant` writes server routes like
+    ``/api/offices/...`` that are URLs at run time, not files on disk.
+    Neither is a link into the repository, and treating them as one would
+    make this test noise — which is how checks get deleted.
+    """
+    if target.startswith("/"):
+        return False                       # a server route, not a repo path
+    if "/" in target:
+        return True
+    return pathlib_suffix(target) in _DOC_EXTENSIONS
+
+
+def pathlib_suffix(name: str) -> str:
+    return Path(name).suffix.lower()
+
+
+def _markdown_files() -> list[Path]:
+    import subprocess
+
+    out = subprocess.run(
+        ["git", "ls-files", "*.md"],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+    ).stdout.split()
+    return [
+        REPO_ROOT / f for f in out
+        # archive/ is kept deliberately stale — its documents are
+        # snapshots of a past state and their links are allowed to rot.
+        if not f.startswith("archive/")
+    ]
+
+
+def test_every_relative_link_resolves():
+    broken: dict[str, list[str]] = {}
+
+    for path in _markdown_files():
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for raw in _MD_LINK.findall(text) + _HTML_SRC.findall(text):
+            target = raw.split()[0].strip("<>")
+            if target.startswith(("http://", "https://", "mailto:", "#")):
+                continue
+            if not _looks_like_a_path(target):
+                continue
+            resolved = (path.parent / target.split("#")[0]).resolve()
+            if not resolved.exists():
+                key = str(path.relative_to(REPO_ROOT))
+                broken.setdefault(key, []).append(target)
+
+    assert not broken, (
+        "These documents link to files that do not exist:\n"
+        + "\n".join(
+            f"  {f}\n" + "\n".join(f"      -> {t}" for t in targets)
+            for f, targets in sorted(broken.items())
+        )
+        + "\n\nA dead link is worse than no link: it reads as though the "
+        "document exists and the reader simply cannot find it."
+    )
+
+
 def test_start_here_catalogue_is_not_silently_incomplete():
     """The reverse direction, as a floor rather than an equality.
 

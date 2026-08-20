@@ -83,5 +83,5 @@ framework's prompt, set the backend. Three lines plus a path.
   free-everywhere base office.
 - [`docs/LANGUAGE_MODELS.md`](../../../../docs/LANGUAGE_MODELS.md)
   — backends, mixing, and the Backend Protocol.
-- [`dev/PROMPTING_FOR_SLMS.md`](../../../../dev/PROMPTING_FOR_SLMS.md)
-  — when SLMs handle a role well and when they don't.
+- [`docs/BUILD_APPS.md`](../../../../docs/BUILD_APPS.md) — how to
+  write a role of your own.
