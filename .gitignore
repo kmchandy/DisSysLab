@@ -197,8 +197,11 @@ demo/
 *.cast
 *.gif
 
-# Exception: README-embedded demo GIFs in docs/ ARE tracked
+# Exception: README-embedded demo GIFs ARE tracked. The images live
+# in docs/images/; the docs/*.gif form is kept because a stale copy
+# at the old path should stay tracked rather than silently vanish.
 !docs/*.gif
+!docs/images/*.gif
 custom_app-for-nyasha.tar.gz
 
 # Local scratch / private notes (not for PRs)
