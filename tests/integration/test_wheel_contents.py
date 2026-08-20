@@ -181,6 +181,15 @@ GENERATED_ARTIFACTS = [
         '{"cash": 1.0, "positions": {}}\n',
     ),
     ("dissyslab/gallery/apps/situation_room/build/run.py", "# generated\n"),
+    # Under examples/, not apps/. The exclusion rule this fixture
+    # guards covered only gallery/apps/, because gallery/apps/ is where
+    # the v1.7.0 leak was seen -- and a fixture that plants only under
+    # apps/ cannot tell you the rule is narrower than the invariant.
+    # gallery/examples/ holds offices too, so a machine that had ever
+    # run `my_first_office` shipped its codegen. These two lines are
+    # what keep that found.
+    ("dissyslab/gallery/examples/my_first_office/build/run.py", "# generated\n"),
+    ("dissyslab/gallery/examples/my_first_office/build/__init__.py", ""),
 ]
 
 

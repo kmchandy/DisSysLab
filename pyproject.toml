@@ -101,8 +101,15 @@ exclude = [
   # files inside packages, not the packages themselves. This is why
   # v1.7.0 shipped 64 build/*.py files. Both patterns are needed:
   # the first drops the build package, the second anything under it.
-  "dissyslab.gallery.apps.*.build",
-  "dissyslab.gallery.apps.*.build.*",
+  #
+  # The wildcard is `gallery.*.*` rather than `gallery.apps.*` because
+  # the first version of this rule named the folder where the leak was
+  # observed instead of the invariant it was defending. `dsl build`
+  # writes build/ next to any office.md, and gallery/examples/ holds
+  # offices too -- so a machine that had ever run `my_first_office`
+  # shipped it. Same bug, second folder, found by the same test.
+  "dissyslab.gallery.*.*.build",
+  "dissyslab.gallery.*.*.build.*",
 ]
 
 # Package data shipped inside the wheel.
@@ -157,10 +164,10 @@ exclude = [
 #                realized P&L). Not ours to ship.
 [tool.setuptools.exclude-package-data]
 "dissyslab" = [
-  "gallery/apps/*/build/*",
-  "gallery/apps/*/snapshots/*",
-  "gallery/apps/*/snapshots/**/*",
-  "gallery/apps/*/book/*",
+  "gallery/*/*/build/*",
+  "gallery/*/*/snapshots/*",
+  "gallery/*/*/snapshots/**/*",
+  "gallery/*/*/book/*",
 ]
 
 [tool.pytest.ini_options]
