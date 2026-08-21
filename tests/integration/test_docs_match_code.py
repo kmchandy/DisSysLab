@@ -796,3 +796,75 @@ def test_start_here_catalogue_is_not_silently_incomplete():
         f"Add them, or raise this threshold deliberately with a note "
         f"about which ones are meant to stay unlisted."
     )
+
+
+# ---------------------------------------------------------------------------
+# 7. Retired vocabulary stays retired
+# ---------------------------------------------------------------------------
+#
+# Two renames, each made because one concept had grown three names and a
+# reader could not tell which one to ask a question about.
+#
+#   inport / outport  ->  inbox / outbox
+#       The docs had already been drifting this way without deciding to:
+#       course/ contained no use of "inport" at all, the recipes had
+#       independently invented "mailbox", and "inbox" appeared 158 times.
+#       Renaming also frees "port" for its ordinary meaning, which the
+#       webhook source needs -- ``webhook(port=8000)``.
+#
+#   org chart  ->  network (user-facing) / graph (internals)
+#       An org chart shows authority; an office shows dataflow. Org
+#       charts are also trees, and an office may contain cycles, so "the
+#       org chart has a loop" was incoherent.
+#
+# This check covers user-facing prose only. docs/internals/ and
+# docs/algorithms/ still say "inport" where they are naming a real Python
+# identifier (``self.inports``, ``inports_checkpointing``), which is
+# correct: they document the code, and the code has not been renamed.
+
+RETIRED_WORDS = {
+    "inport": "inbox",
+    "outport": "outbox",
+    "org chart": "network (or 'graph' in docs/internals/)",
+}
+
+# Prose written for users, students and agents. Excludes the maintainer
+# documentation that legitimately quotes code identifiers, and archive/,
+# which is deliberately frozen.
+_VOCABULARY_EXEMPT_PREFIXES = (
+    "archive/",
+    "CHANGELOG.md",
+    "docs/internals/",
+    "docs/algorithms/",
+)
+
+
+def _user_facing_markdown() -> list[Path]:
+    return [
+        p for p in _markdown_files()
+        if not str(p.relative_to(REPO_ROOT)).startswith(
+            _VOCABULARY_EXEMPT_PREFIXES
+        )
+    ]
+
+
+def test_retired_vocabulary_does_not_return():
+    offenders: dict[str, list[str]] = {}
+
+    for path in _user_facing_markdown():
+        text = path.read_text(encoding="utf-8", errors="replace").lower()
+        found = [w for w in RETIRED_WORDS if w in text]
+        if found:
+            offenders[str(path.relative_to(REPO_ROOT))] = found
+
+    assert not offenders, (
+        "Retired vocabulary found in user-facing prose:\n"
+        + "\n".join(
+            f"  {f}: {', '.join(words)}"
+            for f, words in sorted(offenders.items())
+        )
+        + "\n\nReplacements: "
+        + "; ".join(f"{old} -> {new}" for old, new in RETIRED_WORDS.items())
+        + "\n\nA concept with three names is a concept nobody can ask "
+        "about. That is what this check exists to prevent."
+    )

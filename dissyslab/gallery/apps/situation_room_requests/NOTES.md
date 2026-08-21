@@ -8,7 +8,7 @@ should stay ordinary code.
 `Registry` has one inbox, fed by two upstream senders: `Sync` (a
 computed feature record for one item) and `webhook` (a stakeholder's
 start/stop request). It tells them apart by shape, not by a separate
-inport — same fan-in convention used elsewhere (e.g. CHECKER in
+inbox — same fan-in convention used elsewhere (e.g. CHECKER in
 tutor_multi). It is not a coordinator; nothing here needs gate,
 merge_synch, or select.
 

@@ -9,8 +9,8 @@ Up to seven sections, in any order. Section headers are case-insensitive.
 | `Sinks:` | usually | One declaration per world-facing output |
 | `Agents:` | no | One line per worker |
 | `Connections:` | yes | One line per connection statement |
-| `Inputs:` | no | External inports — only for an office meant to sit inside another |
-| `Outputs:` | no | External outports — same |
+| `Inputs:` | no | External inboxes — only for an office meant to sit inside another |
+| `Outputs:` | no | External outboxes — same |
 
 An office with no `Agents:` section is legal. `periodic_brief` is six sources
 fanning straight into one sink.
@@ -40,7 +40,7 @@ Agents:
 Felix is a filter.
 Alex is an analyst.
 Sasha is a deduplicator(by="url").
-Sync is a synchronizer(inports=["entities", "severity", "topic"]).
+Sync is a synchronizer(inboxes=["entities", "severity", "topic"]).
 news_monitor is an office at ../news_monitor.
 ```
 
@@ -84,7 +84,7 @@ Alex's briefing is console_printer.
 Felix's keep is Alex, Morgan and discard.
 ```
 
-**Into a named inport** — `<Recipient>'s <port>`:
+**Into a named inbox** — `<Recipient>'s <port>`:
 
 ```
 Eve's out is Sync's entities.
@@ -100,15 +100,15 @@ news_monitor's article_out is news_editor's article_in.
 
 ### Port-name rules worth memorising
 
-- A source's outport may be written `destination` **or** `out`. Both legal;
+- A source's outbox may be written `destination` **or** `out`. Both legal;
   the compiler maps either to the same runtime port.
 - A sink has exactly one inbox and it is always `in_`. You never name it.
-- An agent's outports are whatever its role declares. A role can have several
+- An agent's outboxes are whatever its role declares. A role can have several
   — `Felix's keep` and `Felix's discard`, or `Riley's continue` and
   `Riley's finish`.
-- A synchronizer's inports are either declared —
-  `synchronizer(inports=["a","b"])` — or inferred from what gets wired to it.
-  **If you declare them, wire every one.** A declared inport nothing writes to
+- A synchronizer's inboxes are either declared —
+  `synchronizer(inboxes=["a","b"])` — or inferred from what gets wired to it.
+  **If you declare them, wire every one.** A declared inbox nothing writes to
   is an agent that blocks forever.
 
 ## Cycles

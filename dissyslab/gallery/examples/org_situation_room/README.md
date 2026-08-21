@@ -32,7 +32,7 @@ the moment they are published — seconds apart during breaking events.
 
 ```
 situation_room/
-    office.md              ← the org chart: sources, agents, sinks
+    office.md              ← the network: sources, agents, sinks
     roles/
         analyst.md         ← what Alex does, in plain English
         editor.md          ← what Morgan does, in plain English
@@ -120,7 +120,7 @@ rating in a field called "significance" and your summary in the
 Send to briefing.
 ```
 
-## The org chart
+## The network
 
 The whole office, in one file:
 

@@ -141,7 +141,7 @@ Eve      is an entity_extractor.
 Sam      is a severity_classifier.
 Tom      is a topic_tagger.
 Greta    is a geolocator.
-Sync     is a synchronizer(inports=["entities", "severity", "topic", "location"]).
+Sync     is a synchronizer(inboxes=["entities", "severity", "topic", "location"]).
 Registry is a subscription_registry.
 
 Connections:
@@ -173,7 +173,7 @@ Custom Python, not an LLM role — this logic is exact and auditable
 
 One inbox, fed by two upstream senders (Sync's merged feature
 records, webhook's start/stop/publish requests) — told apart by
-shape, not by separate inports. Not a coordinator: nothing here
+shape, not by separate inboxes. Not a coordinator: nothing here
 needs gate, merge_synch, or select. Push only, nothing polls this
 agent; no backfill, a new request only sees records computed after
 it starts.
@@ -246,8 +246,8 @@ def _make_registry_fn():
                 field: value,
                 "text": f"[{sub['stakeholder']}] {field}={value} — {msg.get('title', '')}",
             }
-            outport = "to_console" if sub["channel"] == "console" else "to_email"
-            results.append((projected, outport))
+            outbox = "to_console" if sub["channel"] == "console" else "to_email"
+            results.append((projected, outbox))
         return results
 
     return registry_fn
@@ -262,8 +262,8 @@ def _factory() -> Role:
 
 role = AgentRoleEntry(
     name="subscription_registry",
-    in_ports=("in_",),
-    out_ports=("archive", "to_console", "to_email", "to_torrent"),
+    inboxes=("in_",),
+    outboxes=("archive", "to_console", "to_email", "to_torrent"),
     factory=_factory,
     description=(
         "Stores each computed feature record once and pushes a "
@@ -294,9 +294,9 @@ about the same thing.
 The ambiguity-resolution above happened at the *description* stage,
 before anything ran. Two more issues surfaced only by running it,
 worth naming because they're a different kind of gap: a declared
-outport (`to_torrent`) went briefly unwired in `office.md` with no
+outbox (`to_torrent`) went briefly unwired in `office.md` with no
 error at build time — `dsl build` doesn't require every declared
-outport to be connected, so this is a check a conversation has to make
+outbox to be connected, so this is a check a conversation has to make
 by reading the connections, not one the compiler makes for you. And
 the RSS sources had no `poll_interval`, so they fetched once and went
 silent — correct per their own documented default, but it meant the

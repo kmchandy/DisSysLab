@@ -67,7 +67,7 @@ g = network([
     (source, splitter),      # ✓ Works: splitter.in_ (default)
     (splitter, handler)      # ✗ Fails: which output? out_0, out_1, out_2?
 ])
-# ValueError: Agent 'split' has no default outport
+# ValueError: Agent 'split' has no default outbox
 ```
 
 #### Explicit Syntax (Dot Notation)
@@ -142,8 +142,8 @@ def parse_from(node):
     1. PortReference: Use explicit port
     2. Agent with default_outport: Use default
     3. Agent without default: Error (must use explicit)
-    4. Network with single outport: Use that port
-    5. Network with multiple outports: Error (must use explicit)
+    4. Network with single outbox: Use that port
+    5. Network with multiple outboxes: Error (must use explicit)
     """
     if isinstance(node, PortReference):
         return node.agent, node.port_name
@@ -152,18 +152,18 @@ def parse_from(node):
         port = node.default_outport
         if port is None:
             raise ValueError(
-                f"Agent '{node.name}' has no default outport. "
+                f"Agent '{node.name}' has no default outbox. "
                 f"Use explicit syntax: {node.name}.port_name"
             )
         return node, port
     
     elif isinstance(node, Network):
-        if len(node.outports) != 1:
+        if len(node.outboxes) != 1:
             raise ValueError(
-                f"Network '{node.name}' has {len(node.outports)} outports. "
+                f"Network '{node.name}' has {len(node.outboxes)} outboxes. "
                 f"Use explicit syntax: {node.name}.port_name"
             )
-        return node, node.outports[0]
+        return node, node.outboxes[0]
     
     else:
         raise TypeError(
@@ -190,18 +190,18 @@ def parse_to(node):
         port = node.default_inport
         if port is None:
             raise ValueError(
-                f"Agent '{node.name}' has no default inport. "
+                f"Agent '{node.name}' has no default inbox. "
                 f"Use explicit syntax: {node.name}.port_name"
             )
         return node, port
     
     elif isinstance(node, Network):
-        if len(node.inports) != 1:
+        if len(node.inboxes) != 1:
             raise ValueError(
-                f"Network '{node.name}' has {len(node.inports)} inports. "
+                f"Network '{node.name}' has {len(node.inboxes)} inboxes. "
                 f"Use explicit syntax: {node.name}.port_name"
             )
-        return node, node.inports[0]
+        return node, node.inboxes[0]
     
     else:
         raise TypeError(
@@ -256,12 +256,12 @@ PortReferences are created automatically by Agent's `__getattr__`:
 # In Agent class:
 def __getattr__(self, name: str):
     """Enable dot notation for ports."""
-    if name in self.inports or name in self.outports:
+    if name in self.inboxes or name in self.outboxes:
         return PortReference(agent=self, port_name=name)
     
     raise AttributeError(
         f"'{type(self).__name__}' has no attribute '{name}'. "
-        f"Valid ports: inports={self.inports}, outports={self.outports}"
+        f"Valid ports: inboxes={self.inboxes}, outboxes={self.outboxes}"
     )
 ```
 
@@ -290,7 +290,7 @@ g = network([
 ```python
 # Invalid port
 splitter.out_5  # AttributeError: 'Split' has no attribute 'out_5'
-                # Valid ports: inports=['in_'], outports=['out_0', 'out_1', 'out_2']
+                # Valid ports: inboxes=['in_'], outboxes=['out_0', 'out_1', 'out_2']
 
 # Typo
 splitter.output_0  # AttributeError: 'Split' has no attribute 'output_0'
@@ -373,20 +373,20 @@ class MergeAsynch(Agent):
 ```python
 # Component with single external port - can use default
 component = Network(
-    inports=["in_"],
-    outports=["out_"],
+    inboxes=["in_"],
+    outboxes=["out_"],
     ...
 )
 
 g = network([
-    (source, component),  # ✓ Works: component has single inport
-    (component, sink)     # ✓ Works: component has single outport
+    (source, component),  # ✓ Works: component has single inbox
+    (component, sink)     # ✓ Works: component has single outbox
 ])
 
 # Component with multiple ports - must be explicit
 multi_component = Network(
-    inports=["data_in", "config_in"],
-    outports=["results", "errors"],
+    inboxes=["data_in", "config_in"],
+    outboxes=["results", "errors"],
     ...
 )
 
@@ -487,7 +487,7 @@ g = network([
 
 **Error:**
 ```
-ValueError: Agent 'classifier' has no default outport.
+ValueError: Agent 'classifier' has no default outbox.
 
 The agent has multiple output ports:
   - out_0
@@ -511,8 +511,8 @@ splitter.out_5  # Port doesn't exist
 AttributeError: 'Split' object has no attribute 'out_5'
 
 Valid ports for agent 'classifier':
-  Inports:  ['in_']
-  Outports: ['out_0', 'out_1', 'out_2']
+  Inboxes:  ['in_']
+  Outboxes: ['out_0', 'out_1', 'out_2']
 
 Did you mean one of these?
   classifier.out_0

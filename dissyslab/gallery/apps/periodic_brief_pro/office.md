@@ -9,7 +9,7 @@ Eve is an entity_extractor.
 Tom is a topic_tagger.
 Sam is an urgency_classifier.
 Felix is a relevance_filter.
-Sync is a synchronizer(inports=["entity_extractor", "topic_tagger", "urgency_classifier"]).
+Sync is a synchronizer(inboxes=["entity_extractor", "topic_tagger", "urgency_classifier"]).
 Riley is a summary_writer.
 Mail is a mail_summariser.
 

@@ -61,9 +61,9 @@ we_work_remotely┘    │                                    ├→ matched_job
 
 The office demonstrates:
 
-- **Conditional branch.** Alex has two output ports (`relevant`,
+- **Conditional branch.** Alex has two outboxes (`relevant`,
   `discard`); each goes to a different downstream block.
-- **Fan-out.** Morgan's single `matched_jobs` port fans out to seven
+- **Fan-out.** Morgan's single `matched_jobs` outbox fans out to seven
   destinations — three recorders, the console display, and three
   follow-on LLM agents — all evaluated in parallel.
 - **File-included prompts.** matcher, tailor, and drafter each embed

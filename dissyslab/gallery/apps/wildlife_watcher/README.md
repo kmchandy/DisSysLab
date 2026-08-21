@@ -107,14 +107,14 @@ office can use it.
 > `dissyslab/gallery/apps/loudness_monitor/roles/threshold_detector.py`
 > as the pattern for the boilerplate.*
 >
-> *The agent receives one message per image on inport `in_`.
+> *The agent receives one message per image on inbox `in_`.
 > Each message has shape*
 >
 > >     {"filename": str, "pixels": np.ndarray (H,W,3) float [0,1],
 > >      "width": int, "height": int}
 >
 > *For each message, run MobileNetV3-Small from torchvision
-> (pretrained on ImageNet) and emit one message on outport `out_`
+> (pretrained on ImageNet) and emit one message on outbox `out_`
 > with the top prediction, top-5 list, and a category flag.*
 >
 > *Category is `"animal"` if the top class index is below 398

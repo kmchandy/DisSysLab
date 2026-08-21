@@ -63,9 +63,9 @@ LOW urgency; a bill due today is the reverse.
 
 Both degrade gracefully — put them after any subset of the annotators.
 
-## Filters — two outports, and this is the important part
+## Filters — two outboxes, and this is the important part
 
-| Role | Outports | Decides |
+| Role | Outboxes | Decides |
 |---|---|---|
 | `relevance_filter` | `keep`, `discard` | whether an item is worth forwarding at all |
 | `evaluator` | `publish`, `revise` | whether a written briefing is good enough, or needs another pass |
@@ -102,10 +102,10 @@ straight line.
 
 | Name | Declared as | Does |
 |---|---|---|
-| `synchronizer` | `synchronizer(inports=["a","b"])` | waits for one message on each named inport and joins them into a single message. The fan-in half of a fan-out |
+| `synchronizer` | `synchronizer(inboxes=["a","b"])` | waits for one message on each named inbox and joins them into a single message. The fan-in half of a fan-out |
 | `gate` | `gate(data="data", control="control")` | admits one item at a time, releasing the next only when told. **This is what lets a loop terminate** — `dsl check`'s W7 warns about a loop with no gate |
-| `select` | `select(inports=[...], command="command")` | a commanded traffic controller: reads whichever inport its state points at |
-| `router` | `router(routes=[...])` | forwards each message to a named outport by rule |
+| `select` | `select(inboxes=[...], command="command")` | a commanded traffic controller: reads whichever inbox its state points at |
+| `router` | `router(routes=[...])` | forwards each message to a named outbox by rule |
 | `record` | `record(initial={...})` | a shared keeper — store and reply, for state several agents consult |
 | `deduplicator` | `deduplicator(by="url")` | drops repeats by a named field |
 

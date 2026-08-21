@@ -246,7 +246,7 @@ Take a look at the folder you're in:
 
 ```
 my_briefing/
-├── office.md         ← the org chart: source, agent, sink
+├── office.md         ← the network: source, agent, sink
 └── roles/
     └── analyst.md    ← what the agent does, in plain English
 ```

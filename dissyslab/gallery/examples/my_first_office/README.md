@@ -19,7 +19,7 @@ hacker_news ──→  Alex  ──→  console
 
 ```
 my_first_office/
-    office.md          ← the org chart: source, agent, sink
+    office.md          ← the network: source, agent, sink
     roles/
         analyst.md     ← what the agent does, in plain English
 ```
@@ -115,7 +115,7 @@ learning software might care.
 Send to briefing.
 ```
 
-## The org chart
+## The network
 
 The whole office, in one file:
 

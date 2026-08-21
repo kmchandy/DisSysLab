@@ -5,7 +5,7 @@ Sinks: jsonl_recorder(path='outcomes.jsonl'), console_printer
 
 Agents:
 TICKETS is a tickets.
-SELECT is a select(inports=['ticket', 'manager_reply'], command='command').
+SELECT is a select(inboxes=['ticket', 'manager_reply'], command='command').
 CLERK is a clerk.
 MANAGER is a manager.
 

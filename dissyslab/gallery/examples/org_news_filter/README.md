@@ -23,7 +23,7 @@ bbc_world  ─┘          └→  filtered_output.jsonl  (everything else)
 
 ```
 news_filter/
-    office.md          ← the org chart: sources, agent, sinks
+    office.md          ← the network: sources, agent, sinks
     roles/
         filter.md      ← what Felix does, in plain English
 ```
@@ -97,7 +97,7 @@ many editors and many copywriters. A role is defined once, in
 `roles/<role>.md`. Each agent in `office.md` is then declared with
 "X is a <role>".
 
-## The org chart
+## The network
 
 The whole office, in one file:
 

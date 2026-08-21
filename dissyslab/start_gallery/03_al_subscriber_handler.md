@@ -90,7 +90,7 @@ EntityExtractor   is an entity_extractor.
 SeverityScorer    is a severity_classifier.
 TopicTagger       is a topic_tagger.
 Geolocator        is a geolocator.
-Sync              is a synchronizer(inports=["entities", "severity", "topic", "location"]).
+Sync              is a synchronizer(inboxes=["entities", "severity", "topic", "location"]).
 SubscriberHandler is a subscriber_handler.
 
 Connections:
@@ -116,7 +116,7 @@ by Sync's merged enriched-news records and webhook's
 request-subscription / cancel-subscription messages, told apart by
 shape. Not a coordinator: no gate, merge_synch, or select needed.
 
-Two outports: "monitor" gets every enriched item, unconditionally --
+Two outboxes: "monitor" gets every enriched item, unconditionally --
 a system-monitor firehose view, separate from any subscriber. Only
 "deliver" is per-subscription, one combined message per item per
 active subscriber, containing only the fields that subscription
@@ -178,8 +178,8 @@ def _factory() -> Role:
 
 role = AgentRoleEntry(
     name="subscriber_handler",
-    in_ports=("in_",),
-    out_ports=("monitor", "deliver"),
+    inboxes=("in_",),
+    outboxes=("monitor", "deliver"),
     factory=_factory,
     description=(
         "Stores each enriched item once and pushes a combined "

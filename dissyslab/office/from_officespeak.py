@@ -75,7 +75,7 @@ def _require_single_out(agent: AgentSpec) -> None:
 def _translate_merge_synch(agent: AgentSpec) -> Tuple[str, Dict[str, Any]]:
     _require_single_out(agent)
     if not agent.in_ports:
-        raise GeneratorError(f"merge_synch agent {agent.name!r} has no declared inports")
+        raise GeneratorError(f"merge_synch agent {agent.name!r} has no declared inboxes")
     return "synchronizer", {"inports": list(agent.in_ports)}
 
 

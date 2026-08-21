@@ -43,7 +43,7 @@ reads the first problem from `problems.jsonl` and broadcasts it to
 the three panellists. Each panellist outputs a JSON object **wrapped
 under a top-level key equal to its own name** — Qwen emits
 `{"qwen": {...}}`, GPT emits `{"gpt": {...}}`, etc. The synchronizer
-waits for one message on each of its three named inports and merges
+waits for one message on each of its three named inboxes and merges
 the three dicts into one (`dict.update`, same primitive as
 situation_room — the keys are disjoint, so all three payloads
 survive the merge).
@@ -159,7 +159,7 @@ or when you want to introduce a domain-specialist persona):
    (the same imperative block at the top, the same `contract:
    structured` front matter, just the agent name swapped).
 2. In `office.md`: add the agent declaration and `'s AI is`
-   line, add `from_<name>` to the synchronizer inports, add the
+   line, add `from_<name>` to the synchronizer inboxes, add the
    agent to `Sasha's out`, add `<Name>'s out is Sync's from_<name>.`,
    add the agent to `Riley's continue`.
 3. In `roles/moderator.md`: bump the panellist count, add the new
@@ -253,7 +253,7 @@ moderator-led vs leaderless on the same questions.
 
 ## Files
 
-- `office.md` — the six-agent wiring with two named output ports
+- `office.md` — the six-agent wiring with two named outboxes
   on Riley (`continue` and `finish`) and three `<Agent>'s AI is
   <backend>.` declarations.
 - `problems.jsonl` — the starter problem bank. Edit it (or place

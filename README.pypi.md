@@ -62,9 +62,9 @@ curl -sSf https://raw.githubusercontent.com/kmchandy/DisSysLab/main/install.sh |
 ## What is an office?
 
 An office is a team of specialist agents with **roles**. Connections
-between agents are specified by an **org chart**. You specify each
+between agents are specified by an **network**. You specify each
 role as a job description in English (or as a Python function for
-deterministic work), and you specify the org chart in English.
+deterministic work), and you specify the network in English.
 
 A single role file looks like this:
 

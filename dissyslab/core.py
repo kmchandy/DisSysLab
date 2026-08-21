@@ -554,14 +554,14 @@ class Agent(ABC):
         """
         if outport not in self.outports:
             raise ValueError(
-                f"Port '{outport}' is not a valid outport of agent '{self.name}'. "
-                f"Valid outports: {self.outports}"
+                f"'{outport}' is not a valid outbox of agent '{self.name}'. "
+                f"Valid outboxes: {self.outports}"
             )
 
         q = self.out_q[outport]
         if q is None:
             raise ValueError(
-                f"Outport '{outport}' of agent '{self.name}' is not connected."
+                f"Outbox '{outport}' of agent '{self.name}' is not connected."
             )
 
         if msg is None:
@@ -603,14 +603,14 @@ class Agent(ABC):
         """
         if inport not in self.inports:
             raise ValueError(
-                f"Port '{inport}' is not a valid inport of agent '{self.name}'. "
-                f"Valid inports: {self.inports}"
+                f"'{inport}' is not a valid inbox of agent '{self.name}'. "
+                f"Valid inboxes: {self.inports}"
             )
 
         q = self.in_q[inport]
         if q is None:
             raise ValueError(
-                f"Inport '{inport}' of agent '{self.name}' is not connected."
+                f"Inbox '{inport}' of agent '{self.name}' is not connected."
             )
 
         while True:
@@ -1204,5 +1204,5 @@ class Agent(ABC):
 
         raise AttributeError(
             f"'{type(self).__name__}' object has no attribute '{name}'. "
-            f"Valid ports: inports={self.inports}, outports={self.outports}"
+            f"Valid mailboxes: inboxes={self.inports}, outboxes={self.outports}"
         )

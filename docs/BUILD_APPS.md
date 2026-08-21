@@ -26,7 +26,7 @@ The path through this guide:
 
 1. The shape of an app — three files in a folder.
 2. Picking your data — what's in the sources/sinks catalogue.
-3. Designing the org chart — roles, what they decide, how they hand off.
+3. Designing the network — roles, what they decide, how they hand off.
 4. Writing prompts that route correctly.
 5. Wiring it up in `office.md`.
 6. Running and iterating.
@@ -178,7 +178,7 @@ options:
 
 ---
 
-## 3. Designing the org chart
+## 3. Designing the network
 
 The hardest part of building an app is deciding what the agents
 should *be*. A good design splits the work into roles where each
@@ -272,7 +272,7 @@ The framework reads three things from your prompt file:
 
 1. The `# Role: <name>` header — that's the role's name.
 2. Every `Send to <port>` phrase in the body — those are the
-   role's *outports*. Order matters; the first one is the
+   role's *outboxes*. Order matters; the first one is the
    default.
 3. Everything else is the system prompt the LLM sees.
 
@@ -288,7 +288,7 @@ If yes, send to keep.
 Otherwise send to discard.
 ```
 
-The two `Send to` lines turn into outports `keep` and `discard`.
+The two `Send to` lines turn into outboxes `keep` and `discard`.
 The runtime appends a JSON contract to the prompt automatically:
 
 ```
@@ -575,8 +575,8 @@ def _build_agent():
 
 role = AgentRoleEntry(
     name="extract_ticker",
-    in_ports=("in_",),
-    out_ports=("keep", "skip"),
+    inboxes=("in_",),
+    outboxes=("keep", "skip"),
     factory=_build_agent,
 )
 ```

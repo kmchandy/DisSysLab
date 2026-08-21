@@ -142,9 +142,9 @@ installed version, that is expected and not your fault — it is newer than the
 last release. Ask it to carry on without the check, or to install the current
 version from GitHub. **Do not let it "fix" your installation by editing the
 installed package**; that gives you a copy of the tool nobody else has, and
-problems nobody else can reproduce. It reads your org chart and reports every structural
+problems nobody else can reproduce. It reads your network and reports every structural
 problem at once — an agent nothing can reach, work that reaches no sink, a
-sink nothing feeds, a port nothing writes to. It takes a second and it saves
+sink nothing feeds, an inbox nothing writes to. It takes a second and it saves
 afternoons.
 
 **When it misbehaves:**
@@ -318,7 +318,7 @@ completely, because you built it. Then the questions get sharp:
   when everything is still. The answer is the Chandy–Lamport distributed
   snapshot, and `recovery_demo` runs it.
 - **How do you tell "still working" from "stuck forever"?** Some faults you
-  can see in the org chart before running anything; `dsl check` finds those.
+  can see in the network before running anything; `dsl check` finds those.
   Others depend on which messages actually arrived and in what order, and no
   amount of staring at the diagram will reveal them. That boundary — what is
   knowable from the structure versus only from the execution — is one of the

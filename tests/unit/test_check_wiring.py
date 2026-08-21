@@ -227,3 +227,38 @@ def test_shipped_offices_pass(office_name):
     report = check_office_dir(d)
     errors = [f for f in report.findings if f.severity == "error"]
     assert not errors, format_report(report)
+
+
+# ── The inboxes / inports alias ──────────────────────────────────────────
+
+
+def test_both_mailbox_spellings_normalise_to_one():
+    """office.md now says ``inboxes=``; the framework still calls the
+    same thing ``inports`` internally. RoleRef.__post_init__ is the one
+    place every office.md role reference passes through, so normalising
+    there means every consumer downstream sees a single spelling — and
+    an office written before the rename still compiles.
+    """
+    from dissyslab.office.office_spec import RoleRef
+
+    old = RoleRef(
+        agent_name="Sync", role_name="synchronizer",
+        args=(("inports", ["a", "b"]),),
+    )
+    new = RoleRef(
+        agent_name="Sync", role_name="synchronizer",
+        args=(("inboxes", ["a", "b"]),),
+    )
+
+    assert old.args == new.args == (("inports", ["a", "b"]),)
+
+
+def test_the_alias_leaves_other_arguments_alone():
+    from dissyslab.office.office_spec import RoleRef
+
+    ref = RoleRef(
+        agent_name="Sasha", role_name="deduplicator",
+        args=(("by", "url"), ("outboxes", ["keep", "drop"])),
+    )
+
+    assert ref.args == (("by", "url"), ("outports", ["keep", "drop"]))

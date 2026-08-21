@@ -17,7 +17,7 @@ notifications go to the recycle bin.
 
 ```
 gmail_monitor/
-    office.md          ← the org chart: source, agent, sink
+    office.md          ← the network: source, agent, sink
     roles/
         analyst.md     ← what the agent does, in plain English
 ```

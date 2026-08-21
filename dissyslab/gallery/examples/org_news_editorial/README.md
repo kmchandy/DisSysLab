@@ -34,7 +34,7 @@ bbc_world  ─┼→  Susan  ←────────────────
 
 ```
 news_editorial/
-    office.md              ← the org chart: sources, agents, sinks
+    office.md              ← the network: sources, agents, sinks
     roles/
         editor.md          ← what Susan does, in plain English
         writer.md          ← what Anna does, in plain English
@@ -128,7 +128,7 @@ requires less change. Preserve all sections from the input document.
 Always send to client.
 ```
 
-## The org chart
+## The network
 
 The whole office, in one file:
 

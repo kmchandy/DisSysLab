@@ -132,8 +132,8 @@ The same applies to `jsonl_recorder`, `slack_sink`, and `gmail_sink` variants â€
 use a distinct name per destination.
 
 **`discard` is a real sink.** Routing a filter's rejects to `discard` is how
-you say "deliberately dropped" rather than leaving an outport unwired. An
-unwired outport is a fault; `discard` is a decision.
+you say "deliberately dropped" rather than leaving an outbox unwired. An
+unwired outbox is a fault; `discard` is a decision.
 
 **But `discard` also destroys your only evidence.** A filter that drops the
 wrong thing produces an office that checks clean, runs clean, and answers

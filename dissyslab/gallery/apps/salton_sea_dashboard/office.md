@@ -28,7 +28,7 @@ Sources: salton_wind, synthetic_salton_h2s
 Sinks: console_printer
 
 Agents:
-JOIN is a synchronizer(inports=['wind', 'h2s']).
+JOIN is a synchronizer(inboxes=['wind', 'h2s']).
 DASHBOARD is a dashboard_formatter.
 
 Connections:

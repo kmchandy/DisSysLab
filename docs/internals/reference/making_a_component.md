@@ -7,14 +7,14 @@ The `as_component` function transforms a flat graph into a hierarchical Network 
 ## Function Signature
 
 ```python
-def as_component(graph, inports=None, outports=None):
+def as_component(graph, inboxes=None, outboxes=None):
     """
     Convert a graph into a reusable Network component.
     
     Args:
         graph: An existing network/graph to wrap as a component
-        inports: List of (external_name, node_or_port) tuples defining inputs
-        outports: List of (external_name, node_or_port) tuples defining outputs
+        inboxes: List of (external_name, node_or_port) tuples defining inputs
+        outboxes: List of (external_name, node_or_port) tuples defining outputs
     
     Returns:
         Network: A Network object with external ports that can be nested in other networks
@@ -44,8 +44,8 @@ We call `as_component` to create a reusable component:
 ```python
 component = as_component(
     inner,
-    inports=[("in_1", test_source_1), ("in_2", test_source_2)],
-    outports=[("out_1", test_sink_1), ("out_2", test_sink_2)]
+    inboxes=[("in_1", test_source_1), ("in_2", test_source_2)],
+    outboxes=[("out_1", test_sink_1), ("out_2", test_sink_2)]
 )
 ```
 
@@ -53,18 +53,18 @@ component = as_component(
 
 ## Step-by-Step Execution
 
-### Step 1: Parse inports to 4-tuples
+### Step 1: Parse inboxes to 4-tuples
 
 **Input:**
 ```python
-inports = [("in_1", test_source_1), ("in_2", test_source_2)]
+inboxes = [("in_1", test_source_1), ("in_2", test_source_2)]
 ```
 
 **Processing:**
 ```python
 # For ("in_1", test_source_1):
 agent = test_source_1
-port = "out_"  # (assuming default outport)
+port = "out_"  # (assuming default outbox)
 agent_name = "test_source_1"
 → ("external", "in_1", "test_source_1", "out_")
 
@@ -84,18 +84,18 @@ parsed_inports = [
 
 ---
 
-### Step 2: Parse outports to 4-tuples
+### Step 2: Parse outboxes to 4-tuples
 
 **Input:**
 ```python
-outports = [("out_1", test_sink_1), ("out_2", test_sink_2)]
+outboxes = [("out_1", test_sink_1), ("out_2", test_sink_2)]
 ```
 
 **Processing:**
 ```python
 # For ("out_1", test_sink_1):
 agent = test_sink_1
-port = "in_"  # (assuming default inport)
+port = "in_"  # (assuming default inbox)
 agent_name = "test_sink_1"
 → ("test_sink_1", "in_", "external", "out_1")
 
@@ -131,7 +131,7 @@ new_edges = [
 agents_to_remove = set()
 ```
 
-#### Processing inports:
+#### Processing inboxes:
 
 **For** `("external", "in_1", "test_source_1", "out_")`:
 - Find edges where `fn == "test_source_1"` and `fp == "out_"`
@@ -149,7 +149,7 @@ agents_to_remove.add("test_source_1")
 agents_to_remove.add("test_source_2")
 ```
 
-#### Processing outports:
+#### Processing outboxes:
 
 **For** `("test_sink_1", "in_", "external", "out_1")`:
 - Find edges where `tn == "test_sink_1"` and `tp == "in_"`
@@ -231,8 +231,8 @@ outport_names = ["out_1", "out_2"]
 component = Network(
     blocks=new_blocks,      # A, B, C, ..., X, Y, Z (no test sources/sinks)
     connections=new_edges,  # edges with "external" references
-    inports=["in_1", "in_2"],
-    outports=["out_1", "out_2"]
+    inboxes=["in_1", "in_2"],
+    outboxes=["out_1", "out_2"]
 )
 ```
 
@@ -307,7 +307,7 @@ All component blocks get prefixed with "component.":
 
 The compiler collapses chains of connections through "external" boundaries:
 
-**Inport resolutions:**
+**Inbox resolutions:**
 
 ```python
 ("agent_1", "port_1", "component", "in_1") + ("component", "in_1", "component.A", "in_")
@@ -320,7 +320,7 @@ The compiler collapses chains of connections through "external" boundaries:
 → ("agent_3", "port_3", "component.C", "in_")
 ```
 
-**Outport resolutions:**
+**Outbox resolutions:**
 
 ```python
 ("component.X", "out_", "component", "out_1") + ("component", "out_1", "agent_4", "port_4")

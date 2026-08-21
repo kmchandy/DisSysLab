@@ -21,7 +21,7 @@ across the network.
 
 ```
 webhook_listener/
-    office.md          ← the org chart: source, agent, sinks
+    office.md          ← the network: source, agent, sinks
     roles/
         analyst.md     ← what the agent does, in plain English
 ```

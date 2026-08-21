@@ -98,8 +98,8 @@ inner.run_network()  # Test it
 
 # Convert to component
 component = inner.as_component(
-    inports=[("in_", source)],
-    outports=[("out_", sink)]
+    inboxes=[("in_", source)],
+    outboxes=[("out_", sink)]
 )
 
 # Use in larger network
@@ -153,7 +153,7 @@ outer = network([
 **Key Concepts:**
 - **Blocks**: Dictionary mapping names to Agent/Network instances
 - **Connections**: List of 4-tuples `(from_name, from_port, to_name, to_port)`
-- **External Ports**: Declared inports/outports for component composition
+- **External Ports**: Declared inboxes/outboxes for component composition
 - **Nested Networks**: Recursive flattening during compilation
 
 **Compilation Pipeline:**
@@ -271,8 +271,8 @@ inner.run_network()  # Verify it works
 
 # Step 2: Convert to reusable component
 component = inner.as_component(
-    inports=[("in_", test_source)],
-    outports=[("out_", test_sink)],
+    inboxes=[("in_", test_source)],
+    outboxes=[("out_", test_sink)],
     name="text_processor"
 )
 
@@ -302,8 +302,8 @@ pipeline = network([
 
 # Entire pipeline can become a component
 mega_component = pipeline.as_component(
-    inports=[("in_", source)],
-    outports=[("out_", sink)]
+    inboxes=[("in_", source)],
+    outboxes=[("out_", sink)]
 )
 ```
 
@@ -398,8 +398,8 @@ Provide name parameter: Source(fn=..., name="my_source")
 
 **Dangling port:**
 ```
-TypeError: Outport 'out_' of agent 'cleaner' is not connected.
-All outports must be connected exactly once.
+TypeError: Outbox 'out_' of agent 'cleaner' is not connected.
+All outboxes must be connected exactly once.
 
 Available connections:
   ('cleaner', 'out_', ???, ???)
@@ -427,8 +427,8 @@ To use custom broadcast/merge logic, create agents explicitly.
 
 **Port doesn't exist:**
 ```
-ValueError: Agent 'splitter' has no outport 'out_5'
-Valid outports: ['out_0', 'out_1', 'out_2']
+ValueError: Agent 'splitter' has no outbox 'out_5'
+Valid outboxes: ['out_0', 'out_1', 'out_2']
 
 Did you mean one of these?
   splitter.out_0
@@ -523,8 +523,8 @@ class MyCustomAgent(Agent):
     def __init__(self, *, name, param1, param2):
         super().__init__(
             name=name,
-            inports=["in_"],
-            outports=["out_", "error_"]  # Multiple outputs
+            inboxes=["in_"],
+            outboxes=["out_", "error_"]  # Multiple outputs
         )
         self.param1 = param1
         self.param2 = param2

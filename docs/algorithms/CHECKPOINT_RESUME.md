@@ -7,7 +7,7 @@ DisSysLab is a framework for **sense-and-respond systems** —
 a network of agents that ingest streams of inputs, operate
 on them, and produce streams of outputs. A network of agents
 is represented in DisSysLab as an office of agents, and the
-network structure is represented by an org chart.
+network structure is represented by an graph.
 A long-running office must recover from crashes. 
 This document describes how DisSysLab uses a global snapshot
 algorithm to take a distributed snapshot. 
@@ -34,7 +34,7 @@ We use three adaptations to the protocol:
    
    ***State Transitions***
    NORMAL          ── _Checkpoint(N)         ──►  RECORDING
-RECORDING       ── all inports closed     ──►  NORMAL          (and send _Reply(N))
+RECORDING       ── all inboxes closed     ──►  NORMAL          (and send _Reply(N))
 NORMAL          ── _PrepareRecover(N)     ──►  RECOVER_WAITING (and load + send _RecoverReady)
 RECORDING       ── _PrepareRecover(N)     ──►  RECOVER_WAITING (abandon in-flight snapshot; load + reply)
 RECOVER_WAITING ── _StartRecover(N)       ──►  NORMAL
@@ -80,8 +80,8 @@ below.
 
 - **N** — snapshot number, a monotonically increasing integer.
 - **Edge** — a 4-tuple `(Y, α, X, β)` where `Y` is the sending
-  agent, `α` is `Y`'s outport, `X` is the receiving agent, `β`
-  is `X`'s inport. The framework's flattened graph is a set of
+  agent, `α` is `Y`'s outbox, `X` is the receiving agent, `β`
+  is `X`'s inbox. The framework's flattened graph is a set of
   edges; each edge corresponds to one FIFO queue.
 - **checkpoint(N)** — the marker payload, an `_OsMessage`
   subclass. May travel on the OS agent's control channels
@@ -94,9 +94,9 @@ below.
 - **prepare_recover(N)** — an `_OsMessage` subclass sent by the
   OS manager to every source's input queue at the start of a
   recovery from snapshot N. Sources propagate it on their
-  outports; downstream agents receive it on data inports. On
+  outboxes; downstream agents receive it on data inboxes. On
   receipt each agent loads its checkpoint-N state, fills the
-  per-inport recovery buffer, and enters RECOVER_WAITING.
+  per-inbox recovery buffer, and enters RECOVER_WAITING.
   Sources and sinks additionally use this message as the moment
   at which to record `ptr_to_now` before entering playback (for
   sources) or skip (for sinks).
@@ -106,7 +106,7 @@ below.
   back-channel.
 - **start_recover(N)** — OS broadcast (only after every agent's
   recover_ready has been received) sent to each source's input
-  queue. Sources propagate it on their outports. Each agent on
+  queue. Sources propagate it on their outboxes. Each agent on
   receipt exits RECOVER_WAITING and resumes normal execution.
 - **L, L'** — conceptual endless lists representing the items a
   source reads from the world and the items a sink writes to the
@@ -133,7 +133,7 @@ below.
 - `N`: the next snapshot number. Initially `N = 0`.
 - For each agent `X`: the most recently recorded state of `X`.
   Initially empty.
-- For each inport `β` of each agent `X`: the most recently
+- For each inbox `β` of each agent `X`: the most recently
   recorded queue state of the inbound edge into `β`. Initially
   empty.
 
@@ -154,11 +154,11 @@ while True:
 The OS manager only puts checkpoint(N) into source input queues.
 The marker propagates downstream because every agent that
 receives checkpoint(N) for the first time forwards checkpoint(N)
-on every one of its outports. Sources have no inports of their
+on every one of its outboxes. Sources have no inboxes of their
 own, so they receive checkpoint(N) only via their input queue
 (which exists purely so the OS manager has a queue to put into;
 it is the same kind of object as every non-source agent's first
-inport queue).
+inbox queue).
 
 The same loop body is used for periodic, manual, and
 error-driven snapshots: a periodic snapshot fires when the delay
@@ -175,16 +175,16 @@ conceptually separate layers:
 
 - **The client layer** is the application code the agent author
   wrote: `rms_meter`, `topic_tagger`, the per-app and library
-  roles. It receives data messages on its data inports, processes
-  them, and emits data messages on its outports. It does not know
+  roles. It receives data messages on its data inboxes, processes
+  them, and emits data messages on its outboxes. It does not know
   about checkpoint(N), reply(N), or the snapshot algorithm at
   all. It runs continuously throughout the lifetime of the office
   and is never paused or signalled by the snapshot.
 
 - **The OS layer** is framework infrastructure that wraps the
   client. It intercepts checkpoint(N) messages arriving on data
-  inports (the client never sees them); it injects checkpoint(N)
-  into outport queues directly (independent of client sends); it
+  inboxes (the client never sees them); it injects checkpoint(N)
+  into outbox queues directly (independent of client sends); it
   calls `X.save_state()` at the right moment; and it sends
   reply(N) on the back-channel to the OS agent. The OS layer is
   the only part of `X` that participates in the snapshot
@@ -193,7 +193,7 @@ conceptually separate layers:
 The OS layer does not block, pause, or interfere with the client
 layer. While the OS layer is collecting the snapshot, the client
 continues to process data messages exactly as it does at any
-other time. A data message arriving on an inport `β` during the
+other time. A data message arriving on an inbox `β` during the
 OS layer's recording window for `β` is processed by the client
 *and* copied (by the OS layer, as a side effect) into the
 channel-state recording for `β`; the client is unaware that the
@@ -209,20 +209,20 @@ continues unchanged.
 
 A source `X` receives checkpoint(N) on its input queue, put there
 directly by the OS manager. A non-source agent `X` receives
-checkpoint(N) on one of its data inports, where it was placed by
+checkpoint(N) on one of its data inboxes, where it was placed by
 an upstream agent that had previously received checkpoint(N) and
-forwarded it on every outport. The OS layer of `X` intercepts the
+forwarded it on every outbox. The OS layer of `X` intercepts the
 message in either case; it never reaches the client.
 
 Multi-worker agents (`MergeAsynch`) may forward checkpoint(N) on
-the same outport more than once — one forward per worker thread
-that processes a checkpoint(N) on its inport. The downstream
+the same outbox more than once — one forward per worker thread
+that processes a checkpoint(N) on its inbox. The downstream
 receiver is idempotent on duplicate checkpoint(N) arrivals on an
-inport: the first checkpoint(N) triggers the subsequent-marker
-branch (closing that inport's recording), and any later
-checkpoint(N) on the same inport is discarded as duplicate. This
-relaxes "forwarding is exactly-once per outport" to "forwarding
-is at-least-once per outport," which simplifies the multi-worker
+inbox: the first checkpoint(N) triggers the subsequent-marker
+branch (closing that inbox's recording), and any later
+checkpoint(N) on the same inbox is discarded as duplicate. This
+relaxes "forwarding is exactly-once per outbox" to "forwarding
+is at-least-once per outbox," which simplifies the multi-worker
 handler without changing correctness.
 
 1. **Idempotency.** If `X` is already recording for snapshot
@@ -237,9 +237,9 @@ handler without changing correctness.
    sent to OS).
 2. **Save own state.** `X` calls its `save_state()` method and
    stores the returned object in a local variable.
-3. **Forward on outports.** For each of `X`'s outports `α'`,
+3. **Forward on outboxes.** For each of `X`'s outboxes `α'`,
    `X` sends checkpoint(N) on `α'`. This send happens before
-   `X` sends any further data messages on that outport, so the
+   `X` sends any further data messages on that outbox, so the
    marker is FIFO-ordered ahead of post-snapshot traffic on each
    outgoing edge.
 4. **Checkpoint incoming queues.** `X` calls the
@@ -253,26 +253,26 @@ handler without changing correctness.
 Throughout steps 1–5 the client layer of `X` is processing data
 messages normally; it does not pause, resume, or change behaviour
 in any way. The OS layer does steps 1–5 in parallel with the
-client. A data message arriving on an inport `β` after the OS
+client. A data message arriving on an inbox `β` after the OS
 layer has finalised the channel-state recording for `β` plays no
 part in snapshot N; it is a post-snapshot message and the client
 processes it as it would at any other time.
 
 ### Special cases
 
-- **Sources** (agents with no inports). `inports_checkpointing`
+- **Sources** (agents with no inboxes). `inports_checkpointing`
   is trivially empty and returns immediately. Sources still
-  forward checkpoint(N) on their outports.
-- **Sinks** (agents with no outports). Step 3 is trivially empty.
+  forward checkpoint(N) on their outboxes.
+- **Sinks** (agents with no outboxes). Step 3 is trivially empty.
   Sinks still record channel state for their inbound edges in
   step 4.
-- **Agents with both inports and outports.** All four steps apply
+- **Agents with both inboxes and outboxes.** All four steps apply
   in the order given.
 
 ## inports_checkpointing subroutine
 
 Let `incoming(X)` be the set of edges `(Y, α, X, β)` of the
-flattened graph. For each `β` in the inports of `X`, the
+flattened graph. For each `β` in the inboxes of `X`, the
 subroutine records the queue state of the inbound edge to `β`.
 
 ```
@@ -326,11 +326,11 @@ restore the agent's state.
 3. Start the agent threads.
 4. The OS manager puts prepare_recover(N) in each source's input
    queue. Each source forwards prepare_recover(N) on every
-   outport, so the message propagates downstream by the same
+   outbox, so the message propagates downstream by the same
    induction as checkpoint(N).
 5. On receiving prepare_recover(N), each agent loads its
    checkpoint-N state via `load_state` from disk, fills a
-   per-inport recovery buffer from the snapshot's channel-state
+   per-inbox recovery buffer from the snapshot's channel-state
    files for its incoming edges, sends recover_ready(N, agent)
    on the back-channel, and enters RECOVER_WAITING. In addition:
    each source records `ptr_to_now` (the last log entry written
@@ -340,10 +340,10 @@ restore the agent's state.
    from every agent.
 7. The OS manager puts start_recover(N) in each source's input
    queue. Each source forwards start_recover(N) on every
-   outport. Each agent on receipt exits RECOVER_WAITING and
+   outbox. Each agent on receipt exits RECOVER_WAITING and
    resumes normal execution: client-layer `recv` returns
    buffered channel-state messages first, then falls through to
-   the inport queue.
+   the inbox queue.
 8. Each source enters its playback phase, reading entries
    `L[ptr(N)+1 .. ptr_to_now]` from its on-disk log and emitting
    them into the office. Each sink enters its skip phase,
@@ -368,8 +368,8 @@ property because:
 - Each agent records its state on its first checkpoint(N),
   regardless of whether that first marker arrived from the OS
   agent or from an upstream agent.
-- Each agent forwards checkpoint(N) on every outport before
-  sending any post-snapshot data on that outport. By FIFO order,
+- Each agent forwards checkpoint(N) on every outbox before
+  sending any post-snapshot data on that outbox. By FIFO order,
   the marker arrives at the downstream agent ahead of every
   post-snapshot message.
 - Channel state for an edge is recorded as exactly the data

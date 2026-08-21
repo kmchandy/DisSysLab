@@ -64,7 +64,7 @@ stocks's destination is Alex.   # each source streams to the same Alex
 Alex sees each tick as it arrives.
 
 **Filter for big moves only.** Edit
-[`roles/analyst.md`](roles/analyst.md) so Alex routes to two ports
+[`roles/analyst.md`](roles/analyst.md) so Alex routes to two outboxes
 — `big_move` and `quiet`:
 
 ```

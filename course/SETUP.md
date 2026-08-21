@@ -83,7 +83,7 @@ Riley's out is brief_html.
 
 That is the whole program. **Sources** fetch things from the world. **Sinks**
 do something with the result. **Agents** are workers, each with one job.
-**Connections** is the org chart — who sends what to whom.
+**Connections** is the network — who sends what to whom.
 
 Each agent's job is described in `roles/<name>.md`, in English, or in
 `roles/<name>.py`, in Python. Use English when the job needs judgment
@@ -106,7 +106,7 @@ Now describe what *you* want. Say something like:
 > office in a folder called `gig_watch`.
 
 Cowork writes `office.md` and the role files. Read what it wrote before you
-run it — you should be able to follow the org chart, because it is four
+run it — you should be able to follow the network, because it is four
 sections of English. If a piece is not what you meant, say so and it will
 change it.
 
@@ -124,7 +124,7 @@ Say:
 
 > Run `dsl check` on my office.
 
-This reads your org chart and reports problems in it *without running
+This reads your network and reports problems in it *without running
 anything*. It catches the mistakes that would otherwise waste your afternoon:
 
 - an agent nothing can reach, usually a name spelled two different ways
@@ -134,9 +134,9 @@ anything*. It catches the mistakes that would otherwise waste your afternoon:
 - a feedback loop with nothing to stop it
 
 It reports everything it finds at once, not just the first thing. If it says
-`-- no problems`, your org chart is sound.
+`-- no problems`, your network is sound.
 
-**What it cannot tell you.** `dsl check` reads the org chart, not the run. A
+**What it cannot tell you.** `dsl check` reads the network, not the run. A
 wiring diagram can be perfectly correct and the office can still get stuck,
 because getting stuck can depend on what actually arrives and in what order.
 That difference — what you can know from the diagram, versus what you can only

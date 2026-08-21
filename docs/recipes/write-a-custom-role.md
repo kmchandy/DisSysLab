@@ -77,7 +77,7 @@ Alex's briefing is console_printer.
 
 The mailbox `briefing` is wired from Alex to a sink. Change the
 mailbox name in the role file and you have to change it in the
-org chart too — they have to match.
+network too — they have to match.
 
 ## A role with multiple mailboxes
 
@@ -98,7 +98,7 @@ Otherwise send to discard.
 ```
 
 The role names two mailboxes: `keeper` and `discard`. The job
-description spells out the condition for each. The org chart
+description spells out the condition for each. The network
 wires each mailbox somewhere:
 
 ```
@@ -149,7 +149,7 @@ That's a complete office. Run it with `dsl run .`.
 
 A role is a plain-English job description in `roles/<role>.md`. It
 declares an identity, the job, and the mailboxes the agent sends
-to. The org chart in `office.md` assigns roles to agents and
+to. The network in `office.md` assigns roles to agents and
 connects each mailbox to a downstream agent or sink.
 
 ## Variations

@@ -78,7 +78,7 @@ unverified — see the caveat at the top of `02` for the long version.
   no new coordinator. Distilled from the real conversation that built
   `situation_room_requests`; also covers the "resolved at the
   description stage" vs. "correct once actually run" distinction (a
-  silently-unwired outport, a source with no `poll_interval`).
+  silently-unwired outbox, a source with no `poll_interval`).
 - `03_al_subscriber_handler.md` (Type B, authored Al persona, not a
   cold test — see the gap above) — the same compute-once/push pattern
   as `02`, reached with no wrong first draft this time, because Al's

@@ -57,7 +57,7 @@ Eve is an entity_extractor.
 Sam is a severity_classifier.
 Tom is a topic_tagger.
 Greta is a geolocator.
-Sync is a synchronizer(inports=["entities", "severity", "topic", "location"]).
+Sync is a synchronizer(inboxes=["entities", "severity", "topic", "location"]).
 Riley is a writer.
 
 Connections:
@@ -79,7 +79,7 @@ Riley's out is intelligence_display, jsonl_recorder_briefing.
 **What to take from it.** It has **no `roles/` directory** — every role is a
 shipped English role. That is the point: this whole application is one file.
 `Sasha's out is Eve, Sam, Tom, Greta.` is fan-out — the same article goes to
-all four. The synchroniser declares its four inports explicitly and every one
+all four. The synchroniser declares its four inboxes explicitly and every one
 is wired; declare four and wire three and it blocks forever. Blank lines group
 the connection stanzas and are ignored by the parser.
 
@@ -120,7 +120,7 @@ from dissyslab.office.library import AgentRoleEntry
 
 class _InsideClassifier(Agent):
     def __init__(self, name: str | None = None):
-        super().__init__(name=name, inports=["in_"], outports=["out_"])
+        super().__init__(name=name, inboxes=["in_"], outboxes=["out_"])
         self.count: int = 0
 
     def save_state(self):
@@ -140,8 +140,8 @@ class _InsideClassifier(Agent):
 
 role = AgentRoleEntry(
     name="inside_classifier",
-    in_ports=("in_",),
-    out_ports=("out",),
+    inboxes=("in_",),
+    outboxes=("out",),
     factory=_InsideClassifier,
 )
 ```
@@ -149,7 +149,7 @@ role = AgentRoleEntry(
 **What to take from it.** Estimating π by Monte Carlo is the excuse; the real
 subject is `save_state` / `load_state`, which is what lets the framework take
 a consistent distributed snapshot and resume after a crash. Note the port
-spelling asymmetry — `outports=["out_"]` in `Agent.__init__`, `out_ports=("out",)`
+spelling asymmetry — `outboxes=["out_"]` in `Agent.__init__`, `outboxes=("out",)`
 in `AgentRoleEntry`. Copy it; do not reason about it. Emitting nothing for a
 message is fine: the outside branch simply does not call `send`. And `run()`
 never returns — returning would kill the thread before the office finished
@@ -180,7 +180,7 @@ GPT is a gpt.
 GPT's AI is openai.
 Claude is a claude.
 Claude's AI is anthropic.
-Sync is a synchronizer(inports=["from_qwen", "from_gpt", "from_claude"]).
+Sync is a synchronizer(inboxes=["from_qwen", "from_gpt", "from_claude"]).
 Riley is a moderator.
 
 Connections:
@@ -199,7 +199,7 @@ Riley's finish is jsonl_recorder, Sasha, debate_display.
 ```
 
 **What to take from it.** `starter` emits one message to kick the loop off.
-The moderator has **two named outports** — `continue` sends another round,
+The moderator has **two named outboxes** — `continue` sends another round,
 `finish` ends it — which is how a role decides between branches. `Sasha` is
 the `gate`: without something in the loop deciding when to stop, the office
 runs forever, and `dsl check` will say so. Each panellist runs on a different

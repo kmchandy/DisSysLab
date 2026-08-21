@@ -16,7 +16,7 @@ announcements, product launches, research findings, or significant updates.
 
 ```
 web_monitor/
-    office.md          ← the org chart: source, agent, sink
+    office.md          ← the network: source, agent, sink
     roles/
         analyst.md     ← what the agent does, in plain English
 ```

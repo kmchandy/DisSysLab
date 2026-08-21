@@ -26,7 +26,7 @@ npr_news   ─┘       └→  briefing.jsonl  (discarded articles)
 
 ```
 intelligence_briefing/
-    office.md              ← the org chart: sources, agents, sinks
+    office.md              ← the network: sources, agents, sinks
     roles/
         analyst.md         ← what Alex does, in plain English
         editor.md          ← what Morgan does, in plain English
@@ -120,7 +120,7 @@ summary in the "text" field.
 Always send to archivist.
 ```
 
-## The org chart
+## The network
 
 The whole office, in one file:
 

@@ -61,7 +61,7 @@ BT_TURTLE_S2 is a backtester(speed_name='turtle_s2').
 BT_RS_FAST is a backtester(speed_name='rs_fast').
 BT_RS_SLOW is a backtester(speed_name='rs_slow').
 
-JOIN is a synchronizer(inports=['mac_fast', 'mac_med_fast', 'mac_med', 'mac_med_slow', 'mac_slow', 'donchian_20', 'donchian_55', 'turtle_s1', 'turtle_s2', 'rs_fast', 'rs_slow']).
+JOIN is a synchronizer(inboxes=['mac_fast', 'mac_med_fast', 'mac_med', 'mac_med_slow', 'mac_slow', 'donchian_20', 'donchian_55', 'turtle_s1', 'turtle_s2', 'rs_fast', 'rs_slow']).
 EVAL is a evaluator.
 CMP is a comparator.
 

@@ -257,7 +257,7 @@ def _parse_from_node(node, edge_index: int) -> Tuple['Agent', str]:
     
     Raises:
         TypeError: If node is not Agent or PortReference
-        ValueError: If Agent has no default outport
+        ValueError: If Agent has no default outbox
         ValueError: If port doesn't exist on agent
     """
     from dissyslab.core import Agent
@@ -268,12 +268,12 @@ def _parse_from_node(node, edge_index: int) -> Tuple['Agent', str]:
         port = node.port_name
         
         # Validate port exists
-        if port not in agent.outports:
+        if port not in agent.outboxes:
             raise ValueError(
-                f"Edge {edge_index}: Port '{port}' is not a valid outport of agent '{agent.name}'.\n"
-                f"Valid outports: {agent.outports}\n\n"
+                f"Edge {edge_index}: Port '{port}' is not a valid outbox of agent '{agent.name}'.\n"
+                f"Valid outboxes: {agent.outboxes}\n\n"
                 f"Did you mean one of these?\n" +
-                "\n".join(f"  {agent.name}.{p}" for p in agent.outports)
+                "\n".join(f"  {agent.name}.{p}" for p in agent.outboxes)
             )
         
         return agent, port
@@ -285,12 +285,12 @@ def _parse_from_node(node, edge_index: int) -> Tuple['Agent', str]:
         
         if port is None:
             raise ValueError(
-                f"Edge {edge_index}: Agent '{agent.name}' has no default outport.\n"
-                f"The agent has these outports: {agent.outports}\n\n"
+                f"Edge {edge_index}: Agent '{agent.name}' has no default outbox.\n"
+                f"The agent has these outboxes: {agent.outboxes}\n\n"
                 f"Use explicit port syntax:\n" +
-                "\n".join(f"  ({agent.name}.{p}, ...)") for p in agent.outports) +
+                "\n".join(f"  ({agent.name}.{p}, ...)") for p in agent.outboxes) +
                 f"\n\nExample:\n"
-                f"  ({agent.name}.{agent.outports[0] if agent.outports else 'port_name'}, next_agent)"
+                f"  ({agent.name}.{agent.outboxes[0] if agent.outboxes else 'port_name'}, next_agent)"
             )
         
         return agent, port
@@ -323,7 +323,7 @@ def _parse_to_node(node, edge_index: int) -> Tuple['Agent', str]:
     
     Raises:
         TypeError: If node is not Agent or PortReference
-        ValueError: If Agent has no default inport
+        ValueError: If Agent has no default inbox
         ValueError: If port doesn't exist on agent
     """
     from dissyslab.core import Agent
@@ -334,12 +334,12 @@ def _parse_to_node(node, edge_index: int) -> Tuple['Agent', str]:
         port = node.port_name
         
         # Validate port exists
-        if port not in agent.inports:
+        if port not in agent.inboxes:
             raise ValueError(
-                f"Edge {edge_index}: Port '{port}' is not a valid inport of agent '{agent.name}'.\n"
-                f"Valid inports: {agent.inports}\n\n"
+                f"Edge {edge_index}: Port '{port}' is not a valid inbox of agent '{agent.name}'.\n"
+                f"Valid inboxes: {agent.inboxes}\n\n"
                 f"Did you mean one of these?\n" +
-                "\n".join(f"  {agent.name}.{p}" for p in agent.inports)
+                "\n".join(f"  {agent.name}.{p}" for p in agent.inboxes)
             )
         
         return agent, port
@@ -351,12 +351,12 @@ def _parse_to_node(node, edge_index: int) -> Tuple['Agent', str]:
         
         if port is None:
             raise ValueError(
-                f"Edge {edge_index}: Agent '{agent.name}' has no default inport.\n"
-                f"The agent has these inports: {agent.inports}\n\n"
+                f"Edge {edge_index}: Agent '{agent.name}' has no default inbox.\n"
+                f"The agent has these inboxes: {agent.inboxes}\n\n"
                 f"Use explicit port syntax:\n" +
-                "\n".join(f"  (..., {agent.name}.{p})" for p in agent.inports) +
+                "\n".join(f"  (..., {agent.name}.{p})" for p in agent.inboxes) +
                 f"\n\nExample:\n"
-                f"  (prev_agent, {agent.name}.{agent.inports[0] if agent.inports else 'port_name'})"
+                f"  (prev_agent, {agent.name}.{agent.inboxes[0] if agent.inboxes else 'port_name'})"
             )
         
         return agent, port
@@ -415,8 +415,8 @@ Every error message should include:
 
 **Good error message:**
 ```
-Edge 2: Agent 'splitter' has no default outport.
-The agent has these outports: ['out_0', 'out_1', 'out_2']
+Edge 2: Agent 'splitter' has no default outbox.
+The agent has these outboxes: ['out_0', 'out_1', 'out_2']
 
 Use explicit port syntax:
   (splitter.out_0, ...)
@@ -429,7 +429,7 @@ Example:
 
 **Bad error message:**
 ```
-ValueError: No default outport
+ValueError: No default outbox
 ```
 
 ---
@@ -524,12 +524,12 @@ def test_network_duplicate_name_error():
 
 
 def test_network_no_default_outport_error():
-    """Test error when agent has no default outport."""
+    """Test error when agent has no default outbox."""
     source = Source(fn=lambda: [1], name="src")
     splitter = Split(num_outputs=2, name="split")
     
-    with pytest.raises(ValueError, match="no default outport"):
-        network([(splitter, source)])  # Splitter has no default outport
+    with pytest.raises(ValueError, match="no default outbox"):
+        network([(splitter, source)])  # Splitter has no default outbox
 
 
 def test_network_invalid_port_error():
@@ -540,7 +540,7 @@ def test_network_invalid_port_error():
     # Create invalid PortReference manually
     bad_ref = PortReference(agent=source, port_name="invalid")
     
-    with pytest.raises(ValueError, match="not a valid outport"):
+    with pytest.raises(ValueError, match="not a valid outbox"):
         network([(bad_ref, transform)])
 
 

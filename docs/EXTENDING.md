@@ -135,9 +135,9 @@ subclass internally.
 
 **Example.** `synchronizer` is in `library.py` because:
 
-- It has **N inports** (configurable at office-define time —
+- It has **N inboxes** (configurable at office-define time —
   `synchronizer_role(["entities", "severity", "topic", "location"])`),
-  one outport. Transform has 1 in / 1 out.
+  one outbox. Transform has 1 in / 1 out.
 - Its `run()` is a *wait-for-all-then-merge* loop. Transform's
   `run()` is *"for each msg: yield fn(msg, state)"*.
 
@@ -154,7 +154,7 @@ debate panelist (multi-round state machine).
 ```
 For a new built-in role, ask:
   does it fit Transform shape?
-  (one inport, one outport, function-per-message,
+  (one inbox, one outbox, function-per-message,
    state in a dict)
 
   YES → fn_lib/

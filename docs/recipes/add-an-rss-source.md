@@ -125,7 +125,7 @@ in any office.
 
 ## The pattern, in a sentence
 
-A source is an agent that generates messages. The org chart in
+A source is an agent that generates messages. The network in
 `office.md` declares which sources flow into which agents. Each
 named feed in `Sources:` is a registry entry that produces standard
 five-key article dicts (`source`, `title`, `text`, `url`,

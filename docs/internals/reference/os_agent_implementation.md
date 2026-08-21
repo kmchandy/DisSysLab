@@ -12,7 +12,7 @@ and never the office hierarchy. There is exactly one per compiled
 network, however many nested offices went into it.
 
 `client_queues` is filled in later, by `_wire_os_agent_queues()`, because
-inport queues do not exist until `_wire_queues()` has run. That ordering
+inbox queues do not exist until `_wire_queues()` has run. That ordering
 is not incidental: getting it wrong is one of the three faults that made
 the abandoned per-agent process mode unusable — `compile_for_processes`
 re-linked the data plane and left os_agent holding orphaned queues.
@@ -22,19 +22,19 @@ State it keeps:
 | Field | Meaning |
 |---|---|
 | `all_agents` | name → agent, the flat graph |
-| `source_agents` / `non_source_agents` | split by whether the agent has inports |
+| `source_agents` / `non_source_agents` | split by whether the agent has inboxes |
 | `edge_sent` / `edge_received` | per `(agent, port)` counts, from replies |
 | `idle` | name → the bit from that agent's latest reply |
 | `final` | names that reported "never active again" — sticky |
 | `_round` / `_round_responded` | the poll round, and which round each agent last answered |
-| `waiting_on` | for a coordinator, the inport it will read next |
+| `waiting_on` | for a coordinator, the inbox it will read next |
 | `heard_from` | retained; superseded by `final` for the predicate |
 
 ## The loop
 
 ```
 while True:
-    _send_give_me_counts()      # bump the round, poll every inport
+    _send_give_me_counts()      # bump the round, poll every inbox
     sleep(poll_interval)
     _drain_responses()
     maybe _initiate_snapshot()
@@ -49,10 +49,10 @@ round" mean "this agent is blocked in `recv` right now" rather than
 ### `_send_give_me_counts`
 
 Increments `_round` and puts one `_GiveMeCounts(round_id=_round)` on
-**every** inport queue of every non-source agent. See the overview for
-why every inport rather than the first.
+**every** inbox queue of every non-source agent. See the overview for
+why every inbox rather than the first.
 
-Two consequences to know about. A coordinator blocked on one inport
+Two consequences to know about. A coordinator blocked on one inbox
 accumulates one poll message per round on each of the others, bounded by
 how long it stays blocked — the case where it grows fastest is a stuck
 coordinator, which is the case you most want to survive long enough to

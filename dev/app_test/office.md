@@ -6,7 +6,7 @@ Sinks: console_printer
 Agents:
 TEMP_SENSOR is a temp_sensor.
 HUMIDITY_SENSOR is a humidity_sensor.
-JOIN is a synchronizer(inports=['temp', 'humidity']).
+JOIN is a synchronizer(inboxes=['temp', 'humidity']).
 CHECKER is a checker.
 
 Connections:

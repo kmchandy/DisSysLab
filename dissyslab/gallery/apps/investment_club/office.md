@@ -21,7 +21,7 @@ Feed       is a period_feed.
 Gate       is a gate.
 Val        is a val_analyst.
 Oppo       is a oppo_analyst.
-Join       is a synchronizer(inports=["val", "oppo"]).
+Join       is a synchronizer(inboxes=["val", "oppo"]).
 Manager    is a manager.
 Accountant is a accountant.
 Ledger     is a record(initial={"aapl_shares": 0, "cash": 10000.0}).

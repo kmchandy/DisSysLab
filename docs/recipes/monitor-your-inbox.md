@@ -77,7 +77,7 @@ Save and run `dsl run .` again. No rebuild — just edit and re-run.
 The Gmail source polls your inbox on a schedule and yields one
 message per email. An analyst agent decides which mailbox each
 email goes to (`summary` for the keepers, `discard` for the
-rest). The org chart in `office.md` wires those mailboxes to
+rest). The network in `office.md` wires those mailboxes to
 sinks — terminal, file, email, Slack, anything from
 [the sinks reference](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md).
 

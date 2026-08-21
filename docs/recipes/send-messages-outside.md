@@ -62,7 +62,7 @@ Alex's discard is jsonl_recorder_discard.
 
 The aliases (`jsonl_recorder_briefing`, `jsonl_recorder_discard`,
 `jsonl_recorder_archive`, `jsonl_recorder_raw`) all use the same
-underlying class — the alias just lets the org chart name
+underlying class — the alias just lets the network name
 distinct file destinations.
 
 ## Print to the terminal
@@ -259,7 +259,7 @@ Alex's discard is jsonl_recorder_discard.
 ```
 
 The role file (`roles/alex.md`) spells out when Alex sends to
-`urgent`, `normal`, or `discard`. The org chart wires each one to
+`urgent`, `normal`, or `discard`. The network wires each one to
 a destination.
 
 **Roll your own sink.** Write a Python class with a `run(msg)`

@@ -77,20 +77,20 @@ class Agent(ABC):
     Abstract base class for all agents in the network.
     
     Subclasses must:
-    1. Call super().__init__(name=..., inports=..., outports=...)
+    1. Call super().__init__(name=..., inboxes=..., outboxes=...)
     2. Implement run() method
     3. Optionally override startup() and shutdown()
     """
     
-    def __init__(self, *, name: str, inports: List[str] = None, 
-                 outports: List[str] = None):
+    def __init__(self, *, name: str, inboxes: List[str] = None, 
+                 outboxes: List[str] = None):
         """
         Initialize agent with name and port configuration.
         
         Args:
             name: Unique identifier for this agent (REQUIRED)
-            inports: List of input port names (default: [])
-            outports: List of output port names (default: [])
+            inboxes: List of input port names (default: [])
+            outboxes: List of output port names (default: [])
         
         Raises:
             ValueError: If name is None or empty
@@ -101,27 +101,27 @@ class Agent(ABC):
             ...     def __init__(self):
             ...         super().__init__(
             ...             name="my_processor",
-            ...             inports=["in_"],
-            ...             outports=["out_", "error_"]
+            ...             inboxes=["in_"],
+            ...             outboxes=["out_", "error_"]
             ...         )
         """
 ```
 
 ### Port Configuration
 
-**Inports**: Named inputs that receive messages
+**Inboxes**: Named inputs that receive messages
 - Example: `["in_"]` for simple agents
 - Example: `["in_0", "in_1", "in_2"]` for merge agents
 - Must be unique within the agent
 
-**Outports**: Named outputs that send messages
+**Outboxes**: Named outputs that send messages
 - Example: `["out_"]` for simple agents
 - Example: `["out_0", "out_1", "out_2"]` for split agents
 - Must be unique within the agent
 
-**Invariant**: All port names must be unique across inports and outports
-- Valid: `inports=["data"], outports=["out"]`
-- Invalid: `inports=["port"], outports=["port"]`  # Duplicate!
+**Invariant**: All port names must be unique across inboxes and outboxes
+- Valid: `inboxes=["data"], outboxes=["out"]`
+- Invalid: `inboxes=["port"], outboxes=["port"]`  # Duplicate!
 
 ### Agent Lifecycle
 
@@ -132,7 +132,7 @@ __init__()     check()    startup()  run()  shutdown()
 ```
 
 #### 1. Construction (__init__)
-- Define ports (inports, outports)
+- Define ports (inboxes, outboxes)
 - Store configuration parameters
 - Initialize instance variables
 - **DO NOT**: Open files, create connections, start threads
@@ -190,17 +190,17 @@ def shutdown(self):
 
 ### Message Passing API
 
-#### send(msg, outport)
+#### send(msg, outbox)
 Send a message to an output port (non-blocking).
 
 ```python
-def send(self, msg: Any, outport: str) -> None:
+def send(self, msg: Any, outbox: str) -> None:
     """
     Send message to output port.
     
     Args:
         msg: Message to send (any pickleable Python object)
-        outport: Name of output port (must exist on this agent)
+        outbox: Name of output port (must exist on this agent)
     
     Behavior:
         - None messages are filtered (dropped, not sent)
@@ -209,8 +209,8 @@ def send(self, msg: Any, outport: str) -> None:
         - Non-blocking (queue.put with no timeout)
     
     Raises:
-        ValueError: If outport doesn't exist on this agent
-        ValueError: If outport is not connected (network validation failed)
+        ValueError: If outbox doesn't exist on this agent
+        ValueError: If outbox is not connected (network validation failed)
     
     Example:
         >>> self.send(42, "out_")                    # Integer
@@ -235,16 +235,16 @@ def filter_positive(value):
     return None  # Message filtered out
 ```
 
-#### recv(inport)
+#### recv(inbox)
 Receive a message from an input port (blocking).
 
 ```python
-def recv(self, inport: str) -> Any:
+def recv(self, inbox: str) -> Any:
     """
     Receive message from input port (blocking).
     
     Args:
-        inport: Name of input port (must exist on this agent)
+        inbox: Name of input port (must exist on this agent)
     
     Returns:
         Message received (any Python object, or STOP)
@@ -255,8 +255,8 @@ def recv(self, inport: str) -> Any:
         - No timeout (blocks forever if no message)
     
     Raises:
-        ValueError: If inport doesn't exist on this agent
-        ValueError: If inport is not connected (network validation failed)
+        ValueError: If inbox doesn't exist on this agent
+        ValueError: If inbox is not connected (network validation failed)
     
     Example:
         >>> msg = self.recv("in_")
@@ -286,8 +286,8 @@ def broadcast_stop(self) -> None:
     - Error requiring pipeline shutdown
     
     Equivalent to:
-        for outport in self.outports:
-            self.send(STOP, outport)
+        for outbox in self.outboxes:
+            self.send(STOP, outbox)
     
     Example:
         >>> msg = self.recv("in_")
@@ -318,7 +318,7 @@ def default_inport(self) -> Optional[str]:
         ...     def default_inport(self):
         ...         return "in_"
     """
-    return "in_" if "in_" in self.inports else None
+    return "in_" if "in_" in self.inboxes else None
 
 @property
 def default_outport(self) -> Optional[str]:
@@ -336,7 +336,7 @@ def default_outport(self) -> Optional[str]:
         ...     def default_outport(self):
         ...         return "out_"
     """
-    return "out_" if "out_" in self.outports else None
+    return "out_" if "out_" in self.outboxes else None
 ```
 
 ### Threading Model
@@ -381,7 +381,7 @@ self.out_q: Dict[str, Queue] # Set during Network.compile()
 ```python
 class MySource(Agent):
     def __init__(self, data):
-        super().__init__(name="source", inports=[], outports=["out_"])
+        super().__init__(name="source", inboxes=[], outboxes=["out_"])
         self.data = data
     
     def run(self):
@@ -394,7 +394,7 @@ class MySource(Agent):
 ```python
 class MyTransform(Agent):
     def __init__(self, fn):
-        super().__init__(name="transform", inports=["in_"], outports=["out_"])
+        super().__init__(name="transform", inboxes=["in_"], outboxes=["out_"])
         self.fn = fn
     
     def run(self):
@@ -411,7 +411,7 @@ class MyTransform(Agent):
 ```python
 class MySink(Agent):
     def __init__(self, fn):
-        super().__init__(name="sink", inports=["in_"], outports=[])
+        super().__init__(name="sink", inboxes=["in_"], outboxes=[])
         self.fn = fn
     
     def run(self):
@@ -442,8 +442,8 @@ class MySplit(Agent):
     def __init__(self, num_outputs):
         super().__init__(
             name="split",
-            inports=["in_"],
-            outports=[f"out_{i}" for i in range(num_outputs)]
+            inboxes=["in_"],
+            outboxes=[f"out_{i}" for i in range(num_outputs)]
         )
     
     def run(self):
@@ -466,16 +466,16 @@ class MySplit(Agent):
 Agent(name=None)  # ValueError: Agent name is required
 
 # Duplicate ports
-Agent(name="x", inports=["p"], outports=["p"])  # ValueError: Duplicate port 'p'
+Agent(name="x", inboxes=["p"], outboxes=["p"])  # ValueError: Duplicate port 'p'
 ```
 
 ### Runtime Errors
 ```python
 # Invalid port
-self.send(msg, "invalid")  # ValueError: Port 'invalid' is not a valid outport
+self.send(msg, "invalid")  # ValueError: Port 'invalid' is not a valid outbox
 
 # Unconnected port
-self.recv("in_")  # ValueError: Inport 'in_' is not connected
+self.recv("in_")  # ValueError: Inbox 'in_' is not connected
 ```
 
 ### Exception Handling in run()

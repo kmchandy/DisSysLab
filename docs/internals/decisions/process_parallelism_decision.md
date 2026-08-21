@@ -26,7 +26,7 @@ Three independent faults:
    `_wire_mp_queues()`, which correctly re-links the data plane but
    never re-runs `_wire_os_agent_queues()`. So os_agent keeps sending
    `_GiveMeCounts` and `_Shutdown` into orphaned `SimpleQueue`s. The
-   control plane (os_agent's inbox, per-source OS inports) is also
+   control plane (os_agent's inbox, per-source OS inboxes) is also
    still `SimpleQueue`, which `fork` copies per child, so control
    messages cannot cross at all.
 

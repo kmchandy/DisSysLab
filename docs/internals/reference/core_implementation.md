@@ -70,8 +70,8 @@ class ExceptionThread(Thread):
 class Agent(ABC):
     """Base class for all agents in the network."""
     
-    def __init__(self, *, name: str, inports: List[str] = None, 
-                 outports: List[str] = None):
+    def __init__(self, *, name: str, inboxes: List[str] = None, 
+                 outboxes: List[str] = None):
         """Initialize agent with required name and ports."""
         
     # Lifecycle methods
@@ -83,8 +83,8 @@ class Agent(ABC):
     def shutdown(self) -> None: ...
     
     # Message passing
-    def send(self, msg: Any, outport: str) -> None: ...
-    def recv(self, inport: str) -> Any: ...
+    def send(self, msg: Any, outbox: str) -> None: ...
+    def recv(self, inbox: str) -> Any: ...
     def broadcast_stop(self) -> None: ...
     
     # Default ports (for builder.py to use)
@@ -109,7 +109,7 @@ class Agent(ABC):
 **Port parameters:**
 - ✅ Default to empty lists if not provided
 - ✅ Convert to lists (avoid mutable default trap)
-- ✅ Store in `self.inports` and `self.outports`
+- ✅ Store in `self.inboxes` and `self.outboxes`
 - ✅ Validate: all port names must be strings
 - ✅ Validate: all port names must be unique within agent
 
@@ -120,8 +120,8 @@ class Agent(ABC):
 
 **Example:**
 ```python
-def __init__(self, *, name: str, inports: List[str] = None, 
-             outports: List[str] = None):
+def __init__(self, *, name: str, inboxes: List[str] = None, 
+             outboxes: List[str] = None):
     # Validate name
     if not name:
         raise ValueError("Agent name is required and cannot be empty")
@@ -131,22 +131,22 @@ def __init__(self, *, name: str, inports: List[str] = None,
     self.name = name
     
     # Avoid mutable default trap
-    self.inports = list(inports) if inports is not None else []
-    self.outports = list(outports) if outports is not None else []
+    self.inboxes = list(inboxes) if inboxes is not None else []
+    self.outboxes = list(outboxes) if outboxes is not None else []
     
     # Validate ports
-    for port in self.inports + self.outports:
+    for port in self.inboxes + self.outboxes:
         if not isinstance(port, str):
             raise TypeError(f"Port names must be strings, got {type(port)}")
     
     # Check uniqueness
-    all_ports = self.inports + self.outports
+    all_ports = self.inboxes + self.outboxes
     if len(set(all_ports)) != len(all_ports):
         raise ValueError(f"Duplicate port names in agent '{name}'")
     
     # Queue dictionaries (wired by Network during compilation)
-    self.in_q = {p: None for p in self.inports}
-    self.out_q = {p: None for p in self.outports}
+    self.in_q = {p: None for p in self.inboxes}
+    self.out_q = {p: None for p in self.outboxes}
 ```
 
 #### 3.3 Lifecycle Methods
@@ -192,13 +192,13 @@ def shutdown(self) -> None:
 
 **send() - Send to Output Port**
 ```python
-def send(self, msg: Any, outport: str) -> None:
+def send(self, msg: Any, outbox: str) -> None:
     """
     Send message to output port.
     
     Args:
         msg: Any pickleable Python object (or STOP)
-        outport: Name of output port
+        outbox: Name of output port
     
     Behavior:
         - None messages are filtered (not sent)
@@ -206,20 +206,20 @@ def send(self, msg: Any, outport: str) -> None:
         - Non-blocking (uses queue.put)
     
     Raises:
-        ValueError: If outport doesn't exist or not connected
+        ValueError: If outbox doesn't exist or not connected
     """
-    # Validate outport exists
-    if outport not in self.outports:
+    # Validate outbox exists
+    if outbox not in self.outboxes:
         raise ValueError(
-            f"Port '{outport}' is not a valid outport of agent '{self.name}'. "
-            f"Valid outports: {self.outports}"
+            f"Port '{outbox}' is not a valid outbox of agent '{self.name}'. "
+            f"Valid outboxes: {self.outboxes}"
         )
     
     # Get queue
-    q = self.out_q[outport]
+    q = self.out_q[outbox]
     if q is None:
         raise ValueError(
-            f"Outport '{outport}' of agent '{self.name}' is not connected. "
+            f"Outbox '{outbox}' of agent '{self.name}' is not connected. "
             f"This should not happen if network was validated."
         )
     
@@ -233,12 +233,12 @@ def send(self, msg: Any, outport: str) -> None:
 
 **recv() - Receive from Input Port**
 ```python
-def recv(self, inport: str) -> Any:
+def recv(self, inbox: str) -> Any:
     """
     Receive message from input port (blocking).
     
     Args:
-        inport: Name of input port
+        inbox: Name of input port
     
     Returns:
         Message (any Python object or STOP)
@@ -246,20 +246,20 @@ def recv(self, inport: str) -> Any:
     Blocks until message available.
     
     Raises:
-        ValueError: If inport doesn't exist or not connected
+        ValueError: If inbox doesn't exist or not connected
     """
-    # Validate inport exists
-    if inport not in self.inports:
+    # Validate inbox exists
+    if inbox not in self.inboxes:
         raise ValueError(
-            f"Port '{inport}' is not a valid inport of agent '{self.name}'. "
-            f"Valid inports: {self.inports}"
+            f"Port '{inbox}' is not a valid inbox of agent '{self.name}'. "
+            f"Valid inboxes: {self.inboxes}"
         )
     
     # Get queue
-    q = self.in_q[inport]
+    q = self.in_q[inbox]
     if q is None:
         raise ValueError(
-            f"Inport '{inport}' of agent '{self.name}' is not connected. "
+            f"Inbox '{inbox}' of agent '{self.name}' is not connected. "
             f"This should not happen if network was validated."
         )
     
@@ -271,8 +271,8 @@ def recv(self, inport: str) -> Any:
 ```python
 def broadcast_stop(self) -> None:
     """Send STOP to all output ports."""
-    for outport in self.outports:
-        self.send(STOP, outport)
+    for outbox in self.outboxes:
+        self.send(STOP, outbox)
 ```
 
 #### 3.5 Default Port Properties
@@ -292,7 +292,7 @@ def default_inport(self) -> Optional[str]:
         Port name or None if no default
     """
     # Base implementation: return "in_" if it exists
-    return "in_" if "in_" in self.inports else None
+    return "in_" if "in_" in self.inboxes else None
 
 @property
 def default_outport(self) -> Optional[str]:
@@ -305,7 +305,7 @@ def default_outport(self) -> Optional[str]:
         Port name or None if no default
     """
     # Base implementation: return "out_" if it exists
-    return "out_" if "out_" in self.outports else None
+    return "out_" if "out_" in self.outboxes else None
 ```
 
 **Subclass Overrides:**
@@ -338,13 +338,13 @@ def __getattr__(self, name: str):
     from dissyslab.builder import PortReference
     
     # Check if it's a valid port
-    if name in self.inports or name in self.outports:
+    if name in self.inboxes or name in self.outboxes:
         return PortReference(agent=self, port_name=name)
     
     # Not a port - raise standard AttributeError
     raise AttributeError(
         f"'{type(self).__name__}' object has no attribute '{name}'. "
-        f"Valid ports: inports={self.inports}, outports={self.outports}"
+        f"Valid ports: inboxes={self.inboxes}, outboxes={self.outboxes}"
     )
 ```
 
@@ -387,15 +387,15 @@ def test_stop_identity():
 def test_agent_requires_name():
     """Agent requires name parameter."""
     with pytest.raises(ValueError):
-        Agent(name="", inports=[], outports=[])
+        Agent(name="", inboxes=[], outboxes=[])
     
     with pytest.raises(ValueError):
-        Agent(name=None, inports=[], outports=[])
+        Agent(name=None, inboxes=[], outboxes=[])
 
 def test_agent_name_must_be_string():
     """Agent name must be string."""
     with pytest.raises(TypeError):
-        Agent(name=123, inports=[], outports=[])
+        Agent(name=123, inboxes=[], outboxes=[])
 
 def test_agent_port_defaults():
     """Ports default to empty lists."""
@@ -403,8 +403,8 @@ def test_agent_port_defaults():
         def run(self): pass
     
     agent = TestAgent(name="test")
-    assert agent.inports == []
-    assert agent.outports == []
+    assert agent.inboxes == []
+    assert agent.outboxes == []
 
 def test_agent_duplicate_ports():
     """Duplicate port names raise error."""
@@ -412,14 +412,14 @@ def test_agent_duplicate_ports():
         def run(self): pass
     
     with pytest.raises(ValueError, match="Duplicate"):
-        TestAgent(name="test", inports=["p"], outports=["p"])
+        TestAgent(name="test", inboxes=["p"], outboxes=["p"])
 
 def test_send_filters_none():
     """send() filters None messages."""
     class TestAgent(Agent):
         def run(self): pass
     
-    agent = TestAgent(name="test", outports=["out_"])
+    agent = TestAgent(name="test", outboxes=["out_"])
     agent.out_q["out_"] = SimpleQueue()
     
     agent.send(None, "out_")
@@ -430,7 +430,7 @@ def test_send_passes_stop():
     class TestAgent(Agent):
         def run(self): pass
     
-    agent = TestAgent(name="test", outports=["out_"])
+    agent = TestAgent(name="test", outboxes=["out_"])
     agent.out_q["out_"] = SimpleQueue()
     
     agent.send(STOP, "out_")
@@ -440,7 +440,7 @@ def test_default_ports():
     """Default port properties work correctly."""
     class TestAgent(Agent):
         def __init__(self):
-            super().__init__(name="test", inports=["in_"], outports=["out_"])
+            super().__init__(name="test", inboxes=["in_"], outboxes=["out_"])
         def run(self): pass
     
     agent = TestAgent()
@@ -451,7 +451,7 @@ def test_no_default_ports():
     """Agents without standard ports return None."""
     class TestAgent(Agent):
         def __init__(self):
-            super().__init__(name="test", inports=["x"], outports=["y"])
+            super().__init__(name="test", inboxes=["x"], outboxes=["y"])
         def run(self): pass
     
     agent = TestAgent()
@@ -462,7 +462,7 @@ def test_port_reference_valid():
     """__getattr__ creates PortReference for valid ports."""
     class TestAgent(Agent):
         def __init__(self):
-            super().__init__(name="test", inports=["in_"], outports=["out_"])
+            super().__init__(name="test", inboxes=["in_"], outboxes=["out_"])
         def run(self): pass
     
     agent = TestAgent()
@@ -475,7 +475,7 @@ def test_port_reference_invalid():
     """__getattr__ raises AttributeError for invalid ports."""
     class TestAgent(Agent):
         def __init__(self):
-            super().__init__(name="test", inports=["in_"], outports=["out_"])
+            super().__init__(name="test", inboxes=["in_"], outboxes=["out_"])
         def run(self): pass
     
     agent = TestAgent()
@@ -493,8 +493,8 @@ def test_port_reference_invalid():
 **Solution:** Lazy import inside __getattr__ method
 
 ### 2. Mutable Default Arguments
-**Problem:** `def __init__(self, inports=[])` shares list across instances
-**Solution:** Use None and create new list: `inports = inports or []`
+**Problem:** `def __init__(self, inboxes=[])` shares list across instances
+**Solution:** Use None and create new list: `inboxes = inboxes or []`
 
 ### 3. Queue None Check
 **Problem:** Accessing `self.in_q[port]` before Network wires queues

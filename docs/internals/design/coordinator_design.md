@@ -16,19 +16,19 @@ New file: `dissyslab/blocks/coordinator.py`, exported from
 
 ## What a Coordinator does, each step
 
-1. `inport = self._get_inport(state)` — choose which inbox to read.
+1. `inbox = self._get_inport(state)` — choose which inbox to read.
    Depends on `state` alone.
-2. `msg = self.recv(inport)` — blocking read.
-3. `sends = self._step(msg, state, inport)` — the step function. Returns
-   a **list of `(outport, message)` pairs**, or `None`/`[]` to send
+2. `msg = self.recv(inbox)` — blocking read.
+3. `sends = self._step(msg, state, inbox)` — the step function. Returns
+   a **list of `(outbox, message)` pairs**, or `None`/`[]` to send
    nothing.
-4. `self.send(message, outport)` for each pair.
+4. `self.send(message, outbox)` for each pair.
 
 Two things vary per primitive and are the override points:
 
 - **`_get_inport(state)`** — the inbox-selection policy (the
   coordination).
-- **`_step(msg, state, inport)`** — the computation, i.e. what to send
+- **`_step(msg, state, inbox)`** — the computation, i.e. what to send
   and where.
 
 Both can be supplied inline as `get_inport=` / `fn=` callables (for
@@ -37,16 +37,16 @@ primitives will do this).
 
 ## Why the signatures are what they are
 
-- **`fn` returns a list of `(outport, message)` pairs, not a single
+- **`fn` returns a list of `(outbox, message)` pairs, not a single
   value.** An empty list lets an agent *consume without emitting* (a
-  join swallowing the first of a pair); the explicit outport lets an
+  join swallowing the first of a pair); the explicit outbox lets an
   agent *choose its outbox* (a router). This is the generalisation of
   Transform's "always send the result to `out_`".
-- **`fn` receives `inport`.** It is load-bearing, not cosmetic:
+- **`fn` receives `inbox`.** It is load-bearing, not cosmetic:
   `merge_synch` needs it to know which slot to fill; `gate` needs it to
   tell a data message from a "done" message. Signature:
-  `fn(msg, state=state, inport=inport, **params)` (stateful) or
-  `fn(msg, inport=inport, **params)` (stateless).
+  `fn(msg, state=state, inbox=inbox, **params)` (stateful) or
+  `fn(msg, inbox=inbox, **params)` (stateless).
 - **`get_inport` depends on `state` alone.** An agent that blocks on an
   inbox it chose from its state is a determinate (Kahn) process. This is
   the reason the *deterministic* primitives are Coordinators and
@@ -86,15 +86,15 @@ assistant about it.
 - [x] `Coordinator` written, exported, smoke-tested.
 - [x] `temp.py` deleted.
 - [x] **`MergeSynch`** (`merge_synch.py`) — join over `in_0..in_{n-1}`;
-      `_get_inport` returns the next unfilled inport in order; `_step`
+      `_get_inport` returns the next unfilled inbox in order; `_step`
       files each into a slot and emits the combined message when full.
       Optional `combine(messages)`; default output is the ordered list.
       Verified end-to-end on the real runtime (two sources → join →
       sink, 3 paired emits, termination detection fired).
-- [x] **`Gate`** (`gate.py`) — inports `["in_", "done"]`, state
+- [x] **`Gate`** (`gate.py`) — inboxes `["in_", "done"]`, state
       `{"busy": bool}`; `_get_inport` reads `done` while busy, else
       admits from `in_`. Verified direct-drive (in_ → done → in_).
-- [x] **`Select`** (`select.py`) — reads the inport `state["next"]`
+- [x] **`Select`** (`select.py`) — reads the inbox `state["next"]`
       points to; the step fn sets `state["next"]`. Verified direct-drive
       on the ask-and-wait pattern (in_ → request; reply → out_).
 - [x] **router / Split — decided NOT needed.** Routing to one of several

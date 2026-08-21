@@ -21,20 +21,20 @@ channel at once, and that is os_agent.
 ## How it asks
 
 It polls. Every `poll_interval` it sends a `_GiveMeCounts` to every
-inport queue of every agent that has inports, waits, and drains the
+inbox queue of every agent that has inboxes, waits, and drains the
 replies. A reply carries:
 
 - the agent's **sent and received counts**, per port;
 - an **`idle` bit** — does it owe a future send;
 - a **`final` flag** — will it never be active again;
 - the **round it is answering**;
-- for a coordinator, **`waiting_on`** — the inport it will read next.
+- for a coordinator, **`waiting_on`** — the inbox it will read next.
 
 Two things about that are worth understanding, because everything else
 follows from them.
 
-**A poll goes to every inport, not just the first.** A coordinator blocks
-on whichever inbox its state selects. A poll placed only on `inport[0]`
+**A poll goes to every inbox, not just the first.** A coordinator blocks
+on whichever inbox its state selects. A poll placed only on `inbox[0]`
 would never be seen while it waits on another, and os_agent would never
 learn it is stuck. The extra copies are read later and answered again;
 `_update_counts` is idempotent, so a late duplicate is harmless.
@@ -73,10 +73,10 @@ default**: report active unless you can prove otherwise, because a false
 
 Condition (2) says *reachable*, not simply *empty*. A coordinator reads
 one inbox at a time, chosen by its state. A message buffered on one of
-its other inports is not work remaining — the coordinator is blocked
+its other inboxes is not work remaining — the coordinator is blocked
 elsewhere and can never consume it. Treating that channel as non-empty
 made offices with uneven coordinator inputs hang forever; `waiting_on`
-names the inport the coordinator *will* read, and messages anywhere else
+names the inbox the coordinator *will* read, and messages anywhere else
 are disregarded.
 
 This is correct and it has a consequence worth knowing: an office with a

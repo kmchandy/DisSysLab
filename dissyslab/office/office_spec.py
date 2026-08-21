@@ -169,6 +169,17 @@ class SinkSpec:
 # ── RoleRef — uniform reference to a role in the library ──────────────
 
 
+# office.md's vocabulary for an agent's mailboxes, mapped to the name the
+# framework uses internally. ``inboxes``/``outboxes`` is what the docs,
+# the course and ``dsl check``'s messages say; ``inports``/``outports``
+# is the older spelling and the one still used in the Python source.
+# Both parse.
+_MAILBOX_ALIASES = {
+    "inboxes": "inports",
+    "outboxes": "outports",
+}
+
+
 @dataclass(frozen=True)
 class RoleRef:
     """A reference from an office.md to a role in the library.
@@ -219,8 +230,21 @@ class RoleRef:
     ai_backend: Optional[str] = None
 
     def __post_init__(self) -> None:
-        # Coerce iterables to tuples so callers may pass lists.
-        object.__setattr__(self, "args", tuple(self.args))
+        # Coerce iterables to tuples so callers may pass lists, and
+        # normalise the mailbox spellings.
+        #
+        # office.md now says ``inboxes=[...]``; the framework's internal
+        # name for the same thing is still ``inports``. Accepting both
+        # here -- the single point every office.md role reference passes
+        # through -- means codegen, check_wiring and the role factories
+        # see one spelling and need no alias of their own. The old
+        # spelling keeps working, so offices written before the rename
+        # still run.
+        object.__setattr__(
+            self, "args", tuple(
+                (_MAILBOX_ALIASES.get(k, k), v) for k, v in tuple(self.args)
+            )
+        )
         if self.ai_backend is not None and (
             not isinstance(self.ai_backend, str) or not self.ai_backend
         ):

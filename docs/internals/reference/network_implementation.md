@@ -52,8 +52,8 @@ class Network:
         name: Optional[str] = None,
         blocks: Optional[Dict[str, Agent | Network]] = None,
         connections: Optional[List[Tuple[str, str, str, str]]] = None,
-        inports: Optional[List[str]] = None,
-        outports: Optional[List[str]] = None
+        inboxes: Optional[List[str]] = None,
+        outboxes: Optional[List[str]] = None
     ):
         """Initialize and validate network structure."""
         
@@ -84,8 +84,8 @@ class Network:
     # Component composition
     def as_component(
         self,
-        inports: List[Tuple[str, Agent]] = None,
-        outports: List[Tuple[str, Agent]] = None,
+        inboxes: List[Tuple[str, Agent]] = None,
+        outboxes: List[Tuple[str, Agent]] = None,
         name: Optional[str] = None
     ) -> Network:
         """Convert tested network to reusable component."""
@@ -105,13 +105,13 @@ def __init__(
     name: Optional[str] = None,
     blocks: Optional[Dict[str, Agent | Network]] = None,
     connections: Optional[List[Tuple[str, str, str, str]]] = None,
-    inports: Optional[List[str]] = None,
-    outports: Optional[List[str]] = None
+    inboxes: Optional[List[str]] = None,
+    outboxes: Optional[List[str]] = None
 ):
     # Store configuration
     self.name = name
-    self.inports = list(inports) if inports is not None else []
-    self.outports = list(outports) if outports is not None else []
+    self.inboxes = list(inboxes) if inboxes is not None else []
+    self.outboxes = list(outboxes) if outboxes is not None else []
     self.blocks = blocks or {}
     self.connections = connections or []
     
@@ -178,32 +178,32 @@ for block_name, block_object in self.blocks.items():
 ```python
 # Validate port lists
 for block_name, block_object in self.blocks.items():
-    # Inports must be list
-    if not isinstance(block_object.inports, list):
+    # Inboxes must be list
+    if not isinstance(block_object.inboxes, list):
         raise TypeError(
-            f"Inports of block '{block_name}' must be list, "
-            f"got {type(block_object.inports)}"
+            f"Inboxes of block '{block_name}' must be list, "
+            f"got {type(block_object.inboxes)}"
         )
     
-    # Outports must be list
-    if not isinstance(block_object.outports, list):
+    # Outboxes must be list
+    if not isinstance(block_object.outboxes, list):
         raise TypeError(
-            f"Outports of block '{block_name}' must be list, "
-            f"got {type(block_object.outports)}"
+            f"Outboxes of block '{block_name}' must be list, "
+            f"got {type(block_object.outboxes)}"
         )
     
-    # No duplicate inport names
-    if len(set(block_object.inports)) != len(block_object.inports):
+    # No duplicate inbox names
+    if len(set(block_object.inboxes)) != len(block_object.inboxes):
         raise ValueError(
-            f"Block '{block_name}' has duplicate inport names: "
-            f"{block_object.inports}"
+            f"Block '{block_name}' has duplicate inbox names: "
+            f"{block_object.inboxes}"
         )
     
-    # No duplicate outport names
-    if len(set(block_object.outports)) != len(block_object.outports):
+    # No duplicate outbox names
+    if len(set(block_object.outboxes)) != len(block_object.outboxes):
         raise ValueError(
-            f"Block '{block_name}' has duplicate outport names: "
-            f"{block_object.outports}"
+            f"Block '{block_name}' has duplicate outbox names: "
+            f"{block_object.outboxes}"
         )
 ```
 
@@ -227,18 +227,18 @@ for (from_block, from_port, to_block, to_port) in self.connections:
     
     # From-port must exist on from-block (unless external)
     if from_block != "external":
-        if from_port not in self.blocks[from_block].outports:
+        if from_port not in self.blocks[from_block].outboxes:
             raise ValueError(
                 f"Unknown from_port '{from_port}' on block '{from_block}'. "
-                f"Valid outports: {self.blocks[from_block].outports}"
+                f"Valid outboxes: {self.blocks[from_block].outboxes}"
             )
     
     # To-port must exist on to-block (unless external)
     if to_block != "external":
-        if to_port not in self.blocks[to_block].inports:
+        if to_port not in self.blocks[to_block].inboxes:
             raise ValueError(
                 f"Unknown to_port '{to_port}' on block '{to_block}'. "
-                f"Valid inports: {self.blocks[to_block].inports}"
+                f"Valid inboxes: {self.blocks[to_block].inboxes}"
             )
 ```
 
@@ -272,27 +272,27 @@ def check(self) -> None:
 
 #### 2.6 External Port Connectivity
 ```python
-# Each declared external inport must be connected
-for p in self.inports:
+# Each declared external inbox must be connected
+for p in self.inboxes:
     matches = [
         c for c in self.connections
         if c[0] == "external" and c[1] == p
     ]
     if len(matches) == 0:
         raise ValueError(
-            f"External inport '{p}' is not connected. "
+            f"External inbox '{p}' is not connected. "
             f"All declared external ports must be connected."
         )
 
-# Each declared external outport must be connected
-for p in self.outports:
+# Each declared external outbox must be connected
+for p in self.outboxes:
     matches = [
         c for c in self.connections
         if c[2] == "external" and c[3] == p
     ]
     if len(matches) == 0:
         raise ValueError(
-            f"External outport '{p}' is not connected. "
+            f"External outbox '{p}' is not connected. "
             f"All declared external ports must be connected."
         )
 ```
@@ -310,8 +310,8 @@ def _insert_fanout_fanin(self) -> None:
     Insert Broadcast and Merge agents for multiple connections.
     
     Detects:
-    - Fanout: One outport → multiple inports (insert Broadcast)
-    - Fanin: Multiple outports → one inport (insert Merge)
+    - Fanout: One outbox → multiple inboxes (insert Broadcast)
+    - Fanin: Multiple outboxes → one inbox (insert Merge)
     
     Modifies self.connections and self.blocks in place.
     """
@@ -609,8 +609,8 @@ def _wire_queues(self) -> None:
     Wire communication queues between agents.
     
     For each agent:
-    - Creates SimpleQueue for each inport
-    - Connects sender outports to receiver inport queues
+    - Creates SimpleQueue for each inbox
+    - Connects sender outboxes to receiver inbox queues
     
     After this step:
     - All agent.in_q[port] have queue objects
@@ -626,13 +626,13 @@ def _wire_queues(self) -> None:
         - agent.out_q: Populated with references to receiver queues
         - self.queues: List of all queues (for cleanup/inspection)
     """
-    # Create input queue for each agent inport
+    # Create input queue for each agent inbox
     for agent in self.agents.values():
-        for port in agent.inports:
+        for port in agent.inboxes:
             agent.in_q[port] = SimpleQueue()
             self.queues.append(agent.in_q[port])
     
-    # Connect sender outports to receiver inport queues
+    # Connect sender outboxes to receiver inbox queues
     for (fb, fp, tb, tp) in self.graph_connections:
         sender = self.agents[fb]
         receiver = self.agents[tb]
@@ -679,8 +679,8 @@ def _validate_compiled(self) -> None:
     Validates the fully flattened, resolved, wired network.
     
     Checks:
-    - All agent inports have queues
-    - All agent outports have queues
+    - All agent inboxes have queues
+    - All agent outboxes have queues
     - No unresolved external connections remain
     - All graph connections reference valid agents
     
@@ -689,19 +689,19 @@ def _validate_compiled(self) -> None:
     """
     # Verify all agent ports are wired
     for agent_name, agent in self.agents.items():
-        # Check all inports connected
-        for inport in agent.inports:
-            if agent.in_q[inport] is None:
+        # Check all inboxes connected
+        for inbox in agent.inboxes:
+            if agent.in_q[inbox] is None:
                 raise ValueError(
-                    f"Compilation failed: Agent '{agent_name}' inport '{inport}' "
+                    f"Compilation failed: Agent '{agent_name}' inbox '{inbox}' "
                     f"is not connected to any queue."
                 )
         
-        # Check all outports connected
-        for outport in agent.outports:
-            if agent.out_q[outport] is None:
+        # Check all outboxes connected
+        for outbox in agent.outboxes:
+            if agent.out_q[outbox] is None:
                 raise ValueError(
-                    f"Compilation failed: Agent '{agent_name}' outport '{outport}' "
+                    f"Compilation failed: Agent '{agent_name}' outbox '{outbox}' "
                     f"is not connected to any queue."
                 )
     
@@ -821,16 +821,16 @@ def run_network(self) -> None:
 ```python
 def as_component(
     self,
-    inports: List[Tuple[str, Agent]] = None,
-    outports: List[Tuple[str, Agent]] = None,
+    inboxes: List[Tuple[str, Agent]] = None,
+    outboxes: List[Tuple[str, Agent]] = None,
     name: Optional[str] = None
 ) -> Network:
     """
     Convert this network into a reusable component.
     
     Args:
-        inports: List of (external_port_name, boundary_agent) tuples
-        outports: List of (external_port_name, boundary_agent) tuples
+        inboxes: List of (external_port_name, boundary_agent) tuples
+        outboxes: List of (external_port_name, boundary_agent) tuples
         name: Optional name for the component
     
     Returns:
@@ -844,16 +844,16 @@ def as_component(
 
 **Implementation:** (From previous session - same as before)
 ```python
-def as_component(self, inports=None, outports=None, name=None):
+def as_component(self, inboxes=None, outboxes=None, name=None):
     if self.compiled:
         raise ValueError(
             "Cannot convert already-compiled network to component"
         )
     
-    inports = inports or []
-    outports = outports or []
+    inboxes = inboxes or []
+    outboxes = outboxes or []
     
-    # Parse and validate inports/outports
+    # Parse and validate inboxes/outboxes
     # Replace boundary edges
     # Remove boundary agents from blocks
     # Create new Network with external ports
@@ -943,12 +943,12 @@ raise ValueError(f"Unknown port '{from_port}' on block '{from_block}'")
 # Good
 raise ValueError(
     f"Unknown port in connection: {self._format_connection(conn)}\n"
-    f"Block '{from_block}' has no outport '{from_port}'.\n"
-    f"Valid outports: {self.blocks[from_block].outports}"
+    f"Block '{from_block}' has no outbox '{from_port}'.\n"
+    f"Valid outboxes: {self.blocks[from_block].outboxes}"
 )
 # Error: Unknown port in connection: src.out_invalid → trans.in_
-#        Block 'src' has no outport 'out_invalid'.
-#        Valid outports: ['out_']
+#        Block 'src' has no outbox 'out_invalid'.
+#        Valid outboxes: ['out_']
 ```
 
 #### Unresolved External Connections
@@ -1061,10 +1061,10 @@ def show_network(self, verbose: bool = False) -> None:
     for name, block in self.blocks.items():
         block_type = type(block).__name__
         print(f"  {name}: {block_type}")
-        if block.inports:
-            print(f"    Inports:  {block.inports}")
-        if block.outports:
-            print(f"    Outports: {block.outports}")
+        if block.inboxes:
+            print(f"    Inboxes:  {block.inboxes}")
+        if block.outboxes:
+            print(f"    Outboxes: {block.outboxes}")
     
     print(f"\nConnections ({len(self.connections)}):")
     if self.connections:
@@ -1074,10 +1074,10 @@ def show_network(self, verbose: bool = False) -> None:
         print("  (none)")
     
     # Show external ports if any
-    if self.inports:
-        print(f"\nExternal Inports: {self.inports}")
-    if self.outports:
-        print(f"\nExternal Outports: {self.outports}")
+    if self.inboxes:
+        print(f"\nExternal Inboxes: {self.inboxes}")
+    if self.outboxes:
+        print(f"\nExternal Outboxes: {self.outboxes}")
     
     # Show compiled state if compiled
     if self.compiled:
@@ -1170,12 +1170,12 @@ g.show_network()
 # 
 # Blocks (3):
 #   src: Source
-#     Outports: ['out_']
+#     Outboxes: ['out_']
 #   trans: Transform
-#     Inports:  ['in_']
-#     Outports: ['out_']
+#     Inboxes:  ['in_']
+#     Outboxes: ['out_']
 #   sink: Sink
-#     Inports:  ['in_']
+#     Inboxes:  ['in_']
 #
 # Connections (2):
 #   src.out_ → trans.in_
@@ -1198,16 +1198,16 @@ g.show_network()
 # 
 # Blocks (4):
 #   src: Source
-#     Outports: ['out_']
+#     Outboxes: ['out_']
 #   trans_a: Transform
-#     Inports:  ['in_']
-#     Outports: ['out_']
+#     Inboxes:  ['in_']
+#     Outboxes: ['out_']
 #   trans_b: Transform
-#     Inports:  ['in_']
-#     Outports: ['out_']
+#     Inboxes:  ['in_']
+#     Outboxes: ['out_']
 #   broadcast_0: Broadcast
-#     Inports:  ['in_']
-#     Outports: ['out_0', 'out_1']
+#     Inboxes:  ['in_']
+#     Outboxes: ['out_0', 'out_1']
 #
 # Connections (3):
 #   src.out_ → broadcast_0.in_
@@ -1502,7 +1502,7 @@ def test_simple_pipeline_compilation():
     assert net.compiled
     assert len(net.agents) == 3
     assert len(net.threads) == 3
-    assert len(net.queues) == 2  # One per agent inport
+    assert len(net.queues) == 2  # One per agent inbox
 
 def test_full_execution():
     """Test complete network execution."""
@@ -1553,7 +1553,7 @@ def test_full_execution():
 
 ## Questions to Resolve
 
-1. **Should Network have inports/outports attributes if not used as component?**
+1. **Should Network have inboxes/outboxes attributes if not used as component?**
    - Current: Always initialized (empty lists by default)
    - This is fine - simplifies logic
 

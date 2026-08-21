@@ -118,11 +118,11 @@ npr_news's destination is Sasha.
 al_jazeera's destination is Sasha.
 ```
 
-Each line reads as English. The default outport of a source is
+Each line reads as English. The default outbox of a source is
 called `destination`, so `bbc_world's destination is Sasha` says
 "send each article BBC produces to Sasha." On the receiving side,
-sinks and most agents have a default inport, so we just write
-`Sasha` rather than `Sasha's <port-name>`. Three feeds all feeding
+sinks and most agents have a default inbox, so we just write
+`Sasha` rather than `Sasha's <inbox-name>`. Three feeds all feeding
 one deduplicator means the framework automatically fans them in.
 
 ```
@@ -143,10 +143,10 @@ Greta's out is Sync's location.
 ```
 
 Now the four parallel streams merge back together. `Sync's
-entities` is a *named input port* on the Sync agent. The
+entities` is a *named inbox* on the Sync agent. The
 synchronizer waits until it has one of each (entities, severity,
 topic, location) for the same article and emits a single combined
-message. Named ports are how an agent tells you "I expect a few
+message. Named inboxes are how an agent tells you "I expect a few
 different kinds of input, here's what to call each one."
 
 ```
@@ -266,7 +266,7 @@ Jordan's revise is jsonl_recorder_discard.
 ```
 
 Jordan is an `evaluator` from the role library — it has two
-outports, `publish` and `revise`, and its prompt decides which
+outboxes, `publish` and `revise`, and its prompt decides which
 each briefing earns. Routing decisions live in the role's prompt,
 not in glue code. The rejected briefings are still recorded so
 you can audit what got dropped.

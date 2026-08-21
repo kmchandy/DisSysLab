@@ -38,14 +38,14 @@ npr_news   ─┘
 
 ```
 org_two_office_news/
-    network.md                       ← the org chart at the network level
+    network.md                       ← the network at the network level
     news_monitor/
-        office.md                    ← news_monitor's org chart
+        office.md                    ← news_monitor's network
         roles/
             correspondent.md         ← what Alex does
             analyst.md               ← what Morgan does
     news_editor/
-        office.md                    ← news_editor's org chart
+        office.md                    ← news_editor's network
         roles/
             editor.md                ← what Jordan does
             rewriter.md              ← what Riley does
@@ -179,7 +179,7 @@ If significance is CRITICAL, HIGH, or MEDIUM, send to output.
 Otherwise send to discard.
 ```
 
-**`news_monitor`'s org chart:**
+**`news_monitor`'s network:**
 
 ```
 Inputs: article_in
@@ -243,7 +243,7 @@ Preserve the source, url, topic, and significance fields.
 Always send to output.
 ```
 
-**`news_editor`'s org chart:**
+**`news_editor`'s network:**
 
 ```
 Inputs: article_in

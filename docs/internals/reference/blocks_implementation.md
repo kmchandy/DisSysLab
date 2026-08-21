@@ -61,7 +61,7 @@ source = Source(fn=data.run)  # ERROR: missing name
 def __init__(self, ..., *, name: str):
     if not name:
         raise ValueError("Agent name is required")
-    super().__init__(name=name, inports=[...], outports=[...])
+    super().__init__(name=name, inboxes=[...], outboxes=[...])
 ```
 
 ### Pattern 2: Simple Port Structure
@@ -140,8 +140,8 @@ Repeatedly calls a function to generate messages until it returns `None`.
 
 ### Key Characteristics
 
-- **No inputs**: `inports = []`
-- **Single output**: `outports = ["out_"]`
+- **No inputs**: `inboxes = []`
+- **Single output**: `outboxes = ["out_"]`
 - **Pull-based**: Calls `fn()` repeatedly
 - **Termination**: Stops when `fn()` returns `None`
 - **Optional rate limiting**: `interval` parameter controls message pace
@@ -191,8 +191,8 @@ class Source(Agent):
     Source Agent: Repeatedly calls a function to generate messages.
 
     **Ports:**
-    - Inports: [] (no inputs)
-    - Outports: ["out_"]
+    - Inboxes: [] (no inputs)
+    - Outboxes: ["out_"]
 
     **Function Contract:**
     fn() must:
@@ -245,7 +245,7 @@ class Source(Agent):
                 "Source fn must be callable with signature: fn() -> Optional[message]"
             )
 
-        super().__init__(name=name, inports=[], outports=["out_"])
+        super().__init__(name=name, inboxes=[], outboxes=["out_"])
         self._fn = fn
         self._interval = interval
 
@@ -384,8 +384,8 @@ Applies a function to transform each message flowing through the network.
 
 ### Key Characteristics
 
-- **Single input**: `inports = ["in_"]`
-- **Single output**: `outports = ["out_"]`
+- **Single input**: `inboxes = ["in_"]`
+- **Single output**: `outboxes = ["out_"]`
 - **Stateless or stateful**: Function can be pure or method on instance
 - **Filtering**: Returning `None` drops the message
 - **Fail-fast**: First error stops pipeline
@@ -430,8 +430,8 @@ class Transform(Agent):
     Transform Agent: Applies a function to transform messages.
 
     **Ports:**
-    - Inports: ["in_"]
-    - Outports: ["out_"]
+    - Inboxes: ["in_"]
+    - Outboxes: ["out_"]
 
     **Function Contract:**
     fn(msg) must:
@@ -490,7 +490,7 @@ class Transform(Agent):
                 f"Transform fn must be callable. Got {type(fn).__name__}"
             )
 
-        super().__init__(name=name, inports=["in_"], outports=["out_"])
+        super().__init__(name=name, inboxes=["in_"], outboxes=["out_"])
         self._fn = fn
         self._params = params or {}
 
@@ -668,8 +668,8 @@ Terminal node that consumes messages for side effects (printing, saving, collect
 
 ### Key Characteristics
 
-- **Single input**: `inports = ["in_"]`
-- **No outputs**: `outports = []`
+- **Single input**: `inboxes = ["in_"]`
+- **No outputs**: `outboxes = []`
 - **Side effects only**: Return value ignored
 - **Filters None**: None messages not passed to `fn`
 - **Finalize support**: Calls `fn.finalize()` if present during shutdown
@@ -718,8 +718,8 @@ class Sink(Agent):
     Sink Agent: Terminal node that consumes messages.
 
     **Ports:**
-    - Inports: ["in_"]
-    - Outports: [] (terminal node)
+    - Inboxes: ["in_"]
+    - Outboxes: [] (terminal node)
 
     **Function Contract:**
     fn(msg) should:
@@ -772,7 +772,7 @@ class Sink(Agent):
                 f"Sink fn must be callable. Got {type(fn).__name__}"
             )
 
-        super().__init__(name=name, inports=["in_"], outports=[])
+        super().__init__(name=name, inboxes=["in_"], outboxes=[])
         self._fn = fn
         self._params = params or {}
 
@@ -927,8 +927,8 @@ Routes messages to N outputs based on a routing function that returns a list.
 
 ### Key Characteristics
 
-- **Single input**: `inports = ["in_"]`
-- **Multiple outputs**: `outports = ["out_0", "out_1", ..., "out_N-1"]`
+- **Single input**: `inboxes = ["in_"]`
+- **Multiple outputs**: `outboxes = ["out_0", "out_1", ..., "out_N-1"]`
 - **List-based routing**: Function returns list of N messages
 - **Flexible**: Supports routing, multicast, and transformation
 - **Filtering**: None values in list are filtered (not sent to that output)
@@ -972,8 +972,8 @@ class Split(Agent):
     Split Agent: Route messages to N outputs based on function.
 
     **Ports:**
-    - Inports: ["in_"]
-    - Outports: ["out_0", "out_1", ..., "out_{N-1}"]
+    - Inboxes: ["in_"]
+    - Outboxes: ["out_0", "out_1", ..., "out_{N-1}"]
 
     **Function Contract:**
     fn(msg) must:
@@ -1038,8 +1038,8 @@ class Split(Agent):
 
         super().__init__(
             name=name,
-            inports=["in_"],
-            outports=[f"out_{i}" for i in range(num_outputs)]
+            inboxes=["in_"],
+            outboxes=[f"out_{i}" for i in range(num_outputs)]
         )
         self._fn = fn
         self.num_outputs = num_outputs
@@ -1246,8 +1246,8 @@ Copies messages from one input to all outputs (fanout pattern). Auto-inserted by
 
 ### Key Characteristics
 
-- **Single input**: `inports = ["in_"]`
-- **Multiple outputs**: `outports = ["out_0", "out_1", ..., "out_N-1"]`
+- **Single input**: `inboxes = ["in_"]`
+- **Multiple outputs**: `outboxes = ["out_0", "out_1", ..., "out_N-1"]`
 - **Deep copy**: Each output gets independent copy (prevents shared state bugs)
 - **Auto-inserted**: Framework creates automatically for fanout
 - **Transparent**: Students usually don't create directly
@@ -1285,8 +1285,8 @@ class Broadcast(Agent):
     Broadcast Agent: Copies messages to all outputs (fanout).
 
     **Ports:**
-    - Inports: ["in_"]
-    - Outports: ["out_0", "out_1", ..., "out_{N-1}"]
+    - Inboxes: ["in_"]
+    - Outboxes: ["out_0", "out_1", ..., "out_{N-1}"]
 
     **Message Flow:**
     1. Receives message from "in_"
@@ -1325,8 +1325,8 @@ class Broadcast(Agent):
 
         super().__init__(
             name=name,
-            inports=["in_"],
-            outports=[f"out_{i}" for i in range(num_outports)]
+            inboxes=["in_"],
+            outboxes=[f"out_{i}" for i in range(num_outports)]
         )
 
     def __call__(self):
@@ -1344,17 +1344,17 @@ class Broadcast(Agent):
                 return
 
             # Broadcast to all outputs (with deep copies)
-            for outport in self.outports:
+            for outbox in self.outboxes:
                 outport_msg = copy.deepcopy(msg)
-                self.send(outport_msg, outport=outport)
+                self.send(outport_msg, outbox=outbox)
 
     run = __call__
 
     def __repr__(self) -> str:
-        return f"<Broadcast outputs={len(self.outports)}>"
+        return f"<Broadcast outputs={len(self.outboxes)}>"
 
     def __str__(self) -> str:
-        return f"Broadcast({len(self.outports)} outputs)"
+        return f"Broadcast({len(self.outboxes)} outputs)"
 ```
 
 ### Usage Examples
@@ -1447,8 +1447,8 @@ Asynchronously merges N inputs into one output (fanin pattern). Auto-inserted by
 
 ### Key Characteristics
 
-- **Multiple inputs**: `inports = ["in_0", "in_1", ..., "in_N-1"]`
-- **Single output**: `outports = ["out_"]`
+- **Multiple inputs**: `inboxes = ["in_0", "in_1", ..., "in_N-1"]`
+- **Single output**: `outboxes = ["out_"]`
 - **Asynchronous**: Forwards messages as they arrive (non-deterministic order)
 - **Thread-based**: One worker thread per input port
 - **Coordinated STOP**: Waits for STOP from ALL inputs before sending final STOP
@@ -1492,8 +1492,8 @@ class MergeAsynch(Agent):
     Automatically inserted when multiple nodes feed into one node.
 
     **Ports:**
-    - Inports: ["in_0", "in_1", ..., "in_{N-1}"]
-    - Outports: ["out_"]
+    - Inboxes: ["in_0", "in_1", ..., "in_{N-1}"]
+    - Outboxes: ["out_"]
 
     **Message Flow:**
     1. Receives messages from any input as they arrive (async)
@@ -1535,8 +1535,8 @@ class MergeAsynch(Agent):
                 f"MergeAsynch requires at least 2 inputs, got {num_inports}"
             )
 
-        inports = [f"in_{i}" for i in range(num_inports)]
-        super().__init__(name=name, inports=inports, outports=["out_"])
+        inboxes = [f"in_{i}" for i in range(num_inports)]
+        super().__init__(name=name, inboxes=inboxes, outboxes=["out_"])
 
         # Threading for shutdown coordination
         self._stop_lock = threading.Lock()
@@ -1557,7 +1557,7 @@ class MergeAsynch(Agent):
             if msg is STOP:
                 with self._stop_lock:
                     self._stopped_ports.add(port)
-                    if len(self._stopped_ports) == len(self.inports):
+                    if len(self._stopped_ports) == len(self.inboxes):
                         self._all_stopped.set()
                 break
 
@@ -1573,7 +1573,7 @@ class MergeAsynch(Agent):
         """
         # Spawn worker thread for each input
         threads = []
-        for p in self.inports:
+        for p in self.inboxes:
             t = threading.Thread(
                 target=self._worker,
                 args=(p,),
@@ -1596,10 +1596,10 @@ class MergeAsynch(Agent):
     run = __call__
 
     def __repr__(self) -> str:
-        return f"<MergeAsynch inputs={len(self.inports)}>"
+        return f"<MergeAsynch inputs={len(self.inboxes)}>"
 
     def __str__(self) -> str:
-        return f"MergeAsynch({len(self.inports)} inputs)"
+        return f"MergeAsynch({len(self.inboxes)} inputs)"
 ```
 
 ### Usage Examples
@@ -1700,7 +1700,7 @@ __all__ = [
 
 ## Common Patterns Summary
 
-| Agent | Inports | Outports | Function Signature | Use Case |
+| Agent | Inboxes | Outboxes | Function Signature | Use Case |
 |-------|---------|----------|-------------------|----------|
 | Source | [] | ["out_"] | `fn() -> Optional[msg]` | Generate data |
 | Transform | ["in_"] | ["out_"] | `fn(msg) -> Optional[msg]` | Process data |
@@ -1764,7 +1764,7 @@ All blocks require `name` in `__init__`:
 def __init__(self, *, name: str, ...):
     if not name:
         raise ValueError("Agent name is required")
-    super().__init__(name=name, inports=[...], outports=[...])
+    super().__init__(name=name, inboxes=[...], outboxes=[...])
 ```
 
 ### Pattern 2: Default port properties
@@ -1773,11 +1773,11 @@ Blocks with single ports define defaults:
 ```python
 @property
 def default_inport(self) -> Optional[str]:
-    return "in_" if "in_" in self.inports else None
+    return "in_" if "in_" in self.inboxes else None
 
 @property
 def default_outport(self) -> Optional[str]:
-    return "out_" if "out_" in self.outports else None
+    return "out_" if "out_" in self.outboxes else None
 ```
 
 Blocks with multiple ports return None (ambiguous):
@@ -1825,8 +1825,8 @@ from typing import Any, Callable, Optional, List
 Generate messages by repeatedly calling a function until it returns None.
 
 **Characteristics:**
-- No inputs (inports = [])
-- Single output (outports = ["out_"])
+- No inputs (inboxes = [])
+- Single output (outboxes = ["out_"])
 - Calls fn() repeatedly, sends each result
 - Stops when fn() returns None (exhausted)
 - Optional rate limiting with interval parameter
@@ -1868,8 +1868,8 @@ class Source(Agent):
     Source Agent: Repeatedly calls a function to generate messages.
 
     **Ports:**
-    - Inports: [] (no inputs - sources generate data)
-    - Outports: ["out_"] (emits generated messages)
+    - Inboxes: [] (no inputs - sources generate data)
+    - Outboxes: ["out_"] (emits generated messages)
 
     **Function Requirements:**
     The fn callable must:
@@ -1979,7 +1979,7 @@ class Source(Agent):
                 "Source fn must be callable with signature: fn() -> Optional[message]"
             )
 
-        super().__init__(name=name, inports=[], outports=["out_"])
+        super().__init__(name=name, inboxes=[], outboxes=["out_"])
         self._fn = fn
         self._interval = interval
 
@@ -2081,8 +2081,8 @@ The callable pattern is simpler for beginners and more explicit about terminatio
 Apply a function to each message flowing through.
 
 **Characteristics:**
-- Single input (inports = ["in_"])
-- Single output (outports = ["out_"])
+- Single input (inboxes = ["in_"])
+- Single output (outboxes = ["out_"])
 - Stateless or stateful (fn can be method)
 - Filters messages if fn returns None
 
@@ -2104,8 +2104,8 @@ class Transform(Agent):
     fn(msg, **params) and sending the result.
     
     **Ports:**
-    - Inports: ["in_"]
-    - Outports: ["out_"]
+    - Inboxes: ["in_"]
+    - Outboxes: ["out_"]
     
     **Message Flow:**
     - Receives msg from "in_" port
@@ -2176,7 +2176,7 @@ class Transform(Agent):
                 f"Transform fn must be callable, got {type(fn).__name__}"
             )
         
-        super().__init__(name=name, inports=["in_"], outports=["out_"])
+        super().__init__(name=name, inboxes=["in_"], outboxes=["out_"])
         self._fn = fn
         self._params = params or {}
     
@@ -2250,8 +2250,8 @@ class Transform(Agent):
 Consume messages without producing output.
 
 **Characteristics:**
-- Single input (inports = ["in_"])
-- No outputs (outports = [])
+- Single input (inboxes = ["in_"])
+- No outputs (outboxes = [])
 - Terminal node in network
 - Calls function for side effects
 
@@ -2273,8 +2273,8 @@ class Sink(Agent):
     for each message. Used for actions like printing, saving, or sending.
     
     **Ports:**
-    - Inports: ["in_"]
-    - Outports: [] (no outputs)
+    - Inboxes: ["in_"]
+    - Outboxes: [] (no outputs)
     
     **Message Flow:**
     - Receives msg from "in_" port
@@ -2339,7 +2339,7 @@ class Sink(Agent):
                 f"Sink fn must be callable, got {type(fn).__name__}"
             )
         
-        super().__init__(name=name, inports=["in_"], outports=[])
+        super().__init__(name=name, inboxes=["in_"], outboxes=[])
         self._fn = fn
         self._params = params or {}
     
@@ -2399,8 +2399,8 @@ class Sink(Agent):
 Copy input to multiple outputs (fanout pattern).
 
 **Characteristics:**
-- Single input (inports = ["in_"])
-- Multiple outputs (outports = ["out_0", "out_1", ...])
+- Single input (inboxes = ["in_"])
+- Multiple outputs (outboxes = ["out_0", "out_1", ...])
 - Copies messages to all outputs
 - Auto-inserted by framework for fanout
 
@@ -2421,8 +2421,8 @@ class Broadcast(Agent):
     to each output port.
     
     **Ports:**
-    - Inports: ["in_"]
-    - Outports: ["out_0", "out_1", ..., "out_{n-1}"]
+    - Inboxes: ["in_"]
+    - Outboxes: ["out_0", "out_1", ..., "out_{n-1}"]
     
     **Message Flow:**
     - Receives msg from "in_" port
@@ -2473,9 +2473,9 @@ class Broadcast(Agent):
             )
         
         # Create output ports: out_0, out_1, ..., out_{n-1}
-        outports = [f"out_{i}" for i in range(num_outputs)]
+        outboxes = [f"out_{i}" for i in range(num_outputs)]
         
-        super().__init__(name=name, inports=["in_"], outports=outports)
+        super().__init__(name=name, inboxes=["in_"], outboxes=outboxes)
         self.num_outputs = num_outputs
     
     @property
@@ -2553,8 +2553,8 @@ class MergeAsynch(Agent):
     a message available first. Fast but non-deterministic order.
     
     **Ports:**
-    - Inports: ["in_0", "in_1", ..., "in_{n-1}"]
-    - Outports: ["out_"]
+    - Inboxes: ["in_0", "in_1", ..., "in_{n-1}"]
+    - Outboxes: ["out_"]
     
     **Message Flow:**
     - Receives from any "in_*" port (whichever is ready first)
@@ -2605,9 +2605,9 @@ class MergeAsynch(Agent):
             )
         
         # Create input ports: in_0, in_1, ..., in_{n-1}
-        inports = [f"in_{i}" for i in range(num_inputs)]
+        inboxes = [f"in_{i}" for i in range(num_inputs)]
         
-        super().__init__(name=name, inports=inports, outports=["out_"])
+        super().__init__(name=name, inboxes=inboxes, outboxes=["out_"])
         self.num_inputs = num_inputs
     
     @property
@@ -2665,8 +2665,8 @@ class Merge(Agent):
     order. Deterministic but may block waiting for slow inputs.
     
     **Ports:**
-    - Inports: ["in_0", "in_1", ..., "in_{n-1}"]
-    - Outports: ["out_"]
+    - Inboxes: ["in_0", "in_1", ..., "in_{n-1}"]
+    - Outboxes: ["out_"]
     
     **Message Flow:**
     - Receives from "in_0", "in_1", "in_2", ... in order
@@ -2709,9 +2709,9 @@ class Merge(Agent):
             )
         
         # Create input ports: in_0, in_1, ..., in_{n-1}
-        inports = [f"in_{i}" for i in range(num_inputs)]
+        inboxes = [f"in_{i}" for i in range(num_inputs)]
         
-        super().__init__(name=name, inports=inports, outports=["out_"])
+        super().__init__(name=name, inboxes=inboxes, outboxes=["out_"])
         self.num_inputs = num_inputs
     
     @property
@@ -2781,8 +2781,8 @@ class Merge(Agent):
 Route messages to different outputs based on function.
 
 **Characteristics:**
-- Single input (inports = ["in_"])
-- Multiple outputs (outports = ["out_0", "out_1", ...])
+- Single input (inboxes = ["in_"])
+- Multiple outputs (outboxes = ["out_0", "out_1", ...])
 - Calls router function to determine output
 - Used for conditional routing
 
@@ -2803,8 +2803,8 @@ class Split(Agent):
     which output port to send each message to.
     
     **Ports:**
-    - Inports: ["in_"]
-    - Outports: ["out_0", "out_1", ..., "out_{n-1}"]
+    - Inboxes: ["in_"]
+    - Outboxes: ["out_0", "out_1", ..., "out_{n-1}"]
     
     **Message Flow:**
     - Receives msg from "in_" port
@@ -2875,9 +2875,9 @@ class Split(Agent):
             )
         
         # Create output ports: out_0, out_1, ..., out_{n-1}
-        outports = [f"out_{i}" for i in range(num_outputs)]
+        outboxes = [f"out_{i}" for i in range(num_outputs)]
         
-        super().__init__(name=name, inports=["in_"], outports=outports)
+        super().__init__(name=name, inboxes=["in_"], outboxes=outboxes)
         self._router = router
         self.num_outputs = num_outputs
     
@@ -3206,7 +3206,7 @@ def test_split_routing():
 
 ## Common Patterns Summary
 
-| Block | Inports | Outports | Use Case |
+| Block | Inboxes | Outboxes | Use Case |
 |-------|---------|----------|----------|
 | Source | [] | ["out_"] | Generate data |
 | Transform | ["in_"] | ["out_"] | Process data |

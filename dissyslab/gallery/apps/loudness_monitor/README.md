@@ -154,11 +154,11 @@ reproduced below so you can adapt them to your own roles.
 > `roles/rms_meter.py` and is loaded by the framework via
 > `AgentRoleEntry`. Use
 > `dissyslab/gallery/apps/debate/roles/gate.py` as the pattern for
-> the boilerplate (subclass `Agent`, declare `inports=["in_"]` and
-> `outports=["out_"]`, register at module level with
+> the boilerplate (subclass `Agent`, declare `inboxes=["in_"]` and
+> `outboxes=["out_"]`, register at module level with
 > `AgentRoleEntry`).*
 >
-> *The agent receives one message per audio chunk on inport `in_`.
+> *The agent receives one message per audio chunk on inbox `in_`.
 > Each message has shape*
 >
 > >     {"samples": np.ndarray, "sample_rate": int,
@@ -166,7 +166,7 @@ reproduced below so you can adapt them to your own roles.
 >
 > *For each message, compute the RMS (root mean square) of the
 > samples and convert to dBFS using
-> `db = 20 * log10(max(rms, 1e-10))`. Emit one message on outport
+> `db = 20 * log10(max(rms, 1e-10))`. Emit one message on outbox
 > `out_` with shape*
 >
 > >     {"db": float, "rms": float,
