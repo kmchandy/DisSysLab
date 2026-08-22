@@ -53,7 +53,7 @@ ten minutes; `21600` is once every six hours.
 ### Tier 2 — Modify  *(30 minutes, swap a component)*
 
 **Make Alex sarcastic, poetic, or terse.** Edit
-[`roles/analyst.md`](roles/analyst.md). The role is a single
+[roles/analyst.md](roles/analyst.md). The role is a single
 plain-English prompt — change the persona and re-run.
 
 **Save to a file instead of stdout.** Swap the sink in `office.md`:
@@ -72,10 +72,10 @@ parses Alex's output and routes accordingly.
 ### Tier 3 — Build  *(a few hours)*
 
 Combine weather with your calendar (see
-[`periodic_brief`](../periodic_brief/)) to get *"Wear a coat for
+[periodic_brief](../periodic_brief/)) to get *"Wear a coat for
 your 9am client meeting downtown."* That's the kind of
 multi-source office DisSysLab is designed for. See
-[`docs/BUILD_APPS.md`](../../../../docs/BUILD_APPS.md).
+[docs/BUILD_APPS.md](../../../../docs/BUILD_APPS.md).
 
 ## What you should expect
 
@@ -91,9 +91,9 @@ multi-source office DisSysLab is designed for. See
 
 ## See also
 
-- [`office.md`](office.md) — the wiring (six lines).
-- [`roles/analyst.md`](roles/analyst.md) — what Alex does (six
+- [office.md](office.md) — the wiring (six lines).
+- [roles/analyst.md](roles/analyst.md) — what Alex does (six
   more).
-- [`situation_room`](../situation_room/README.md) — a much bigger
+- [situation_room](../situation_room/README.md) — a much bigger
   office (9 agents, 3 sources, fork-merge) for journalists and
   analysts.

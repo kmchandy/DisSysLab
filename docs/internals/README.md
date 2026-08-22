@@ -14,12 +14,12 @@ of document ages:
 
 | Folder | What is in it | How it ages |
 |---|---|---|
-| [`reference/`](reference/) | How the code works now | Updated whenever the code changes. If it is wrong, that is a bug. |
-| [`design/`](design/) | What is being built, and the argument for it | Living. Extended as the design is worked out. |
-| [`decisions/`](decisions/) | A choice made once, with its reasons | Frozen. Never updated — a superseded decision gets a new document that says so. |
+| [reference/](reference/) | How the code works now | Updated whenever the code changes. If it is wrong, that is a bug. |
+| [design/](design/) | What is being built, and the argument for it | Living. Extended as the design is worked out. |
+| [decisions/](decisions/) | A choice made once, with its reasons | Frozen. Never updated — a superseded decision gets a new document that says so. |
 
 Anything dated and finished — plans, issue lists, acceptance runs,
-resolved bug reports — moves to [`../../archive/`](../../archive/) and
+resolved bug reports — moves to [../../archive/](../../archive/) and
 is not maintained.
 
 ## reference/

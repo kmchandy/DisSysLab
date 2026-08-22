@@ -19,7 +19,7 @@ export DSL_BACKEND=ollama
 
 Paid hosted alternatives (Claude, OpenAI, Gemini, OpenRouter)
 work identically — they're just different environment variables.
-See [`LANGUAGE_MODELS.md`](LANGUAGE_MODELS.md) for the full
+See [LANGUAGE_MODELS.md](LANGUAGE_MODELS.md) for the full
 setup of each.
 
 The path through this guide:
@@ -610,13 +610,13 @@ under any gallery office's `roles/` for this pattern — stateful
 
 ## See also
 
-- [`docs/LANGUAGE_MODELS.md`](LANGUAGE_MODELS.md) — switching
+- [docs/LANGUAGE_MODELS.md](LANGUAGE_MODELS.md) — switching
   the LLM, mixing backends, comparing models.
-- [`dissyslab/gallery/`](https://github.com/kmchandy/DisSysLab/tree/main/dissyslab/gallery)
+- [dissyslab/gallery/](https://github.com/kmchandy/DisSysLab/tree/main/dissyslab/gallery)
   — twenty worked offices covering the patterns above; `dsl list`
   prints them with one-line descriptions.
-- [`docs/recipes/`](recipes/) — how-tos for specific tasks
+- [docs/recipes/](recipes/) — how-tos for specific tasks
   (adding an RSS source, monitoring an inbox, receiving
   webhooks, ...).
-- [`API_KEY_SETUP.md`](API_KEY_SETUP.md) — environment
+- [API_KEY_SETUP.md](API_KEY_SETUP.md) — environment
   variables for Anthropic, Gmail, Slack, etc.

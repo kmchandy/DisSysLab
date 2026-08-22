@@ -40,7 +40,7 @@ composing, not re-deriving.
 ## 2. Setting up (do this before the first class)
 
 Everything below is done by talking to **Cowork** (the Claude desktop app).
-The full walkthrough is [`SETUP.md`](SETUP.md), next to this file; here is
+The full walkthrough is [SETUP.md](SETUP.md), next to this file; here is
 the short version.
 
 **Choose "on your computer," not "in the cloud,"** when you start a task in
@@ -82,7 +82,7 @@ There are two ways to give it to your agent. Try the first; if anything about
 it is unclear, the second always works.
 
 **Either — install the bundle.** Download
-[`office-builder.skill`](../skills/office-builder.skill) from the repository
+[office-builder.skill](../skills/office-builder.skill) from the repository
 and add it to Cowork as a skill. Your agent then picks it up automatically
 whenever you ask for something that sounds like an office.
 
@@ -111,7 +111,7 @@ bad test — every version answers that, so it tells you a skill is loaded, not
 which one.
 
 *Building sensing offices — classifying photos, recordings, or sensor
-readings? Also add [`sensor-office-builder.skill`](../skills/sensor-office-builder.skill).*
+readings? Also add [sensor-office-builder.skill](../skills/sensor-office-builder.skill).*
 
 ---
 
@@ -188,7 +188,7 @@ You never have to. But reading one is how you check the agent's work, and by
 the end of the course you should be able to write one without help — that is
 most of what "you understand your own office" means.
 
-**[`docs/BUILD_APPS.md`](../docs/BUILD_APPS.md)** has the full grammar, the
+**[docs/BUILD_APPS.md](../docs/BUILD_APPS.md)** has the full grammar, the
 component catalogue and worked examples. Reach for it when the agent has built
 something and you want to know why it wired it that way.
 

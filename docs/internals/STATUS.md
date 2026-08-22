@@ -1,11 +1,11 @@
 # Where the project is — 2026-08-20
 
 One page. What is true now, what is open, and what to read first.
-Everything dated and finished lives in [`archive/`](../../archive/);
+Everything dated and finished lives in [archive/](../../archive/);
 this file is the only status document that is kept current.
 
 If you are picking the project up cold, read this, then
-[`reference/architecture.md`](reference/architecture.md), then the
+[reference/architecture.md](reference/architecture.md), then the
 overview half of whichever module you are about to change.
 
 ---
@@ -54,9 +54,9 @@ the wheel by, among other things:
 3. **Offices as processes, steps 3–5** — `Channel` / `PipeChannel` and
    the boundary agents, the cut and flatten, the network-level
    detector. Design in
-   [`design/process_per_office_design.md`](design/process_per_office_design.md)
+   [design/process_per_office_design.md](design/process_per_office_design.md)
    and
-   [`design/termination_detection_design.md`](design/termination_detection_design.md)
+   [design/termination_detection_design.md](design/termination_detection_design.md)
    §5.4–§5.5. Start with `PipeChannel`; `SocketChannel` is the same
    interface when a second machine is wanted.
 
@@ -94,7 +94,7 @@ the wheel by, among other things:
 - **Termination detection has an explicit idleness bit.** The old
   predicate worked only because every agent was reactive. Alarms are
   the first agent that can answer a poll while owing a send. See
-  [`design/termination_detection_design.md`](design/termination_detection_design.md).
+  [design/termination_detection_design.md](design/termination_detection_design.md).
 
 - **The vocabulary pass.** "OfficeSpeak" named nothing a reader could
   point at, so it became the name for the whole system — which is how

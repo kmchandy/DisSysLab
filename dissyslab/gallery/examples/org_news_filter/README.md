@@ -64,7 +64,7 @@ send it to a second agent that summarizes it, rates its significance,
 or translates it. That's the next example —
 [Intelligence Briefing](../org_intelligence_briefing/).
 
-**More to swap in.** See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+**More to swap in.** See [docs/SOURCES_AND_SINKS.md](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
 for the full list of sources and sinks shipped with the framework.
 
 **Recipes.**

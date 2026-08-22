@@ -98,7 +98,7 @@ or a summary office that batches briefings into a daily digest.
 compile each as a black box, and wire them together in a `network.md`.
 The pattern scales to any number of offices.
 
-**More to swap in.** See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+**More to swap in.** See [docs/SOURCES_AND_SINKS.md](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
 for the full list of sources and sinks shipped with the framework.
 
 **Recipe.** [How to chain offices](https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/chain-offices.md)

@@ -64,7 +64,7 @@ stocks's destination is Alex.   # each source streams to the same Alex
 Alex sees each tick as it arrives.
 
 **Filter for big moves only.** Edit
-[`roles/analyst.md`](roles/analyst.md) so Alex routes to two outboxes
+[roles/analyst.md](roles/analyst.md) so Alex routes to two outboxes
 — `big_move` and `quiet`:
 
 ```
@@ -77,7 +77,7 @@ Then route `Alex's big_move` to a notification sink and
 
 **Use Claude for high-stakes alerts only.** Most of the time Qwen
 is fine. Override one role to use Claude (see
-[`situation_room_pro`](../situation_room_pro/) for the pattern).
+[situation_room_pro](../situation_room_pro/) for the pattern).
 
 ### Tier 3 — Build  *(a few hours)*
 
@@ -85,7 +85,7 @@ Combine `stocks` with a news source. When Alex spots a 3% move on
 AAPL, simultaneously query recent BBC tech / TechCrunch headlines
 about Apple and write a one-paragraph "what's behind this move"
 brief. That's a real multi-source office. See
-[`docs/BUILD_APPS.md`](../../../../docs/BUILD_APPS.md).
+[docs/BUILD_APPS.md](../../../../docs/BUILD_APPS.md).
 
 ## What you should expect
 
@@ -108,8 +108,8 @@ architecture.
 
 ## See also
 
-- [`office.md`](office.md) — the wiring.
-- [`roles/analyst.md`](roles/analyst.md) — Alex's job description.
-- [`weather_monitor`](../weather_monitor/README.md) — the same
+- [office.md](office.md) — the wiring.
+- [roles/analyst.md](roles/analyst.md) — Alex's job description.
+- [weather_monitor](../weather_monitor/README.md) — the same
   shape with a different source. Useful comparison if you're
   learning.

@@ -10,7 +10,7 @@ is through a **sink**. A sink can write to a file, send an email,
 post to Slack, drive a physical actuator, or do anything else
 that has an effect on the outside world. Every sink shipped with
 the framework is listed in
-[`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md);
+[docs/SOURCES_AND_SINKS.md](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md);
 this recipe shows the four most common destinations.
 
 ## Run a working example

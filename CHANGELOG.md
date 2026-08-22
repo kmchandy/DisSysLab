@@ -432,7 +432,7 @@ was still unreleased. It is 1.7.0.)*
   algorithm, adapted for DSL's office-shaped systems. Algorithm
   authored by K. Mani Chandy with implementation help from Claude.
   Specification in
-  [`docs/algorithms/CHECKPOINT_RESUME.md`](docs/algorithms/CHECKPOINT_RESUME.md).
+  [docs/algorithms/CHECKPOINT_RESUME.md](docs/algorithms/CHECKPOINT_RESUME.md).
 - New `dsl run` flags:
   - `--snapshot-interval <seconds>` — initiate a distributed
     snapshot every N seconds while running. Snapshots persist

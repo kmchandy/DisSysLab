@@ -108,7 +108,7 @@ dsl run recovery_demo --resume latest --snapshot-interval 5
 ## Algorithm reference
 
 The algorithm's specification lives in
-[`docs/algorithms/CHECKPOINT_RESUME.md`](../../../../docs/algorithms/CHECKPOINT_RESUME.md).
+[docs/algorithms/CHECKPOINT_RESUME.md](../../../../docs/algorithms/CHECKPOINT_RESUME.md).
 Read that document and then read the three role files
 alongside `dissyslab/core.py`'s `Agent._handle_checkpoint` /
 `_handle_prepare_recover` / `_handle_start_recover` and

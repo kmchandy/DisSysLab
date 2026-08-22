@@ -104,7 +104,7 @@ since an office still being built is usually untracked.
 
 ## Where things live
 
-See [`docs/EXTENDING.md`](docs/EXTENDING.md) for the layered
+See [docs/EXTENDING.md](docs/EXTENDING.md) for the layered
 framework surface and the *"local office vs. framework library"*
 decision rule. That doc is the one you want if you are unsure
 whether your change belongs in your own office's `roles/` folder
@@ -126,7 +126,7 @@ or in the framework's `dissyslab/fn_lib/` or
 ## Code of Conduct
 
 Participation in this project is governed by
-[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md). The reporting contact
+[CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md). The reporting contact
 is K. Mani Chandy (kmchandy@gmail.com).
 
 

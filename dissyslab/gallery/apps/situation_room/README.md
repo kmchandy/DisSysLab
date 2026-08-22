@@ -14,7 +14,7 @@ briefings are rendered in your terminal as an intelligence
 digest and also archived as JSONL.
 The office instantiates the
 sense → think → respond pattern — see
-[`docs/PATTERN_sense_think_respond.md`](../../../../docs/PATTERN_sense_think_respond.md)
+[docs/PATTERN_sense_think_respond.md](../../../../docs/PATTERN_sense_think_respond.md)
 for how to modify it.
 
 ## Run it
@@ -43,7 +43,7 @@ the office reuses the loaded model and goes faster.
 
 ## What's in office.md
 
-Open [`office.md`](office.md) alongside this section — every line is
+Open [office.md](office.md) alongside this section — every line is
 explained below. 
 
 **The header.** Every office starts with one line naming itself:
@@ -171,7 +171,7 @@ describes every office in the gallery.
 > wiring. It adds one LLM call per article; the default office
 > skips it so Pat sees raw output.
 
-When you're ready to write your own, [`docs/BUILD_APPS.md`](../../../../docs/BUILD_APPS.md)
+When you're ready to write your own, [docs/BUILD_APPS.md](../../../../docs/BUILD_APPS.md)
 walks through it from scratch.
 
 ## Make it yours
@@ -355,8 +355,8 @@ Felix's discard is discard.
 After re-running, only articles mentioning the competitor flow
 through the rest of the pipeline. The full guide for writing
 new roles is at
-[`docs/BUILD_APPS.md`](../../../../docs/BUILD_APPS.md), and
-[`docs/LANGUAGE_MODELS.md`](../../../../docs/LANGUAGE_MODELS.md)
+[docs/BUILD_APPS.md](../../../../docs/BUILD_APPS.md), and
+[docs/LANGUAGE_MODELS.md](../../../../docs/LANGUAGE_MODELS.md)
 covers choosing a backend per role.
 
 **Example: a brand-new office.**
@@ -365,7 +365,7 @@ Once you can read `office.md` and write a role, you can compose
 a different office entirely — an inbox-triage office, a
 calendar-prep office, a competitor-watch office. The same
 patterns apply: pick sources, name agents, wire connections.
-[`docs/BUILD_APPS.md`](../../../../docs/BUILD_APPS.md) walks
+[docs/BUILD_APPS.md](../../../../docs/BUILD_APPS.md) walks
 through this from scratch.
 
 **Where to get help:**
@@ -402,14 +402,14 @@ through this from scratch.
 
 ## See also
 
-- [`office.md`](office.md) — the wiring.
+- [office.md](office.md) — the wiring.
 - `synchronizer_role` in
-  [`dissyslab/office/library.py`](../../../office/library.py) —
+  [dissyslab/office/library.py](../../../office/library.py) —
   the fan-in primitive this office uses; the five LLM roles
   (entity_extractor, severity_classifier, topic_tagger,
   geolocator, writer) come from `dissyslab/roles/`. This office
   ships no Python of its own.
-- [`docs/BUILD_APPS.md`](../../../../docs/BUILD_APPS.md) — how to
+- [docs/BUILD_APPS.md](../../../../docs/BUILD_APPS.md) — how to
   build your own office.
-- [`docs/LANGUAGE_MODELS.md`](../../../../docs/LANGUAGE_MODELS.md) —
+- [docs/LANGUAGE_MODELS.md](../../../../docs/LANGUAGE_MODELS.md) —
   how to switch or mix backends.

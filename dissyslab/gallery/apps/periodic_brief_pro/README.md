@@ -75,7 +75,7 @@ the simpler office doesn't have.
 ## Make it yours
 
 The office is hybrid: the news pipeline follows sense → think →
-respond (see [`docs/PATTERN_sense_think_respond.md`](../../../../docs/PATTERN_sense_think_respond.md)),
+respond (see [docs/PATTERN_sense_think_respond.md](../../../../docs/PATTERN_sense_think_respond.md)),
 while weather / stocks / calendar / gmail bypass it. You can edit
 each part independently:
 
@@ -93,10 +93,10 @@ each part independently:
 
 ## See also
 
-- [`periodic_brief`](../periodic_brief/) — the credential-free,
+- [periodic_brief](../periodic_brief/) — the credential-free,
   no-LLM version. Try this first to see the framework working in
   ten seconds.
-- [`docs/PATTERN_sense_think_respond.md`](../../../../docs/PATTERN_sense_think_respond.md)
+- [docs/PATTERN_sense_think_respond.md](../../../../docs/PATTERN_sense_think_respond.md)
   — the pattern instantiated by the news pipeline.
-- [`docs/LANGUAGE_MODELS.md`](../../../../docs/LANGUAGE_MODELS.md)
+- [docs/LANGUAGE_MODELS.md](../../../../docs/LANGUAGE_MODELS.md)
   — backend choice, per-role overrides, cost comparisons.

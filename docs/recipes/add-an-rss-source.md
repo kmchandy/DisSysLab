@@ -48,7 +48,7 @@ techcrunch   venturebeat_ai   python_jobs   hacker_news
 Save and run `dsl run .` again. Same office, different feed.
 
 The full list with descriptions is in
-[`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md).
+[docs/SOURCES_AND_SINKS.md](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md).
 
 ## Step 2 — point a shipped feed at a different URL
 

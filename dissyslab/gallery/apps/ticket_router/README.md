@@ -54,7 +54,7 @@ archive JSONL. Press Ctrl-C to stop.
 
 ## Make it yours
 
-Edit [`office.md`](office.md):
+Edit [office.md](office.md):
 
 - **SLOT 1 (sources):** change the webhook port or add a second
   source (e.g., gmail for tickets that come by email).
@@ -67,5 +67,5 @@ Edit [`office.md`](office.md):
   and informational tickets to another, or page someone via a
   webhook to PagerDuty.
 
-See [`docs/PATTERN_sense_think_respond.md`](../../../../docs/PATTERN_sense_think_respond.md)
+See [docs/PATTERN_sense_think_respond.md](../../../../docs/PATTERN_sense_think_respond.md)
 for the pattern.

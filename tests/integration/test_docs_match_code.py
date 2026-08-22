@@ -868,3 +868,38 @@ def test_retired_vocabulary_does_not_return():
         + "\n\nA concept with three names is a concept nobody can ask "
         "about. That is what this check exists to prevent."
     )
+
+
+# ---------------------------------------------------------------------------
+# 8. Link labels are plain text, never inline code
+# ---------------------------------------------------------------------------
+#
+# ``[`course/SETUP.md`](course/SETUP.md)`` renders as a link *and* a code span at
+# once. Several markdown viewers give a code span a dark background and a
+# link dark blue text, and the two together are unreadable -- reported from
+# the repository's own README, where the path was invisible while the same
+# path without backticks, and the same backticks without a link, both read
+# fine.
+#
+# Nothing is lost by dropping them. A path ending in .md already reads as a
+# path, and the link styling already marks it as clickable. One convention
+# beats two, so this holds for symbol names as well as paths.
+
+_CODE_IN_LINK = re.compile(r"\[`[^`]*`\]\(")
+
+
+def test_link_labels_are_not_inline_code():
+    offenders: dict[str, int] = {}
+
+    for path in _markdown_files():
+        text = path.read_text(encoding="utf-8", errors="replace")
+        hits = len(_CODE_IN_LINK.findall(text))
+        if hits:
+            offenders[str(path.relative_to(REPO_ROOT))] = hits
+
+    assert not offenders, (
+        "Link labels wrapped in backticks (unreadable in some viewers):\n"
+        + "\n".join(f"  {f}: {n}" for f, n in sorted(offenders.items()))
+        + "\n\nWrite [course/SETUP.md](course/SETUP.md), not "
+        "[`course/SETUP.md`](course/SETUP.md)."
+    )

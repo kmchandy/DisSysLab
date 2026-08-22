@@ -9,7 +9,7 @@ functions with first-class state**.
 > **Where does this fit?** `fn_lib/` is Layer 3 of the framework
 > (framework-maintainer territory). For when to add an entry here
 > vs. write a local Python role in your office vs. just ask Claude
-> for an English role, see [`docs/EXTENDING.md`](../../docs/EXTENDING.md).
+> for an English role, see [docs/EXTENDING.md](../../docs/EXTENDING.md).
 
 
 When Pat writes:

@@ -188,7 +188,7 @@ house style:
 - [`filter` in `org_news_filter`](https://github.com/kmchandy/DisSysLab/blob/main/dissyslab/gallery/org_news_filter/roles/filter.md)
   — two mailboxes, conditional routing.
 - [`analyst` in `org_intelligence_briefing`](https://github.com/kmchandy/DisSysLab/blob/main/dissyslab/gallery/org_intelligence_briefing/roles/analyst.md)
-  and [`editor`](https://github.com/kmchandy/DisSysLab/blob/main/dissyslab/gallery/org_intelligence_briefing/roles/editor.md)
+  and [editor](https://github.com/kmchandy/DisSysLab/blob/main/dissyslab/gallery/org_intelligence_briefing/roles/editor.md)
   — two roles in one office, one feeding the other.
 
 ## Tips for writing good job descriptions
