@@ -5,26 +5,51 @@
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Tests](https://github.com/kmchandy/DisSysLab/actions/workflows/test.yml/badge.svg)](https://github.com/kmchandy/DisSysLab/actions/workflows/test.yml)
 
-**Build persistent, concurrent applications by talking to an AI agent
-which assembles the apps from tested libraries.**
+**Build persistent, distributed applications by talking to an AI assistant.**
 
 ---
 
+DisSysLab (DSL) is a set of skills - libraries - that AI assistants such as Claude Cowork, Codex and Gemini CLI,  can use to build persistent, distributed applications. 
+The AI assistant assembles the concurrency machinery — message passing, rollback and recovery — from the library instead of re-generating the machinery from scratch for each application.
+An assistant without the library may generate incorrect programs because distributed systems are more complex than sequential programs.
 
-AI coding assistants such as Claude Cowork, Codex and Gemini CLI can generate code for
-persistent, concurrent applications. AI assistants may not generate correct programs
-because concurrency introduces problems that aren't in sequential programs.
-Straightforward operations in sequential programs - such as detecting that a computation
-has terminated - are not straightforward in concurrent programs.
+A distributed system is represented by an **office** in which all the staff (agents) work remotely. An agent has a set of inboxes and a set of outboxes - queues of messages. The flow of messages in the office is represented by a set of connections from outboxes to inboxes. The system removes a message from an outbox and sends a copy of the message to all the inboxes to which it is connected. We specify offices, in detail,later.
 
-DisSysLab (DSL) is a set of libraries that AI assistants can use to build persistent,
-concurrent applications. The libraries contain Python programs,
-instructions to the assistant, and test suites. You describe an application in
-English to the assistant. The assistant states what it assumed if your description is
-incomplete. You correct the assistant; the conversation continues until the assistant
-describes an application that matches the one you want. 
+## A child builds an office for herself.
 
-The assistant assembles the concurrency machinery — message passing, rollback and recovery — from the library instead of re-generating the machinery itself, for each application. We can reason about the correctness of the concurrent machinery because we wrote it. We don't know, however, how the assistant generated the rest of the code. So, the libraries include suites of tests and mechanisms to help you check the code.
+Let's call the child Su. An adult installs an AI assistant, such as Claude Cowork on the Su's laptop. 
+
+**1. Cowork on your computer.** When you start a task on Cowork you are given the options of running tasks on your computer or in the cloud; choose your computer.
+
+**2. Install the library.**
+
+Tell Cowork:
+
+> *Install  `dissyslab`
+
+
+
+
+Here is a possible conversation between Su and the assistant:
+
+> Give me an office with agents Dan and Jay.
+> Dan puts urgent messages that it receives in its outbox **urgent**.
+> Urgent messages from Dan are sent to Jay.
+> Show me my office
+
+The assistant responds:
+
+```
+# Office: urgent
+
+Agents:
+Dan is a router.
+Jay is unassigned.
+
+Connections:
+Dan's urgent is Jay.
+```
+
 
 
 
