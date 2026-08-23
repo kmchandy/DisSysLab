@@ -68,9 +68,9 @@ def load_bars(ticker: str, directory: str) -> Tuple[List[dict], str]:
     path = os.path.join(directory, f"{ticker}_10_year.csv")
     if os.path.isfile(path):
         from dissyslab.components.sources.csv_stock_history_source import (
-            CsvStockHistorySource,
+            CSVStockHistorySource,
         )
-        src = CsvStockHistorySource(
+        src = CSVStockHistorySource(
             tickers=[ticker], directory=directory,
             filename_pattern="{ticker}_10_year.csv",
         )
