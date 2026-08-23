@@ -66,10 +66,25 @@ model over a weekend finds out. A claim with a bill attached.
 ## 2. The pedagogy. Weeks 5–10.
 
 **Conversational office construction.** Storyboard first, then design,
-then build. Design so far in
+then build. The storyboard is
+[storyboard_first_office.md](design/storyboard_first_office.md) — one
+first-year, fourteen panels, ending in the question that opens the
+algorithms half of the course. Its §12 costs every panel and is the
+current work list. Design so far in
 [building_by_conversation.md](design/building_by_conversation.md): the
 `unassigned` placeholder, automatic draft mode, the gap list, the turn
 protocol. Not implemented, deliberately.
+
+**Four things the storyboard found that no design covers.** A way to
+list library roles with one line each on what they *emit* — there is
+no registry, no `dsl roles`, and no summary line, so an assistant
+paraphrases the prompt files afresh every time and no two students are
+told the same thing. A protocol for teaching turns (*"what is a
+source?"* asked mid-build) as distinct from building turns. What to
+call a role invented for one agent, since `Dan is a dan.` is what the
+grammar produces today. And an answer to *"undo that"*, which will be
+said in the first ten minutes and which putting `office.md` under
+version control would give for free.
 
 **A behavioural eval for the skill.** `test_docs_match_code.py` checks
 that the documentation agrees with the code. **Nothing checks that the
