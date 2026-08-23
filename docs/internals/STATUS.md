@@ -94,9 +94,13 @@ structure; nothing summarises an office for a marker.
 Vikram's own words for how he wants to work: **English and Excel.**
 Not diagrams, not Kakushadze notation, though he reads the latter.
 
-- **Phase 1 — the trace.** Strategies expose their intermediates; an
-  Excel sheet shows values, the same quantity as a live Excel formula,
-  and a *why* column. This is exactly what he asked for.
+- **Phase 1 — the trace. Done, 23 Aug.**
+  `mac_speed_suite/explain_strategy.py` writes a workbook: one row per
+  day, every intermediate, the same quantity again as a live Excel
+  formula, a match column, and a sentence saying which rule fired.
+  Donchian and MAC; Turtle and RS still to do. It cannot silently
+  disagree with the role it explains — the intermediates are checked
+  against the real signal, and a mismatch writes nothing.
 - **Phase 2 — corrections.** He edits the sheet or says what is wrong;
   Claude keeps prose and formulas consistent. One document, two ways
   to change it.
@@ -105,6 +109,28 @@ Not diagrams, not Kakushadze notation, though he reads the latter.
 
 Design in [signal_notation.md](design/signal_notation.md). Open: whether
 Excel is the specification or only the review surface.
+
+**Two requests from Vikram, 23 Aug.**
+
+*Control what is shown* — "show top 10 for a set of strategies". The
+trace already takes `--strategy`, `--variant`, `--ticker`, `--bars`,
+`--rows`. A ranked summary is a different thing: that is
+`report.html`'s job made askable, and belongs in its own change.
+
+*Turtle-style risk management* — ATR, position size by inverse
+volatility, weights, a stop. **Half of this is expressible today and
+half is not, and the difference matters.** `_backtester_core` computes
+`gross = prior_signal * today_return`, so the signal is a position
+*fraction*: per-instrument inverse-volatility sizing can be written as
+a signal in [-1, 1] and it will backtest correctly. But signals are
+computed per ticker with no shared state, so anything portfolio-level
+— total risk across positions, unit caps across correlated markets,
+sizing against current account equity — **cannot be expressed at all**.
+
+An assistant asked for "Turtle risk management" will produce plausible
+per-instrument code and call it Turtle. The gap is invisible in the
+output. The skill needs to state the signal contract and say when a
+request needs portfolio state the office does not have.
 
 ## 4. Debt, after January
 

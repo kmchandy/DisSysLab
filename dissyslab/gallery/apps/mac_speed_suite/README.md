@@ -105,6 +105,53 @@ exact basket, window, validation, stop, and cost that produced it. For the
 plain-English way to drive all of this through Cowork, see
 [skill_for_testers/COWORK_EXAMPLES.md](skill_for_testers/COWORK_EXAMPLES.md).
 
+## Seeing the working — `explain_strategy.py`
+
+`report.html` answers *how did it do*. This answers a different
+question: **is this the strategy I meant?**
+
+```bash
+python3 explain_strategy.py --strategy donchian --variant 20 --ticker NVDA
+python3 explain_strategy.py --strategy donchian --strategy mac --rows 25
+python3 explain_strategy.py --strategy mac --variant med --bars 300:340
+```
+
+It writes `strategy_working.xlsx`: one row per trading day, and every
+quantity the strategy computed on the way to its decision — the channel
+bounds for Donchian, the two moving averages for MAC — with a plain
+sentence saying which rule fired.
+
+Each derived quantity appears **twice**: the value the Python produced,
+and the same quantity as a live Excel formula over the price cells,
+with a `match` column comparing them. The formula is there to be read.
+`=MAX(C2:C21)` in row 22 says *"the twenty rows above this one, not
+this one"* without anyone explaining the boundary convention — and if
+that is not your rule, change it and watch the signal column move.
+
+The two columns do not verify each other; both express one author's
+understanding of the rule. What they give you is a specification you
+can read, in a language you already trust.
+
+**Defaults worth knowing.** With no `--bars`, a window is chosen that
+contains a signal change — twenty bars in which nothing happens
+demonstrate nothing. Rows the formulas need but you did not ask for are
+included and shaded grey, so a 20-day Donchian window carries twenty
+rows of context. MAC cannot be recomputed from a window at all, since
+an exponential average depends on every earlier bar, so its first
+visible row is seeded from the full run and the recurrence proceeds
+from there. With no price CSVs on disk it uses a synthetic series and
+says so, in capitals, on the Read me sheet.
+
+**It cannot silently disagree with the strategy it explains.** The
+intermediates are recomputed and then checked against the signal the
+real role produced. In both strategies the signal is a function of the
+intermediates alone, so agreement on one is agreement on the other. On
+a mismatch it names the bar and writes nothing.
+
+Formula cells have no cached value until a spreadsheet application
+opens the file, so `pandas.read_excel` sees blanks where Excel sees
+numbers.
+
 ## Add a strategy
 
 Add one role file under `roles/` (a per-day compute function plus a small
