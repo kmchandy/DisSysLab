@@ -31,12 +31,19 @@ your work stays yours.
 
 Say this:
 
-> Install the Python package `dissyslab` for me, then run `dsl list` and show
-> me what offices come with it.
+> The project is at https://github.com/kmchandy/DisSysLab. Install its Python
+> package `dissyslab` for me, then run `dsl list` and show me what offices come
+> with it.
 
-You should get a list of about thirty offices — a morning brief, a news
-situation room, a bird-call classifier, a stock watcher. These are working
-programs, not examples in a book.
+**Name the repository, every time.** *"Install dissyslab"* on its own asks an
+assistant to trust a name it cannot check. Given the address it can read the
+project's own instructions, confirm the package it is about to install is this
+one, and — in the next step — find the skill, which lives in that repository
+and not on PyPI. The URL in step 4 has to come from somewhere; this is where.
+
+You should get a list of forty offices — 31 applications and 9 smaller
+examples: a morning brief, a news situation room, a bird-call classifier, a
+stock watcher. These are working programs, not examples in a book.
 
 If anything looks wrong, say: *"run `dsl doctor` and tell me what it says."*
 That checks your Python, your dependencies, and your backend, then builds and

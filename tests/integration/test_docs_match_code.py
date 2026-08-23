@@ -975,3 +975,95 @@ def test_documented_diagrams_match_the_office_they_show():
         "in. A picture that disagrees with the office it claims to show "
         "is believed in preference to the office."
     )
+
+
+# ── §10. An install instruction names the repository ──────────────────────────
+#
+# Four documents told a reader to say "Install the Python package
+# dissyslab for me" and none of them said where the project lives. The
+# name alone asks an assistant to trust a string it cannot check, and
+# the step that follows -- installing the office-builder skill, which
+# is in the repository and not on PyPI -- hands over a URL that
+# appeared from nowhere.
+#
+# The check is narrow on purpose. It fires only on an instruction
+# addressed to an assistant, which in these documents means a
+# blockquote: `pip install dissyslab` in a shell block is a command a
+# person runs, and it does not need provenance because they typed it
+# themselves. What needs the address is the sentence a reader is told
+# to say out loud to something that will act on it.
+
+_REPO_URL = "github.com/kmchandy/DisSysLab"
+
+# "Install `dissyslab`", "Install the Python package `dissyslab`",
+# "Install its Python package `dissyslab`" -- an order to install the
+# package, addressed to something that will carry it out.
+#
+# The backtick immediately before the name is what keeps this from
+# matching prose. `pip install dissyslab` in a sentence is a command a
+# person types, and its backtick sits before "pip"; "runs on any laptop
+# with DisSysLab installed" is a description. Neither needs an address.
+_INSTALL_ORDER = re.compile(
+    r"\binstall\s+(?:the\s+|its\s+)?(?:python\s+)?(?:package\s+)?`dissyslab`",
+    re.I,
+)
+
+
+def _quoted_install_instructions(text: str):
+    """Each blockquote that orders an assistant to install the package.
+
+    A blockquote is a run of consecutive lines starting with '>'; the
+    documents use one wherever they give a reader something to say.
+    Yields (first_line_number, block_text).
+    """
+    lines = text.splitlines()
+    i = 0
+    while i < len(lines):
+        if lines[i].lstrip().startswith(">"):
+            start = i
+            while i < len(lines) and lines[i].lstrip().startswith(">"):
+                i += 1
+            block = "\n".join(lines[start:i])
+            # Unwrap: an instruction split over two quoted lines is one
+            # sentence, and the pattern has to see it that way.
+            flat = " ".join(
+                ln.lstrip().lstrip(">").strip().strip("*") for ln in lines[start:i]
+            )
+            if _INSTALL_ORDER.search(flat):
+                yield start + 1, block
+        else:
+            i += 1
+
+
+def test_install_instructions_name_the_repository():
+    offenders: list[str] = []
+    checked = 0
+
+    for path in _markdown_files():
+        if path.name == "CHANGELOG.md":
+            continue  # a record of what was said, not an instruction
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for line_no, block in _quoted_install_instructions(text):
+            checked += 1
+            # Either source will do. The repository is the better answer
+            # and the one the next step needs, but an instruction that
+            # says "from PyPI" has still told the assistant where to
+            # look, and a Dockerfile prompt has no use for the skill.
+            if _REPO_URL not in block and "pypi" not in block.lower():
+                offenders.append(f"{path.relative_to(REPO_ROOT)}:{line_no}")
+
+    assert checked, (
+        "No install instructions found at all. Either they were removed, "
+        "or their shape changed and this check is now passing vacuously."
+    )
+    assert not offenders, (
+        "These tell a reader to have an assistant install the package "
+        "without saying where the project is:\n"
+        + "\n".join(f"  {o}" for o in sorted(offenders))
+        + f"\n\nSay where it comes from: https://{_REPO_URL} in the "
+        "quoted instruction, or at minimum 'from PyPI'. A bare package "
+        "name asks the assistant to trust something it cannot check, "
+        "and the skill the reader needs next is in the repository "
+        "rather than on PyPI, so the address has to be introduced "
+        "somewhere."
+    )

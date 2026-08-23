@@ -25,7 +25,15 @@ Let's call the child Su. An adult installs an AI assistant, such as Claude Cowor
 
 Tell Cowork:
 
-> *Install  `dissyslab`
+> *The project is at https://github.com/kmchandy/DisSysLab. Install its
+> Python package `dissyslab` for me.*
+
+Name the repository. *"Install dissyslab"* on its own asks the
+assistant to trust a name it cannot check; given the address it can
+read the project's own instructions and confirm what it is installing.
+The skill Su needs next lives in that repository and not on PyPI, so
+the address has to be introduced somewhere, and this is the first
+place it is needed.
 
 
 
@@ -75,11 +83,12 @@ described in detail later.
 
 Tell Cowork:
 
-> *Install the Python package `dissyslab` for me, then run `dsl list`
-> and show me what offices come with it.*
+> *The project is at https://github.com/kmchandy/DisSysLab. Install its
+> Python package `dissyslab` for me, then run `dsl list` and show me
+> what offices come with it.*
 
-You should see about forty applications listed. If anything looks
-wrong, tell Cowork
+You should see forty offices listed — 31 applications and 9 smaller
+examples. If anything looks wrong, tell Cowork
 
 >  run `dsl doctor` and tell me what it says.
 

@@ -11,8 +11,9 @@ Open your Claude Cowork desktop app. **Choose "on your computer," not "in the cl
 
 Then say:
 
-> Install the Python package `dissyslab` for me, then run `dsl list` and show
-> me what offices come with it.
+> The project is at https://github.com/kmchandy/DisSysLab. Install its Python
+> package `dissyslab` for me, then run `dsl list` and show me what offices come
+> with it.
 
 Then to see an example of an app, tell Cowork:
 

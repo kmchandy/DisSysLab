@@ -258,8 +258,9 @@ computer**.
 
 **2. Install the library.** Tell Cowork:
 
-> *Install the Python package `dissyslab` for me, then run `dsl list`
-> and show me what offices come with it.*
+> *The project is at https://github.com/kmchandy/DisSysLab. Install its
+> Python package `dissyslab` for me, then run `dsl list` and show me
+> what offices come with it.*
 
 You should see forty offices — 31 applications and 9 smaller examples.
 If anything looks wrong: *run `dsl doctor` and tell me what it says.*
