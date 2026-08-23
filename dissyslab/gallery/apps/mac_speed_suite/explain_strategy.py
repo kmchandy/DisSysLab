@@ -275,6 +275,14 @@ def write_workbook(traces: List[Trace], windows: List[Tuple[int, int]],
     from openpyxl.styles import Alignment, Font, PatternFill
 
     wb = openpyxl.Workbook()
+    # Nothing here computes a formula, so every formula cell ships with
+    # no stored answer. Excel is entitled to trust a stored answer if
+    # one is present; asking for a full recalculation on load means the
+    # numbers a reader sees were worked out by their spreadsheet from
+    # the prices in front of them, and not by us. It also fills the
+    # columns in immediately, which is what stops the sheet looking
+    # broken on first open.
+    wb.calculation.fullCalcOnLoad = True
     _read_me(wb.active, traces, provenance)
     for tr, (lo, hi) in zip(traces, windows):
         _trace_sheet(wb.create_sheet(tr.name[:31]), tr, lo, hi)
@@ -294,6 +302,13 @@ def _read_me(ws, traces: List[Trace], provenance: str) -> None:
          "and read the formula bar: it is the rule, in a form you can "
          "check and change. Change a price and the shaded columns "
          "recompute.", False),
+        ("", False),
+        ("Open this in a spreadsheet application -- Excel, Numbers, "
+         "Google Sheets. A formula has no stored answer until something "
+         "works it out, so in a preview that does not calculate (the "
+         "Finder's Quick Look, a file listing on the web) the shaded "
+         "columns and the match columns look empty. They are not empty; "
+         "nothing has evaluated them yet.", False),
         ("", False),
         ("The unshaded value columns are what the Python produced. They "
          "do not verify the formulas -- both say the same author's "
