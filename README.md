@@ -230,28 +230,44 @@ briefing.
 
 ```mermaid
 flowchart LR
-  A[bbc_world]:::src --> D[Sasha<br/>deduplicate]
-  B[npr_news]:::src --> D
-  C[al_jazeera]:::src --> D
-  D --> E1[Eve<br/>extract entities]
-  D --> E2[Sam<br/>classify severity]
-  D --> E3[Tom<br/>tag topic]
-  D --> E4[Greta<br/>geolocate]
-  E1 --> H[Sync<br/>synchronize]
-  E2 --> H
-  E3 --> H
-  E4 --> H
-  H --> I[Riley<br/>write briefing]
-  I --> J[intelligence_display]:::sink
-  I --> K[(briefings.jsonl)]:::sink
+  bbc_world[bbc_world]
+  npr_news[npr_news]
+  al_jazeera[al_jazeera]
+  Sasha[Sasha<br/>deduplicator]
+  Eve[Eve<br/>entity_extractor]
+  Sam[Sam<br/>severity_classifier]
+  Tom[Tom<br/>topic_tagger]
+  Greta[Greta<br/>geolocator]
+  Sync[Sync<br/>synchronizer]
+  Riley[Riley<br/>writer]
+  intelligence_display[intelligence_display]
+  jsonl_recorder_briefing[jsonl_recorder_briefing]
+  bbc_world --> Sasha
+  npr_news --> Sasha
+  al_jazeera --> Sasha
+  Sasha --> Eve
+  Sasha --> Sam
+  Sasha --> Tom
+  Sasha --> Greta
+  Eve -->|entities| Sync
+  Sam -->|severity| Sync
+  Tom -->|topic| Sync
+  Greta -->|location| Sync
+  Sync --> Riley
+  Riley --> intelligence_display
+  Riley --> jsonl_recorder_briefing
   classDef src fill:#dbeafe,stroke:#1d4ed8
+  class bbc_world,npr_news,al_jazeera src
   classDef sink fill:#fef3c7,stroke:#92400e
+  class intelligence_display,jsonl_recorder_briefing sink
 ```
 
-The diagram is generated from the office's `office.md`, which is the
-whole program:
+That diagram was produced by `dsl draw`, from the office's
+`office.md` below, which is the whole program:
 
 ```
+# Office: situation_room
+
 Sources: bbc_world(max_articles=3), npr_news(max_articles=3), al_jazeera(max_articles=3)
 Sinks: intelligence_display, jsonl_recorder_briefing(path="briefings.jsonl")
 

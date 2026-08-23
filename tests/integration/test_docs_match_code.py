@@ -903,3 +903,75 @@ def test_link_labels_are_not_inline_code():
         + "\n\nWrite [course/SETUP.md](course/SETUP.md), not "
         "[`course/SETUP.md`](course/SETUP.md)."
     )
+
+
+# ── §9. Every diagram in the documentation is the office beside it ────────────
+#
+# README.md said "The diagram is generated from the office's office.md"
+# for months. It was not: nothing in the repository could produce a
+# diagram, and the mermaid block had been drawn by hand and copied
+# forward through three documents. Nobody noticed, because a picture is
+# the one part of a document a reader never checks against the code --
+# they check the code against the picture.
+#
+# Now there is a generator, so the claim can be made true rather than
+# deleted. This section is what keeps it true: wherever a document
+# shows a mermaid diagram and then shows the office.md it depicts, the
+# diagram must be exactly what `dsl draw` produces from that office.
+#
+# It compares the whole block, not just the node and edge sets. That is
+# a deliberate choice and it will occasionally fail for a cosmetic
+# change to the drawing. The alternative -- comparing structure and
+# forgiving styling -- would let the two drift apart in every way a
+# reader can see, which is the failure this section exists to prevent.
+# The fix when it fails is one command, and the failure message says so.
+
+_MERMAID_BLOCK = re.compile(r"^```mermaid\n(.*?)^```", re.M | re.S)
+_PLAIN_BLOCK = re.compile(r"^```\n(.*?)^```", re.M | re.S)
+
+
+def _diagram_office_pairs(text: str):
+    """Each mermaid block paired with the next office.md shown after it.
+
+    A fenced block counts as an office if it has the two sections no
+    other code sample in these documents has.
+    """
+    for m in _MERMAID_BLOCK.finditer(text):
+        for after in _PLAIN_BLOCK.finditer(text, m.end()):
+            body = after.group(1)
+            if "Agents:" in body and "Connections:" in body:
+                yield m.group(1).rstrip("\n"), body
+            break
+
+
+def test_documented_diagrams_match_the_office_they_show():
+    import tempfile
+
+    from dissyslab.office.draw import draw_office_dir
+
+    wrong: list[str] = []
+    checked = 0
+
+    for path in _markdown_files():
+        text = path.read_text(encoding="utf-8", errors="replace")
+        for shown, office_md in _diagram_office_pairs(text):
+            checked += 1
+            with tempfile.TemporaryDirectory() as tmp:
+                (Path(tmp) / "office.md").write_text(office_md, encoding="utf-8")
+                actual = draw_office_dir(Path(tmp))
+            if shown.strip() != actual.strip():
+                wrong.append(str(path.relative_to(REPO_ROOT)))
+
+    assert checked, (
+        "No diagram/office pairs found. Either the documentation stopped "
+        "showing them, or the fence conventions changed and this check is "
+        "now passing vacuously -- which is worse than failing."
+    )
+    assert not wrong, (
+        "These documents show a diagram that is not the office printed "
+        "beside it:\n"
+        + "\n".join(f"  {f}" for f in sorted(set(wrong)))
+        + "\n\nRegenerate it: `dsl draw <office_dir>` and paste the block "
+        "in. A picture that disagrees with the office it claims to show "
+        "is believed in preference to the office."
+    )

@@ -532,6 +532,38 @@ def cmd_check(args: argparse.Namespace) -> int:
     return 0 if report.ok else 1
 
 
+# ── Subcommand: draw ──────────────────────────────────────────────────────────
+
+def cmd_draw(args: argparse.Namespace) -> int:
+    """Render an office's network as a Mermaid diagram.
+
+    On demand, not after every edit. See the note at the head of
+    ``dissyslab/office/draw.py``: a diagram produced on every change
+    has to stay stable under change so the reader does not have to
+    re-find what they had already understood; one asked for once has
+    no such obligation, and that is what keeps this simple.
+    """
+    office_dir = _resolve_office_arg(args.office_dir, "office_dir")
+    if office_dir is None:
+        return 2
+
+    from dissyslab.office.draw import draw_office_dir, fenced
+
+    try:
+        diagram = draw_office_dir(office_dir)
+    except Exception as exc:  # noqa: BLE001
+        _eprint(_explain_failure("dsl draw", exc))
+        return 1
+
+    text = diagram if args.raw else fenced(diagram)
+    if args.out:
+        Path(args.out).write_text(text + "\n", encoding="utf-8")
+        print(f"wrote {args.out}")
+    else:
+        print(text)
+    return 0
+
+
 # ── Subcommand: explain-trace ─────────────────────────────────────────────────
 
 def cmd_explain_trace(args: argparse.Namespace) -> int:
@@ -1713,6 +1745,35 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_check.add_argument("office_dir", help="path to an office directory")
     p_check.set_defaults(handler=cmd_check)
+
+    p_draw = sub.add_parser(
+        "draw",
+        help="draw an office's network as a Mermaid diagram",
+        description=(
+            "Read <office_dir>/office.md and print the network as a "
+            "Mermaid flowchart, wrapped in a Markdown fence so that "
+            "GitHub and most editors render it.\n\n"
+            "Ask for this when the wiring stops being readable as text, "
+            "which happens at the first branch or fan-in. It draws an "
+            "incomplete office too: a name used in Connections and "
+            "declared nowhere gets its own node, marked, because an "
+            "office you cannot run is when you most want to look at it.\n\n"
+            "The picture shows structure and nothing else. Two offices "
+            "that draw identically can behave completely differently, "
+            "and a diagram with no fault in it can still deadlock."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_draw.add_argument("office_dir", help="path to an office directory")
+    p_draw.add_argument(
+        "--out", metavar="FILE",
+        help="write to FILE instead of standard output",
+    )
+    p_draw.add_argument(
+        "--raw", action="store_true",
+        help="print the diagram without the ```mermaid fence",
+    )
+    p_draw.set_defaults(handler=cmd_draw)
 
     p_doc = sub.add_parser(
         "doctor",

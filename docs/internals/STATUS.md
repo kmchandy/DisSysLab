@@ -46,10 +46,17 @@ foot of `tests/unit/test_alarm.py`.
 **Release 1.7.2 — and ship the skill with it.** The repository is
 ahead of the wheel by W5 (nearest-spelling suggestion for an unknown
 source or sink — a typo currently reads to a student as a missing
-feature), the yfinance change, and error counting in the run summary.
-**The skill and the wheel are now coupled**: `office-builder` teaches
-`inboxes=`, which needs the alias in `office_spec.py`. A student on
-PyPI 1.7.2 with the current skill gets a mismatch.
+feature), the yfinance change, error counting in the run summary, and
+`dsl draw`. **The skill and the wheel are now coupled**: `office-builder`
+teaches `inboxes=`, which needs the alias in `office_spec.py`. A student
+on PyPI 1.7.2 with the current skill gets a mismatch.
+
+**`dsl draw` is unreachable until the skill knows about it.** A user
+who says *"draw the network"* gets it only if the assistant knows the
+subcommand exists. Teaching the skill before the release ships would
+point students on PyPI 1.7.2 at a command they do not have — the same
+coupling as `inboxes=`, and the second instance of it. Both clear
+together.
 
 **Thirty students installing at once has never been tested.** One
 unresolved install failure costs a class hour, thirty times. Windows
@@ -207,6 +214,19 @@ course does not suffer.
 - **The documentation is testable.** `test_docs_match_code.py` now
   also checks every relative link and `<img src>`, retired vocabulary,
   and link-label style.
+- **`dsl draw`, and the §F it closed.** README said *"the diagram is
+  generated from the office's `office.md`"* for months; nothing could
+  generate a diagram, and the block had been drawn by hand and copied
+  into three documents. Now it is generated, and §9 of
+  `test_docs_match_code.py` asserts that any documented diagram equals
+  what the generator produces from the office printed beside it.
+  Deliberately **on request** rather than after every edit: a diagram
+  redrawn on each change has to be stable under change, or adding an
+  agent moves the ones the reader had already understood, and laying
+  out a graph under that constraint is a real problem. Asked for once,
+  it has no such obligation — which is the whole reason the module is
+  150 lines. It draws an office that does not compile, too, since that
+  is when a picture is worth most.
 
 ## The standing rule
 
