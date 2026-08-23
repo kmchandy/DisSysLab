@@ -11,34 +11,22 @@ which assembles the apps from tested libraries.**
 ---
 
 
-**Coding assistants for Concurrent Apps**: 
-AI coding assistants such as Claude Cowork, Codex and Gemini CLI generate code for
-persistent, concurrent applications. You can generate any app by talking to the
-assistant in plain English; however, AI assistants may not generate correct programs
-because concurrency introduces problems that aren't in sequential programs. For example,
-straightforward operations in sequential programs - such as detecting that a computation
+AI coding assistants such as Claude Cowork, Codex and Gemini CLI can generate code for
+persistent, concurrent applications. AI assistants may not generate correct programs
+because concurrency introduces problems that aren't in sequential programs.
+Straightforward operations in sequential programs - such as detecting that a computation
 has terminated - are not straightforward in concurrent programs.
 
-**Skills for Concurrent Apps**:
-DisSysLab is a set of libraries that AI assistants can use to build persistent,
+DisSysLab (DSL) is a set of libraries that AI assistants can use to build persistent,
 concurrent applications. The libraries contain Python programs,
-instructions to the assistant, and test suites. You describe the application in
+instructions to the assistant, and test suites. You describe an application in
 English to the assistant. The assistant states what it assumed if your description is
 incomplete. You correct the assistant; the conversation continues until the assistant
-describes an application that matches the one you want. The assistant assembles
-the concurrency machinery — message passing, termination detection, checkpointing, rollback and
-recovery — instead of attempting to generate the machinery itself.
+describes an application that matches the one you want. 
 
-**Test Suites in Skills**: 
-We can reason about the correctness of the concurrency components that the assistant used
-to assemble the application because we wrote the components. However, you don't know how
-the assistant generated the rest of the code. So, the libraries include suites of tests
-that help you test both the parts of the app and the entire ensemble.
+The assistant assembles the concurrency machinery — message passing, rollback and recovery — from the library instead of re-generating the machinery itself, for each application. We can reason about the correctness of the concurrent machinery because we wrote it. We don't know, however, how the assistant generated the rest of the code. So, the libraries include suites of tests and mechanisms to help you check the code.
 
-**Distributed Systems as Offices**: 
-A distributed system is represented as an office - a network of agents. An agent sends and
-receives messaegs. The network specifies how messages flow between agents. Offices are
-described in detail later.
+
 
 ---
 
@@ -55,6 +43,10 @@ computer**.
 
 
 **2. Install the library.**
+
+A distributed system is represented as an office - a network of agents. An agent sends and
+receives messaegs. The network specifies how messages flow between agents. Offices are
+described in detail later.
 
 Tell Cowork:
 
