@@ -1,65 +1,26 @@
-# Start here
+# Build a distributed system.
 
-**Distributed systems, January 4 – March 10, 2027**
+This description assumes that you have read the **office** representation of a distributed system.
+A summary: an office consists of agents and an org chart. Each agent is specified by a job description. The network specifies how messages flow between agents.
 
-You will build a system that watches something you care about and reacts to
-it — and then you will take the floor apart and study what holds it up.
 
-That order matters. Most courses in this subject give you the algorithms first
-and ask you to believe they are useful. Here you build something that works in
-the first week, and the algorithms arrive later as answers to questions your
-own program has already raised: *how does it know it has finished? what
-happens if it crashes halfway? how would I tell "still working" from "stuck
-forever"?*
-
-You need to know some Python. You do not need to know anything about
-distributed systems, concurrency, or parallel programming. That is what the
-course is for.
-
----
-
-## 1. What you are building
-
-An **office**: a network of agents, each with one job, that runs continuously.
-
-- **Sources** fetch from the world — a news feed, a weather service, a folder
-  of photos, a webhook, your inbox.
-- **Agents** transform the stream — filter, classify, extract, summarise,
-  compute.
-- **Sinks** act — write a file, print, post, send.
-
-You describe the office in English. An AI agent assembles it from a tested
-library rather than writing the concurrency machinery from scratch. The
-machinery — passing messages between agents, knowing when the whole office has
-finished, saving state so it can resume after a crash — is the part that is
-genuinely hard to get right, and it is already written and tested. You are
-composing, not re-deriving.
-
----
-
-## 2. Setting up (do this before the first class)
-
-Everything below is done by talking to **Cowork** (the Claude desktop app).
-The full walkthrough is [`SETUP.md`](SETUP.md), next to this file; here is
+In this example, you build a distributed app by talking to **Cowork** (the Claude desktop app). You can also use other AI agents such as Codex and Gemini CLI. The details are in [SETUP.md](SETUP.md); here is
 the short version.
 
-**Choose "on your computer," not "in the cloud,"** when you start a task in
-Cowork. A cloud task runs on a machine that is thrown away afterwards, so the
-work you do today would not be there tomorrow.
+Open your Claude Cowork desktop app. **Choose "on your computer," not "in the cloud,"** when you start a task in Cowork. 
 
 Then say:
 
 > Install the Python package `dissyslab` for me, then run `dsl list` and show
 > me what offices come with it.
 
-Then see one work:
+Then to see an example of an app, tell Cowork:
 
 > Make me my own copy of the `periodic_brief` office in a folder called
 > `my_brief`, then run it and open the result.
 
-Ten to twenty seconds later you have an HTML page with real news and real
-weather. **No API key, no account, no model download, and nothing to install
-beyond `dissyslab` itself.** If anything goes wrong, say *"run `dsl doctor`
+In 20 seconds you have an HTML page with news and weather. If anything goes wrong, tell Cowork
+> run `dsl doctor`
 and tell me what it says."*
 
 (Stock prices are one line away — `stocks(ticker="AAPL")` — but they need
