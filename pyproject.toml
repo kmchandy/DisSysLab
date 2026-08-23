@@ -65,6 +65,11 @@ dependencies = [
 # by accident. See mac_speed_suite/download_stock_history_from_yf.py.
 market = [
   "yfinance>=0.2.40",
+  # explain_strategy.py writes the per-bar working as a spreadsheet with
+  # live formulas, which is how a non-programmer checks that the
+  # implemented rule is the one they meant. Same extra as the data it
+  # explains, so one install covers the whole backtesting path.
+  "openpyxl>=3.1",
 ]
 dev = [
   "pytest>=8.0.0",

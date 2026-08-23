@@ -261,7 +261,17 @@ CONTEXT_FILL = "F2F2F2"
 
 def write_workbook(traces: List[Trace], windows: List[Tuple[int, int]],
                    provenance: str, out_path: str) -> None:
-    import openpyxl
+    try:
+        import openpyxl
+    except ImportError:
+        raise SystemExit(
+            "This needs openpyxl to write the spreadsheet, and it is not "
+            "installed.\n\n"
+            '    pip install "dissyslab[market]"\n\n'
+            "That extra carries yfinance for the price history and openpyxl "
+            "for this. Use the same Python that runs `dsl` -- if dsl lives "
+            "in a virtualenv, activate it first."
+        ) from None
     from openpyxl.styles import Alignment, Font, PatternFill
 
     wb = openpyxl.Workbook()
