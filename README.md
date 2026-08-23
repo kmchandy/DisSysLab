@@ -15,50 +15,92 @@ An assistant without the library may generate incorrect programs because distrib
 
 A distributed system is represented by an **office** in which all the staff (agents) work remotely. An agent has a set of inboxes and a set of outboxes - queues of messages. The flow of messages in the office is represented by a set of connections from outboxes to inboxes. The system removes a message from an outbox and sends a copy of the message to all the inboxes to which it is connected. We specify offices, in detail,later.
 
-## A child builds an office for herself.
+## A child builds an office for herself
 
-Let's call the child Su. An adult installs an AI assistant, such as Claude Cowork on the Su's laptop. 
+Su is twelve and likes space. An adult installs Claude Cowork on her
+laptop and chooses **on your computer** rather than in the cloud. That
+is the only adult step.
 
-**1. Cowork on your computer.** When you start a task on Cowork you are given the options of running tasks on your computer or in the cloud; choose your computer.
-
-**2. Install the library.**
-
-Tell Cowork:
+Su tells Cowork:
 
 > *The project is at https://github.com/kmchandy/DisSysLab. Install its
-> Python package `dissyslab` for me.*
+> Python package `dissyslab` for me, and get the skill for building
+> offices from that repository.*
 
-Name the repository. *"Install dissyslab"* on its own asks the
-assistant to trust a name it cannot check; given the address it can
-read the project's own instructions and confirm what it is installing.
-The skill Su needs next lives in that repository and not on PyPI, so
-the address has to be introduced somewhere, and this is the first
-place it is needed.
+Then she talks. Everything below is her, one sentence at a time.
 
-
-
-
-Here is a possible conversation between Su and the assistant:
-
-> Give me an office with agents Dan and Jay.
-> Dan puts urgent messages that it receives in its outbox **urgent**.
-> Urgent messages from Dan are sent to Jay.
-> Show me my office
-
-The assistant responds:
+> *Give me an office with Dan and Jay.*
 
 ```
-# Office: urgent
+# Office: draft
 
 Agents:
-Dan is a router.
+Dan is unassigned.
 Jay is unassigned.
-
-Connections:
-Dan's urgent is Jay.
 ```
 
+> Two agents, no jobs yet. **Still to do:** Dan and Jay have no job;
+> nothing comes in; nothing goes out; nothing is connected.
 
+She has not said what they do and she was not asked. Nothing was
+invented for her, and what is missing is a list rather than an error.
+
+> *Dan reads the space news and keeps only the ones about Mars.*
+
+```
+Dan is a relevance_filter.
+```
+
+> Dan keeps the Mars ones and throws the rest away. **Still to do:**
+> Jay has no job; nothing goes out; nothing is connected.
+
+> *Jay writes one sentence about each one Dan keeps. Show me them on
+> the screen.*
+
+```
+# Office: mars_watch
+
+Sources: nasa_news(max_articles=10)
+Sinks: console_printer, discard
+
+Agents:
+Dan is a relevance_filter.
+Jay is a summarizer.
+
+Connections:
+nasa_news's destination is Dan.
+Dan's keep is Jay.
+Dan's discard is discard.
+Jay's out is console_printer.
+```
+
+> No gaps. Your office runs.
+
+Three sentences. Dan and Jay are separate agents that share nothing
+and can only send each other messages, the office keeps running and
+checks for new stories on its own, and when there is nothing left to
+do it works that out and stops. Su wrote none of that and can read
+all of it.
+
+Su picked space. The same three sentences build the same office around
+anything that publishes a feed — a game's update notes, a football
+club, a webcomic — by pointing it at the address:
+`rss(url="...", name="patch_notes")`.
+
+---
+
+## Three skills, and no programming in any of them
+
+| | What you say | What the skill does |
+|---|---|---|
+| **Build an office by talking** | *"give me an office with Dan and Jay"* | writes the office down as you describe it, and shows you what is still missing |
+| **Sense and respond** — the `office-builder` skill | *"watch these three feeds and tell me when a competitor is mentioned"* | assembles the office out of tested parts instead of inventing the concurrency for your app |
+| **A domain** — trading now, drug discovery next | *"show me the working for the Donchian 20 strategy on NVDA"* | adds that field's components, and that field's characteristic mistakes as checks — for trading, that a strategy never uses tomorrow's price to make today's decision |
+
+The first is how Su starts and the third is what a professional tester
+is doing with it this week. **None of the three asks you to write
+code.** You describe, you read what was written down, and you say what
+should be different.
 
 
 ---
