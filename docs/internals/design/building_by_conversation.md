@@ -65,7 +65,33 @@ Jay is unassigned.
 ```
 
 The article is mandatory, so `Jay is unassigned.` does **not** match
-today. Three ways out:
+this pattern.
+
+**And that was the wrong thing to check.** An earlier version of this
+note stopped there and concluded the line is rejected today. It is
+not. `_AGENT_LINE_RE` is tried first and fails, and the parser then
+falls back to a legacy form, `name is <path>`, for sub-offices written
+without the `office at` phrase. So the line parses, and produces
+
+```
+RoleRef(agent_name='Jay', role_name='unassigned', path='unassigned')
+```
+
+— an agent whose job is a sub-office in a directory called
+`unassigned`. Nothing says so. `dsl check` then reports W6, *"'Jay' is
+a 'unassigned', but there is no roles/unassigned.md"*, which is a
+comprehensible sentence about the wrong thing: the office is not
+missing a file, it is missing a decision.
+
+Two lessons, and the second is the general one. Testing a regex is not
+testing a parser — the fallback was ten lines further down and would
+have been found by running the line through `parse_office_dir`, which
+is what "I checked rather than assumed" should have meant. And a
+silent misparse is a worse starting position than a clean rejection,
+so this is more urgent than the earlier version made it look, not
+less.
+
+Three ways out:
 
 - `Jay is a placeholder.` parses right now, with no change at all. It
   reads slightly worse and it is a real role name that could collide.
@@ -87,7 +113,9 @@ today. Three ways out:
   unassigned, which is cleaner than a reserved name that could
   collide with a real one.
 
-Take the third. Then the rest of the meaning is still missing:
+Take the third — and note that the branch has to be tried *before*
+the legacy path fallback, or the fallback keeps swallowing the line
+and nothing changes. Then the rest of the meaning is still missing:
 
 - a reserved entry in the role library that refuses to run;
 - `check_wiring` reporting it as a gap — *"Jay has no role yet"* —
