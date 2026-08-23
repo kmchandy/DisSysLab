@@ -1,8 +1,10 @@
-# Where the project is — 2026-08-20
+# Where the project is — 2026-08-23
 
-One page. What is true now, what is open, and what to read first.
+One page. What is true now, what is open, and in what order.
 Everything dated and finished lives in [archive/](../../archive/);
-this file is the only status document that is kept current.
+this file is the only status document that is kept current, and it is
+deliberately the only one. A separate plan would be a second thing to
+keep true.
 
 If you are picking the project up cold, read this, then
 [reference/architecture.md](reference/architecture.md), then the
@@ -15,103 +17,155 @@ overview half of whichever module you are about to change.
 > A first-year builds an app they care about, then studies the
 > algorithms underneath it.
 
-The course runs 4 January – 10 March 2027. Everything below is
-prioritised against that sentence: a change that makes a first-year's
-first hour work beats a change that makes the framework more general.
+**The course runs 4 January – 10 March 2027 — 19 weeks away.**
+Everything below is prioritised against that sentence: a change that
+makes a first-year's first hour work beats a change that makes the
+framework more general.
+
+Three tracks, on different clocks.
+
+| Track | Clock | Why |
+|---|---|---|
+| **Backtesting** (Vikram, Sebu) | now, no deadline | Live testers. Decays if left, and it is the only outside evidence the thesis works. |
+| **Conversational offices** | 4 January | This *is* the pedagogy. |
+| **Processes, deadlock detection** | after January | See "Two that may not be features". |
 
 ---
 
-## Released
+## 1. Course-blocking. Do first.
 
-**1.7.1 is on PyPI.** It carries `dsl check`, all thirty gallery
-apps, the four unfed-sink fixes, and the skill's version guard.
+**Fix the timed-out office that cannot be shut down.**
+`run_network(timeout=T)` raises `TimeoutError`, but nothing tells the
+agents to stop — `os_agent` sends `_Shutdown` only when it declares
+termination, and the timeout path does not. Agent threads are
+`daemon=False`, so they park in `recv` and the process cannot exit.
+A student meets this in the first hour and concludes Ctrl-C is broken.
+Small fix, changes `Network.run` for every caller. See the note at the
+foot of `tests/unit/test_alarm.py`.
 
-**1.7.2 is not released and needs to be.** The repository is ahead of
-the wheel by, among other things:
+**Release 1.7.2 — and ship the skill with it.** The repository is
+ahead of the wheel by W5 (nearest-spelling suggestion for an unknown
+source or sink — a typo currently reads to a student as a missing
+feature), the yfinance change, and error counting in the run summary.
+**The skill and the wheel are now coupled**: `office-builder` teaches
+`inboxes=`, which needs the alias in `office_spec.py`. A student on
+PyPI 1.7.2 with the current skill gets a mismatch.
 
-- W5 — a source or sink name in no registry is now reported with a
-  nearest-spelling suggestion. This is the prerequisite-for-course
-  fix: a typo currently reads to a student as a missing feature.
-- The yfinance change (below) — the stock sources in 1.7.1 are dead.
-- Error-message counting in the run summary.
+**Thirty students installing at once has never been tested.** One
+unresolved install failure costs a class hour, thirty times. Windows
+is the sharp end: CI runs it, and the checkpoint/resume tests fail
+there. Do this early — what it finds needs a release to fix.
 
-## Open, in the order I would do them
+**Verify the cost guard on a *generated* office.** "Every shipped
+office stops after a few cycles by default" is asserted. Is it true of
+an office Cowork writes? A student who leaves one polling a hosted
+model over a weekend finds out. A claim with a bill attached.
 
-1. **A timed-out office cannot be shut down.** `run_network(timeout=T)`
-   raises `TimeoutError`, but nothing tells the agents to stop —
-   `os_agent` sends `_Shutdown` only when it *declares termination*,
-   and the timeout path does not. Agent threads are `daemon=False`, so
-   they stay parked in `recv` and **the process cannot exit**.
-   Confirmed with `faulthandler`. Not specific to any agent; any office
-   that times out does it, and it is why Ctrl-C on a hung office
-   appears to do nothing. The fix is small — send `_Shutdown` to every
-   agent on the timeout path before raising — but it changes
-   `Network.run` for every caller. See the note at the foot of
-   `tests/unit/test_alarm.py`.
+**Course materials.** The algorithm sequence and what is taught when.
 
-2. **Release 1.7.2.**
+## 2. The pedagogy. Weeks 5–10.
 
-3. **Offices as processes, steps 3–5** — `Channel` / `PipeChannel` and
-   the boundary agents, the cut and flatten, the network-level
-   detector. Design in
-   [design/process_per_office_design.md](design/process_per_office_design.md)
-   and
-   [design/termination_detection_design.md](design/termination_detection_design.md)
-   §5.4–§5.5. Start with `PipeChannel`; `SocketChannel` is the same
-   interface when a second machine is wanted.
+**Conversational office construction.** Storyboard first, then design,
+then build. Design so far in
+[building_by_conversation.md](design/building_by_conversation.md): the
+`unassigned` placeholder, automatic draft mode, the gap list, the turn
+protocol. Not implemented, deliberately.
 
-4. **D1 — the tier-2 hang.** Undiagnosed. Days, not hours.
+**A behavioural eval for the skill.** `test_docs_match_code.py` checks
+that the documentation agrees with the code. **Nothing checks that the
+skill, given "watch two feeds and email me a summary", produces an
+office that runs.** The skill is the primary interface and the least
+tested thing here. The `skill-creator` skill supports evals; this is
+what they are for.
 
-5. **E2 — W2** needs resolved role shapes before it can say anything
-   useful.
+**A fixture or replay mode.** Stooq took out three stock sources with
+no warning. If a student's source dies in week six their project dies.
+Running an office from recorded data is insurance, and it is also what
+makes offices testable offline.
 
-6. **E3 —** `sensor-office-builder` has no `references/` directory,
-   where `office-builder` has four.
+**`sensor-office-builder` has no `references/`**, where
+`office-builder` has four (E3).
 
-7. **D2 / D4 —** a tier-3 instrument in the foundation skill.
+**Assessment.** Thirty offices, someone reads them. `dsl check` gives
+structure; nothing summarises an office for a marker.
 
-8. **E4 —** move the three `gallery/apps/*/skill_for_testers/`
-   bundles out of the package. Deliberately held until after 25 Aug,
-   because testers are using them where they are.
+## 3. Backtesting, in parallel
 
-9. **E7 —** the `\b` in the vocabulary check will bite again on
-   possessives and hyphenation.
+Vikram's own words for how he wants to work: **English and Excel.**
+Not diagrams, not Kakushadze notation, though he reads the latter.
 
-10. **Renames that are pure debt.** `office/utils.py` →
-    `office/registry.py` (16 import sites); `start_gallery/` →
-    `chat/`; the `OfficeSpeakSpec` / `from_officespeak.py` internals,
-    which are the last place the retired word survives.
+- **Phase 1 — the trace.** Strategies expose their intermediates; an
+  Excel sheet shows values, the same quantity as a live Excel formula,
+  and a *why* column. This is exactly what he asked for.
+- **Phase 2 — corrections.** He edits the sheet or says what is wrong;
+  Claude keeps prose and formulas consistent. One document, two ways
+  to change it.
+- **Phase 3 — Excel to Python.** Only if Phase 1 shows the sheet is
+  the right instrument.
 
-## Recently closed, and worth knowing why
+Design in [signal_notation.md](design/signal_notation.md). Open: whether
+Excel is the specification or only the review surface.
 
-- **Stooq is gone.** Every endpoint the stock sources used returns
-  404. yfinance is now the only path, as an optional `[market]`
-  extra, and each user downloads their own data — nothing in this
-  repository ships market data. Worth re-checking that
-  `course/START_HERE.md` §2 does not promise a first-year stock
-  prices they will not get without the extra (this was issue B4).
+## 4. Debt, after January
 
+**Processes, steps 3–5** — `Channel`/`PipeChannel`, boundary agents,
+the cut and flatten, the network detector. Design in
+[process_per_office_design.md](design/process_per_office_design.md) and
+[termination_detection_design.md](design/termination_detection_design.md)
+§5.4–§5.5.
+
+**The identifier rename.** `inport`→`inbox` stopped at the
+user-facing surface. 540 Python identifiers, the public
+`Agent(inports=…)` keyword and the `open_inports` snapshot key still
+need a deprecation path — renaming that key stops existing
+checkpoints resuming.
+
+**Source aliasing** — `bbc_world as Vikram`. Needed before *"make
+Vikram a source"* can be written. Parser, spec, `check_wiring`,
+codegen.
+
+**Renames that are pure debt.** `office/utils.py` →
+`office/registry.py` (16 import sites); `start_gallery/` → `chat/`;
+the `OfficeSpeakSpec` / `from_officespeak.py` internals, the last
+place the retired word survives.
+
+**Smaller:** D1's tier-2 hang (undiagnosed, days); W2 and role shapes
+(E2); the tier-3 instrument (D2/D4); the `\b` vocabulary bug that will
+bite on possessives (E7); moving the three `skill_for_testers/`
+bundles once the 25 August gate passes (E4); a `docs/apps/` page per
+ready-made application, backtesting first, drug discovery later.
+
+## Two that may not be features
+
+**Deadlock detection.** The README already teaches its absence: a
+structurally correct office can still deadlock, *"because whether a
+message is ever readable can depend on execution history rather than
+on the graph — that boundary is itself one of the ideas the course
+teaches."* Building the detector removes the teaching moment.
+
+**Processes.** An office in one process is a simpler system to reason
+about while students are learning termination detection.
+Multi-process is the interesting sequel, not the prerequisite.
+
+If both hold, the two named leftovers move behind January and the
+course does not suffer.
+
+## Recently closed
+
+- **Stooq is gone.** yfinance only, an optional `[market]` extra, each
+  user fetching their own. Nothing here ships market data.
 - **Termination detection has an explicit idleness bit.** The old
-  predicate worked only because every agent was reactive. Alarms are
-  the first agent that can answer a poll while owing a send. See
-  [design/termination_detection_design.md](design/termination_detection_design.md).
-
+  predicate worked only because every agent was reactive; alarms are
+  the first that can answer a poll while owing a send.
 - **The vocabulary pass.** "OfficeSpeak" named nothing a reader could
-  point at, so it became the name for the whole system — which is how
-  a tester's question about the runtime arrived as a question about
-  the chat. There are now four nameable parts: the `office.md` you
-  write, the Python roles, the `dsl` command, and the skill Claude
-  reads.
-
-- **The documentation is testable.**
-  `tests/integration/test_docs_match_code.py` checks the source and
-  sink catalogues against the registry in both directions, the
-  documented `dsl` subcommands against the CLI, the `START_HERE`
-  catalogue, the `.skill` bundles against their sources, the internals
-  index against the modules on disk, and every relative link in every
-  tracked markdown file. This exists because the same failure kept
-  recurring: a document asserts something the system does not do, and
-  nothing detects the divergence.
+  point at. Four nameable parts now.
+- **Two renames.** *org chart* → network/graph; *inport/outport* →
+  inbox/outbox on every user-facing surface, with `inboxes=`
+  normalised in `RoleRef.__post_init__` so old offices still compile.
+- **157 code-in-link labels unwrapped** — unreadable in some viewers.
+- **The documentation is testable.** `test_docs_match_code.py` now
+  also checks every relative link and `<img src>`, retired vocabulary,
+  and link-label style.
 
 ## The standing rule
 
