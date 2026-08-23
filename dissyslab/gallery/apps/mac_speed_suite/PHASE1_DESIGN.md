@@ -158,7 +158,7 @@ We do this **inside the office** as a feedback loop, not as an external script
 that runs the office twice. The debate office is the template:
 
 - Debate: `starter` -> `Sasha` (a **gate** holding the problem bank) -> three
-  panellists -> `Sync` (join) -> `Riley` (moderator). Riley's `finish` outport
+  panellists -> `Sync` (join) -> `Riley` (moderator). Riley's `finish` outbox
   loops back to `Sasha` to release the next problem; the gate terminates when the
   bank is exhausted.
 - Walk-forward: `csv_stock_history` loads the full span once and feeds a **window

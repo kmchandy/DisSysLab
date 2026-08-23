@@ -10,7 +10,7 @@ is through a **sink**. A sink can write to a file, send an email,
 post to Slack, drive a physical actuator, or do anything else
 that has an effect on the outside world. Every sink shipped with
 the framework is listed in
-[`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md);
+[docs/SOURCES_AND_SINKS.md](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md);
 this recipe shows the four most common destinations.
 
 ## Run a working example
@@ -62,7 +62,7 @@ Alex's discard is jsonl_recorder_discard.
 
 The aliases (`jsonl_recorder_briefing`, `jsonl_recorder_discard`,
 `jsonl_recorder_archive`, `jsonl_recorder_raw`) all use the same
-underlying class — the alias just lets the org chart name
+underlying class — the alias just lets the network name
 distinct file destinations.
 
 ## Print to the terminal
@@ -259,7 +259,7 @@ Alex's discard is jsonl_recorder_discard.
 ```
 
 The role file (`roles/alex.md`) spells out when Alex sends to
-`urgent`, `normal`, or `discard`. The org chart wires each one to
+`urgent`, `normal`, or `discard`. The network wires each one to
 a destination.
 
 **Roll your own sink.** Write a Python class with a `run(msg)`

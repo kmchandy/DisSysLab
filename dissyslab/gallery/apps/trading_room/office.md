@@ -18,7 +18,7 @@ Sinks: jsonl_recorder(path="trades.jsonl"), console_printer
 
 Agents:
 News       is a news_feed.
-SelectNews is a select(inports=["info", "reply"], command="command").
+SelectNews is a select(inboxes=["info", "reply"], command="command").
 Trader     is a trader_news.
 Ledger     is a ledger.
 

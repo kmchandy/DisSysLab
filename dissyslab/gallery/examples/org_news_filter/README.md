@@ -23,7 +23,7 @@ bbc_world  ─┘          └→  filtered_output.jsonl  (everything else)
 
 ```
 news_filter/
-    office.md          ← the org chart: sources, agent, sinks
+    office.md          ← the network: sources, agent, sinks
     roles/
         filter.md      ← what Felix does, in plain English
 ```
@@ -64,7 +64,7 @@ send it to a second agent that summarizes it, rates its significance,
 or translates it. That's the next example —
 [Intelligence Briefing](../org_intelligence_briefing/).
 
-**More to swap in.** See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+**More to swap in.** See [docs/SOURCES_AND_SINKS.md](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
 for the full list of sources and sinks shipped with the framework.
 
 **Recipes.**
@@ -97,7 +97,7 @@ many editors and many copywriters. A role is defined once, in
 `roles/<role>.md`. Each agent in `office.md` is then declared with
 "X is a <role>".
 
-## The org chart
+## The network
 
 The whole office, in one file:
 

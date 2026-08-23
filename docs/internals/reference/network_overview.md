@@ -44,8 +44,8 @@ class Network:
         name: Optional[str] = None,
         blocks: Optional[Dict[str, Agent | Network]] = None,
         connections: Optional[List[Tuple[str, str, str, str]]] = None,
-        inports: Optional[List[str]] = None,
-        outports: Optional[List[str]] = None
+        inboxes: Optional[List[str]] = None,
+        outboxes: Optional[List[str]] = None
     ):
         """
         Create a network.
@@ -54,8 +54,8 @@ class Network:
             name: Optional name for this network
             blocks: Dict mapping agent names to Agent/Network instances
             connections: List of 4-tuples (from_name, from_port, to_name, to_port)
-            inports: External input ports (for nested networks)
-            outports: External output ports (for nested networks)
+            inboxes: External input ports (for nested networks)
+            outboxes: External output ports (for nested networks)
         
         Raises:
             TypeError: If blocks are not Agent/Network instances
@@ -114,14 +114,14 @@ connections = [
 - All referenced ports must exist on agents
 - Each port connected exactly once (no duplicates, no danglers)
 
-#### inports / outports: List[str]
+#### inboxes / outboxes: List[str]
 External ports for component composition.
 
 ```python
 # Component with external interface
 component = Network(
-    inports=["data_in", "config_in"],
-    outports=["results_out", "errors_out"],
+    inboxes=["data_in", "config_in"],
+    outboxes=["results_out", "errors_out"],
     blocks={...},
     connections=[
         ("external", "data_in", "processor", "in_"),
@@ -185,14 +185,14 @@ connections = [
     ("trans", "out_", "sink_a", "in_"),  # trans.out_ → sink_a
     ("trans", "out_", "sink_b", "in_")   # trans.out_ → sink_b (DUPLICATE!)
 ]
-# TypeError: Outport 'out_' of block 'trans' is connected 2 times
+# TypeError: Outbox 'out_' of block 'trans' is connected 2 times
 
 # Invalid - sink.in_ not connected (dangling)
 connections = [
     ("src", "out_", "trans", "in_")
     # sink.in_ has no connection!
 ]
-# TypeError: Inport 'in_' of block 'sink' is not connected
+# TypeError: Inbox 'in_' of block 'sink' is not connected
 ```
 
 #### 4. Port Existence
@@ -208,8 +208,8 @@ connections = [
 ```python
 # Valid - external ports connected
 net = Network(
-    inports=["in"],
-    outports=["out"],
+    inboxes=["in"],
+    outboxes=["out"],
     connections=[
         ("external", "in", "processor", "in_"),
         ("processor", "out_", "external", "out")
@@ -218,12 +218,12 @@ net = Network(
 
 # Invalid - external port not connected
 net = Network(
-    inports=["in"],  # Declared but...
+    inboxes=["in"],  # Declared but...
     connections=[
         # No connection from external.in!
     ]
 )
-# ValueError: External inport 'in' is not connected
+# ValueError: External inbox 'in' is not connected
 ```
 
 ### Error Messages
@@ -236,8 +236,8 @@ All validation errors include:
 
 Example:
 ```
-ValueError: Inport 'in_' of block 'processor' is connected 2 times.
-Each inport must be connected exactly once.
+ValueError: Inbox 'in_' of block 'processor' is connected 2 times.
+Each inbox must be connected exactly once.
 
 Conflicting connections:
   ('source_a', 'out_', 'processor', 'in_')
@@ -488,17 +488,17 @@ while changed:
 
 **Algorithm**:
 ```python
-# Create one queue per agent inport
+# Create one queue per agent inbox
 for agent in agents.values():
-    for inport in agent.inports:
-        agent.in_q[inport] = SimpleQueue()
+    for inbox in agent.inboxes:
+        agent.in_q[inbox] = SimpleQueue()
 
-# Connect sender outports to receiver inport queues
+# Connect sender outboxes to receiver inbox queues
 for (from_name, from_port, to_name, to_port) in graph_connections:
     sender = agents[from_name]
     receiver = agents[to_name]
     
-    # Wire: sender's outport → receiver's inport queue
+    # Wire: sender's outbox → receiver's inbox queue
     sender.out_q[from_port] = receiver.in_q[to_port]
 ```
 
@@ -656,8 +656,8 @@ assert results_correct()
 
 # Step 3: Convert to component
 component = inner.as_component(
-    inports=[("in_", test_source)],
-    outports=[("out_", test_sink)],
+    inboxes=[("in_", test_source)],
+    outboxes=[("out_", test_sink)],
     name="text_processor"
 )
 
@@ -673,8 +673,8 @@ outer = network([
 ```python
 def as_component(
     self,
-    inports: List[Tuple[str, Agent | PortReference]] = None,
-    outports: List[Tuple[str, Agent | PortReference]] = None,
+    inboxes: List[Tuple[str, Agent | PortReference]] = None,
+    outboxes: List[Tuple[str, Agent | PortReference]] = None,
     name: Optional[str] = None
 ) -> Network:
     """
@@ -683,8 +683,8 @@ def as_component(
     Replaces boundary agents (test sources/sinks) with external ports.
     
     Args:
-        inports: List of (external_port_name, source_agent) tuples
-        outports: List of (external_port_name, sink_agent) tuples
+        inboxes: List of (external_port_name, source_agent) tuples
+        outboxes: List of (external_port_name, sink_agent) tuples
         name: Optional name for the component
     
     Returns:
@@ -696,8 +696,8 @@ def as_component(
     
     Example:
         >>> component = network.as_component(
-        ...     inports=[("data_in", test_source)],
-        ...     outports=[("results_out", test_sink)],
+        ...     inboxes=[("data_in", test_source)],
+        ...     outboxes=[("results_out", test_sink)],
         ...     name="processor"
         ... )
     """
@@ -706,17 +706,17 @@ def as_component(
 ### Algorithm
 
 ```python
-def as_component(self, inports, outports, name):
-    # 1. Parse inports: (external_name, agent) → 4-tuple
+def as_component(self, inboxes, outboxes, name):
+    # 1. Parse inboxes: (external_name, agent) → 4-tuple
     parsed_inports = []
-    for ext_name, agent in inports:
+    for ext_name, agent in inboxes:
         agent_name = find_name(agent)
         port = agent.default_outport
         parsed_inports.append(("external", ext_name, agent_name, port))
     
-    # 2. Parse outports: (external_name, agent) → 4-tuple
+    # 2. Parse outboxes: (external_name, agent) → 4-tuple
     parsed_outports = []
-    for ext_name, agent in outports:
+    for ext_name, agent in outboxes:
         agent_name = find_name(agent)
         port = agent.default_inport
         parsed_outports.append((agent_name, port, "external", ext_name))
@@ -725,14 +725,14 @@ def as_component(self, inports, outports, name):
     new_connections = list(self.connections)
     agents_to_remove = set()
     
-    # Replace inport edges: (agent, port, X, Y) → (external, ext, X, Y)
+    # Replace inbox edges: (agent, port, X, Y) → (external, ext, X, Y)
     for (ext, ext_port, agent, port) in parsed_inports:
         for i, (fn, fp, tn, tp) in enumerate(new_connections):
             if fn == agent and fp == port:
                 new_connections[i] = (ext, ext_port, tn, tp)
                 agents_to_remove.add(agent)
     
-    # Replace outport edges: (X, Y, agent, port) → (X, Y, external, ext)
+    # Replace outbox edges: (X, Y, agent, port) → (X, Y, external, ext)
     for (agent, port, ext, ext_port) in parsed_outports:
         for i, (fn, fp, tn, tp) in enumerate(new_connections):
             if tn == agent and tp == port:
@@ -755,8 +755,8 @@ def as_component(self, inports, outports, name):
         name=name,
         blocks=new_blocks,
         connections=new_connections,
-        inports=inport_names,
-        outports=outport_names
+        inboxes=inport_names,
+        outboxes=outport_names
     )
 ```
 
@@ -785,8 +785,8 @@ connections = [
     ("external", "in_", "processor", "in_"),    # Boundary replaced
     ("processor", "out_", "external", "out_")   # Boundary replaced
 ]
-inports = ["in_"]
-outports = ["out_"]
+inboxes = ["in_"]
+outboxes = ["out_"]
 ```
 
 ---

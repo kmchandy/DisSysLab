@@ -16,7 +16,7 @@ hit at least one of these.
 
 ## 1. Non-source agents must keep recv()-ing until _Shutdown
 
-Non-source agents in DSL (anything with at least one inport — `Role`,
+Non-source agents in DSL (anything with at least one inbox — `Role`,
 `Synchronizer`, custom Python agents) follow a single, universal
 convention: **loop forever on `recv()` and let the framework end
 the agent**, not your own logic.
@@ -61,17 +61,17 @@ This convention matches `Role` (in `dissyslab/blocks/role.py`)
 and `Synchronizer` (the factory in `dissyslab/office/library.py`).
 Read either for the canonical pattern.
 
-**Source agents** (no inports) follow a different convention:
+**Source agents** (no inboxes) follow a different convention:
 their `fn` returns `None` when exhausted; the wrapping `Source`
 class sends one termination message to `os_agent` and then
 returns. Do not extend this convention to non-source agents.
 
 ---
 
-## 2. Multi-outport agents use indexed runtime port names
+## 2. Multi-outbox agents use indexed runtime port names
 
 When a custom Python role declares **more than one** semantic
-outport in its `AgentRoleEntry`, the compiler translates each
+outbox in its `AgentRoleEntry`, the compiler translates each
 semantic name to a positional runtime name (`out_0`, `out_1`, ...)
 in the same order. The Agent class itself must use the indexed
 names; the AgentRoleEntry stays semantic so that `office.md` can
@@ -84,8 +84,8 @@ class _Moderator(Agent):
     def __init__(self, name=None):
         super().__init__(
             name=name,
-            inports=["in_"],
-            outports=["to_cold", "to_hot", "finish"],   # ← will fail
+            inboxes=["in_"],
+            outboxes=["to_cold", "to_hot", "finish"],   # ← will fail
         )
 
     def run(self) -> None:
@@ -94,8 +94,8 @@ class _Moderator(Agent):
 
 role = AgentRoleEntry(
     name="moderator",
-    in_ports=("in_",),
-    out_ports=("to_cold", "to_hot", "finish"),
+    inboxes=("in_",),
+    outboxes=("to_cold", "to_hot", "finish"),
     factory=_Moderator,
 )
 ```
@@ -104,8 +104,8 @@ At runtime you'll see:
 
 ```
 ValueError: Unknown from_port in connection: Mod.out_0 → ClaudeCold.in_
-Block 'Mod' has no outport 'out_0'.
-Valid outports: ['to_cold', 'to_hot', 'finish']
+Block 'Mod' has no outbox 'out_0'.
+Valid outboxes: ['to_cold', 'to_hot', 'finish']
 ```
 
 **Right:**
@@ -114,9 +114,9 @@ Valid outports: ['to_cold', 'to_hot', 'finish']
 # AgentRoleEntry declares semantic names that office.md sees;
 # the framework translates each to an indexed runtime port:
 #
-#   out_ports[0] "to_cold"  → runtime port "out_0"
-#   out_ports[1] "to_hot"   → runtime port "out_1"
-#   out_ports[2] "finish"   → runtime port "out_2"
+#   outboxes[0] "to_cold"  → runtime port "out_0"
+#   outboxes[1] "to_hot"   → runtime port "out_1"
+#   outboxes[2] "finish"   → runtime port "out_2"
 OUT_TO_COLD = "out_0"
 OUT_TO_HOT  = "out_1"
 OUT_FINISH  = "out_2"
@@ -126,8 +126,8 @@ class _Moderator(Agent):
     def __init__(self, name=None):
         super().__init__(
             name=name,
-            inports=["in_"],
-            outports=[OUT_TO_COLD, OUT_TO_HOT, OUT_FINISH],
+            inboxes=["in_"],
+            outboxes=[OUT_TO_COLD, OUT_TO_HOT, OUT_FINISH],
         )
 
     def run(self) -> None:
@@ -137,8 +137,8 @@ class _Moderator(Agent):
 
 role = AgentRoleEntry(
     name="moderator",
-    in_ports=("in_",),
-    out_ports=("to_cold", "to_hot", "finish"),    # ← stays semantic
+    inboxes=("in_",),
+    outboxes=("to_cold", "to_hot", "finish"),    # ← stays semantic
     factory=_Moderator,
 )
 ```
@@ -147,13 +147,13 @@ role = AgentRoleEntry(
 need a human-readable port name. The runtime uses indexed names so
 multi-output `Role` agents (English `.md` roles) and custom Python
 agents share one convention. The compiler does the translation
-based on the *order* of `out_ports`.
+based on the *order* of `outboxes`.
 
-**Single-outport agents** follow a different rule: one declared
+**Single-outbox agents** follow a different rule: one declared
 port becomes `out_` (with trailing underscore) at runtime. See
 `dissyslab/blocks/source.py` and `dissyslab/blocks/role.py`'s
 `if len(statuses) == 1` branch. The bug pattern above only shows
-up with two or more outports.
+up with two or more outboxes.
 
 ---
 

@@ -1,6 +1,6 @@
 # Situation Room Pro
 
-A variant of [`situation_room`](../situation_room/README.md) that
+A variant of [situation_room](../situation_room/README.md) that
 uses **Claude** for the writer role and **free local Qwen** for
 everything else. Demonstrates DisSysLab's per-role backend
 override: pay where it helps, run free where it doesn't.
@@ -67,7 +67,7 @@ she wants.
 ## What makes this work
 
 The single file that distinguishes `_pro` from `situation_room` is
-[`roles/writer.py`](roles/writer.py). It reads the framework's
+[roles/writer.py](roles/writer.py). It reads the framework's
 writer prompt and re-wraps it with `AI="claude"`. The framework's
 [local-roles search](../../../../docs/BUILD_APPS.md) sees this
 file first and uses it; the framework-shipped
@@ -79,9 +79,9 @@ framework's prompt, set the backend. Three lines plus a path.
 
 ## See also
 
-- [`situation_room/`](../situation_room/README.md) — the
+- [situation_room/](../situation_room/README.md) — the
   free-everywhere base office.
-- [`docs/LANGUAGE_MODELS.md`](../../../../docs/LANGUAGE_MODELS.md)
+- [docs/LANGUAGE_MODELS.md](../../../../docs/LANGUAGE_MODELS.md)
   — backends, mixing, and the Backend Protocol.
-- [`docs/BUILD_APPS.md`](../../../../docs/BUILD_APPS.md) — how to
+- [docs/BUILD_APPS.md](../../../../docs/BUILD_APPS.md) — how to
   write a role of your own.

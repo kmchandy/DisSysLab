@@ -21,7 +21,7 @@ across the network.
 
 ```
 webhook_listener/
-    office.md          ← the org chart: source, agent, sinks
+    office.md          ← the network: source, agent, sinks
     roles/
         analyst.md     ← what the agent does, in plain English
 ```
@@ -56,7 +56,7 @@ to keep or discard.
   from a Stripe charge hook
 - Swap `console_printer` for `slack_sink` to forward summaries
   to a Slack channel, or `gmail_sink` to email yourself
-- See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+- See [docs/SOURCES_AND_SINKS.md](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
   for the full list of sources and sinks you can swap in
 
 **Recipe.** [How to receive webhooks](https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/receive-webhooks.md)

@@ -73,7 +73,7 @@ sees them.
 ## Make it yours
 
 The office description is in
-[`office.md`](office.md), annotated with `# SLOT N:` markers
+[office.md](office.md), annotated with `# SLOT N:` markers
 showing the four edit slots. Pat-friendly remixes:
 
 - **SLOT 1 — sources.** Swap `hacker_news` for `techcrunch`,
@@ -93,7 +93,7 @@ showing the four edit slots. Pat-friendly remixes:
   any markdown viewer, or `slack_sink` to push hits to a Slack
   channel, or `gmail_sink` to email yourself a roundup.
 
-See [`docs/PATTERN_sense_think_respond.md`](../../../../docs/PATTERN_sense_think_respond.md)
+See [docs/PATTERN_sense_think_respond.md](../../../../docs/PATTERN_sense_think_respond.md)
 for the pattern this office instantiates and what other gallery
 offices follow the same shape.
 
@@ -111,7 +111,7 @@ offices follow the same shape.
 - **Cost**: $0 on Ollama after the one-time model download;
   pennies per day on OpenRouter; tens of cents per day on Claude
   if you set every agent to use it. See
-  [`docs/LANGUAGE_MODELS.md`](../../../../docs/LANGUAGE_MODELS.md)
+  [docs/LANGUAGE_MODELS.md](../../../../docs/LANGUAGE_MODELS.md)
   for per-role overrides.
 
 ## Credit
@@ -122,9 +122,9 @@ pattern.
 
 ## See also
 
-- [`docs/PATTERN_sense_think_respond.md`](../../../../docs/PATTERN_sense_think_respond.md)
+- [docs/PATTERN_sense_think_respond.md](../../../../docs/PATTERN_sense_think_respond.md)
   — the pattern this office instantiates.
-- [`situation_room`](../situation_room/) — the bigger cousin: same
+- [situation_room](../situation_room/) — the bigger cousin: same
   shape with four parallel thinkers, a writer, and an editor.
-- [`docs/BUILD_APPS.md`](../../../../docs/BUILD_APPS.md) — design
+- [docs/BUILD_APPS.md](../../../../docs/BUILD_APPS.md) — design
   and wire your own office from scratch.

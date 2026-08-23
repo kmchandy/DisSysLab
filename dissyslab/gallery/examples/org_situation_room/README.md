@@ -32,7 +32,7 @@ the moment they are published — seconds apart during breaking events.
 
 ```
 situation_room/
-    office.md              ← the org chart: sources, agents, sinks
+    office.md              ← the network: sources, agents, sinks
     roles/
         analyst.md         ← what Alex does, in plain English
         editor.md          ← what Morgan does, in plain English
@@ -72,7 +72,7 @@ on your field.
 **Add more sources.** Wire in additional RSS feeds alongside BlueSky.
 The more sources, the more complete your picture.
 
-**More to swap in.** See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+**More to swap in.** See [docs/SOURCES_AND_SINKS.md](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
 for the full list of sources and sinks shipped with the framework.
 
 ---
@@ -120,7 +120,7 @@ rating in a field called "significance" and your summary in the
 Send to briefing.
 ```
 
-## The org chart
+## The network
 
 The whole office, in one file:
 

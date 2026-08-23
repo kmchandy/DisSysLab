@@ -20,7 +20,7 @@ she wants a replayable trace.
 Debug mode must capture *every* source of nondeterminism, or replay silently
 diverges. The full list for an office:
 
-- **fair_merge forward order** — which inport each forwarded message came from, in
+- **fair_merge forward order** — which inbox each forwarded message came from, in
   sequence (the only nondeterministic coordination primitive).
 - **each LLM response** (worker bodies that call a model).
 - **any RNG seed, clock read, or external call** a worker body makes.

@@ -30,21 +30,21 @@ channel whose backlog grows without bound is the visible signature of a receiver
 stuck waiting on it.
 
 - The starvation risk is concentrated at **Coordinator** destinations, which read
-  a *chosen* inport (merge_synch waiting for `in_1`; gate waiting for `done`;
-  select waiting on the inport its state points to). A Transform or Sink always
+  a *chosen* inbox (merge_synch waiting for `in_1`; gate waiting for `done`;
+  select waiting on the inbox its state points to). A Transform or Sink always
   consumes, so it cannot starve a channel.
 - **Localizes, does not explain** — the counts say *which* channel is stuck; the
   receiver's coordination state / tape says *why*. Chains with (a).
-- Need the **trend**, not a snapshot — a Coordinator waits on one inport at a time
+- Need the **trend**, not a snapshot — a Coordinator waits on one inbox at a time
   by design, so a momentary imbalance is normal; the bug signal is an imbalance
   that never resolves (received stops advancing while sent climbs).
 - Ties to machinery we have: termination detection fires when every channel is
   drained, so a should-terminate office that hangs has undrained channels at
-  exactly the stuck edges; a checkpoint already captures per-inport in-flight
+  exactly the stuck edges; a checkpoint already captures per-inbox in-flight
   messages.
 - fair_merge never leaves a nonempty channel unread, so the aim is the
   deterministic Coordinators — which is where it's placed.
-- Accounting nuance for later: `sent` is per *outport*; a broadcast outport feeds
+- Accounting nuance for later: `sent` is per *outbox*; a broadcast outbox feeds
   several channels, so faithful *per-channel* backlog needs per-channel counters,
   not just per-port. The raw material exists; the granularity needs a look.
 

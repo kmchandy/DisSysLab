@@ -8,7 +8,7 @@ Sasha is a deduplicator(by='url').
 Eve is a summarizer.
 Sam is a sentiment_classifier.
 Tom is an urgency_classifier.
-Sync is a synchronizer(inports=["summarizer", "sentiment_classifier", "urgency_classifier"]).
+Sync is a synchronizer(inboxes=["summarizer", "sentiment_classifier", "urgency_classifier"]).
 Riley is a summary_writer.
 
 Connections:

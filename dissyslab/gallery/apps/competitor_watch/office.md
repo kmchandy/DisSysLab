@@ -8,7 +8,7 @@ Sasha is a deduplicator(by='url').
 Eve is an entity_extractor.
 Sam is a sentiment_classifier.
 Tom is a topic_tagger.
-Sync is a synchronizer(inports=["entity_extractor", "sentiment_classifier", "topic_tagger"]).
+Sync is a synchronizer(inboxes=["entity_extractor", "sentiment_classifier", "topic_tagger"]).
 Riley is a summary_writer.
 
 Connections:

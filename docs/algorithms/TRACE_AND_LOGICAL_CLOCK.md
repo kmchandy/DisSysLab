@@ -112,8 +112,8 @@ at the moment it is sent.
   message with its own advancing clock, and since physical time only moves
   forward, each successive message from a source already has an increasing
   timestamp.
-- **Coordinators with multiple inports (e.g. `merge_synch`) need no special
-  rule either.** A `Coordinator` reads one inport at a time via one blocking
+- **Coordinators with multiple inboxes (e.g. `merge_synch`) need no special
+  rule either.** A `Coordinator` reads one inbox at a time via one blocking
   `recv()` per step (see `coordinator_design.md`) — it never receives two
   messages in a single combined event. So `merge_synch` waiting on
   `in_0` then `in_1` just applies the ordinary single-message rule twice, in
@@ -179,7 +179,7 @@ page.
 
 *(Kept for the record, since a decision log should show what changed —
 resolved above: no special case is needed. A `Coordinator` never actually
-receives multiple messages in one combined event; it reads one inport at a
+receives multiple messages in one combined event; it reads one inbox at a
 time, so the single-message rule already composes correctly across
 sequential reads.)*
 
@@ -228,9 +228,9 @@ it does not change the clock algorithm in Part 1, which is unmodified.
 
 ### What gets captured, per action
 
-For every send: `(agent_name, direction="sent", outport, timestamp,
+For every send: `(agent_name, direction="sent", outbox, timestamp,
 message_summary)`.
-For every receive: `(agent_name, direction="received", inport, timestamp,
+For every receive: `(agent_name, direction="received", inbox, timestamp,
 message_summary)`.
 
 `message_summary` is whatever a short, safe, human-readable rendering of
@@ -257,7 +257,7 @@ class _Timestamped:
 
 `send()` wraps the client's message in `_Timestamped(msg, self._clock)`
 before `q.put(...)` — invisible to the client, which still calls
-`self.send(msg, outport)` exactly as today. `recv()` unwraps it
+`self.send(msg, outbox)` exactly as today. `recv()` unwraps it
 **immediately after `q.get()`** (or after the recovery-buffer pop), updates
 `self._clock` from the unwrapped `.clock` value, appends the activity-log
 entry, and returns only `.payload` to the client — exactly mirroring how
@@ -267,7 +267,7 @@ message" branch today (`core.py` `recv()`, the `else:` branch around line
 
 **This must happen before existing channel-state recording sees the
 message.** `recv()` already copies in-flight messages into
-`self._recording["channels"][inport]` during a checkpoint (for
+`self._recording["channels"][inbox]` during a checkpoint (for
 global-snapshot channel-state). If unwrapping happens first, that recording
 path is unaffected — it keeps storing plain payloads exactly as it does
 today, no change needed there. Get this ordering right and the two features
@@ -369,7 +369,7 @@ Cowork boundary:
   command's own job is to hand the ordered structured trace to Claude, not
   to print English itself.
 - **Cowork's job** (Claude reads the ordered structured trace and
-  narrates it): turning "agent Alex received `(0.31, 0.88)` on inport `in_`
+  narrates it): turning "agent Alex received `(0.31, 0.88)` on inbox `in_`
   at t=41" into the kind of sentence Pat can read is exactly the same
   translation move already used for office structure, "Things I assumed,"
   and the `debug_demo` walkthrough — done by Claude, not by a fixed template
@@ -441,7 +441,7 @@ One question remains open, not yet decided:
 - 2026-07-21 (later same day) — Mani replaced the pure Lamport-counter clock
   with a physical-time-grounded hybrid clock: `x := max(t, x+1)` on every
   single-message receive, one uniform rule for every agent (sources,
-  transforms, sinks, and multi-inport coordinators alike — no special
+  transforms, sinks, and multi-inbox coordinators alike — no special
   cases). Removed the earlier "coordinators with multiple inbound messages"
   generalization as unnecessary. Clarified the workflow (turn on tracing
   from a checkpoint or the initial state; stop manually; Claude explains

@@ -66,7 +66,7 @@ wrong, tell Cowork
 
 >  run `dsl doctor` and tell me what it says.
 
-**3. Run one of pre-build apps.**
+**3. Run one of the pre-built apps.**
 
 Tell Cowork:
 
@@ -77,8 +77,8 @@ Ten to twenty seconds later you have an HTML page built from live news
 headlines and current weather. That is the whole of the first run: no
 key, no account, no model download.
 
-**4. Give your assistant the skill.** The first two steps ran a pre-built
-application. To build your own app,  the assistant needs the skill to 
+**4. Give your assistant the skill.** Steps 2 and 3 ran a pre-built
+application. To build your own app, the assistant needs the skill to 
 assemble offices from components in the DisSysLab library. Without the
 skill the assistant will improvise its own concurrency constructs.
 
@@ -93,9 +93,8 @@ Then check that the assistant got the skill by asking it:
 > *Which version of the office-builder skill do you have?*
 
 The assistant should answer with a dated string such as `2026-08-19.385377d`.
-Anything that is vague implies that the assistant didn't get the skill; in
-tell the assistant to reload the skill and tell you if it fails and why it
-fails.
+Anything vaguer means the assistant did not get the skill. Tell it to
+load the skill again, and to say so if that fails and why.
 
 
 **5. Specify what to sense and how to respond: Examples** 
@@ -128,8 +127,8 @@ you change it by saying what should be different, for example
 
 [course/SETUP.md](course/SETUP.md) is the same path at more length,
 with what to do when a step misbehaves. **Students** begin at
-[`course/START_HERE.md`](course/START_HERE.md). **Contributors** begin
-at [`CONTRIBUTING.md`](CONTRIBUTING.md).
+[course/START_HERE.md](course/START_HERE.md). **Contributors** begin
+at [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
@@ -150,18 +149,18 @@ assistant to modify it.
 | **Learning and argument** | an adaptive tutor, a structured debate |
 
 `dsl list` shows all of them once the library is installed, and
-[`course/START_HERE.md`](course/START_HERE.md) describes each one.
+[course/START_HERE.md](course/START_HERE.md) describes each one.
 
 Some offices have agents that need LLMs, and in other offices all agents execute Python and
 don't use LLMs. If an agent uses an LLM you can specify which one: a free local model
 through Ollama, or a hosted one. See
-[`docs/LANGUAGE_MODELS.md`](docs/LANGUAGE_MODELS.md).
+[docs/LANGUAGE_MODELS.md](docs/LANGUAGE_MODELS.md).
 
 ---
 
 ## What a skill adds to an AI assistant
 
-The DisSysLab library has components for dealing with conucurrency.
+The DisSysLab library has components for dealing with concurrency.
 Message passing, construction of networks of agents, distributed
 termination detection, checkpointing and recovery come from the library,
 and are not generated afresh by AI assistants for each app.
@@ -195,7 +194,7 @@ steps and a paid ones only where necessary.
 Every application from this repository stops after a few cycles. 
 This is so that you don't run up a large bill for using LLMs.
 Most of the apps are designed to run forever and you can tell the app to do so.
-[`docs/LANGUAGE_MODELS.md`](docs/LANGUAGE_MODELS.md) has the details.
+[docs/LANGUAGE_MODELS.md](docs/LANGUAGE_MODELS.md) has the details.
 
 ---
 
@@ -347,7 +346,7 @@ for them in code it did not write.
 
 The domain library that is built is trading. It holds a backtester and a paper
 trader, and its skill in
-[`dissyslab/gallery/apps/paper_trader/skill/`](dissyslab/gallery/apps/paper_trader/skill/)
+[dissyslab/gallery/apps/paper_trader/skill/](dissyslab/gallery/apps/paper_trader/skill/)
 runs three checks on a strategy the skill's author never saw: that the
 strategy meets the interface contract, that it is deterministic, and
 that it does not use a day's future prices to make that day's decision.
@@ -370,11 +369,11 @@ keep.
 - **Single machine.** An office runs in one process with each agent in
   a thread. Per-agent process parallelism does not work. The intended
   unit is a whole office, which is designed but not built
-  ([`docs/internals/design/process_per_office_design.md`](docs/internals/design/process_per_office_design.md)).
+  ([docs/internals/design/process_per_office_design.md](docs/internals/design/process_per_office_design.md)).
   Distribution across machines is roadmap.
 - **Checkpoint-recovery is opt-in.** The Chandy–Lamport distributed
   snapshot is implemented, and
-  [`recovery_demo`](dissyslab/gallery/apps/recovery_demo/) demonstrates
+  [recovery_demo](dissyslab/gallery/apps/recovery_demo/) demonstrates
   it end to end. An office has it where the author of a stateful agent
   has added `save_state` and `load_state`.
 - **Deadlock detection does not exist.** `dsl check` finds structural
@@ -387,7 +386,7 @@ keep.
 - **No first-party web UI.** Offices produce files: HTML, JSONL, text.
 - **Platforms.** Linux and macOS are supported and in CI. Windows runs
   and is in CI, with setup notes in
-  [`docs/WINDOWS.md`](docs/WINDOWS.md).
+  [docs/WINDOWS.md](docs/WINDOWS.md).
 
 ---
 
@@ -421,12 +420,12 @@ Foundation*, K. Mani Chandy and Jayadev Misra (Addison-Wesley, 1988).
 
 | Path | Contents |
 |---|---|
-| [`skills/`](skills/) | Skills an agent loads to build offices |
-| [`course/`](course/) | The course: setup, what you build, the catalogue |
-| [`docs/`](docs/) | Reference: components, backends, algorithms, internals |
-| [`dissyslab/`](dissyslab/) | The library and the gallery |
-| [`tests/`](tests/) | The suite; CI runs it on Python 3.10–3.14 |
-| [`archive/`](archive/) | Dated documents, kept but not maintained |
+| [skills/](skills/) | Skills an agent loads to build offices |
+| [course/](course/) | The course: setup, what you build, the catalogue |
+| [docs/](docs/) | Reference: components, backends, algorithms, internals |
+| [dissyslab/](dissyslab/) | The library and the gallery |
+| [tests/](tests/) | The suite; CI runs it on Python 3.10–3.14 |
+| [archive/](archive/) | Dated documents, kept but not maintained |
 
 ---
 
@@ -445,8 +444,8 @@ test tools. Python 3.10 or newer. Market-data offices need the optional
 extra: `pip install "dissyslab[market]"`.
 
 For offices with language-model agents, choose a backend and export its
-credentials; see [`docs/API_KEY_SETUP.md`](docs/API_KEY_SETUP.md) and
-[`docs/LANGUAGE_MODELS.md`](docs/LANGUAGE_MODELS.md). Every shipped
+credentials; see [docs/API_KEY_SETUP.md](docs/API_KEY_SETUP.md) and
+[docs/LANGUAGE_MODELS.md](docs/LANGUAGE_MODELS.md). Every shipped
 office stops after a few cycles by default, so a run will not
 accumulate cost unattended.
 

@@ -94,7 +94,7 @@ You don't modify them except to specify the names of the inboxes of
 the merge.
 
 Open
-[`dissyslab/gallery/apps/situation_room/office.md`](../dissyslab/gallery/apps/situation_room/office.md)
+[dissyslab/gallery/apps/situation_room/office.md](../dissyslab/gallery/apps/situation_room/office.md)
 and you'll see the four slots explained in situation_room/README.md's 'Make it yours' section. 
 
 
@@ -110,17 +110,17 @@ family.
 
 Offices that follow this pattern:
 
-- **[`situation_room`](../dissyslab/gallery/apps/situation_room/)**
+- **[situation_room](../dissyslab/gallery/apps/situation_room/)**
   — three news feeds → deduplicator → four parallel thinkers
   (entity, severity, topic, location) → synchronizer → writer →
   intelligence display + JSONL. The canonical instance.
 
-- **[`situation_room_pro`](../dissyslab/gallery/apps/situation_room_pro/)**
+- **[situation_room_pro](../dissyslab/gallery/apps/situation_room_pro/)**
   — same office, Claude as the writer, open-weight Qwen for every
   other agent. Demonstrates per-agent engine choice without
   changing the office shape.
 
-- **[`periodic_brief`](../dissyslab/gallery/apps/periodic_brief/)**
+- **[periodic_brief](../dissyslab/gallery/apps/periodic_brief/)**
   — a leaner instance: multiple sources go straight to a
   multi-source sink that buckets and arranges. When the response
   is "just collect and present," the thinker layer can collapse to
@@ -182,5 +182,5 @@ isn't a wall; it's a starting line.
 The spine **sense → think → respond** lives in the
 [top-level README](../README.md) banner; this doc expands it; the
 annotated
-[`situation_room/office.md`](../dissyslab/gallery/apps/situation_room/office.md)
+[situation_room/office.md](../dissyslab/gallery/apps/situation_room/office.md)
 instantiates it. Same idea, three layers of detail.

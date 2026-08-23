@@ -162,7 +162,7 @@ DisSysLab's agents use Anthropic's Claude. You need an API key.
 
 **Full instructions and troubleshooting** (TextEdit pitfalls,
 paste mistakes, 401 errors) are in
-[`API_KEY_SETUP.md`](API_KEY_SETUP.md). If anything confuses you,
+[API_KEY_SETUP.md](API_KEY_SETUP.md). If anything confuses you,
 open that file now. It takes about three minutes end to end.
 
 ---
@@ -246,7 +246,7 @@ Take a look at the folder you're in:
 
 ```
 my_briefing/
-├── office.md         ← the org chart: source, agent, sink
+├── office.md         ← the network: source, agent, sink
 └── roles/
     └── analyst.md    ← what the agent does, in plain English
 ```
@@ -462,7 +462,7 @@ A working key prints `sk-ant-api…  (length 108)` or similar.
 An empty line means nothing is set.
 
 Full fix list (including the older `.env` file approach) is in
-[`API_KEY_SETUP.md`](API_KEY_SETUP.md).
+[API_KEY_SETUP.md](API_KEY_SETUP.md).
 
 ### `dsl run` prints nothing for a long time
 

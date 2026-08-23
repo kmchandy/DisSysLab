@@ -17,7 +17,7 @@ notifications go to the recycle bin.
 
 ```
 gmail_monitor/
-    office.md          ← the org chart: source, agent, sink
+    office.md          ← the network: source, agent, sink
     roles/
         analyst.md     ← what the agent does, in plain English
 ```
@@ -38,7 +38,7 @@ dsl run .
   "important" — work emails only, urgent threads, replies from specific
   people
 - Add a second agent that drafts replies for emails that need one
-- See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+- See [docs/SOURCES_AND_SINKS.md](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
   for the full list of sources and sinks you can swap in
 
 **Recipe.** [How to monitor your inbox](https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/monitor-your-inbox.md)

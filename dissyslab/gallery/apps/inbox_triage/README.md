@@ -52,7 +52,7 @@ for a typical inbox.
 
 ## Make it yours
 
-Edit [`office.md`](office.md):
+Edit [office.md](office.md):
 
 - **SLOT 1 (sources):** change Gmail filters; add a webhook to also
   triage form submissions.
@@ -63,5 +63,5 @@ Edit [`office.md`](office.md):
 - **SLOT 4 (sinks):** route to email instead of Slack, or also
   archive everything to JSONL.
 
-See [`docs/PATTERN_sense_think_respond.md`](../../../../docs/PATTERN_sense_think_respond.md)
+See [docs/PATTERN_sense_think_respond.md](../../../../docs/PATTERN_sense_think_respond.md)
 for the pattern this office instantiates.

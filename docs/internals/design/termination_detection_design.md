@@ -64,8 +64,8 @@ Every agent answers a query with the same message, whatever its kind:
     "round_id":   7,
     "idle":       True,           # ← the new field
     "final":      False,          # ← optional; True = never active again
-    "sent":       {outport: n, ...},
-    "received":   {inport: n, ...},
+    "sent":       {outbox: n, ...},
+    "received":   {inbox: n, ...},
     "waiting_on": "in_1",         # coordinators only, as today
 }
 ```
@@ -155,7 +155,7 @@ replies. This makes explicit what `heard_from` does implicitly today.
 - a reactive agent is final only at shutdown.
 
 **"reachable"** keeps today's coordinator refinement: a non-empty channel
-into an inport a coordinator will not read (`waiting_on` names the one it
+into an inbox a coordinator will not read (`waiting_on` names the one it
 *will*) is unreachable and does not block quiescence. See §8.
 
 ---
@@ -172,11 +172,11 @@ sees an internal one:
 
 | Count | Held by | Reported to |
 |---|---|---|
-| internal edge, sender's outport | the sending agent | office detector |
-| internal edge, receiver's inport | the receiving agent | office detector |
-| `channel_sink`'s **internal inport** | `channel_sink` | office detector |
+| internal edge, sender's outbox | the sending agent | office detector |
+| internal edge, receiver's inbox | the receiving agent | office detector |
+| `channel_sink`'s **internal inbox** | `channel_sink` | office detector |
 | `channel_sink`'s **external sends** | `channel_sink` | network detector |
-| `channel_source`'s **internal outport** | `channel_source` | office detector |
+| `channel_source`'s **internal outbox** | `channel_source` | office detector |
 | `channel_source`'s **external receives** | `channel_source` | network detector |
 
 The boundary agent filters its own report, so the office detector needs
@@ -295,7 +295,7 @@ change to the graph model.
 **One outstanding request.** There is no use case for more, and allowing
 more brings cancellation, reordering and per-request identity with it. A
 second request while a timer is armed is an **error**, reported as
-`{"type": "alarm_error", ...}` on the outport — which the run summary
+`{"type": "alarm_error", ...}` on the outbox — which the run summary
 already counts and surfaces with the source's own reason.
 
 ### 6.2 Counters
@@ -317,7 +317,7 @@ depends only on messages the alarm has handled, never on the worker's
 internal state. See §3.4.
 
 **Not** the raw port totals. The rejected-request error message travels
-on the same outport, so `sent` would advance without discharging
+on the same outbox, so `sent` would advance without discharging
 anything, and the alarm would read idle with a timer still pending. The
 counters must count arming and firing, not traffic.
 
@@ -397,7 +397,7 @@ outlives the office, and Ctrl-C does not wait out an hour-long timer.
 
 The main loop is blocked on its inbox, so a `threading.Event` cannot wake
 it. The worker must put something on that queue with a direct `q.put` —
-not `send()`, which is for outports — and that something must not be
+not `send()`, which is for outboxes — and that something must not be
 counted as a received message or `received` inflates.
 
 So `_TimerFired` subclasses `_OsMessage`. Counting in `recv()` happens
@@ -410,14 +410,14 @@ for subclass extension in that dispatch — `Coordinator` extends the poll
 reply via `_termination_info()` — so the symmetric hook is one branch:
 
 ```python
-            elif self._handle_os_extension(msg, inport):
+            elif self._handle_os_extension(msg, inbox):
                 pass                      # a subclass recognised it
 ```
 
 with a base implementation returning `False`, and:
 
 ```python
-    def _handle_os_extension(self, msg, inport):
+    def _handle_os_extension(self, msg, inbox):
         if isinstance(msg, _TimerFired):
             self.send(self._wake_up_message(), "out_")
             self.discharged += 1
@@ -454,10 +454,10 @@ correct:
    `discharged` advances, and it then reports `idle`. The recorded state
    is right.
 
-This argument depends on the alarm having exactly **one** inport. With
+This argument depends on the alarm having exactly **one** inbox. With
 two, a marker could arrive on one while `_TimerFired` sat on the other,
 and ordering them would need the full channel-state machinery. The
-single-inport design is doing real work.
+single-inbox design is doing real work.
 
 **What does need care is resume.** In case 1 the recorded state is
 `{active, accepted = 1, discharged = 0}` — correct — but the thing that
@@ -480,7 +480,7 @@ to know. It should be a decision rather than an accident.
 ## 8. What this does *not* fix, deliberately
 
 An office whose coordinator holds a half-filled join, or has a message
-stranded on an inport it will never read, is **quiescent**: nothing more
+stranded on an inbox it will never read, is **quiescent**: nothing more
 can happen, so the verdict "terminated" is correct. It is also
 deadlocked, and the held data is discarded.
 

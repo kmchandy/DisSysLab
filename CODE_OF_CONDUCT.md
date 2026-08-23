@@ -42,7 +42,7 @@ Report a concern to **K. Mani Chandy — kmchandy@gmail.com**.
 Reports are read by the maintainer. Include what happened, where,
 and roughly when; a link is usually enough. You will get an
 acknowledgement, though not necessarily a fast one — see the note
-on bandwidth in [`CONTRIBUTING.md`](CONTRIBUTING.md).
+on bandwidth in [CONTRIBUTING.md](CONTRIBUTING.md).
 
 If your report concerns the maintainer, and you are at Caltech,
 you may instead use the Institute's own reporting channels.

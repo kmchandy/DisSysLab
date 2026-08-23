@@ -25,7 +25,7 @@ Eve      is an entity_extractor.
 Sam      is a severity_classifier.
 Tom      is a topic_tagger.
 Greta    is a geolocator.
-Sync     is a synchronizer(inports=["entities", "severity", "topic", "location"]).
+Sync     is a synchronizer(inboxes=["entities", "severity", "topic", "location"]).
 Registry is a subscription_registry.
 
 Connections:

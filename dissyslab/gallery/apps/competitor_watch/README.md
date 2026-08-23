@@ -54,10 +54,10 @@ The office's default thinkers (entity, sentiment, topic) give you
 a generic competitor-watch. To track *specific* companies or
 products you care about, write a local relevance filter and put it
 in `roles/relevance_filter.md` in this office. See
-[`dissyslab/roles/relevance_filter.md`](../../../roles/relevance_filter.md)
+[dissyslab/roles/relevance_filter.md](../../../roles/relevance_filter.md)
 for the base prompt to copy.
 
-Edit [`office.md`](office.md):
+Edit [office.md](office.md):
 
 - **SLOT 1 (sources):** swap or add feeds — Hacker News
   (`hacker_news`), MIT Tech Review (`mit_tech_review`), specific
@@ -69,5 +69,5 @@ Edit [`office.md`](office.md):
 - **SLOT 4 (sinks):** drop `markdown_digest`, use `slack_sink_briefing`
   or `gmail_sink` instead.
 
-See [`docs/PATTERN_sense_think_respond.md`](../../../../docs/PATTERN_sense_think_respond.md)
+See [docs/PATTERN_sense_think_respond.md](../../../../docs/PATTERN_sense_think_respond.md)
 for the pattern.

@@ -44,7 +44,7 @@ Save and run `dsl run .` again. No rebuild — just edit and re-run.
 A filter is an agent whose job is to send each incoming item to
 one of two destinations: `keep` or `discard`. The job description
 in the role spells out the criteria for `keep` and `discard`.
-The org chart in `office.md` shows how the mailboxes `keep` and `discard`
+The network in `office.md` shows how the mailboxes `keep` and `discard`
 are connected to agents including sinks.
 
 ## The minimal office, from scratch
@@ -102,7 +102,7 @@ filter.
 **More than two buckets.** Replace `discard` with
 finer destinations (e.g., `routine`, `archive`). The job description
 in the filter role spells out the mailboxes to which each item goes.
-The org chart in `office.md` shows the connections of the mailboxes
+The network in `office.md` shows the connections of the mailboxes
 to the inputs of agents including sink agents.
 
 ## See also

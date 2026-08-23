@@ -1698,7 +1698,7 @@ def build_parser() -> argparse.ArgumentParser:
         "check",
         help="check an office's wiring without running it",
         description=(
-            "Read <office_dir>/office.md and report faults in the org chart "
+            "Read <office_dir>/office.md and report faults in the network "
             "as a whole: agents nothing can reach, work that reaches no "
             "sink, sinks nothing feeds, roles with no file behind them, and "
             "cycles. Reports every fault it finds, not just the first, and "

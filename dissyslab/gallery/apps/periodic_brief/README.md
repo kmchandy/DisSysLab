@@ -32,7 +32,7 @@ polling.
 
 ## What's in the office
 
-Open [`office.md`](office.md). It's about ten lines:
+Open [office.md](office.md). It's about ten lines:
 
 ```
 Sources: bbc_world(max_articles=5), npr_news(max_articles=5),
@@ -136,7 +136,7 @@ to open it for you.
 
 ## Want more?
 
-[`periodic_brief_pro`](../periodic_brief_pro/) is the upgraded
+[periodic_brief_pro](../periodic_brief_pro/) is the upgraded
 version. It adds a sense → think → respond news pipeline (each
 article gets entity / topic / urgency tagged, then a writer
 composes a brief per article), plus your Google Calendar, plus
@@ -146,9 +146,9 @@ expectations.
 
 ## See also
 
-- [`office.md`](office.md) — the wiring (ten lines).
-- [`periodic_brief_pro`](../periodic_brief_pro/) — the LLM-enabled
+- [office.md](office.md) — the wiring (ten lines).
+- [periodic_brief_pro](../periodic_brief_pro/) — the LLM-enabled
   upgrade.
-- [`docs/PATTERN_sense_think_respond.md`](../../../../docs/PATTERN_sense_think_respond.md)
+- [docs/PATTERN_sense_think_respond.md](../../../../docs/PATTERN_sense_think_respond.md)
   — the design pattern that periodic_brief_pro instantiates for
   its news pipeline.

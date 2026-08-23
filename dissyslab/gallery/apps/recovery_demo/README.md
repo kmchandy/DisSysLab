@@ -16,10 +16,10 @@ csv_points_source  →  Alex (inside_classifier)  →  Pi (pi_combiner)  →  di
 Five specialist agents:
 
 - `csv_points_source` reads `(x, y)` pairs from `samples/points.txt` one per emission
-- The compiler auto-inserts a **Broadcast** in front of the two classifiers because the source's outport fans out to two destinations
+- The compiler auto-inserts a **Broadcast** in front of the two classifiers because the source's outbox fans out to two destinations
 - **Alex** (`inside_classifier`) counts points with `x² + y² < 1`
 - **Bob** (`outside_classifier`) counts points with `x² + y² ≥ 1`
-- The compiler auto-inserts a **MergeAsynch** in front of Pi because two outports fan into one inport
+- The compiler auto-inserts a **MergeAsynch** in front of Pi because two outboxes fan into one inbox
 - **Pi** (`pi_combiner`) tracks the running inside/outside counts and emits `π ≈ 4 · inside / (inside + outside)` after every received message
 - `intelligence_display` shows the running estimate as a card stream
 
@@ -101,14 +101,14 @@ dsl run recovery_demo --resume latest --snapshot-interval 5
 | **Distributed snapshot algorithm** | The framework's `OsAgent` broadcasts `_Checkpoint(N)` to source input queues; the marker propagates via upstream-forwarding through the data graph. |
 | **Per-agent `save_state` / `load_state`** | The three stateful roles in `roles/` each override the two methods in five lines. |
 | **Per-edge channel-state recording** | The Monte Carlo flow has fan-out and fan-in; each edge's in-flight messages are captured per-snapshot and replayed on resume. |
-| **MergeAsynch under concurrency** | Pi's single inport is fed by two outports; the compiler auto-inserts a multi-worker MergeAsynch. The snapshot lock added in v1.6 keeps the protocol correct under thread races. |
+| **MergeAsynch under concurrency** | Pi's single inbox is fed by two outboxes; the compiler auto-inserts a multi-worker MergeAsynch. The snapshot lock added in v1.6 keeps the protocol correct under thread races. |
 | **Four-way recovery handshake** | `_PrepareRecover` → `_RecoverReady` → `_StartRecover` synchronizes every agent before any of them produces post-recovery output. |
 | **Source / sink boundary protocol** | `csv_points_source` records `ptr(N)` at each snapshot and `ptr_to_now` at each recover; on replay it re-reads the file from `cursor` and the office sees no gap. |
 
 ## Algorithm reference
 
 The algorithm's specification lives in
-[`docs/algorithms/CHECKPOINT_RESUME.md`](../../../../docs/algorithms/CHECKPOINT_RESUME.md).
+[docs/algorithms/CHECKPOINT_RESUME.md](../../../../docs/algorithms/CHECKPOINT_RESUME.md).
 Read that document and then read the three role files
 alongside `dissyslab/core.py`'s `Agent._handle_checkpoint` /
 `_handle_prepare_recover` / `_handle_start_recover` and

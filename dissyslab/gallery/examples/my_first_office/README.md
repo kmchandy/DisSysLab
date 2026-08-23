@@ -19,7 +19,7 @@ hacker_news ──→  Alex  ──→  console
 
 ```
 my_first_office/
-    office.md          ← the org chart: source, agent, sink
+    office.md          ← the network: source, agent, sink
     roles/
         analyst.md     ← what the agent does, in plain English
 ```
@@ -92,7 +92,7 @@ source file (`office.md`, `roles/*`) is newer than the
 artifact, so editing a prompt and re-running picks up the
 change without you doing anything.
 
-**More to swap in.** See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+**More to swap in.** See [docs/SOURCES_AND_SINKS.md](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
 for the full list of sources and sinks shipped with the framework.
 
 **Recipe.** [How to add a new RSS source](https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/add-an-rss-source.md)
@@ -115,7 +115,7 @@ learning software might care.
 Send to briefing.
 ```
 
-## The org chart
+## The network
 
 The whole office, in one file:
 

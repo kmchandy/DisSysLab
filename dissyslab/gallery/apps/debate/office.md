@@ -13,7 +13,7 @@ GPT is a gpt.
 GPT's AI is openai.
 Claude is a claude.
 Claude's AI is anthropic.
-Sync is a synchronizer(inports=["from_qwen", "from_gpt", "from_claude"]).
+Sync is a synchronizer(inboxes=["from_qwen", "from_gpt", "from_claude"]).
 Riley is a moderator.
 
 Connections:

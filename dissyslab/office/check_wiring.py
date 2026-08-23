@@ -21,14 +21,14 @@ the one where every port is wired and messages flow, but a coordinator sits
 blocked on one inbox while another holds a message it will never read. Whether
 that message is readable depends on how many messages each source happened to
 produce and how they paired up, which is an execution history, not a property
-of the org chart. That is runtime hang diagnosis, and it is a different tool.
+of the graph. That is runtime hang diagnosis, and it is a different tool.
 
 Knowing which faults are structural and which are behavioural is itself the
 lesson; this module is the structural half and says so.
 
 Codes
 -----
-W1  declared inport nothing writes to -- a guaranteed block
+W1  declared inbox nothing writes to -- a guaranteed block
 W3  unreachable agent -- nothing upstream can reach it
 W4  dead end -- its output reaches no sink and no office output
 W5  no such source or sink -- a name that is in no registry
@@ -36,8 +36,8 @@ W6  missing role file -- named a role with no ``.md`` or ``.py`` behind it
 W7  cycle (note, not an error) -- legal and often intended
 W8  source with no destination, or sink nothing feeds
 
-W1 applies only where an agent *declares* its inports in ``office.md`` --
-``Sync is a synchronizer(inports=["entities", "severity", "topic"])``. Where
+W1 applies only where an agent *declares* its inboxes in ``office.md`` --
+``Sync is a synchronizer(inboxes=["entities", "severity", "topic"])``. Where
 ports are not declared they are inferred from the connections themselves, so
 an unwired port cannot arise and there is nothing to check. W2 (an outport
 nothing reads) would need the role's resolved shape, which the parser does not
@@ -230,7 +230,7 @@ def _looping_groups(
 def _declared_inports(agent_spec) -> List[str]:
     """Inports an agent spells out in office.md, if any.
 
-    ``Sync is a synchronizer(inports=["entities", "severity"])`` parses to
+    ``Sync is a synchronizer(inboxes=["entities", "severity"])`` parses to
     ``args=(("inports", ["entities", "severity"]),)``. Agents that do not
     declare inports return an empty list, and are not checked -- their ports
     are whatever gets wired to them.
@@ -351,7 +351,7 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
 
     named = graph.nodes | {EXTERNAL}
 
-    # W1 -- a declared inport that no connection writes to.
+    # W1 -- a declared inbox that no connection writes to.
     #
     # Only agents that spell their inports out in office.md can have this
     # fault. Where the ports are not declared they are defined by whatever is
@@ -379,12 +379,12 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                     "W1",
                     "error",
                     agent,
-                    f"{agent!r} declares inport {port!r}, but nothing writes "
+                    f"{agent!r} declares inbox {port!r}, but nothing writes "
                     f"to it -- {agent} will block on it and never proceed.",
-                    f"Declared inports: {', '.join(declared)}. "
+                    f"Declared inboxes: {', '.join(declared)}. "
                     + (f"Wired: {wired}." if wired else "None are wired.")
                     + f" Either wire something to {port!r}, or remove it from "
-                    "the inports list.",
+                    "the inboxes list.",
                 )
             )
 

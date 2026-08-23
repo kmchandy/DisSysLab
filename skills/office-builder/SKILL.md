@@ -5,7 +5,7 @@ description: Build, check, and run DisSysLab offices — networks of agents that
 
 # Building an office
 
-**Skill version: `2026-08-19.638fc17`.** If anyone asks which version of this
+**Skill version: `2026-08-19.385377d`.** If anyone asks which version of this
 skill is loaded, answer with that string, exactly. A skill update can
 report success while the old version stays resident, and until now there
 was no way to tell — the wrong version once ran for an entire test round.
@@ -73,8 +73,8 @@ In a class of thirty, this is far worse than the missing feature.
    catches nothing about the graph. Verified against 1.6.1: `dsl build`
    happily wrote `run.py` for an office whose `Connections` named an agent
    that does not exist, and for offices with unreachable agents, dead ends,
-   and an unfed synchronizer inport. There is no substitute for the
-   structural check; read the org chart yourself and say that is what you
+   and an unfed synchronizer inbox. There is no substitute for the
+   structural check; read the network yourself and say that is what you
    did.
 3. Fix what it reports. Show the user what it found — do not silently repair.
 4. `dsl run <office_dir>`.
@@ -113,11 +113,11 @@ Riley's out is intelligence_display, jsonl_recorder_briefing.
 
 Notes that save debugging time:
 
-- A source's outport may be written `destination` or `out`. Both are legal.
+- A source's outbox may be written `destination` or `out`. Both are legal.
 - A sink has exactly one inbox, always `in_`.
 - `X's out is Y, Z.` is fan-out — one message to both.
-- `Eve's out is Sync's entities.` sends into a *named* inport. A
-  synchronizer's inports are defined by whatever gets wired to it.
+- `Eve's out is Sync's entities.` sends into a *named* inbox. A
+  synchronizer's inboxes are defined by whatever gets wired to it.
 - The network **may contain cycles**. Loops are legal and often intended. A
   loop needs a `gate` if it is to terminate.
 - Keep `max_articles=N` / `max_readings=N` limits in place. They stop a
@@ -133,7 +133,7 @@ sometimes with its criteria edited:
   `category_classifier`, `severity_classifier`, `urgency_classifier`,
   `sentiment_classifier`, `entity_extractor`, `geolocator`, `summarizer`
 - **writers** — `writer`, `summary_writer`
-- **filters with two outports** — `relevance_filter` (`keep` / `discard`),
+- **filters with two outboxes** — `relevance_filter` (`keep` / `discard`),
   `evaluator` (`publish` / `revise`)
 - **a Python gate** — `confidence_filter`
 - **six structural roles** with no file at all, built from `office.md`
@@ -250,7 +250,7 @@ from dissyslab.office.library import AgentRoleEntry
 
 class _InsideClassifier(Agent):
     def __init__(self, name: str | None = None):
-        super().__init__(name=name, inports=["in_"], outports=["out_"])
+        super().__init__(name=name, inboxes=["in_"], outboxes=["out_"])
         self.count: int = 0
 
     # Optional. Implementing these two is what lets an office
@@ -271,8 +271,8 @@ class _InsideClassifier(Agent):
 
 role = AgentRoleEntry(
     name="inside_classifier",
-    in_ports=("in_",),
-    out_ports=("out",),
+    inboxes=("in_",),
+    outboxes=("out",),
     factory=_InsideClassifier,
 )
 ```
@@ -281,8 +281,8 @@ Points that are easy to get wrong:
 
 - The module must end with a module-level `role = AgentRoleEntry(...)`.
 - **The port spellings differ between the two places.** `Agent.__init__` takes
-  `outports=["out_"]` (trailing underscore) while `AgentRoleEntry` takes
-  `out_ports=("out",)` (no underscore). Copy this exactly rather than
+  `outboxes=["out_"]` (trailing underscore) while `AgentRoleEntry` takes
+  `outboxes=("out",)` (no underscore). Copy this exactly rather than
   reasoning about it.
 - `run()` is an infinite loop over `self.recv(port)`. Never return from it
   voluntarily — returning kills the agent's thread before the office can
@@ -383,7 +383,7 @@ installed package* rather than the user's folder, and they will not find it.
 
 ## What `dsl check` catches, and what it cannot
 
-It reads the org chart and reports every fault at once: a declared inport
+It reads the network and reports every fault at once: a declared inbox
 nothing writes to, agents nothing can reach, work that reaches no sink, sinks
 nothing feeds, roles with no file behind them, unknown names in connections,
 and feedback loops with no gate.
@@ -392,7 +392,7 @@ It is **structural**. It cannot see faults that depend on what happens at run
 time. An office whose diagram is perfectly correct can still get stuck,
 because getting stuck can depend on which messages actually arrive and in what
 order. If `dsl check` is clean and the office still hangs, the fault is in the
-run, not the wiring — look at which agent is blocked and on which inport.
+run, not the wiring — look at which agent is blocked and on which inbox.
 
 Worth telling a student explicitly: the difference between what you can know
 from the diagram and what you can only know from an execution is one of the
@@ -402,7 +402,7 @@ real ideas in this subject.
 
 | Symptom | First move |
 |---|---|
-| Hangs, nothing happens | `dsl check`. If clean, find which agent is blocked on which inport and what would have to arrive. |
+| Hangs, nothing happens | `dsl check`. If clean, find which agent is blocked on which inbox and what would have to arrive. |
 | Runs, produces nothing | Per-agent message counts at the end of the run. First zero is where flow stops. A sink nothing feeds is the usual cause. |
 | A sink's file is empty | Almost always no connection writes to that sink. `dsl check` names it as W8. |
 | English role does something odd | The job description is underspecified. State the allowed values and where to send. |

@@ -185,7 +185,7 @@ minute and get your webhook URL blocked.
 The webhook source spins up an HTTP server that turns every POST
 into a DisSysLab message; an analyst agent decides which mailbox
 each one goes to (`keep` for the real events, `discard` for the
-rest); and the org chart in `office.md` wires those mailboxes to
+rest); and the network in `office.md` wires those mailboxes to
 sinks — terminal, file, email, Slack, another webhook, anything
 from
 [the sinks reference](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md).

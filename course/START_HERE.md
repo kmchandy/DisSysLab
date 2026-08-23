@@ -1,7 +1,7 @@
 # Build a distributed system.
 
 This description assumes that you have read the **office** representation of a distributed system.
-A summary: an office consists of agents and an org chart. Each agent is specified by a job description. The network specifies how messages flow between agents.
+A summary: an office consists of agents and a network. Each agent is specified by a job description. The network specifies how messages flow between agents.
 
 
 In this example, you build a distributed app by talking to **Cowork** (the Claude desktop app). You can also use other AI agents such as Codex and Gemini CLI. The details are in [SETUP.md](SETUP.md); here is
@@ -43,7 +43,7 @@ There are two ways to give it to your agent. Try the first; if anything about
 it is unclear, the second always works.
 
 **Either — install the bundle.** Download
-[`office-builder.skill`](../skills/office-builder.skill) from the repository
+[office-builder.skill](../skills/office-builder.skill) from the repository
 and add it to Cowork as a skill. Your agent then picks it up automatically
 whenever you ask for something that sounds like an office.
 
@@ -72,7 +72,7 @@ bad test — every version answers that, so it tells you a skill is loaded, not
 which one.
 
 *Building sensing offices — classifying photos, recordings, or sensor
-readings? Also add [`sensor-office-builder.skill`](../skills/sensor-office-builder.skill).*
+readings? Also add [sensor-office-builder.skill](../skills/sensor-office-builder.skill).*
 
 ---
 
@@ -103,9 +103,9 @@ installed version, that is expected and not your fault — it is newer than the
 last release. Ask it to carry on without the check, or to install the current
 version from GitHub. **Do not let it "fix" your installation by editing the
 installed package**; that gives you a copy of the tool nobody else has, and
-problems nobody else can reproduce. It reads your org chart and reports every structural
+problems nobody else can reproduce. It reads your network and reports every structural
 problem at once — an agent nothing can reach, work that reaches no sink, a
-sink nothing feeds, a port nothing writes to. It takes a second and it saves
+sink nothing feeds, an inbox nothing writes to. It takes a second and it saves
 afternoons.
 
 **When it misbehaves:**
@@ -149,7 +149,7 @@ You never have to. But reading one is how you check the agent's work, and by
 the end of the course you should be able to write one without help — that is
 most of what "you understand your own office" means.
 
-**[`docs/BUILD_APPS.md`](../docs/BUILD_APPS.md)** has the full grammar, the
+**[docs/BUILD_APPS.md](../docs/BUILD_APPS.md)** has the full grammar, the
 component catalogue and worked examples. Reach for it when the agent has built
 something and you want to know why it wired it that way.
 
@@ -279,7 +279,7 @@ completely, because you built it. Then the questions get sharp:
   when everything is still. The answer is the Chandy–Lamport distributed
   snapshot, and `recovery_demo` runs it.
 - **How do you tell "still working" from "stuck forever"?** Some faults you
-  can see in the org chart before running anything; `dsl check` finds those.
+  can see in the network before running anything; `dsl check` finds those.
   Others depend on which messages actually arrived and in what order, and no
   amount of staring at the diagram will reveal them. That boundary — what is
   knowable from the structure versus only from the execution — is one of the

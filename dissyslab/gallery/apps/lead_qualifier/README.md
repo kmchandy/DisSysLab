@@ -55,7 +55,7 @@ discarded. Press Ctrl-C to stop.
 
 ## Make it yours
 
-Edit [`office.md`](office.md):
+Edit [office.md](office.md):
 
 - **SLOT 1 (sources):** add `gmail` for leads that come by email,
   or `file_source` for batch processing exported CSVs.
@@ -66,5 +66,5 @@ Edit [`office.md`](office.md):
 - **SLOT 4 (sinks):** add a `slack_sink_alerts` so the sales team
   gets a real-time ping in addition to the CRM record.
 
-See [`docs/PATTERN_sense_think_respond.md`](../../../../docs/PATTERN_sense_think_respond.md)
+See [docs/PATTERN_sense_think_respond.md](../../../../docs/PATTERN_sense_think_respond.md)
 for the pattern.

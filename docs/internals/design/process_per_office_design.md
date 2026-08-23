@@ -39,7 +39,7 @@ BACKTEST's out is console_printer.
 ```
 
 `office(...)` is a new component kind. The parser and the graph model
-need no changes: an office-agent has inports and outports like any
+need no changes: an office-agent has inboxes and outboxes like any
 other agent, and the compiler already validates wiring against
 contracts. What changes is what the compiler *builds* for that node --
 a child process rather than a thread.
@@ -92,7 +92,7 @@ Two implementations:
 Both must be **FIFO per channel**, because Chandy-Lamport requires it.
 `multiprocessing.Queue` is FIFO. An AMQP queue is FIFO with a *single*
 consumer, which the model already guarantees: a channel feeds exactly
-one inport.
+one inbox.
 
 ## 5. The network OS process
 

@@ -26,7 +26,7 @@ npr_news   ─┘       └→  briefing.jsonl  (discarded articles)
 
 ```
 intelligence_briefing/
-    office.md              ← the org chart: sources, agents, sinks
+    office.md              ← the network: sources, agents, sinks
     roles/
         analyst.md         ← what Alex does, in plain English
         editor.md          ← what Morgan does, in plain English
@@ -71,7 +71,7 @@ different sinks.
 **Change the sources.** Replace the news feeds with anything — job
 boards, arXiv papers, social media, your email inbox.
 
-**More to swap in.** See [`docs/SOURCES_AND_SINKS.md`](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
+**More to swap in.** See [docs/SOURCES_AND_SINKS.md](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
 for the full list of sources and sinks shipped with the framework.
 
 **Recipe.** [How to write a custom role](https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/write-a-custom-role.md)
@@ -120,7 +120,7 @@ summary in the "text" field.
 Always send to archivist.
 ```
 
-## The org chart
+## The network
 
 The whole office, in one file:
 

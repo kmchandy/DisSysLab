@@ -102,8 +102,8 @@ nothing else in the network would change.
 
 A chainable office declares external `Inputs:` and `Outputs:` at
 the top of its `office.md`. A `network.md` wires offices together
-by name, treating each one as a black box. The org chart at the
-network level shows how offices connect; the org chart inside
+by name, treating each one as a black box. The network at the
+network level shows how offices connect; the network inside
 each office is hidden from the network.
 
 ## Build and run
@@ -164,7 +164,7 @@ translator's article_out is intelligence_display.
 **Build a library of reusable offices.** Once an office is
 black-boxed by its `Inputs:` and `Outputs:`, you (or a teammate)
 can paste it into any network with no changes to its internals.
-Job descriptions in `roles/` and the org chart in `office.md` stay
+Job descriptions in `roles/` and the network in `office.md` stay
 private to that office.
 
 ## When *not* to reach for this
@@ -175,7 +175,7 @@ it there. Chaining is worth the extra build step when:
 - You want to test a chunk of the pipeline in isolation.
 - You want to swap one chunk for an alternative implementation.
 - The pipeline has grown to more than five or six agents and
-  reading the org chart has become a chore.
+  reading the network has become a chore.
 
 For everything else, one office is simpler.
 
@@ -183,7 +183,7 @@ For everything else, one office is simpler.
 
 - [`org_two_office_news` in the gallery](https://github.com/kmchandy/DisSysLab/tree/main/dissyslab/gallery/org_two_office_news)
   — the working example used in this recipe, with all four agents
-  and both office org charts.
+  and both office networks.
 - [Sources and sinks reference](https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md)
   — every shipped source and sink, for the network's outer layer.
 - [How to filter for a topic](filter-for-a-topic.md) — the simpler
