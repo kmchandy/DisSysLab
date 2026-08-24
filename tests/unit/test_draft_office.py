@@ -96,13 +96,16 @@ def test_the_new_branch_did_not_loosen_the_grammar(tmp_path):
     written for and nothing else. The `unassigned` pattern is anchored
     on that literal word, so it cannot.
 
-    This asserts less than it should, and the reason is recorded in
-    STATUS: the line is not rejected either. A legacy `name is <path>`
-    fallback accepts *any* unmatched agent line as a sub-office path,
-    so `Jay is deduplicator.` silently becomes an office in
-    ./deduplicator and `dsl check` says nothing. That predates this
-    work and is a separate change; what matters here is that the branch
-    added for drafts did not widen anything.
+    This asserts less than it should, and the reason is in STATUS: the
+    line is not rejected either. A legacy `name is <path>` fallback
+    accepts any unmatched agent line as a sub-office path and sets both
+    role_name and path to it, so a forgotten article gives three
+    different answers depending on which library the name lives in --
+    `Jay is summarizer.` runs correctly, `Jay is deduplicator.` fails at
+    build with a sub-office path error, and `Jay is frobnicator.` is
+    reported as a missing role file. All three were run. That predates
+    this work and is a separate change; what matters here is that the
+    branch added for drafts did not widen anything.
     """
     spec = parse_office_dir(
         _office(tmp_path, "# Office: t\n\nAgents:\nJay is deduplicator.\n")

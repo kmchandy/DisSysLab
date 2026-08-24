@@ -80,17 +80,34 @@ findings: G1 *"has no job yet"* and G2 *"nothing leaves this office"*.
 What is left is the assistant's half — the turn protocol, and the
 skill. See building_by_conversation.md §3–§4 (built) and §5, §7 (not).
 
-**Found while building it: the grammar is not as strict as we say it
-is.** The README argues that the narrow grammar is what lets
-`dsl check` catch what a language model got wrong. But an agent line
-that matches nothing falls through to a legacy `name is <path>` form,
-so `Jay is deduplicator.` — the exact line the strictness is supposed
-to reject — silently becomes a sub-office in `./deduplicator`, and
-`dsl check` says nothing about it. It surfaces at compile time as a
-missing office. Tightening the fallback is its own change with an
-unknown blast radius on offices that use the legacy form; recorded in
-`tests/unit/test_draft_office.py` where the assertion had to be
-weakened to match.
+**Found while building it: a forgotten article gives three different
+answers.** An agent line matching no pattern falls through to a legacy
+`name is <path>` form for sub-offices, which sets *both* `role_name`
+and `path` to the same string. What happens next depends on which
+library the name belongs to. All three were run:
+
+| Line | `dsl check` | then |
+|---|---|---|
+| `Jay is summarizer.` | no problems | **runs correctly** — the prompt-role lookup ignores `path` |
+| `Jay is deduplicator.` | no problems | `dsl build` fails: *"sub-office path 'deduplicator' could not be resolved"* |
+| `Jay is frobnicator.` | W6, exit 1 | but W6 says *"there is no roles/frobnicator.md"*, not *"you left out the article"* |
+
+The article is enforced by the regex and then unenforced by the
+fallback, so a student who drops one word gets no message, or a
+message about sub-offices, or a message about a missing file —
+depending on a distinction they cannot see.
+
+**Underneath it: `check_wiring` never reads `RoleRef.path`.**
+`_build_graph` maps each agent to its `role_name` and nothing looks at
+the path, so a genuine `X is an office at ./nowhere.` is reported as a
+missing *role file*, and a path whose basename happens to name a real
+role is not reported at all. That is the more general bug, and fixing
+it — check that a declared sub-office directory exists, and say so in
+those words — is worth doing whether or not the fallback is tightened.
+
+Tightening the fallback has an unknown blast radius on offices using
+the legacy form. Recorded in `tests/unit/test_draft_office.py`, where
+the assertion had to be weakened to match.
 
 **Conversational office construction, the rest.** Storyboard first,
 then design, then build. The storyboard is
