@@ -58,7 +58,9 @@ would point a student on PyPI 1.7.2 at behaviour their install does
 not have. `skills/office-builder/references/office_grammar.md` is the
 file, and editing it also forces a bundle rebuild and a version bump,
 so it is one edit made once, with the release. Same coupling as
-`inboxes=`; that makes four.
+`inboxes=`; that makes four — five with `dsl fetch-prices`, which is
+how the download becomes something a tester asks for rather than a
+command they have to know.
 
 **Thirty students installing at once has never been tested.** One
 unresolved install failure costs a class hour, thirty times. Windows
@@ -179,9 +181,19 @@ Not diagrams, not Kakushadze notation, though he reads the latter.
   this as `No module named 'openpyxl'`. And `dsl init` no longer copies
   our design notes, a build plan and a PDF into a tester's folder.
 
+  **The download is now `dsl fetch-prices`**, a subcommand rather than
+  a script inside one gallery folder — so an assistant can run it, from
+  anywhere, after a plain `pip install`. It takes the basket from an
+  office's own `csv_stock_history(...)` line, skips files already
+  present, and finishes by loading each ticker back through the
+  office's source: fetching and reading are two pieces of code agreeing
+  on a directory and a filename, and that agreement is the thing that
+  was broken. The old script still works and now points at the
+  subcommand.
+
   **Still to do for that path**: ranked output ("show top 10"), and
-  making the download something an assistant offers rather than a
-  script a tester runs.
+  teaching the skill about `dsl fetch-prices` — which is blocked behind
+  the release like the other four.
 
 - **Phase 1 — the trace. Done, 23 Aug.**
   `mac_speed_suite/explain_strategy.py` writes a workbook: one row per

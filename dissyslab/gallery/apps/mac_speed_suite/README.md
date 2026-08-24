@@ -14,14 +14,20 @@ redistributing it, so you download your own once:
 
 ```bash
 pip install "dissyslab[market]"
-python3 download_stock_history_from_yf.py
+dsl fetch-prices --office .
 ```
 
 Files land in `~/.dissyslab/market_data` (or `$DSL_MARKET_DATA` if you
 set it), which every office shares and which does not change when you
 copy this office somewhere else with `dsl init`.
 
-Or ask your assistant: *"download the price history this office needs."*
+Better, ask your assistant: *"download the price history this office
+needs."* That is the intended path — `dsl fetch-prices` exists so the
+download is something you ask for rather than a terminal command you
+have to know about.
+
+(`download_stock_history_from_yf.py` still works and does the same
+thing. It needs you to be standing in this folder.)
 
 
 ## New here? Try it by talking to Cowork

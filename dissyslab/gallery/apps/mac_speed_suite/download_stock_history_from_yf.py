@@ -142,7 +142,22 @@ def fetch_basket():
     print("Done. Now run:  dsl run .")
 
 
+def _suggest_the_subcommand():
+    """This script still works. It is no longer the way in.
+
+    `dsl fetch-prices` does the same job from anywhere, needs no cd
+    into this folder, and an assistant can run it -- which is the
+    difference between a capability the user has to reach and one they
+    can ask for. Kept because it is in the documentation, in a tester's
+    muscle memory, and in at least one letter I have already sent.
+    """
+    print("Note: `dsl fetch-prices --office .` does this from anywhere,")
+    print("and you can ask your assistant to run it for you.")
+    print()
+
+
 def main():
+    _suggest_the_subcommand()
     if len(sys.argv) == 1:
         # Default: the office's whole basket, as described by office.md.
         fetch_basket()

@@ -201,12 +201,22 @@ the first read Stooq's historical endpoint, which no longer serves data,
 and the second existed only as a stand-in while the first was broken.
 Neither was used by any office.
 
-To backtest, download your own data once and read it from disk:
+To backtest, download your own data once and read it from disk. Ask
+your assistant — *"download ten years of prices for NVDA and AMD"* —
+or run it yourself:
 
 ```bash
 pip install "dissyslab[market]"
-python3 dissyslab/gallery/apps/mac_speed_suite/download_stock_history_from_yf.py
+dsl fetch-prices NVDA AMD --years 10
+dsl fetch-prices --office my_backtest    # or: the basket an office asks for
 ```
+
+`dsl fetch-prices` works from anywhere and needs no clone. Files already
+present are left alone; pass `--force` to replace them. When it takes
+the basket from an office it finishes by loading each ticker back
+through the office's own source, so you find out immediately if the
+fetch and the read disagree rather than from an office that runs and
+produces nothing.
 
 That script reads the ticker list and the filename pattern straight out
 of `office.md`, so the download always matches what the office expects.

@@ -560,6 +560,13 @@ MODULES_WITHOUT_DOCS: dict[str, str] = {
     "snapshot.py": "covered by os_agent_implementation and the algorithm docs",
     "utils.py": "grab-bag; no single subject to document",
     "builder.py": "has its own pair already",
+    "market_fetch.py": (
+        "one command's worth of logic, and the reasoning -- why it is a "
+        "subcommand an assistant can run rather than a script in a "
+        "gallery folder -- is in its own docstring and in "
+        "docs/SOURCES_AND_SINKS.md, which is where a person looking for "
+        "market data reads"
+    ),
     "market_data.py": (
         "one rule -- where a user's own price files live -- and its own "
         "docstring carries the reasoning. The part worth documenting is "

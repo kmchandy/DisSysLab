@@ -604,6 +604,74 @@ def cmd_draw(args: argparse.Namespace) -> int:
     return 0
 
 
+# ── Subcommand: fetch-prices ──────────────────────────────────────────────────
+
+def cmd_fetch_prices(args: argparse.Namespace) -> int:
+    """Download the user's own price history.
+
+    A subcommand rather than a script in one gallery folder, so an
+    assistant can run it. A capability an assistant cannot reach is a
+    capability the user has to reach themselves, and that is what put a
+    git clone and two shell commands in a tester's path to a backtest.
+    """
+    from dissyslab.market_fetch import (
+        DEFAULT_PATTERN, FetchError, confirm_office_reads, fetch, office_basket,
+    )
+
+    tickers = list(args.tickers or [])
+    pattern = DEFAULT_PATTERN
+    years = args.years
+    office_dir = None
+
+    if not tickers:
+        # No tickers named: take the basket from an office, so the
+        # fetch matches what that office will look for.
+        office_dir = Path(args.office) if args.office else Path.cwd()
+        try:
+            tickers, pattern, years = office_basket(office_dir)
+        except FetchError as exc:
+            _eprint(f"dsl fetch-prices: {exc}")
+            return 1
+        if args.years is not None:
+            years = args.years
+        print(f"Reading the basket from {office_dir}/office.md")
+    elif years is None:
+        years = 10
+
+    try:
+        results = fetch(tickers, years=years, pattern=pattern,
+                        dest=args.dest, force=args.force)
+    except FetchError as exc:
+        _eprint(f"dsl fetch-prices: {exc}")
+        return 1
+    except Exception as exc:  # noqa: BLE001
+        _eprint(_explain_failure("dsl fetch-prices", exc))
+        return 1
+
+    for r in results:
+        note = "already there" if r.skipped else f"{r.rows} rows"
+        print(f"  {r.ticker:<8} {note:<12} {r.path}")
+    fetched = [r for r in results if not r.skipped]
+    print(f"{len(fetched)} downloaded, {len(results) - len(fetched)} already "
+          f"present. Re-fetch with --force.")
+
+    # Prove the office can read what was just written. Fetching and
+    # reading are two pieces of code agreeing on a directory and a
+    # filename; better to find out here than from an office that runs
+    # and produces nothing.
+    if office_dir is not None:
+        unreadable = confirm_office_reads(office_dir, tickers, pattern,
+                                          dest=args.dest)
+        if unreadable:
+            _eprint("but the office still cannot read:")
+            for line in unreadable:
+                _eprint(f"  {line}")
+            return 1
+        print(f"The office at {office_dir} can read all "
+              f"{len(tickers)} tickers.")
+    return 0
+
+
 # ── Subcommand: explain-trace ─────────────────────────────────────────────────
 
 def cmd_explain_trace(args: argparse.Namespace) -> int:
@@ -1859,6 +1927,44 @@ def build_parser() -> argparse.ArgumentParser:
         help="print the diagram without the ```mermaid fence",
     )
     p_draw.set_defaults(handler=cmd_draw)
+
+    p_fetch = sub.add_parser(
+        "fetch-prices",
+        help="download your own daily price history",
+        description=(
+            "Download daily price history for the tickers you name, or "
+            "for the basket an office asks for, into the one directory "
+            "every office shares -- $DSL_MARKET_DATA, or "
+            "~/.dissyslab/market_data.\n\n"
+            "Nothing in this project ships market data. The vendor's "
+            "terms do not permit redistributing it, so every user "
+            "fetches their own; that is why this exists as a deliberate "
+            "act and why yfinance is in the [market] extra rather than a "
+            "core dependency.\n\n"
+            "Files already present are left alone -- ten years of daily "
+            "bars is a slow download, and a backtest that silently "
+            "re-downloads is not reproducible. Pass --force to replace "
+            "them.\n\n"
+            "Examples:\n"
+            "  dsl fetch-prices NVDA AMD --years 10\n"
+            "  dsl fetch-prices --office my_backtest\n"
+            "  dsl fetch-prices            (basket of the office you are in)"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_fetch.add_argument("tickers", nargs="*",
+                         help="ticker symbols; omit to use an office's basket")
+    p_fetch.add_argument("--years", type=int, default=None,
+                         help="how much history (default 10)")
+    p_fetch.add_argument("--office", metavar="DIR",
+                         help="take the basket from DIR/office.md")
+    p_fetch.add_argument("--dest", metavar="DIR",
+                         help="write here instead of the shared directory. "
+                              "Note that an office still searches the shared "
+                              "directory too, so a copy there can win")
+    p_fetch.add_argument("--force", action="store_true",
+                         help="re-download files that are already there")
+    p_fetch.set_defaults(handler=cmd_fetch_prices)
 
     p_doc = sub.add_parser(
         "doctor",
