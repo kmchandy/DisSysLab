@@ -208,10 +208,18 @@ pip install "dissyslab[market]"
 python3 dissyslab/gallery/apps/mac_speed_suite/download_stock_history_from_yf.py
 ```
 
-That script reads the ticker list, the data directory and the filename
-pattern straight out of `office.md`, so the download always matches what
-the office expects. Prices are split- and dividend-adjusted and written
-as plain `Date,Open,High,Low,Close,Volume` CSV.
+That script reads the ticker list and the filename pattern straight out
+of `office.md`, so the download always matches what the office expects.
+Prices are split- and dividend-adjusted and written as plain
+`Date,Open,High,Low,Close,Volume` CSV.
+
+**Where the files go.** One directory, shared by every office:
+`$DSL_MARKET_DATA` if you set it, otherwise `~/.dissyslab/market_data`.
+A download made once serves every office that names the ticker, and it
+serves it identically whether you cloned the repository or ran
+`dsl init`. An older checkout with prices in `<repo>/sp100_data` keeps
+working — that layout is still searched — but new downloads go to the
+standard place.
 
 Separating *fetch* from *read* is not only a licensing matter. A backtest
 that re-downloads on every run is slow, non-reproducible, and at the
@@ -235,13 +243,19 @@ the whole batch.
 
 **Arguments:**
 - `tickers` *(list of str, required)*.
-- `directory` *(str, required)* — relative paths resolve against the
-  **office folder**, not the directory you typed the command in.
-  `build/run.py` chdirs there first; see `jsonl_recorder`'s `path`
-  argument below for the full explanation. This is why
-  `paper_trader` and `mac_speed_suite` reach the shared data with
-  `directory='../../../../sp100_data'` — that path is counted from
-  the office's own folder.
+- `directory` *(str, optional — leave it out)*. Omitted, the source
+  reads the shared market-data directory described above, which is the
+  same before and after `dsl init`. Give it only for data you keep
+  somewhere of your own.
+
+  **Why the default exists.** `paper_trader` and `mac_speed_suite` used
+  to say `directory='../../../../sp100_data'`, counted from the office's
+  own folder — because `build/run.py` chdirs there first, see
+  `jsonl_recorder`'s `path` argument below. Four levels above the office
+  folder is the repository root *in a clone*; after `dsl init` it is the
+  filesystem root. So the documented way to get your own copy of a
+  shipped office produced a backtester that could neither read data nor
+  download any, and the only working path was a git clone.
 - `filename_pattern` *(str, default `"{ticker}_1year.csv"`)* — must
   contain `{ticker}`.
 - `start` / `end` *(str, default: no bound)* — optionally filter rows

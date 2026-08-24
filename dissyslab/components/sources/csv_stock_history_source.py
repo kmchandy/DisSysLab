@@ -91,9 +91,18 @@ class CSVStockHistorySource:
         tickers:           Ticker symbols whose files should be loaded,
                             e.g. ["AMD", "NFLX", "NVDA", "PLTR", "TSLA"].
                             Must be non-empty.
-        directory:          Directory containing the per-ticker CSV
-                            files. Relative paths are resolved against
-                            the current working directory.
+        directory:          Optional. Where the per-ticker CSV files
+                            are. **Leave it out.** The default is the
+                            one directory every office shares --
+                            ``$DSL_MARKET_DATA`` or
+                            ``~/.dissyslab/market_data`` -- which is
+                            the same before and after ``dsl init`` and
+                            is what the downloader writes to. Naming a
+                            directory here is for data kept somewhere
+                            of your own; a relative path is resolved
+                            against the office folder at run time, and
+                            that is the sharp edge this default exists
+                            to remove.
         filename_pattern:   Filename template, must contain
                             ``{ticker}``. Default "{ticker}_1year.csv".
         start:              Optional first date to include ("YYYY-MM-DD"
@@ -104,7 +113,6 @@ class CSVStockHistorySource:
     Example:
         >>> real = CSVStockHistorySource(
         ...     tickers=["AMD", "NFLX", "NVDA", "PLTR", "TSLA"],
-        ...     directory="sp100_data",
         ... )
         >>> source = Source(fn=real.run, name="price_history")
     """
@@ -112,7 +120,7 @@ class CSVStockHistorySource:
     def __init__(
         self,
         tickers: Sequence[str],
-        directory: str,
+        directory: Optional[str] = None,
         filename_pattern: str = "{ticker}_1year.csv",
         start: Optional[str] = None,
         end: Optional[str] = None,
@@ -148,12 +156,34 @@ class CSVStockHistorySource:
                 return lower_map[c]
         return None
 
+    def _search_dirs(self):
+        from dissyslab.market_data import search_dirs
+
+        return search_dirs(self.directory)
+
     def _load_ticker(self, ticker: str) -> List[Dict]:
-        path = os.path.join(
-            self.directory, self.filename_pattern.format(ticker=ticker)
-        )
-        if not os.path.isfile(path):
-            raise FileNotFoundError(f"file not found: {path}")
+        filename = self.filename_pattern.format(ticker=ticker)
+        searched = self._search_dirs()
+        path = None
+        for directory in searched:
+            candidate = os.path.join(str(directory), filename)
+            if os.path.isfile(candidate):
+                path = candidate
+                break
+        if path is None:
+            # Name every directory that was looked in. A user who has
+            # the file somewhere we did not search would otherwise read
+            # that they do not have it.
+            from dissyslab.market_data import describe
+
+            raise FileNotFoundError(
+                f"no {filename} in any of: {describe(searched)}. "
+                "Nothing here ships market data -- Yahoo's terms do not "
+                "permit redistributing it, so each user downloads their "
+                "own. Ask your assistant to download the price history "
+                "for the tickers this office uses, or run "
+                "download_stock_history_from_yf.py."
+            )
 
         with open(path, "r", newline="", encoding="utf-8") as f:
             reader = csv.DictReader(f)

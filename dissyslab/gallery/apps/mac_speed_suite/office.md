@@ -29,7 +29,7 @@
 #                       R multiple of a trade = its return / stop_pct
 # Whatever a run actually used is echoed back in report.html's "Run settings"
 # panel, so every report says exactly which parameters produced it.
-Sources: csv_stock_history(tickers=['AMD', 'NFLX', 'NVDA', 'PLTR', 'TSLA'], directory='../../../../sp100_data', filename_pattern='{ticker}_10_year.csv')
+Sources: csv_stock_history(tickers=['AMD', 'NFLX', 'NVDA', 'PLTR', 'TSLA'], filename_pattern='{ticker}_10_year.csv')
 Sinks: console_printer, report_html(path="report.html")
 
 Agents:

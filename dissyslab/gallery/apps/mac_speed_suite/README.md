@@ -6,6 +6,24 @@ speeds), Donchian channels, the Turtle system, and a relative-strength trend
 rule. Results are net of transaction costs and shown with a strategy-correlation
 view, so you can see which "different" strategies are actually the same bet.
 
+
+## Getting the price data
+
+Nothing here ships market data — Yahoo's terms do not permit
+redistributing it, so you download your own once:
+
+```bash
+pip install "dissyslab[market]"
+python3 download_stock_history_from_yf.py
+```
+
+Files land in `~/.dissyslab/market_data` (or `$DSL_MARKET_DATA` if you
+set it), which every office shares and which does not change when you
+copy this office somewhere else with `dsl init`.
+
+Or ask your assistant: *"download the price history this office needs."*
+
+
 ## New here? Try it by talking to Cowork
 
 If you are not a programmer — or just want the guided path — you can drive the

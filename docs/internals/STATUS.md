@@ -161,6 +161,28 @@ structure; nothing summarises an office for a marker.
 Vikram's own words for how he wants to work: **English and Excel.**
 Not diagrams, not Kakushadze notation, though he reads the latter.
 
+- **The path a tester actually walks. Fixed, 24 Aug.** Backtesting
+  used to require a git clone, and nobody had decided that. The office
+  said `directory='../../../../sp100_data'` — four levels above the
+  office folder, which is the repository root in a clone and the
+  *filesystem root* after `dsl init`. `explain_strategy.py` carried the
+  same arithmetic and then fell back to synthetic prices, so it
+  produced a workbook that looked entirely right and said the numbers
+  were invented only on the Read me sheet. A graceful fallback is very
+  good at concealing the path everyone takes.
+
+  Now one directory, asked of `dissyslab.market_data`:
+  `$DSL_MARKET_DATA`, else `~/.dissyslab/market_data`, with an existing
+  `<repo>/sp100_data` still searched so nobody re-downloads. Shipped
+  offices name no directory at all, and a test keeps it that way.
+  `dsl doctor` reports the `[market]` extra, which is how Vikram met
+  this as `No module named 'openpyxl'`. And `dsl init` no longer copies
+  our design notes, a build plan and a PDF into a tester's folder.
+
+  **Still to do for that path**: ranked output ("show top 10"), and
+  making the download something an assistant offers rather than a
+  script a tester runs.
+
 - **Phase 1 — the trace. Done, 23 Aug.**
   `mac_speed_suite/explain_strategy.py` writes a workbook: one row per
   day, every intermediate, the same quantity again as a live Excel

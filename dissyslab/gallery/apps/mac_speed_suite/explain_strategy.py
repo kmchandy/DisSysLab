@@ -39,51 +39,78 @@ from __future__ import annotations
 import argparse
 import os
 import sys
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(_HERE, "roles"))
 sys.path.insert(0, os.path.join(_HERE, "..", "..", "..", ".."))
 
-from donchian_signal import (                                    # noqa: E402
-    DONCHIAN_VARIANTS, _donchian_compute_variant_signal,
+from donchian_signal import (  # noqa: E402
+    DONCHIAN_VARIANTS,
+    _donchian_compute_variant_signal,
 )
-from mac_signal import (                                         # noqa: E402
-    MAC_VARIANTS, _ewma, _mac_compute_variant_signal,
+from mac_signal import (  # noqa: E402
+    MAC_VARIANTS,
+    _ewma,
+    _mac_compute_variant_signal,
 )
-
 
 # ── loading bars ───────────────────────────────────────────────────────
 
 
-DEFAULT_DATA_DIR = os.path.join(_HERE, "..", "..", "..", "..", "sp100_data")
+#: ``None`` means "wherever market data lives" -- see
+#: ``dissyslab.market_data``. This used to be
+#: ``_HERE/../../../../sp100_data``, which is the repository root in a
+#: clone and nowhere at all after ``dsl init``. The fallback to
+#: synthetic prices then hid it: the sheet was produced, it looked
+#: right, and only the Read me said the numbers were invented. A
+#: graceful fallback is very good at concealing the path everyone
+#: actually takes.
+DEFAULT_DATA_DIR = None
 
 
-def load_bars(ticker: str, directory: str) -> Tuple[List[dict], str]:
+def _data_dirs(directory):
+    try:
+        from dissyslab.market_data import search_dirs
+
+        return [str(d) for d in search_dirs(directory, start=Path(_HERE))]
+    except ImportError:  # pragma: no cover - standalone use
+        return [directory] if directory else []
+
+
+def load_bars(ticker: str, directory=None) -> tuple[list[dict], str]:
     """Real bars if the CSV is there, otherwise a synthetic series.
 
     Returns ``(bars, provenance)``; the provenance string goes on the
     Read me sheet so nobody mistakes made-up prices for real ones.
     """
-    path = os.path.join(directory, f"{ticker}_10_year.csv")
-    if os.path.isfile(path):
-        from dissyslab.components.sources.csv_stock_history_source import (
-            CSVStockHistorySource,
-        )
-        src = CSVStockHistorySource(
-            tickers=[ticker], directory=directory,
-            filename_pattern="{ticker}_10_year.csv",
-        )
-        return src._load_ticker(ticker), f"{ticker}, from {os.path.relpath(path, _HERE)}"
+    filename = f"{ticker}_10_year.csv"
+    searched = _data_dirs(directory)
+    for candidate_dir in searched:
+        path = os.path.join(candidate_dir, filename)
+        if os.path.isfile(path):
+            from dissyslab.components.sources.csv_stock_history_source import (
+                CSVStockHistorySource,
+            )
+            src = CSVStockHistorySource(
+                tickers=[ticker], directory=candidate_dir,
+                filename_pattern="{ticker}_10_year.csv",
+            )
+            return src._load_ticker(ticker), f"{ticker}, from {path}"
 
     return _synthetic_bars(), (
-        "SYNTHETIC PRICES -- no CSV found. These are made up, so the "
-        "numbers mean nothing; the formulas and the rule are still real. "
-        "Run download_stock_history_from_yf.py for real prices."
+        f"SYNTHETIC PRICES -- no {filename} in any of: "
+        + ", ".join(searched)
+        + ". These are made up, so the numbers mean nothing; the "
+        "formulas and the rule are still real. Ask your assistant to "
+        "download the price history for this ticker, or run "
+        "download_stock_history_from_yf.py."
     )
 
 
-def _synthetic_bars(n: int = 120) -> List[dict]:
+def _synthetic_bars(n: int = 120) -> list[dict]:
     """A deterministic sawtooth: rises for 15 bars, falls for 10.
 
     Chosen so every strategy produces several signal changes in a short
@@ -118,10 +145,10 @@ def _synthetic_bars(n: int = 120) -> List[dict]:
 
 
 class Trace:
-    def __init__(self, name: str, warmup: int, columns: List[str],
-                 rows: List[dict], rule: str, notes: List[str]):
+    def __init__(self, name: str, warmup: int, columns: list[str],
+                 rows: list[dict], rule: str, notes: list[str]):
         # Filled in by _trace_sheet once the table length is known.
-        self.alpha_cells: Dict[str, str] = {}
+        self.alpha_cells: dict[str, str] = {}
         self.name = name          # e.g. "donchian_20"
         self.warmup = warmup      # rows of context the formulas need
         self.columns = columns
@@ -130,7 +157,7 @@ class Trace:
         self.notes = notes
 
 
-def donchian_trace(bars: List[dict], variant: str) -> Trace:
+def donchian_trace(bars: list[dict], variant: str) -> Trace:
     n = DONCHIAN_VARIANTS[variant]
     truth = _donchian_compute_variant_signal(bars, n)
 
@@ -171,7 +198,7 @@ def donchian_trace(bars: List[dict], variant: str) -> Trace:
     )
 
 
-def mac_trace(bars: List[dict], variant: str) -> Trace:
+def mac_trace(bars: list[dict], variant: str) -> Trace:
     fast_span, slow_span = MAC_VARIANTS[variant]
     truth = _mac_compute_variant_signal(bars, (fast_span, slow_span))
 
@@ -213,7 +240,7 @@ def mac_trace(bars: List[dict], variant: str) -> Trace:
     )
 
 
-def _agree(rows: List[dict], truth: List[float], label: str) -> None:
+def _agree(rows: list[dict], truth: list[float], label: str) -> None:
     mine = [r["signal"] for r in rows]
     if mine != list(truth):
         bad = next(i for i, (a, b) in enumerate(zip(mine, truth)) if a != b)
@@ -225,7 +252,7 @@ def _agree(rows: List[dict], truth: List[float], label: str) -> None:
         )
 
 
-TRACERS: Dict[str, Tuple[Callable, Dict[str, Any]]] = {
+TRACERS: dict[str, tuple[Callable, dict[str, Any]]] = {
     "donchian": (donchian_trace, DONCHIAN_VARIANTS),
     "mac": (mac_trace, MAC_VARIANTS),
 }
@@ -234,7 +261,7 @@ TRACERS: Dict[str, Tuple[Callable, Dict[str, Any]]] = {
 # ── choosing the window ────────────────────────────────────────────────
 
 
-def pick_window(trace: Trace, rows: int) -> Tuple[int, int]:
+def pick_window(trace: Trace, rows: int) -> tuple[int, int]:
     """A window containing a signal change, or the last `rows` bars.
 
     Twenty bars in which nothing happens prove nothing, so the default
@@ -259,7 +286,7 @@ FORMULA_FILL = "FFF2CC"
 CONTEXT_FILL = "F2F2F2"
 
 
-def write_workbook(traces: List[Trace], windows: List[Tuple[int, int]],
+def write_workbook(traces: list[Trace], windows: list[tuple[int, int]],
                    provenance: str, out_path: str) -> None:
     try:
         import openpyxl
@@ -272,7 +299,6 @@ def write_workbook(traces: List[Trace], windows: List[Tuple[int, int]],
             "for this. Use the same Python that runs `dsl` -- if dsl lives "
             "in a virtualenv, activate it first."
         ) from None
-    from openpyxl.styles import Alignment, Font, PatternFill
 
     wb = openpyxl.Workbook()
     # Nothing here computes a formula, so every formula cell ships with
@@ -289,11 +315,11 @@ def write_workbook(traces: List[Trace], windows: List[Tuple[int, int]],
     wb.save(out_path)
 
 
-def _read_me(ws, traces: List[Trace], provenance: str) -> None:
+def _read_me(ws, traces: list[Trace], provenance: str) -> None:
     from openpyxl.styles import Alignment, Font
 
     ws.title = "Read me"
-    lines: List[Tuple[str, bool]] = [
+    lines: list[tuple[str, bool]] = [
         ("What this is", True),
         ("One row per trading day, showing every quantity the strategy "
          "computed and the rule that turned them into a position.", False),
@@ -357,8 +383,8 @@ def _trace_sheet(ws, tr: Trace, lo: int, hi: int) -> None:
     ws.freeze_panes = "A2"
 
 
-def _headers(tr: Trace) -> List[str]:
-    out: List[str] = []
+def _headers(tr: Trace) -> list[str]:
+    out: list[str] = []
     for name in tr.columns:
         out.append(name)
         if name in _DERIVED[tr.name.split("_")[0]]:
@@ -370,10 +396,10 @@ def _headers(tr: Trace) -> List[str]:
 _DERIVED = {"donchian": ("upper", "lower"), "mac": ("fast", "slow")}
 
 
-def _row_values(tr: Trace, r: dict, shown: List[dict], i: int,
-                excel_row: int, col: Dict[str, str]) -> List[Any]:
+def _row_values(tr: Trace, r: dict, shown: list[dict], i: int,
+                excel_row: int, col: dict[str, str]) -> list[Any]:
     kind = tr.name.split("_")[0]
-    out: List[Any] = []
+    out: list[Any] = []
     for name in tr.columns:
         out.append(r.get(name))
         if name not in _DERIVED[kind]:
@@ -390,7 +416,7 @@ def _row_values(tr: Trace, r: dict, shown: List[dict], i: int,
 
 
 def _formula(tr: Trace, kind: str, name: str, r: dict, i: int,
-             excel_row: int, col: Dict[str, str]) -> Optional[str]:
+             excel_row: int, col: dict[str, str]) -> str | None:
     if kind == "donchian":
         if r[name] is None or i < tr.warmup:
             return None
@@ -407,8 +433,8 @@ def _formula(tr: Trace, kind: str, name: str, r: dict, i: int,
             f"+(1-{alpha_cell})*{col[name + ' (excel)']}{excel_row - 1}")
 
 
-def _style(ws, tr: Trace, shown: List[dict], lo: int, first: int,
-           col: Dict[str, str], headers: List[str]) -> None:
+def _style(ws, tr: Trace, shown: list[dict], lo: int, first: int,
+           col: dict[str, str], headers: list[str]) -> None:
     from openpyxl.styles import Font, PatternFill
 
     formula_cols = [c for h, c in col.items() if h.endswith("(excel)")]
@@ -449,7 +475,7 @@ def _style(ws, tr: Trace, shown: List[dict], lo: int, first: int,
 # ── entry point ────────────────────────────────────────────────────────
 
 
-def main(argv: Optional[List[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     p.add_argument("--strategy", action="append", default=None,
                    choices=sorted(TRACERS), help="repeatable")

@@ -21,7 +21,13 @@ Fetch one ticker explicitly (for one-offs)::
 
     python3 download_stock_history_from_yf.py AAPL 10 AAPL_10_year.csv
 
-Requires ``yfinance`` (``pip install yfinance``). Prices are split/dividend
+Files land in the one directory every office shares --
+``$DSL_MARKET_DATA`` if set, otherwise ``~/.dissyslab/market_data`` --
+so a download made once serves every office that names the ticker, and
+serves it identically whether you cloned the repository or ran
+``dsl init``.
+
+Requires ``yfinance`` (``pip install "dissyslab[market]"``). Prices are split/dividend
 adjusted (auto_adjust) and written as a clean
 ``Date,Open,High,Low,Close,Volume`` CSV that ``CSVStockHistorySource`` reads
 directly.
@@ -81,12 +87,41 @@ def office_source_spec(office_md=OFFICE_MD):
         if tick_m else []
     )
     dir_m = re.search(r"directory\s*=\s*['\"]([^'\"]+)['\"]", args)
-    directory = dir_m.group(1) if dir_m else "."
+    directory = dir_m.group(1) if dir_m else None
     pat_m = re.search(r"filename_pattern\s*=\s*['\"]([^'\"]+)['\"]", args)
     pattern = pat_m.group(1) if pat_m else "{ticker}_1year.csv"
     yr_m = re.search(r"(\d+)_?year", pattern)
     years = int(yr_m.group(1)) if yr_m else 1
     return tickers, directory, pattern, years
+
+
+def data_dir(directory=None):
+    """Where to write, which must be where the office will read.
+
+    Both sides ask ``dissyslab.market_data``, so there is one answer.
+    They used to agree only by arithmetic -- the office said
+    ``'../../../../sp100_data'`` and this script resolved the same
+    string relative to itself -- which held in a git clone and broke
+    the moment anyone ran ``dsl init``, because four levels above an
+    arbitrary folder is not the repository root.
+    """
+    if directory:
+        return os.path.normpath(os.path.join(HERE, directory))
+    try:
+        from dissyslab.market_data import market_data_dir
+
+        return str(market_data_dir())
+    except ImportError:
+        # This script is run directly, sometimes from a checkout where
+        # the package is not importable. The rule is two lines, so
+        # repeat it rather than fail -- and a test asserts the two
+        # copies agree, because a data directory that the downloader
+        # and the office disagree about is exactly the bug this whole
+        # change is fixing.
+        override = os.environ.get("DSL_MARKET_DATA")
+        if override:
+            return os.path.expanduser(override)
+        return os.path.join(os.path.expanduser("~"), ".dissyslab", "market_data")
 
 
 def fetch_basket():
@@ -95,7 +130,7 @@ def fetch_basket():
     tickers, directory, pattern, years = office_source_spec()
     if not tickers:
         raise SystemExit("No tickers found in office.md's csv_stock_history(...)")
-    out_dir = os.path.normpath(os.path.join(HERE, directory))
+    out_dir = data_dir(directory)
     os.makedirs(out_dir, exist_ok=True)
     print(f"Fetching {years}y of daily data for {len(tickers)} ticker(s) "
           f"into {out_dir}")

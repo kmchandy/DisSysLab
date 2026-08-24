@@ -560,6 +560,13 @@ MODULES_WITHOUT_DOCS: dict[str, str] = {
     "snapshot.py": "covered by os_agent_implementation and the algorithm docs",
     "utils.py": "grab-bag; no single subject to document",
     "builder.py": "has its own pair already",
+    "market_data.py": (
+        "one rule -- where a user's own price files live -- and its own "
+        "docstring carries the reasoning. The part worth documenting is "
+        "that nothing here ships market data, which is in "
+        "docs/SOURCES_AND_SINKS.md and pyproject.toml where the "
+        "constraint bites"
+    ),
     "skills_installed.py": (
         "one question with one answer -- which DisSysLab skills are on "
         "this machine. Its own docstring carries the reasoning, and the "

@@ -15,7 +15,7 @@
 # ledger.jsonl + book.json are written by the store). Configure by talking to
 # Cowork, or edit ./book/config.json. Strictly paper -- simulated fills only.
 
-Sources: csv_stock_history(tickers=['AMD', 'NFLX', 'NVDA', 'PLTR', 'TSLA'], directory='../../../../sp100_data', filename_pattern='{ticker}_10_year.csv')
+Sources: csv_stock_history(tickers=['AMD', 'NFLX', 'NVDA', 'PLTR', 'TSLA'], filename_pattern='{ticker}_10_year.csv')
 Sinks: console_printer
 
 Agents:

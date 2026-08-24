@@ -946,8 +946,17 @@ def cmd_init(args: argparse.Namespace) -> int:
         shutil.copytree(
             source,
             target,
+            # Also drop our own working papers. `dsl init mac_speed_suite`
+            # was putting PHASE1_DESIGN.md, PHASE2_BUILD_PLAN.md,
+            # TESTER_FEEDBACK.md, a draft_workers/ folder and a PDF
+            # report into a tester's directory -- notes we wrote to each
+            # other, delivered as though they were part of his office.
+            # The office is office.md, roles/, and the scripts that
+            # operate it.
             ignore=shutil.ignore_patterns(
-                "__pycache__", "*.pyc", "__init__.py"
+                "__pycache__", "*.pyc", "__init__.py",
+                "*_DESIGN.md", "*_BUILD_PLAN.md", "*_FEEDBACK.md",
+                "draft_*", "paper", "*.pdf",
             ),
         )
     except OSError as exc:
@@ -1318,6 +1327,24 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     # leaves pytest absent. That is correct packaging but surprising, so
     # answer the question here rather than making people find the docs.
     # Never a failure: running offices does not require pytest.
+    # Market extras. Vikram met this as `No module named 'openpyxl'`
+    # after following an instruction that said `pip install dissyslab`.
+    # The extra is mentioned once, deep in the README, and the person
+    # who needs it is the one least likely to be reading that far.
+    print()
+    print("Market data tools (optional, the [market] extra):")
+    market_missing = []
+    for mod, why in (("yfinance", "downloading your own price history"),
+                     ("openpyxl", "writing a strategy's working as a spreadsheet")):
+        try:
+            importlib.import_module(mod)
+            print(f"  [OK] {mod}")
+        except ImportError:
+            market_missing.append(mod)
+            print(f"  [    ] {mod}: not installed — needed for {why}")
+    if market_missing:
+        print('         pip install "dissyslab[market]"')
+
     print()
     print("Test tools (optional):")
     try:
