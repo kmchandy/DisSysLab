@@ -94,5 +94,15 @@ running the thing rather than reading it.
 **A branch never taken is a branch never tested.** A graceful fallback
 is very good at hiding the path everyone actually uses.
 
+**Run the suite without the optional extras.** CI installs `.[dev]`
+and nothing else, so a test that imports `yfinance` or `openpyxl`
+passes here and fails on his machine and in CI. It has happened: two
+tests that only wanted to ask a module where it writes could not
+import it, because the module imported the vendor library at the top.
+Keep the extras uninstalled in the container, and install them
+temporarily when you need to exercise the market path. Optional
+dependencies belong inside the function that needs them, where the
+ImportError can be turned into the sentence naming the extra.
+
 **Prefer the smallest reversible step**, and say plainly what was not
 done.

@@ -37,7 +37,14 @@ import os
 import re
 import sys
 
-import yfinance as yf
+# yfinance is imported inside download_stock, not here.
+#
+# A module-level import makes this file unimportable without the
+# [market] extra -- which broke two tests that only wanted to ask it
+# where it writes, a question with nothing to do with the vendor. It
+# also meant that a user without the extra got an ImportError
+# traceback instead of the sentence telling them which extra to
+# install.
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OFFICE_MD = os.path.join(HERE, "office.md")
@@ -47,6 +54,14 @@ def download_stock(ticker, years):
     """Return `years` of daily bars for one ticker as a clean DataFrame:
     a Date index and Open/High/Low/Close/Volume columns, split/dividend
     adjusted."""
+    try:
+        import yfinance as yf
+    except ImportError:
+        raise SystemExit(
+            "Downloading price history needs yfinance, which is in the "
+            'market extra:\n    pip install "dissyslab[market]"'
+        ) from None
+
     data = yf.download(
         ticker,
         period=f"{years}y",
