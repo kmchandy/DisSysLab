@@ -354,8 +354,14 @@ headers are case-insensitive.
 
 ### Agents
 
-The pattern is `<Name> is a[n] <role>.` or `<Name> is an office at
-<path>.` for sub-offices.
+The pattern is `<Name> is a[n] <role>.`, or `<Name> is an office at
+<path>.` for sub-offices, or `<Name> is unassigned.` for an agent
+whose job you have not decided yet.
+
+The article is optional — `Jay is summarizer.` is the same line as
+`Jay is a summarizer.` It reads better with it, and everything here
+writes it, but leaving it out is not an error. What marks a sub-office
+is the keyword `office at`.
 
 ```
 Agents:

@@ -36,6 +36,7 @@ W6  missing role file -- named a role with no ``.md`` or ``.py`` behind it
 W7  cycle (note, not an error) -- legal and often intended
 W8  source with no destination, or sink nothing feeds
 W9  a connection naming something that is not declared anywhere
+W10 a sub-office whose directory, or whose office.md, is not there
 G1  an agent with a name and no job yet
 G2  nothing leaves the office -- it has no sink
 
@@ -577,11 +578,18 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
     builtins = _builtin_role_names()
     if builtins:
         local = _local_role_names(office_dir)
+        sub_offices = {a.agent_name for a in spec.agents if a.path is not None}
         for agent in sorted(graph.agents):
             role = graph.roles.get(agent, "")
             if role == UNASSIGNED:
                 # Not a missing file. G1 reports it as a missing decision,
                 # which is what it is and what the user can act on.
+                continue
+            if agent in sub_offices:
+                # Its "role name" is the last segment of a directory
+                # path. W10 checks the directory; asking whether there
+                # is a roles/news.md for `X is an office at ../news.`
+                # is a question about the wrong thing.
                 continue
             if role and role not in local and role not in builtins:
                 report.findings.append(
@@ -631,6 +639,35 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                         "Check the spelling against the Agents section.",
                     )
                 )
+
+    # W10 -- a sub-office whose directory is not there.
+    #
+    # Nothing checked this until now, because check_wiring read only
+    # ``role_name`` and never ``path``. So `X is an office at ./nowhere.`
+    # came out as W6, "there is no roles/nowhere.md" -- a clear sentence
+    # about a file the office was never looking for. The real answer is
+    # at compile time, several steps later, and mentions a directory the
+    # reader has by then stopped thinking about.
+    for agent_spec in spec.agents:
+        if agent_spec.path is None:
+            continue
+        target = (office_dir / agent_spec.path).resolve()
+        if (target / "office.md").is_file():
+            continue
+        if target.is_dir():
+            detail = f"{target} exists but has no office.md in it."
+        else:
+            detail = f"There is no directory at {target}."
+        report.findings.append(
+            Finding(
+                "W10",
+                "error",
+                agent_spec.agent_name,
+                f"{agent_spec.agent_name!r} is an office at "
+                f"{agent_spec.path!r}, but that office is not there.",
+                detail + " The path is relative to this office's folder.",
+            )
+        )
 
     # G1 -- an agent with a name and no job yet.
     for agent_spec in spec.agents:

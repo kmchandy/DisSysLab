@@ -19,6 +19,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from dissyslab.office.check_wiring import check_office_dir, format_report
 from dissyslab.office.office_spec import (
     UNASSIGNED,
@@ -87,31 +89,74 @@ def test_a_real_sub_office_still_parses_as_one(tmp_path):
     assert spec.agents[0].path == "../news"
 
 
-def test_the_new_branch_did_not_loosen_the_grammar(tmp_path):
-    """`Jay is deduplicator.` must not become a role.
+def test_the_article_is_optional(tmp_path):
+    """`Jay is a deduplicator.` and `Jay is deduplicator.` are the same.
 
-    The article is what is supposed to make the language rigid enough
-    for `dsl check` to catch what a language model got wrong, and a new
-    branch is only acceptable if it buys the one sentence it was
-    written for and nothing else. The `unassigned` pattern is anchored
-    on that literal word, so it cannot.
-
-    This asserts less than it should, and the reason is in STATUS: the
-    line is not rejected either. A legacy `name is <path>` fallback
-    accepts any unmatched agent line as a sub-office path and sets both
-    role_name and path to it, so a forgotten article gives three
-    different answers depending on which library the name lives in --
-    `Jay is summarizer.` runs correctly, `Jay is deduplicator.` fails at
-    build with a sub-office path error, and `Jay is frobnicator.` is
-    reported as a missing role file. All three were run. That predates
-    this work and is a separate change; what matters here is that the
-    branch added for drafts did not widen anything.
+    The article used to be mandatory, and it was the only thing
+    separating a library role from a directory on disk: without it the
+    line fell through to a legacy path form and made Jay a sub-office
+    in ./deduplicator. One character, invisible to anyone reading the
+    line as English, carrying a distinction between two unrelated
+    meanings — so every use of it was a mistake, and the mistake gave
+    three different outcomes depending on which library the name
+    happened to belong to.
     """
-    spec = parse_office_dir(
-        _office(tmp_path, "# Office: t\n\nAgents:\nJay is deduplicator.\n")
+    for line in ("Jay is a deduplicator.", "Jay is deduplicator."):
+        spec = parse_office_dir(
+            _office(tmp_path, f"# Office: t\n\nAgents:\n{line}\n")
+        )
+        assert spec.agents[0].role_name == "deduplicator"
+        assert spec.agents[0].path is None
+
+
+def test_a_sub_office_is_marked_by_the_keyword_not_the_article(tmp_path):
+    """`office at` is two words that mean something. That is what
+    separates a nested office from a role now."""
+    for line in (
+        "X is an office at ../news.",
+        "X is office at ../news.",
+        "X is a office at ../news.",
+    ):
+        spec = parse_office_dir(
+            _office(tmp_path, f"# Office: t\n\nAgents:\n{line}\n")
+        )
+        assert spec.agents[0].path == "../news"
+
+
+def test_an_unrecognised_agent_line_names_the_three_forms(tmp_path):
+    """No fallback. A form recognised by failing to match the others is
+    not a form; it is the absence of one."""
+    from dissyslab.office.parser_errors import ParseError
+
+    with pytest.raises(ParseError) as exc:
+        parse_office_dir(
+            _office(tmp_path, "# Office: t\n\nAgents:\nJay likes deduplicating.\n")
+        )
+    text = str(exc.value)
+    assert "Name is a <role>." in text
+    assert "Name is an office at <path>." in text
+    assert "Name is unassigned." in text
+
+
+def test_the_legacy_bare_path_survives_only_in_an_offices_section(tmp_path):
+    """`news_monitor is news_monitor` in a legacy network.md.
+
+    Unambiguous there and nowhere else: the section header has already
+    said that everything in it is an office, so a bare name has no role
+    to be confused with. The same line under `Agents:` is a role.
+    """
+    body = """# Network: t
+
+Offices:
+  news_monitor is news_monitor
+"""
+    spec = parse_office_dir(_office(tmp_path, body))
+    assert spec.agents[0].path == "news_monitor"
+
+    under_agents = parse_office_dir(
+        _office(tmp_path, "# Office: t\n\nAgents:\nnews_monitor is summarizer.\n")
     )
-    assert spec.agents[0].path == "deduplicator"  # legacy fallback, not a role
-    assert not is_draft(spec)
+    assert under_agents.agents[0].path is None
 
 
 # ── draft-ness is a property, not a flag ──────────────────────────────
@@ -267,13 +312,14 @@ def test_no_library_role_is_called_unassigned():
     office's own roles/, would shadow the sentinel and make an
     undecided agent look decided. Nothing else prevents it, so this
     does."""
+    reserved = {UNASSIGNED, "office"}
     library = REPO_ROOT / "dissyslab" / "roles"
-    clashes = [p.name for p in library.iterdir() if p.stem == UNASSIGNED]
+    clashes = [p.name for p in library.iterdir() if p.stem in reserved]
     assert not clashes, (
         f"{clashes} shadows the reserved role name {UNASSIGNED!r}. "
         "An agent with no job yet would be read as having one."
     )
 
     offices = list((REPO_ROOT / "dissyslab" / "gallery").glob("*/*/roles/*"))
-    shadowed = [str(p) for p in offices if p.stem == UNASSIGNED]
+    shadowed = [str(p) for p in offices if p.stem in reserved]
     assert not shadowed, f"{shadowed} shadows {UNASSIGNED!r}."

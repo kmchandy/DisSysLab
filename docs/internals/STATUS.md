@@ -51,12 +51,14 @@ feature), the yfinance change, error counting in the run summary, and
 teaches `inboxes=`, which needs the alias in `office_spec.py`. A student
 on PyPI 1.7.2 with the current skill gets a mismatch.
 
-**`dsl draw` is unreachable until the skill knows about it.** A user
-who says *"draw the network"* gets it only if the assistant knows the
-subcommand exists. Teaching the skill before the release ships would
-point students on PyPI 1.7.2 at a command they do not have — the same
-coupling as `inboxes=`, and the second instance of it. Both clear
-together.
+**Three things the skill cannot be taught until the release ships.**
+`dsl draw`, so *"draw the network"* reaches the subcommand at all;
+`Jay is unassigned.` and draft mode; and the optional article. Each
+would point a student on PyPI 1.7.2 at behaviour their install does
+not have. `skills/office-builder/references/office_grammar.md` is the
+file, and editing it also forces a bundle rebuild and a version bump,
+so it is one edit made once, with the release. Same coupling as
+`inboxes=`; that makes four.
 
 **Thirty students installing at once has never been tested.** One
 unresolved install failure costs a class hour, thirty times. Windows
@@ -80,44 +82,50 @@ findings: G1 *"has no job yet"* and G2 *"nothing leaves this office"*.
 What is left is the assistant's half — the turn protocol, and the
 skill. See building_by_conversation.md §3–§4 (built) and §5, §7 (not).
 
-**Found while building it: a forgotten article gives three different
-answers.** An agent line matching no pattern falls through to a legacy
-`name is <path>` form for sub-offices, which sets *both* `role_name`
-and `path` to the same string. What happens next depends on which
-library the name belongs to. All three were run:
+**The article is now optional, and the fallback is gone.** It used to
+be the only thing separating a library role from a directory on disk,
+which is a distinction nobody intends to draw with one character —
+`Jay is a deduplicator.` was a role and `Jay is deduplicator.` was a
+sub-office in `./deduplicator`. A sub-office is now marked by the
+keyword `office at`, two words that mean something. An agent line that
+matches none of the three forms is a parse error naming all three,
+rather than a silent reinterpretation.
 
-| Line | `dsl check` | then |
+The legacy bare `X is <name>` survives **only inside a legacy
+`Offices:` section**, where it is unambiguous because the header has
+already said everything in it is an office. `gallery/examples/
+org_two_office_news/network.md` uses it and still works. I had
+reported the blast radius as zero after grepping only `office.md`
+files and only `Agents:` sections — the third scoped-too-narrowly
+answer of the week, and the one the test suite caught.
+
+`check_wiring` now reads `RoleRef.path`: **W10**, a sub-office whose
+directory or `office.md` is not there, said in those words instead of
+W6's "there is no roles/news.md". And a `ParseError` from `dsl check`
+no longer arrives wrapped in forty lines of traceback.
+
+**What a dropped article used to do, for the record**, because it is
+a good example of a rule enforced in one place and quietly undone in
+another. Three lines, all run:
+
+| Line | `dsl check` said | and then |
 |---|---|---|
-| `Jay is summarizer.` | no problems | **runs correctly** — the prompt-role lookup ignores `path` |
-| `Jay is deduplicator.` | no problems | `dsl build` fails: *"sub-office path 'deduplicator' could not be resolved"* |
-| `Jay is frobnicator.` | W6, exit 1 | but W6 says *"there is no roles/frobnicator.md"*, not *"you left out the article"* |
+| `Jay is summarizer.` | no problems | it **ran correctly** — the prompt-role lookup ignored the path |
+| `Jay is deduplicator.` | no problems | `dsl build` failed: *"sub-office path 'deduplicator' could not be resolved"* |
+| `Jay is frobnicator.` | W6, exit 1 | but W6 said *"there is no roles/frobnicator.md"*, not *"you left out the article"* |
 
-The article is enforced by the regex and then unenforced by the
-fallback, so a student who drops one word gets no message, or a
-message about sub-offices, or a message about a missing file —
-depending on a distinction they cannot see.
+Three outcomes for one typo, chosen by which library the name happened
+to belong to — a distinction the writer cannot see. Now all three are
+the same thing: a role.
 
-**Underneath it: `check_wiring` never reads `RoleRef.path`.**
-`_build_graph` maps each agent to its `role_name` and nothing looks at
-the path, so a genuine `X is an office at ./nowhere.` is reported as a
-missing *role file*, and a path whose basename happens to name a real
-role is not reported at all. That is the more general bug, and fixing
-it — check that a declared sub-office directory exists, and say so in
-those words — is worth doing whether or not the fallback is tightened.
-
-Tightening the fallback has an unknown blast radius on offices using
-the legacy form. Recorded in `tests/unit/test_draft_office.py`, where
-the assertion had to be weakened to match.
-
-**Conversational office construction, the rest.** Storyboard first,
-then design, then build. The storyboard is
+**Conversational office construction, the rest.** The storyboard is
 [storyboard_first_office.md](design/storyboard_first_office.md) — one
 first-year, fourteen panels, ending in the question that opens the
-algorithms half of the course. Its §12 costs every panel and is the
-current work list. Design so far in
-[building_by_conversation.md](design/building_by_conversation.md): the
-`unassigned` placeholder, automatic draft mode, the gap list, the turn
-protocol. Not implemented, deliberately.
+algorithms half of the course. Its §12 costs every panel and is still
+the work list; the framework half of §1's panels is now done, and the
+assistant's half is not. Design in
+[building_by_conversation.md](design/building_by_conversation.md): §3
+and §4 built, §5 (the turn protocol) and §7 open.
 
 **Four things the storyboard found that no design covers.** A way to
 list library roles with one line each on what they *emit* — there is

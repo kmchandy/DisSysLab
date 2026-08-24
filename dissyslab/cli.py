@@ -258,6 +258,16 @@ def _explain_failure_message(command: str, exc: BaseException) -> str:
             f"{command}: the office ran but produced nothing.\n\n{msg}"
         )
 
+    # ParseError is the same case as OfficeRunError: it already names
+    # the file, the line, the snippet and the three forms an agent line
+    # may take. A traceback underneath it is forty lines of framework
+    # internals wrapped around a message about a missing article, and
+    # the reader's eye goes to the traceback. (DSL_DEBUG still appends
+    # it.)
+    from dissyslab.office.parser_errors import ParseError
+    if isinstance(exc, ParseError):
+        return f"{command}: {msg}"
+
     # Missing Python module — almost always a stale build/run.py or
     # a package the user forgot to install in this venv.
     if isinstance(exc, ModuleNotFoundError):

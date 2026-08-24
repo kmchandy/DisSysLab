@@ -190,21 +190,52 @@ def _parse_decl_section(
 # ── Agents ─────────────────────────────────────────────────────────────
 
 
-_AGENT_LINE_RE = re.compile(
-    r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s+(?:is|are)\s+an?\s+(.+?)\s*$"
-)
+# Three agent forms, tried in this order. The article is optional in
+# all of them.
+#
+# ``Jay is unassigned.``            -- named, job not decided yet
+# ``Jay is an office at ../news.``  -- a nested office
+# ``Jay is a deduplicator.``        -- a role from the library or roles/
+#
+# **Why the article is optional.** It used to be mandatory, and it was
+# the only thing separating a library role from a directory on disk:
+# ``Jay is a deduplicator.`` was a role and ``Jay is deduplicator.``
+# fell through to a legacy path form and made Jay a sub-office in
+# ./deduplicator. One character, invisible to anyone reading the line
+# as English, carrying a distinction between two unrelated meanings.
+# Nobody ever intended it, so every use of it was a mistake -- and the
+# mistake produced three different outcomes depending on which library
+# the name happened to belong to.
+#
+# Strictness was the argument for keeping it, and it does not survive
+# examination: the article catches no semantic error. Whether a role
+# exists is settled by looking the name up (W6), with or without the
+# article. What separates a role from a sub-office is now the keyword
+# ``office at``, which is two words that mean something rather than one
+# that means nothing.
+#
+# We still *write* the article everywhere -- the skill does, the
+# gallery does, and a test keeps it that way. Strict in what we emit,
+# forgiving in what we accept; a twelve-year-old who types
+# ``Jay is summarizer`` should not be corrected on grammar.
+#
+# ``office`` and ``unassigned`` are reserved as role names in
+# consequence. tests/unit/test_draft_office.py keeps them free.
 
-# "Jay is unassigned." -- an agent with a name and no job yet, which is
-# how an office looks while it is being described a sentence at a time.
-# Deliberately its own pattern rather than a branch inside the one
-# above: the article in ``\s+an?\s+`` is what stops
-# ``Jay is deduplicator.`` parsing, and the grammar's strictness is the
-# reason `dsl check` can catch what a language model got wrong. The
-# trailing full stop is consumed here because the role pattern captures
-# it into the role and strips it downstream.
 _UNASSIGNED_LINE_RE = re.compile(
     r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s+(?:is|are)\s+unassigned\s*\.?\s*$",
     re.IGNORECASE,
+)
+
+# The path runs to the end of the line; the trailing full stop is
+# stripped downstream, as it is for roles.
+_SUB_OFFICE_LINE_RE = re.compile(
+    r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s+(?:is|are)\s+(?:an?\s+)?office\s+at\s+(.+?)\s*$",
+    re.IGNORECASE,
+)
+
+_AGENT_LINE_RE = re.compile(
+    r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s+(?:is|are)\s+(?:an?\s+)?(.+?)\s*$"
 )
 
 
@@ -227,7 +258,8 @@ _AI_OVERRIDE_RE = re.compile(
 
 
 def _parse_agents_section(
-    body: List[_Line], path: Optional[Path]
+    body: List[_Line], path: Optional[Path],
+    offices_section: bool = False
 ) -> Tuple[
     List[Tuple[str, str, Tuple[Tuple[str, Any], ...], _Line]],
     List[Tuple[str, str, _Line]],
@@ -244,8 +276,11 @@ def _parse_agents_section(
     * ``Susan is an editor.``                 (leaf agent, no args)
     * ``Sasha is a deduplicator(by="url").``  (leaf agent with kwargs)
     * ``X is an office at <path>.``           (sub-office)
-    * ``X is <name>``  (legacy network.md ``Offices:`` form, where
-      <name> is itself a path; treated as a sub-office)
+    * ``X is <name>``  -- **only inside a legacy ``Offices:``
+      section**, where <name> is itself a path. Everything in that
+      section is an office, so a bare name there is unambiguous. In an
+      ``Agents:`` section the same line is a role, and the keyword
+      ``office at`` is what marks a sub-office.
     * ``Qwen's AI is ollama.``                (per-agent backend
       override; matched separately and folded into the agent's
       RoleRef by the caller)
@@ -303,50 +338,51 @@ def _parse_agents_section(
             ai_overrides[agent_name] = backend_str
             continue
 
-        # "Jay is unassigned." -- named, job not decided yet.
-        #
-        # This has to be tried before both the role pattern and the
-        # legacy path fallback below. Without it the line still parses:
-        # _AGENT_LINE_RE rejects it, because the article is mandatory,
-        # and the fallback then reads "unassigned" as a directory name
-        # and makes Jay a sub-office living in ./unassigned. Nothing
-        # says so, and the failure surfaces much later as a missing
-        # role file -- a clear sentence about the wrong thing, since
-        # the office is not missing a file, it is missing a decision.
+        # The three forms, most specific first. Order is the whole of
+        # the disambiguation: `office at <path>` has to be recognised
+        # before the role pattern, which would otherwise read a
+        # sub-office line as a role named "office at ../news".
         un_m = _UNASSIGNED_LINE_RE.match(text)
         if un_m:
             leaves.append((un_m.group(1), UNASSIGNED, (), line))
             continue
 
+        sub_m = _SUB_OFFICE_LINE_RE.match(text)
+        if sub_m:
+            subs.append((sub_m.group(1), sub_m.group(2).strip(), line))
+            continue
+
+        if offices_section:
+            # `news_monitor is news_monitor` in a legacy network.md.
+            # Unambiguous here and nowhere else: the section header
+            # already said everything in it is an office, so there is
+            # no role for a bare name to be confused with.
+            legacy = re.match(
+                r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s+(?:is|are)\s+(.+?)\s*$", text
+            )
+            if legacy:
+                subs.append((legacy.group(1), legacy.group(2).strip(), line))
+                continue
+
         m = _AGENT_LINE_RE.match(text)
         if not m:
-            # Try the legacy form: "name is path/with/slashes"
-            m2 = re.match(
-                r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s+(?:is|are)\s+(.+?)\s*$",
-                text,
+            # No fallback in an Agents: section. A form recognised by
+            # failing to match the others is not a form; it is the
+            # absence of one, and the one that used to be here turned
+            # `Jay is deduplicator.` into a sub-office in ./deduplicator
+            # without saying so. Name the three forms instead.
+            raise ParseError(
+                "an agent line must be one of:\n"
+                "    Name is a <role>.             a library role, or roles/<role>.md\n"
+                "    Name is an office at <path>.  a nested office\n"
+                "    Name is unassigned.           not decided yet",
+                path=path,
+                line_no=line.no,
+                snippet=line.text,
             )
-            if not m2:
-                raise ParseError(
-                    "expected 'Name is a <role>.' or "
-                    "'Name is an office at <path>.'",
-                    path=path,
-                    line_no=line.no,
-                    snippet=line.text,
-                )
-            agent_name = m2.group(1)
-            rest = m2.group(2).strip()
-            # Treat as a sub-office path (legacy network.md form).
-            subs.append((agent_name, rest, line))
-            continue
 
         agent_name = m.group(1)
         rest = m.group(2).strip()
-
-        # Sub-office form: "office at <path>"
-        sub_m = re.match(r"^office\s+at\s+(.+)$", rest, re.IGNORECASE)
-        if sub_m:
-            subs.append((agent_name, sub_m.group(1).strip(), line))
-            continue
 
         # Plain role: ``role_name`` or ``role_name(k=v, k=v)``. The
         # article was consumed by the regex (\s+an?\s+), so ``rest``
@@ -678,8 +714,15 @@ def _build_office_spec(
     # job.
     agent_entries: List[RoleRef] = []
     if "agents" in seen_labels:
+        # ``Offices:`` is aliased to ``agents``; the raw header is how
+        # we tell whether a bare ``X is <name>`` line means an office.
+        _agents_section = seen_labels["agents"]
         leaves, subs, ai_overrides = _parse_agents_section(
-            seen_labels["agents"].body, md_path
+            _agents_section.body,
+            md_path,
+            offices_section=_agents_section.header.text.strip()
+            .lower()
+            .startswith("offices"),
         )
         # Validate that every AI override names a real agent in this
         # office. Doing this here (rather than at compile time) lets
