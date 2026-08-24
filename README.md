@@ -10,36 +10,26 @@ assistant.**
 
 DisSysLab is a Python library and a set of skills that AI assistants —
 Claude Cowork, Codex, Gemini CLI — can use to build applications that
-run continuously: watch something, decide something, do something,
-keep going. The concurrency machinery is in the library: message
-passing, distributed termination detection, checkpointing and
-recovery. An assistant that has the library assembles an application
-from those parts. An assistant without it writes those parts for your
-application.
+run continuously. These applications read sources of data such as sensors, stock
+tickers, social media, and news; they process streams of data; and they send
+messages to actuators, files or consoles.
 
-This is not a claim that the library is the better route. It is a
-claim that it exists, that its machinery is tested, and that the
-applications below run.
+An AI assistant builds an application by assembling components in the library which contains the machinery for concurrent computation - messages, agents, checkpointing, crash recovery. An AI assistant can also build an application without the library; however, it then has to regenerate the concurrency machinery from scratch for each new app. 
 
-**An office, in which everyone works remotely.** That is the mental
-model, and the "remotely" is the part that matters. Nobody can walk
-over to anyone's desk. There is no shared whiteboard. An **agent**
-knows only what has been sent to it, through named **inboxes** and
-**outboxes**, and a **connection** carries a copy of each message from
-an outbox to every inbox it feeds. If a group chat or an assembly line
-is a more comfortable picture, they carry the same properties.
+A distributed system is represented by an office in which everyone works remotely. Each agent (i.e. worker) in the office receives messages from its inboxes and puts messages in its outboxes. An agent cannot communicate in any other way. The office network specifies connections from outboxes to inboxes. The distributed system machinery removes a message from an outbox and sends copies of the message to each inbox to which it is connected. Office details are given later.
+
 
 ---
 
-# 1. Using it
+## 1. Examples
 
-Two people, two paths, four steps each. Neither needs a clone and
-neither writes code.
+Here are two examples of building distributed apps. The first is for a pre-teen who likes learning about space, and the second is for a finance "quant" who develops stock-trading strategies.
 
-## Su, who is twelve and likes space
+### Su, who is twelve and likes space
 
-An adult installs Claude Cowork on her laptop and chooses **on your
-computer** rather than in the cloud. That is the only adult step.
+An adult installs Claude Cowork on Su's laptop and chooses **on your
+computer** rather than in the cloud when given that option. 
+Now Su builds a distributed app for herself.
 
 **1.** Start a task, **on your computer**.
 
