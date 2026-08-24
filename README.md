@@ -5,18 +5,13 @@
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Tests](https://github.com/kmchandy/DisSysLab/actions/workflows/test.yml/badge.svg)](https://github.com/kmchandy/DisSysLab/actions/workflows/test.yml)
 
-**Build persistent, distributed applications by talking to an AI
-assistant.**
+**Build multi-agent applications.**
 
-DisSysLab is a Python library and a set of skills that AI assistants —
-Claude Cowork, Codex, Gemini CLI — can use to build applications that
-run continuously. These applications read sources of data such as sensors, stock
-tickers, social media, and news; they process streams of data; and they send
-messages to actuators, files or consoles.
+DisSysLab is a Python library and a set of skills that AI assistants — Claude Cowork, Codex, Gemini CLI — can use to build distributed applications in which many agents run concurrently. Some of these applications monitor data sources such as news, sensors, and social media, and respond by sending messages to actuators, consoles and files. Other applications process data sets such as historic stock and weather records. 
 
-An AI assistant builds an application by assembling components in the library which contains the machinery for concurrent computation - messages, agents, checkpointing, crash recovery. An AI assistant can also build an application without the library; however, it then has to regenerate the concurrency machinery from scratch for each new app. 
+An AI assistant builds an application by assembling components from the library. The library contains the machinery for concurrent computation - messages, agents, termination detection, checkpointing, crash recovery. The primitives in the library have been tested and have clear specifications. An AI assistant can also build an application without the library; however, it then has to generate the concurrency machinery from scratch for each new app. 
 
-A distributed system is represented by an office in which everyone works remotely. Each agent (i.e. worker) in the office receives messages from its inboxes and puts messages in its outboxes. An agent cannot communicate in any other way. The office network specifies connections from outboxes to inboxes. The distributed system machinery removes a message from an outbox and sends copies of the message to each inbox to which it is connected. Office details are given later.
+A distributed system is represented by an office in which everyone works remotely. Each agent - worker - in the office receives messages from its inboxes and puts messages in its outboxes. An agent cannot communicate in any other way. The office network specifies connections from outboxes to inboxes. The distributed system machinery removes a message from an outbox and sends copies of the message to each inbox to which it is connected. Offices are described in detail below.
 
 
 ---
