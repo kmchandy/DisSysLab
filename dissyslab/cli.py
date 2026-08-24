@@ -445,11 +445,38 @@ def _resolve_office_arg(arg: str, label: str) -> Path | None:
     return None
 
 
+def _refuse_if_draft(office_dir, command: str) -> bool:
+    """True if the office is still being described, and we said so.
+
+    The check belongs here as well as in the compiler because only here
+    can it name *every* agent whose job is undecided. The compiler meets
+    them one at a time and stops at the first, which is right for a
+    library caller and wrong for a person who wants the whole list.
+
+    Silent on anything it cannot parse: a syntax error has its own,
+    better message a few lines further on.
+    """
+    try:
+        from dissyslab.office.office_spec import draft_refusal, unassigned_agents
+        from dissyslab.office.parser import parse_office_dir
+
+        pending = unassigned_agents(parse_office_dir(Path(office_dir)))
+    except Exception:  # noqa: BLE001
+        return False
+    if not pending:
+        return False
+    _eprint(f"{command}: {draft_refusal(pending)}")
+    return True
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     """Build (if stale) and run a closed office via office."""
     office_dir = _resolve_office_arg(args.office_dir, "office_dir")
     if office_dir is None:
         return 2
+
+    if _refuse_if_draft(office_dir, "dsl run"):
+        return 1
 
     # Power-user override: --processes flag asks the runtime to use
     # ``process_network()`` (one OS process per agent — true CPU
@@ -500,6 +527,9 @@ def cmd_build(args: argparse.Namespace) -> int:
     office_dir = _resolve_office_arg(args.office_dir, "office_dir")
     if office_dir is None:
         return 2
+
+    if _refuse_if_draft(office_dir, "dsl build"):
+        return 1
 
     from dissyslab.office.cli_helpers import cli_build
 
@@ -1735,6 +1765,12 @@ def build_parser() -> argparse.ArgumentParser:
             "sink, sinks nothing feeds, roles with no file behind them, and "
             "cycles. Reports every fault it finds, not just the first, and "
             "never runs the office.\n\n"
+            "An office with an agent whose job is undecided -- 'Jay is "
+            "unassigned.' -- is a draft. Its findings are then reported as "
+            "remaining work rather than faults, and the exit status is 0: "
+            "an unfinished office is not a broken one. A misspelled "
+            "component name stays an error, because it is as wrong now as "
+            "it will be later.\n\n"
             "This is a structural check. It cannot see faults that depend "
             "on what actually happens at run time -- a coordinator blocked "
             "on one inbox while another holds a message it will never read "

@@ -71,6 +71,8 @@ from dissyslab.office.library import (
     OfficeRoleEntry,
 )
 from dissyslab.office.office_spec import (
+    UNASSIGNED,
+    draft_refusal,
     ConnectionStmt,
     Endpoint,
     OfficeSpec,
@@ -229,6 +231,10 @@ def _build_tree(
             node.fn_lib_agents[ref.agent_name] = (
                 ref.role_name, init_kwargs, fn_kwargs
             )
+        elif ref.role_name == UNASSIGNED:
+            # A draft office, not a broken one. Say the sentence the
+            # user still owes rather than dumping the role registry.
+            raise CompileError(draft_refusal([ref.agent_name]))
         else:
             raise CompileError(
                 f"agent {ref.agent_name!r} uses role {ref.role_name!r}, "

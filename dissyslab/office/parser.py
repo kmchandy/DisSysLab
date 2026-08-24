@@ -112,6 +112,7 @@ from dissyslab.office._parser_text import (
 )
 from dissyslab.office.office_spec_constants import EXTERNAL
 from dissyslab.office.office_spec import (
+    UNASSIGNED,
     ConnectionStmt,
     Endpoint,
     OfficeSpec,
@@ -191,6 +192,19 @@ def _parse_decl_section(
 
 _AGENT_LINE_RE = re.compile(
     r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s+(?:is|are)\s+an?\s+(.+?)\s*$"
+)
+
+# "Jay is unassigned." -- an agent with a name and no job yet, which is
+# how an office looks while it is being described a sentence at a time.
+# Deliberately its own pattern rather than a branch inside the one
+# above: the article in ``\s+an?\s+`` is what stops
+# ``Jay is deduplicator.`` parsing, and the grammar's strictness is the
+# reason `dsl check` can catch what a language model got wrong. The
+# trailing full stop is consumed here because the role pattern captures
+# it into the role and strips it downstream.
+_UNASSIGNED_LINE_RE = re.compile(
+    r"^\s*([A-Za-z_][A-Za-z0-9_]*)\s+(?:is|are)\s+unassigned\s*\.?\s*$",
+    re.IGNORECASE,
 )
 
 
@@ -287,6 +301,21 @@ def _parse_agents_section(
                     snippet=line.text,
                 )
             ai_overrides[agent_name] = backend_str
+            continue
+
+        # "Jay is unassigned." -- named, job not decided yet.
+        #
+        # This has to be tried before both the role pattern and the
+        # legacy path fallback below. Without it the line still parses:
+        # _AGENT_LINE_RE rejects it, because the article is mandatory,
+        # and the fallback then reads "unassigned" as a directory name
+        # and makes Jay a sub-office living in ./unassigned. Nothing
+        # says so, and the failure surfaces much later as a missing
+        # role file -- a clear sentence about the wrong thing, since
+        # the office is not missing a file, it is missing a decision.
+        un_m = _UNASSIGNED_LINE_RE.match(text)
+        if un_m:
+            leaves.append((un_m.group(1), UNASSIGNED, (), line))
             continue
 
         m = _AGENT_LINE_RE.match(text)

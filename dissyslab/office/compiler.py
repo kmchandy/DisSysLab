@@ -100,12 +100,14 @@ from dissyslab.office.library import (
     OfficeRoleEntry,
 )
 from dissyslab.office.office_spec import (
+    UNASSIGNED,
     ConnectionStmt,
     Endpoint,
     OfficeSpec,
     RoleRef,
     SinkSpec,
     SourceSpec,
+    draft_refusal,
 )
 from dissyslab.office.parser import parse_office_dir
 
@@ -695,6 +697,12 @@ def _resolve_role_ref(
         child_net, child_warnings = compile_office(child_dir)
         warnings.extend(child_warnings)
         return child_net, "subnetwork", tuple(child_net.outports)
+
+    if ref.role_name == UNASSIGNED:
+        # A draft office reaching the compiler. The user has not made a
+        # decision yet; a list of every role in the library is not an
+        # answer to that.
+        raise CompileError(draft_refusal([ref.agent_name]))
 
     all_roles = sorted(
         set(library.keys())

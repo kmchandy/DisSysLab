@@ -72,8 +72,28 @@ model over a weekend finds out. A claim with a bill attached.
 
 ## 2. The pedagogy. Weeks 5–10.
 
-**Conversational office construction.** Storyboard first, then design,
-then build. The storyboard is
+**Conversational office construction — the draft office is built.**
+`Jay is unassigned.` parses as undecided, an office holding one is a
+draft, `dsl check` reports remaining work and exits 0, and `dsl run`
+refuses by naming the agents whose job is not decided. Two new
+findings: G1 *"has no job yet"* and G2 *"nothing leaves this office"*.
+What is left is the assistant's half — the turn protocol, and the
+skill. See building_by_conversation.md §3–§4 (built) and §5, §7 (not).
+
+**Found while building it: the grammar is not as strict as we say it
+is.** The README argues that the narrow grammar is what lets
+`dsl check` catch what a language model got wrong. But an agent line
+that matches nothing falls through to a legacy `name is <path>` form,
+so `Jay is deduplicator.` — the exact line the strictness is supposed
+to reject — silently becomes a sub-office in `./deduplicator`, and
+`dsl check` says nothing about it. It surfaces at compile time as a
+missing office. Tightening the fallback is its own change with an
+unknown blast radius on offices that use the legacy form; recorded in
+`tests/unit/test_draft_office.py` where the assertion had to be
+weakened to match.
+
+**Conversational office construction, the rest.** Storyboard first,
+then design, then build. The storyboard is
 [storyboard_first_office.md](design/storyboard_first_office.md) — one
 first-year, fourteen panels, ending in the question that opens the
 algorithms half of the course. Its §12 costs every panel and is the

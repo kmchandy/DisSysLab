@@ -1,6 +1,8 @@
 # Building an office by conversation
 
-A design note. Not implemented.
+A design note. **Sections 3 and 4 are now built** — see the status
+line at the head of each section, and `tests/unit/test_draft_office.py`.
+The rest is still design.
 
 The `office-builder` skill assumes an office is drafted whole and then
 checked. A student building one by talking does the opposite: names
@@ -9,8 +11,20 @@ describes what the framework needs so that conversation can be written
 down as it happens, and `office.md` can be the record of it from the
 first sentence rather than only at the end.
 
-Status: design. The worked conversation in §6 is checked against the
-parser as it stands; nothing here is built.
+Status: §3 and §4 are built. `Jay is unassigned.` parses as undecided
+rather than as a sub-office path, an office holding one is a draft,
+`dsl check` reports its findings as remaining work and exits 0, and
+`dsl run` and `dsl build` refuse with a sentence naming every agent
+whose job has not been decided. §5 (the turn protocol) and §7 are not
+built; neither is the office rename.
+
+One deliberate divergence from §3. The role is the reserved string
+`unassigned`, not `None`. `None` is tidier and it is what §3 argued
+for, but `role_name` is a non-empty `str` read in 82 places across
+nine modules, and widening it would touch the compiler, codegen and
+every consumer to express something three of them care about. The
+reserved name costs one test, which keeps a role file of that name
+from shadowing it.
 
 ---
 

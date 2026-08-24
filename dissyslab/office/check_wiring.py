@@ -35,6 +35,30 @@ W5  no such source or sink -- a name that is in no registry
 W6  missing role file -- named a role with no ``.md`` or ``.py`` behind it
 W7  cycle (note, not an error) -- legal and often intended
 W8  source with no destination, or sink nothing feeds
+W9  a connection naming something that is not declared anywhere
+G1  an agent with a name and no job yet
+G2  nothing leaves the office -- it has no sink
+
+Drafts
+------
+An office with an agent whose job is undecided (``Jay is unassigned.``)
+is a **draft**, and draft-ness is a property of the office rather than
+a flag anyone passes. Its findings do not change; what they mean does.
+In a finished office an unreachable agent is a fault; in one being
+described a sentence at a time it is the next sentence. So the
+incompleteness codes -- W1, W3, W4, W8, G1, G2 -- become notes, the
+report says "still to do", and the exit status is 0. There is nothing
+wrong with an unfinished office, and reporting it as broken teaches a
+beginner that building is a sequence of errors.
+
+Mistakes stay errors. W5 (a component name in no registry) and W6 (a
+role with no file behind it) are wrong now and will still be wrong when
+the office is finished, so calling them remaining work would bury them.
+
+G2 earns its own code because it is the only fault a person cannot
+diagnose from outside. Every other mistake announces itself; an office
+with no sink is structurally perfect, runs cleanly, exits zero and
+produces silence.
 
 W1 applies only where an agent *declares* its inboxes in ``office.md`` --
 ``Sync is a synchronizer(inboxes=["entities", "severity", "topic"])``. Where
@@ -50,9 +74,16 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, Iterable, List, Sequence, Set, Tuple
 
+from dissyslab.office.office_spec import UNASSIGNED, is_draft
+
 __all__ = ["Finding", "WiringReport", "check_office_dir", "check_spec", "format_report"]
 
 EXTERNAL = "external"
+
+# Findings that mean "not finished yet" rather than "wrong". In a draft
+# office these are the remaining work; W5 and W6 and W9 are not, because
+# a misspelled component name is as wrong now as it will be later.
+_INCOMPLETENESS_CODES = {"W1", "W3", "W4", "W8", "G1", "G2"}
 
 
 @dataclass(frozen=True)
@@ -64,6 +95,11 @@ class Finding:
     subject: str  # the agent/source/sink the finding is about
     message: str
     hint: str = ""
+    #: The same finding said as remaining work rather than as a fault,
+    #: for an office still being described. "Dan's 'immediate' goes
+    #: nowhere yet" and "'Dan' is a dead end" are the same observation;
+    #: only one of them reads as progress. Falls back to ``message``.
+    gap: str = ""
 
     @property
     def is_error(self) -> bool:
@@ -76,6 +112,9 @@ class WiringReport:
     office_path: Path
     findings: List[Finding] = field(default_factory=list)
     skipped: List[str] = field(default_factory=list)
+    #: True when the office still has an agent whose job is undecided.
+    #: Its findings are then remaining work rather than faults.
+    draft: bool = False
 
     @property
     def errors(self) -> List[Finding]:
@@ -385,6 +424,7 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                     + (f"Wired: {wired}." if wired else "None are wired.")
                     + f" Either wire something to {port!r}, or remove it from "
                     "the inboxes list.",
+                    gap=f"nothing is connected to {agent}'s {port!r} inbox yet.",
                 )
             )
 
@@ -399,6 +439,7 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                     f"source {source!r} has no destination -- nothing reads what it fetches.",
                     "Add a line such as: "
                     f"{source}'s destination is <agent>.",
+                    gap=f"nothing reads {source} yet.",
                 )
             )
     for sink in sorted(graph.sinks):
@@ -410,6 +451,7 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                     sink,
                     f"sink {sink!r} is never sent anything -- it will produce no output.",
                     f"Add a line such as: <agent>'s out is {sink}.",
+                    gap=f"nothing is sent to {sink} yet.",
                 )
             )
 
@@ -433,6 +475,7 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                     agent,
                     f"{agent!r} is unreachable -- no path from any source.",
                     hint,
+                    gap=f"nothing reaches {agent} yet.",
                 )
             )
 
@@ -488,6 +531,7 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                 agent,
                 f"{agent!r} is a dead end -- its output reaches no sink.",
                 hint,
+                gap=f"{agent}'s output goes nowhere yet.",
             )
         )
 
@@ -535,6 +579,10 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
         local = _local_role_names(office_dir)
         for agent in sorted(graph.agents):
             role = graph.roles.get(agent, "")
+            if role == UNASSIGNED:
+                # Not a missing file. G1 reports it as a missing decision,
+                # which is what it is and what the user can act on.
+                continue
             if role and role not in local and role not in builtins:
                 report.findings.append(
                     Finding(
@@ -584,6 +632,66 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                     )
                 )
 
+    # G1 -- an agent with a name and no job yet.
+    for agent_spec in spec.agents:
+        if agent_spec.role_name == UNASSIGNED and agent_spec.path is None:
+            report.findings.append(
+                Finding(
+                    "G1",
+                    "error",
+                    agent_spec.agent_name,
+                    f"{agent_spec.agent_name!r} has no job yet.",
+                    "Say what it does and it will be written down.",
+                )
+            )
+
+    # G2 -- nothing leaves the office.
+    #
+    # This one has a line of its own because it is the only fault a
+    # person cannot diagnose from the outside. Every other mistake
+    # announces itself: the office refuses to build, or hangs, or names
+    # the thing it could not find. An office with no sink is
+    # structurally perfect, runs cleanly, exits zero and produces
+    # silence, and the reasonable conclusion from that is that the
+    # framework is broken.
+    #
+    # An open office is exempt: its Outputs are how work leaves it, and
+    # the office that embeds it owns the sink.
+    if not spec.sinks and not spec.outputs:
+        report.findings.append(
+            Finding(
+                "G2",
+                "error",
+                spec.name,
+                "nothing leaves this office -- it has no sink.",
+                "It will run, finish and show you nothing. Add a sink: "
+                "console_printer to see the output, or "
+                "jsonl_recorder(path=\"...\") to keep it.",
+            )
+        )
+
+    # Draft framing.
+    #
+    # An office with an agent whose job is undecided is a draft. Its
+    # findings do not change; what they mean does. In a finished office
+    # an unreachable agent is a fault; in one being described a
+    # sentence at a time it is the next sentence. So the incompleteness
+    # codes become notes and `dsl check` exits 0 -- there is nothing
+    # wrong with an unfinished office, and reporting it as broken
+    # teaches a beginner that building is a sequence of errors.
+    #
+    # Mistakes stay errors. A source name that is in no registry (W5)
+    # or a role with no file behind it (W6) is wrong now and will still
+    # be wrong when the office is finished; calling it "remaining work"
+    # would bury it.
+    if is_draft(spec):
+        report.draft = True
+        report.findings = [
+            Finding(f.code, "note", f.subject, f.gap or f.message, f.hint, f.gap)
+            if f.code in _INCOMPLETENESS_CODES else f
+            for f in report.findings
+        ]
+
     return report
 
 
@@ -604,12 +712,34 @@ def check_office_dir(office_dir: Path) -> WiringReport:
 def format_report(report: WiringReport) -> str:
     """Plain text, every finding, grouped -- no traceback, no first-error-only."""
     errors, notes = report.errors, report.notes
+
+    # A draft is not a broken office, and its report should not read
+    # like a list of failures. Same findings, same order, different
+    # word -- and that word is most of what makes an unfinished office
+    # feel like progress rather than a pile of mistakes.
+    if report.draft and not errors:
+        lines = [
+            f"check_wiring: {report.office_path}/office.md -- draft, "
+            f"{len(notes)} thing{'s' if len(notes) != 1 else ''} still to do",
+            "",
+        ]
+        for finding in notes:
+            lines.append(f"  {'still to do':<14}{finding.message}")
+            if finding.hint:
+                lines.append(f"{'':<16}{finding.hint}")
+            lines.append("")
+        for skipped in report.skipped:
+            lines.append(f"  skipped: {skipped}")
+        return "\n".join(lines).rstrip() + "\n"
+
     header_bits = []
     if errors:
         header_bits.append(f"{len(errors)} problem{'s' if len(errors) != 1 else ''}")
     if notes:
         header_bits.append(f"{len(notes)} note{'s' if len(notes) != 1 else ''}")
     summary = ", ".join(header_bits) if header_bits else "no problems"
+    if report.draft:
+        summary = "draft, " + summary
 
     lines = [f"check_wiring: {report.office_path}/office.md -- {summary}"]
     if not errors and not notes:

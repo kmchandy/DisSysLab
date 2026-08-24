@@ -180,6 +180,65 @@ _MAILBOX_ALIASES = {
 }
 
 
+# The role of an agent whose job has not been decided yet.
+#
+# An office is described a sentence at a time -- "give me an office with
+# Dan and Jay" comes before anyone says what Dan does -- and until this
+# existed there was no way to write that down. The office lived in the
+# assistant's head until it was complete, which is exactly when the
+# person building it most needs to see it.
+#
+# A reserved name rather than ``role_name=None``. None would be tidier
+# and it is what design/building_by_conversation.md proposed, but
+# ``role_name`` is a non-empty ``str`` read in 82 places across nine
+# modules, and widening it would touch the compiler, codegen and every
+# consumer to express something only three of them care about. The cost
+# of the reserved name is that a role file called ``unassigned.md``
+# would shadow it; a test in tests/unit/test_draft_office.py keeps that
+# name free.
+#
+# An office containing one of these is a **draft**: `dsl check` reports
+# its findings as remaining work and exits 0, and `dsl run` refuses.
+# Draft-ness is a property of the office, not a flag, so there is
+# nothing for a user to remember or an assistant to forget to pass.
+UNASSIGNED = "unassigned"
+
+
+def is_draft(spec) -> bool:
+    """True if any agent's job is still undecided."""
+    return any(a.role_name == UNASSIGNED and a.path is None for a in spec.agents)
+
+
+def unassigned_agents(spec) -> list:
+    """The agents with no job yet, in declaration order."""
+    return [
+        a.agent_name for a in spec.agents
+        if a.role_name == UNASSIGNED and a.path is None
+    ]
+
+
+def draft_refusal(agents) -> str:
+    """What to say when something tries to run an unfinished office.
+
+    Not a lookup failure. The office is not missing a file or misspelling
+    a name; the person building it has not said what these agents do yet,
+    and the message should be the question they still owe rather than an
+    error about the framework's internals.
+    """
+    agents = list(agents)
+    many = len(agents) != 1
+    if many:
+        names = ", ".join(repr(a) for a in agents[:-1]) + f" and {agents[-1]!r}"
+    else:
+        names = repr(agents[0])
+    return (
+        f"this office is still a draft: {names} "
+        f"{'have' if many else 'has'} no job yet.\n"
+        f"Say what {'they do' if many else 'it does'} and it will be written "
+        f"into office.md. `dsl check` lists everything still to do."
+    )
+
+
 @dataclass(frozen=True)
 class RoleRef:
     """A reference from an office.md to a role in the library.
