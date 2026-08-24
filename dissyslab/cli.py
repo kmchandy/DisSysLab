@@ -1329,6 +1329,18 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         print("         The test tools live in the [dev] extra. From a source")
         print("         checkout:  pip install -e \".[dev]\"")
 
+    # Skills. Asked of the filesystem, not of the assistant.
+    #
+    # The setup script used to end by telling the user to ask their
+    # assistant which version of the skill it had -- which asks the
+    # possibly-unreliable thing whether it is reliable. An assistant
+    # that never loaded the skill answers anyway, and answers
+    # plausibly, and then improvises its own concurrency. Where a skill
+    # lives is a filesystem question.
+    print()
+    from dissyslab.skills_installed import print_report as _skill_report
+    _skill_report()
+
     print()
     print("Local .env:")
     env_status, env_detail = _diagnose_env_file()
@@ -1825,9 +1837,10 @@ def build_parser() -> argparse.ArgumentParser:
         "doctor",
         help="check your setup if something breaks",
         description=(
-            "Check your Python version, your dependencies, the credential "
-            "your selected backend actually needs, and any optional "
-            "integrations (Gmail, Slack, webhook URLs) you've configured. "
+            "Check your Python version, your dependencies, which DisSysLab "
+            "skills are installed and where, the credential your selected "
+            "backend actually needs, and any optional integrations (Gmail, "
+            "Slack, webhook URLs) you've configured. "
             "Finishes by building and running a small office as a "
             "self-test, so you get a straight answer about whether the "
             "install works. Run this first when something breaks."

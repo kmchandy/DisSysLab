@@ -560,6 +560,13 @@ MODULES_WITHOUT_DOCS: dict[str, str] = {
     "snapshot.py": "covered by os_agent_implementation and the algorithm docs",
     "utils.py": "grab-bag; no single subject to document",
     "builder.py": "has its own pair already",
+    "skills_installed.py": (
+        "one question with one answer -- which DisSysLab skills are on "
+        "this machine. Its own docstring carries the reasoning, and the "
+        "part worth documenting is the *decision* not to ask the "
+        "assistant, which belongs in course/SETUP.md where the person "
+        "following the steps will read it"
+    ),
 }
 
 

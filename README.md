@@ -156,13 +156,19 @@ Tell Cowork:
 > github.com/kmchandy/DisSysLab and follow it when you build offices
 > for me.*
 
-Then check that the assistant got the skill by asking it:
+Then check that it took:
 
-> *Which version of the office-builder skill do you have?*
+> *Run `dsl doctor` again.*
 
-The assistant should answer with a dated string such as `2026-08-19.385377d`.
-Anything vaguer means the assistant did not get the skill. Tell it to
-load the skill again, and to say so if that fails and why.
+Its **Skills** section names the skill and its version, or says the
+skill is not installed and where it looked.
+
+Do not ask the assistant which version of the skill it has. That asks
+the possibly-unreliable thing whether it is reliable: an assistant that
+never loaded the skill answers anyway, plausibly, and then improvises
+its own concurrency — the failure this step exists to catch. Where a
+skill lives is a question about the filesystem, so `dsl doctor` asks
+the filesystem.
 
 
 **5. Specify what to sense and how to respond: Examples** 
