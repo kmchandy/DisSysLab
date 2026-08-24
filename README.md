@@ -5,29 +5,61 @@
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Tests](https://github.com/kmchandy/DisSysLab/actions/workflows/test.yml/badge.svg)](https://github.com/kmchandy/DisSysLab/actions/workflows/test.yml)
 
-**Build persistent, distributed applications by talking to an AI assistant.**
+**Build persistent, distributed applications by talking to an AI
+assistant.**
+
+DisSysLab is a Python library and a set of skills that AI assistants —
+Claude Cowork, Codex, Gemini CLI — can use to build applications that
+run continuously: watch something, decide something, do something,
+keep going. The concurrency machinery is in the library: message
+passing, distributed termination detection, checkpointing and
+recovery. An assistant that has the library assembles an application
+from those parts. An assistant without it writes those parts for your
+application.
+
+This is not a claim that the library is the better route. It is a
+claim that it exists, that its machinery is tested, and that the
+applications below run.
+
+**An office, in which everyone works remotely.** That is the mental
+model, and the "remotely" is the part that matters. Nobody can walk
+over to anyone's desk. There is no shared whiteboard. An **agent**
+knows only what has been sent to it, through named **inboxes** and
+**outboxes**, and a **connection** carries a copy of each message from
+an outbox to every inbox it feeds. If a group chat or an assembly line
+is a more comfortable picture, they carry the same properties.
 
 ---
 
-DisSysLab (DSL) is a set of skills - libraries - that AI assistants such as Claude Cowork, Codex and Gemini CLI,  can use to build persistent, distributed applications. 
-The AI assistant assembles the concurrency machinery — message passing, rollback and recovery — from the library instead of re-generating the machinery from scratch for each application.
-An assistant without the library may generate incorrect programs because distributed systems are more complex than sequential programs.
+# 1. Using it
 
-A distributed system is represented by an **office** in which all the staff (agents) work remotely. An agent has a set of inboxes and a set of outboxes - queues of messages. The flow of messages in the office is represented by a set of connections from outboxes to inboxes. The system removes a message from an outbox and sends a copy of the message to all the inboxes to which it is connected. We specify offices, in detail,later.
+Two people, two paths, four steps each. Neither needs a clone and
+neither writes code.
 
-## A child builds an office for herself
+## Su, who is twelve and likes space
 
-Su is twelve and likes space. An adult installs Claude Cowork on her
-laptop and chooses **on your computer** rather than in the cloud. That
-is the only adult step.
+An adult installs Claude Cowork on her laptop and chooses **on your
+computer** rather than in the cloud. That is the only adult step.
 
-Su tells Cowork:
+**1.** Start a task, **on your computer**.
+
+**2.** Say:
 
 > *The project is at https://github.com/kmchandy/DisSysLab. Install its
-> Python package `dissyslab` for me, and get the skill for building
-> offices from that repository.*
+> Python package `dissyslab` for me, then run `dsl doctor`.*
 
-Then she talks. Everything below is her, one sentence at a time.
+**3.** Say:
+
+> *Install the `office-builder` skill from that repository, then run
+> `dsl doctor` again.*
+
+`dsl doctor`'s **Skills** section names the skill and its version, or
+says it is not installed and lists where it looked. Do not ask the
+assistant which version it has — an assistant that never loaded the
+skill will answer anyway. Where a skill lives is a question about the
+filesystem.
+
+**4.** Now talk. Everything below is Su, one sentence at a time.
 
 > *Give me an office with Dan and Jay.*
 
@@ -51,8 +83,10 @@ invented for her, and what is missing is a list rather than an error.
 Dan is a relevance_filter.
 ```
 
-> Dan keeps the Mars ones and throws the rest away. **Still to do:**
-> Jay has no job; nothing goes out; nothing is connected.
+Alongside it the assistant writes `roles/relevance_filter.md` — the
+library's version of that role with its criteria rewritten to say
+"about Mars". Dan's job is a paragraph of English she can read and
+edit.
 
 > *Jay writes one sentence about each one Dan keeps. Show me them on
 > the screen.*
@@ -77,143 +111,74 @@ Jay's out is console_printer.
 > No gaps. Your office runs.
 
 Three sentences. Dan and Jay are separate agents that share nothing
-and can only send each other messages, the office keeps running and
-checks for new stories on its own, and when there is nothing left to
-do it works that out and stops. Su wrote none of that and can read
-all of it.
+and can only send each other messages; the office keeps running and
+checks for new stories on its own; and when there is nothing left to
+do it works that out and stops. Su wrote none of that and can read all
+of it.
 
 Su picked space. The same three sentences build the same office around
 anything that publishes a feed — a game's update notes, a football
 club, a webcomic — by pointing it at the address:
 `rss(url="...", name="patch_notes")`.
 
----
+<p align="center">
+  <img src="docs/images/dsl-demo.gif" alt="dsl run streaming classified headlines from live news feeds" width="700">
+</p>
 
-## Three skills, and no programming in any of them
+## Vikram, who tests trading strategies and does not read Python
 
-| | What you say | What the skill does |
-|---|---|---|
-| **Build an office by talking** | *"give me an office with Dan and Jay"* | writes the office down as you describe it, and shows you what is still missing |
-| **Sense and respond** — the `office-builder` skill | *"watch these three feeds and tell me when a competitor is mentioned"* | assembles the office out of tested parts instead of inventing the concurrency for your app |
-| **A domain** — trading now, drug discovery next | *"show me the working for the Donchian 20 strategy on NVDA"* | adds that field's components, and that field's characteristic mistakes as checks — for trading, that a strategy never uses tomorrow's price to make today's decision |
+**1.** Start a task, **on your computer**.
 
-The first is how Su starts and the third is what a professional tester
-is doing with it this week. **None of the three asks you to write
-code.** You describe, you read what was written down, and you say what
-should be different.
-
-
----
-
-
-## Start here
-
-
-You need Claude Cowork - the Claude desktop app - and Python 3.10 (or
-newer), and nothing else, to get started. 
-
-**1. Cowork on your computer.** When you start a task in Cowork you
-can run it *on your computer* or *in the cloud*. Choose **on your
-computer**.
-
-
-**2. Install the library.**
-
-A distributed system is represented as an office - a network of agents. An agent sends and
-receives messaegs. The network specifies how messages flow between agents. Offices are
-described in detail later.
-
-Tell Cowork:
+**2.** Say:
 
 > *The project is at https://github.com/kmchandy/DisSysLab. Install its
-> Python package `dissyslab` for me, then run `dsl list` and show me
-> what offices come with it.*
+> Python package `dissyslab` with the market extra, then run
+> `dsl doctor`.*
 
-You should see forty offices listed — 31 applications and 9 smaller
-examples. If anything looks wrong, tell Cowork
+The market extra carries the price downloader and the spreadsheet
+writer. `dsl doctor` reports whether both arrived.
 
->  run `dsl doctor` and tell me what it says.
+**3.** Say:
 
-**3. Run one of the pre-built apps.**
+> *Make me a copy of the `mac_speed_suite` backtester in a folder
+> called `my_backtest`, then download ten years of prices for the
+> tickers it uses.*
 
-Tell Cowork:
+That runs `dsl init` and then `dsl fetch-prices --office my_backtest`,
+which reads the basket out of the office's own source line, skips
+anything already downloaded, and finishes by loading each ticker back
+through the office to confirm it can read what was just written.
 
-> *Make me my own copy of the `periodic_brief` office in a folder
-> called `my_brief`, then run it and open the result.*
+**Nothing in this repository ships market data.** The vendor's terms
+do not permit redistributing it, so every user fetches their own —
+which is why the downloader lives in an extra you install deliberately.
 
-Ten to twenty seconds later you have an HTML page built from live news
-headlines and current weather. That is the whole of the first run: no
-key, no account, no model download.
+**4.** Ask for what you want to see:
 
-**4. Give your assistant the skill.** Steps 2 and 3 ran a pre-built
-application. To build your own app, the assistant needs the skill to 
-assemble offices from components in the DisSysLab library. Without the
-skill the assistant will improvise its own concurrency constructs.
+> *Show me the working for the Donchian 20 strategy on NVDA.*
 
-Tell Cowork:
+You get an Excel workbook: one row per trading day, every quantity the
+strategy computed on the way to its decision — not just the signal but
+the upper and lower channel — and a sentence at the end of each row
+saying which rule fired. *"close 121.8 > upper 119.4 — go long."*
 
-> *Install the `office-builder` skill from
-> github.com/kmchandy/DisSysLab and follow it when you build offices
-> for me.*
+Each computed quantity appears twice: once as the number the Python
+produced, and once as a live Excel formula over the price cells, with
+a column comparing the two. Click a shaded cell and the formula bar
+reads `=MAX(C2:C21)` — the channel is built from the twenty rows
+*above* this one, not this one. A boundary convention that is
+ambiguous in English, invisible in a chart, and decides whether a
+backtest was honest. If it is not your rule, edit the cell and watch
+the signal column move.
 
-Then check that it took:
+To be straight about what that does and does not give you: both
+columns are one person's reading of the rule, written twice. If the
+rule was misread, both are wrong together. What the formula gives you
+is a specification you can read without reading Python.
 
-> *Run `dsl doctor` again.*
+## Forty offices to start from
 
-Its **Skills** section names the skill and its version, or says the
-skill is not installed and where it looked.
-
-Do not ask the assistant which version of the skill it has. That asks
-the possibly-unreliable thing whether it is reliable: an assistant that
-never loaded the skill answers anyway, plausibly, and then improvises
-its own concurrency — the failure this step exists to catch. Where a
-skill lives is a question about the filesystem, so `dsl doctor` asks
-the filesystem.
-
-
-**5. Specify what to sense and how to respond: Examples** 
-
-These are examples of sentences that you can tell Cowork to start 
-building apps.
-
-> *Watch the BBC and NPR news feeds and give me one page each morning
-> with the headlines and the weather.*
-
-The next app requires a large language model. You can use Claude, OpenAI,
-Gemini or any of the free LLMs. Tell Cowork:
-
-> *Watch three tech-news feeds and tell me when a competitor is
-> mentioned.*
-
-The next app needs access to your email account and LLMs
-
-> *Rate my unread email by urgency and draft replies to the routine
-> ones.*
-
-The next requires a folder of bird-call recordings and a bird-call model.
-
-> *Listen to my garden recordings and tell me which birds are there.*
-
-The assistant asks what it needs to know, builds the application,
-checks it, runs it, and shows you the output. You write no code, and
-you change it by saying what should be different, for example  
-— *"add the weather for Pasadena too"*,
-
-[course/SETUP.md](course/SETUP.md) is the same path at more length,
-with what to do when a step misbehaves. **Students** begin at
-[course/START_HERE.md](course/START_HERE.md). **Contributors** begin
-at [CONTRIBUTING.md](CONTRIBUTING.md).
-
----
-
-## Example applications
-
-Each of the sentences above corresponds to an application that ships
-with the library. There are forty of them. If you want to build an
-app similar to the ones in the list then start with it and tell the
-assistant to modify it.
-
-| | Examples |
+| | |
 |---|---|
 | **Watching the world** | news briefings, an arXiv radar, a competitor watch, a weather monitor |
 | **Your own day** | a morning page, inbox triage, a wardrobe assistant |
@@ -222,68 +187,66 @@ assistant to modify it.
 | **The physical world** | bird calls from recordings, animals in camera-trap photos, room climate, a loudness alarm |
 | **Learning and argument** | an adaptive tutor, a structured debate |
 
-`dsl list` shows all of them once the library is installed, and
-[course/START_HERE.md](course/START_HERE.md) describes each one.
+`dsl list` shows all forty — 31 applications and 9 smaller examples —
+and [course/START_HERE.md](course/START_HERE.md) describes each one.
+The quickest way to something you want is to start from the nearest
+one and say what should be different.
 
-Some offices have agents that need LLMs, and in other offices all agents execute Python and
-don't use LLMs. If an agent uses an LLM you can specify which one: a free local model
-through Ollama, or a hosted one. See
-[docs/LANGUAGE_MODELS.md](docs/LANGUAGE_MODELS.md).
-
----
-
-## What a skill adds to an AI assistant
-
-The DisSysLab library has components for dealing with concurrency.
-Message passing, construction of networks of agents, distributed
-termination detection, checkpointing and recovery come from the library,
-and are not generated afresh by AI assistants for each app.
-
-You can extend an app -- add, modify, or remove components in a
-distributed app -- by continuing a conversation with the AI assistant.
-When the app is modified the skilled assistant automatically runs 
-tests to check the entire app after it has been modified.
-For example, we describe an app that helps you develop new stock-trading strategies
-and test them on historical data. Each time you develop a new strategy
-the skilled assistant checks that the strategy does not use future prices to 
-determine current trades. The tests are built into the skill without
-knowing how apps will be constructed or modified.
-
+[course/SETUP.md](course/SETUP.md) is the same path at more length,
+with what to do when a step misbehaves. **Students** begin at
+[course/START_HERE.md](course/START_HERE.md). **Contributors** begin
+at [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
-### What it costs
+# 2. What is in it
 
-The library is free and so is running it. Some applications use only 
-Python and no LLMs -- these apps are free. Others need a language model
-for example to determine whether the sentiment of an article is positive.
-You have two choices there, and the assistant will set either up for you. A
-model running on your own machine (Ollama) is free and needs no
-account, but requires a reasonably recent laptop. A hosted model needs an
-account and costs a few cents per day for a person's typical morning
-brief containing news, weather and simple analysis. You can build applications
-that use different LLMs; for instance using free models for simple
-steps and a paid ones only where necessary.
+## The library
 
-Every application from this repository stops after a few cycles. 
-This is so that you don't run up a large bill for using LLMs.
-Most of the apps are designed to run forever and you can tell the app to do so.
-[docs/LANGUAGE_MODELS.md](docs/LANGUAGE_MODELS.md) has the details.
+Everything an application needs in order to keep running and pass
+messages, written once and tested: agents as threads with named
+inboxes and outboxes, the network that connects them, distributed
+termination detection, the Chandy–Lamport global snapshot for
+checkpoint and resume, and a library of sources, sinks and roles to
+build from. `dsl list` shows the shipped offices; `dsl check` reads an
+office and reports its structural faults without running it;
+`dsl draw` renders it; `dsl doctor` checks an installation.
 
----
+## The skills
 
-## What was built
+A skill is a folder of instructions an assistant loads — an open
+format, the same `SKILL.md` in Claude Code, Codex and Gemini CLI.
+DisSysLab has two kinds.
 
-Nothing in this section is needed in order to start. It describes the
-artifact the assistant produces, and how to read it.
+**The basic skills** know how to build an office: the grammar, the
+role library, the sources and sinks, and the check-and-fix loop.
+`office-builder` covers offices in general and
+`sensor-office-builder` covers the shape where a model classifies a
+signal.
 
-The assistant writes an **office**: a network of agents, each with one
-job. Sources fetch from the world, agents transform the stream, and
-sinks act on the result. An office runs continuously.
+**Domain skills** add a field's components and, more to the point, a
+field's characteristic mistakes as checks that run against code the
+check's author never saw. Trading is the one that exists. Before a
+strategy is traded on, three mechanical checks run: that it produces
+one finite signal per bar, that it is deterministic, and that it does
+not use tomorrow's prices to make today's decision — the last verified
+by recomputing on truncated history and failing if any earlier
+decision moves once later bars are added.
 
+Look-ahead bias is not a concurrency bug. It is a finance bug, and
+only someone who knows finance knows to check for it. That is the
+pattern the project is exploring: a domain expert contributes their
+field's parts and their field's suspicions, and inherits the
+concurrency. One domain exists. One instance is not evidence that a
+pattern generalises.
+
+## What the assistant writes
+
+An **office** is a network of agents, each with one job. Sources fetch
+from the world, agents transform the stream, sinks act on the result.
 The office below reads three news feeds, removes duplicates, extracts
-four kinds of information in parallel, waits for all four, and writes a
-briefing.
+four kinds of information in parallel, waits for all four, and writes
+a briefing.
 
 ```mermaid
 flowchart LR
@@ -350,55 +313,147 @@ Sync's out is Riley.
 Riley's out is intelligence_display, jsonl_recorder_briefing.
 ```
 
-**You do not write this file. You read it.** The agent writes it; the
-office is the record of what was built, and reading it is how you check
-that the assistant built what you meant. It is also what you revise by
-conversation: you say what should change, and the assistant changes the
-file.
+**You do not write this file. You read it.** It is the record of what
+was built, and reading it is how you check that what the assistant
+understood is what you meant. It is also what you revise: you say what
+should change, and the assistant changes the file.
 
-Each agent's job is either an English description in `roles/<name>.md`,
-run by a language model, or Python in `roles/<name>.py`, which is
-deterministic and costs nothing to run. English suits jobs that need
-judgment. Python suits jobs that are exact.
+Each agent's job is either English in `roles/<name>.md`, run by a
+language model, or Python in `roles/<name>.py`, which is deterministic
+and costs nothing. An office is itself a black box with inboxes and
+outboxes, so an office may contain offices.
 
-Two further properties. An office is a black box with inboxes and
-outboxes, so an office may contain offices. And each agent names its own model backend
-— `Eve's AI is ollama.` alongside `Riley's AI is claude.` — so an
-application need not be uniformly expensive. The supported backends are
-`anthropic`, `openai`, `gemini`, `openrouter` and `ollama`.
-
----
-
-## Why the language is small
-
-`dsl check` reports an office's structural faults before it runs: an
-inbox nothing writes to, an agent nothing can reach, work that reaches
-no sink, a sink nothing feeds, a role with no file behind it, a source
-or sink name that is in no registry, a feedback loop with no gate.
+## Why the grammar is small
 
 ```bash
 dsl check my_office
 ```
 
-This is the reason `office.md` has a narrow grammar. The language is
-small and rigid not so that a person can write it, but so that
-`dsl check` can catch what a language model got wrong before the office
-runs. A more expressive language would be pleasanter to write by hand
-and would defeat its own purpose: the narrower the grammar, the more of
-a generated office can be checked mechanically.
+`dsl check` reports an office's structural faults before it runs: an
+inbox nothing writes to, an agent nothing can reach, work that reaches
+no sink, a sink nothing feeds, a role with no file behind it, a source
+or sink name in no registry with the nearest real name suggested, a
+sub-office whose folder is not there, a feedback loop with no gate.
 
-The check is structural. It cannot see faults that depend on what
-happens at run time. An office whose diagram is correct can still
-deadlock, because whether a message is ever readable may depend on
-execution history rather than on the graph. That boundary is one of the
-subjects the course treats.
+That is why `office.md` has a narrow grammar. The language is small
+not so that a person can write it, but so that a checker can catch
+what a language model got wrong before anything runs. A more
+expressive language would be pleasanter to write by hand and would
+have less of it checkable.
+
+An office still being described is a **draft** — some agent's job is
+undecided — and then the same findings are reported as remaining work
+rather than faults, and `dsl check` exits 0. An unfinished office is
+not a broken one.
+
+The check is structural, and it stops where structure stops. An office
+whose diagram is correct can still deadlock, because whether a message
+is ever readable can depend on execution history rather than on the
+graph. That boundary is one of the subjects the course teaches.
+
+## What it costs
+
+The library is free and so is running it. Offices that use only Python
+cost nothing at all. Where an agent needs a language model you have
+two choices, and the assistant will set up either: a model on your own
+machine through Ollama, free and accountless but wanting a reasonably
+recent laptop; or a hosted model, a few cents a day for a typical
+morning brief. Agents in one office can use different models —
+`Eve's AI is ollama.` alongside `Riley's AI is claude.` — so an
+application need not be uniformly expensive.
+
+**Every office in this repository stops after a few cycles by
+default**, so that nobody meets this project by way of a bill. Most
+are designed to run indefinitely and you can say so.
+[docs/LANGUAGE_MODELS.md](docs/LANGUAGE_MODELS.md) has the details.
 
 ---
 
+# 3. How Vikram's application was built
+
+Not a recommendation. A record of what we actually did, because the
+interesting part is which skill supplied what.
+
+**He asked for a backtest of several trend-following rules, ranked.**
+The `office-builder` skill turned that into an office: one price
+source, a validation gate, a market-context agent, four strategy
+families fanning out to eleven backtester instances, a synchronizer
+joining them, and an evaluator ranking the results. Adding a twelfth
+variant is an agent line and two connection lines. Nothing about that
+office is specific to trading — it is the same fan-out and fan-in as
+the news briefing above.
+
+**The trading skill supplied the parts that are about markets.** The
+strategy contract — a function from bars and parameters to one signal
+per bar, where the signal is a position fraction rather than a
+direction — and the three checks, look-ahead among them. Those checks
+run against strategies their author never saw.
+
+**Then he told us the thing we had not thought of.** He could read the
+ranking but could not tell whether the code implemented the rule he
+had in his head, and he was not going to read Python to find out. So
+we added a third thing: a per-bar trace, written as a spreadsheet,
+with every intermediate quantity shown twice — once as the number and
+once as a live Excel formula. That was not in either skill. It came
+from a tester saying what he could not see.
+
+**What we would do differently, stated plainly.** The office assumed a
+git clone for eighteen months without anyone noticing, because we
+only ever ran it from one. The look-ahead check is offered as a script
+rather than run as part of building the office, so an eleven-agent
+fan-out can contain a strategy nobody checked. And ranked output —
+*"show me the top 10"* — is what he asked for next, and is not built.
+
+---
+
+## Then study the algorithms underneath
+
+The second half of the point. A student builds something they care
+about, and then finds out what was holding it up.
+
+- **Termination detection.** How does an office know that no agent
+  will ever send another message, when no agent can see the whole
+  system? It does this every time it exits cleanly.
+- **Global snapshots.** The Chandy–Lamport distributed snapshot is
+  implemented;
+  [dissyslab/gallery/apps/recovery_demo/](dissyslab/gallery/apps/recovery_demo/)
+  interrupts an office mid-run and resumes it.
+- **Causal order.** `dsl run --trace` records what every agent did,
+  and `dsl explain-trace` merges the per-agent logs into one sequence
+  ordered by logical timestamp. Reading it is how you see that
+  "before" in a distributed system is not the same as "earlier on the
+  clock".
+
+The formal treatment behind the course is *Parallel Program Design: A
+Foundation*, K. Mani Chandy and Jayadev Misra (Addison-Wesley, 1988).
+Algorithm notes are in [docs/algorithms/](docs/algorithms/).
+
+## What it does not do
+
+Stated plainly, so that nobody infers a promise the software does not
+keep.
+
+- **Single machine.** An office runs in one process, each agent in a
+  thread. Per-agent process parallelism does not work, so eleven
+  backtesters running concurrently is concurrency and not speed. The
+  intended unit is a whole office, which is designed and not built
+  ([docs/internals/design/process_per_office_design.md](docs/internals/design/process_per_office_design.md)).
+- **Checkpoint-recovery is opt-in.** An office has it where the author
+  of a stateful agent has written `save_state` and `load_state`.
+- **Deadlock detection does not exist.** `dsl check` finds structural
+  faults only.
+- **Domain checks are not proofs.** They catch the mistakes a field
+  knows it makes. They do not establish that what was built is what
+  you meant. The conversation does that, and you stay in it.
+- **One domain library exists.** Trading. No others.
+- **No first-party web interface.** Offices produce files: HTML,
+  JSONL, text.
+- **Platforms.** Linux and macOS are supported and in CI. Windows runs
+  and is in CI, with setup notes in [docs/WINDOWS.md](docs/WINDOWS.md).
+
 ## Running an office without an assistant
 
-The library runs on its own. The following installs it, copies a
-shipped office into a folder you own, and runs it.
+The library stands on its own.
 
 ```bash
 pip install dissyslab
@@ -406,118 +461,48 @@ dsl init periodic_brief my_brief
 cd my_brief && dsl run .
 ```
 
-No API key, no account, and no model download. After ten to twenty
-seconds the office has written a styled HTML brief from live news
-headlines and current weather.
+No API key, no account, no model download. After ten to twenty seconds
+the office has written a styled HTML brief from live news headlines
+and current weather.
 
 <p align="center">
-  <img src="docs/images/brief_hero.png" alt="brief.html produced by the periodic_brief office" width="472">
+  <img src="docs/images/brief_hero.png" alt="brief.html produced by the periodic_brief office" width="420">
 </p>
 
-This is the library shown by hand, not the intended way to use it. It
-is here as evidence that the machinery is real and runs without an
-account.
-
-`dsl list` shows the shipped offices — 31 applications and 9 smaller
-examples. `dsl doctor` checks an installation and runs a small office
-as a self-test. Use `dsl init` rather than running a shipped office
-where it sits, so that its output does not land inside the installed
-package.
-
----
-
-## Domain libraries, and the tests they carry
-
-The concurrency library is domain-independent. Above it sit libraries
-for particular application spaces, which add that space's components
-and — the point of the opening's last paragraph — that space's tests.
-A domain knows the mistakes it characteristically makes, and can check
-for them in code it did not write.
-
-The domain library that is built is trading. It holds a backtester and a paper
-trader, and its skill in
-[dissyslab/gallery/apps/paper_trader/skill/](dissyslab/gallery/apps/paper_trader/skill/)
-runs three checks on a strategy the skill's author never saw: that the
-strategy meets the interface contract, that it is deterministic, and
-that it does not use a day's future prices to make that day's decision.
-The last is the look-ahead error, which flatters a strategy on history
-and fails it in practice.
-
-This is the pattern the project claims transfers: a domain expert
-contributes their field's components and their field's characteristic
-mistakes, and inherits the concurrency machinery. One domain is built.
-That is one instance, and not yet evidence that the pattern
-generalises.
-
----
-
-## Current limitations
-
-Stated plainly, so that no one infers a promise the software does not
-keep.
-
-- **Single machine.** An office runs in one process with each agent in
-  a thread. Per-agent process parallelism does not work. The intended
-  unit is a whole office, which is designed but not built
-  ([docs/internals/design/process_per_office_design.md](docs/internals/design/process_per_office_design.md)).
-  Distribution across machines is roadmap.
-- **Checkpoint-recovery is opt-in.** The Chandy–Lamport distributed
-  snapshot is implemented, and
-  [recovery_demo](dissyslab/gallery/apps/recovery_demo/) demonstrates
-  it end to end. An office has it where the author of a stateful agent
-  has added `save_state` and `load_state`.
-- **Deadlock detection does not exist.** `dsl check` finds structural
-  faults only.
-- **Domain checks are not proofs.** They catch the mistakes a domain
-  knows it makes. They do not establish that what the assistant built is
-  what you meant. The conversation does that, and you remain in it.
-- **One domain library exists.** Trading is built and tested. No
-  others are.
-- **No first-party web UI.** Offices produce files: HTML, JSONL, text.
-- **Platforms.** Linux and macOS are supported and in CI. Windows runs
-  and is in CI, with setup notes in
-  [docs/WINDOWS.md](docs/WINDOWS.md).
-
----
+This is not the intended way to use the library; it is here as
+evidence that the machinery is real and runs without an assistant.
 
 ## Why I am building this
 
-Sense-and-respond systems have been used by large institutions for
-decades. Militaries formalised them as the OODA loop. Stephan Haeckel
-introduced "sense and respond" as a business methodology in 1992. In
+Sense-and-respond systems have belonged to large institutions for
+decades. Militaries formalised them as the OODA loop; Stephan Haeckel
+introduced "sense and respond" as a business methodology in 1992; in
 2009 Roy Schulte and I published *Event Processing: Designing IT
 Systems for Agile Companies* (Morgan Kaufmann). I worked on two
-startups building such systems, and helped build earthquake-warning and
-radiation-detection systems; see *Community Sense and Response Systems:
-Your Phone as Quake Detector*, CACM, July 2014.
+startups building such systems, and helped build earthquake-warning
+and radiation-detection systems — see *Community Sense and Response
+Systems: Your Phone as Quake Detector*, CACM, July 2014.
 
-Those systems belonged to institutions because only institutions had
-the expertise and the compute. Language models change that. A person
-can describe an office in plain English and rely on tested machinery
-for the parts that are hard to get right.
+They belonged to institutions because only institutions had the
+expertise and the compute. That is what has changed. A person can now
+describe an office in plain English and lean on tested machinery for
+the parts that are hard to get right.
 
 I am using this to teach distributed algorithms to undergraduates,
-including first-year students. Each student builds a system for
-something they care about, and we then study the algorithms holding it
-up: termination detection, global snapshots, consensus. The framework
-implements the Chandy–Lamport snapshot algorithm, and for the formal
-treatment behind the course see *Parallel Program Design: A
-Foundation*, K. Mani Chandy and Jayadev Misra (Addison-Wesley, 1988).
-
----
+first-year students included. The measure I hold it to is one
+sentence: **a first-year builds an application they care about, and
+then studies the algorithms underneath it.**
 
 ## Repository map
 
 | Path | Contents |
 |---|---|
-| [skills/](skills/) | Skills an agent loads to build offices |
+| [skills/](skills/) | Skills an assistant loads to build offices |
 | [course/](course/) | The course: setup, what you build, the catalogue |
 | [docs/](docs/) | Reference: components, backends, algorithms, internals |
 | [dissyslab/](dissyslab/) | The library and the gallery |
 | [tests/](tests/) | The suite; CI runs it on Python 3.10–3.14 |
 | [archive/](archive/) | Dated documents, kept but not maintained |
-
----
 
 ## Install from source
 
@@ -529,17 +514,12 @@ pip install -e ".[dev]"
 dsl doctor && pytest tests/ -q
 ```
 
-Note the `[dev]`. A plain `pip install -e .` runs offices but omits the
-test tools. Python 3.10 or newer. Market-data offices need the optional
-extra: `pip install "dissyslab[market]"`.
-
-For offices with language-model agents, choose a backend and export its
-credentials; see [docs/API_KEY_SETUP.md](docs/API_KEY_SETUP.md) and
-[docs/LANGUAGE_MODELS.md](docs/LANGUAGE_MODELS.md). Every shipped
-office stops after a few cycles by default, so a run will not
-accumulate cost unattended.
-
----
+Note the `[dev]`: a plain `pip install -e .` runs offices but omits
+the test tools. Market-data offices need
+`pip install "dissyslab[market]"`. For offices with language-model
+agents, choose a backend and export its credentials — see
+[docs/API_KEY_SETUP.md](docs/API_KEY_SETUP.md) and
+[docs/LANGUAGE_MODELS.md](docs/LANGUAGE_MODELS.md).
 
 ## License
 
