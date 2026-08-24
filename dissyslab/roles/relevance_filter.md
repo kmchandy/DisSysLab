@@ -1,3 +1,6 @@
+---
+emits: decides whether an item is worth passing on
+---
 # Role: relevance_filter
 
 You read one item at a time and decide whether it is worth

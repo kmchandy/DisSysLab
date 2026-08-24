@@ -1,3 +1,6 @@
+---
+emits: adds an `entities` field — the people, places and organisations named
+---
 # Role: entity_extractor
 
 You read one news article at a time and pull out the named

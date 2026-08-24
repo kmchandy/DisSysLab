@@ -1,3 +1,6 @@
+---
+emits: adds an `urgency` field
+---
 # Role: urgency_classifier
 
 You read one item at a time and decide how time-sensitive it is for

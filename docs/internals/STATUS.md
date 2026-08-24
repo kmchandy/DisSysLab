@@ -34,14 +34,13 @@ Three tracks, on different clocks.
 
 ## 1. Course-blocking. Do first.
 
-**Fix the timed-out office that cannot be shut down.**
-`run_network(timeout=T)` raises `TimeoutError`, but nothing tells the
-agents to stop — `os_agent` sends `_Shutdown` only when it declares
-termination, and the timeout path does not. Agent threads are
-`daemon=False`, so they park in `recv` and the process cannot exit.
-A student meets this in the first hour and concludes Ctrl-C is broken.
-Small fix, changes `Network.run` for every caller. See the note at the
-foot of `tests/unit/test_alarm.py`.
+**The timed-out office is fixed.** `Network._stop_all_agents` runs
+before the `TimeoutError`: `_Shutdown` into every inport queue, into
+every source's OS queue, and `request_stop()` on `os_agent` — whose
+loop returns only when it *declares termination*, which at a timeout
+is false by construction, so without that last part the manager
+outlived every agent it managed and the process still hung. That third
+part was not in the written diagnosis; running it is what found it.
 
 **Release 1.7.2 — and ship the skill with it.** The repository is
 ahead of the wheel by W5 (nearest-spelling suggestion for an unknown
@@ -129,11 +128,15 @@ assistant's half is not. Design in
 [building_by_conversation.md](design/building_by_conversation.md): §3
 and §4 built, §5 (the turn protocol) and §7 open.
 
-**Four things the storyboard found that no design covers.** A way to
-list library roles with one line each on what they *emit* — there is
-no registry, no `dsl roles`, and no summary line, so an assistant
-paraphrases the prompt files afresh every time and no two students are
-told the same thing. A protocol for teaching turns (*"what is a
+**`dsl roles` is built.** Every role file now opens with an
+`emits:` front-matter line, `dsl roles` prints the table, and a test
+fails if a role is added without one. The outbox list is extracted by
+the same `send to <name>` rule the framework uses and pinned to it by
+a test — the first version matched a literal space, so a wrapped
+"send to\nkeep" was missed and the catalogue reported one outbox where
+the office wires two.
+
+**Three of the storyboard's four remain.** A protocol for teaching turns (*"what is a
 source?"* asked mid-build) as distinct from building turns. What to
 call a role invented for one agent, since `Dan is a dan.` is what the
 grammar produces today. And an answer to *"undo that"*, which will be

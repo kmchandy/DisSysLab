@@ -1,3 +1,6 @@
+---
+emits: adds a `severity` field — how significant the item is
+---
 # Role: severity_classifier
 
 You read one news article at a time and decide how

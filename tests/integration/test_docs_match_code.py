@@ -560,6 +560,12 @@ MODULES_WITHOUT_DOCS: dict[str, str] = {
     "snapshot.py": "covered by os_agent_implementation and the algorithm docs",
     "utils.py": "grab-bag; no single subject to document",
     "builder.py": "has its own pair already",
+    "roles_catalogue.py": (
+        "the front-matter format and why each role must say what it "
+        "emits are in its own docstring; what a user does with it is "
+        "`dsl roles`, documented in the skill's role reference where "
+        "someone choosing a role is reading"
+    ),
     "market_fetch.py": (
         "one command's worth of logic, and the reasoning -- why it is a "
         "subcommand an assistant can run rather than a script in a "

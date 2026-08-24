@@ -1,3 +1,6 @@
+---
+emits: adds a `brief` field — a short paragraph a busy reader can scan
+---
 # Role: summary_writer
 
 You read one item at a time, including any annotations earlier

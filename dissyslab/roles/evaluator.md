@@ -1,3 +1,6 @@
+---
+emits: adds `verdict` (publish or revise) and the reason for it
+---
 # Role: evaluator
 
 You read one written briefing at a time and decide whether

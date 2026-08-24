@@ -1,3 +1,6 @@
+---
+emits: adds a `sentiment` field — positive, negative or neutral
+---
 # Role: sentiment_classifier
 
 You read one item at a time and decide its sentiment — whether the

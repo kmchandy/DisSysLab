@@ -604,6 +604,23 @@ def cmd_draw(args: argparse.Namespace) -> int:
     return 0
 
 
+# ── Subcommand: roles ─────────────────────────────────────────────────────────
+
+def cmd_roles(args: argparse.Namespace) -> int:
+    """List the built-in roles and what each one adds to a message.
+
+    Nothing could do this before, so an assistant asked "what roles are
+    there?" read the thirteen prompt files and paraphrased -- afresh
+    each time, so no two students were told the same thing about
+    `summarizer`. The emitted field is the fact a user needs in order
+    to wire the next agent.
+    """
+    from dissyslab.roles_catalogue import catalogue, format_catalogue
+
+    print(format_catalogue(catalogue()), end="")
+    return 0
+
+
 # ── Subcommand: fetch-prices ──────────────────────────────────────────────────
 
 def cmd_fetch_prices(args: argparse.Namespace) -> int:
@@ -1927,6 +1944,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="print the diagram without the ```mermaid fence",
     )
     p_draw.set_defaults(handler=cmd_draw)
+
+    p_roles = sub.add_parser(
+        "roles",
+        help="list the built-in roles and what each one adds",
+        description=(
+            "Print every role that ships with dissyslab, with the field "
+            "each one adds to a message.\n\n"
+            "The emitted field is the part you need in order to wire "
+            "the next agent: something downstream of a "
+            "severity_classifier reads `severity`, and knowing only "
+            "that the role 'decides how significant an item is' leaves "
+            "you guessing.\n\n"
+            "`dsl show <name>` prints a role in full. If none of them "
+            "fit, describe what you want in a sentence and your "
+            "assistant will write the role from your words."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_roles.set_defaults(handler=cmd_roles)
 
     p_fetch = sub.add_parser(
         "fetch-prices",

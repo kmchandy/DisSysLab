@@ -1,3 +1,6 @@
+---
+emits: adds `headline` and `summary` — the item rewritten for a reader
+---
 # Role: writer
 
 You read one enriched news article at a time and produce a

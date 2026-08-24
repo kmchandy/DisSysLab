@@ -21,8 +21,8 @@ import time
 
 import pytest
 
-from dissyslab.blocks import Sink, Source, Transform
 from dissyslab import network
+from dissyslab.blocks import Sink, Source, Transform
 
 
 def _forever_source():

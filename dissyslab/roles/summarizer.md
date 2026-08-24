@@ -1,3 +1,6 @@
+---
+emits: adds a `summary` field — one plain-English sentence
+---
 # Role: summarizer
 
 You read one item at a time and write a one-sentence summary of

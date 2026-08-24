@@ -1,3 +1,6 @@
+---
+emits: adds a `topic` field
+---
 # Role: topic_tagger
 
 You read one news article at a time and assign it to one of

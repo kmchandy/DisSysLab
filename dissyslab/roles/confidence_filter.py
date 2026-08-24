@@ -1,6 +1,10 @@
 # dissyslab/roles/confidence_filter.py
 
 """
+---
+emits: passes on only the messages whose confidence clears a threshold you set
+outboxes: out
+---
 ``confidence_filter`` — a framework-level specialist agent.
 
 Watches a stream of classifier outputs (or any messages that carry

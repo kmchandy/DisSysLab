@@ -1,3 +1,6 @@
+---
+emits: adds a `category` field — one of a fixed list you set
+---
 # Role: category_classifier
 
 You read one item at a time and assign it to exactly one category
