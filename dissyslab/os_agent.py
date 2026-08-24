@@ -49,6 +49,7 @@ from queue import SimpleQueue, Empty
 from typing import Dict, List, Tuple, Any, Set, Optional
 from pathlib import Path
 import sys
+import threading
 import time
 
 from dissyslab.core import (
@@ -80,6 +81,12 @@ class OsAgent:
         self.all_agents = dict(agents)
         self.graph_connections = list(graph_connections)
         self.poll_interval = poll_interval
+        # Set by Network._stop_all_agents on the timeout path. The
+        # loop below exits only when it declares termination, which is
+        # by definition not what happened at a timeout -- so without
+        # this the manager thread outlives every agent it manages and
+        # the process still cannot exit.
+        self._stop_event = threading.Event()
 
         # Input queue — all agents post messages here via send_os()
         self.in_q = SimpleQueue()
@@ -191,12 +198,17 @@ class OsAgent:
         the existing count responses.
         """
         while True:
+            if self._stop_event.is_set():
+                return
             # Send this round's poll, THEN wait, THEN collect — so the
             # replies we drain answer the round we just sent. That lets
             # the passivity check (reply round == current round) mean
             # "this agent is blocked in recv right now."
             self._send_give_me_counts()
-            time.sleep(self.poll_interval)
+            # wait() rather than sleep() so a stop request is noticed
+            # immediately instead of after the rest of this poll cycle.
+            if self._stop_event.wait(self.poll_interval):
+                return
             self._drain_responses()
 
             # Periodic snapshot trigger (v1.6).
@@ -366,6 +378,14 @@ class OsAgent:
         return True
 
     # ── Shutdown ──────────────────────────────────────────────────────────────
+
+    def request_stop(self) -> None:
+        """Ask the manager loop to return at its next opportunity.
+
+        Used on the timeout path, where ``_terminated()`` is false by
+        definition and the loop would otherwise never end.
+        """
+        self._stop_event.set()
 
     def _shutdown_all(self) -> None:
         """

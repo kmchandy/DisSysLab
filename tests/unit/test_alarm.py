@@ -243,7 +243,7 @@ def test_resume_with_no_obligation_starts_nothing():
     assert a._worker is None
 
 
-# ── A pre-existing bug this file must work around ────────────────────────
+# ── A bug this file used to work around. Fixed 24 Aug 2026. ──────────────
 #
 # `run_network(timeout=T)` raises TimeoutError when agents are still
 # running, but nothing tells those agents to stop: os_agent sends
@@ -258,7 +258,18 @@ def test_resume_with_no_obligation_starts_nothing():
 # cannot assert "this office should not terminate" by running it to a
 # timeout.
 #
-# The fix is small: send `_Shutdown` to every agent on the timeout path
-# before raising, so the office stops the same way it would on a clean
-# termination. Not done here because it changes `Network.run` for every
-# caller and belongs in its own change.
+# Fixed. `Network._stop_all_agents` now runs before the TimeoutError is
+# raised: `_Shutdown` into every client inport queue, `_Shutdown` into
+# every source's OS queue, and `request_stop()` on os_agent itself --
+# whose loop returns only when it *declares termination*, which is by
+# definition not what happened at a timeout. That last part was found
+# by running it: every client stopped and os_agent_thread was still
+# alive, so the process still could not exit.
+#
+# Threads that genuinely cannot notice in time -- one asleep between
+# polls, one blocked in a network call -- are named in the report
+# rather than hidden. See tests/unit/test_timeout_shutdown.py.
+#
+# The workaround below stays: this file has no need to run an office to
+# a timeout, and a test that does not depend on the fix is one less
+# thing to re-verify.

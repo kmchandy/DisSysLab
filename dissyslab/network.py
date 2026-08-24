@@ -10,6 +10,7 @@ This module provides:
 """
 
 from __future__ import annotations
+import time
 from typing import Optional, List, Dict, Tuple, Any, Union
 from queue import SimpleQueue
 from collections import deque
@@ -624,6 +625,70 @@ class Network:
             msgs = "; ".join(f"{n}: {repr(e)}" for n, e in errors)
             raise RuntimeError(f"Startup failed for agent(s): {msgs}")
 
+
+    def _stop_all_agents(self, grace: float = 2.0) -> list:
+        """Tell every agent to stop, and wait a little for it to.
+
+        Used on the timeout path. Before this existed, ``run(timeout=T)``
+        raised ``TimeoutError`` and told nobody: ``os_agent`` sends
+        ``_Shutdown`` only when it *declares termination*, and a timeout
+        is the case where it did not. Agent threads are ``daemon=False``,
+        so they stayed parked in ``recv`` and the process could not
+        exit -- the timeout was reported, and then the program hung. A
+        student meets that in the first hour and concludes Ctrl-C is
+        broken.
+
+        Two channels, because agents stop in two different ways:
+
+        * a non-source blocks in ``recv``, so ``_Shutdown`` goes into
+          each of its inport queues and ``recv`` raises
+          ``_ShutdownSignal``;
+        * a source has no inports and polls a dedicated OS queue
+          between items, so ``_Shutdown`` goes there and ``_poll_os``
+          raises the same signal.
+
+        Returns the threads still alive after the grace period. Some
+        will be: a source asleep for a long poll interval, or one
+        blocked in a network call, cannot notice until it comes back.
+        That is worth reporting rather than hiding, and it is why this
+        returns a list instead of a bool.
+        """
+        from dissyslab.core import Agent, _Shutdown
+
+        msg = _Shutdown()
+
+        # Non-sources: every inport queue, because an agent with one
+        # worker thread per inport needs one _Shutdown per thread.
+        if self._os_agent is not None:
+            try:
+                self._os_agent._shutdown_all()
+                # And the manager itself. Its loop returns only when it
+                # declares termination, which is by definition not what
+                # happened here -- so without this the manager outlives
+                # every agent it manages and the process still cannot
+                # exit. Found by running it: the clients all stopped and
+                # os_agent_thread was still alive.
+                self._os_agent.request_stop()
+            except Exception:  # noqa: BLE001 - best effort on the way out
+                pass
+
+        # Sources: the dedicated OS queue they poll between items.
+        for agent in self.agents.values():
+            os_q = agent.in_q.get(Agent._OS_PORT_NAME)
+            if os_q is not None:
+                try:
+                    os_q.put(msg)
+                except Exception:  # noqa: BLE001
+                    pass
+
+        deadline = time.time() + grace
+        for t in self.threads:
+            remaining = deadline - time.time()
+            if remaining <= 0:
+                break
+            t.join(timeout=remaining)
+        return [t for t in self.threads if t.is_alive()]
+
     def run(self, timeout: Optional[float] = 30.0) -> None:
         """
         Start all agent threads and wait for completion.
@@ -676,14 +741,28 @@ class Network:
                 failed_threads.append(t)
 
         if hung_threads:
+            # Stop them before reporting. Raising first and stopping
+            # never was the old behaviour, and it left non-daemon
+            # threads parked in recv so the interpreter could not
+            # exit: the timeout was printed and then the program hung.
+            still_alive = self._stop_all_agents()
+
             print("\n" + "="*70)
             print("NETWORK TIMEOUT - AGENTS STILL RUNNING:")
             print("="*70)
             print(f"\n  Network did not complete within {timeout} seconds")
-            print(f"\n  Agents still running:")
+            print("\n  Agents still running when the timeout fired:")
             for t in hung_threads:
                 agent_name = t.name.replace("_thread", "")
                 print(f"   - {agent_name}")
+            if still_alive:
+                print("\n  Asked to stop, and still running:")
+                for t in still_alive:
+                    print(f"   - {t.name.replace('_thread', '')}")
+                print("  (an agent asleep between polls, or blocked in a")
+                print("   network call, cannot notice until it comes back)")
+            else:
+                print("\n  All agents stopped.")
             print("="*70)
             raise TimeoutError(
                 f"Network timed out after {timeout}s. "
