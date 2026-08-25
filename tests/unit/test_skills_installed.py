@@ -15,7 +15,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from dissyslab.skills_installed import (
+    BASIC_SKILLS,
     DISSYSLAB_SKILLS,
+    DOMAIN_SKILLS,
     find_installed,
     report_lines,
     search_roots,
@@ -136,6 +138,61 @@ def test_search_roots_never_raises_without_a_home(monkeypatch):
     fail the one command people run when something is already wrong."""
     assert search_roots() == search_roots()
     assert all(isinstance(r, Path) for r in search_roots())
+
+
+# ── basic skills are required; domain skills are not ──────────────────
+
+
+def test_a_missing_domain_skill_is_not_reported_as_missing(tmp_path, monkeypatch):
+    """Su installs office-builder and nothing else, and her doctor
+    output must not accuse her of missing a trading skill. A report
+    that lists every optional thing you have not got is a report
+    people stop reading, and the one line that mattered goes with it.
+    """
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
+    _install(tmp_path / "home" / ".claude" / "skills", "office-builder")
+
+    text = "\n".join(report_lines(cwd=tmp_path))
+    for name in DOMAIN_SKILLS:
+        assert name not in text, (
+            f"doctor mentions {name}, which is not installed and was "
+            "never asked for."
+        )
+
+
+def test_a_missing_basic_skill_is_still_reported(tmp_path, monkeypatch):
+    """The other half of the same rule. Silence about domain skills
+    must not become silence about the ones that matter."""
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
+    (tmp_path / "home").mkdir()
+
+    text = "\n".join(report_lines(cwd=tmp_path))
+    for name in BASIC_SKILLS:
+        assert f"{name}: not installed" in text
+
+
+def test_an_installed_domain_skill_is_reported(tmp_path, monkeypatch):
+    """Absence is silent; presence is not. Vikram needs to see which
+    version of the trading skill is loaded for the same reason Su needs
+    to see office-builder's — an install can report success while the
+    old copy stays resident."""
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
+    _install(
+        tmp_path / "home" / ".claude" / "skills",
+        "backtest-strategy-builder",
+        version="2026-08-25.d01444c",
+    )
+
+    text = "\n".join(report_lines(cwd=tmp_path))
+    assert "[OK] backtest-strategy-builder 2026-08-25.d01444c" in text
+
+
+def test_every_shipped_skill_is_classified():
+    """A skill added to skills/ and to DISSYSLAB_SKILLS but to neither
+    BASIC_SKILLS nor DOMAIN_SKILLS would be looked for and then never
+    reported either way."""
+    assert set(DISSYSLAB_SKILLS) == set(BASIC_SKILLS) | set(DOMAIN_SKILLS)
+    assert not (set(BASIC_SKILLS) & set(DOMAIN_SKILLS))
 
 
 def test_the_shipped_skills_are_the_ones_we_look_for():

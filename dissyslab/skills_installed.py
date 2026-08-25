@@ -33,9 +33,21 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
+#: The skills everyone needs. Absence is worth reporting: without
+#: these an assistant improvises its own concurrency.
+BASIC_SKILLS = ("office-builder", "sensor-office-builder")
+
+#: A field's skills, installed deliberately by someone working in that
+#: field. Absence is the normal case and is *not* reported as missing:
+#: telling a twelve-year-old watching Mars news that she lacks a
+#: trading skill is a false alarm, and a doctor that cries wolf stops
+#: being read. Presence is reported, because a stale or duplicated
+#: copy is a real thing to see.
+DOMAIN_SKILLS = ("backtest-strategy-builder",)
+
 #: Skills that belong to this project. A directory called something
 #: else is somebody else's skill and none of our business.
-DISSYSLAB_SKILLS = ("office-builder", "sensor-office-builder")
+DISSYSLAB_SKILLS = BASIC_SKILLS + DOMAIN_SKILLS
 
 _NAME_RE = re.compile(r"^name:\s*(\S+)\s*$", re.M)
 _VERSION_RE = re.compile(r"Skill version: `(\d{4}-\d{2}-\d{2}[a-z]?\.[0-9a-f]{7})`")
@@ -143,7 +155,10 @@ def report_lines(cwd: Path | None = None) -> list[str]:
     for name in DISSYSLAB_SKILLS:
         hits = by_name.get(name, [])
         if not hits:
-            lines.append(f"  [    ] {name}: not installed")
+            # A domain skill nobody in this field installed is not a
+            # fault, so it is not reported at all.
+            if name not in DOMAIN_SKILLS:
+                lines.append(f"  [    ] {name}: not installed")
             continue
         for skill in hits:
             version = skill.version or "no version string"

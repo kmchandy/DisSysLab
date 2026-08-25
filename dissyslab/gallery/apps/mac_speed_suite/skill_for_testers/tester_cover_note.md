@@ -21,7 +21,7 @@ anyone needing to touch the underlying Python framework.
 2. **Install the skill from your own session.** With that folder connected,
    just ask Claude something like "show me the backtest-strategy-builder
    skill" -- it'll find
-   `dissyslab/gallery/apps/mac_speed_suite/skill_for_testers/backtest-strategy-builder.skill`
+   `skills/backtest-strategy-builder.skill`
    in the repo and show you a "Save skill" button right there; click it.
    (If you got the `.skill` file as an email attachment instead, don't
    double-click it in Finder -- depending on your file associations that

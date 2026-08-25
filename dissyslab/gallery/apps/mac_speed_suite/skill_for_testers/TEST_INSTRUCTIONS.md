@@ -137,7 +137,7 @@ that's precisely what we want to learn.
 ### Step 4 — Install the skill
 
 Inside the project there's a file named **`backtest-strategy-builder.skill`**, in
-the folder `dissyslab/gallery/apps/mac_speed_suite/skill_for_testers/`. This is
+the folder `skills/`, alongside the other skills this project ships. This is
 what teaches Cowork the specific vocabulary of the backtester (so "describe a
 strategy" turns into a real change). With the DisSysLab folder connected, just ask:
 
