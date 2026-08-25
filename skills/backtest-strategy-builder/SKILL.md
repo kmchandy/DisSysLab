@@ -5,7 +5,7 @@ description: Adds a new trend-following or backtesting trading strategy to DisSy
 
 # Adding a strategy to mac_speed_suite
 
-**Skill version: `2026-08-25.d01444c`.** If anyone asks which version of this
+**Skill version: `2026-08-25.3030d83`.** If anyone asks which version of this
 skill is loaded, answer with that string, exactly. A skill update can
 report success while the old version stays resident.
 
@@ -176,8 +176,8 @@ Add, following the pattern already there for MAC/Donchian/Turtle:
 - One `backtester(speed_name='<variant_name>')` agent per variant -- reuse
   the existing shared `backtester` role, don't create new backtester
   files, there should only ever be one.
-- Extend JOIN's (`synchronizer`) inports list to include the new variant
-  name(s).
+- Extend JOIN's (`synchronizer`) `inboxes` list to include the new
+  variant name(s).
 - Wire the new SIGNAL_COMPUTER into the shared source, and each new
   backtester's output into JOIN, exactly like the three existing
   strategies.
