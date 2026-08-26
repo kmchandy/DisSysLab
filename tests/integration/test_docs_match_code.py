@@ -1094,3 +1094,76 @@ def test_install_instructions_name_the_repository():
         "rather than on PyPI, so the address has to be introduced "
         "somewhere."
     )
+
+
+# ---------------------------------------------------------------------------
+# 9. A skill must not name a path inside the installed package
+# ---------------------------------------------------------------------------
+#
+# The trading skill said its office was at
+# `dissyslab/gallery/apps/mac_speed_suite/`, "in the connected DisSysLab
+# repo". A user who installed the wheel and ran `dsl init my_backtest`
+# has no such folder -- but the assistant finds one anyway, because the
+# gallery ships inside the wheel (test_wheel_contents.py asserts it, so
+# that `dsl init` has something to copy). So the assistant read the
+# contract correctly, wrote the new strategy into site-packages,
+# reported success, and the user's own office did not have it. Nothing
+# errored at any point, and `pip install -U` would have erased it.
+#
+# This is the eighteen-month clone assumption repeating in a second
+# artifact: a path that is true in one copy of the world, written by
+# someone standing in that copy. A skill should name the *kind* of
+# office it works on -- an `office.md` declaring an agent `is a
+# backtester` -- because a property survives copying and a path does
+# not.
+#
+# The rule is not "never mention the package". `office-builder` sends an
+# assistant to *read* the shipped example sinks there, and says in the
+# same file not to edit them -- that is the correct use, and an earlier
+# version of that file printed a bare relative path instead, so an agent
+# ran `cat gallery/apps/...` from the student's folder and concluded the
+# examples did not exist.
+#
+# So the invariant is: a skill that names a path inside the package must
+# also say, in that file, not to write there. Naming the kind of office
+# instead satisfies it by having no such path at all.
+
+_PACKAGE_PATH_RE = re.compile(r"`[^`\n]*dissyslab/gallery/[^`\n]*`")
+
+#: Phrases that count as saying "read here, do not write here".
+_NO_WRITE_MARKERS = (
+    "never repair the installation",
+    "do not edit them in place",
+    "never write",
+    "treat it as none",
+)
+
+
+def _skill_prose() -> list[Path]:
+    d = REPO_ROOT / "skills"
+    return sorted(d.rglob("SKILL.md")) + sorted(d.rglob("references/*.md"))
+
+
+@pytest.mark.parametrize(
+    "skill_md", _skill_prose(), ids=lambda p: str(p.relative_to(REPO_ROOT))
+)
+def test_a_skill_naming_a_package_path_says_not_to_write_there(skill_md):
+    text = skill_md.read_text(encoding="utf-8")
+    paths = _PACKAGE_PATH_RE.findall(text)
+    if not paths:
+        return
+    lowered = text.lower()
+    assert any(m in lowered for m in _NO_WRITE_MARKERS), (
+        f"{skill_md.relative_to(REPO_ROOT)} points an assistant at "
+        f"{paths}, which is inside the installed package on every "
+        "machine that pip-installed dissyslab -- and does not say not "
+        "to write there.\n\n"
+        "Anything written into the package is invisible to the user's "
+        "own office and is erased by the next upgrade, with nothing "
+        "erroring on the way. That is exactly what the trading skill "
+        "did before it was fixed.\n\n"
+        "Either name the kind of office instead -- 'a folder whose "
+        "office.md declares an agent `is a backtester`' -- or say "
+        "plainly in this file that the package is to be read and never "
+        "written."
+    )

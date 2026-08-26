@@ -1,17 +1,48 @@
 ---
 name: backtest-strategy-builder
-description: Adds a new trend-following or backtesting trading strategy to DisSysLab's mac_speed_suite office, following its signal/backtest/evaluate reuse contract, and verifies it before wiring it in. Use this whenever the user wants to add, draft, prototype, or backtest a new trading rule or strategy for mac_speed_suite -- momentum, mean-reversion, RSI, MACD, breakout, moving-average, pairs, or anything similar -- even if they don't say "mac_speed_suite" or "signal computer" by name. Trigger on phrases like "backtest a new strategy", "add a trading rule", "try a momentum strategy on these stocks", "can we test an RSI rule", "what if we added a mean-reversion strategy", or similar requests to try out a new stock-trading idea against historical data. Also use this when the user wants to change a run's parameters in plain English -- which stocks/basket, how far back, how many Monte Carlo samples, walk-forward folds, or transaction cost -- e.g. "use these eight stocks", "run 500 Monte Carlo samples", "test the last five years", "set costs to 10 bps". Requires the DisSysLab repo to be connected/accessible (specifically dissyslab/gallery/apps/mac_speed_suite/).
+description: Adds a new trend-following or backtesting trading strategy to DisSysLab's mac_speed_suite office, following its signal/backtest/evaluate reuse contract, and verifies it before wiring it in. Use this whenever the user wants to add, draft, prototype, or backtest a new trading rule or strategy for mac_speed_suite -- momentum, mean-reversion, RSI, MACD, breakout, moving-average, pairs, or anything similar -- even if they don't say "mac_speed_suite" or "signal computer" by name. Trigger on phrases like "backtest a new strategy", "add a trading rule", "try a momentum strategy on these stocks", "can we test an RSI rule", "what if we added a mean-reversion strategy", or similar requests to try out a new stock-trading idea against historical data. Also use this when the user wants to change a run's parameters in plain English -- which stocks/basket, how far back, how many Monte Carlo samples, walk-forward folds, or transaction cost -- e.g. "use these eight stocks", "run 500 Monte Carlo samples", "test the last five years", "set costs to 10 bps". Requires the dissyslab package (pip install "dissyslab[market]") and a backtest office folder -- one whose office.md declares an agent `is a backtester`, made by `dsl init mac_speed_suite <folder>`.
 ---
 
 # Adding a strategy to mac_speed_suite
 
-**Skill version: `2026-08-25.3030d83`.** If anyone asks which version of this
+**Skill version: `2026-08-25.b431d63`.** If anyone asks which version of this
 skill is loaded, answer with that string, exactly. A skill update can
 report success while the old version stays resident.
 
-mac_speed_suite (`dissyslab/gallery/apps/mac_speed_suite/` in the connected
-DisSysLab repo) already runs three trend-following strategies -- MAC,
-Donchian, and Turtle -- all sharing one BACKTESTER and one EVALUATOR.
+## First: which folder are you working in?
+
+**Settle this before anything else, and say out loud which folder you
+settled on.** A backtest office is one whose `office.md` declares an
+agent `is a backtester`. That is a property every copy keeps; a path is
+true in one copy of the world and `dsl init` makes copies where it is
+false.
+
+- **The user named a folder** -- use it.
+- **They did not** -- look for directories holding an `office.md` whose
+  Agents section matches `is a backtester`. Search where the user is
+  working and under their home directory, not the whole filesystem.
+- **One match** -- use it, and say which: *"Working in `~/my_backtest`
+  -- it has BT_DON_20 and eleven other backtesters."* One line, and it
+  is what lets them catch you on the day you are wrong.
+- **Several** -- ask. Two backtest folders is normal for someone
+  comparing versions of their own work.
+- **None** -- offer to make one: `dsl init mac_speed_suite my_backtest`,
+  then `dsl fetch-prices --office my_backtest`.
+- **A match only inside the installed package** (a path containing
+  `site-packages`, or `dissyslab/gallery/`) -- **treat it as none.**
+  The gallery ships inside the wheel, so this match exists on every
+  machine and is the one place you must never write: `dsl init` copies
+  from it, and `pip install -U` erases anything added to it. A user
+  whose strategy went there will run their own office and not find it.
+
+**Every path in this document is relative to the folder you settled
+on.** Where it says `roles/_signal_common.py`, it means that folder's
+`roles/_signal_common.py`.
+
+---
+
+The backtest office already runs three trend-following strategies --
+MAC, Donchian, and Turtle -- all sharing one BACKTESTER and one EVALUATOR.
 Adding a new strategy means writing one new, small piece (a
 `compute_variant_signal` function) and letting the existing, already-tested
 BACKTESTER/EVALUATOR machinery do everything else. You should not need to
@@ -24,7 +55,7 @@ To change a run's **parameters** (basket, history window, validation, cost) rath
 
 ## Step 1: Read the contract and the three existing examples
 
-Before writing anything, read these files in the connected repo:
+Before writing anything, read these files in the folder you settled on:
 
 - `roles/_signal_common.py` -- the contract itself (VARIANTS, compute
   function, wrapper) and the `make_signal_computer` factory's docstring.
@@ -113,7 +144,8 @@ Follow the shape of the three examples exactly:
 ## Step 4: Run the strategy-contract checker before wiring anything in
 
 Use the bundled `scripts/check_no_lookahead.py` against the new compute
-function, on real data (e.g. the connected repo's `sp100_data/` CSVs),
+function, on real data -- the CSVs `dsl fetch-prices` downloaded, which
+`dsl doctor` reports the location of --
 before touching `office.md`. Five checks always run; the sixth is
 whichever of golden-example / trend-sanity / neither was chosen in Step 2:
 
@@ -222,7 +254,7 @@ code.** A description is your reading of the role. The script's
 numbers come from the role itself.
 
 ```bash
-cd dissyslab/gallery/apps/mac_speed_suite
+cd <the folder you settled on>
 python3 explain_strategy.py --strategy donchian --variant 20 --ticker NVDA
 ```
 

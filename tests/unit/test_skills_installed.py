@@ -273,3 +273,26 @@ def test_dsl_skills_runs():
     assert out.returncode == 0
     assert "office-builder" in out.stdout
     assert "backtest-strategy-builder" in out.stdout
+
+
+def test_office_builder_names_every_other_shipped_skill():
+    """`office-builder` is the only skill guaranteed to be installed, so
+    it is the only one that can mention a skill the user does not have.
+    An assistant matches words against a skill's `description:`, and an
+    uninstalled skill has none on this machine — so without this index
+    a domain skill is invisible to the person it was written for.
+
+    Which makes the index a second place the truth lives. Pin it.
+    """
+    text = (SKILL_SRC / "office-builder" / "SKILL.md").read_text(encoding="utf-8")
+    for entry in CATALOGUE:
+        if entry.name == "office-builder":
+            continue
+        assert entry.name in text, (
+            f"{entry.name} ships but office-builder never mentions it, "
+            "so an assistant without it will not know it exists."
+        )
+    assert "dsl skills" in text, (
+        "office-builder should point at `dsl skills` — the listing is "
+        "the part that stays true as skills are added."
+    )

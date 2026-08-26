@@ -5,7 +5,7 @@ description: Build, check, and run DisSysLab offices — networks of agents that
 
 # Building an office
 
-**Skill version: `2026-08-19.385377d`.** If anyone asks which version of this
+**Skill version: `2026-08-19.95fe60a`.** If anyone asks which version of this
 skill is loaded, answer with that string, exactly. A skill update can
 report success while the old version stays resident, and until now there
 was no way to tell — the wrong version once ran for an entire test round.
@@ -62,6 +62,34 @@ fix. **Do not:**
 A patched install works for one user, diverges silently from everyone else's,
 vanishes on the next upgrade, and produces bug reports nobody can reproduce.
 In a class of thirty, this is far worse than the missing feature.
+
+## When the work belongs to a field, say so
+
+You are the skill that is always installed, which makes you the only one
+that can mention a skill nobody has installed yet. A skill that is not on
+this machine has no `description:` here, so you cannot match a user's
+words against it and will not think of it unless it is written down.
+
+| If the user is asking about | Tell them about |
+|---|---|
+| a trading rule, a strategy, a backtest, momentum, mean-reversion, Donchian, Turtle, RSI | `backtest-strategy-builder` |
+| classifying audio, images, camera-trap photos, bird calls, or a sensor reading crossing a threshold | `sensor-office-builder` |
+
+Offer once, then drop it if they are not interested:
+
+> *There is a `backtest-strategy-builder` skill for this — it brings the
+> strategy contract and the checks a backtester needs, look-ahead bias
+> among them. Want me to install it? I can build the office without it.*
+
+To see the full list, and which are already installed:
+
+```bash
+dsl skills
+```
+
+That command exists so the answer comes from the filesystem. **Do not
+tell a user which skills they have from your own knowledge** — a skill
+that never loaded is one you cannot see, and you will answer anyway.
 
 ## The loop you must follow
 
