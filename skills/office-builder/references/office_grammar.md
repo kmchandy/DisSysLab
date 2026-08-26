@@ -39,18 +39,56 @@ only when the user asks for continuous operation.
 Agents:
 Felix is a filter.
 Alex is an analyst.
+Eve is summarizer.
 Sasha is a deduplicator(by="url").
 Sync is a synchronizer(inboxes=["entities", "severity", "topic"]).
 news_monitor is an office at ../news_monitor.
+Jay is unassigned.
 ```
 
-- `<Name> is a[n] <role>.` — `a` and `an` are interchangeable.
-- `<Name> is an office at <path>.` — a sub-office. Offices nest; the
-  surrounding network sees only its ports.
+**Exactly three forms, and nothing else parses:**
+
+| Form | Means |
+|---|---|
+| `<Name> is a[n] <role>.` | a library role, `roles/<role>.md`, or `roles/<role>.py` |
+| `<Name> is an office at <path>.` | a nested office |
+| `<Name> is unassigned.` | the job is not decided yet |
+
+- **The article is optional.** `Eve is summarizer.` and `Eve is a
+  summarizer.` are the same line. It used to be the only thing separating a
+  role from a sub-office, which is not a distinction anyone means to draw
+  with one character; `office at` is what marks a sub-office now, two words
+  that say what they mean.
+- A line matching none of the three is a **parse error naming all three**,
+  rather than a silent reinterpretation. Three outcomes for one dropped
+  article, chosen by which library the name happened to belong to, is what
+  this replaced.
 - Arguments in parentheses, same as sources.
 - Plural agreement is accepted: `Susan and Anna are editors.`
-- `<Name>` is the agent's local identity; `<role>` is the job, and resolves to
-  `roles/<role>.md`, `roles/<role>.py`, or a library role.
+- `<Name>` is the agent's local identity; `<role>` is the job.
+
+### An office you have not finished
+
+`Jay is unassigned.` is how you write down an agent whose job the user has
+not said yet. An office holding one is a **draft**, and that changes what
+the report means rather than what it says: the incompleteness findings are
+listed as *"still to do"*, and `dsl check` exits 0.
+
+```
+check_wiring: office.md -- draft, 2 things still to do
+
+  still to do   nothing reaches Jay yet.
+  still to do   'Jay' has no job yet.
+```
+
+`dsl run` and `dsl build` refuse a draft, naming the agents whose job is
+undecided.
+
+**Use this rather than inventing a job.** When someone says *"give me an
+office with Dan and Jay"* they have told you two names and nothing else.
+Write the two names down, say what is still missing, and wait. An
+unfinished office is not a broken one, and reporting it as broken teaches a
+beginner that building is a sequence of errors.
 
 ### Per-agent model backend
 
@@ -132,4 +170,58 @@ dsl check <office_dir>
 ```
 
 Reports every structural fault at once. Run it before every `dsl run`. It
-cannot see faults that depend on what happens at run time.
+cannot see faults that depend on what happens at run time — an office whose
+diagram is correct can still deadlock, because whether a message is ever
+readable can depend on execution history rather than on the graph.
+
+### W11 — free text reaching something that acts
+
+One finding is not about structure but about consequence, and it is a
+**note**, so the check still passes:
+
+```
+W11  note:text from web_scraper can reach gmail_sink -- which sends email.
+```
+
+An agent whose job is English is run by a language model, and a model that
+can be instructed can be instructed by its input. When that input was
+fetched from the open web, a stranger chose the words. No wording of the
+role file closes that; what bounds it is the other end, because an office
+affects the world only through its sinks.
+
+So when this fires, **say what it means and let the user decide** — do not
+quietly rewire, and do not treat it as an error:
+
+> *This office can send whatever a scraped page says out by email. If that
+> is what you want, nothing to do. If not, I can have the last agent send
+> only a score and a link rather than text it wrote.*
+
+An office whose sinks all print or write a local file never fires it.
+
+## The other subcommands worth knowing
+
+```
+dsl draw <office_dir>          the network as a Mermaid diagram
+dsl roles                      every built-in role and the field it adds
+dsl skills                     which DisSysLab skills are installed
+dsl fetch-prices --office DIR  download your own price history
+```
+
+**`dsl draw` when the wiring stops being readable as text**, which happens
+at the first branch or fan-in — or when the user asks to see it. It is on
+request, never automatic: a diagram redrawn after every edit has to stay
+stable under change, or adding one agent moves the ones the reader had
+already understood. It draws an office that does not compile, too, since
+that is when a picture is worth most. `--out FILE` writes to a file;
+`--raw` omits the ```mermaid fence.
+
+**`dsl skills` before telling anyone what is installed.** A skill that never
+loaded is one you cannot see, and you will answer anyway.
+
+**`dsl fetch-prices` for any office with a `csv_stock_history` source.** It
+takes the basket from the office's own source line, skips files already
+downloaded, and finishes by loading each ticker back through the office to
+confirm it can read what was just written. Nothing in this project ships
+market data — the vendor's terms do not permit redistributing it — so this
+is a deliberate act by each user, and `yfinance` lives in the `[market]`
+extra for the same reason.

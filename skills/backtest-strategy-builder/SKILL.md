@@ -5,7 +5,7 @@ description: Adds a new trend-following or backtesting trading strategy to DisSy
 
 # Adding a strategy to mac_speed_suite
 
-**Skill version: `2026-08-25.b431d63`.** If anyone asks which version of this
+**Skill version: `2026-08-26.b431d63`.** If anyone asks which version of this
 skill is loaded, answer with that string, exactly. A skill update can
 report success while the old version stays resident.
 
