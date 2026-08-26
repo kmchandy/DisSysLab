@@ -159,8 +159,8 @@ a column comparing the two. Click a shaded cell and the formula bar
 reads `=MAX(C2:C21)`. That says the channel is built from the twenty
 rows *above* this one and not this one — a boundary convention that is
 ambiguous in English, invisible in a chart, and decides whether the
-backtest was honest. If it is not his rule, he edits the cell and
-watches the signal column move.
+backtest was honest. If it is not his rule, he edits the cell and the
+channel recomputes under him.
 
 And before any strategy is traded on, three mechanical checks run
 against it — checks written by someone who never saw that strategy:

@@ -150,3 +150,48 @@ def test_a_tracer_that_disagrees_refuses_to_write(explain):
     with pytest.raises(SystemExit) as exc:
         explain._agree(rows, [1.0, 1.0], "made_up")
     assert "disagrees with the strategy at bar 1" in str(exc.value)
+
+
+# ── claims about the sheet ────────────────────────────────────────────
+
+
+def test_nothing_promises_that_the_signal_column_moves(explain):
+    """A tester changed a close to 99 against a channel top of 1.55 and
+    the sheet said "no breakout -- hold". The signal is a number Python
+    typed into the cell; nothing recalculates it. Four documents
+    promised otherwise, two of which ship inside the wheel.
+
+    The promise is easy to write because it is what a reader wants to
+    be true, so it is worth a check rather than a memory.
+    """
+    import re
+
+    watched = []
+    for path in (
+        REPO_ROOT / "README.md",
+        REPO_ROOT / "ASPIRATIONAL.md",
+        APP / "README.md",
+        APP / "explain_strategy.py",
+    ):
+        text = path.read_text(encoding="utf-8")
+        # "watch the signal column move", "watches the signal move", ...
+        if re.search(r"watch\w*\s+the\s+signal\s+\w*\s*move", text):
+            watched.append(str(path.relative_to(REPO_ROOT)))
+
+    assert not watched, (
+        f"{watched} promise that editing a cell moves the signal column. "
+        "It does not: the signal is a value, not a formula, for every "
+        "shipped strategy. Say that the shaded columns recompute, which "
+        "is true, and point at the office README for the live signal "
+        "column that can be pasted in for Donchian and MAC."
+    )
+
+
+def test_a_missing_price_file_is_reported_on_stdout(explain, tmp_path, capsys):
+    """The workbook has always disclosed synthetic prices on its Read me
+    tab. But when a trader asks rather than runs, the assistant is the
+    only thing between fabricated prices and a decision, and the
+    assistant reads stdout. It saw an ordinary success."""
+    bars, provenance = explain.load_bars("NOSUCHTICKER", tmp_path)
+    assert provenance.startswith("SYNTHETIC")
+    assert bars, "the fallback must still produce a usable series"
