@@ -1167,3 +1167,44 @@ def test_a_skill_naming_a_package_path_says_not_to_write_there(skill_md):
         "plainly in this file that the package is to be read and never "
         "written."
     )
+
+
+# ---------------------------------------------------------------------------
+# 10. A skill's front matter must not contain angle-bracket tokens
+# ---------------------------------------------------------------------------
+#
+# `description: ... made by `dsl init mac_speed_suite <folder>`.` was
+# rejected at save time: "SKILL.md description cannot contain XML tags".
+# The skill could not be installed at all, and the only way to find out
+# was to try -- the file is valid YAML, valid Markdown, and passes every
+# other check here.
+#
+# A placeholder in angle brackets is the natural way to write a
+# placeholder, which is exactly why this will happen again. The body is
+# unaffected and full of them legitimately (`<office_dir>`,
+# `<site-packages>`); it is the front matter that goes through the
+# installer's validator.
+
+
+def _front_matter(path: Path) -> str:
+    text = path.read_text(encoding="utf-8")
+    m = re.match(r"^---\n(.*?)\n---\n", text, re.S)
+    return m.group(1) if m else ""
+
+
+@pytest.mark.parametrize(
+    "skill_md",
+    sorted((REPO_ROOT / "skills").glob("*/SKILL.md")),
+    ids=lambda p: p.parent.name,
+)
+def test_skill_front_matter_has_no_angle_bracket_tokens(skill_md):
+    offenders = re.findall(r"<[^>]*>", _front_matter(skill_md))
+    assert not offenders, (
+        f"{skill_md.parent.name}'s front matter contains {offenders}, and "
+        "the installer refuses a description containing what looks like "
+        "an XML tag — the skill cannot be saved at all.\n\n"
+        "Use a concrete example instead of a placeholder: "
+        "`dsl init mac_speed_suite my_backtest`, not "
+        "`dsl init mac_speed_suite <folder>`. The body may use angle "
+        "brackets freely; only the front matter is validated."
+    )
