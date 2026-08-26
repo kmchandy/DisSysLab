@@ -69,9 +69,9 @@ role = AgentRoleEntry(
     name="donchian_signal",
     in_ports=("in_",),
     out_ports=("out",),
-    factory=lambda: Role(
+    factory=lambda checks="on": Role(
         fn=make_signal_computer(
-            "donchian", DONCHIAN_VARIANTS, _donchian_compute_variant_signal
+            "donchian", DONCHIAN_VARIANTS, _donchian_compute_variant_signal, checks=checks
         ),
         statuses=["out"],
     ),

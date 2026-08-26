@@ -27,9 +27,13 @@ The three-part contract
    dicts (date/open/high/low/close/volume) -- not just closes, so a
    strategy that needs the day's high/low (Donchian, Turtle) can use
    them, while one that only needs closes (MAC) can ignore the rest.
-   Contract: signal[t] must depend only on bars[0..t] (no lookahead) --
-   this is on the compute function's author to uphold; it is not
-   mechanically enforced by this module.
+   Contract: signal[t] must depend only on bars[0..t] (no lookahead).
+   **This module enforces that**, on each variant's first real message,
+   along with determinism and finiteness -- see
+   `_verify_before_first_use`. It used to be on the author to uphold
+   and on an assistant to remember to check, which meant a strategy
+   nobody checked produced a ranking indistinguishable from one that
+   had been. `checks='off'` in office.md waives it, in writing.
 
    The returned signal is a *position size*, not just a direction:
    +1.0 / -1.0 for a strategy that's always fully long or fully short
@@ -127,10 +131,116 @@ def _annualized_volatility(returns: List[Optional[float]]) -> float:
     return (variance ** 0.5) * (TRADING_DAYS_PER_YEAR ** 0.5)
 
 
+#: How often the look-ahead check re-truncates history. 1 checks every
+#: day, 5 every fifth. A strategy that peeks does so on essentially
+#: every bar -- the bug is a line of code, not an occasional event --
+#: so sampling finds it, and eleven variants stay a few seconds rather
+#: than half a minute. Set to 1 for the exhaustive answer.
+CHECK_SAMPLE_EVERY = 5
+
+#: (strategy, variant, function identity) already verified this run.
+#: Eleven backtesters share four signal functions, and the property is
+#: a property of the function, so this runs once per variant rather
+#: than once per message.
+_VERIFIED: set = set()
+
+
+class StrategyContractError(AssertionError):
+    """A strategy failed a mechanical check before its first use.
+
+    Raised where the strategy is *used* rather than where it was
+    written, which is the difference between a check and a request.
+    This check used to be a sentence in a SKILL.md telling an assistant
+    to run a script; if it did not, nothing recorded the fact, and the
+    office produced a ranking indistinguishable from a checked one.
+    """
+
+
+def _verify_before_first_use(
+    strategy_name: str,
+    variant_name: str,
+    compute_fn,
+    params,
+    bars: List[dict],
+    identity=None,
+) -> None:
+    """Run the declaration-free contract checks once, on real bars.
+
+    **Why here and not at assembly.** The look-ahead check needs data:
+    it recomputes the signal on truncated history and asserts day t's
+    value does not move when later bars are added. At assembly no data
+    has flowed. Fetching some here would couple the check to the source
+    and would verify the strategy against data the office will not use.
+    Waiting for the first message is what makes the subject and the
+    sample arrive together.
+
+    Three checks run -- the three that need nothing declared: no
+    look-ahead, determinism, and every value finite. Range and warm-up
+    need a strategy to declare what it promises, which the contract
+    does not yet carry in machine-readable form; the skill asks for
+    them and `assert_strategy_contract` takes them.
+    """
+    # Keyed on the *strategy's own* function, not on whatever wrapper
+    # was built to call it: a context-taking strategy gets a fresh
+    # closure per ticker, and keying on that would re-verify every
+    # variant on every ticker.
+    key = (strategy_name, variant_name, id(identity if identity is not None else compute_fn))
+    if key in _VERIFIED:
+        return
+
+    from _contract_checks import (  # the office's own copy
+        check_deterministic,
+        check_finite,
+        check_no_lookahead,
+    )
+
+    failures = []
+    result = check_no_lookahead(
+        compute_fn, params, bars, sample_every=CHECK_SAMPLE_EVERY
+    )
+    if not result["passed"]:
+        v = result["first_violation"] or {}
+        failures.append(
+            f"it uses a later bar to decide an earlier day. On "
+            f"{v.get('date')} (day {v.get('day')}) the signal is "
+            f"{v.get('full_signal_value')!r} computed from the whole "
+            f"history and {v.get('truncated_signal_value')!r} computed "
+            f"from the history that existed on the day. A backtest of a "
+            f"strategy that can see tomorrow measures nothing."
+        )
+    if not check_deterministic(compute_fn, params, bars)["passed"]:
+        failures.append(
+            "it gives two different answers for one input. Hidden "
+            "randomness, a clock read, or shared mutable state -- and a "
+            "run that cannot be repeated cannot be checked."
+        )
+    finite = check_finite(compute_fn, params, bars)
+    if not finite["passed"]:
+        failures.append(
+            f"it produced a value that is not a finite number "
+            f"({finite.get('first_violation')}). Usually a division by a "
+            f"zero average, or a window read before it has filled."
+        )
+
+    if failures:
+        joined = "\n  - ".join(failures)
+        raise StrategyContractError(
+            f"{strategy_name}_{variant_name} did not pass the strategy "
+            f"contract, so the office stopped before ranking it:\n"
+            f"  - {joined}\n\n"
+            f"To rank it anyway, say so in office.md, where anyone "
+            f"reading the office can see that you did:\n"
+            f"    <AGENT> is a {strategy_name}_signal(checks='off').\n"
+        )
+
+    _VERIFIED.add(key)
+
+
 def make_signal_computer(
     strategy_name: str,
     variants: Dict[str, Any],
     compute_variant_signal: Callable[[List[dict], Any], List[float]],
+    checks: str = "on",
 ) -> Callable[[Dict[str, Any]], list]:
     """
     Factory: builds a SIGNAL_COMPUTER worker body for one strategy family.
@@ -142,9 +252,24 @@ def make_signal_computer(
             `compute_variant_signal` for that variant.
         compute_variant_signal: the strategy-specific per-ticker signal
             function -- see module docstring's 3-part contract.
+        checks: ``"on"`` (default) verifies every variant against the
+            contract on its first real message; ``"off"`` skips it.
+
+            The waiver is written in ``office.md`` -- ``DONCHIAN_SIGNAL
+            is a donchian_signal(checks='off').`` -- and deliberately
+            not as a command-line flag. A flag is invisible six weeks
+            later; the office file is the artifact of record, so a
+            waived check is something anyone reading the office can
+            see.
+
+            Nothing found so far needs it. Look-ahead is not a matter
+            of taste -- the property is what makes a backtest mean
+            anything, and it costs seconds. The hatch exists so that a
+            false positive is a nuisance rather than a wall.
     """
 
     accepts_context = _accepts_context(compute_variant_signal)
+    run_checks = str(checks).lower() not in ("off", "false", "0", "no")
 
     def signal_computer(msg: Dict[str, Any]):
         """Worker body: (message) -> [(message, outport_name), ...]."""
@@ -188,6 +313,32 @@ def make_signal_computer(
 
             signals: Dict[str, List[float]] = {}
             for variant_name, params in variants.items():
+                if accepts_context:
+                    # The checker calls fn(bars, params); a
+                    # context-taking strategy needs its context sliced
+                    # to the same length, or truncating history would
+                    # leave signal[t] reading a context array that
+                    # still runs to the end -- which is the very thing
+                    # being checked for.
+                    def _with_context(b, p, _ctx=ticker_context):
+                        n = len(b)
+                        sliced = {
+                            k: (v[:n] if isinstance(v, list) else v)
+                            for k, v in (_ctx or {}).items()
+                        }
+                        return compute_variant_signal(b, p, sliced)
+
+                    checkable = _with_context
+                else:
+                    checkable = compute_variant_signal
+
+                if run_checks:
+                    _verify_before_first_use(
+                        strategy_name, variant_name, checkable,
+                        params, usable_bars,
+                        identity=compute_variant_signal,
+                    )
+
                 if accepts_context:
                     sig = compute_variant_signal(usable_bars, params, ticker_context)
                 else:

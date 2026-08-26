@@ -68,9 +68,9 @@ role = AgentRoleEntry(
     name="rs_trend",
     in_ports=("in_",),
     out_ports=("out",),
-    factory=lambda: Role(
+    factory=lambda checks="on": Role(
         fn=make_signal_computer(
-            "rs", RS_TREND_VARIANTS, _rs_trend_compute_variant_signal
+            "rs", RS_TREND_VARIANTS, _rs_trend_compute_variant_signal, checks=checks
         ),
         statuses=["out"],
     ),

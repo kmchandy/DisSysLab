@@ -5,7 +5,7 @@ description: Adds a new trend-following or backtesting trading strategy to DisSy
 
 # Adding a strategy to mac_speed_suite
 
-**Skill version: `2026-08-26.b431d63`.** If anyone asks which version of this
+**Skill version: `2026-08-26.ff3f811`.** If anyone asks which version of this
 skill is loaded, answer with that string, exactly. A skill update can
 report success while the old version stays resident.
 
@@ -345,6 +345,40 @@ the "Run settings" panel reflects it. Never silently apply a different value
 than asked; if you had to interpret the request ("the last five years" -> a
 date cutoff), say what you assumed -- the same disclosure discipline as Step 2.
 
+## What a signal can and cannot say
+
+**Read this before agreeing to build risk management.** The gap below is
+invisible in the output: you will produce plausible code, the office will
+run it, the report will rank it, and it will not be what was asked for.
+
+`_backtester_core` computes `gross = prior_signal * today_return`, so a
+signal is a **position fraction**, not a direction. `0.5` means half a
+position and the backtest handles it correctly.
+
+**Expressible**, being a property of one ticker's own history: position
+size scaled by that ticker's own volatility; pyramiding in and out, as
+Turtle does; a stop expressed as an exit to `0.0`; anything computable
+from `bars[0..t]` for that one ticker.
+
+**Not expressible at all**, because signals are computed per ticker with
+no shared state: total risk across open positions; a cap on correlated
+markets or units per sector; sizing against current account equity,
+which depends on every other position's path; rebalancing between
+tickers.
+
+So when someone asks for *"Turtle-style risk management"*, half of what
+they mean is available and half is not. Say which half, in those terms,
+before writing anything:
+
+> *I can size each position by that stock's own volatility and pyramid
+> the way Turtle does — those are per-ticker rules. What I cannot do is
+> cap total portfolio risk or limit correlated units, because each
+> ticker's signal is computed without seeing the others. Do you want the
+> per-ticker half, knowing that?*
+
+**Do not** approximate a portfolio rule with a per-ticker one and give it
+the portfolio rule's name. The backtest will look right.
+
 ## When this doesn't fit
 
 Some strategies genuinely don't fit this contract, and it's better to say
@@ -354,3 +388,27 @@ sectional ranking, sector rotation -- needs a different worker shape than
 "one ticker's bars in, one signal series out." Flag this to the user
 rather than bending `compute_variant_signal` to secretly take extra
 tickers as a hidden argument.
+
+## The three checks are no longer yours to remember
+
+The office runs them itself. `make_signal_computer` verifies every
+variant on its first real message -- no look-ahead, deterministic, every
+value finite -- and raises `StrategyContractError` before anything is
+ranked. You do not have to invoke them, and a strategy you forget to
+check is checked anyway. About four seconds for nine variants over ten
+years, once per run.
+
+The fuller checks still need you, because they need declarations the
+office does not carry: `signal_range`, `min_bars_required`, a golden
+example, the trend-sanity pass. Run `assert_strategy_contract` with
+those, as Step 4 describes.
+
+If a check fires and the user is certain it is wrong, the waiver goes in
+`office.md`, where anyone reading the office can see it:
+
+```
+DONCHIAN_SIGNAL is a donchian_signal(checks='off').
+```
+
+Never a command-line flag. Six weeks later nobody can tell a run that
+passed from a run that skipped.

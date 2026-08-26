@@ -173,8 +173,9 @@ role = AgentRoleEntry(
     name="turtle_signal",
     in_ports=("in_",),
     out_ports=("out",),
-    factory=lambda: Role(
-        fn=make_signal_computer("turtle", TURTLE_VARIANTS, _turtle_compute_variant_signal),
+    factory=lambda checks="on": Role(
+        fn=make_signal_computer("turtle", TURTLE_VARIANTS,
+                            _turtle_compute_variant_signal, checks=checks),
         statuses=["out"],
     ),
 )

@@ -66,8 +66,9 @@ role = AgentRoleEntry(
     name="mac_signal",
     in_ports=("in_",),
     out_ports=("out",),
-    factory=lambda: Role(
-        fn=make_signal_computer("mac", MAC_VARIANTS, _mac_compute_variant_signal),
+    factory=lambda checks="on": Role(
+        fn=make_signal_computer("mac", MAC_VARIANTS, _mac_compute_variant_signal,
+                            checks=checks),
         statuses=["out"],
     ),
 )
