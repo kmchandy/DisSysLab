@@ -132,14 +132,84 @@ def search_roots(cwd: Path | None = None) -> list[Path]:
     ]
     # Bundled inside a plugin or extension. Globbed rather than named,
     # because the bundle's own directory name is the author's choice.
+    #
+    # The Cowork entry was added on 2026-08-26 after `dsl doctor` told
+    # this project's own author that office-builder was not installed
+    # while he was actively using it. The desktop app materialises
+    # account skills two UUID levels down, under a directory named for
+    # a *session* -- so it must be globbed, and it will move again.
+    # That is the argument for `deep_search` below: a list of known
+    # places can only ever be behind.
     for pattern_root, pattern in (
         (home / ".claude" / "plugins", "*/skills"),
         (home / ".gemini" / "extensions", "*/skills"),
         (home / ".codex" / "plugins", "*/skills"),
+        (
+            home / "Library" / "Application Support" / "Claude"
+            / "local-agent-mode-sessions" / "skills-plugin",
+            "*/*/skills",
+        ),
     ):
         if pattern_root.is_dir():
             roots.extend(sorted(p for p in pattern_root.glob(pattern) if p.is_dir()))
     return roots
+
+
+#: Directories a home-wide search will not enter. Not for correctness
+#: -- a skill could in principle live in any of them -- but because
+#: walking a node_modules tree turns "slower" into "appears to hang",
+#: and a search people abandon finds nothing.
+_DEEP_SKIP = {
+    ".Trash", ".cache", ".git", ".npm", ".venv", "Caches",
+    "__pycache__", "node_modules", "site-packages", "venv",
+}
+
+#: How deep a home-wide search goes. A skill is a directory holding
+#: SKILL.md; the deepest real case seen so far is eight levels down.
+_DEEP_MAX_DEPTH = 12
+
+
+def deep_search(home: Path | None = None) -> list[FoundSkill]:
+    """Walk the home directory for this project's skills.
+
+    The fast search knows five directories and four glob patterns, and
+    every one of them is a guess about somebody else's product. When a
+    guess goes stale the fast search reports "not found" -- confidently,
+    and wrongly.
+
+    This knows nothing about anyone's layout. It looks for a directory
+    called ``skills`` holding a subdirectory named after one of ours
+    holding ``SKILL.md``. Slower, and it keeps working when a vendor
+    renames something.
+    """
+    root = Path(home or Path.home())
+    found: list[FoundSkill] = []
+    seen: set[Path] = set()
+
+    def walk(directory: Path, depth: int) -> None:
+        if depth > _DEEP_MAX_DEPTH:
+            return
+        try:
+            entries = sorted(directory.iterdir())
+        except OSError:
+            return
+        for entry in entries:
+            if not entry.is_dir() or entry.is_symlink():
+                continue
+            if entry.name in _DEEP_SKIP:
+                continue
+            if entry.name == "skills":
+                for candidate in DISSYSLAB_SKILLS:
+                    skill_md = entry / candidate / "SKILL.md"
+                    if skill_md.is_file() and skill_md.parent not in seen:
+                        skill = _read_skill(skill_md)
+                        if skill is not None:
+                            seen.add(skill_md.parent)
+                            found.append(skill)
+            walk(entry, depth + 1)
+
+    walk(root, 0)
+    return found
 
 
 def _read_skill(skill_md: Path) -> FoundSkill | None:
@@ -179,6 +249,22 @@ def find_installed(cwd: Path | None = None) -> tuple[list[FoundSkill], list[Path
     return found, roots
 
 
+def is_source_checkout(skill_dir: Path) -> bool:
+    """Is this ``skills/<name>/`` inside the project's own repository?
+
+    A home-wide walk finds the repository's `skills/` folder, which is
+    the *source* of a skill and not an installed copy of one. Reporting
+    it as installed would be the same wrong answer from the other
+    direction: an assistant loads what the vendor materialised, not
+    what is sitting in a clone, and telling someone their clone counts
+    is how they conclude an install took when it did not.
+    """
+    try:
+        return (skill_dir.parent.parent / "pyproject.toml").is_file()
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _shorten(path: Path) -> str:
     """``~/.claude/skills`` reads better than the absolute form, and it
     is what the user would type."""
@@ -188,10 +274,38 @@ def _shorten(path: Path) -> str:
         return str(path)
 
 
-def report_lines(cwd: Path | None = None) -> list[str]:
+def locate(cwd: Path | None = None, deep: bool | None = None):
+    """Find the skills, falling back to a home-wide walk.
+
+    ``deep=None`` -- the default, and the one that matters -- runs the
+    fast search and only walks the home directory if a *basic* skill
+    was not found. That is the case where the fast answer is both
+    wrong and unactionable, and it is not the user's job to know a
+    second command exists. Su is twelve; she did what she was told; a
+    message saying "not installed, go install it" is a wall.
+
+    ``deep=True`` forces the walk, ``deep=False`` forbids it.
+
+    Returns ``(skills, roots_searched, went_deep)``.
+    """
+    found, roots = find_installed(cwd)
+    names = {s.name for s in found}
+    should = deep is True or (
+        deep is None and any(n not in names for n in BASIC_SKILLS)
+    )
+    if not should:
+        return found, roots, False
+
+    by_path = {s.path: s for s in found}
+    for skill in deep_search():
+        by_path.setdefault(skill.path, skill)
+    return list(by_path.values()), roots, True
+
+
+def report_lines(cwd: Path | None = None, deep: bool | None = None) -> list[str]:
     """The `dsl doctor` section, as lines. Never raises."""
     try:
-        found, roots = find_installed(cwd)
+        found, roots, went_deep = locate(cwd, deep)
     except Exception:  # noqa: BLE001 - doctor must always finish
         return ["  [    ] could not read the skill directories"]
 
@@ -205,13 +319,30 @@ def report_lines(cwd: Path | None = None) -> list[str]:
         if not hits:
             # A domain skill nobody in this field installed is not a
             # fault, so it is not reported at all.
+            #
+            # And the wording for a basic one is deliberate. This
+            # module knows where it looked; it does not know what
+            # exists. It once told this project's author that a skill
+            # he was actively using was "not installed" -- the same
+            # silent wrong answer it was written to prevent, one level
+            # up.
             if name not in DOMAIN_SKILLS:
-                lines.append(f"  [    ] {name}: not installed")
+                lines.append(f"  [    ] {name}: not found")
             continue
         for skill in hits:
             version = skill.version or "no version string"
-            lines.append(f"  [OK] {name} {version}")
+            mark = "[OK]" if not is_source_checkout(skill.path) else "[    ]"
+            lines.append(f"  {mark} {name} {version}")
             lines.append(f"         {_shorten(skill.path)}")
+            if is_source_checkout(skill.path):
+                lines.append(
+                    "         that is the repository's own copy, not an "
+                    "installed skill —"
+                )
+                lines.append(
+                    "         an assistant loads what was installed, not what "
+                    "is in a clone"
+                )
         if len(hits) > 1:
             lines.append(
                 f"         {len(hits)} copies of {name} — an assistant loads "
@@ -221,13 +352,19 @@ def report_lines(cwd: Path | None = None) -> list[str]:
 
     if not by_name.get("office-builder"):
         lines.append("")
-        lines.append("         Without office-builder an assistant will improvise its")
-        lines.append("         own concurrency instead of assembling tested parts. Ask")
-        lines.append("         your assistant to install the office-builder skill from")
-        lines.append("         https://github.com/kmchandy/DisSysLab, then run this again.")
+        lines.append("         I could not find office-builder in the usual places")
+        if went_deep:
+            lines.append("         or anywhere under your home folder. That does not")
+            lines.append("         prove it is missing — it proves I could not find it.")
+        lines.append("         Without it an assistant will improvise its own")
+        lines.append("         concurrency instead of assembling tested parts. Ask your")
+        lines.append("         assistant to install the office-builder skill from")
+        lines.append(f"         {REPO_URL}, then run this again.")
 
     lines.append("")
     lines.append("         searched: " + ", ".join(_shorten(r) for r in roots))
+    if went_deep:
+        lines.append("         and every folder under your home directory")
     return lines
 
 
@@ -248,10 +385,11 @@ def print_report(cwd: Path | None = None) -> None:
 # to come from something that is not the assistant.
 
 
-def catalogue_lines(cwd: Path | None = None) -> list[str]:
+def catalogue_lines(cwd: Path | None = None, deep: bool | None = None) -> list[str]:
     """The `dsl skills` listing, as lines. Never raises."""
+    went_deep = False
     try:
-        found, roots = find_installed(cwd)
+        found, roots, went_deep = locate(cwd, deep)
     except Exception:  # noqa: BLE001 - a listing must always finish
         found, roots = [], []
 
@@ -273,9 +411,13 @@ def catalogue_lines(cwd: Path | None = None) -> list[str]:
             hits = installed.get(entry.name, [])
             if hits:
                 version = hits[0].version or "no version string"
-                lines.append(f"    [OK] {entry.name}  {version}")
+                source = is_source_checkout(hits[0].path)
+                lines.append(
+                    f"    {'[OK]' if not source else '[  ]'} {entry.name}  "
+                    f"{version}{'  (repository copy, not installed)' if source else ''}"
+                )
             else:
-                lines.append(f"    [  ] {entry.name}  (not installed)")
+                lines.append(f"    [  ] {entry.name}  (not found)")
             lines.extend(
                 textwrap.wrap(
                     entry.blurb,
@@ -312,11 +454,21 @@ def catalogue_lines(cwd: Path | None = None) -> list[str]:
         lines.append("")
 
     lines.append("  searched: " + ", ".join(_shorten(r) for r in roots))
+    if went_deep:
+        lines.append("  and every folder under your home directory")
+    else:
+        lines.append(
+            "  `dsl skills --deep` searches your home directory instead — "
+            "slower, but"
+        )
+        lines.append(
+            "  it needs to know nothing about where your assistant put them."
+        )
     return lines
 
 
-def print_catalogue(cwd: Path | None = None) -> None:
-    for line in catalogue_lines(cwd):
+def print_catalogue(cwd: Path | None = None, deep: bool | None = None) -> None:
+    for line in catalogue_lines(cwd, deep):
         print(line)
 
 

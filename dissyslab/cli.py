@@ -50,12 +50,80 @@ def _require_dir(label: str, path_str: str) -> Path:
 
 
 def _package_version() -> str:
+    """The version, and -- for an editable install -- where the code is.
+
+    A recorded version can lie. ``pip install -e .`` writes the version
+    that was in ``pyproject.toml`` at install time and never revisits
+    it, while the code that runs is whatever is in the working tree. On
+    2026-08-26 that gap was nine commits and two minor versions wide:
+    ``dsl --version`` said 1.6.1 while running 1.7.2 plus a week's
+    work, and an assistant reading that number would have told a
+    student their install had no ``dsl check``.
+
+    So an editable install reports what cannot go stale -- the
+    directory the code is being imported from, and the commit if that
+    directory is a git working tree:
+
+        dissyslab 1.7.2 (editable: /Users/x/DisSysLab @ f7181c8)
+
+    Derived, not recorded, for the same reason the skill version
+    carries a content hash.
+    """
     try:
         from importlib.metadata import version
-        return version("dissyslab")
+        recorded = version("dissyslab")
     except Exception:
-        # Running from a source checkout without an installed dist.
-        return "unknown (source)"
+        # Running from a source checkout with no installed dist at all.
+        recorded = "unknown (source)"
+
+    editable = _editable_source()
+    return f"{recorded} ({editable})" if editable else recorded
+
+
+def _editable_source() -> str | None:
+    """``editable: <dir> @ <commit>`` when the code is not in site-packages.
+
+    Returns ``None`` for a normal wheel install, where the recorded
+    version is the whole truth and a path would be noise.
+    """
+    import dissyslab
+
+    try:
+        source = Path(dissyslab.__file__).resolve().parent
+    except Exception:  # noqa: BLE001 - a version string must never raise
+        return None
+    if "site-packages" in source.parts or "dist-packages" in source.parts:
+        return None
+
+    root = source.parent
+    commit = _git_commit(root)
+    return f"editable: {root}" + (f" @ {commit}" if commit else "")
+
+
+def _git_commit(root: Path) -> str | None:
+    """The short commit of the working tree, read without running git.
+
+    Reading the files means this works with no git on PATH and cannot
+    hang; a subprocess in a version string is a bad trade. Returns
+    ``None`` for anything unexpected -- a version string that raises is
+    worse than one that is merely short.
+    """
+    try:
+        head = (root / ".git" / "HEAD").read_text(encoding="utf-8").strip()
+        if head.startswith("ref:"):
+            ref = head.split(None, 1)[1].strip()
+            ref_file = root / ".git" / ref
+            if ref_file.is_file():
+                return ref_file.read_text(encoding="utf-8").strip()[:7]
+            # A packed ref -- the loose file is gone after `git gc`.
+            packed = (root / ".git" / "packed-refs").read_text(encoding="utf-8")
+            for line in packed.splitlines():
+                if line.endswith(f" {ref}"):
+                    return line.split()[0][:7]
+            return None
+        return head[:7] if len(head) >= 7 else None
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def _packaged_gallery() -> Path:
@@ -633,7 +701,7 @@ def cmd_skills(_args: argparse.Namespace) -> int:
     """
     from dissyslab.skills_installed import print_catalogue
 
-    print_catalogue()
+    print_catalogue(deep=True if getattr(_args, "deep", False) else None)
     return 0
 
 
@@ -1402,6 +1470,62 @@ def _smoke_test_office() -> list:
     return results
 
 
+def _doctor_verdict() -> tuple[str, list[str], object]:
+    """One sentence saying whether you can build an office, and why not.
+
+    Two things decide it, and nothing else does:
+
+    * the library works -- a three-agent office builds and runs;
+    * an assistant has the ``office-builder`` skill, without which it
+      improvises its own concurrency and looks like it is working.
+
+    A missing API key is not here on purpose. Offices whose roles are
+    all plain Python need no credential, and those are the offices a
+    new user runs first; calling that install "not ready" would be the
+    false alarm that teaches people to skip the verdict.
+
+    Returns ``(headline, detail_lines, smoke_result)``. The smoke
+    result is handed back so the Self-test section below does not run
+    the office a second time.
+    """
+    try:
+        smoke_result = _smoke_test_office()
+        smoke_ok = smoke_result == _SMOKE_EXPECTED
+    except Exception as exc:  # noqa: BLE001
+        smoke_result = exc
+        smoke_ok = False
+
+    try:
+        from dissyslab.skills_installed import is_source_checkout, locate
+
+        found, _roots, _deep = locate()
+        have_skill = any(
+            s.name == "office-builder" and not is_source_checkout(s.path)
+            for s in found
+        )
+    except Exception:  # noqa: BLE001 - doctor must always finish
+        have_skill = False
+
+    if not smoke_ok:
+        return (
+            "Not ready: dissyslab itself is not working here.",
+            ["The three-agent self-test did not produce what it should.",
+             "See the Self-test section below; nothing else matters until"
+             " that passes."],
+            smoke_result,
+        )
+    if not have_skill:
+        return (
+            "Not ready: the office-builder skill is not installed.",
+            ["dissyslab itself works. Without the skill an assistant will",
+             "improvise its own concurrency instead of assembling tested",
+             "parts -- and it will look as though it worked.",
+             "See the Skills section below."],
+            smoke_result,
+        )
+    return ("Ready. You can build an office.", [], smoke_result)
+
+
 def cmd_doctor(args: argparse.Namespace) -> int:
     """Check Python, key deps, .env file format, and ANTHROPIC_API_KEY."""
     ok = True
@@ -1411,6 +1535,25 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         mark = "OK" if cond else "FAIL"
         ok = ok and cond
         print(f"  [{mark}] {label}" + (f": {detail}" if detail else ""))
+
+    # The verdict, before the inventory.
+    #
+    # This used to end with "All required checks passed.", and the skill
+    # section was one `[    ]` among nine ticks. An assistant summarising
+    # the output for a twelve-year-old read that, classified the missing
+    # skill as an optional gap, and told her everything was fine -- while
+    # the paragraph explaining that without it an assistant improvises
+    # its own concurrency sat four lines above.
+    #
+    # A report whose most important line can be reclassified has no most
+    # important line. So the conclusion comes first, in one sentence
+    # anything downstream can carry, and the detail follows for whoever
+    # wants it.
+    verdict, verdict_detail, smoke_result = _doctor_verdict()
+    print(verdict)
+    for line in verdict_detail:
+        print(f"  {line}")
+    print()
 
     print(f"dissyslab version: {_package_version()}")
     print(f"Python:            {sys.version.split()[0]}  ({sys.executable})")
@@ -1560,25 +1703,32 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     # checks DisSysLab. It is a real failure if it does not pass.
     print()
     print("Self-test:")
-    try:
-        produced = _smoke_test_office()
-        passed = produced == _SMOKE_EXPECTED
+    # Already run, at the top, to decide the verdict. Running it again
+    # would double the cost of the one command people use when
+    # something is already wrong.
+    if isinstance(smoke_result, Exception):
+        check(
+            "build and run a 3-agent office",
+            False,
+            f"{smoke_result.__class__.__name__}: {smoke_result}",
+        )
+    else:
+        passed = smoke_result == _SMOKE_EXPECTED
         check(
             "build and run a 3-agent office",
             passed,
             "source -> transform -> sink" if passed
-            else f"produced {produced!r}, expected {_SMOKE_EXPECTED!r}",
-        )
-    except Exception as exc:  # noqa: BLE001
-        check(
-            "build and run a 3-agent office",
-            False,
-            f"{exc.__class__.__name__}: {exc}",
+            else f"produced {smoke_result!r}, expected {_SMOKE_EXPECTED!r}",
         )
 
     print()
     if ok:
-        print("All required checks passed.")
+        # Repeat the verdict rather than reaching a second one. Two
+        # conclusions in one report is how "Not ready" at the top became
+        # "everything is fine" by the time it was summarised.
+        print(verdict)
+        for line in verdict_detail:
+            print(f"  {line}")
         return 0
     print("One or more required checks failed. See above.")
     return 1
@@ -1998,6 +2148,16 @@ def build_parser() -> argparse.ArgumentParser:
             "filesystem."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_skills.add_argument(
+        "--deep",
+        action="store_true",
+        help=(
+            "search your whole home directory instead of the places "
+            "assistants are known to use. Slower, and it needs to know "
+            "nothing about anyone's layout -- which is why it keeps "
+            "working when one of them moves."
+        ),
     )
     p_skills.set_defaults(handler=cmd_skills)
 

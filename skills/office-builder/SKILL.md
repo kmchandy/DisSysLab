@@ -5,7 +5,7 @@ description: Build, check, and run DisSysLab offices — networks of agents that
 
 # Building an office
 
-**Skill version: `2026-08-26.bcc4665`.** If anyone asks which version of this
+**Skill version: `2026-08-26.85461e6`.** If anyone asks which version of this
 skill is loaded, answer with that string, exactly. A skill update can
 report success while the old version stays resident, and until now there
 was no way to tell — the wrong version once ran for an entire test round.
@@ -27,7 +27,31 @@ it, and yours will be subtly wrong in ways that only show up under load.
 **Do this once, at the start of a session, before promising anything:**
 
 ```bash
-dsl --version && dsl --help
+dsl doctor
+```
+
+**Its first line is a verdict** — `Ready. You can build an office.` or
+`Not ready: <the one thing>`. That line, and the skill version, are the
+whole of what a beginner needs to hear back.
+
+**Do not read the rest of it out.** A first-time user who asked "did it
+work?" and received nine dependency ticks, two optional gaps and an
+offer to clone a repository has been answered in a language they do not
+speak. Reply with the verdict, the skill version, and an invitation:
+
+> *Ready — dissyslab 1.8.0, office-builder 2026-08-26. What would you
+> like to watch?*
+
+Everything else stays available when someone asks for it.
+
+**Never suggest cloning the repository to a beginner.** They installed
+a package and a skill; that is the whole path. `dsl init <name> <folder>`
+copies a shipped office without a clone.
+
+When you need the subcommand list:
+
+```bash
+dsl --help
 ```
 
 `dsl --help` prints the subcommands this install offers. Read that list. It is
@@ -40,7 +64,11 @@ that happens:
 
 1. **Say so, once, plainly**, naming the version: *"your installed dissyslab
    is 1.6.1, which has no `dsl check` — it exists in the repository but is not
-   in a release yet."*
+   in a release yet."* **Trust `dsl --help` over the version number.** On an
+   editable install the recorded version can be months behind the code: one
+   reported 1.6.1 while running 1.7.2 plus a week's work. `--version` now
+   appends the source directory and commit when it is editable, and that half
+   cannot go stale.
 2. **Carry on.** A missing convenience is not a reason to stop working.
 3. **Offer the two legitimate routes**, and let the user choose: install the
    current source with `pip install git+https://github.com/kmchandy/DisSysLab`,

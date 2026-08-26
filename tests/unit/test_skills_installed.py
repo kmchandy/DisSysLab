@@ -23,7 +23,10 @@ from dissyslab.skills_installed import (
     DISSYSLAB_SKILLS,
     DOMAIN_SKILLS,
     catalogue_lines,
+    deep_search,
     find_installed,
+    is_source_checkout,
+    locate,
     report_lines,
     search_roots,
 )
@@ -81,8 +84,8 @@ def test_a_missing_skill_says_what_it_costs(tmp_path, monkeypatch):
     (tmp_path / "home").mkdir()
 
     text = "\n".join(report_lines(cwd=tmp_path))
-    assert "office-builder: not installed" in text
-    assert "improvise its" in text
+    assert "office-builder: not found" in text
+    assert "improvise its own" in text
     assert "github.com/kmchandy/DisSysLab" in text
 
 
@@ -173,7 +176,7 @@ def test_a_missing_basic_skill_is_still_reported(tmp_path, monkeypatch):
 
     text = "\n".join(report_lines(cwd=tmp_path))
     for name in BASIC_SKILLS:
-        assert f"{name}: not installed" in text
+        assert f"{name}: not found" in text
 
 
 def test_an_installed_domain_skill_is_reported(tmp_path, monkeypatch):
@@ -244,7 +247,7 @@ def test_an_uninstalled_skill_is_listed_with_how_to_get_it(tmp_path, monkeypatch
     text = "\n".join(catalogue_lines(cwd=tmp_path))
     for entry in CATALOGUE:
         assert entry.name in text
-    assert "not installed" in text
+    assert "not found" in text
     assert "github.com/kmchandy/DisSysLab" in text
 
 
@@ -296,3 +299,126 @@ def test_office_builder_names_every_other_shipped_skill():
         "office-builder should point at `dsl skills` — the listing is "
         "the part that stays true as skills are added."
     )
+
+
+# ── when the known places are wrong ───────────────────────────────────
+#
+# On 2026-08-26 `dsl doctor` told this project's author that
+# office-builder was not installed while he was using it. Cowork
+# materialises account skills under
+# ~/Library/Application Support/Claude/local-agent-mode-sessions/
+# skills-plugin/<uuid>/<uuid>/skills/, two UUID levels down, in a
+# directory named for a *session*. No list of known places could have
+# had that in it, and the next rename will break the list again.
+#
+# So the fast search stays, and a home-wide walk backs it up.
+
+
+def test_a_skill_in_the_desktop_apps_own_directory_is_found(tmp_path, monkeypatch):
+    """The exact layout that was reported as missing."""
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
+    _install(
+        tmp_path / "home" / "Library" / "Application Support" / "Claude"
+        / "local-agent-mode-sessions" / "skills-plugin"
+        / "e96bd284-583e-4f55-a626-f0437a8bd087"
+        / "8a9e7d88-e0db-49d8-a6a4-72eb31384cbf" / "skills",
+        "office-builder",
+    )
+    found, _roots = find_installed(cwd=tmp_path)
+    assert [s.name for s in found] == ["office-builder"]
+
+
+def test_the_deep_search_finds_a_skill_nobody_predicted(tmp_path, monkeypatch):
+    """The point of the walk: it knows nothing about anyone's layout,
+    so it keeps working when a vendor moves something."""
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
+    _install(
+        tmp_path / "home" / "somewhere" / "nobody" / "guessed" / "skills",
+        "office-builder",
+    )
+    fast, _roots = find_installed(cwd=tmp_path)
+    assert fast == []
+    assert [s.name for s in deep_search()] == ["office-builder"]
+
+
+def test_the_walk_happens_by_itself_when_a_basic_skill_is_missing(
+    tmp_path, monkeypatch
+):
+    """Su is twelve, she did what she was told, and "not installed —
+    go install it" is a wall. She should not have to know a second
+    command exists, so the fallback is automatic rather than offered."""
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
+    _install(
+        tmp_path / "home" / "unexpected" / "place" / "skills", "office-builder"
+    )
+    found, _roots, went_deep = locate(cwd=tmp_path)
+    assert went_deep
+    assert "office-builder" in {s.name for s in found}
+
+
+def test_the_walk_is_skipped_when_the_fast_search_succeeds(tmp_path, monkeypatch):
+    """The slow path costs nothing to anyone whose skills are where we
+    expected, which is what makes it affordable as a default."""
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
+    for name in BASIC_SKILLS:
+        _install(tmp_path / "home" / ".claude" / "skills", name)
+    _found, _roots, went_deep = locate(cwd=tmp_path)
+    assert not went_deep
+
+
+def test_the_walk_does_not_enter_a_node_modules_tree(tmp_path, monkeypatch):
+    """Not correctness — a skill could be in there. But a search people
+    abandon finds nothing, and "slower" must not become "hangs"."""
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
+    _install(
+        tmp_path / "home" / "proj" / "node_modules" / "x" / "skills",
+        "office-builder",
+    )
+    assert deep_search() == []
+
+
+def test_the_repository_copy_is_not_an_installed_skill(tmp_path, monkeypatch):
+    """A home-wide walk finds the project's own `skills/` folder. That
+    is the *source* of a skill, not an installed one — an assistant
+    loads what the vendor materialised, and calling a clone "installed"
+    is how someone concludes an install took when it did not."""
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
+    checkout = tmp_path / "home" / "DisSysLab"
+    (checkout / "skills").mkdir(parents=True)
+    (checkout / "pyproject.toml").write_text("[project]\nname='dissyslab'\n")
+    d = _install(checkout / "skills", "office-builder")
+
+    assert is_source_checkout(d)
+    text = "\n".join(report_lines(cwd=tmp_path))
+    assert "repository's own copy" in text
+    assert "[OK] office-builder" not in text
+
+
+def test_the_verdict_says_not_ready_when_the_skill_is_missing(tmp_path, monkeypatch):
+    """The line that must survive being summarised. It used to be one
+    `[    ]` among nine ticks, and an assistant reading the output told
+    a twelve-year-old everything was fine."""
+    from dissyslab.cli import _doctor_verdict
+
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
+    (tmp_path / "home").mkdir()
+    verdict, detail, _smoke = _doctor_verdict()
+    assert verdict.startswith("Not ready")
+    assert "office-builder" in verdict
+    assert any("improvise" in line for line in detail)
+
+
+def test_a_missing_api_key_is_not_a_reason_to_say_not_ready(tmp_path, monkeypatch):
+    """Offices whose roles are all Python need no credential, and those
+    are the ones a new user runs first. A verdict that cried wolf about
+    a key would teach people to skip the verdict."""
+    from dissyslab.cli import _doctor_verdict
+
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
+    for name in BASIC_SKILLS:
+        _install(tmp_path / "home" / ".claude" / "skills", name)
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.chdir(tmp_path)
+
+    verdict, _detail, _smoke = _doctor_verdict()
+    assert verdict.startswith("Ready")
