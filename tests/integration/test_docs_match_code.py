@@ -1192,6 +1192,41 @@ def _front_matter(path: Path) -> str:
     return m.group(1) if m else ""
 
 
+#: What the installer accepts in `description:`. Both limits were found
+#: by a save failing, one after the other, on a file that passed every
+#: check in this repository -- so they are written down here now rather
+#: than rediscovered a third time.
+_MAX_DESCRIPTION = 1024
+
+
+def _description(path: Path) -> str:
+    m = re.search(r"^description:\s*(.*)$", _front_matter(path), re.M)
+    return m.group(1) if m else ""
+
+
+@pytest.mark.parametrize(
+    "skill_md",
+    sorted((REPO_ROOT / "skills").glob("*/SKILL.md")),
+    ids=lambda p: p.parent.name,
+)
+def test_skill_description_is_short_enough_to_install(skill_md):
+    """`field 'description' in SKILL.md must be at most 1024 characters`.
+
+    A description is a list of trigger phrases, and the temptation is
+    always to add one more -- this one reached 1254 and could not be
+    installed. Trimming it costs coverage of some phrasings, which is a
+    real trade and worth making deliberately rather than at a save
+    prompt.
+    """
+    length = len(_description(skill_md))
+    assert length <= _MAX_DESCRIPTION, (
+        f"{skill_md.parent.name}'s description is {length} characters; "
+        f"the installer refuses anything over {_MAX_DESCRIPTION} and the "
+        "skill cannot be saved at all. Cut trigger phrases that "
+        "duplicate one another, not the ones that name a distinct topic."
+    )
+
+
 @pytest.mark.parametrize(
     "skill_md",
     sorted((REPO_ROOT / "skills").glob("*/SKILL.md")),

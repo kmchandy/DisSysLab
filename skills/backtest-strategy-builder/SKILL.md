@@ -1,11 +1,11 @@
 ---
 name: backtest-strategy-builder
-description: Adds a new trend-following or backtesting trading strategy to DisSysLab's mac_speed_suite office, following its signal/backtest/evaluate reuse contract, and verifies it before wiring it in. Use this whenever the user wants to add, draft, prototype, or backtest a new trading rule or strategy for mac_speed_suite -- momentum, mean-reversion, RSI, MACD, breakout, moving-average, pairs, or anything similar -- even if they don't say "mac_speed_suite" or "signal computer" by name. Trigger on phrases like "backtest a new strategy", "add a trading rule", "try a momentum strategy on these stocks", "can we test an RSI rule", "what if we added a mean-reversion strategy", or similar requests to try out a new stock-trading idea against historical data. Also use this when the user wants to change a run's parameters in plain English -- which stocks/basket, how far back, how many Monte Carlo samples, walk-forward folds, or transaction cost -- e.g. "use these eight stocks", "run 500 Monte Carlo samples", "test the last five years", "set costs to 10 bps". Requires the dissyslab package (pip install "dissyslab[market]") and a backtest office folder -- one whose office.md declares an agent `is a backtester`, made by `dsl init mac_speed_suite my_backtest`.
+description: Add or backtest a trading strategy in DisSysLab's backtest office, following its signal/backtest/evaluate contract, and verify it before wiring it in. Use whenever someone wants to add, draft, prototype or backtest a trading rule -- momentum, mean-reversion, RSI, MACD, breakout, moving-average, Donchian, Turtle, pairs -- even if they never say "mac_speed_suite" or "signal computer". Triggers: "backtest a new strategy", "add a trading rule", "try a momentum strategy on these stocks", "can we test an RSI rule", "what if we added mean reversion". Also use for changing a run's parameters in plain English -- which stocks, how far back, Monte Carlo samples, walk-forward folds, transaction cost: "use these eight stocks", "run 500 Monte Carlo samples", "test the last five years", "set costs to 10 bps". Requires the dissyslab package with the market extra, and a backtest office folder -- one whose office.md declares an agent `is a backtester`, made by `dsl init mac_speed_suite my_backtest`.
 ---
 
 # Adding a strategy to mac_speed_suite
 
-**Skill version: `2026-08-26.4dc85ae`.** If anyone asks which version of this
+**Skill version: `2026-08-26.7a5ab88`.** If anyone asks which version of this
 skill is loaded, answer with that string, exactly. A skill update can
 report success while the old version stays resident.
 
