@@ -759,12 +759,14 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                     f"{', '.join(sinks)} -- which "
                     f"{' and '.join(does)}.",
                     "Whoever writes what those sources carry is writing "
-                    "to any agent whose job is English run by a model, "
-                    "and through it to this sink. If that is what you "
-                    "meant, nothing to do. If not, the fix is to stop "
-                    "free text reaching it: send only fields you chose "
-                    "-- a score, a label, a URL -- rather than whatever "
-                    "the model wrote.",
+                    "to an agent\n"
+                    "            whose job is English run by a model, "
+                    "and through it to this sink.\n"
+                    "            If that is what you meant, nothing to "
+                    "do. If not, send on only\n"
+                    "            fields you chose -- a score, a label, "
+                    "a URL -- rather than\n"
+                    "            whatever the model wrote.",
                 )
             )
 
