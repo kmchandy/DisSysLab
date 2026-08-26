@@ -30,24 +30,72 @@ from __future__ import annotations
 
 import os
 import re
+import textwrap
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Dict
 
-#: The skills everyone needs. Absence is worth reporting: without
-#: these an assistant improvises its own concurrency.
-BASIC_SKILLS = ("office-builder", "sensor-office-builder")
 
-#: A field's skills, installed deliberately by someone working in that
-#: field. Absence is the normal case and is *not* reported as missing:
-#: telling a twelve-year-old watching Mars news that she lacks a
-#: trading skill is a false alarm, and a doctor that cries wolf stops
-#: being read. Presence is reported, because a stale or duplicated
-#: copy is a real thing to see.
-DOMAIN_SKILLS = ("backtest-strategy-builder",)
+@dataclass(frozen=True)
+class SkillInfo:
+    """One skill this project ships.
+
+    The blurb is here, in the package, rather than read from the
+    skill's own ``SKILL.md`` -- because the point of ``dsl skills`` is
+    to name a skill that is *not installed*, whose SKILL.md is
+    therefore not on this machine. Skills are not in the wheel; they
+    install from the repository. So the catalogue has to travel with
+    the code that prints it, and a test pins the names to ``skills/``.
+    """
+
+    name: str
+    kind: str  # "basic" | "domain"
+    blurb: str
+
+
+#: Everything this project ships, in the order it should be read.
+#:
+#: **Basic** skills are what everyone needs; absence is worth
+#: reporting, because without them an assistant improvises its own
+#: concurrency.
+#:
+#: **Domain** skills are a field's, installed deliberately by someone
+#: working in that field. Absence is the normal case and is not
+#: reported as missing: telling a twelve-year-old watching Mars news
+#: that she lacks a trading skill is a false alarm, and a doctor that
+#: cries wolf stops being read.
+CATALOGUE = (
+    SkillInfo(
+        "office-builder",
+        "basic",
+        "build, check and run an office -- the grammar, the roles, "
+        "the sources and sinks, and what to do when it does nothing",
+    ),
+    SkillInfo(
+        "sensor-office-builder",
+        "basic",
+        "classify audio, images or sensor readings -- wrap a model or "
+        "a signal-processing step as one role and gate its output",
+    ),
+    SkillInfo(
+        "backtest-strategy-builder",
+        "domain",
+        "describe a trading strategy in English, have it written, "
+        "checked against the signal contract, and ranked with the rest",
+    ),
+)
+
+BASIC_SKILLS = tuple(s.name for s in CATALOGUE if s.kind == "basic")
+DOMAIN_SKILLS = tuple(s.name for s in CATALOGUE if s.kind == "domain")
 
 #: Skills that belong to this project. A directory called something
 #: else is somebody else's skill and none of our business.
 DISSYSLAB_SKILLS = BASIC_SKILLS + DOMAIN_SKILLS
+
+#: Where an assistant is told to install them from. Skills are not in
+#: the wheel: they are an open format installed from the repository,
+#: which is also what makes them work in Codex and Gemini CLI.
+REPO_URL = "https://github.com/kmchandy/DisSysLab"
 
 _NAME_RE = re.compile(r"^name:\s*(\S+)\s*$", re.M)
 _VERSION_RE = re.compile(r"Skill version: `(\d{4}-\d{2}-\d{2}[a-z]?\.[0-9a-f]{7})`")
@@ -186,6 +234,89 @@ def report_lines(cwd: Path | None = None) -> list[str]:
 def print_report(cwd: Path | None = None) -> None:
     print("Skills:")
     for line in report_lines(cwd):
+        print(line)
+
+
+# ── the catalogue, for `dsl skills` ───────────────────────────────────
+#
+# `dsl doctor` answers "is what I need installed?". This answers a
+# different question -- "what is there?" -- and it is the only thing
+# that can, because an assistant cannot see a skill that is not
+# installed. A skill's `description:` is what an assistant matches
+# against your words, and a skill that is not on disk has no
+# description on this machine. So discovery of an uninstalled skill has
+# to come from something that is not the assistant.
+
+
+def catalogue_lines(cwd: Path | None = None) -> list[str]:
+    """The `dsl skills` listing, as lines. Never raises."""
+    try:
+        found, roots = find_installed(cwd)
+    except Exception:  # noqa: BLE001 - a listing must always finish
+        found, roots = [], []
+
+    installed: Dict[str, list[FoundSkill]] = {}
+    for skill in found:
+        installed.setdefault(skill.name, []).append(skill)
+
+    lines = ["Skills that come with DisSysLab.", ""]
+
+    for kind, heading in (
+        ("basic", "Basic — build an office by describing it"),
+        ("domain", "For one field — add the one you work in"),
+    ):
+        entries = [s for s in CATALOGUE if s.kind == kind]
+        if not entries:
+            continue
+        lines.append(f"  {heading}")
+        for entry in entries:
+            hits = installed.get(entry.name, [])
+            if hits:
+                version = hits[0].version or "no version string"
+                lines.append(f"    [OK] {entry.name}  {version}")
+            else:
+                lines.append(f"    [  ] {entry.name}  (not installed)")
+            lines.extend(
+                textwrap.wrap(
+                    entry.blurb,
+                    width=72,
+                    initial_indent="         ",
+                    subsequent_indent="         ",
+                )
+            )
+            if len(hits) > 1:
+                lines.append(
+                    f"         {len(hits)} copies are installed — an "
+                    "assistant loads one of them, and which one is not "
+                    "yours to choose."
+                )
+        lines.append("")
+
+    missing = [s for s in CATALOGUE if s.name not in installed]
+    if missing:
+        lines.append("  To install one, ask your assistant:")
+        lines.append("")
+        lines.append(
+            f"      Install the {missing[0].name} skill from {REPO_URL}"
+        )
+        lines.append("")
+        lines.append(
+            "  Then run `dsl skills` again. Do not ask the assistant "
+            "whether it worked —"
+        )
+        lines.append(
+            "  an assistant that never loaded a skill will answer anyway. "
+            "Where a skill"
+        )
+        lines.append("  lives is a question about the filesystem.")
+        lines.append("")
+
+    lines.append("  searched: " + ", ".join(_shorten(r) for r in roots))
+    return lines
+
+
+def print_catalogue(cwd: Path | None = None) -> None:
+    for line in catalogue_lines(cwd):
         print(line)
 
 

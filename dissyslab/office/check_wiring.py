@@ -37,6 +37,8 @@ W7  cycle (note, not an error) -- legal and often intended
 W8  source with no destination, or sink nothing feeds
 W9  a connection naming something that is not declared anywhere
 W10 a sub-office whose directory, or whose office.md, is not there
+W11 (note) text from the open web can reach a sink that acts outside
+    this machine -- email, chat, a webhook, an MCP tool
 G1  an agent with a name and no job yet
 G2  nothing leaves the office -- it has no sink
 
@@ -76,6 +78,11 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Sequence, Set, Tuple
 
 from dissyslab.office.office_spec import UNASSIGNED, is_draft
+from dissyslab.office.trust import (
+    is_acting_sink,
+    is_untrusted_source,
+    what_it_does,
+)
 
 __all__ = ["Finding", "WiringReport", "check_office_dir", "check_spec", "format_report"]
 
@@ -706,6 +713,60 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                 "jsonl_recorder(path=\"...\") to keep it.",
             )
         )
+
+    # W11 -- text from the open web can reach something that acts.
+    #
+    # The first check here that is about consequences rather than
+    # structure. An agent's job can be a paragraph of English run by a
+    # language model; when the message it reads was fetched from the
+    # open web, the words in it were chosen by a stranger. Nothing in
+    # the role file prevents a stranger from writing instructions, so
+    # what is worth bounding is not the agent but the damage: an office
+    # affects the world only through its sinks.
+    #
+    # So the question is reachability, on the graph already built for
+    # W3 and W4 -- can an untrusted source reach an acting sink. See
+    # trust.py for what puts a component in each class.
+    #
+    # A note, not an error, and deliberately. There is no gate concept
+    # yet, so this cannot tell a guarded path from an unguarded one,
+    # and an error on an office somebody built on purpose would teach
+    # them to stop reading the section it prints in. It says what the
+    # office can do and leaves the judgment where the judgment is.
+    # Sinks fed by the same sources are grouped into one finding, for
+    # the reason W4 reports a frontier: job_hunter has four Gmail sinks
+    # behind one set of job boards, and four notes about one shape
+    # reads as four things to think about.
+    acting_sinks = sorted(k.name for k in spec.sinks if is_acting_sink(k.name))
+    untrusted = sorted(s.name for s in spec.sources if is_untrusted_source(s.name))
+    if acting_sinks and untrusted:
+        reverse_edges = [(b, a) for a, b in graph.edges]
+        grouped: Dict[Tuple[str, ...], List[str]] = {}
+        for sink_name in acting_sinks:
+            feeders = _reachable([sink_name], reverse_edges)
+            upstream = tuple(s for s in untrusted if s in feeders)
+            if upstream:
+                grouped.setdefault(upstream, []).append(sink_name)
+
+        for upstream, sinks in sorted(grouped.items()):
+            does = sorted({what_it_does(s) for s in sinks})
+            report.findings.append(
+                Finding(
+                    "W11",
+                    "note",
+                    sinks[0] if len(sinks) == 1 else spec.name,
+                    f"text from {', '.join(upstream)} can reach "
+                    f"{', '.join(sinks)} -- which "
+                    f"{' and '.join(does)}.",
+                    "Whoever writes what those sources carry is writing "
+                    "to any agent whose job is English run by a model, "
+                    "and through it to this sink. If that is what you "
+                    "meant, nothing to do. If not, the fix is to stop "
+                    "free text reaching it: send only fields you chose "
+                    "-- a score, a label, a URL -- rather than whatever "
+                    "the model wrote.",
+                )
+            )
 
     # Draft framing.
     #

@@ -14,10 +14,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import subprocess
+import sys
+
 from dissyslab.skills_installed import (
     BASIC_SKILLS,
+    CATALOGUE,
     DISSYSLAB_SKILLS,
     DOMAIN_SKILLS,
+    catalogue_lines,
     find_installed,
     report_lines,
     search_roots,
@@ -204,3 +209,67 @@ def test_the_shipped_skills_are_the_ones_we_look_for():
         f"skills/ holds {sorted(on_disk)} but doctor looks for "
         f"{sorted(DISSYSLAB_SKILLS)}."
     )
+
+
+# ── `dsl skills`: what is there, as against what is installed ─────────
+#
+# `dsl doctor` answers "is what I need installed?". This answers "what
+# is there?", and it is the only thing that can: an assistant matches
+# your words against a skill's `description:`, and a skill that is not
+# installed has no description on this machine. So an assistant cannot
+# tell you about a skill you do not already have, and will answer
+# anyway.
+
+
+def test_the_catalogue_names_every_shipped_skill():
+    """The listing is hardcoded in the package because it has to name
+    skills that are *not* installed, whose SKILL.md is therefore
+    absent. That makes it a second place the truth lives, so pin it."""
+    on_disk = {p.name for p in SKILL_SRC.iterdir() if (p / "SKILL.md").is_file()}
+    assert {s.name for s in CATALOGUE} == on_disk
+
+
+def test_every_catalogue_entry_says_what_the_skill_lets_you_do():
+    for entry in CATALOGUE:
+        assert entry.blurb.strip(), f"{entry.name} has no blurb"
+        assert entry.kind in ("basic", "domain")
+
+
+def test_an_uninstalled_skill_is_listed_with_how_to_get_it(tmp_path, monkeypatch):
+    """The case the command exists for. Absence here is not a fault to
+    report -- it is the thing being answered."""
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
+    (tmp_path / "home").mkdir()
+
+    text = "\n".join(catalogue_lines(cwd=tmp_path))
+    for entry in CATALOGUE:
+        assert entry.name in text
+    assert "not installed" in text
+    assert "github.com/kmchandy/DisSysLab" in text
+
+
+def test_an_installed_skill_is_marked_with_its_version(tmp_path, monkeypatch):
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
+    _install(tmp_path / "home" / ".claude" / "skills", "office-builder")
+
+    text = "\n".join(catalogue_lines(cwd=tmp_path))
+    assert "[OK] office-builder  2026-08-19.385377d" in text
+
+
+def test_it_says_where_it_looked(tmp_path, monkeypatch):
+    """Same reason `dsl doctor` does. A skill installed somewhere this
+    module has never heard of otherwise reads as 'not installed',
+    which is the silent wrong answer one level up."""
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
+    (tmp_path / "home").mkdir()
+    assert "searched:" in "\n".join(catalogue_lines(cwd=tmp_path))
+
+
+def test_dsl_skills_runs():
+    out = subprocess.run(
+        [sys.executable, "-m", "dissyslab.cli", "skills"],
+        capture_output=True, text=True, cwd=REPO_ROOT,
+    )
+    assert out.returncode == 0
+    assert "office-builder" in out.stdout
+    assert "backtest-strategy-builder" in out.stdout

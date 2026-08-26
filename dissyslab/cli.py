@@ -621,6 +621,22 @@ def cmd_roles(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_skills(_args: argparse.Namespace) -> int:
+    """List the skills this project ships and which are installed.
+
+    `dsl doctor` answers "is what I need installed?". This answers
+    "what is there?", which nothing could answer before -- and which
+    an assistant structurally cannot, because a skill that is not
+    installed has no `description:` on this machine for the assistant
+    to match your words against. Discovery of an uninstalled skill has
+    to come from something that is not the assistant.
+    """
+    from dissyslab.skills_installed import print_catalogue
+
+    print_catalogue()
+    return 0
+
+
 # ── Subcommand: fetch-prices ──────────────────────────────────────────────────
 
 def cmd_fetch_prices(args: argparse.Namespace) -> int:
@@ -1963,6 +1979,27 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p_roles.set_defaults(handler=cmd_roles)
+
+    p_skills = sub.add_parser(
+        "skills",
+        help="list the skills DisSysLab ships and which are installed",
+        description=(
+            "Print every skill this project ships, whether it is "
+            "installed, and the sentence that installs one that is "
+            "not.\n\n"
+            "A skill is a folder of instructions an assistant loads -- "
+            "an open format, the same SKILL.md in Claude Code, Codex "
+            "and Gemini CLI. Skills install from the repository rather "
+            "than from the wheel, which is why this command names them "
+            "rather than finding them all on disk.\n\n"
+            "An assistant cannot tell you about a skill it has not "
+            "loaded, and will answer anyway. Where a skill lives is a "
+            "question about the filesystem, so this asks the "
+            "filesystem."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_skills.set_defaults(handler=cmd_skills)
 
     p_fetch = sub.add_parser(
         "fetch-prices",
