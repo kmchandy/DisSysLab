@@ -581,7 +581,7 @@ Short names in the last column are
 | §3 | The entire drug-discovery domain: `assay_folder`, `potency_filter`, `structure_canonicaliser`, `pains_screen`, `literature_scout`, and the three checks | **Does not exist.** No components, no checks, no design document. The three characteristic errors named are real and well known; nothing here implements them | nothing yet |
 | §3, "The bet" | Two domain libraries | One: trading | — |
 | "Forty offices" | "The bench" row | Nothing in it exists | — |
-| everywhere | `Vikram is a source` — naming a source after a person | Not built. Sources are library names; this needs source aliasing, which touches the parser, the spec, the checker and codegen | STATUS.md §4 |
+| everywhere | `Reuters is a source` — naming a source yourself | Not built. Sources are library names; this needs source aliasing, which touches the parser, the spec, the checker and codegen | STATUS.md §4 |
 
 Everything not listed above is true today and is in
 [README.md](README.md).

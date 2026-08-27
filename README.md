@@ -22,7 +22,7 @@ Here are two examples of building distributed apps. The first builds an office b
 
 ### Use office primitives
 
-Install Claude Cowork on your laptop and chooses **on your
+Install Claude Cowork on your laptop and choose **on your
 computer** rather than in the cloud when given that option. 
 
 **1.** Start a task in Cowork.
@@ -74,7 +74,7 @@ Dan is a relevance_filter.
 
 Alongside it the assistant writes `roles/relevance_filter.md` — the
 library's version of that role with its criteria rewritten to say
-"about Mars". Dan's job is a paragraph of English she can read and
+"about Mars". Dan's job is a paragraph of English you can read and
 edit.
 
 > *Jay writes one sentence about each one Dan keeps. Show me them on
@@ -102,19 +102,19 @@ Jay's out is console_printer.
 Three sentences. Dan and Jay are separate agents that share nothing
 and can only send each other messages; the office keeps running and
 checks for new stories on its own; and when there is nothing left to
-do it works that out and stops. Su wrote none of that and can read all
-of it.
+do it works that out and stops. You wrote none of that and can read
+all of it.
 
-Su picked space. The same three sentences build the same office around
-anything that publishes a feed — a game's update notes, a football
-club, a webcomic — by pointing it at the address:
+This one is about space. The same three sentences build the same
+office around anything that publishes a feed — a game's update notes,
+a football club, a webcomic — by pointing it at the address:
 `rss(url="...", name="patch_notes")`.
 
 <p align="center">
   <img src="docs/images/dsl-demo.gif" alt="dsl run streaming classified headlines from live news feeds" width="700">
 </p>
 
-## Vikram, who tests trading strategies and does not read Python
+### Test trading strategies without reading Python
 
 **1.** Start a task, **on your computer**.
 
@@ -384,12 +384,13 @@ are designed to run indefinitely and you can say so.
 
 ---
 
-# 3. How Vikram's application was built
+# 3. How the backtesting application was built
 
 Not a recommendation. A record of what we actually did, because the
 interesting part is which skill supplied what.
 
-**He asked for a backtest of several trend-following rules, ranked.**
+**A tester asked for a backtest of several trend-following rules,
+ranked.**
 The `office-builder` skill turned that into an office: one price
 source, a validation gate, a market-context agent, four strategy
 families fanning out to eleven backtester instances, a synchronizer
@@ -404,20 +405,20 @@ per bar, where the signal is a position fraction rather than a
 direction — and the three checks, look-ahead among them. Those checks
 run against strategies their author never saw.
 
-**Then he told us the thing we had not thought of.** He could read the
-ranking but could not tell whether the code implemented the rule he
-had in his head, and he was not going to read Python to find out. So
-we added a third thing: a per-bar trace, written as a spreadsheet,
-with every intermediate quantity shown twice — once as the number and
-once as a live Excel formula. That was not in either skill. It came
-from a tester saying what he could not see.
+**Then the tester told us the thing we had not thought of.** He could
+read the ranking but could not tell whether the code implemented the
+rule he had in his head, and he was not going to read Python to find
+out. So we added a third thing: a per-bar trace, written as a
+spreadsheet, with every intermediate quantity shown twice — once as the
+number and once as a live Excel formula. That was not in either skill.
+It came from a tester saying what he could not see.
 
 **What we would do differently, stated plainly.** The office assumed a
 git clone for eighteen months without anyone noticing, because we
 only ever ran it from one. The look-ahead check is offered as a script
 rather than run as part of building the office, so an eleven-agent
 fan-out can contain a strategy nobody checked. And ranked output —
-*"show me the top 10"* — is what he asked for next, and is not built.
+*"show me the top 10"* — is what was asked for next, and is not built.
 
 ---
 
