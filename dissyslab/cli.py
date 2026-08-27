@@ -194,25 +194,84 @@ def _walk_packaged_offices() -> dict[str, list[Path]]:
     return out
 
 
-def _one_line_description(office_dir: Path) -> str:
-    """Find a short one-line description for an office, or '' if none.
+#: Lines that begin an office's *grammar* rather than describe it. An
+#: office.md with no prose under its title would otherwise be summarised
+#: by its own wiring -- `dsl list` showed eight offices described as
+#: "Sources: starter", which tells a reader nothing and looks broken.
+_GRAMMAR_PREFIXES = (
+    "sources:", "sinks:", "agents:", "connections:", "office:",
+)
 
-    Returns the first non-blank, non-heading line of README.md (or
-    office.md as a fallback) that is not the `**Tags:**` line.
+
+def _unfinished_reason(office_dir: Path) -> str:
+    """Why this office is not expected to work yet, or '' if it is.
+
+    An office that is still being built carries a file named ``WIP``
+    whose first line says what is missing. The test sweeps have honoured
+    that marker for months -- they report an expected failure instead of
+    a hard one -- but `dsl list` did not, so `salton_sea_dashboard` was
+    advertised under "ready to run" while `dsl check` reported two
+    faults on it. A catalogue that recommends something known not to
+    work spends a beginner's afternoon.
+    """
+    marker = Path(office_dir) / "WIP"
+    if not marker.is_file():
+        return ""
+    try:
+        for line in marker.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if line and not line.startswith("#"):
+                return line
+    except OSError:
+        pass
+    return "work in progress"
+
+
+def _one_line_description(office_dir: Path) -> str:
+    """A short description of an office for `dsl list`, or '' if none.
+
+    The first line of prose in README.md, falling back to office.md.
+
+    **Nothing is better than something wrong.** This is a catalogue
+    somebody browses to choose what to run, so a line that is not a
+    description -- a blockquote marker, a wiring declaration -- is worse
+    than a blank, which at least reads as "no description" rather than
+    as a description that makes no sense.
     """
     for candidate in ("README.md", "office.md"):
         f = office_dir / candidate
         if not f.is_file():
             continue
+        # `#` means two different things in the two files. In a README
+        # it is a heading, to be skipped. In an office.md only the first
+        # one is the title; the rest are comments, and five gallery
+        # offices keep their whole description in them -- which is why
+        # `dsl list` showed them as "Sources: starter" while a perfectly
+        # good sentence sat two lines above.
+        comments_are_prose = candidate == "office.md"
+        past_title = False
         try:
             for line in f.read_text(encoding="utf-8").splitlines():
                 s = line.strip()
-                if not s:
+                if not s or s.startswith("**Tags:**"):
                     continue
                 if s.startswith("#"):
+                    if not comments_are_prose:
+                        continue
+                    if not past_title:
+                        past_title = True
+                        continue
+                    s = s.lstrip("#").strip()
+                    if not s:
+                        continue
+                # A lead paragraph is often written as a blockquote. The
+                # marker is markdown, not part of the sentence.
+                while s.startswith(">"):
+                    s = s[1:].lstrip()
+                if not s:
                     continue
-                if s.startswith("**Tags:**"):
-                    continue
+                if s.lower().startswith(_GRAMMAR_PREFIXES):
+                    break  # this file describes nothing; try the next
                 # Strip simple markdown bold markers so the terminal
                 # output reads naturally — e.g. `**Foo.**` → `Foo.`.
                 cleaned = s.replace("**", "")
@@ -1023,9 +1082,13 @@ def cmd_show_checkpoint(args: argparse.Namespace) -> int:
 
 # ── Subcommand: list ──────────────────────────────────────────────────────────
 
+#: `Pat` and `Builders` were the personas this project designs against.
+#: They belong in its documents, not in its output: a student reading
+#: `dsl list` has never met Pat, and a heading that names someone they
+#: cannot ask about is the same defect as an unexplained `W11`.
 _SECTION_HEADINGS = {
-    "apps": "Apps (for Pat — ready to run as a daily assistant)",
-    "examples": "Examples (for Builders — patterns to crib)",
+    "apps": "Apps — ready to run",
+    "examples": "Examples — patterns to copy from",
     "": "Other",
 }
 
@@ -1065,9 +1128,11 @@ def cmd_list(args: argparse.Namespace) -> int:
         for p in group:
             hint = _one_line_description(p)
             line1 = f"    {p.name:<{name_width}}"
+            if _unfinished_reason(p):
+                line1 += "  (unfinished)"
             if hint:
                 line1 += f"  {hint}"
-            print(line1)
+            print(line1.rstrip())
         print()
 
     print("To copy an office into your own folder:")
@@ -1151,6 +1216,13 @@ def cmd_init(args: argparse.Namespace) -> int:
         return 1
 
     print(f"Copied '{args.office_name}' to {target}")
+    unfinished = _unfinished_reason(target)
+    if unfinished:
+        # The last place to say it before they spend an afternoon on it.
+        print()
+        print("Note: this office is unfinished and is not expected to run:")
+        print(f"  {unfinished}")
+        print("It is here to read and to copy from.")
     print()
     print("Next steps:")
     print(f"  cd {target}")
@@ -1521,8 +1593,19 @@ def _doctor_verdict() -> tuple[str, list[str], object]:
             s.name == "office-builder" and not is_source_checkout(s.path)
             for s in found
         )
+        # Found in a clone is a different fact from found nowhere, and
+        # only the first is something doctor knows. Saying "not
+        # installed" for the second claims knowledge of what exists on
+        # a disk it has only partly read -- the wording mistake this
+        # whole section was rewritten to stop making, still living on
+        # in the verdict line.
+        repo_copy_only = not have_skill and any(
+            s.name == "office-builder" and is_source_checkout(s.path)
+            for s in found
+        )
     except Exception:  # noqa: BLE001 - doctor must always finish
         have_skill = False
+        repo_copy_only = False
 
     if not smoke_ok:
         return (
@@ -1532,13 +1615,22 @@ def _doctor_verdict() -> tuple[str, list[str], object]:
              " that passes."],
             smoke_result,
         )
+    if repo_copy_only:
+        return (
+            "Not ready: office-builder is only in the repository, not installed.",
+            ["An assistant loads what was installed, not what is in a",
+             "clone. dissyslab itself works. Ask your assistant to",
+             "install the office-builder skill from the repository.",
+             "See the Skills section below."],
+            smoke_result,
+        )
     if not have_skill:
         return (
-            "Not ready: the office-builder skill is not installed.",
+            "Not ready: I could not find the office-builder skill.",
             ["dissyslab itself works. Without the skill an assistant will",
              "improvise its own concurrency instead of assembling tested",
              "parts -- and it will look as though it worked.",
-             "See the Skills section below."],
+             "The Skills section below lists everywhere I looked."],
             smoke_result,
         )
     return ("Ready. You can build an office.", [], smoke_result)

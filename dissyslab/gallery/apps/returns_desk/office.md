@@ -1,5 +1,9 @@
 # Office: returns_desk
 
+# A returns desk that pauses. A clerk handles each ticket, escalates the
+# hard ones to a manager, and a `select` coordinator holds the queue
+# still until the manager answers -- the worked example for `select`.
+
 Sources: starter
 Sinks: jsonl_recorder(path='outcomes.jsonl'), console_printer
 

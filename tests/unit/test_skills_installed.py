@@ -407,6 +407,40 @@ def test_the_verdict_says_not_ready_when_the_skill_is_missing(tmp_path, monkeypa
     assert "office-builder" in verdict
     assert any("improvise" in line for line in detail)
 
+    # And it must not claim the skill is *not installed*. Doctor
+    # searched some folders and found nothing in them; what exists on
+    # this disk is not something it knows. This is the same wording
+    # mistake the Skills section was rewritten to stop making, and it
+    # survived in the verdict line for a fortnight because nothing
+    # tested the sentence a reader actually reads first.
+    assert "not installed" not in verdict
+    assert any("looked" in line for line in detail), (
+        "when it found nothing, the verdict must offer where it looked"
+    )
+
+
+def test_found_only_in_a_clone_is_a_different_verdict(tmp_path, monkeypatch):
+    """Two situations, two sentences. "I could not find it" is a
+    statement about doctor's search; "it is in the repository but not
+    installed" is a statement about a folder it actually read. The
+    second is more useful precisely because it is a stronger claim, and
+    it is only sayable when true."""
+    from dissyslab.cli import _doctor_verdict
+
+    home = tmp_path / "home"
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: home))
+    checkout = home / "DisSysLab"
+    (checkout / "skills").mkdir(parents=True)
+    (checkout / "pyproject.toml").write_text("[project]\nname='dissyslab'\n")
+    for name in BASIC_SKILLS:
+        _install(checkout / "skills", name)
+    monkeypatch.chdir(tmp_path)
+
+    verdict, detail, _smoke = _doctor_verdict()
+    assert verdict.startswith("Not ready")
+    assert "repository" in verdict
+    assert any("clone" in line for line in detail)
+
 
 def test_a_missing_api_key_is_not_a_reason_to_say_not_ready(tmp_path, monkeypatch):
     """Offices whose roles are all Python need no credential, and those

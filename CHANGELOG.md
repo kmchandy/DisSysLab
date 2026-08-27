@@ -70,6 +70,33 @@ teaches a beginner that building is a sequence of errors.
   be looked for. A capability an assistant cannot reach is one the user
   has to reach themselves.
 
+### Fixed — `dsl list` was describing offices by their own wiring
+
+The catalogue a beginner picks from, read as a new user for the first
+time — by installing the wheel into an empty virtualenv, which is how
+all three of these were found:
+
+- **Eight offices were described as "Sources: starter"**. Their prose
+  sat in `#` comment lines under the title, and the extractor skipped
+  every `#` line as a markdown heading. In a README `#` is a heading; in
+  an office.md only the first one is, and the rest are comments.
+- **Ten more carried a leading `> `** into the terminal.
+- **`salton_sea_dashboard` was listed under "ready to run"** while
+  `dsl check` reports two faults on it. It has carried a `WIP` marker
+  for months and the test sweeps honour it — `dsl list` did not read it.
+  It is now marked `(unfinished)`, and `dsl init` on an unfinished
+  office says so and says why.
+
+Three offices that had no description anywhere now have one. A test
+requires every shipped office to say what it is, and cannot be
+satisfied by suppressing the line.
+
+The section headings said **"Apps (for Pat)"** and **"Examples (for
+Builders)"**. Pat and Builders are who this project designs for; a
+student reading `dsl list` has never met them. Naming someone the
+reader cannot ask about is the same defect as printing `W11` with
+nowhere to look it up.
+
 ### Added — W11: text from the open web reaching something that acts
 
 A note, not a fault. An agent whose job is a paragraph of English is
@@ -148,6 +175,17 @@ home folder before concluding anything. It **never says "not
 installed"** — it knows where it looked, not what exists. Cowork stores
 skills two UUID levels down inside Application Support, which is how a
 skill that was demonstrably in use got reported as absent.
+
+The **verdict line** said "the office-builder skill is not installed"
+whatever the reason, which is the exact wording the section below it
+had been rewritten to stop using — the rule was applied to the long
+output and not to the sentence a reader sees first. Two situations now
+get two sentences: *"office-builder is only in the repository, not
+installed"* when doctor read a clone and found it there, and *"I could
+not find the office-builder skill"* when it found nothing, with the
+list of everywhere it looked. The second is weaker on purpose. A test
+pins both, including that the not-found verdict does not contain the
+words "not installed".
 
 ### Changed — `dsl --version` names the code it is actually running
 

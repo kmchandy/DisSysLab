@@ -1,5 +1,9 @@
 # Office: room_climate_monitor
 
+# Two sensors, one reading. A temperature agent and a humidity agent
+# report independently and a `synchronizer` waits for both before the
+# checker judges the room -- the worked example for joining branches.
+
 Sources: starter
 Sinks: console_printer
 
