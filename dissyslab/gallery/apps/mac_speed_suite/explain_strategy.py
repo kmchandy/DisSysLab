@@ -13,8 +13,17 @@ Each derived quantity appears twice: the value the Python produced, and
 the same quantity as a live Excel formula over the price cells. The
 formula is there to be *read*, and edited. `=MAX(D7:D9)` in row 10 says
 "the three rows above this one, not this one" without anyone explaining
-the boundary convention, and if that is not your rule you can change it
-and watch the signal column move.
+the boundary convention.
+
+**The signal column does not move.** Change a price and the shaded
+columns recompute -- the channels, the averages, N -- because those are
+formulas. The signal is a number Python worked out and wrote into the
+cell, so nothing recalculates it. This file used to promise otherwise,
+and a tester changed a close to 99 against a channel top of 1.55 and
+read "no breakout -- hold": a confident wrong answer to the exact
+question the sheet invites. See this office's README for a live signal
+column you can paste in for Donchian and MAC, and why Turtle and RS
+cannot have one.
 
 The two columns do not verify each other. Both express one author's
 understanding of the rule, so a misreading appears in both. What they
@@ -897,10 +906,34 @@ def main(argv: list[str] | None = None) -> int:
         traces.append(tr)
         if a.bars:
             lo, hi = (int(x) for x in a.bars.split(":"))
+            # Checked, because `--variant` already is and this was not:
+            # asking for days 9000-9040 of a 2,515-day history exited
+            # cleanly, printed "wrote ... bars 9000-9039", and produced
+            # a header row with nothing under it.
+            if lo >= hi:
+                p.error(f"--bars {a.bars}: the range runs backwards")
+            if lo >= len(bars):
+                p.error(
+                    f"--bars {a.bars}: {a.ticker} has {len(bars)} days of "
+                    f"history, so day {lo} does not exist. The most recent "
+                    f"day is {len(bars) - 1} ({bars[-1]['date']})."
+                )
+            hi = min(hi, len(bars))
         else:
             lo, hi = pick_window(tr, a.rows)
         windows.append((lo, hi))
 
+    # Say it here, not only on the Read me sheet.
+    #
+    # The workbook has always disclosed made-up prices, clearly, on its
+    # first tab. But when a trader asks rather than runs, the assistant
+    # is the only thing between fabricated prices and a decision -- and
+    # the assistant sees stdout, not the workbook. An ordinary success
+    # message was all it got, so it reported "here's the working for
+    # Donchian on MSFT" over invented data. The warning existed, in a
+    # variable, and was handed to the sheet and never printed.
+    if provenance.startswith("SYNTHETIC"):
+        print("WARNING: " + provenance)
     write_workbook(traces, windows, provenance, a.out)
     print(f"wrote {a.out}")
     for tr, (lo, hi) in zip(traces, windows):

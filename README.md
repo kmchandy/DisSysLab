@@ -37,12 +37,12 @@ computer** rather than in the cloud when given that option.
 > *Install the `office-builder` skill from that repository, then run
 > `dsl doctor` again.*
 
-`dsl doctor`'s **Skills** section names the skill and its version, or
-says it is not installed and lists where it looked. 
-
-**4.** Now carry out a conversation with Cowork. Here is an example conversation.
-
-Input:
+`dsl doctor`'s first line is a verdict: `Ready. You can build an
+office.` or `Not ready:` and the one thing that is wrong. Its
+**Skills** section names each skill, its version, and the folder it
+was found in — or every folder it looked in, if it found none. Do not
+ask the assistant which version it has; where a skill lives is a
+question about the filesystem.
 
 > *Give me an office with agents Dan and Jay.*
 
@@ -146,8 +146,12 @@ a column comparing the two. Click a shaded cell and the formula bar
 reads `=MAX(C2:C21)` — the channel is built from the twenty rows
 *above* this one, not this one. A boundary convention that is
 ambiguous in English, invisible in a chart, and decides whether a
-backtest was honest. If it is not your rule, edit the cell and watch
-the signal column move.
+backtest was honest. Change a price and those shaded columns recompute.
+
+The signal column does not: it is a number, not a formula, because for
+two of the four strategies the position depends on the whole path and
+no cell formula could compute it. The office's README carries a live
+signal column you can paste in for the two where it is possible.
 
 To be straight about what that does and does not give you: both
 columns are one person's reading of the rule, written twice. If the
@@ -186,7 +190,9 @@ messages, written once and tested: agents as threads with named
 inboxes and outboxes, the network that connects them, distributed
 termination detection, the Chandy–Lamport global snapshot for
 checkpoint and resume, and a library of sources, sinks and roles to
-build from. `dsl list` shows the shipped offices; `dsl check` reads an
+build from. `dsl list` shows the shipped offices; `dsl roles` the
+built-in roles and the field each one adds; `dsl skills` which skills
+are installed and where; `dsl check` reads an
 office and reports its structural faults without running it;
 `dsl draw` renders it; `dsl doctor` checks an installation.
 
@@ -312,6 +318,26 @@ inbox nothing writes to, an agent nothing can reach, work that reaches
 no sink, a sink nothing feeds, a role with no file behind it, a source
 or sink name in no registry with the nearest real name suggested, a
 sub-office whose folder is not there, a feedback loop with no gate.
+
+One finding is not about structure but about consequence, and it is a
+note rather than a fault: **text from the open web reaching a sink that
+acts outside this machine** — email, chat, a webhook. An agent whose
+job is English is run by a model, and a model that can be instructed
+can be instructed by its input; when that input was fetched from the
+web, a stranger chose the words. Nothing in the role file closes that.
+What bounds it is the other end: an office's **declared** power is its
+sinks, so the decidable question is whether an untrusted source can
+reach an acting one — reachability on a graph already computed. Five
+shipped offices report it, and all five are doing exactly what they
+were built to do; the note is the office saying so out loud.
+
+"Declared" is doing work in that sentence. Python inside a role can act
+outside the sinks, and no check on the graph will see it — which is why
+`dsl check` also reports (W12) when a role's own code reaches the
+network, starts another program, or runs code built at run time. That
+one is a lint: it reads imports and cannot see what the code does. The
+exposure is not this project's — anyone running assistant-written
+Python has it — but the claim is, so the claim is stated exactly.
 
 That is why `office.md` has a narrow grammar. The language is small
 not so that a person can write it, but so that a checker can catch

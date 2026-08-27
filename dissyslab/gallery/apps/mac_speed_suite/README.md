@@ -149,8 +149,46 @@ Each derived quantity appears **twice**: the value the Python produced,
 and the same quantity as a live Excel formula over the price cells,
 with a `match` column comparing them. The formula is there to be read.
 `=MAX(C2:C21)` in row 22 says *"the twenty rows above this one, not
-this one"* without anyone explaining the boundary convention — and if
-that is not your rule, change it and watch the signal column move.
+this one"* without anyone explaining the boundary convention. Change a
+price and those shaded columns recompute.
+
+### The signal column does not move
+
+It is a number Python worked out and wrote into the cell, not a
+formula, so nothing recalculates it when you change a price. A tester
+changed a close to 99 against a channel top of 1.55 and the sheet said
+*"no breakout -- hold"* — a confident wrong answer to the exact
+question the sheet invites. This README used to promise otherwise.
+
+For **Donchian** and the **moving-average crossover** the position is a
+function of that row alone, so a live signal column is possible. Add
+one and paste in the formula, filling down from row 3:
+
+```
+Donchian   =IF(F3="",0,IF(E3>F3,1,IF(E3<I3,-1,N2)))
+MA cross   =IF(D3>G3,1,-1)
+```
+
+Seed Donchian's first row with the value from the `signal` column, then
+fill down. `N2` points at the row above, which is how *"hold whatever
+you held"* survives being written as a formula; the `F3=""` guard is
+for the warm-up rows, where the channel does not exist yet and Excel
+would otherwise read a blank cell as zero. Column letters assume the
+default layout — check the header row if you passed `--strategy` more
+than once.
+
+Verified against the Python by recalculating both sheets: 43 rows for
+Donchian, 30 for MAC, no disagreement. The Donchian formula is Sebu's,
+with the blank guard added.
+
+For **Turtle** and **relative strength** no such formula exists, and
+this is the interesting half. Turtle's position depends on the whole
+path — how many units are on, where the last one was added, where the
+stop is — so no cell can compute it from one row. Relative strength
+depends on the *other stocks in the basket*, which are not on this
+sheet at all. Those two sheets show the position as a number with the
+rule that fired beside it, and that is the honest presentation rather
+than a limitation to be worked around.
 
 The two columns do not verify each other; both express one author's
 understanding of the rule. What they give you is a specification you

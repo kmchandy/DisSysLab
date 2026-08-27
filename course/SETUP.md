@@ -46,12 +46,14 @@ examples: a morning brief, a news situation room, a bird-call classifier, a
 stock watcher. These are working programs, not examples in a book.
 
 If anything looks wrong, say: *"run `dsl doctor` and tell me what it says."*
-That checks your Python, your dependencies, your backend and which DisSysLab
-skills are installed, then builds and runs a small office as a self-test.
+Its **first line is a verdict** — `Ready. You can build an office.`, or `Not
+ready:` and the one thing that is wrong. Everything under it is detail: your
+Python, your dependencies, your backend, which skills are installed, and a
+small office built and run as a self-test.
 
-Run it again after installing the skill in step 4. Its **Skills** section is
-how you know that step worked — see the note there about why you should not
-just ask.
+Run it again after installing the skill in step 4. The **Skills** section
+names the version and the folder it was found in, which is how you know that
+step worked — see the note there about why you should not just ask.
 
 ---
 

@@ -416,6 +416,17 @@ def catalogue_lines(cwd: Path | None = None, deep: bool | None = None) -> list[s
                     f"    {'[OK]' if not source else '[  ]'} {entry.name}  "
                     f"{version}{'  (repository copy, not installed)' if source else ''}"
                 )
+                # The path, because "where do my skills live?" cost the
+                # author of this project a `find` and two wrong guesses,
+                # and because a version with no path cannot tell you
+                # which of two copies you are looking at.
+                lines.append(f"         {_shorten(hits[0].path)}")
+                if len(hits) > 1:
+                    lines.append(
+                        f"         and {len(hits) - 1} more copy(ies) — an "
+                        "assistant loads one of them, and which one is not "
+                        "yours to choose"
+                    )
             else:
                 lines.append(f"    [  ] {entry.name}  (not found)")
             lines.extend(
