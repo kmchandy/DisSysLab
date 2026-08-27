@@ -689,6 +689,24 @@ def cmd_roles(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_checks(args: argparse.Namespace) -> int:
+    """Say what a check code means.
+
+    `dsl check` prints `W11` beside a finding. Codes are worth having --
+    stable across rewordings, and a way for two people to refer to the
+    same finding without quoting a sentence at each other -- but they
+    are opaque, and until this existed a reader who did not already
+    know had nowhere to go. The meanings lived in the code that raises
+    them and in CHANGELOG entries filed by release.
+    """
+    from dissyslab.office.check_catalogue import catalogue_lines, get
+
+    code = getattr(args, "code", None)
+    for line in catalogue_lines(code):
+        print(line)
+    return 0 if code is None or get(code) is not None else 1
+
+
 def cmd_skills(_args: argparse.Namespace) -> int:
     """List the skills this project ships and which are installed.
 
@@ -2129,6 +2147,28 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p_roles.set_defaults(handler=cmd_roles)
+
+    p_checks = sub.add_parser(
+        "checks",
+        help="say what a check code like W4 or G1 means",
+        description=(
+            "`dsl check` prints a code beside every finding. This says "
+            "what one means.\n\n"
+            "    dsl checks        every code, one line each\n"
+            "    dsl checks W11    what that one means\n\n"
+            "A *problem* means the office is wrong and will not run "
+            "correctly. A *note* means read it and decide -- the office "
+            "is not wrong, but it is doing something worth knowing "
+            "about."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_checks.add_argument(
+        "code",
+        nargs="?",
+        help="a code such as W4, W11 or G1. Omit it to list them all.",
+    )
+    p_checks.set_defaults(handler=cmd_checks)
 
     p_skills = sub.add_parser(
         "skills",

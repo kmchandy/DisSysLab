@@ -190,6 +190,39 @@ cannot see faults that depend on what happens at run time — an office whose
 diagram is correct can still deadlock, because whether a message is ever
 readable can depend on execution history rather than on the graph.
 
+### The codes, and how to look one up
+
+Every finding carries a code. **You do not need to memorise them, and
+neither does the user — `dsl checks W11` says what one means, and
+`dsl checks` lists them all.** Use it rather than explaining a code from
+memory; the descriptions are pinned to the code that raises them by a test,
+and yours are not.
+
+| | | |
+|---|---|---|
+| `W1` | problem | an inbox nothing writes to — the usual reason an office hangs |
+| `W3` | problem | an unreachable agent: no path from any source |
+| `W4` | problem | a dead end: output that reaches no sink |
+| `W5` | problem | no such source or sink (with the nearest real name) |
+| `W6` | problem | no file behind a role |
+| `W7` | **note** | a feedback loop, and whether anything gates it |
+| `W8` | problem | a source with no destination, or a sink nothing feeds |
+| `W9` | problem | a name in Connections that is nothing at all |
+| `W10` | problem | a sub-office that is not there |
+| `W11` | **note** | text from the open web reaching something that acts |
+| `W12` | **note** | a role's own Python reaching outside |
+| `G1` | problem | an agent with no job yet |
+| `G2` | problem | nothing leaves this office |
+
+A **problem** means the office is wrong. A **note** means read it and
+decide: the office is not wrong, and `dsl check` still passes. In a draft
+office the incompleteness findings are reported as *"still to do"* with no
+code at all, which is the right register for an office someone is halfway
+through writing.
+
+There is no `W2`. It was withdrawn, and the numbers are identifiers rather
+than a sequence.
+
 ### W11 — free text reaching something that acts
 
 One finding is not about structure but about consequence, and it is a
@@ -250,6 +283,7 @@ and that is true of any Python an assistant hands you.
 
 ```
 dsl draw <office_dir>          the network as a Mermaid diagram
+dsl checks [CODE]              what a check code means
 dsl roles                      every built-in role and the field it adds
 dsl skills                     which DisSysLab skills are installed
 dsl fetch-prices --office DIR  download your own price history

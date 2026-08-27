@@ -712,9 +712,9 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                 "error",
                 spec.name,
                 "nothing leaves this office -- it has no sink.",
-                "It will run, finish and show you nothing. Add a sink: "
-                "console_printer to see the output, or "
-                "jsonl_recorder(path=\"...\") to keep it.",
+                "It will run, finish and show you nothing. Add a sink:"
+                "\n            console_printer to see the output, or"
+                "\n            jsonl_recorder(path=\"...\") to keep it.",
             )
         )
 
@@ -852,6 +852,20 @@ def check_office_dir(office_dir: Path) -> WiringReport:
 # --------------------------------------------------------------------------
 
 
+def _hint_lines(hint: str, indent: int) -> List[str]:
+    """A hint, indented to match the report it is being printed in.
+
+    Hints that need more than one line used to carry their own leading
+    spaces in the string literal. That worked in the ordinary report and
+    misaligned in a draft's, which indents four columns further -- the
+    author of the hint cannot know which report it will appear in. So
+    the writer supplies the line breaks and the printer supplies the
+    indentation.
+    """
+    pad = " " * indent
+    return [pad + line.strip() for line in hint.split("\n")]
+
+
 def format_report(report: WiringReport) -> str:
     """Plain text, every finding, grouped -- no traceback, no first-error-only."""
     errors, notes = report.errors, report.notes
@@ -869,7 +883,7 @@ def format_report(report: WiringReport) -> str:
         for finding in notes:
             lines.append(f"  {'still to do':<14}{finding.message}")
             if finding.hint:
-                lines.append(f"{'':<16}{finding.hint}")
+                lines.extend(_hint_lines(finding.hint, 16))
             lines.append("")
         for skipped in report.skipped:
             lines.append(f"  skipped: {skipped}")
@@ -893,10 +907,19 @@ def format_report(report: WiringReport) -> str:
         label = finding.code if finding.is_error else f"{finding.code}  note:"
         lines.append(f"  {label:<10}{finding.message}")
         if finding.hint:
-            lines.append(f"{'':<12}{finding.hint}")
+            lines.extend(_hint_lines(finding.hint, 12))
         lines.append("")
     for skipped in report.skipped:
         lines.append(f"  skipped: {skipped}")
+
+    # The code is only useful if the reader can find out what it means,
+    # and until `dsl checks` existed there was nowhere to look. Say so
+    # here, using a code actually in this report, rather than assuming
+    # anyone will go looking for the command.
+    first = (errors + notes)[0].code
+    while lines and not lines[-1]:
+        lines.pop()
+    lines += ["", f"  What a code means: dsl checks {first}"]
     return "\n".join(lines).rstrip() + "\n"
 
 

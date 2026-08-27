@@ -37,8 +37,21 @@ The reason is pedagogical and it is the point of the feature: an
 unfinished office is not a broken one, and reporting it as broken
 teaches a beginner that building is a sequence of errors.
 
-### Added — four commands, so an assistant can ask instead of guessing
+### Added — five commands, so an assistant can ask instead of guessing
 
+- **`dsl checks`** — what a check code means. `dsl checks W11` explains
+  one; `dsl checks` lists all thirteen. `dsl check`'s own output now
+  ends with a line naming the command and a code from that report, so
+  the code is resolvable at the moment you meet it.
+
+  The codes were opaque to everyone, the author of this project
+  included: their meanings lived in the nine hundred lines that raise
+  them and in CHANGELOG entries filed by release, so "what does W11
+  mean?" had no answer short of a search. The descriptions are pinned
+  to the checker by a test that reads `check_wiring.py` — a code raised
+  with no entry fails, and so does an entry for a code nothing raises.
+  A reference that can drift is worse than none, because it is
+  believed.
 - **`dsl roles`** — the built-in roles and, for each, the field it adds
   to a message. Every role file now opens with `emits:` front matter,
   in the file whose behaviour it describes, so changing a role and
