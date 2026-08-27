@@ -86,9 +86,25 @@ undecided.
 
 **Use this rather than inventing a job.** When someone says *"give me an
 office with Dan and Jay"* they have told you two names and nothing else.
-Write the two names down, say what is still missing, and wait. An
-unfinished office is not a broken one, and reporting it as broken teaches a
-beginner that building is a sequence of errors.
+Write the two names down and wait. An unfinished office is not a broken
+one, and reporting it as broken teaches a beginner that building is a
+sequence of errors.
+
+**Say back what you wrote, then invite the next sentence.** Two lines:
+
+> The office has an agent called Dan with an unassigned role, and an agent
+> called Jay with an unassigned role. Tell me more about the office.
+
+Not a list of everything missing. The gaps are real and `dsl check` prints
+them on request, but reciting them here turns a first sentence into a
+report card, and a beginner reads a five-item list of what is absent as
+five things they got wrong. One sentence of what exists, one invitation to
+continue.
+
+Also not a menu. A model asked something underspecified will offer options
+unless it is told not to — *"would you like Dan to be a filter, a router, a
+summarizer…"* is the default behaviour, and it is wrong here. The user
+knows what she is building; she has not said it yet.
 
 ### Per-agent model backend
 

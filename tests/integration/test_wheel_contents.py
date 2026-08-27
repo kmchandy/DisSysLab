@@ -199,9 +199,18 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 def _has_build() -> bool:
     """Probe for ``python -m build``. The release env has it; CI may
     not. Skip cleanly when missing rather than red-flagging the
-    suite."""
+    suite.
+
+    Import ``build.__main__``, not ``build``. A leftover ``build/``
+    directory in the repo root — which is exactly what a bare
+    ``python -m build`` leaves behind — is importable as a namespace
+    package, so ``import build`` succeeds while ``python -m build``
+    fails with *"'build' is a package and cannot be directly
+    executed"*, and eighty-four tests error instead of skipping. A
+    probe has to ask the question the caller is about to ask.
+    """
     try:
-        import build  # noqa: F401
+        import build.__main__  # noqa: F401
         return True
     except ImportError:
         return False

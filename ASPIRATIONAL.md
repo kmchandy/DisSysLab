@@ -46,15 +46,19 @@ Dan is unassigned.
 Jay is unassigned.
 ```
 
-> Two agents, no roles yet. **Still to do:** Dan and Jay have no role;
-> no source; no sink; nothing is connected.
+> The office has an agent called Dan with an unassigned role, and an
+> agent called Jay with an unassigned role. Tell me more about the
+> office.
 
 That is the whole protocol, and it is visible from the first sentence:
-**what you said, written down** — and **what is missing, as a list**.
-Nothing was invented on her behalf. There is no source she did not ask
-for, no sink, no helpful guess about what Dan might be. An office this
-incomplete cannot run, and the assistant says so rather than filling
-the hole.
+**what you said, written down** — and **an invitation to say the next
+thing**. Nothing was invented on her behalf. There is no source she did
+not ask for, no sink, no helpful guess about what Dan might be, and no
+menu of jobs to pick from.
+
+Nor is she handed a list of the five things her office is missing. They
+are all missing, `dsl check` will say so whenever she asks, and reciting
+them at her first sentence would read as five things she got wrong.
 
 > *Dan reads what comes in and sends the urgent ones to `immediate`
 > and everything else to `delay`.*
@@ -74,8 +78,8 @@ If the message is urgent, send to immediate.
 Otherwise, send to delay.
 ```
 
-> Dan routes to `immediate` and `delay`. **Still to do:** Jay has no
-> role; no source; no sink; Dan's `immediate` and `delay` go nowhere.
+> Dan is a `router` and sends to `immediate` and `delay`. Neither goes
+> anywhere yet.
 
 Her sentence declared Dan's two outboxes. The names came out of her
 own words — no model was asked to guess them — so the checker already
@@ -89,9 +93,8 @@ Jay is a sentiment_classifier.
 ```
 
 > Jay is a `sentiment_classifier` from the role library — it adds a
-> `sentiment` field with values positive, negative or neutral.
-> **Still to do:** no source; no sink; Dan's `immediate` and `delay`
-> go nowhere; Jay's output goes nowhere.
+> `sentiment` field with values positive, negative or neutral. Nothing
+> reaches Jay yet.
 
 She has been handed a component she has never seen, so she is told
 what it emits. Otherwise she wires the next agent to it blind and
