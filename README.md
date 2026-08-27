@@ -336,12 +336,19 @@ acts outside this machine** — email, chat, a webhook. An agent whose
 job is English is run by a model, and a model that can be instructed
 can be instructed by its input; when that input was fetched from the
 web, a stranger chose the words. Nothing in the role file closes that.
-What bounds it is the other end, because an office affects the world
-only through its sinks — so the decidable question is whether an
-untrusted source can reach an acting one, which is reachability on a
-graph already computed. Five shipped offices report it, and all five
-are doing exactly what they were built to do; the note is the office
-saying so out loud.
+What bounds it is the other end: an office's **declared** power is its
+sinks, so the decidable question is whether an untrusted source can
+reach an acting one — reachability on a graph already computed. Five
+shipped offices report it, and all five are doing exactly what they
+were built to do; the note is the office saying so out loud.
+
+"Declared" is doing work in that sentence. Python inside a role can act
+outside the sinks, and no check on the graph will see it — which is why
+`dsl check` also reports (W12) when a role's own code reaches the
+network, starts another program, or runs code built at run time. That
+one is a lint: it reads imports and cannot see what the code does. The
+exposure is not this project's — anyone running assistant-written
+Python has it — but the claim is, so the claim is stated exactly.
 
 That is why `office.md` has a narrow grammar. The language is small
 not so that a person can write it, but so that a checker can catch

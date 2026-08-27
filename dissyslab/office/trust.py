@@ -10,8 +10,8 @@ to the page. That is prompt injection, and no amount of care in the
 role file prevents it: a model that can be instructed can be
 instructed by its input.
 
-What *can* be bounded is the damage. An office affects the world only
-through its sinks. An office whose sinks all print to a screen or
+What *can* be bounded is the damage. An office's **declared** power is
+its sinks -- see "What this does not do" below for the word "declared". An office whose sinks all print to a screen or
 write a local file cannot attack anything, whatever a model in the
 middle is persuaded to say. An office with an email or webhook sink
 can. So the question worth asking before a run is not "is this agent
@@ -43,11 +43,14 @@ forces the decision instead of defaulting to one -- the same shape as
 
 What this does not do
 ---------------------
-It says nothing about roles. A Python role is free to ``import
-requests`` and act without going near a sink, and no table here sees
-that. It also cannot tell a well-guarded path from an unguarded one;
-that is what a gate would be, and gates are not built. So a finding
-from this module is a note about a shape, not a verdict about a risk.
+It says nothing about what a role's own code does. A Python role is
+free to ``import requests`` and act without going near a sink, and no
+table here sees that -- ``role_effects.py`` and W12 are the partial,
+import-reading answer to it.
+
+It also cannot tell a well-guarded path from an unguarded one; that is
+what a gate would be, and gates are not built. So a finding from this
+module is a note about a shape, not a verdict about a risk.
 """
 from __future__ import annotations
 

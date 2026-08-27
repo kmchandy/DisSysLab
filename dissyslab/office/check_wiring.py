@@ -39,6 +39,9 @@ W9  a connection naming something that is not declared anywhere
 W10 a sub-office whose directory, or whose office.md, is not there
 W11 (note) text from the open web can reach a sink that acts outside
     this machine -- email, chat, a webhook, an MCP tool
+W12 (note) a role's own Python reaches the network, another program, or
+    code built at run time -- a lint, and one that teaches rather than
+    protects
 G1  an agent with a name and no job yet
 G2  nothing leaves the office -- it has no sink
 
@@ -78,6 +81,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Sequence, Set, Tuple
 
 from dissyslab.office.office_spec import UNASSIGNED, is_draft
+from dissyslab.office.role_effects import scan_office
 from dissyslab.office.trust import (
     is_acting_sink,
     is_untrusted_source,
@@ -769,6 +773,45 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                     "            whatever the model wrote.",
                 )
             )
+
+    # W12 -- what a role's own Python reaches for.
+    #
+    # A lint, and deliberately a teaching one. The exposure it points
+    # at is not this project's: any student running any
+    # assistant-written Python has it, and a sandbox to solve one
+    # instance of a general problem would be overreach.
+    #
+    # What *is* this project's is the claim. A plain script promises
+    # nothing; an office says its power is its Sources and Sinks. That
+    # sentence is true of the office and not of the Python inside a
+    # role, so this exists to keep it honest -- and to put the general
+    # lesson in front of someone at the one moment it is concrete,
+    # which is when they have just been handed code they did not write.
+    #
+    # It reads imports. It cannot see what the code does.
+    # Grouped by file, for the reason W4 reports a frontier: one file
+    # that imports subprocess and calls subprocess.run is one thing to
+    # look at, not two.
+    by_file: Dict[Path, List[str]] = {}
+    for effect in scan_office(office_dir):
+        by_file.setdefault(effect.path, []).append(effect.detail)
+
+    for path, details in sorted(by_file.items()):
+        report.findings.append(
+            Finding(
+                "W12",
+                "note",
+                path.name,
+                f"{path.parent.name}/{path.name} "
+                + "; ".join(details) + ".",
+                "An office's declared power is its Sources and Sinks."
+                "\n            Python inside a role can act outside "
+                "that, and this check"
+                "\n            only reads imports -- it cannot see what "
+                "the code does."
+                "\n            If you did not write this file, read it.",
+            )
+        )
 
     # Draft framing.
     #
