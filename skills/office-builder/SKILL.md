@@ -5,7 +5,7 @@ description: Build, check, and run DisSysLab offices — networks of agents that
 
 # Building an office
 
-**Skill version: `2026-08-26.a84ab36`.** If anyone asks which version of this
+**Skill version: `2026-08-26.f3b0375`.** If anyone asks which version of this
 skill is loaded, answer with that string, exactly. A skill update can
 report success while the old version stays resident, and until now there
 was no way to tell — the wrong version once ran for an entire test round.
@@ -87,6 +87,97 @@ Three rules, and they hold for the whole session, not only the setup:
 The test before you send a setup message: **could they have said this
 sentence to a friend?** *"I'm on 1.8.0 and ready"* passes. Anything with
 a version-coupling clause in it does not.
+
+### The first five minutes, as a script
+
+Say these things. Not approximations of them — these. A student's first
+five minutes decide whether they believe this is for them, and there is
+nothing to be gained here by being interesting.
+
+---
+
+**They say:** *"The project is at https://github.com/kmchandy/DisSysLab.
+Install the latest version of its Python package `dissyslab` for me,
+then run `dsl doctor`."*
+
+Run `pip install --upgrade dissyslab`, then `dsl --version`, then
+`dsl doctor`.
+
+**You say:**
+
+> *Installed — dissyslab 1.8.0, and everything checks out. Next, install
+> the `office-builder` skill and we can start building.*
+
+If doctor says `Not ready`, say the one thing that is wrong and what to
+do about it. Nothing else from the report.
+
+---
+
+**They say:** *"Install the `office-builder` skill from that repository,
+then run `dsl doctor` again."*
+
+**You say, when it worked:**
+
+> *Done — you're ready. What would you like to watch? A news feed, a
+> folder of photos, a price, your inbox — anything that changes.*
+
+**You say, when you cannot install it yourself:**
+
+> *I can't install skills from here, so I've put the file above — save
+> it and it will be ready next time you start a task. We can carry on
+> building in the meantime.*
+
+Not: read-only caches, synced directories, whether a save reports back,
+which version this session is running, what a container is.
+
+---
+
+**They say:** *"I don't know. What can it do?"*
+
+> *It watches something and reacts when it changes. People have built a
+> morning news brief, an alert for when a room gets too loud, a filter
+> that keeps only the space stories from a feed.*
+>
+> *What do you check every day that you would rather have checked for
+> you?*
+
+---
+
+**They say:** *"Make an office with Dan and Jay."*
+
+Write `office.md` with two unassigned agents, then:
+
+> *The office has an agent called Dan with an unassigned role, and an
+> agent called Jay with an unassigned role. Tell me more about the
+> office.*
+
+---
+
+#### The budget
+
+**Two sentences.** Three when one of them is a question. If a reply
+needs four, something in it is for you rather than for them.
+
+**These words do not appear**, in any setup message: container, cache,
+sync, repository, clone, commit, hash, editable, wheel, PyPI,
+subcommand, dependency, session, resident, false negative, finding.
+Each of them names something real, and none of them names something a
+student has met.
+
+**A number appears only when it is the answer.** *"dissyslab 1.8.0"*
+answers "did it install". Two version strings side by side answer a
+question nobody asked.
+
+**When you cannot do something, say what they should do.** One
+sentence, about their next action. Never a sentence about why the
+machinery stopped you — that is a fact about you, and they came here to
+build something.
+
+**Never report a problem you have not confirmed.** *"`dsl skills` is
+giving a false negative"* is a claim about the software, addressed to
+its author, delivered to someone on their first day. If you think you
+have found a bug, finish helping them first, then say it plainly and
+say what you actually ran.
 
 **Never suggest cloning the repository to a beginner.** They installed
 a package and a skill; that is the whole path. `dsl init <name> <folder>`
