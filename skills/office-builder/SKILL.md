@@ -5,7 +5,7 @@ description: Build, check, and run DisSysLab offices — networks of agents that
 
 # Building an office
 
-**Skill version: `2026-08-26.23e45f0`.** If anyone asks which version of this
+**Skill version: `2026-08-26.67ab37f`.** If anyone asks which version of this
 skill is loaded, answer with that string, exactly. A skill update can
 report success while the old version stays resident, and until now there
 was no way to tell — the wrong version once ran for an entire test round.
@@ -57,6 +57,30 @@ dsl --help
 `dsl --help` prints the subcommands this install offers. Read that list. It is
 the authority on what exists here — not this file, not the repository, not the
 documentation.
+
+### Installing, and the word that decides whether it worked
+
+**Use `pip install --upgrade dissyslab`, never `pip install dissyslab`.**
+On a machine that already has an older release, the second prints
+*"Requirement already satisfied"* and changes nothing. That is a true
+sentence which reads as success, and it is how a tester spent an
+afternoon on 1.7.1 an hour after 1.8.0 was published — with a skill
+teaching behaviour the install did not have.
+
+**Then check, rather than assume.** `pip` reporting success is not
+evidence about what is now on the path:
+
+```bash
+dsl --version
+```
+
+**This file describes dissyslab 1.8.0 or later.** An older install lacks
+things taught here — `dsl checks`, draft offices, the optional article,
+`dsl draw`, `dsl fetch-prices` — so if `dsl --version` reports less than
+1.8.0 after an install, the install did not take. Say so and upgrade
+again, naming the version you saw. Do not proceed quietly; a mismatch
+between this skill and the package is the one fault that makes every
+later answer wrong in a way the user cannot see.
 
 **These instructions describe the current source. A user's `pip install
 dissyslab` may be an older release that lacks something described here.** When

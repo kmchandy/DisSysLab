@@ -5,7 +5,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Tests](https://github.com/kmchandy/DisSysLab/actions/workflows/test.yml/badge.svg)](https://github.com/kmchandy/DisSysLab/actions/workflows/test.yml)
 
-**Build multi-agent applications.**
+**Build message-passing multi-agent applications.**
 
 DisSysLab is a Python library and a set of skills that AI assistants — Claude Cowork, Codex, Gemini CLI — can use to build distributed applications in which many agents run concurrently. These applications can monitor data sources - news, sensors, and social media - and respond by sending messages to actuators, consoles and files. The applications can also process data sets such as historic stock and weather records. 
 
@@ -20,17 +20,18 @@ A distributed system is represented by an office in which everyone works remotel
 
 Here are two examples of building distributed apps. The first builds an office by using primitives of an office - agents, connections, and roles. The second is for a finance "quant" who develops concurrent stock-trading strategies without explicitly using the office infrastructure.
 
-### Use office primitives
+### Build a distributed system by talking to an assistant
 
 Install Claude Cowork on your laptop and choose **on your
 computer** rather than in the cloud when given that option. 
 
 **1.** Start a task in Cowork.
 
-**2.** Input the following:
+**2.** Input the following into Cowork:
 
-> *The project is at https://github.com/kmchandy/DisSysLab. Install its
-> Python package `dissyslab` for me, then run `dsl doctor`.*
+> *The project is at https://github.com/kmchandy/DisSysLab. Install the
+> latest version of its Python package `dissyslab` for me — upgrading it
+> if an older one is already there — then run `dsl doctor`.*
 
 **3.** Input:
 
@@ -120,8 +121,9 @@ a football club, a webcomic — by pointing it at the address:
 
 **2.** Say:
 
-> *The project is at https://github.com/kmchandy/DisSysLab. Install its
-> Python package `dissyslab` with the market extra, then run
+> *The project is at https://github.com/kmchandy/DisSysLab. Install the
+> latest version of its Python package `dissyslab` with the market extra
+> — upgrading it if an older one is already there — then run
 > `dsl doctor`.*
 
 The market extra carries the price downloader and the spreadsheet
@@ -472,10 +474,16 @@ keep.
 The library stands on its own.
 
 ```bash
-pip install dissyslab
+pip install --upgrade dissyslab
 dsl init periodic_brief my_brief
 cd my_brief && dsl run .
 ```
+
+**`--upgrade`, not `install`.** On a machine that already has an older
+`dissyslab`, `pip install dissyslab` prints *"Requirement already
+satisfied"* and changes nothing — which reads as success, and is how a
+tester spent an afternoon on 1.7.1 an hour after 1.8.0 was published.
+`dsl --version` is the answer to "what have I actually got".
 
 No API key, no account, no model download. After ten to twenty seconds
 the office has written a styled HTML brief from live news headlines
