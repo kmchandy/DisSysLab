@@ -5,6 +5,223 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/).
 
 
+## [1.8.0] — 2026-08-27
+
+Fifty-five commits, and one theme runs through most of them: **the
+software says out loud what it knows, in a channel where it can be
+checked.** Every entry below that reads as a bug fix is an instance of
+the same failure — a document promising behaviour the code did not
+have, a program reporting a fact in a place nobody would look, an
+assistant summarising a warning into "all good". The corrections are
+mostly checks, because a check in a prompt is a request and a check in
+code is a fact.
+
+Nothing in this release changes the Python API. Offices written for
+1.7.2 run unchanged.
+
+### Added — an office you have not finished writing
+
+`Jay is unassigned.` is now a line you can write. It parses as a
+decision not yet made rather than as a role named `unassigned`, and an
+office holding one is a **draft** — a property of the office, not a
+flag somebody has to remember to pass.
+
+`dsl check` on a draft reports the same findings in different words and
+**exits 0**. *"'Dan' is unreachable — no path from any source"* becomes
+*"nothing reaches Dan yet"*; the header reads `draft, 4 things still to
+do`. Two findings are new: **G1**, an agent with a name and no job, and
+**G2**, nothing leaves this office. `dsl run` and `dsl build` refuse a
+draft, naming the agents whose job is undecided.
+
+The reason is pedagogical and it is the point of the feature: an
+unfinished office is not a broken one, and reporting it as broken
+teaches a beginner that building is a sequence of errors.
+
+### Added — four commands, so an assistant can ask instead of guessing
+
+- **`dsl roles`** — the built-in roles and, for each, the field it adds
+  to a message. Every role file now opens with `emits:` front matter,
+  in the file whose behaviour it describes, so changing a role and
+  changing its description are one edit. Before this, an assistant
+  asked "what roles are there?" read thirteen prompt files and
+  paraphrased them afresh, and no two students were told the same thing
+  about `summarizer`. The emitted field is the fact you actually need:
+  something wired downstream of `severity_classifier` reads `severity`.
+- **`dsl draw`** — the office's network as a Mermaid diagram.
+- **`dsl skills`** — which skills ship with DisSysLab, which are
+  installed, and **the folder each was found in**.
+- **`dsl fetch-prices`** — the price downloader, previously a script
+  inside one gallery folder that you had to `cd` into. With no tickers
+  named it reads the basket out of the office's own
+  `csv_stock_history(...)` line, so what is fetched is what will later
+  be looked for. A capability an assistant cannot reach is one the user
+  has to reach themselves.
+
+### Added — W11: text from the open web reaching something that acts
+
+A note, not a fault. An agent whose job is a paragraph of English is
+run by a model, and a model that can be instructed can be instructed by
+its input; prompt injection is not something care in the role file
+prevents. What *can* be bounded is the damage, and an office's declared
+power is its sinks. So `dsl check` now answers the question that is
+actually answerable — *can text a stranger wrote reach a sink that
+sends mail, posts to chat, or calls a URL?* — which is reachability on
+a graph it already computes.
+
+All 46 shipped sources are classified trusted or untrusted, and all 26
+sinks inert or acting, in `dissyslab/office/trust.py`, explicitly
+rather than by name pattern. A test fails when a component is
+registered without an entry, so adding one forces the decision.
+An unknown name is **not** treated as untrusted: a check that fires on
+everything it has not heard of is one people learn to skim.
+
+Five shipped offices report it: `inbox_triage`, `job_hunter`,
+`lead_qualifier`, `situation_room_requests`, `ticket_router`.
+
+### Added — W12: what a role's own Python reaches for
+
+W11 is complete only while an agent's body cannot act on its own. Once
+roles are Python, an agent can open a socket without going near a sink,
+and the graph check quietly becomes a check on one of two channels with
+nothing announcing it.
+
+W12 reads a role's imports and a handful of call names — network,
+another process, code built at run time. It is **a lint, and it is
+there to teach**: it cannot see what code does, cannot follow an alias,
+and can be evaded by anyone trying. The hint says so, in the output
+rather than only in a docstring.
+
+The exposure is not this project's — any student running any
+assistant-written Python has it. What is this project's is the claim
+that an office's power is readable in four lines, and this is what
+keeps that sentence honest. `import os` is deliberately not flagged
+(fifteen shipped roles use it for paths); `os.system` is. Exactly one
+shipped office reports it, and correctly: `periodic_brief`'s sink
+shells out to `open` to show you the brief.
+
+### Changed — one name per concept
+
+*Org chart* is gone; it is a **network**. An org chart shows authority
+and is a tree; an office shows dataflow and may contain cycles, so "the
+org chart has a loop" was incoherent beside a README that said networks
+need not be acyclic. *Inport* and *outport* are gone; they are
+**inbox** and **outbox**, which is what the office metaphor already
+called them.
+
+Documents and skills only — no Python name changed. A vocabulary check
+now fails the build if a retired word comes back.
+
+### Changed — `Eve is summarizer.` and `Eve is a summarizer.` are the same line
+
+The article used to be the only thing separating a role from a
+sub-office, which is not a distinction anyone means to draw with one
+character — and it produced three different outcomes for one dropped
+`a`, chosen by which library the name happened to belong to.
+**`office at` now marks a sub-office**, two words that say what they
+mean. A line matching none of the three agent forms is a parse error
+that names all three, instead of a silent reinterpretation.
+
+### Changed — `dsl doctor` leads with a verdict
+
+Its first line is now `Ready. You can build an office.` or `Not ready:`
+and the one thing that is wrong, and the verdict is repeated at the
+end. This is a fix for a real failure: doctor reported a missing skill
+in the middle of its output, ended with "All required checks passed",
+and an assistant reading it told the user everything was fine.
+
+Its **Skills** section names each skill, its version, and the folder it
+was found in. If the usual folders do not have it, doctor searches your
+home folder before concluding anything. It **never says "not
+installed"** — it knows where it looked, not what exists. Cowork stores
+skills two UUID levels down inside Application Support, which is how a
+skill that was demonstrably in use got reported as absent.
+
+### Changed — `dsl --version` names the code it is actually running
+
+An editable install records its version once, at install time, so
+`dsl --version` said 1.6.1 while running code nine commits later. It
+now appends the source folder and the commit — read from `.git`
+directly, without running `git`.
+
+### Fixed — a timed-out office stops instead of hanging
+
+`run(timeout=T)` raised `TimeoutError` and told nobody: shutdown was
+sent only when termination was *declared*, and a timeout is exactly the
+case where it was not. Agent threads are non-daemon, so they stayed
+parked in `recv` and the process could not exit — the timeout was
+printed and then the program hung. A student meets that in the first
+hour and concludes Ctrl-C is broken.
+
+Every agent is now stopped before the raise, on both channels agents
+listen on. And a third thing the written-down diagnosis did not have,
+found only by running it: `os_agent`'s own loop returns only on
+termination, so the manager outlived every agent it managed. It now
+waits on a stop event.
+
+### Changed — termination detection proves idleness instead of inferring it
+
+The old predicate asked "did every agent answer this round, and are all
+channels empty?" That worked only because every agent was reactive — a
+reactive agent can answer a poll from inside `recv`, at a point where
+it owes nothing, so answering *is* the proof. That is an accident of
+the agent's shape, not a property of the protocol.
+
+Agents now report an explicit `idle` bit, and the manager believes an
+agent is idle only if it said so this round. The default is `False`,
+which is the conservative direction: a false idle discards real work,
+a false active only delays termination.
+
+`Alarm` is the first non-reactive agent that is not a Source. It takes
+a `wake_me_in` request and its worker's only action is to put a message
+on the alarm's own inbox, so every message event stays on the agent's
+thread.
+
+### Added — a strategy shows its working, bar by bar
+
+`explain_strategy` writes an Excel workbook in which every intermediate
+column is a live formula. Click a shaded cell and the formula bar reads
+`=MAX(C2:C21)` — the channel is built from the twenty rows *above* this
+one, not including this one. That boundary convention is ambiguous in
+English, invisible in a chart, and decides whether a backtest was
+honest. Turtle and RS now show their working too, and `--peers` sets
+the RS comparison basket.
+
+Two honesty fixes in the same area, both found by recalculating the
+sheets by hand: the signal column is a value rather than a formula (for
+two of the four strategies the position depends on the whole path, and
+no cell formula can compute it), and four documents that promised a
+signal column you could watch move now say what actually happens.
+Synthetic prices print a warning to **stdout**, not only into the file.
+
+### Added — the look-ahead check runs itself
+
+The no-lookahead, determinism and finiteness checks were a script
+somebody had to remember to run. A signal computer now verifies its
+strategy on the first real message it sees and raises
+`StrategyContractError` if it fails, with the offending bar and both
+values named. Sampled after that, so the cost is bounded. `checks="off"`
+is available and is an explicit choice.
+
+The checker lives in one place and the copy bundled with the skill is
+pinned to it byte-for-byte by a test — the previous arrangement had a
+correct checker in one app and a weaker copy in another.
+
+### Changed — skills live in `skills/` and say what they build
+
+`backtest-strategy-builder` moved out of the gallery to where the
+install instruction can find it. Each skill's front matter now names
+the kind of office it builds, and `office-builder` carries an index of
+the domain skills, so an assistant meeting an unfamiliar request has
+somewhere to look. Two rules the skill installer never documented —
+no angle-bracket tokens in a description, and at most 1024 characters —
+are now checked by a test, having each cost a failed save.
+
+`office-builder` itself was rewritten around transcribing what the user
+said. Asked for *"an office with Dan and Jay"* it writes two agents with
+unassigned roles and invites the next sentence, rather than offering a
+menu of jobs the user did not ask about.
+
+
 ## [1.7.2] — 2026-08-18
 
 ### Changed — market data comes from Yahoo via yfinance, and you fetch your own
