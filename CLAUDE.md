@@ -41,10 +41,49 @@ what follows is unnecessary — say so and set that up. Otherwise:
 then exactly the work he has not seen. Forgetting this is the bug that
 produces every other problem here.
 
+**His half of it: he commits and pushes before handing back to you.**
+`dslsave "message"` is `git commit -am "$1" && git push`. Anything he
+has not pushed is invisible to you and becomes a conflict; anything he
+has pushed, you build on top of. If a working block starts and his
+last message implied an edit, fetch before assuming anything.
+
 **Bundles carry everything that belongs in git.**
-`git bundle create <file> origin/main..HEAD`, delivered to his disk.
-He runs `git fetch <bundle> HEAD && git merge FETCH_HEAD`, tests,
-pushes.
+`git bundle create <file> origin/main..main`, written straight to
+`~/Documents/OfficeSpeak/_to_delete/dsl.bundle`. He runs `dslpull`,
+tests, pushes. Always `origin/main..main`: a bundle built from
+`..HEAD` once carried only a `HEAD` ref and his pull could not name a
+branch.
+
+**He must never have to merge.** A merge costs him ten minutes and a
+conflict editor he does not use. Every conflict this project has had
+was avoidable, and the two rules that avoid them are:
+
+1. **Re-stage the file before you commit anything that touches it**
+   (`device_stage_files` on `~/Documents/DisSysLab/<file>`), diff it
+   against the last commit he has, and **fold his edits into your own
+   commit** -- his wording, not your rewrite of it. Then his pull is a
+   fast-forward.
+2. **It is proximity, not overlap.** Git compares with three lines of
+   context, so an edit of his one blank line from an edit of yours
+   conflicts even though neither touched the other's text. "We changed
+   different sentences" is not safety.
+
+**When he has already committed and diverged**, do not send him to a
+merge. Ask for `git --no-pager show --stat <his-commit>`, confirm every
+file in it is folded into your commit, then have him run
+`git reset --hard origin/main && dslpull`. Confirm the contents first,
+every time: `reset --hard` is not recoverable through anything he knows
+how to drive.
+
+**`git --no-pager` whenever you ask him to read git output.** A plain
+`git show` opens a pager and he pastes back the header alone.
+
+**There is no push access and asking for a token is a waste of his
+time.** This container reaches GitHub through a proxy that refuses to
+inject a credential for any repository outside the session's authorized
+set. Reads work because the repository is public and anonymous. A
+correctly scoped fine-grained token was created, tried, and refused
+before it reached GitHub.
 
 **Never write a tracked file into his repository.** Writing a file to
 his disk *and* shipping the same file in a bundle guarantees his
