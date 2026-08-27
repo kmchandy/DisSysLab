@@ -44,6 +44,10 @@ was found in — or every folder it looked in, if it found none. Do not
 ask the assistant which version it has; where a skill lives is a
 question about the filesystem.
 
+**4.** Now carry out a conversation with Cowork. Here is an example conversation.
+
+Input:
+
 > *Give me an office with agents Dan and Jay.*
 
 ```
@@ -54,6 +58,13 @@ Dan is unassigned.
 Jay is unassigned.
 ```
 
+> The office has an agent called Dan with an unassigned role, and an
+> agent called Jay with an unassigned role. Tell me more about the
+> office.
+
+You said two names and nothing else, and two names is what was written
+down. No source you did not ask for, no sink, no guess about what Dan
+might do, and no menu of jobs to choose from.
 
 > *Dan reads the space news and keeps only the ones about Mars.*
 
