@@ -22,11 +22,19 @@ from dissyslab.skills_installed import BASIC_SKILLS
 
 
 def _install_skill(root: Path, name: str) -> Path:
+    """A skill stamped exactly as this release expects.
+
+    Not an arbitrary date: an older one now draws a "your skill predates
+    this release" note, correctly, and the healthy case has to be
+    genuinely healthy or it is testing the wrong thing.
+    """
+    from dissyslab.skill_versions import EXPECTED
+
     d = root / name
     d.mkdir(parents=True, exist_ok=True)
     (d / "SKILL.md").write_text(
         f"---\nname: {name}\ndescription: test\n---\n\n"
-        f"**Skill version: `2026-01-01.abc1234`.**\n",
+        f"**Skill version: `{EXPECTED.get(name, '2099-01-01.abcdefa')}`.**\n",
         encoding="utf-8",
     )
     return d

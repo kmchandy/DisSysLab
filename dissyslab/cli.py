@@ -1858,12 +1858,21 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         print(f"dissyslab {_package_version()}   Python "
               f"{sys.version.split()[0]}")
         try:
-            from dissyslab.skills_installed import is_source_checkout, locate
+            from dissyslab.skills_installed import (
+                is_source_checkout,
+                locate,
+                stale_message,
+            )
 
             found, _roots, _deep = locate()
             for s in found:
                 if not is_source_checkout(s.path):
                     print(f"{s.name} {s.version}")
+                    # A skill older than this release survives the short
+                    # form. It is the one thing here that changes what
+                    # the user should do next.
+                    for line in stale_message(s.name, s.version):
+                        print(f"  {line}")
         except Exception:  # noqa: BLE001 - doctor must always finish
             pass
         print()

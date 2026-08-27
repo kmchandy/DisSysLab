@@ -302,6 +302,40 @@ def locate(cwd: Path | None = None, deep: bool | None = None):
     return list(by_path.values()), roots, True
 
 
+def stale_message(name: str, version: str | None) -> list[str]:
+    """Lines to print when an installed skill predates this release.
+
+    The comparison a person should not have to make by eye. A skill
+    version reads `2026-08-26.a84ab36`; asking a beginner to check that
+    against a string in a chat message is asking them to be a diffing
+    tool, and they will glance at the date and move on.
+
+    **Only the date half is compared, and only in one direction.**
+    Between releases the repository's skill is legitimately newer than
+    the wheel expects, and a student who installed it correctly must
+    never be told they got it wrong. Older is the case worth reporting:
+    the skill then teaches behaviour this package does not have, and
+    every later answer is wrong in a way nobody can see.
+    """
+    try:
+        from dissyslab.skill_versions import EXPECTED
+    except Exception:  # noqa: BLE001 - a report must always finish
+        return []
+
+    expected = EXPECTED.get(name)
+    if not expected or not version:
+        return []
+    have_date, want_date = version.split(".")[0], expected.split(".")[0]
+    if have_date >= want_date:
+        return []
+    return [
+        f"this is older than the {want_date} skill this release was",
+        "built with, so it may describe things this install does not",
+        "have. Ask your assistant to install it again from",
+        f"{REPO_URL}",
+    ]
+
+
 def report_lines(cwd: Path | None = None, deep: bool | None = None) -> list[str]:
     """The `dsl doctor` section, as lines. Never raises."""
     try:
@@ -334,6 +368,9 @@ def report_lines(cwd: Path | None = None, deep: bool | None = None) -> list[str]
             mark = "[OK]" if not is_source_checkout(skill.path) else "[    ]"
             lines.append(f"  {mark} {name} {version}")
             lines.append(f"         {_shorten(skill.path)}")
+            stale = stale_message(name, skill.version)
+            if stale:
+                lines.extend(f"         {line}" for line in stale)
             if is_source_checkout(skill.path):
                 lines.append(
                     "         that is the repository's own copy, not an "

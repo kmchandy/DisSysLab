@@ -39,11 +39,16 @@ computer** rather than in the cloud when given that option.
 > `dsl doctor` again.*
 
 `dsl doctor`'s first line is a verdict: `Ready. You can build an
-office.` or `Not ready:` and the one thing that is wrong. Its
-**Skills** section names each skill, its version, and the folder it
-was found in — or every folder it looked in, if it found none. Do not
-ask the assistant which version it has; where a skill lives is a
-question about the filesystem.
+office.` or `Not ready:` and the one thing that is wrong. Under it are
+the versions you have — the package, and each skill. **If anything is
+wrong it says so there**, including a skill older than your copy of the
+library, and tells you what to do about it. You are not expected to
+compare version strings yourself.
+
+That is also why this question goes to `dsl doctor` rather than to the
+assistant. Which version of a skill is on your machine is a question
+about your filesystem; an assistant that never loaded the skill will
+answer anyway, and answer plausibly.
 
 **4.** Now carry out a conversation with Cowork. Here is an example conversation.
 
