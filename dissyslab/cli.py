@@ -23,7 +23,9 @@ argument parsing boring and readable.
 from __future__ import annotations
 
 import argparse
+import contextlib
 import importlib
+import io
 import json
 import os
 import runpy
@@ -1665,180 +1667,221 @@ def cmd_doctor(args: argparse.Namespace) -> int:
         print(f"  {line}")
     print()
 
-    print(f"dissyslab version: {_package_version()}")
-    print(f"Python:            {sys.version.split()[0]}  ({sys.executable})")
-    print()
-    print("Dependencies:")
-    for mod in ("anthropic", "dotenv", "feedparser", "requests",
-                "websocket", "bs4", "PIL", "numpy", "scipy"):
-        try:
-            importlib.import_module(mod)
-            check(mod, True)
-        except Exception as exc:  # noqa: BLE001
-            check(mod, False, f"not importable ({exc.__class__.__name__})")
-
-    # The test suite lives in the [dev] extra, so a plain `pip install`
-    # leaves pytest absent. That is correct packaging but surprising, so
-    # answer the question here rather than making people find the docs.
-    # Never a failure: running offices does not require pytest.
-    # Market extras. Vikram met this as `No module named 'openpyxl'`
-    # after following an instruction that said `pip install dissyslab`.
-    # The extra is mentioned once, deep in the README, and the person
-    # who needs it is the one least likely to be reading that far.
-    print()
-    print("Market data tools (optional, the [market] extra):")
-    market_missing = []
-    for mod, why in (("yfinance", "downloading your own price history"),
-                     ("openpyxl", "writing a strategy's working as a spreadsheet")):
-        try:
-            importlib.import_module(mod)
-            print(f"  [OK] {mod}")
-        except ImportError:
-            market_missing.append(mod)
-            print(f"  [    ] {mod}: not installed — needed for {why}")
-    if market_missing:
-        print('         pip install "dissyslab[market]"')
-
-    print()
-    print("Test tools (optional):")
-    try:
-        importlib.import_module("pytest")
-        print("  [SET ] pytest: available \u2014 run `pytest tests/` "
-              "from a source checkout")
-    except ImportError:
-        print("  [    ] pytest: not installed")
-        print("         The test tools live in the [dev] extra. From a source")
-        print("         checkout:  pip install -e \".[dev]\"")
-
-    # Skills. Asked of the filesystem, not of the assistant.
+    # The inventory is captured rather than printed, because most of
+    # the time nobody should see it.
     #
-    # The setup script used to end by telling the user to ask their
-    # assistant which version of the skill it had -- which asks the
-    # possibly-unreliable thing whether it is reliable. An assistant
-    # that never loaded the skill answers anyway, and answers
-    # plausibly, and then improvises its own concurrency. Where a skill
-    # lives is a filesystem question.
-    print()
-    from dissyslab.skills_installed import print_report as _skill_report
-    _skill_report()
-
-    print()
-    print("Local .env:")
-    env_status, env_detail = _diagnose_env_file()
-    env_ok = env_status in ("ok", "absent")
-    check(".env format", env_ok, env_detail)
-    # "absent" is not a hard failure *if* the key is in the environment;
-    # we detect that below with the ANTHROPIC_API_KEY check.
-    env_advice = _env_file_advice(env_status) if env_status not in ("ok", "absent") else []
-
-    print()
-    print("Backend:")
-    active = os.environ.get("DSL_BACKEND", "anthropic")
-    bmod   = os.environ.get("DSL_BACKEND_MODULE")
-    print(f"  active: {active}"
-          + ("  (default)" if active == "anthropic" and not bmod else ""))
-    if bmod:
-        print(f"  DSL_BACKEND_MODULE: {bmod}")
-
-    print()
-    print("Credentials:")
-    # Which credential matters depends on the backend selected above --
-    # checking ANTHROPIC_API_KEY unconditionally reported a FAIL on
-    # perfectly healthy Ollama and OpenRouter installs.
+    # A first-time user who asked "did it work?" was told about nine
+    # dependencies, two optional gaps and a three-agent self-test.
+    # Every line true; none of it answerable by someone who does not
+    # yet know what a sink is. Instructing an assistant to summarise
+    # it does not work either -- it relayed the ticks, because they
+    # were on its screen and looked like the answer.
     #
-    # A missing key is reported as information, never as a failure. An
-    # office whose roles are all plain Python needs no credential at all,
-    # and that includes the offices the README tells a new user to run
-    # first, so failing here called a working install broken.
-    required_key = {
-        "anthropic":  "ANTHROPIC_API_KEY",
-        "claude":     "ANTHROPIC_API_KEY",
-        "openrouter": "OPENROUTER_API_KEY",
-        "ollama":     None,          # local model, no credential needed
-    }.get(active, "ANTHROPIC_API_KEY")
-
-    if required_key is None:
-        print(f"  [    ] no credential needed for backend '{active}'")
-    else:
-        key = os.environ.get(required_key, "")
-        if key:
-            # Never print the key itself; a length + prefix is enough.
-            print(f"  [SET ] {required_key}: set "
-                  f"(prefix {key[:7]}…, len {len(key)})")
-        else:
-            print(f"  [    ] {required_key}: not set")
-            print(f"         Needed only by offices with LLM roles on "
-                  f"backend '{active}'.")
-            print("         Key-free offices (periodic_brief, recovery_demo)")
-            print("         run without it.")
-            # Only nudge about .env when a key is actually wanted.
-            if env_status == "absent":
-                env_advice = _env_file_advice("absent")
-
-    # Print fix suggestions after the table, so the check list stays scannable.
-    if env_advice:
+    # So when the verdict is Ready and nobody asked for detail, the
+    # detail is not produced. When anything is wrong, or --full is
+    # given, all of it prints exactly as before: quiet when healthy,
+    # complete when not.
+    _inventory = io.StringIO()
+    with contextlib.redirect_stdout(_inventory):
+        print(f"dissyslab version: {_package_version()}")
+        print(f"Python:            {sys.version.split()[0]}  ({sys.executable})")
         print()
-        for line in env_advice:
-            print(f"  {line}")
+        print("Dependencies:")
+        for mod in ("anthropic", "dotenv", "feedparser", "requests",
+                    "websocket", "bs4", "PIL", "numpy", "scipy"):
+            try:
+                importlib.import_module(mod)
+                check(mod, True)
+            except Exception as exc:  # noqa: BLE001
+                check(mod, False, f"not importable ({exc.__class__.__name__})")
 
-    # Optional integration credentials. These are not required for `dsl
-    # run` to work in general — they're only needed by specific
-    # sources/sinks (gmail_source, slack_sink, webhook_sink). We print
-    # them so a student running `dsl doctor` can see at a glance which
-    # integrations are wired up. Never a failure, just an "info" line.
-    print()
-    print("Optional integrations (only needed by specific sinks/sources):")
-    optional_creds: list[tuple[str, str]] = [
-        ("GMAIL_USER",          "gmail_source: email address to read from"),
-        ("GMAIL_APP_PASSWORD",  "gmail_source / gmail_sink: 16-char app password"),
-        ("SLACK_WEBHOOK_URL",   "slack_sink: Incoming Webhook URL"),
-        ("WEBHOOK_URL",         "webhook_sink: outbound POST target"),
-    ]
-    for name, what in optional_creds:
-        val = os.environ.get(name, "")
-        if val:
-            # For URL-shaped secrets, show only the host so we never
-            # leak the secret token in the path.
-            if val.startswith(("http://", "https://")):
-                from urllib.parse import urlparse
-                host = urlparse(val).hostname or "(unparseable)"
-                detail = f"set ({host})"
-            else:
-                detail = f"set (len {len(val)})"
-            print(f"  [SET ] {name}: {detail}")
+        # The test suite lives in the [dev] extra, so a plain `pip install`
+        # leaves pytest absent. That is correct packaging but surprising, so
+        # answer the question here rather than making people find the docs.
+        # Never a failure: running offices does not require pytest.
+        # Market extras. Vikram met this as `No module named 'openpyxl'`
+        # after following an instruction that said `pip install dissyslab`.
+        # The extra is mentioned once, deep in the README, and the person
+        # who needs it is the one least likely to be reading that far.
+        print()
+        print("Market data tools (optional, the [market] extra):")
+        market_missing = []
+        for mod, why in (("yfinance", "downloading your own price history"),
+                         ("openpyxl", "writing a strategy's working as a spreadsheet")):
+            try:
+                importlib.import_module(mod)
+                print(f"  [OK] {mod}")
+            except ImportError:
+                market_missing.append(mod)
+                print(f"  [    ] {mod}: not installed — needed for {why}")
+        if market_missing:
+            print('         pip install "dissyslab[market]"')
+
+        print()
+        print("Test tools (optional):")
+        try:
+            importlib.import_module("pytest")
+            print("  [SET ] pytest: available \u2014 run `pytest tests/` "
+                  "from a source checkout")
+        except ImportError:
+            print("  [    ] pytest: not installed")
+            print("         The test tools live in the [dev] extra. From a source")
+            print("         checkout:  pip install -e \".[dev]\"")
+
+        # Skills. Asked of the filesystem, not of the assistant.
+        #
+        # The setup script used to end by telling the user to ask their
+        # assistant which version of the skill it had -- which asks the
+        # possibly-unreliable thing whether it is reliable. An assistant
+        # that never loaded the skill answers anyway, and answers
+        # plausibly, and then improvises its own concurrency. Where a skill
+        # lives is a filesystem question.
+        print()
+        from dissyslab.skills_installed import print_report as _skill_report
+        _skill_report()
+
+        print()
+        print("Local .env:")
+        env_status, env_detail = _diagnose_env_file()
+        env_ok = env_status in ("ok", "absent")
+        check(".env format", env_ok, env_detail)
+        # "absent" is not a hard failure *if* the key is in the environment;
+        # we detect that below with the ANTHROPIC_API_KEY check.
+        env_advice = _env_file_advice(env_status) if env_status not in ("ok", "absent") else []
+
+        print()
+        print("Backend:")
+        active = os.environ.get("DSL_BACKEND", "anthropic")
+        bmod   = os.environ.get("DSL_BACKEND_MODULE")
+        print(f"  active: {active}"
+              + ("  (default)" if active == "anthropic" and not bmod else ""))
+        if bmod:
+            print(f"  DSL_BACKEND_MODULE: {bmod}")
+
+        print()
+        print("Credentials:")
+        # Which credential matters depends on the backend selected above --
+        # checking ANTHROPIC_API_KEY unconditionally reported a FAIL on
+        # perfectly healthy Ollama and OpenRouter installs.
+        #
+        # A missing key is reported as information, never as a failure. An
+        # office whose roles are all plain Python needs no credential at all,
+        # and that includes the offices the README tells a new user to run
+        # first, so failing here called a working install broken.
+        required_key = {
+            "anthropic":  "ANTHROPIC_API_KEY",
+            "claude":     "ANTHROPIC_API_KEY",
+            "openrouter": "OPENROUTER_API_KEY",
+            "ollama":     None,          # local model, no credential needed
+        }.get(active, "ANTHROPIC_API_KEY")
+
+        if required_key is None:
+            print(f"  [    ] no credential needed for backend '{active}'")
         else:
-            print(f"  [    ] {name}: not set — {what}")
+            key = os.environ.get(required_key, "")
+            if key:
+                # Never print the key itself; a length + prefix is enough.
+                print(f"  [SET ] {required_key}: set "
+                      f"(prefix {key[:7]}…, len {len(key)})")
+            else:
+                print(f"  [    ] {required_key}: not set")
+                print(f"         Needed only by offices with LLM roles on "
+                      f"backend '{active}'.")
+                print("         Key-free offices (periodic_brief, recovery_demo)")
+                print("         run without it.")
+                # Only nudge about .env when a key is actually wanted.
+                if env_status == "absent":
+                    env_advice = _env_file_advice("absent")
 
-    # Everything above checks the environment around DisSysLab. This
-    # checks DisSysLab. It is a real failure if it does not pass.
-    print()
-    print("Self-test:")
-    # Already run, at the top, to decide the verdict. Running it again
-    # would double the cost of the one command people use when
-    # something is already wrong.
-    if isinstance(smoke_result, Exception):
-        check(
-            "build and run a 3-agent office",
-            False,
-            f"{smoke_result.__class__.__name__}: {smoke_result}",
-        )
+        # Print fix suggestions after the table, so the check list stays scannable.
+        if env_advice:
+            print()
+            for line in env_advice:
+                print(f"  {line}")
+
+        # Optional integration credentials. These are not required for `dsl
+        # run` to work in general — they're only needed by specific
+        # sources/sinks (gmail_source, slack_sink, webhook_sink). We print
+        # them so a student running `dsl doctor` can see at a glance which
+        # integrations are wired up. Never a failure, just an "info" line.
+        print()
+        print("Optional integrations (only needed by specific sinks/sources):")
+        optional_creds: list[tuple[str, str]] = [
+            ("GMAIL_USER",          "gmail_source: email address to read from"),
+            ("GMAIL_APP_PASSWORD",  "gmail_source / gmail_sink: 16-char app password"),
+            ("SLACK_WEBHOOK_URL",   "slack_sink: Incoming Webhook URL"),
+            ("WEBHOOK_URL",         "webhook_sink: outbound POST target"),
+        ]
+        for name, what in optional_creds:
+            val = os.environ.get(name, "")
+            if val:
+                # For URL-shaped secrets, show only the host so we never
+                # leak the secret token in the path.
+                if val.startswith(("http://", "https://")):
+                    from urllib.parse import urlparse
+                    host = urlparse(val).hostname or "(unparseable)"
+                    detail = f"set ({host})"
+                else:
+                    detail = f"set (len {len(val)})"
+                print(f"  [SET ] {name}: {detail}")
+            else:
+                print(f"  [    ] {name}: not set — {what}")
+
+        # Everything above checks the environment around DisSysLab. This
+        # checks DisSysLab. It is a real failure if it does not pass.
+        print()
+        print("Self-test:")
+        # Already run, at the top, to decide the verdict. Running it again
+        # would double the cost of the one command people use when
+        # something is already wrong.
+        if isinstance(smoke_result, Exception):
+            check(
+                "build and run a 3-agent office",
+                False,
+                f"{smoke_result.__class__.__name__}: {smoke_result}",
+            )
+        else:
+            passed = smoke_result == _SMOKE_EXPECTED
+            check(
+                "build and run a 3-agent office",
+                passed,
+                "source -> transform -> sink" if passed
+                else f"produced {smoke_result!r}, expected {_SMOKE_EXPECTED!r}",
+            )
+
+    _show_all = getattr(args, "full", False) or not ok or not verdict.startswith("Ready")
+    if _show_all:
+        print(_inventory.getvalue(), end="")
     else:
-        passed = smoke_result == _SMOKE_EXPECTED
-        check(
-            "build and run a 3-agent office",
-            passed,
-            "source -> transform -> sink" if passed
-            else f"produced {smoke_result!r}, expected {_SMOKE_EXPECTED!r}",
-        )
+        # The three facts anyone actually carries away, and the two an
+        # assistant is told to report: what package, and what skill.
+        print(f"dissyslab {_package_version()}   Python "
+              f"{sys.version.split()[0]}")
+        try:
+            from dissyslab.skills_installed import is_source_checkout, locate
 
-    print()
+            found, _roots, _deep = locate()
+            for s in found:
+                if not is_source_checkout(s.path):
+                    print(f"{s.name} {s.version}")
+        except Exception:  # noqa: BLE001 - doctor must always finish
+            pass
+        print()
+        print("`dsl doctor --full` for the rest: dependencies, extras,")
+        print("skills, .env, backend, credentials and the self-test.")
+
+    if _show_all:
+        print()
+        if ok:
+            # Repeat the verdict rather than reaching a second one. Two
+            # conclusions in one report is how "Not ready" at the top
+            # became "everything is fine" by the time it was summarised.
+            # Only worth repeating when there is a report to get lost
+            # in; in the short form the first line is still on screen.
+            print(verdict)
+            for line in verdict_detail:
+                print(f"  {line}")
     if ok:
-        # Repeat the verdict rather than reaching a second one. Two
-        # conclusions in one report is how "Not ready" at the top became
-        # "everything is fine" by the time it was summarised.
-        print(verdict)
-        for line in verdict_detail:
-            print(f"  {line}")
         return 0
     print("One or more required checks failed. See above.")
     return 1
@@ -2341,9 +2384,21 @@ def build_parser() -> argparse.ArgumentParser:
             "Slack, webhook URLs) you've configured. "
             "Finishes by building and running a small office as a "
             "self-test, so you get a straight answer about whether the "
-            "install works. Run this first when something breaks."
+            "install works. Run this first when something breaks.\n\n"
+            "When everything is in order it prints the verdict and little "
+            "else; the inventory appears whenever something is wrong, or "
+            "on request with --full."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_doc.add_argument(
+        "--full",
+        action="store_true",
+        help=(
+            "print the whole inventory even when the install is healthy: "
+            "dependencies, market and test extras, skills, .env, backend, "
+            "credentials and the self-test."
+        ),
     )
     p_doc.set_defaults(handler=cmd_doctor)
 

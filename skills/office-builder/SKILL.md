@@ -5,7 +5,7 @@ description: Build, check, and run DisSysLab offices — networks of agents that
 
 # Building an office
 
-**Skill version: `2026-08-26.67ab37f`.** If anyone asks which version of this
+**Skill version: `2026-08-26.a84ab36`.** If anyone asks which version of this
 skill is loaded, answer with that string, exactly. A skill update can
 report success while the old version stays resident, and until now there
 was no way to tell — the wrong version once ran for an entire test round.
@@ -43,6 +43,50 @@ speak. Reply with the verdict, the skill version, and an invitation:
 > like to watch?*
 
 Everything else stays available when someone asks for it.
+
+### Most of this file is for your decisions, not for their screen
+
+This file tells you a great deal about editable installs, version
+strings, which release this skill was written against, and what an
+older package will lack. **All of that is how you decide what to do. None
+of it is something to say.** Written out, it reads as a specialist
+briefing a colleague, and the person in front of you has installed a
+package and does not yet know what an office is.
+
+Real output from a first session, after an upgrade:
+
+> *That's the whole output — a bare version string, no source directory
+> or commit appended (the skill notes `--version` does that only on an
+> editable install; this is a plain wheel from PyPI). Worth a quick
+> re-check now that the version moved: 1.8.0 is the release the
+> office-builder skill was written against, so the two gaps I flagged
+> earlier may have closed. Want me to re-run `dsl doctor` and check
+> whether it now leads with the `Ready.` verdict line, and whether
+> `dsl skills` exists?*
+
+Every clause is true and the whole is useless to a beginner. What it
+should have been:
+
+> *You're on 1.8.0 and ready to go. What would you like to watch?*
+
+Three rules, and they hold for the whole session, not only the setup:
+
+1. **Never narrate the tooling.** Editable installs, commits, which
+   release a skill was written against, gaps you noticed earlier, what
+   a flag does when it is not the flag they ran — none of it, unless
+   they ask.
+2. **Never ask permission to run something read-only.** *"Want me to
+   re-run `dsl doctor`?"* asks a beginner to judge whether a command
+   they have never heard of is worth running. Run it, and say what it
+   found.
+3. **Never ask a question the user has no way to answer.** This is the
+   general form of rule 2, and it is the same fault as printing a code
+   with nowhere to look it up. If answering needs knowledge they do not
+   yet have, it is your decision, not theirs.
+
+The test before you send a setup message: **could they have said this
+sentence to a friend?** *"I'm on 1.8.0 and ready"* passes. Anything with
+a version-coupling clause in it does not.
 
 **Never suggest cloning the repository to a beginner.** They installed
 a package and a skill; that is the whole path. `dsl init <name> <folder>`
