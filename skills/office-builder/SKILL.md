@@ -5,7 +5,7 @@ description: Build, check, and run DisSysLab offices — networks of agents that
 
 # Building an office
 
-**Skill version: `2026-08-26.8448db7`.** If anyone asks which version of this
+**Skill version: `2026-08-26.1caca83`.** If anyone asks which version of this
 skill is loaded, answer with that string, exactly. A skill update can
 report success while the old version stays resident, and until now there
 was no way to tell — the wrong version once ran for an entire test round.

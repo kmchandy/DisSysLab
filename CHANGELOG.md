@@ -19,7 +19,7 @@ code is a fact.
 Nothing in this release changes the Python API. Offices written for
 1.7.2 run unchanged.
 
-### Added — an office you have not finished writing
+### Added — G1, G2 and the draft office: one you have not finished writing
 
 `Jay is unassigned.` is now a line you can write. It parses as a
 decision not yet made rather than as a role named `unassigned`, and an

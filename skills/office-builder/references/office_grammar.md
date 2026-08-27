@@ -214,6 +214,38 @@ quietly rewire, and do not treat it as an error:
 
 An office whose sinks all print or write a local file never fires it.
 
+### W12 — a role's own Python reaches outside
+
+Also a **note**, and read it beside W11: W11 asks what the *office* can do,
+and answers by reading its sinks. W12 asks what a *role* can do, and reads
+its imports.
+
+```
+W12  note:roles/link_checker.py imports `requests`.
+          An office's declared power is its Sources and Sinks.
+          Python inside a role can act outside that, and this check
+          only reads imports -- it cannot see what the code does.
+          If you did not write this file, read it.
+```
+
+It fires on reaching the network, starting another program, or running code
+built at run time (`eval`, `os.system`). `import os` on its own does not
+fire it — most roles use it for file paths.
+
+Two things to say when it fires, and the second matters more:
+
+1. **What the code reaches for**, in a sentence. Usually there is a good
+   reason — a role that checks whether a link is still live has to fetch
+   the link — and then the answer is "yes, that is what it does".
+2. **That the check is a lint, not a guarantee.** It reads imports. It
+   cannot see what code does, cannot follow a renamed import, and anyone
+   trying to hide reach from it can. Silence from W12 is not a clean bill
+   of health, and describing it as one is worse than not running it.
+
+The general lesson is worth one sentence to a student, because it is not
+about DisSysLab: code you did not write can do things you did not ask for,
+and that is true of any Python an assistant hands you.
+
 ## The other subcommands worth knowing
 
 ```
