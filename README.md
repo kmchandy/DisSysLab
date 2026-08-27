@@ -7,46 +7,44 @@
 
 **Build multi-agent applications.**
 
-DisSysLab is a Python library and a set of skills that AI assistants — Claude Cowork, Codex, Gemini CLI — can use to build distributed applications in which many agents run concurrently. Some of these applications monitor data sources such as news, sensors, and social media, and respond by sending messages to actuators, consoles and files. Other applications process data sets such as historic stock and weather records. 
+DisSysLab is a Python library and a set of skills that AI assistants — Claude Cowork, Codex, Gemini CLI — can use to build distributed applications in which many agents run concurrently. These applications can monitor data sources - news, sensors, and social media - and respond by sending messages to actuators, consoles and files. The applications can also process data sets such as historic stock and weather records. 
 
-An AI assistant builds an application by assembling components from the library. The library contains the machinery for concurrent computation - messages, agents, termination detection, checkpointing, crash recovery. The primitives in the library have been tested and have clear specifications. An AI assistant can also build an application without the library; however, it then has to generate the concurrency machinery from scratch for each new app. 
+An AI assistant builds an application by assembling components from the library. The library contains the machinery for concurrent computation - messages, agents, termination detection, checkpointing, crash recovery. The library has been tested with different types of apps. Components of the library have clear specifications and test suites. An AI assistant can build applications without the library; however, then AI has to generate concurrency machinery from scratch for each new app. 
 
-A distributed system is represented by an office in which everyone works remotely. Each agent - worker - in the office receives messages from its inboxes and puts messages in its outboxes. An agent cannot communicate in any other way. The office network specifies connections from outboxes to inboxes. The distributed system machinery removes a message from an outbox and sends copies of the message to each inbox to which it is connected. Offices are described in detail below.
+A distributed system is represented by an office in which everyone works remotely. Each agent - worker - in the office receives messages from its inboxes and puts messages in its outboxes. An agent cannot communicate in any other way. The office network specifies connections from outboxes to inboxes. The system removes a message from an outbox and sends copies of the message to each inbox to which it is connected. Offices are described in detail below.
 
 
 ---
 
 ## 1. Examples
 
-Here are two examples of building distributed apps. The first is for a pre-teen who likes learning about space, and the second is for a finance "quant" who develops stock-trading strategies.
+Here are two examples of building distributed apps. The first builds an office by using primitives of an office - agents, connections, and roles. The second is for a finance "quant" who develops concurrent stock-trading strategies without explicitly using the office infrastructure.
 
-### Su, who is twelve and likes space
+### Use office primitives
 
-An adult installs Claude Cowork on Su's laptop and chooses **on your
+Install Claude Cowork on your laptop and chooses **on your
 computer** rather than in the cloud when given that option. 
-Now Su builds a distributed app for herself.
 
-**1.** Start a task, **on your computer**.
+**1.** Start a task in Cowork.
 
-**2.** Say:
+**2.** Input the following:
 
 > *The project is at https://github.com/kmchandy/DisSysLab. Install its
 > Python package `dissyslab` for me, then run `dsl doctor`.*
 
-**3.** Say:
+**3.** Input:
 
 > *Install the `office-builder` skill from that repository, then run
 > `dsl doctor` again.*
 
 `dsl doctor`'s **Skills** section names the skill and its version, or
-says it is not installed and lists where it looked. Do not ask the
-assistant which version it has — an assistant that never loaded the
-skill will answer anyway. Where a skill lives is a question about the
-filesystem.
+says it is not installed and lists where it looked. 
 
-**4.** Now talk. Everything below is Su, one sentence at a time.
+**4.** Now carry out a conversation with Cowork. Here is an example conversation.
 
-> *Give me an office with Dan and Jay.*
+Input:
+
+> *Give me an office with agents Dan and Jay.*
 
 ```
 # Office: draft
@@ -56,11 +54,6 @@ Dan is unassigned.
 Jay is unassigned.
 ```
 
-> Two agents, no jobs yet. **Still to do:** Dan and Jay have no job;
-> nothing comes in; nothing goes out; nothing is connected.
-
-She has not said what they do and she was not asked. Nothing was
-invented for her, and what is missing is a list rather than an error.
 
 > *Dan reads the space news and keeps only the ones about Mars.*
 
