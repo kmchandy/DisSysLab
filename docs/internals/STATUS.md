@@ -42,24 +42,21 @@ is false by construction, so without that last part the manager
 outlived every agent it managed and the process still hung. That third
 part was not in the written diagnosis; running it is what found it.
 
-**Release 1.7.2 — and ship the skill with it.** The repository is
-ahead of the wheel by W5 (nearest-spelling suggestion for an unknown
-source or sink — a typo currently reads to a student as a missing
-feature), the yfinance change, error counting in the run summary, and
-`dsl draw`. **The skill and the wheel are now coupled**: `office-builder`
-teaches `inboxes=`, which needs the alias in `office_spec.py`. A student
-on PyPI 1.7.2 with the current skill gets a mismatch.
+**Release 1.8.0 — cut, with the skill.** The repository had run
+fifty-five commits ahead of the wheel, and **the skill and the wheel
+are coupled**: `office-builder` teaches `inboxes=`, draft offices, the
+optional article, `dsl draw` and `dsl fetch-prices`, none of which a
+student on PyPI 1.7.2 would have had. Each would have pointed them at
+behaviour their install does not have. That coupling is why the version
+bump and the skill rebuild are one act, and why the skill is not edited
+between releases without one.
 
-**Three things the skill cannot be taught until the release ships.**
-`dsl draw`, so *"draw the network"* reaches the subcommand at all;
-`Jay is unassigned.` and draft mode; and the optional article. Each
-would point a student on PyPI 1.7.2 at behaviour their install does
-not have. `skills/office-builder/references/office_grammar.md` is the
-file, and editing it also forces a bundle rebuild and a version bump,
-so it is one edit made once, with the release. Same coupling as
-`inboxes=`; that makes four — five with `dsl fetch-prices`, which is
-how the download becomes something a tester asks for rather than a
-command they have to know.
+**Rehearse the install before every tag.** For 1.8.0: wheel built,
+installed into an empty virtualenv, `dsl doctor` self-test green,
+`dsl init` then `dsl check` clean on the starter office. It found
+nothing wrong with the install and four things wrong with what a new
+user *reads* — see the 1.8.0 CHANGELOG entry. Three minutes, and it is
+the only view of the product a first-year actually gets.
 
 **Thirty students installing at once has never been tested.** One
 unresolved install failure costs a class hour, thirty times. Windows
