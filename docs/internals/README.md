@@ -61,6 +61,13 @@ Cross-cutting:
 - [coordinator_design.md](design/coordinator_design.md) — selective
   receive, and why a message in an inbox the coordinator is not
   reading is not live work.
+- [guard_rails.md](design/guard_rails.md) — an opt-in way for a user to
+  put her own checks around a model call, and the micro-course on
+  using models safely that it exists to carry. Composed inside one
+  agent rather than wired as its own, so it cannot be bypassed by
+  rewiring.
+- [check_registry_design.md](design/check_registry_design.md) — where a
+  domain's checks should live, and what silence means in a prompt.
 
 ## decisions/
 
