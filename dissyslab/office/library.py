@@ -596,6 +596,209 @@ def nl_role(
     )
 
 
+# ── guard ───────────────────────────────────────────────────────────────
+
+
+def _builtin_role(name: str) -> AgentRoleEntry:
+    """One of the framework's own roles, by name."""
+    roles_dir = Path(__file__).resolve().parent.parent / "roles"
+    library = load_roles_dir(roles_dir)
+    entry = library.get(name)
+    if entry is None:
+        raise ValueError(
+            f"guard(): no built-in role called {name!r}. "
+            f"Built-in roles: {', '.join(sorted(library))}.\n"
+            "To guard a role of your own, import it and pass the entry "
+            "itself rather than its name."
+        )
+    return entry
+
+
+def _rejected(side: str, exc: Exception, msg: Any, on_reject: Optional[str]):
+    """What happens to a message a check refused.
+
+    Printed either way. A guard that rejects silently leaves an office
+    producing less than it should for a reason nobody can see -- the
+    same failure as a source that quietly returns nothing.
+    """
+    print(f"[guard] {side} rejected: {exc}")
+    return [(msg, on_reject)] if on_reject else []
+
+
+def guard(
+    role: "str | AgentRoleEntry",
+    *,
+    before: "Optional[Callable[[Any], Any]]" = None,
+    after: "Optional[Callable[[Any, str], Any]]" = None,
+    on_reject: Optional[str] = None,
+) -> AgentRoleEntry:
+    """Put your own checks around a role, most usefully one that calls a model.
+
+    **Opt-in, and it ships no checks of its own.** A guard exists only in
+    an office where somebody wrote one; nothing is wired into every
+    agent, and what counts as acceptable is entirely yours::
+
+        # roles/checked_filter.py
+        from dissyslab.office.library import guard
+
+        def before(msg):
+            if not isinstance(msg.get("title"), str):
+                raise ValueError("no title")
+
+        def after(msg, outbox):
+            if outbox == "keep" and "http" in msg.get("summary", ""):
+                raise ValueError("summary should not carry links")
+
+        role = guard("relevance_filter", before=before, after=after)
+
+    and in ``office.md`` it is an ordinary agent::
+
+        Screen is a checked_filter.
+
+    One agent, not three
+    --------------------
+    ``guard`` composes three plain function calls inside a single
+    agent's own function -- ``before``, the wrapped role, ``after``.
+    Nothing is queued between them, no thread is handed off, and the
+    wrapped role's name never appears in ``office.md``. The network is
+    exactly what it was: same nodes, same edges, same drawing.
+
+    A guard could instead have been its own agent, with messages routed
+    to it and back. That form is visible in the diagram, which is a real
+    advantage -- but it **can be bypassed by rewiring**: edit one
+    connection line and the guard is still there, still drawn, still
+    passing its own tests, and no longer in the path. This form cannot
+    be bypassed, because there is no wire to move.
+
+    Rejection
+    ---------
+    A check rejects by **raising**. No return convention to learn, and
+    the traceback names your own function.
+
+    By default a rejected message is dropped, with one line on stdout --
+    what an English role already does with a reply it cannot parse. Pass
+    ``on_reject="rejected"`` and the role gains that outbox instead; and
+    because an unwired outbox is an error (W2), the office must then say
+    where rejected messages go. That is how an opt-in guard becomes
+    visible in ``office.md`` without any grammar for it: not by being an
+    agent, but by having a port.
+
+    What this does not do
+    ---------------------
+    **It narrows the opening; it does not close it.** A guard that
+    approves a message has approved sending it, and the bound on what an
+    office can do is still its sinks. A guard believed to be complete is
+    worse than none, because it moves the belief without moving the
+    risk.
+
+    The checks worth writing are about **form** -- schema, types, which
+    outbox was chosen, length -- and about **provenance**: not "is this
+    output bad" but "is it derived from the input". Requiring every URL
+    in the reply to appear in the incoming message turns an unbounded
+    question into set membership, and an injection's payload is nearly
+    always a new destination. A check for "nothing harmful" is a smell
+    test and should be described as one.
+
+    See ``docs/internals/design/guard_rails.md``.
+
+    Parameters
+    ----------
+    role
+        A built-in role's name, or an ``AgentRoleEntry`` -- pass the
+        entry itself to guard a role of your own.
+    before
+        ``before(msg)``. Raise to reject. Its return value is ignored:
+        it is a check, not a transform, so a guarded role produces
+        exactly what the unguarded one would.
+    after
+        ``after(msg, outbox)``. Raise to reject. Receives the chosen
+        outbox as well as the message, because a useful output check
+        often wants to veto the *routing* -- "this may be published, but
+        not to ``publish``".
+    on_reject
+        Name of an extra outbox for rejected messages. Omitted, a
+        rejected message is dropped.
+
+    Returns
+    -------
+    AgentRoleEntry
+        The wrapped role's inboxes; its outboxes, plus ``on_reject``
+        when given.
+    """
+    inner = _builtin_role(role) if isinstance(role, str) else role
+    if not isinstance(inner, AgentRoleEntry):
+        raise TypeError(
+            "guard(role=...) takes a built-in role's name or an "
+            f"AgentRoleEntry, not {type(inner).__name__}."
+        )
+    if before is None and after is None:
+        raise ValueError(
+            "guard() with no before= and no after= is the unguarded "
+            "role. Use the role itself."
+        )
+    if on_reject is not None and on_reject in inner.out_ports:
+        raise ValueError(
+            f"guard(on_reject={on_reject!r}) collides with an outbox the "
+            f"wrapped role already has ({', '.join(inner.out_ports)}). "
+            "Choose another name."
+        )
+
+    out_ports = tuple(inner.out_ports) + ((on_reject,) if on_reject else ())
+
+    def factory(AI: Optional[str] = None) -> Agent:
+        # The wrapped role may or may not accept a per-agent backend:
+        # `nl_role`'s factory does, a hand-written `.py` role's usually
+        # does not. Forward it where it is accepted, so
+        # `Screen's AI is ollama.` keeps working through a guard.
+        try:
+            inner_agent = inner.factory(AI=AI) if AI else inner.factory()
+        except TypeError:
+            inner_agent = inner.factory()
+        inner_fn = getattr(inner_agent, "_fn", None)
+        if inner_fn is None:
+            raise TypeError(
+                "guard(): the wrapped role does not build a Role, so "
+                "there is no function to compose checks around."
+            )
+
+        def guarded_fn(msg: Any):
+            from dissyslab.blocks.role import normalise_results
+
+            try:
+                if before is not None:
+                    before(msg)
+            except Exception as exc:  # noqa: BLE001 - the user's own check
+                return _rejected("input", exc, msg, on_reject)
+
+            results = normalise_results(inner_fn(msg))
+            if results is None:
+                return None
+
+            kept = []
+            for out_msg, outbox in results:
+                try:
+                    if after is not None:
+                        after(out_msg, outbox)
+                except Exception as exc:  # noqa: BLE001 - the user's own check
+                    kept.extend(_rejected("output", exc, out_msg, on_reject))
+                    continue
+                kept.append((out_msg, outbox))
+            return kept
+
+        return Role(fn=guarded_fn, statuses=list(out_ports))
+
+    return AgentRoleEntry(
+        name=f"guarded_{inner.name}" if inner.name else "guarded",
+        in_ports=tuple(inner.in_ports),
+        out_ports=out_ports,
+        factory=factory,
+        description=(
+            f"{inner.description or inner.name or 'a role'} — with your "
+            "own checks on the way in and the way out."
+        ),
+    )
+
+
 # ── specialist_role ─────────────────────────────────────────────────────
 
 

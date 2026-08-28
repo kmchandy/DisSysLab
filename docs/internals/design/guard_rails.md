@@ -1,8 +1,8 @@
 # Guard rails around a model call
 
-**Status: designed, not built.** Nothing described here exists. It is
-recorded now because the reasoning took a working session to reach and
-would otherwise have to be reached again.
+**Status: built.** `dissyslab.office.library.guard`, with
+`tests/unit/test_guard.py`. The micro-course sketched at the end is
+*not* written; that half is still a plan.
 
 **It has two purposes, and the second is the larger one.** The
 mechanism lets a user put her own checks around an agent that calls a

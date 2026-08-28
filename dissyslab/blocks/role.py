@@ -18,6 +18,28 @@ import traceback
 from dissyslab.core import Agent
 
 
+def normalise_results(results: Any) -> Optional[List[Tuple[Any, str]]]:
+    """The four shapes a role function may return, as one list of pairs.
+
+    ``None`` means "drop this message" and is returned unchanged, so a
+    caller can tell it apart from an empty list.
+
+    This lives at module level rather than inside ``Role.run`` because
+    it now has two callers: the agent loop, and ``library.guard``, which
+    composes checks around another role's function and has to read its
+    return value the same way. Two copies of this rule would drift, and
+    the drift would appear as a guarded role behaving differently from
+    the same role unguarded -- the one thing a guard must never do.
+    """
+    if results is None:
+        return None
+    if not isinstance(results, (list, tuple)):
+        return [(results, "all")]
+    if results and not isinstance(results[0], (list, tuple)):
+        return [(item, "all") for item in results]
+    return [(pair[0], pair[1]) for pair in results]
+
+
 class Role(Agent):
     """
     Role agent: routes messages based on status strings.
@@ -108,15 +130,10 @@ class Role(Agent):
             msg = self.recv("in_")
 
             try:
-                results = self._fn(msg)
+                results = normalise_results(self._fn(msg))
 
                 if results is None:
                     continue
-
-                if not isinstance(results, (list, tuple)):
-                    results = [(results, "all")]
-                elif results and not isinstance(results[0], (list, tuple)):
-                    results = [(item, "all") for item in results]
 
                 for out_msg, status in results:
                     if status not in self._status_to_port:
