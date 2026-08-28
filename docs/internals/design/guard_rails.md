@@ -153,6 +153,16 @@ Three kinds. Two of them work.
 membership, length bounds, no unexpected keys, and that the chosen
 outbox is one the role declares. Decidable, cheap, no false positives.
 
+The first worked example should be this: **a built-in role already
+documents its input shape, and nothing enforces it.**
+`relevance_filter.md` says each item has `title`, `text`, `source`,
+`url`, `timestamp` — a sentence addressed to the model, checked by
+nobody. If an upstream agent stops producing `title`, the role file
+still claims it is there and the office carries on producing plausible
+output. Five lines in `before` make the claim real. Nothing in the
+framework requires any field; the role says what it wants, and the
+student decides whether to insist.
+
 **Provenance — the underrated one.** Not *"is this output bad"* but
 *"is this output derived from the input"*. Every URL in the reply must
 appear in the incoming message. No email address that was not already

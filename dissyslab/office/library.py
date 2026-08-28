@@ -642,6 +642,11 @@ def guard(
         from dissyslab.office.library import guard
 
         def before(msg):
+            # Nothing in the framework requires any field. This one is
+            # here because `relevance_filter.md` *says* it expects a
+            # title -- and nothing enforces that, because the sentence
+            # is addressed to the model. A guard is what turns a
+            # documented shape into an enforced one.
             if not isinstance(msg.get("title"), str):
                 raise ValueError("no title")
 
