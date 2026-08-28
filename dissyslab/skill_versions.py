@@ -16,6 +16,6 @@ installed it correctly must not be told they got it wrong.
 
 EXPECTED = {
     "backtest-strategy-builder": "2026-08-26.7a5ab88",
-    "office-builder": "2026-08-26.f3b0375",
+    "office-builder": "2026-08-26.5a8f325",
     "sensor-office-builder": "2026-08-19.935f28d",
 }

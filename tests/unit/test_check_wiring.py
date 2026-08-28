@@ -262,3 +262,133 @@ def test_the_alias_leaves_other_arguments_alone():
     )
 
     assert ref.args == (("by", "url"), ("outports", ["keep", "drop"]))
+
+
+# ── W2: an outbox the role declares and nothing is wired to ───────────
+
+
+def _office(tmp_path, office_md: str, roles: dict[str, str] | None = None):
+    d = tmp_path / "office"
+    (d / "roles").mkdir(parents=True, exist_ok=True)
+    (d / "office.md").write_text(office_md, encoding="utf-8")
+    for name, body in (roles or {}).items():
+        (d / "roles" / name).write_text(body, encoding="utf-8")
+    return d
+
+
+_FILTER = """---
+emits: keeps some items
+---
+# Role: my_filter
+
+If the item is relevant, send to keep. Otherwise send to discard.
+"""
+
+_TWO_PORT_OFFICE = """# Office: x
+
+Sources: starter
+Sinks: console_printer
+
+Agents:
+Screen is a my_filter.
+
+Connections:
+starter's destination is Screen.
+Screen's keep is console_printer.
+"""
+
+
+def test_w2_catches_an_outbox_nothing_is_wired_to(tmp_path):
+    """The office is structurally perfect and crashes on the first item
+    it wants to discard: `send` raises on an outbox with no queue. For a
+    filter, discarding something is the normal case, so this is not an
+    edge -- it is the second message."""
+    from dissyslab.office.check_wiring import check_office_dir
+
+    d = _office(tmp_path, _TWO_PORT_OFFICE, {"my_filter.md": _FILTER})
+    report = check_office_dir(d)
+    w2 = [f for f in report.findings if f.code == "W2"]
+    assert len(w2) == 1
+    assert "discard" in w2[0].message
+    assert not report.ok, "an outbox that will raise is a fault, not a note"
+
+
+def test_w2_is_silent_when_every_declared_outbox_is_wired(tmp_path):
+    from dissyslab.office.check_wiring import check_office_dir
+
+    d = _office(
+        tmp_path,
+        _TWO_PORT_OFFICE + "Screen's discard is discard.\n",
+        {"my_filter.md": _FILTER},
+    )
+    assert not [f for f in check_office_dir(d).findings if f.code == "W2"]
+
+
+def test_w2_uses_the_loader_s_own_extractor(tmp_path):
+    """The backtick trap, from the other side.
+
+    ``send to `keep` `` creates no port, because that is what the loader
+    does with it. So W2 must be silent here -- there is no declared
+    outbox to be unwired. Reporting one would mean the check and the
+    runtime disagreed about what the role says, and then neither could
+    be believed.
+    """
+    from dissyslab.office.check_wiring import check_office_dir
+
+    backticked = _FILTER.replace("send to keep", "send to `keep`").replace(
+        "send to discard", "send to `discard`"
+    )
+    d = _office(tmp_path, _TWO_PORT_OFFICE, {"my_filter.md": backticked})
+    assert not [f for f in check_office_dir(d).findings if f.code == "W2"]
+
+
+def test_a_python_role_is_exempt(tmp_path):
+    """`mac_speed_suite` ships `roles/evaluator.py`, which shadows the
+    library's prose `evaluator.md`. Read the wrong file and the check
+    invents a fault in a working office -- the first version of this
+    check did exactly that."""
+    from dissyslab.office.check_wiring import check_office_dir
+
+    d = _office(
+        tmp_path,
+        _TWO_PORT_OFFICE,
+        {
+            "my_filter.md": _FILTER,
+            "my_filter.py": "def run(msg):\n    return [(msg, 'keep')]\n",
+        },
+    )
+    assert not [f for f in check_office_dir(d).findings if f.code == "W2"]
+
+
+def test_in_a_draft_it_is_remaining_work(tmp_path):
+    from dissyslab.office.check_wiring import check_office_dir, format_report
+
+    d = _office(
+        tmp_path,
+        _TWO_PORT_OFFICE.replace(
+            "Screen is a my_filter.", "Screen is a my_filter.\nLater is unassigned."
+        ),
+        {"my_filter.md": _FILTER},
+    )
+    report = check_office_dir(d)
+    assert report.ok, "an unfinished sketch is not a broken office"
+    assert "still to do" in format_report(report)
+
+
+def test_no_shipped_office_trips_it():
+    """Pinned. A check that fires on things people meant is one they
+    learn to skim, and it takes the true findings with it."""
+    from pathlib import Path
+
+    from dissyslab.office.check_wiring import check_office_dir
+
+    gallery = Path(__file__).resolve().parents[2] / "dissyslab" / "gallery"
+    firing = set()
+    for office_md in sorted(gallery.rglob("office.md")):
+        try:
+            report = check_office_dir(office_md.parent)
+        except Exception:  # noqa: BLE001 - other checks cover parse failures
+            continue
+        if [f for f in report.findings if f.code == "W2"]:
+            firing.add(office_md.parent.name)
+    assert firing == set()

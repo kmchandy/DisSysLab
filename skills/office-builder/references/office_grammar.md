@@ -201,6 +201,7 @@ and yours are not.
 | | | |
 |---|---|---|
 | `W1` | problem | an inbox nothing writes to — the usual reason an office hangs |
+| `W2` | problem | an outbox the role declares and nothing is wired to |
 | `W3` | problem | an unreachable agent: no path from any source |
 | `W4` | problem | a dead end: output that reaches no sink |
 | `W5` | problem | no such source or sink (with the nearest real name) |
@@ -220,8 +221,8 @@ office the incompleteness findings are reported as *"still to do"* with no
 code at all, which is the right register for an office someone is halfway
 through writing.
 
-There is no `W2`. It was withdrawn, and the numbers are identifiers rather
-than a sequence.
+A code means one thing for ever, so `dsl checks W4` on an old report still
+says what it said.
 
 ### W11 — free text reaching something that acts
 

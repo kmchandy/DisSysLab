@@ -29,11 +29,12 @@ is raised without an entry here, or has an entry and is raised nowhere,
 or disagrees about severity. A catalogue that can drift from the code is
 worse than none, because it is believed.
 
-There is no W2
---------------
-It existed and was withdrawn. The numbers are identifiers, not a
-sequence, and renumbering the others would silently change what an old
-report meant.
+The numbers are identifiers, not a sequence
+-------------------------------------------
+W2 sat unimplemented for a long time while the codes around it shipped.
+It kept its number rather than being reused for something else, and
+that is the rule: a code means one thing for ever, so an old report
+still says what it said.
 """
 from __future__ import annotations
 
@@ -67,6 +68,17 @@ CHECKS: Dict[str, Check] = {
         "work -- so this is the usual reason an office starts and then "
         "appears to hang. Either wire something to the inbox or remove it "
         "from the agent's list.",
+    ),
+    "W2": Check(
+        "W2",
+        "error",
+        "an outbox wired to nothing",
+        "A role says `send to <name>` and nothing is connected to that "
+        "outbox. Worse than the inbox case: an unwired inbox blocks, but "
+        "an unwired outbox raises the first time the agent uses it -- so "
+        "a filter wired only on `keep` passes every check and then stops "
+        "on the first item it wants to discard. Either wire it, or take "
+        "that sentence out of the role.",
     ),
     "W3": Check(
         "W3",

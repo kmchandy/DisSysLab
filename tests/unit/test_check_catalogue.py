@@ -68,11 +68,13 @@ def test_severity_agrees():
         )
 
 
-def test_there_is_no_w2():
-    """Withdrawn, and deliberately not reused. The numbers are
-    identifiers, not a sequence: renumbering would silently change what
-    an old report meant."""
-    assert "W2" not in CHECKS
+def test_w2_kept_its_own_number():
+    """W2 sat unimplemented for a long time while the codes around it
+    shipped. It was never reused for something else, and now that it
+    exists it means what it was reserved for: an outbox wired to
+    nothing. The rule is that a code means one thing for ever, so an old
+    report still says what it said."""
+    assert CHECKS["W2"].title == "an outbox wired to nothing"
 
 
 # ── what a person gets ────────────────────────────────────────────────

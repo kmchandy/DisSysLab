@@ -29,6 +29,8 @@ lesson; this module is the structural half and says so.
 Codes
 -----
 W1  declared inbox nothing writes to -- a guaranteed block
+W2  an outbox the role declares and nothing is wired to -- a
+    guaranteed crash the first time the agent uses it
 W3  unreachable agent -- nothing upstream can reach it
 W4  dead end -- its output reaches no sink and no office output
 W5  no such source or sink -- a name that is in no registry
@@ -52,7 +54,7 @@ is a **draft**, and draft-ness is a property of the office rather than
 a flag anyone passes. Its findings do not change; what they mean does.
 In a finished office an unreachable agent is a fault; in one being
 described a sentence at a time it is the next sentence. So the
-incompleteness codes -- W1, W3, W4, W8, G1, G2 -- become notes, the
+incompleteness codes -- W1, W2, W3, W4, W8, G1, G2 -- become notes, the
 report says "still to do", and the exit status is 0. There is nothing
 wrong with an unfinished office, and reporting it as broken teaches a
 beginner that building is a sequence of errors.
@@ -69,9 +71,14 @@ produces silence.
 W1 applies only where an agent *declares* its inboxes in ``office.md`` --
 ``Sync is a synchronizer(inboxes=["entities", "severity", "topic"])``. Where
 ports are not declared they are inferred from the connections themselves, so
-an unwired port cannot arise and there is nothing to check. W2 (an outport
-nothing reads) would need the role's resolved shape, which the parser does not
-provide; not implemented.
+an unwired port cannot arise and there is nothing to check.
+
+W2 is the outbox half, and it was left unimplemented for years on the
+grounds that it needs the role's resolved shape. It does not: for a
+prose role the loader builds the ports by scanning for ``send to
+<name>``, and this check calls that same function on that same file, so
+the two cannot disagree about what a role declares. A ``.py`` role is
+exempt -- its ports come from its code, which is not readable here.
 """
 
 from __future__ import annotations
@@ -95,7 +102,7 @@ EXTERNAL = "external"
 # Findings that mean "not finished yet" rather than "wrong". In a draft
 # office these are the remaining work; W5 and W6 and W9 are not, because
 # a misspelled component name is as wrong now as it will be later.
-_INCOMPLETENESS_CODES = {"W1", "W3", "W4", "W8", "G1", "G2"}
+_INCOMPLETENESS_CODES = {"W1", "W2", "W3", "W4", "W8", "G1", "G2"}
 
 
 @dataclass(frozen=True)
@@ -292,6 +299,49 @@ def _declared_inports(agent_spec) -> List[str]:
     return []
 
 
+def _resolve_role_file(office_dir: Path, role: str) -> Path | None:
+    """The file the loader will actually use for this role, or None.
+
+    Order matters and must match the loader's: a role in the office's
+    own ``roles/`` wins over the library's, and ``.py`` wins over
+    ``.md``. Getting this wrong makes W2 fire on `mac_speed_suite`,
+    whose local ``roles/evaluator.py`` shadows the library's prose
+    ``evaluator.md`` -- the Python role's ports come from its code, not
+    from a sentence, and reading the wrong file invents a fault.
+    """
+    from dissyslab.office import library  # noqa: WPS433
+
+    pkg_roles = Path(library.__file__).resolve().parents[1] / "roles"
+    for candidate in (
+        office_dir / "roles" / f"{role}.py",
+        office_dir / "roles" / f"{role}.md",
+        pkg_roles / f"{role}.py",
+        pkg_roles / f"{role}.md",
+    ):
+        if candidate.is_file():
+            return candidate
+    return None
+
+
+def _prose_outports(office_dir: Path, role: str) -> Tuple[str, ...]:
+    """The outboxes the loader will create for a prose role.
+
+    Uses the loader's own extractor, so the check and the runtime can
+    never disagree about what a role file declares -- which is the only
+    way this check is worth having. A ``.py`` role returns nothing:
+    its ports come from its code and are not readable here.
+    """
+    path = _resolve_role_file(office_dir, role)
+    if path is None or path.suffix != ".md":
+        return ()
+    try:
+        from dissyslab.office.library import _extract_send_to_ports  # noqa: WPS433
+
+        return _extract_send_to_ports(path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 - a check must always finish
+        return ()
+
+
 def _local_role_names(office_dir: Path) -> Set[str]:
     roles_dir = office_dir / "roles"
     if not roles_dir.is_dir():
@@ -437,6 +487,50 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                     + f" Either wire something to {port!r}, or remove it from "
                     "the inboxes list.",
                     gap=f"nothing is connected to {agent}'s {port!r} inbox yet.",
+                )
+            )
+
+    # W2 -- an outbox the role declares and nothing is wired to.
+    #
+    # The symmetric hole beside W1, and a worse one: an unwired inbox
+    # blocks, which at least stops; an unwired outbox raises
+    # "Outbox 'discard' of agent 'Screen' is not connected" the first
+    # time the agent tries to use it. So a relevance_filter wired only
+    # on `keep` passes every check and then crashes on the first
+    # irrelevant article -- which, for a filter, is the point.
+    #
+    # This was reserved and left unimplemented because it needs the
+    # role's resolved shape. It does not: the loader builds those ports
+    # by scanning the role's prose, and this calls the same function on
+    # the same file, so the two cannot disagree.
+    #
+    # Silent on all forty shipped offices.
+    for agent_spec in spec.agents:
+        role = getattr(agent_spec, "role_name", None)
+        if not role or role == UNASSIGNED or agent_spec.path is not None:
+            continue
+        declared_out = _prose_outports(office_dir, role)
+        if not declared_out:
+            continue
+        agent = agent_spec.agent_name
+        wired_out = {
+            conn.source.port for conn in spec.connections
+            if conn.source.name == agent
+        }
+        for port in declared_out:
+            if port in wired_out:
+                continue
+            report.findings.append(
+                Finding(
+                    "W2",
+                    "error",
+                    agent,
+                    f"{agent!r} sends to {port!r}, but {port!r} is connected "
+                    f"to nothing -- the run stops the first time it is used.",
+                    f"roles/{role}.md says 'send to {port}'. Either wire it "
+                    f"-- {agent}'s {port} is <somewhere>. -- or take that "
+                    "sentence out of the role.",
+                    gap=f"{agent}'s {port!r} goes nowhere yet.",
                 )
             )
 
