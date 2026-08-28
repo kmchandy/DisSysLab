@@ -212,7 +212,9 @@ build from. `dsl list` shows the shipped offices; `dsl roles` the
 built-in roles and the field each one adds; `dsl skills` which skills
 are installed and where; `dsl check` reads an
 office and reports its structural faults without running it;
-`dsl draw` renders it; `dsl doctor` checks an installation.
+`dsl draw` lists its wiring, naming the outbox each connection leaves by
+and the inbox it arrives at, and every port connected to nothing;
+`dsl doctor` checks an installation.
 
 ## The skills
 
@@ -284,7 +286,7 @@ flowchart LR
   class intelligence_display,jsonl_recorder_briefing sink
 ```
 
-That diagram was produced by `dsl draw`, from the office's
+That diagram was produced by `dsl draw --mermaid`, from the office's
 `office.md` below, which is the whole program:
 
 ```

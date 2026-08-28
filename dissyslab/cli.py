@@ -704,7 +704,18 @@ def cmd_check(args: argparse.Namespace) -> int:
 # ── Subcommand: draw ──────────────────────────────────────────────────────────
 
 def cmd_draw(args: argparse.Namespace) -> int:
-    """Render an office's network as a Mermaid diagram.
+    """Show an office's network: as text by default, Mermaid on request.
+
+    Text is the default because that is what the person running the
+    command can read. Mermaid is a diagram *somewhere else* -- pasted
+    into GitHub or an editor -- and a student who types `dsl draw .`
+    expecting to see her office got a wall of flowchart source with no
+    hint that a readable form existed.
+
+    The text form also answers the question `office.md` cannot.
+    `Screen is a relevance_filter.` says nothing about Screen having an
+    outbox called `discard`; the listing names both ends of every edge
+    and puts every unconnected port in a block of its own.
 
     On demand, not after every edit. See the note at the head of
     ``dissyslab/office/draw.py``: a diagram produced on every change
@@ -716,15 +727,18 @@ def cmd_draw(args: argparse.Namespace) -> int:
     if office_dir is None:
         return 2
 
-    from dissyslab.office.draw import draw_office_dir, fenced
+    from dissyslab.office.draw import draw_office_dir, fenced, text_office_dir
 
     try:
-        diagram = draw_office_dir(office_dir)
+        if args.mermaid:
+            diagram = draw_office_dir(office_dir)
+            text = diagram if args.raw else fenced(diagram)
+        else:
+            text = text_office_dir(office_dir)
     except Exception as exc:  # noqa: BLE001
         _eprint(_explain_failure("dsl draw", exc))
         return 1
 
-    text = diagram if args.raw else fenced(diagram)
     if args.out:
         Path(args.out).write_text(text + "\n", encoding="utf-8")
         print(f"wrote {args.out}")
@@ -2246,11 +2260,18 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_draw = sub.add_parser(
         "draw",
-        help="draw an office's network as a Mermaid diagram",
+        help="show an office's network, edge by edge",
         description=(
-            "Read <office_dir>/office.md and print the network as a "
-            "Mermaid flowchart, wrapped in a Markdown fence so that "
-            "GitHub and most editors render it.\n\n"
+            "Read <office_dir>/office.md and list the network: every "
+            "connection with the outbox it leaves by and the inbox it "
+            "arrives at, then a block naming every port that is "
+            "connected to nothing.\n\n"
+            "That second block is what an office.md cannot tell you. "
+            "`Screen is a relevance_filter.` does not say that Screen "
+            "has an outbox called `discard`, and an outbox wired to "
+            "nothing stops the run the first time it is used.\n\n"
+            "--mermaid prints a flowchart instead, fenced so GitHub and "
+            "most editors render it.\n\n"
             "Ask for this when the wiring stops being readable as text, "
             "which happens at the first branch or fan-in. It draws an "
             "incomplete office too: a name used in Connections and "
@@ -2268,8 +2289,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="write to FILE instead of standard output",
     )
     p_draw.add_argument(
+        "--mermaid", action="store_true",
+        help=(
+            "print a Mermaid flowchart instead of the listing, for "
+            "pasting somewhere that renders it"
+        ),
+    )
+    p_draw.add_argument(
         "--raw", action="store_true",
-        help="print the diagram without the ```mermaid fence",
+        help="with --mermaid, omit the ```mermaid fence",
     )
     p_draw.set_defaults(handler=cmd_draw)
 

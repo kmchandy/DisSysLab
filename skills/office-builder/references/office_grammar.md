@@ -283,20 +283,37 @@ and that is true of any Python an assistant hands you.
 ## The other subcommands worth knowing
 
 ```
-dsl draw <office_dir>          the network as a Mermaid diagram
+dsl draw <office_dir>          every connection, port to port
 dsl checks [CODE]              what a check code means
 dsl roles                      every built-in role and the field it adds
 dsl skills                     which DisSysLab skills are installed
 dsl fetch-prices --office DIR  download your own price history
 ```
 
-**`dsl draw` when the wiring stops being readable as text**, which happens
-at the first branch or fan-in — or when the user asks to see it. It is on
-request, never automatic: a diagram redrawn after every edit has to stay
-stable under change, or adding one agent moves the ones the reader had
-already understood. It draws an office that does not compile, too, since
-that is when a picture is worth most. `--out FILE` writes to a file;
-`--raw` omits the ```mermaid fence.
+**`dsl draw` answers the question `office.md` cannot.** An agent line
+says `Screen is a relevance_filter.` and nothing there says Screen has an
+outbox called `discard`. The listing names both ports on every edge, and
+puts every port connected to nothing in a block of its own:
+
+```
+starter  destination ──▶ in_  Screen
+Screen   keep        ──▶ in_  Write
+
+Not connected:
+  Screen's discard  ──▶  nothing
+```
+
+**Run it when the user shows you an office**, before saying anything
+about the wiring — it is the fastest way to see what she has, and the
+"Not connected" block is the list of gaps in the form she can act on.
+
+`--mermaid` gives a flowchart instead, for pasting somewhere that
+renders it; use it when she asks to *see* the network rather than read
+it. That form is on request and never automatic: a diagram redrawn after
+every edit has to stay stable under change, or adding one agent moves
+the ones the reader had already understood. Both forms draw an office
+that does not compile, since that is when a picture is worth most.
+`--out FILE` writes to a file; `--raw` omits the ```mermaid fence.
 
 **`dsl skills` before telling anyone what is installed.** A skill that never
 loaded is one you cannot see, and you will answer anyway.

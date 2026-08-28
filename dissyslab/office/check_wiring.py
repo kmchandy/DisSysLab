@@ -95,7 +95,15 @@ from dissyslab.office.trust import (
     what_it_does,
 )
 
-__all__ = ["Finding", "WiringReport", "check_office_dir", "check_spec", "format_report"]
+__all__ = [
+    "Finding",
+    "WiringReport",
+    "check_office_dir",
+    "check_spec",
+    "declared_inports",
+    "declared_outports",
+    "format_report",
+]
 
 EXTERNAL = "external"
 
@@ -285,7 +293,7 @@ def _looping_groups(
 # --------------------------------------------------------------------------
 
 
-def _declared_inports(agent_spec) -> List[str]:
+def declared_inports(agent_spec) -> List[str]:
     """Inports an agent spells out in office.md, if any.
 
     ``Sync is a synchronizer(inboxes=["entities", "severity"])`` parses to
@@ -323,7 +331,7 @@ def _resolve_role_file(office_dir: Path, role: str) -> Path | None:
     return None
 
 
-def _prose_outports(office_dir: Path, role: str) -> Tuple[str, ...]:
+def declared_outports(office_dir: Path, role: str) -> Tuple[str, ...]:
     """The outboxes the loader will create for a prose role.
 
     Uses the loader's own extractor, so the check and the runtime can
@@ -459,7 +467,7 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
     # wired, so an unwired one cannot exist. When it does exist it is not a
     # style problem: the agent blocks on that port and never proceeds.
     for agent_spec in spec.agents:
-        declared = _declared_inports(agent_spec)
+        declared = declared_inports(agent_spec)
         if not declared:
             continue
         agent = agent_spec.agent_name
@@ -509,7 +517,7 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
         role = getattr(agent_spec, "role_name", None)
         if not role or role == UNASSIGNED or agent_spec.path is not None:
             continue
-        declared_out = _prose_outports(office_dir, role)
+        declared_out = declared_outports(office_dir, role)
         if not declared_out:
             continue
         agent = agent_spec.agent_name

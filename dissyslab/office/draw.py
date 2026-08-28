@@ -175,3 +175,125 @@ def fenced(diagram: str) -> str:
     bare diagram as text.
     """
     return f"```mermaid\n{diagram}\n```"
+
+
+# ── the same graph, as text ───────────────────────────────────────────
+#
+# Mermaid is a diagram somewhere else. This is the one a person reads in
+# the terminal she is already looking at, and it answers the question
+# `office.md` cannot: an agent line says `Screen is a relevance_filter.`
+# and nothing there says Screen has an outbox called `discard`.
+#
+# Two differences from the Mermaid rendering, both deliberate:
+#
+# **Both ends of every edge are named, defaults included.** The diagram
+# suppresses `out` and `in_` because a label on every arrow is noise in
+# a picture. In a table the column is there anyway, and a reader
+# learning the model is helped by seeing that a source's outbox really
+# is called `destination` and a sink's inbox really is called `in_`.
+#
+# **Unconnected ports get their own block**, which is the whole point:
+# every port an agent has appears exactly once, either on an edge or in
+# the list of things that go nowhere. That list is the same set of facts
+# `dsl check` reports as W1, W2 and W8 -- said as a shape rather than as
+# findings, for a reader who is looking at the wiring rather than at a
+# verdict.
+
+_ARROW = "──▶"
+
+
+def _agent_ports(spec, office_dir: Path | None):
+    """Ports each agent declares, as far as anything can know them.
+
+    Outboxes come from the role, resolved exactly as the loader
+    resolves it; inboxes from an `inboxes=` argument where there is
+    one. Both are best-effort: a `.py` role's ports live in its code and
+    a role with no `inboxes=` takes whatever is wired to it. Where
+    nothing is known the agent simply contributes no unconnected ports,
+    which is the honest answer rather than a guess.
+    """
+    from dissyslab.office.check_wiring import declared_inports, declared_outports
+
+    outs: dict[str, tuple[str, ...]] = {}
+    ins: dict[str, tuple[str, ...]] = {}
+    for a in spec.agents:
+        ins[a.agent_name] = tuple(declared_inports(a))
+        role = getattr(a, "role_name", None)
+        if office_dir is not None and role and role not in _UNASSIGNED and a.path is None:
+            try:
+                outs[a.agent_name] = declared_outports(Path(office_dir), role)
+            except Exception:  # noqa: BLE001 - a drawing must always finish
+                outs[a.agent_name] = ()
+        else:
+            outs[a.agent_name] = ()
+    return ins, outs
+
+
+def text_spec(spec, office_dir: Path | None = None) -> str:
+    """The office's edges, both ports named, plus what is unconnected."""
+    rows: list[tuple[str, str, str, str]] = []
+    for conn in spec.connections:
+        for dest in conn.destinations:
+            rows.append((
+                conn.source.name,
+                conn.source.port or "out",
+                dest.port or "in_",
+                dest.name,
+            ))
+
+    lines: list[str] = []
+    if rows:
+        w0 = max(len(r[0]) for r in rows)
+        w1 = max(len(r[1]) for r in rows)
+        w2 = max(len(r[2]) for r in rows)
+        for sender, out_port, in_port, receiver in rows:
+            lines.append(
+                f"{sender:<{w0}}  {out_port:<{w1}} {_ARROW} "
+                f"{in_port:<{w2}}  {receiver}"
+            )
+    else:
+        lines.append("(no connections yet)")
+
+    # What goes nowhere, and what nothing reaches.
+    declared_ins, declared_outs = _agent_ports(spec, office_dir)
+    wired_out: dict[str, set[str]] = {}
+    wired_in: dict[str, set[str]] = {}
+    for sender, out_port, in_port, receiver in rows:
+        wired_out.setdefault(sender, set()).add(out_port)
+        wired_in.setdefault(receiver, set()).add(in_port)
+
+    dangling: list[tuple[str, str]] = []
+    for a in spec.agents:
+        for port in declared_outs.get(a.agent_name, ()):
+            if port not in wired_out.get(a.agent_name, set()):
+                dangling.append((f"{a.agent_name}'s {port}", "nothing"))
+        for port in declared_ins.get(a.agent_name, ()):
+            if port not in wired_in.get(a.agent_name, set()):
+                dangling.append(("nothing", f"{a.agent_name}'s {port}"))
+    for s in spec.sources:
+        if s.name not in wired_out:
+            dangling.append((f"{s.name}'s destination", "nothing"))
+    for k in spec.sinks:
+        if k.name not in wired_in:
+            dangling.append(("nothing", f"{k.name}'s in_"))
+
+    if dangling:
+        width = max(len(left) for left, _ in dangling)
+        lines += ["", "Not connected:"]
+        lines += [
+            f"  {left:<{width}}  {_ARROW}  {right}" for left, right in dangling
+        ]
+
+    undecided = [a.agent_name for a in spec.agents if a.role_name in _UNASSIGNED]
+    if undecided:
+        lines += ["", f"No role yet: {', '.join(undecided)}"]
+
+    return "\n".join(lines)
+
+
+def text_office_dir(office_dir: Path) -> str:
+    """Parse the office at ``office_dir`` and list its wiring."""
+    from dissyslab.office.parser import parse_office_dir
+
+    office_dir = Path(office_dir)
+    return text_spec(parse_office_dir(office_dir), office_dir)
