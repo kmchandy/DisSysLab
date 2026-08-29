@@ -25,8 +25,6 @@ Your job. Add two new fields:
   Required only when "keep" is true; when "keep" is false, set
   "headline" to the empty string "".
 
-Preserve every existing field exactly.
-
 What to keep:
 
 - Personal correspondence (from a human you know, or any
@@ -60,12 +58,6 @@ Routing:
 - If keep is true, send to keep.
 - If keep is false, send to discard.
 
-Output. Return a single JSON object that includes every field of
-the input plus the new "keep" and "headline" fields, plus a
-"send_to" field whose value is "keep" or "discard". Do not include
-explanations, markdown code fences, or any text outside the JSON
-object.
-
 Example.
 
 Input:
@@ -74,4 +66,4 @@ Input:
 
 Output:
 
-{"source": "gmail", "title": "Invoice 4521", "text": "Hi — Attached is invoice 4521 for the Q1 consulting work, $1,200 due May 17. Let me know if you have questions. – Lisa, Acme Vendor", "url": "https://mail.google.com/...", "sender": "billing@acme.example", "timestamp": "2026-05-11T08:00:00Z", "keep": true, "headline": "Acme Vendor invoice $1,200 due May 17.", "send_to": "keep"}
+{"send_to": "keep", "text": "Hi — Attached is invoice 4521 for the Q1 consulting work, $1,200 due May 17. Let me know if you have questions. – Lisa, Acme Vendor"}

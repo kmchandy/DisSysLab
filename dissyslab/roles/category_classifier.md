@@ -1,5 +1,5 @@
 ---
-emits: adds a `category` field — one of a fixed list you set
+emits: one of a fixed list of categories you set
 outboxes: out
 adds: category
 ---
@@ -25,10 +25,7 @@ Your job. Add one new field, "category", whose value is one of:
 - NEWS — factual reporting of an event.
 - DISCUSSION — community thread, Q&A, or back-and-forth.
 - OFFER — a promotion, sale, deal, or call to buy.
-- OTHER — anything that does not fit the above five.
-
-Preserve every existing field exactly; only add the new "category"
-field. Pick exactly one value. When in doubt, choose NEWS for
+- OTHER — anything that does not fit the above five. Pick exactly one value. When in doubt, choose NEWS for
 event-shaped items and OTHER for everything else.
 
 **To customise this role for your office:** copy this file into
@@ -38,11 +35,6 @@ will use your local override in preference to this default.
 
 Always send to out.
 
-Output. Return a single JSON object that includes every field of
-the input plus the new "category" field, plus a "send_to" field
-whose value is "out". Do not include explanations, markdown code
-fences, or any text outside the JSON object.
-
 Example.
 
 Input:
@@ -51,4 +43,4 @@ Input:
 
 Output:
 
-{"source": "hacker_news", "title": "Show HN: I built a side project that automates my tax filing", "text": "After three years of doing my own taxes by hand I built a small tool that ...", "url": "https://news.ycombinator.com/item?id=...", "timestamp": "2026-03-20T14:00:00Z", "category": "ANNOUNCEMENT", "send_to": "out"}
+{"category": "ANNOUNCEMENT"}

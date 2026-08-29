@@ -1,5 +1,5 @@
 ---
-emits: adds a `topic` field
+emits: one of eight topics, from politics to entertainment
 outboxes: out
 adds: topic
 ---
@@ -32,9 +32,6 @@ exactly these eight strings:
 - "other"         — anything that does not clearly fit one of
   the seven above. Use this when you would have to guess.
 
-Preserve every existing field exactly; only add the new
-"topic" field.
-
 Rules:
 
 - Pick exactly one topic per article. Do not output a list.
@@ -42,12 +39,6 @@ Rules:
 - When in doubt, prefer "other" rather than guessing.
 
 Always send to out.
-
-Output. Return a single JSON object that includes every
-field of the input plus the new "topic" field, plus a
-"send_to" field whose value is "out". Do not include
-explanations, markdown code fences, or any text outside the
-JSON object.
 
 Example.
 
@@ -57,4 +48,4 @@ Input:
 
 Output:
 
-{"source": "techcrunch", "title": "AI startup raises $50M to automate code review", "text": "Series B funding led by Sequoia values the company at $400M...", "url": "https://techcrunch.com/2026/04/15/ai-startup", "timestamp": "2026-04-15T10:00:00Z", "topic": "technology", "send_to": "out"}
+{"topic": "technology"}

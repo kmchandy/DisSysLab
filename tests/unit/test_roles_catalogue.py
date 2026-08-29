@@ -167,7 +167,10 @@ def test_dsl_roles_runs_and_lists_them():
     )
     assert out.returncode == 0
     assert "summarizer" in out.stdout
-    assert "`summary` field" in out.stdout
+    # The field name comes from the declaration, not from the emits
+    # sentence -- which used to say it too, so the listing printed
+    # every field twice and could disagree with itself.
+    assert "adds summary" in out.stdout
 
 
 # ── the first outbox is the fallback, so it has to be the one the
@@ -235,3 +238,99 @@ def test_a_role_that_names_a_fallback_declares_it_first():
                 f"role says. Put {promised!r} first."
             )
     assert checked, "the fallback phrasing changed; this now checks nothing"
+
+
+# ── prose says what a field means; the declaration says what it is ────
+
+
+def _prose_roles() -> list[Path]:
+    from dissyslab.roles_catalogue import builtin_roles_dir
+
+    gallery = Path(__file__).resolve().parents[2] / "dissyslab" / "gallery"
+    roots = [Path(builtin_roles_dir())]
+    roots += sorted(p for p in gallery.glob("**/roles") if p.is_dir())
+    return [
+        p for d in roots for p in sorted(d.glob("*.md"))
+        if p.stem != "README" and not p.name.startswith("_")
+    ]
+
+
+def test_no_role_restates_the_output_shape():
+    """The reply shape is generated. Nothing may say it a second time.
+
+    Every role used to end with a paragraph naming the keys the model
+    should return, and the framework appended its own -- and the two
+    disagreed about the one thing that mattered. The role asked for
+    every input field plus `summary`; the appended contract asked for
+    `send_to` and `text`. Which one the model followed decided whether
+    the annotation existed at all, and the shipped annotators worked
+    only because capable models follow the longer block.
+
+    ``contract: structured`` roles are exempt, and that is not a
+    loophole: nothing is appended to them, so their own prose *is* the
+    only statement of the shape. Two of them were wrongly stripped
+    while this migration ran, which is how the exemption got noticed.
+    """
+    import re
+
+    offenders = []
+    for path in _prose_roles():
+        text = path.read_text(encoding="utf-8")
+        if re.search(r"^\s*contract:\s*structured", text, re.M):
+            continue
+        if re.search(r"^\s*Output\.\s", text, re.M):
+            offenders.append(path.name)
+    assert not offenders, (
+        "these roles state their own output shape, which the generated "
+        f"contract now states: {offenders}"
+    )
+
+
+def test_no_role_tells_the_model_to_preserve_fields():
+    """That is a framework guarantee, and the model has no part in it.
+
+    ``role_fn`` merges the upstream message with the model's reply, in
+    code. A model returning strictly ``{"summary": ...}`` still
+    produces a message carrying `title`, `url` and `timestamp` -- so
+    the sentence asking it to preserve them described work it was not
+    doing, and cost tokens asking for a copy of the input back.
+    """
+    import re
+
+    offenders = [
+        p.name for p in _prose_roles()
+        if re.search(r"[Pp]reserve every existing field", p.read_text(encoding="utf-8"))
+    ]
+    assert not offenders, offenders
+
+
+def test_every_role_that_claims_a_field_declares_it():
+    """`emits:` is prose and drifts; `adds:` is read by the framework.
+
+    `deadline_extractor`, written by an assistant in a student session,
+    said "adds a `deadline` field" and added two. Ours had the same
+    fault: `sentiment_classifier` named one field and declares two,
+    and `evaluator`'s sentence named `verdict` while the role adds
+    `verdict` and `feedback`.
+
+    So `emits:` no longer names fields at all -- it says what the value
+    means, which is the half no declaration can carry. This checks that
+    it stays that way.
+    """
+    import re
+
+    from dissyslab.office.role_ports import read_ports
+
+    offenders = []
+    for path in _prose_roles():
+        text = path.read_text(encoding="utf-8")
+        m = re.search(r"^emits:\s*(.+)$", text, re.M)
+        if not m:
+            continue
+        named = set(re.findall(r"`([a-z_][a-z0-9_]*)`", m.group(1)))
+        if named:
+            offenders.append((path.name, sorted(named)))
+    assert not offenders, (
+        "emits: should say what the value means, not name the field -- "
+        f"adds: is the name and it cannot drift: {offenders}"
+    )

@@ -68,6 +68,11 @@ class RoleInfo:
     outboxes: tuple[str, ...]
     kind: str          # "english" (a model runs it) or "python"
     path: Path
+    #: The fields the role declares it adds. Read from `adds:`, not
+    #: from the `emits:` sentence -- `emits:` is prose for a human and
+    #: it drifts: `deadline_extractor`, written by an assistant in a
+    #: student session, said "adds a `deadline` field" and added two.
+    adds: tuple[str, ...] = ()
 
     @property
     def costs_money(self) -> bool:
@@ -100,6 +105,16 @@ def _outboxes_from(path: Path) -> tuple[str, ...]:
         return ()
 
 
+def _adds_from(path: Path) -> tuple[str, ...]:
+    """The fields the role declares. Same reader as everything else."""
+    from dissyslab.office.role_ports import PortDeclarationError, read_ports
+
+    try:
+        return read_ports(path).adds
+    except PortDeclarationError:
+        return ()
+
+
 def read_role(path: Path) -> RoleInfo | None:
     if path.name.startswith("_") or path.stem == "README":
         return None
@@ -124,6 +139,7 @@ def read_role(path: Path) -> RoleInfo | None:
         name=path.stem,
         emits=meta.get("emits", ""),
         outboxes=_outboxes_from(path),
+        adds=_adds_from(path),
         kind=kind,
         path=path,
     )
@@ -156,6 +172,12 @@ def format_catalogue(roles: list[RoleInfo]) -> str:
         emits = r.emits or "(no description — see the role file)"
         lines.append(f"  {r.name:<{width}}  {emits}")
         detail = []
+        # The declared fields, not the sentence. A reader wiring
+        # something downstream of `severity_classifier` needs the key
+        # they will be reading, and `emits:` is where that answer goes
+        # stale -- it is written by hand and nothing checks it.
+        if r.adds:
+            detail.append("adds " + ", ".join(r.adds))
         if r.outboxes and tuple(r.outboxes) != ("out",):
             detail.append("sends to " + " or ".join(r.outboxes))
         if r.kind == "python":

@@ -1,5 +1,5 @@
 ---
-emits: adds a `location` field — where in the world the item is about
+emits: where in the world the item is about — country and region
 outboxes: out
 adds: location
 ---
@@ -29,9 +29,6 @@ JSON object with exactly two keys:
   span continents (international diplomacy, climate, world
   markets) or have no clear geographic anchor.
 
-Preserve every existing field exactly; only add the new
-"location" field.
-
 Rules:
 
 - Use the exact spelling for "region" — all lowercase, with
@@ -44,12 +41,6 @@ Rules:
 
 Always send to out.
 
-Output. Return a single JSON object that includes every
-field of the input plus the new "location" field, plus a
-"send_to" field whose value is "out". Do not include
-explanations, markdown code fences, or any text outside the
-JSON object.
-
 Example.
 
 Input:
@@ -58,4 +49,4 @@ Input:
 
 Output:
 
-{"source": "al_jazeera", "title": "Floods displace thousands in southern Pakistan", "text": "Heavy monsoon rains have caused widespread flooding in Sindh province...", "url": "https://www.aljazeera.com/news/2026/04/floods", "timestamp": "2026-04-09T12:00:00Z", "location": {"country": "Pakistan", "region": "asia"}, "send_to": "out"}
+{"location": {"country": "Pakistan", "region": "asia"}}

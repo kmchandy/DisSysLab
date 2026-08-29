@@ -1,5 +1,5 @@
 ---
-emits: adds `verdict` (publish or revise) and the reason for it
+emits: whether a written briefing is good enough to publish, and why not
 outboxes: publish, revise
 adds: verdict, feedback
 ---
@@ -22,8 +22,7 @@ these keys:
   pass)
 
 Other fields may also be present (severity, topic, location,
-entities). Preserve every existing field exactly; only add
-the two new fields described below.
+entities).
 
 Your job. Add two new fields:
 
@@ -46,12 +45,6 @@ Routing:
   always send to publish regardless of your verdict. The
   briefing has been around the loop enough; ship it.
 
-Output. Return a single JSON object that includes every
-field of the input plus the new "verdict" and "feedback"
-fields, plus a "send_to" field whose value is either
-"publish" or "revise". Do not include explanations,
-markdown code fences, or any text outside the JSON object.
-
 Example.
 
 Input:
@@ -60,4 +53,4 @@ Input:
 
 Output:
 
-{"headline": "Markets drop as central bank holds rates", "summary": "Stocks fell today amid uncertainty.", "source": "bbc_world", "url": "https://www.bbc.com/news/business-12345", "revisions": 0, "verdict": "revise", "feedback": "Summary is too vague — name which markets fell, by how much, and which central bank.", "send_to": "revise"}
+{"send_to": "revise", "verdict": "revise", "feedback": "Summary is too vague — name which markets fell, by how much, and which central bank."}

@@ -52,8 +52,6 @@ Markdown style:
 
 Always send to out.
 
-Output. Return a single JSON object with these fields:
-
 - "markdown" — the full markdown text of the briefing (the string).
 - "send_to" — "out".
 

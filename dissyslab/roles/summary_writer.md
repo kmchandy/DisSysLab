@@ -1,5 +1,5 @@
 ---
-emits: adds a `brief` field — a short paragraph a busy reader can scan
+emits: a short paragraph a busy reader can scan
 outboxes: out
 adds: brief
 ---
@@ -49,14 +49,7 @@ Style rules:
 - Never invent facts. If the input doesn't say something, don't
   say it in the brief.
 
-Preserve every existing field exactly; only add "brief".
-
 Always send to out.
-
-Output. Return a single JSON object that includes every field of
-the input plus the new "brief" field, plus a "send_to" field
-whose value is "out". Do not include explanations, markdown code
-fences, or any text outside the JSON object.
 
 Example.
 
@@ -66,4 +59,4 @@ Input:
 
 Output:
 
-{"source": "bbc_world", "title": "Lebanon reports 39 killed in Israeli strikes", "text": "Lebanon reports that Israeli strikes killed 39 people overnight ...", "url": "https://www.bbc.com/...", "timestamp": "2026-04-12T08:30:00Z", "severity": "CRITICAL", "topic": "politics", "sentiment": "NEGATIVE", "brief": "Lebanon reports that overnight Israeli strikes killed 39 people, marking one of the deadliest single incidents of the current conflict. Fighting between Israel and Hezbollah continues despite a ceasefire announced last month. The escalation is likely to draw renewed diplomatic intervention this week.", "send_to": "out"}
+{"brief": "Lebanon reports that overnight Israeli strikes killed 39 people, marking one of the deadliest single incidents of the current conflict. Fighting between Israel and Hezbollah continues despite a ceasefire announced last month. The escalation is likely to draw renewed diplomatic intervention this week."}

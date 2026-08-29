@@ -162,15 +162,22 @@ news_monitor's article_out is news_editor's article_in.
 
   ```
   ---
-  emits: decides whether an item is worth passing on
+  emits: whether an item is worth passing on
   inboxes: in_
   outboxes: keep, discard
+  adds: summary
   ---
   ```
 
   `inboxes:` may be left out and defaults to `in_`, which is what almost
-  every role has. A Python role declares in the `AgentRoleEntry` it builds —
-  `in_ports=`, `out_ports=` — and needs no front matter.
+  every role has. `adds:` is the fields the role puts on the message, and
+  is left out by a role that only routes. A Python role declares its ports
+  in the `AgentRoleEntry` it builds — `in_ports=`, `out_ports=` — and its
+  fields in the module docstring's front matter.
+
+  **`adds:` is what the output contract is generated from**, which makes it
+  the only statement of the reply shape anywhere. `dsl grammar roles` has
+  the detail.
 
   So `Felix's keep` and `Felix's discard` are legal because
   `relevance_filter` says `outboxes: keep, discard`, and `dsl draw` can show

@@ -1,5 +1,5 @@
 ---
-emits: adds an `urgency` field
+emits: how time-sensitive the item is for the reader: HIGH, MEDIUM or LOW
 outboxes: out
 adds: urgency
 ---
@@ -20,8 +20,7 @@ Other fields may be present (e.g., earlier thinkers may have added
 "severity" or "sentiment"); preserve them.
 
 Your job. Add one new field, "urgency", with one of three values:
-HIGH, MEDIUM, or LOW. Preserve every existing field exactly; only
-add the new "urgency" field.
+HIGH, MEDIUM, or LOW.
 
 How to choose the value:
 
@@ -39,11 +38,6 @@ them in the next hour would matter to the recipient.
 
 Always send to out.
 
-Output. Return a single JSON object that includes every field of
-the input plus the new "urgency" field, plus a "send_to" field
-whose value is "out". Do not include explanations, markdown code
-fences, or any text outside the JSON object.
-
 Example.
 
 Input:
@@ -52,4 +46,4 @@ Input:
 
 Output:
 
-{"source": "gmail", "title": "Invoice #4421 due Friday — Acme Corp", "text": "Hi — just a reminder that invoice #4421 for $1,250 is due this Friday March 8. Let me know if you have any questions. Best, Sandra", "url": "https://mail.google.com/...", "timestamp": "2026-03-05T09:14:00Z", "urgency": "MEDIUM", "send_to": "out"}
+{"urgency": "MEDIUM"}

@@ -17,8 +17,7 @@ Input shape. Each paper is a JSON object with at least:
 
 Other fields may be present; preserve them.
 
-Your job. Add two new fields. Preserve every existing field
-exactly.
+Your job. Add two new fields.
 
 - "impact" — one of:
   - "HIGH"   — likely to be widely cited or change practice in

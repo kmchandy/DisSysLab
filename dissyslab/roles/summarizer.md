@@ -1,5 +1,5 @@
 ---
-emits: adds a `summary` field — one plain-English sentence
+emits: one plain-English sentence saying what the item is about
 outboxes: out
 adds: summary
 ---
@@ -21,8 +21,7 @@ Other fields may be present (e.g., earlier thinkers may have added
 
 Your job. Add one new field, "summary", whose value is a single
 plain-English sentence (no leading bullet, no quotation marks) that
-captures the gist of the item. Preserve every existing field
-exactly; only add the new "summary" field.
+captures the gist of the item.
 
 Rules for the summary:
 
@@ -38,11 +37,6 @@ Rules for the summary:
 
 Always send to out.
 
-Output. Return a single JSON object that includes every field of
-the input plus the new "summary" field, plus a "send_to" field
-whose value is "out". Do not include explanations, markdown code
-fences, or any text outside the JSON object.
-
 Example.
 
 Input:
@@ -51,4 +45,4 @@ Input:
 
 Output:
 
-{"source": "techcrunch", "title": "Anthropic raises new funding round at $80B valuation", "text": "Anthropic announced today that it has closed a new funding round led by ... The round values the AI safety lab at $80 billion ...", "url": "https://techcrunch.com/2026/03/anthropic-80b", "timestamp": "2026-03-04T15:12:00Z", "summary": "Anthropic closed a new funding round that values the AI safety company at eighty billion dollars.", "send_to": "out"}
+{"summary": "Anthropic closed a new funding round that values the AI safety company at eighty billion dollars."}

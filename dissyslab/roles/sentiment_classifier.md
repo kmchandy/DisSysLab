@@ -1,5 +1,5 @@
 ---
-emits: adds a `sentiment` field — positive, negative or neutral
+emits: positive, negative or neutral, with a score from -1.0 to +1.0
 outboxes: out
 adds: sentiment, sentiment_score
 ---
@@ -25,8 +25,6 @@ Your job. Add two new fields to the item:
 - "sentiment_score" — a float between -1.0 (most negative) and
   +1.0 (most positive); 0.0 is neutral
 
-Preserve every existing field exactly; only add the two new fields.
-
 How to choose the value:
 
 - POSITIVE — clearly favorable framing, good news for the subject,
@@ -42,12 +40,6 @@ for items with unambiguous emotional charge.
 
 Always send to out.
 
-Output. Return a single JSON object that includes every field of
-the input plus the new "sentiment" and "sentiment_score" fields,
-plus a "send_to" field whose value is "out". Do not include
-explanations, markdown code fences, or any text outside the JSON
-object.
-
 Example.
 
 Input:
@@ -56,4 +48,4 @@ Input:
 
 Output:
 
-{"source": "techcrunch", "title": "Anthropic's new model beats GPT-5 on every benchmark", "text": "In a striking demonstration of progress, Anthropic's latest model has set new state-of-the-art results across ten major benchmarks ...", "url": "https://techcrunch.com/...", "timestamp": "2026-04-12T10:00:00Z", "sentiment": "POSITIVE", "sentiment_score": 0.7, "send_to": "out"}
+{"sentiment": "POSITIVE", "sentiment_score": 0.7}

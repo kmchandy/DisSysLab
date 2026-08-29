@@ -1,5 +1,5 @@
 ---
-emits: adds an `entities` field — the people, places and organisations named
+emits: the people, organisations, places and events named in the item
 outboxes: out
 adds: entities
 ---
@@ -43,12 +43,6 @@ Rules:
 
 Always send to out.
 
-Output. Return a single JSON object that includes every
-field of the input plus the new "entities" field, plus a
-"send_to" field whose value is "out". Do not include
-explanations, markdown code fences, or any text outside the
-JSON object.
-
 Example.
 
 Input:
@@ -57,4 +51,4 @@ Input:
 
 Output:
 
-{"source": "al_jazeera", "title": "BRICS leaders meet in Beijing summit", "text": "Modi and Xi joined Putin in Beijing on Tuesday for the BRICS summit, where leaders signed the Beijing Declaration on cooperation.", "url": "https://www.aljazeera.com/news/12345", "timestamp": "2026-04-08T14:00:00Z", "entities": {"people": ["Modi", "Xi", "Putin"], "organizations": ["BRICS"], "places": ["Beijing"], "events": ["BRICS summit", "Beijing Declaration"]}, "send_to": "out"}
+{"entities": {"people": ["Modi", "Xi", "Putin"], "organizations": ["BRICS"], "places": ["Beijing"], "events": ["BRICS summit", "Beijing Declaration"]}}

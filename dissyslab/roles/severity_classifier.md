@@ -1,5 +1,5 @@
 ---
-emits: adds a `severity` field — how significant the item is
+emits: how significant the item is: CRITICAL, HIGH, MEDIUM or LOW
 outboxes: out
 adds: severity
 ---
@@ -32,12 +32,6 @@ How to choose the value:
 
 Always send to out.
 
-Output. Return a single JSON object that includes every
-field of the input plus the new "severity" field, plus a
-"send_to" field whose value is "out". Do not include
-explanations, markdown code fences, or any text outside the
-JSON object.
-
 Example.
 
 Input:
@@ -46,4 +40,4 @@ Input:
 
 Output:
 
-{"source": "bbc_world", "title": "UN Security Council emergency meeting on regional conflict", "text": "Diplomats convened in New York early Tuesday after fresh airstrikes...", "url": "https://www.bbc.com/news/world-12345678", "timestamp": "2026-04-12T08:30:00Z", "severity": "CRITICAL", "send_to": "out"}
+{"severity": "CRITICAL"}

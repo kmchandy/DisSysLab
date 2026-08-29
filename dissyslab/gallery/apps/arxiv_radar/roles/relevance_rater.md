@@ -22,7 +22,7 @@ Other fields may be present; preserve them.
 Your job. Extract authors and abstract from "text" (the format
 follows arXiv's `Title: …\nAuthors: …\nAbstract: …` convention).
 Decide whether the paper matches the reader's interests above.
-Add four new fields. Preserve every existing field exactly.
+Add four new fields.
 
 - "author"    — comma-separated authors taken from the
   ``Authors:`` line of the input "text".

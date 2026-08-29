@@ -18,8 +18,7 @@ Input shape. Each item is a JSON object with at least these keys:
 Other fields may be present; preserve them.
 
 Your job. Decide whether the item is relevant. If relevant, send to
-keep. If not, send to discard. Preserve every existing field
-exactly; do not add or modify any field.
+keep. If not, send to discard.
 
 Default criteria for relevance (edit this section to fit your
 office). An item is relevant if it meets ALL of the following:
@@ -45,11 +44,6 @@ filter further if needed.
 
 If relevant, send to keep. If not relevant, send to discard.
 
-Output. Return a single JSON object that includes every field of
-the input plus a "send_to" field whose value is either "keep" or
-"discard". Do not include explanations, markdown code fences, or
-any text outside the JSON object.
-
 Example.
 
 Input:
@@ -58,4 +52,4 @@ Input:
 
 Output:
 
-{"source": "bbc_world", "title": "Lebanon ceasefire talks resume in Beirut", "text": "Talks aimed at stabilising the Lebanon-Israel border resumed in Beirut today as diplomats ...", "url": "https://www.bbc.com/...", "timestamp": "2026-04-12T08:30:00Z", "send_to": "keep"}
+{"send_to": "keep"}

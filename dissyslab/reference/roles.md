@@ -180,7 +180,7 @@ A role goes in the office's `roles/` folder and is named after the role:
 
 ```markdown
 ---
-emits: decides whether a job posting is worth reading
+emits: whether a posting is open to someone with no experience
 outboxes: keep, discard
 ---
 # Role: screener
@@ -194,19 +194,65 @@ If the posting is for a new graduate, send to keep.
 Otherwise send to discard.
 ```
 
+An annotator — a role that adds a field rather than deciding where a
+message goes — declares that field too:
+
+```markdown
+---
+emits: one plain-English sentence saying what the item is about
+outboxes: out
+adds: summary
+---
+```
+
 - **`outboxes:` is required.** It is the role's interface: what the
   framework builds, what `dsl check` compares the wiring against, and
   what `dsl draw` shows. In order — the first name is the default
-  destination when the model does not choose one.
+  destination when a single-outbox role's model does not choose one.
+- **`adds:` is the fields the role puts on the message**, in order.
+  Leave it out for a role that only routes: a filter decides, it does
+  not add. This is what the output contract is generated from, so it
+  is the only place the reply shape is stated.
 - **`inboxes:` may be omitted** and defaults to `in_`, which is what
   almost every role wants.
-- `emits:` is one line for `dsl roles` to print.
-- The prompt is prose for the model. It does **not** decide the ports.
-  Write `send to keep` in it because it tells the model what to do,
-  not because the framework reads it — it does not.
+- `emits:` says what the value *means* — the half no declaration can
+  carry. It does **not** name the field; `adds:` does that, and a
+  sentence naming it too is a second copy that drifts.
+- The prompt is prose for the model. It does **not** decide the ports
+  or the fields. Write `send to keep` in it because it tells the model
+  what to do, not because the framework reads it — it does not.
 
-The framework appends the JSON contract that says how to name the chosen
-outbox. Never write that by hand.
+## Never write the output shape yourself
+
+The framework appends a contract generated from `outboxes` and `adds`,
+and that is the **only** statement of the reply shape:
+
+```
+a filter        {"send_to": "<one of: keep, discard>"}
+an annotator    {"summary": <summary, as described above>}
+```
+
+A role that adds nothing is asked for no content. A role with one
+outbox is not asked to choose. Neither is asked for `text` unless it
+declares `adds: text`, which is what a role that genuinely writes
+should declare — the sinks read that field.
+
+Do not add an "Output." paragraph, and do not tell the model to
+preserve the input's fields. Every shipped role used to do both, and
+the result was two statements in one prompt asking for different
+things: the role wanted every input field plus `summary`, the appended
+contract wanted `send_to` and `text`. Which the model obeyed decided
+whether the annotation existed at all. **The framework merges the
+upstream message with the reply, in code** — so a model returning
+strictly `{"summary": "..."}` still produces a message carrying
+`title`, `url` and `timestamp`. Asking for them back costs tokens and
+buys nothing.
+
+If your role's output genuinely needs a shape the contract cannot
+express — a specific top-level key, a nested object — set
+`contract: structured` in the front matter. Nothing is appended then,
+and your prose is the whole statement. Tests exempt those roles from
+the rule above for exactly that reason.
 
 **In Python — `roles/<name>.py`.** The module builds one top-level
 `role`, and the ports are the declaration:
