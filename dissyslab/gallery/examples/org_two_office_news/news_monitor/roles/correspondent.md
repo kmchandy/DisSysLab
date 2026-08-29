@@ -1,5 +1,6 @@
 ---
 outboxes: analyst, discard
+adds: text
 ---
 # Role: correspondent
 

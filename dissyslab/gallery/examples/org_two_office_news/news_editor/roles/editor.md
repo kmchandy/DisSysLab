@@ -1,5 +1,6 @@
 ---
 outboxes: rewriter, discard
+adds: text
 ---
 # Role: editor
 

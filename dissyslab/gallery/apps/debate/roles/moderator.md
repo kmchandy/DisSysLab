@@ -1,5 +1,6 @@
 ---
 outboxes: finish, continue
+adds: text
 ---
 # Role: moderator
 

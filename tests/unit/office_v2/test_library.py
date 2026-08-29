@@ -635,7 +635,7 @@ class TestNamedContracts:
             f"stub-contract-{contract}", '{"send_to": "out", "text": "ok"}'
         )
         entry = nl_role(
-            "You answer. Send to out.", outboxes=['out'],
+            "You answer. Send to out.", outboxes=['out'], adds=["text"],
             AI=f"stub-contract-{contract}",
             contract=contract,
         )
@@ -644,14 +644,49 @@ class TestNamedContracts:
         agent._fn({"problem": "x"})
         return stub.calls[0]["system"]
 
-    def test_passthrough_appends_send_to_text_template(self):
-        """The default contract should still produce the historical
-        {send_to, text} template — every gallery app shipped before
-        the α change relies on this and must keep working."""
+    def test_passthrough_names_the_fields_the_role_declares(self):
+        """The contract is generated from the declaration now.
+
+        It used to be one fixed template, `{"send_to": ..., "text":
+        ...}`, appended to every passthrough role whatever the role
+        did. That asked an annotator for `text` and never for the
+        `summary` it exists to add, and it asked a filter for content
+        it has no business producing -- in the same prompt as the
+        role's own prose asking for the opposite.
+
+        A role declaring `adds: text` gets a contract naming `text`,
+        which is what a writer wants and what the sinks read.
+        """
         system = self._capture_system_prompt("passthrough")
-        assert "send_to" in system
         assert '"text"' in system
-        assert "<content>" in system
+        assert "<content>" not in system, (
+            "the fixed template is gone; the field is named from adds:"
+        )
+
+    def test_a_single_outbox_role_is_not_asked_to_choose(self):
+        """There is one place its answer can go. A key whose only legal
+        value is fixed is ceremony a small model can still get wrong."""
+        system = self._capture_system_prompt("passthrough")
+        assert "send_to" not in system.split("Return JSON only")[-1]
+
+    def test_a_role_that_adds_nothing_is_asked_for_no_content(self):
+        """A filter decides; it does not produce.
+
+        The old template always asked for `text`, which meant the
+        article's body on the way in and the role's output on the way
+        out -- so a model that obeyed it overwrote the body, in a role
+        promising in the same prompt to preserve every field.
+        """
+        stub = _register_stub("stub-filter-contract",
+                              '{"send_to": "keep"}')
+        entry = nl_role("Triage.", outboxes=["keep", "discard"],
+                        AI="stub-filter-contract")
+        entry()._fn({"title": "T", "text": "the article body"})
+        system = stub.calls[0]["system"]
+        assert "send_to" in system
+        assert '"text"' not in system, (
+            "a filter must not be asked for content:\n" + system[-300:]
+        )
 
     def test_structured_appends_no_contract(self):
         """The structured contract appends nothing. The role's own .md
@@ -679,7 +714,8 @@ class TestNamedContracts:
             "stub-contract-default", '{"send_to": "out", "text": "ok"}'
         )
         entry = nl_role(
-            "You answer. Send to out.", outboxes=['out'], AI="stub-contract-default",
+            "You answer. Send to out.", outboxes=['out'], adds=["text"],
+            AI="stub-contract-default",
         )
         agent = entry()
         agent._fn({"problem": "x"})
@@ -725,7 +761,7 @@ class TestRoleFrontMatter:
         roles = tmp_path / "roles"
         roles.mkdir()
         (roles / "agent.md").write_text(
-            "---\noutboxes: out\n---\n"
+            "---\noutboxes: out\nadds: text\n---\n"
             "# Role: agent\n\n"
             "You answer. Send to out.\n"
         , encoding="utf-8")
@@ -734,8 +770,9 @@ class TestRoleFrontMatter:
         agent = lib["agent"](AI="stub-fm-none")
         agent._fn({"problem": "x"})
         system = stub.calls[0]["system"]
-        # Default = passthrough = {send_to, text} template appended.
-        assert "<content>" in system
+        # Default is passthrough, so a contract is appended and it
+        # names the field the role declared -- not a fixed template.
+        assert '"text"' in system.split("Return JSON only")[-1]
 
     def test_unknown_front_matter_keys_ignored(self, tmp_path):
         """Forward compatibility: future framework versions might use

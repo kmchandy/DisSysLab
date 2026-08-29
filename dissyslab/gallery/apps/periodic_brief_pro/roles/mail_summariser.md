@@ -1,5 +1,6 @@
 ---
 outboxes: keep, discard
+adds: text
 ---
 # Role: mail_summariser
 

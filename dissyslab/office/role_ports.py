@@ -41,6 +41,47 @@ Where the ports are computed, module-level names are resolved; where
 the role is built by a helper and nothing is readable, the module
 docstring carries the same front matter as a prose role.
 
+The fields a role adds
+----------------------
+``adds:`` is the same idea one level along, and it exists because the
+same defect was found one level along::
+
+    ---
+    emits: adds a `summary` field -- one plain-English sentence
+    outboxes: out
+    adds: summary
+    ---
+
+An annotator exists to put a named field on the message. Until this
+was declared, the role said so in prose -- *"Output. Return a single
+JSON object containing every field of the input plus `summary`"* --
+while the framework appended, as the last thing the model reads::
+
+    Return JSON only, no explanation, no nested JSON:
+    {"send_to": "<one of: out>", "text": "<content>"}
+
+Two keys. Not `summary`. A model that obeys the last line returns
+those two and the field the role is *for* never appears; a model that
+obeys the role ignores the contract. Which one wins is up to the model,
+and the twelve shipped annotators worked only because capable models
+follow the longer, more specific block. That is not a guarantee, and it
+is weakest on exactly the small local models a beginner is pointed at.
+
+There was a second collision in the same two lines. ``text`` means the
+*article body* in the input shape and the *role's output* in the
+contract, so a model obeying the contract overwrote the body -- in
+roles that promise, in the same prompt, to preserve every field.
+
+With ``adds:`` declared the contract is generated from the declaration
+and names exactly what the role produces::
+
+    filter:      {"send_to": "<one of: keep, discard>"}
+    summarizer:  {"send_to": "<one of: out>", "summary": "..."}
+
+No generic content slot, so ``text`` never appears in a contract and
+the collision cannot arise. The prose stops asserting the shape because
+nothing needs it to.
+
 Read, never imported
 --------------------
 Every path here is static. Importing a role to discover its ports would
@@ -73,6 +114,16 @@ class PortDeclarationError(Exception):
 class Ports:
     inboxes: Tuple[str, ...]
     outboxes: Tuple[str, ...]
+    #: The fields this role puts on the message, in declared order.
+    #:
+    #: Empty for a role that only routes: a filter decides, it does not
+    #: add. Non-empty for every annotator -- ``summarizer`` adds
+    #: ``summary``, ``geolocator`` adds ``location`` -- which is the
+    #: whole reason those roles exist.
+    #:
+    #: This is what lets the output contract be *generated* rather than
+    #: written twice. See ``The fields a role adds`` below.
+    adds: Tuple[str, ...] = ()
 
 
 # ── prose roles ───────────────────────────────────────────────────────
@@ -142,8 +193,17 @@ def _ports_arg(node: ast.expr, literals: dict[str, object]) -> Tuple[str, ...] |
     return None
 
 
-def _from_agent_role_entry(tree: ast.Module) -> Ports | None:
-    """Ports spelled in the ``AgentRoleEntry(...)`` the module builds."""
+def _from_agent_role_entry(
+    tree: ast.Module, adds: Tuple[str, ...] = ()
+) -> Ports | None:
+    """Ports spelled in the ``AgentRoleEntry(...)`` the module builds.
+
+    ``adds`` comes from the module docstring rather than the call:
+    ``AgentRoleEntry`` has no field for it, a Python role's function
+    can put anything on a message, and there is nothing static to read.
+    A Python role that adds a field says so in its docstring front
+    matter, exactly as a prose role does.
+    """
     literals = _module_literals(tree)
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
@@ -154,7 +214,7 @@ def _from_agent_role_entry(tree: ast.Module) -> Ports | None:
         ins = _ports_arg(kw["in_ports"], literals) if "in_ports" in kw else None
         outs = _ports_arg(kw["out_ports"], literals) if "out_ports" in kw else None
         if ins is not None and outs is not None:
-            return Ports(ins, outs)
+            return Ports(ins, outs, adds)
     return None
 
 
@@ -193,14 +253,16 @@ def read_ports(path: Path) -> Ports:
             raise PortDeclarationError(
                 f"{path.name}: will not parse ({exc.msg} on line {exc.lineno})"
             ) from exc
-        found = _from_agent_role_entry(tree)
+        meta = _docstring_front_matter(text)
+        adds = _name_list(meta.get("adds", ""))
+        found = _from_agent_role_entry(tree, adds)
         if found is not None:
             return found
-        meta = _docstring_front_matter(text)
         if "outboxes" in meta:
             return Ports(
                 _name_list(meta.get("inboxes", DEFAULT_INBOX)),
                 _name_list(meta["outboxes"]),
+                adds,
             )
         raise PortDeclarationError(
             f"{path.name} does not say what its ports are.\n"
@@ -228,4 +290,9 @@ def read_ports(path: Path) -> Ports:
     return Ports(
         _name_list(meta.get("inboxes", DEFAULT_INBOX)),
         _name_list(meta["outboxes"]),
+        # Absent is meaningful and is not an error: a filter adds no
+        # field, it decides. Only a role that claims a field in prose
+        # and does not declare it is wrong, and a test asks that
+        # question of the prose rather than guessing here.
+        _name_list(meta.get("adds", "")),
     )

@@ -1,5 +1,6 @@
 ---
 outboxes: archivist
+adds: text
 ---
 # Role: editor
 

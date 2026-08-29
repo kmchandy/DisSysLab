@@ -1,6 +1,7 @@
 ---
 emits: adds an `urgency` field
 outboxes: out
+adds: urgency
 ---
 # Role: urgency_classifier
 

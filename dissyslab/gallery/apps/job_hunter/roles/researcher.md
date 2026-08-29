@@ -1,5 +1,6 @@
 ---
 outboxes: research_briefs
+adds: text
 ---
 # Role: researcher
 

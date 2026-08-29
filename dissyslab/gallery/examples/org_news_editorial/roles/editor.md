@@ -1,5 +1,6 @@
 ---
 outboxes: archivist, copywriter
+adds: text
 ---
 # Role: editor
 

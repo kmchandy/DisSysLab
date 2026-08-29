@@ -1,6 +1,7 @@
 ---
 emits: adds a `category` field — one of a fixed list you set
 outboxes: out
+adds: category
 ---
 # Role: category_classifier
 

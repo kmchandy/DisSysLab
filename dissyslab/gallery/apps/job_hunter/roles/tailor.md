@@ -1,5 +1,6 @@
 ---
 outboxes: tailored
+adds: text
 ---
 # Role: tailor
 

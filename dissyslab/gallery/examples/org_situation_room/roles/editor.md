@@ -1,5 +1,6 @@
 ---
 outboxes: briefing
+adds: text
 ---
 # Role: editor
 

@@ -1,5 +1,6 @@
 ---
 outboxes: stylist
+adds: text
 ---
 # Role: calendar_analyst
 

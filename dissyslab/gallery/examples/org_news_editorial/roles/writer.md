@@ -1,5 +1,6 @@
 ---
 outboxes: client
+adds: text
 ---
 # Role: writer
 

@@ -1,5 +1,6 @@
 ---
 outboxes: out
+adds: text
 ---
 # Role: morning_composer
 

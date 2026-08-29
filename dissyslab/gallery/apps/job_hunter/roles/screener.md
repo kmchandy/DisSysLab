@@ -1,5 +1,6 @@
 ---
 outboxes: relevant, discard
+adds: text
 ---
 # Role: screener
 

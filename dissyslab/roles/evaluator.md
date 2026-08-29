@@ -1,6 +1,7 @@
 ---
 emits: adds `verdict` (publish or revise) and the reason for it
 outboxes: publish, revise
+adds: verdict, feedback
 ---
 # Role: evaluator
 

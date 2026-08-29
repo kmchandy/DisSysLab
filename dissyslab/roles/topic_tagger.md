@@ -1,6 +1,7 @@
 ---
 emits: adds a `topic` field
 outboxes: out
+adds: topic
 ---
 # Role: topic_tagger
 

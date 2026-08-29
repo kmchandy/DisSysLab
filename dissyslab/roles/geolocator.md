@@ -1,6 +1,7 @@
 ---
 emits: adds a `location` field — where in the world the item is about
 outboxes: out
+adds: location
 ---
 # Role: geolocator
 

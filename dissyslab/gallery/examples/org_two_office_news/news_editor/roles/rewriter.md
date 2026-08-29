@@ -1,5 +1,6 @@
 ---
 outboxes: output
+adds: text
 ---
 # Role: rewriter
 

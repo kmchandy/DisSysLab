@@ -1,5 +1,6 @@
 ---
 outboxes: display, email
+adds: text
 ---
 # Role: summary_compiler
 

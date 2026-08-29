@@ -1,5 +1,6 @@
 ---
 outboxes: job_board
+adds: text
 ---
 # Role: formatter
 

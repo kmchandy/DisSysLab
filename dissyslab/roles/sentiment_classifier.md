@@ -1,6 +1,7 @@
 ---
 emits: adds a `sentiment` field — positive, negative or neutral
 outboxes: out
+adds: sentiment, sentiment_score
 ---
 # Role: sentiment_classifier
 

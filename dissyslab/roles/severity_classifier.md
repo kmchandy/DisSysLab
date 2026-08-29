@@ -1,6 +1,7 @@
 ---
 emits: adds a `severity` field — how significant the item is
 outboxes: out
+adds: severity
 ---
 # Role: severity_classifier
 

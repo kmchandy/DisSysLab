@@ -1,5 +1,6 @@
 ---
 outboxes: formatter, discard
+adds: text
 ---
 # Role: screener
 

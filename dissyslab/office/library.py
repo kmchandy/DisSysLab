@@ -307,6 +307,55 @@ _NL_CONTRACTS: Dict[str, str] = {
 }
 _NL_CONTRACT_DEFAULT = "passthrough"
 
+
+def _passthrough_contract(
+    out_ports: Sequence[str], adds: Sequence[str]
+) -> str:
+    """The reply shape, generated from what the role declares.
+
+    One statement about output, in one place, derived from the same
+    declaration the framework routes and checks by. Nothing else may
+    say it, so nothing else can disagree with it.
+
+    Two things it deliberately does not do:
+
+    **No generic content slot.** The old template always asked for
+    ``text``, which meant two different things twenty lines apart -- the
+    article's body in the role's input shape, the role's own output in
+    the contract. A model that obeyed the contract overwrote the body,
+    in roles that promise in the same prompt to preserve every field.
+    Naming the declared fields instead means ``text`` never appears in
+    a contract at all, and the collision cannot happen.
+
+    **Nothing asked of a role that adds nothing.** A filter decides; it
+    does not produce. Its contract is ``send_to`` and stops there.
+    Asking it for content invited the model to invent some.
+
+    A single-outbox role is not asked for ``send_to`` either: there is
+    one place its answer can go, and a key whose only legal value is
+    fixed is ceremony that a small model can still get wrong.
+    """
+    keys: List[str] = []
+    if len(out_ports) > 1:
+        keys.append(
+            '"send_to": "<one of: ' + ", ".join(out_ports) + '>"'
+        )
+    # The placeholder is unquoted, so it says nothing about the value's
+    # type. `entities` is an object of four lists and `sentiment_score`
+    # is a float; writing them as `"<entities>"` would tell the model
+    # they are strings, and that is a claim about meaning -- which
+    # belongs to the role's own prose, the only part of the prompt that
+    # knows what the field is for.
+    keys.extend(f'"{name}": <{name}, as described above>' for name in adds)
+    if not keys:
+        # A single-outbox role that adds nothing has no reply shape to
+        # ask for. Saying so beats asking for an empty object.
+        return ""
+    return (
+        "\n\nReturn JSON only, no explanation, no nested JSON, and no "
+        "other keys:\n{" + ", ".join(keys) + "}"
+    )
+
 # Kept as a module-level name for backward compatibility with any
 # external callers that imported it.
 _NL_CONTRACT = _NL_CONTRACT_PASSTHROUGH
@@ -359,6 +408,7 @@ def nl_role(
     contract: str = _NL_CONTRACT_DEFAULT,
     outboxes: "Optional[Sequence[str]]" = None,
     inboxes: "Optional[Sequence[str]]" = None,
+    adds: "Optional[Sequence[str]]" = None,
 ) -> AgentRoleEntry:
     """Build an ``AgentRoleEntry`` from a natural-language prompt.
 
@@ -391,6 +441,16 @@ def nl_role(
     inboxes
         The role's input ports. Defaults to ``("in_",)``, which is what
         all but three of the shipped roles have.
+    adds
+        The fields this role puts on the message. Empty for a role that
+        only routes -- a filter decides, it does not add.
+
+        This is what the output contract is generated from, so it is
+        the only place the reply shape is stated. It used to be written
+        in the role's prose *as well*, and the two disagreed: the prose
+        asked for every input field plus ``summary``, the appended
+        contract asked for ``send_to`` and ``text``, and which one the
+        model followed decided whether the annotation existed.
     AI
         Human-readable name of the language-model backend to use for
         this role. When ``None`` (the default) the role uses whichever
@@ -471,6 +531,7 @@ def nl_role(
             "with no outboxes at all."
         )
     in_ports = tuple(inboxes or (DEFAULT_INBOX,))
+    add_fields = tuple(adds or ())
 
     # Validate the contract name early so a typo in a .md role file's
     # front matter surfaces at load time, not when the LLM is called.
@@ -485,11 +546,13 @@ def nl_role(
     # AI kwarg from a .py wrapper, or via the office.md "X's AI is Y"
     # sentence), lock that backend in for this role instance.
     default_backend_name: Optional[str] = _resolve_ai(AI) if AI else None
-    options = ", ".join(out_ports)
-    contract_template = _NL_CONTRACTS[contract]
+    # ``structured`` means the role's own prose fully describes the
+    # reply, so nothing is appended; ``passthrough`` means the shape is
+    # generated here, from the declaration, and is the only statement of
+    # it anywhere.
     contract_suffix = (
-        contract_template.format(options=options)
-        if contract_template
+        _passthrough_contract(out_ports, add_fields)
+        if contract == "passthrough"
         else ""
     )
     full_prompt = prompt.strip() + contract_suffix
@@ -615,6 +678,19 @@ def nl_role(
             # Merge the original dict with the model's reply when
             # both are dicts — this preserves upstream metadata.
             out_msg = {**msg, **result} if isinstance(msg, dict) else result
+
+            # The field the role exists to add. A missing annotation and
+            # a null one are indistinguishable downstream, and the
+            # office runs cleanly either way -- so this is the only
+            # moment anything can tell them apart.
+            missing = [f for f in add_fields if f not in result]
+            if missing:
+                raise ValueError(
+                    f"the model's reply is missing {', '.join(missing)}, "
+                    f"which this role declares it adds "
+                    f"(adds: {', '.join(add_fields)}). It answered with "
+                    f"{sorted(result) or 'nothing'}."
+                )
 
             if "send_to" not in result:
                 if len(out_ports) == 1:
@@ -1755,6 +1831,7 @@ def load_roles_dir(roles_dir: Union[str, Path]) -> Dict[str, RoleEntry]:
         ports = read_ports(md_path)
         nl_role_kwargs["outboxes"] = ports.outboxes
         nl_role_kwargs["inboxes"] = ports.inboxes
+        nl_role_kwargs["adds"] = ports.adds
         try:
             entry = nl_role(text, **nl_role_kwargs)
         except ValueError as e:

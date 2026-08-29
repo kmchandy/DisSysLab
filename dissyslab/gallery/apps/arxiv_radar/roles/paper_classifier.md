@@ -1,5 +1,6 @@
 ---
 outboxes: out
+adds: text
 ---
 # Role: paper_classifier
 

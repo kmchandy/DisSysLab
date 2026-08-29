@@ -1,6 +1,7 @@
 ---
 emits: adds a `brief` field — a short paragraph a busy reader can scan
 outboxes: out
+adds: brief
 ---
 # Role: summary_writer
 

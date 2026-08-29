@@ -1,5 +1,6 @@
 ---
 outboxes: output, discard
+adds: text
 ---
 # Role: analyst
 

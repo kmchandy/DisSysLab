@@ -1,5 +1,6 @@
 ---
 outboxes: compiler
+adds: text
 ---
 # Role: wardrobe_stylist
 

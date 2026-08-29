@@ -1,5 +1,6 @@
 ---
 outboxes: keeper, discard
+adds: text
 ---
 # Role: filter
 

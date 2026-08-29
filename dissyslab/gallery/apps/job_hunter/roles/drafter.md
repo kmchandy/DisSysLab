@@ -1,5 +1,6 @@
 ---
 outboxes: cover_letters
+adds: text
 ---
 # Role: drafter
 

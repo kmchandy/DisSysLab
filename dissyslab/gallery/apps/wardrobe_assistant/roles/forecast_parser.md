@@ -1,5 +1,6 @@
 ---
 outboxes: summary
+adds: text
 ---
 # Role: forecast_parser
 
