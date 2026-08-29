@@ -1930,14 +1930,35 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             )
 
             found, _roots, _deep = locate()
-            for s in found:
-                if not is_source_checkout(s.path):
-                    print(f"{s.name} {s.version}")
-                    # A skill older than this release survives the short
-                    # form. It is the one thing here that changes what
-                    # the user should do next.
-                    for line in stale_message(s.name, s.version):
-                        print(f"  {line}")
+            installed = [s for s in found if not is_source_checkout(s.path)]
+
+            # Two copies of one skill is a finding, not a repetition:
+            # an assistant loads one of them and which one is not the
+            # user's to choose. The long form said so and the short
+            # form printed the same name twice with no comment, which
+            # reads as a display glitch rather than as the problem it is.
+            copies: dict[str, int] = {}
+            for s in installed:
+                copies[s.name] = copies.get(s.name, 0) + 1
+
+            for s in installed:
+                # `or` and not a bare print: a skill whose SKILL.md has
+                # no version line has ``version is None``, and printing
+                # it raw put the word `None` in front of a beginner.
+                print(f"{s.name} {s.version or 'no version string'}")
+                # A skill that is not the one this release expects
+                # survives the short form. It is the one thing here that
+                # changes what the user should do next.
+                for line in stale_message(s.name, s.version):
+                    print(f"  {line}")
+
+            for name, count in sorted(copies.items()):
+                if count > 1:
+                    print(f"  {count} copies of {name} are installed. An "
+                          "assistant loads one of")
+                    print("  them and which one is not yours to choose; "
+                          "`dsl doctor --full`")
+                    print("  gives the folder of each.")
         except Exception:  # noqa: BLE001 - doctor must always finish
             pass
         print()

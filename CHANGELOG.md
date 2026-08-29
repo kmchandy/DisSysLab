@@ -151,6 +151,28 @@ four-sitting micro-course on what these can and cannot do.
   scan of its own — it calls the same reader the loader calls, so the
   catalogue cannot describe a role differently from the office that
   uses it.
+- **`dsl doctor`'s staleness check was inverted, on both sides at
+  once.** It compared the hand-written date half of a skill version and
+  discarded the hash half — the half `stamp_skills.py` describes as
+  *"what proves an install took"*. On one machine on release day that
+  produced both wrong answers together: `sensor-office-builder`, whose
+  installed copy was byte-identical to what the release was built with
+  (`935f28d` either side), was told to reinstall; `office-builder`,
+  which was genuinely a commit behind, was passed in silence because
+  both strings began `2026-08-26`.
+
+  Equal hashes are now silent whatever the dates say. A newer date is
+  silent too — a save that did not take cannot carry a future date. An
+  older date is the fault it always was. The same day with different
+  content is the one case nothing can resolve, since two hashes cannot
+  be ordered, so it gets one line naming both readings rather than a
+  guess.
+- **The short `dsl doctor` printed `None`** for a skill whose SKILL.md
+  has no version line, and printed a duplicated skill name twice with
+  no comment. The long form already handled both. A summary that drops
+  the finding is worse than one that is long, because it is believed:
+  two installed copies of one skill means an assistant loads one of
+  them and which one is not the user's to choose.
 
 ## [1.8.0] — 2026-08-27
 

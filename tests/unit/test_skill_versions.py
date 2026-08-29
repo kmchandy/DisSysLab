@@ -74,14 +74,49 @@ def test_a_newer_skill_is_silent():
     it.
     """
     assert stale_message("office-builder", "2099-01-01.abcdefa") == []
+    # A save that did not take cannot carry a future date, so a newer
+    # date is the one case with no ambiguity left in it.
 
 
-def test_only_the_date_is_compared():
-    """Same day, different content. The hash changes several times in a
-    working afternoon, and none of those are a reason to tell someone
-    their install is wrong."""
-    date = EXPECTED["office-builder"].split(".")[0]
-    assert stale_message("office-builder", f"{date}.0000000") == []
+def test_the_same_hash_is_silent_whatever_the_dates_say():
+    """The false alarm that was live on 2026-08-29.
+
+    `sensor-office-builder` was installed as `2026-08-18.935f28d` and
+    the release expected `2026-08-19.935f28d` -- the same hash, so the
+    same bytes, with only the hand-written date differing. The check
+    compared the date and sent the user to reinstall a file that was
+    already correct.
+
+    Equal hashes mean equal content. Nothing else here is that certain,
+    so it is answered first.
+    """
+    want_date, _, want_hash = EXPECTED["office-builder"].partition(".")
+    assert stale_message("office-builder", f"2020-01-01.{want_hash}") == []
+    assert stale_message("office-builder", f"2099-01-01.{want_hash}") == []
+
+
+def test_the_same_day_with_different_content_is_reported():
+    """The silence that was live on the same afternoon, and cost more.
+
+    `office-builder` was installed as `2026-08-26.88b9631` while the
+    release expected `2026-08-26.3caa9fc` -- different files, one
+    commit apart, and the older one still told assistants the package
+    required a version that did not have the commands it then named.
+    Both dates read 2026-08-26, so a date comparison said nothing.
+
+    Nothing can order two hashes, so this cannot be resolved into
+    "older" or "newer"; the line names both readings. The window is
+    narrow -- the skill and the release stamped on the same date -- and
+    it is exactly where the failure lived.
+    """
+    date, _, _ = EXPECTED["office-builder"].partition(".")
+    lines = stale_message("office-builder", f"{date}.0000000")
+    assert lines, "same day, different content said nothing"
+    joined = " ".join(lines)
+    assert "newer" in joined and "did not take" in joined, (
+        "it must name both readings; it cannot tell them apart"
+    )
+    assert "older" not in joined, "it does not know that, and must not say it"
 
 
 @pytest.mark.parametrize("version", [None, "", "nonsense", "no version string"])

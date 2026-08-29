@@ -320,19 +320,53 @@ def locate(cwd: Path | None = None, deep: bool | None = None):
 
 
 def stale_message(name: str, version: str | None) -> list[str]:
-    """Lines to print when an installed skill predates this release.
+    """Lines to print when an installed skill is not the one this release expects.
 
     The comparison a person should not have to make by eye. A skill
     version reads `2026-08-26.a84ab36`; asking a beginner to check that
     against a string in a chat message is asking them to be a diffing
     tool, and they will glance at the date and move on.
 
-    **Only the date half is compared, and only in one direction.**
-    Between releases the repository's skill is legitimately newer than
-    the wheel expects, and a student who installed it correctly must
-    never be told they got it wrong. Older is the case worth reporting:
-    the skill then teaches behaviour this package does not have, and
-    every later answer is wrong in a way nobody can see.
+    **The hash decides, then the date.** An earlier version of this
+    compared only the date, and on 2026-08-29 that produced both wrong
+    answers at once on the same machine:
+
+        sensor-office-builder  had 2026-08-18.935f28d
+                               wanted 2026-08-19.935f28d   -> "reinstall it"
+        office-builder         had 2026-08-26.88b9631
+                               wanted 2026-08-26.3caa9fc   -> silence
+
+    The first two are byte-identical -- same hash, only the hand-written
+    date differs -- and the user was sent to reinstall a file that was
+    already right. The second two are different files, and the check
+    said nothing. It was ignoring the half that proves identity and
+    trusting the half that is written for humans to read in a changelog.
+    ``stamp_skills.py`` says so in its own docstring: *the hash half is
+    what proves an install took.*
+
+    So: equal hashes are silent, whatever the dates say. That is the
+    only certain answer here and it is worth taking first.
+
+    After that the date sorts the rest into three, and only one of them
+    is genuinely ambiguous:
+
+    * **Newer -- silent.** Between releases the repository's skill is
+      legitimately ahead of the wheel, and a student who installed it
+      correctly must never be told they got it wrong. A save that did
+      not take cannot carry a future date, so there is nothing else
+      this can be.
+    * **Older -- a fault.** The skill teaches behaviour this package
+      does not have, and every later answer is wrong in a way nobody
+      can see.
+    * **The same day, different content -- ambiguous, and this is the
+      case that bit.** It is what a repository copy edited today looks
+      like, and equally what a save that reported success and did not
+      take looks like. Two hashes cannot be ordered, so nothing here can
+      choose between them; the honest thing is one line naming both
+      readings rather than picking one and being silently wrong half
+      the time. The window is narrow -- it needs the skill and the
+      release to have been stamped on the same date -- and today it was
+      the whole of the failure.
     """
     try:
         from dissyslab.skill_versions import EXPECTED
@@ -342,14 +376,32 @@ def stale_message(name: str, version: str | None) -> list[str]:
     expected = EXPECTED.get(name)
     if not expected or not version:
         return []
-    have_date, want_date = version.split(".")[0], expected.split(".")[0]
-    if have_date >= want_date:
+
+    have_date, _, have_hash = version.partition(".")
+    want_date, _, want_hash = expected.partition(".")
+
+    if have_hash and want_hash and have_hash == want_hash:
+        # Same content. The dates are a label on it, not evidence.
         return []
+
+    if have_date < want_date:
+        return [
+            f"this is older than the {want_date} skill this release was",
+            "built with, so it may describe things this install does not",
+            "have. Ask your assistant to install it again from",
+            f"{REPO_URL}",
+        ]
+
+    if have_date > want_date or not have_hash or not want_hash:
+        # Newer, or a version string from before the hash existed.
+        # Neither says anything is wrong.
+        return []
+
     return [
-        f"this is older than the {want_date} skill this release was",
-        "built with, so it may describe things this install does not",
-        "have. Ask your assistant to install it again from",
-        f"{REPO_URL}",
+        f"this is not the copy this release was built with ({expected}).",
+        "Same day, different content: either it is newer than the wheel",
+        "-- normal between releases -- or a save that reported success",
+        "and did not take.",
     ]
 
 

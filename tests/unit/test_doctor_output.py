@@ -145,3 +145,52 @@ def test_a_broken_install_prints_everything_without_being_asked(
         "inventory is the diagnosis"
     )
     assert "Skills:" in out
+
+
+# ── the short form's own two defects, found on 2026-08-29 ─────────────
+#
+# Both were in the short form only. The long form already printed "no
+# version string" and already said how many copies it found; the short
+# form printed a Python literal and said nothing. A summary that drops
+# the finding is worse than one that is long, because the reader
+# believes it.
+
+
+def test_a_skill_with_no_version_line_does_not_print_the_word_None(
+    healthy_home, capsys
+):
+    """`backtest-strategy-builder None`, on a real machine.
+
+    A SKILL.md with no `**Skill version:**` line has ``version is
+    None``, and the short form interpolated it straight into an
+    f-string. A beginner asking whether their install worked was shown
+    a Python literal.
+    """
+    d = healthy_home / ".claude" / "skills" / "office-builder"
+    (d / "SKILL.md").write_text(
+        "---\nname: office-builder\ndescription: test\n---\n\nNo version here.\n",
+        encoding="utf-8",
+    )
+    out = _doctor(capsys, ["doctor"])
+    _healthy_or_skip(out)
+    assert " None" not in out, f"printed a Python literal at the user:\n{out}"
+    assert "no version string" in out
+
+
+def test_two_copies_of_one_skill_are_reported_in_the_short_form(
+    healthy_home, capsys
+):
+    """Two installs is a finding, not a repetition.
+
+    An assistant loads one of them and which one is not the user's to
+    choose -- so the same name twice with no comment reads as a display
+    glitch rather than as the thing to go and fix. The long form said
+    so; the short form printed the name twice and moved on.
+    """
+    second = healthy_home / ".claude" / "skills" / "synced" / "abc"
+    _install_skill(second, "office-builder")
+    out = _doctor(capsys, ["doctor"])
+    _healthy_or_skip(out)
+    assert "2 copies of office-builder" in out, (
+        f"the short form printed it twice and said nothing:\n{out}"
+    )
