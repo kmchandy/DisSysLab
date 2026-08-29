@@ -246,14 +246,44 @@ class TestNLRoleAgentBehaviour:
         assert msg["send_to"] == "keep"
         assert msg["body"] == "hi"  # upstream metadata preserved
 
-    def test_default_destination_when_send_to_missing(self):
+    def test_no_send_to_defaults_only_when_there_is_no_choice(self):
+        """One outbox: defaulting is not a guess, so it defaults."""
+        _register_stub("stub-one-out", json.dumps({"text": "no key here"}))
+        entry = nl_role("Summarise.", outboxes=["out"], AI="stub-one-out")
+        _msg, status = entry()._fn({"x": 1})[0]
+        assert status == "out"
+
+    def test_no_send_to_with_two_outboxes_is_an_error(self):
+        """Two outboxes: the model did not decide, and nothing here is
+        entitled to decide for it.
+
+        This used to route to the first declared outbox. That is the
+        framework inventing the answer to the only question the role
+        exists to ask -- and inventing it invisibly, since the office
+        then finishes and produces a result that looks like every
+        other. The failure is counted by ``Role.run`` and reported in
+        the run summary instead.
+        """
         _register_stub("stub-no-key", json.dumps({"text": "no key here"}))
-        entry = nl_role("Send to first or to second.", outboxes=['first', 'second'], AI="stub-no-key")
-        agent = entry()
-        results = agent._fn({"x": 1})
-        assert len(results) == 1
-        _msg, status = results[0]
-        assert status == "first"  # first declared port = default
+        entry = nl_role("Triage.", outboxes=["first", "second"],
+                        AI="stub-no-key")
+        with pytest.raises(ValueError, match="no 'send_to'"):
+            entry()._fn({"x": 1})
+
+    def test_an_outbox_the_role_does_not_have_is_an_error(self):
+        """And the message names the nearest real one.
+
+        Routing it to the default instead would be worse than the
+        crash it replaced: a model answering `discrad` would have the
+        item it decided to discard passed on as kept, and nothing on
+        screen would be wrong.
+        """
+        _register_stub("stub-typo",
+                       json.dumps({"send_to": "discrad", "text": "x"}))
+        entry = nl_role("Triage.", outboxes=["keep", "discard"],
+                        AI="stub-typo")
+        with pytest.raises(ValueError, match="Did you mean 'discard'"):
+            entry()._fn({"x": 1})
 
     def test_routes_to_list_of_destinations(self):
         _register_stub(
@@ -276,16 +306,24 @@ class TestNLRoleAgentBehaviour:
         assert status == "summary"
         assert msg == "Just plain text"
 
-    def test_exception_in_backend_returns_empty_list(self):
+    def test_a_failing_backend_is_reported_not_swallowed(self):
+        """It used to print and return ``[]`` -- dropping the message.
+
+        The stated reason was "so the network does not crash on a
+        single bad LLM call", and that reason no longer holds:
+        ``Role.run`` records a failure and moves to the next message,
+        so nothing crashes. What the old behaviour actually bought was
+        an office that exited 0 having quietly produced less than it
+        should have, with the explanation printed into a stream nobody
+        reads.
+        """
         def boom(_user):
             raise RuntimeError("boom")
 
         _register_stub("stub-boom", boom)
-        entry = nl_role("Send to anywhere.", outboxes=['anywhere'], AI="stub-boom")
-        agent = entry()
-        # Should swallow the error and return [] so the network does
-        # not crash on a single bad LLM call.
-        assert agent._fn({"k": 1}) == []
+        entry = nl_role("Report.", outboxes=["anywhere"], AI="stub-boom")
+        with pytest.raises(RuntimeError, match="boom"):
+            entry()._fn({"k": 1})
 
     def test_string_input_is_serialised(self):
         captured = {}

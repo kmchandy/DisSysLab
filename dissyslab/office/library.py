@@ -548,31 +548,87 @@ def nl_role(
             except json.JSONDecodeError:
                 return cleaned
 
+        def _resolve(destination: Any) -> str:
+            """One name the model chose, checked against the declaration.
+
+            **Reported, never corrected.** An earlier design routed an
+            unrecognised name to the default outbox and counted it. That
+            is worse than the crash it replaced: a model that answers
+            ``discrad`` instead of ``discard`` would have had the item
+            it decided to *throw away* passed on as *kept*, the office
+            would have finished, exited 0, and produced a result with a
+            few entries in it that the filter had rejected. Nothing on
+            screen would be wrong. A hang at least stops.
+
+            So this raises, and ``Role.run`` records it as a failure of
+            that one message. The office finishes, the summary says how
+            many and quotes the first, and ``dsl run`` exits non-zero.
+            """
+            if destination in out_ports:
+                return destination
+            import difflib
+
+            near = difflib.get_close_matches(
+                str(destination), list(out_ports), n=2, cutoff=0.5
+            )
+            hint = (
+                f" Did you mean {' or '.join(repr(n) for n in near)}?"
+                if near else ""
+            )
+            raise ValueError(
+                f"the model answered send_to: {destination!r}, which is not "
+                f"one of this role's outboxes ({', '.join(out_ports)})."
+                + hint
+            )
+
         def role_fn(msg: Any):
             """Run the LLM and translate its reply into (msg, status) pairs.
 
-            * If the LLM returns a dict, ``send_to`` selects the
-              outport (``default_dest`` if absent).
-            * If the LLM returns plain text, route it to the default
-              outport — covers prompts that do not use the JSON
-              contract (e.g., a single-status reporter role).
-            * On exception, log and drop the message (return ``[]``).
+            The interface between Python and the model, and the one
+            place that knows both what was asked for and what came
+            back. Three cases, and the rule for all three is *report,
+            do not repair*:
+
+            * ``send_to`` naming an outbox that does not exist is an
+              error. See ``_resolve``.
+            * ``send_to`` absent is an error **when the role has more
+              than one outbox** -- the model did not decide, and
+              nothing here is entitled to decide for it. With a single
+              outbox there is no choice to get wrong, so it defaults;
+              that is not a guess.
+            * The model returning plain text rather than JSON is left
+              alone. The role's prompt did not necessarily ask for
+              JSON, so this is not a violation of anything, and a
+              single-status reporter role relies on it.
+
+            The remaining exceptions -- a timeout, a rate limit, a
+            malformed reply -- used to print and return ``[]``, which
+            dropped the message and let the office exit 0 having
+            quietly produced less than it should have. They now
+            propagate to ``Role.run``, which counts them and carries
+            on to the next message.
             """
             text = json.dumps(msg) if isinstance(msg, dict) else str(msg)
-            try:
-                result = call_llm(text)
-                if not isinstance(result, dict):
-                    return [(result, default_dest)]
-                # Merge the original dict with the model's reply when
-                # both are dicts — this preserves upstream metadata.
-                out_msg = {**msg, **result} if isinstance(msg, dict) else result
-                destination = result.get("send_to", default_dest)
-                if isinstance(destination, list):
-                    return [(out_msg, dest) for dest in destination]
-                return [(out_msg, destination)]
-            except Exception as exc:
-                print(f"[nl_role] error in role_fn: {exc}")
-                return []
+            result = call_llm(text)
+            if not isinstance(result, dict):
+                return [(result, default_dest)]
+            # Merge the original dict with the model's reply when
+            # both are dicts — this preserves upstream metadata.
+            out_msg = {**msg, **result} if isinstance(msg, dict) else result
+
+            if "send_to" not in result:
+                if len(out_ports) == 1:
+                    return [(out_msg, out_ports[0])]
+                raise ValueError(
+                    "the model's reply has no 'send_to', and this role has "
+                    f"{len(out_ports)} outboxes ({', '.join(out_ports)}), so "
+                    "there is nothing here that can know which one it meant."
+                )
+
+            destination = result["send_to"]
+            if isinstance(destination, list):
+                return [(out_msg, _resolve(dest)) for dest in destination]
+            return [(out_msg, _resolve(destination))]
 
         return Role(fn=role_fn, statuses=list(out_ports))
 

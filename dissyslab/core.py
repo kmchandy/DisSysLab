@@ -416,6 +416,31 @@ class Agent(ABC):
         # silent. One string, first writer wins, never cleared.
         self.first_error: Optional[str] = None
 
+        # Failures of the agent's *own* work, as distinct from `errors`
+        # above. `errors` counts failure reports an agent passed on as
+        # data; these count times the agent could not do its job at all
+        # -- a role's function raised, or a model answered with
+        # something the role's declared interface does not allow.
+        #
+        # They are counted rather than fatal because one bad message
+        # should cost that message and not the agent. An agent that
+        # stops is an agent that never reaches the shutdown protocol,
+        # and the office then hangs for ever: `Role.run` used to
+        # `return` on any exception, so a single `1/0` in a student's
+        # role produced a program that never ended, with the
+        # explanation scrolled past in a stream of output.
+        #
+        # Counted, not swallowed. The run summary prints these, and
+        # `dsl run` exits non-zero when any are non-zero, so an office
+        # that limped is never mistaken for one that worked.
+        self.failures: int = 0
+
+        # Same first-writer-wins rule as `first_error`, and for the
+        # same reason: a run of five hundred messages that all fail the
+        # same way should say what happened once, not five hundred
+        # times.
+        self.first_failure: Optional[str] = None
+
         # Queue to os_agent — injected by network.py during _create_os_agent()
         # Always set before threads start, never None at runtime
         self.os_q: Optional[QueueLike] = None
@@ -590,6 +615,22 @@ class Agent(ABC):
                     self.first_error = (
                         str(detail) if detail else str(msg.get("type"))
                     )
+
+    def record_failure(self, detail: str) -> None:
+        """Note that this agent could not do its job for one message.
+
+        Counted, not raised. The caller carries on with the next
+        message; the run summary reports the total and quotes the
+        first, and ``dsl run`` exits non-zero because of it.
+
+        The alternative -- stopping the agent -- is what produced the
+        worst failure this framework had: the thread ended, the
+        shutdown protocol never completed, and the office ran for ever
+        having printed the reason into a stream nobody was reading.
+        """
+        self.failures += 1
+        if self.first_failure is None:
+            self.first_failure = str(detail)
 
     def recv(self, inport: str) -> Any:
         """

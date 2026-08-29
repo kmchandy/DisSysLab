@@ -662,7 +662,12 @@ def _emit_main(root: _OfficeNode) -> str:
         "    if os.environ.get(\"DSL_PROCESS_MODE\") == \"process\":\n"
         "        _office.process_network()\n"
         "    else:\n"
-        "        _office.run_network()\n"
+        "        # Exit non-zero when an agent failed on any message.\n"
+        "        # The office ran and its output is real, but some of\n"
+        "        # the work did not happen, and a run that limped must\n"
+        "        # not be mistaken for one that worked -- by a person\n"
+        "        # or by a script that runs this every morning.\n"
+        "        raise SystemExit(_office.run_network())\n"
     )
 
 

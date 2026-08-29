@@ -799,9 +799,13 @@ class Network:
         self,
         timeout: Optional[float] = None,
         require_source_output: bool = True,
-    ) -> None:
+    ) -> int:
         """
         Compile (if needed), startup, run, and shutdown the network.
+
+        Returns 0 when every agent did its job and 1 when any agent
+        failed on at least one message. Callers that ignore the return
+        value behave exactly as before.
 
         Main entry point for executing a network.
         Termination is detected automatically by os_agent.
@@ -845,6 +849,15 @@ class Network:
         if require_source_output:
             self._raise_if_no_source_produced_output()
 
+        # 0 when every agent did its job, 1 when any did not. Returned
+        # rather than raised: the office genuinely ran and its output is
+        # genuinely there, so this is a status, not an exception. The
+        # generated artifact turns it into the process's exit code, so
+        # `python build/run.py` and `dsl run` agree, and so a script
+        # that runs an office nightly can tell a partial run from a
+        # whole one without reading the summary.
+        return 1 if self.run_report()["failed_agents"] else 0
+
 
 
     # ── Run reporting ─────────────────────────────────────────────────
@@ -872,14 +885,21 @@ class Network:
         empty: List[str] = []
         all_errors: List[Tuple[str, int]] = []
         some_errors: List[Tuple[str, int, int]] = []
+        failed_agents: List[Tuple[str, int, Optional[str]]] = []
 
         for name, agent in self.agents.items():
             sent = sum(getattr(agent, "sent", {}).values())
             received = sum(getattr(agent, "received", {}).values())
             errors = sum(getattr(agent, "errors", {}).values())
+            failures = int(getattr(agent, "failures", 0) or 0)
             agents[name] = {
                 "sent": sent, "received": received, "errors": errors,
+                "failures": failures,
             }
+            if failures:
+                failed_agents.append(
+                    (name, failures, getattr(agent, "first_failure", None))
+                )
             if isinstance(agent, _Source):
                 if getattr(agent, "failure", None):
                     failed.append((name, agent.failure))
@@ -896,7 +916,8 @@ class Network:
         return {"agents": agents, "failed_sources": failed,
                 "empty_sources": empty,
                 "all_error_sources": all_errors,
-                "some_error_sources": some_errors}
+                "some_error_sources": some_errors,
+                "failed_agents": failed_agents}
 
     def print_run_summary(self) -> None:
         """Print per-agent message counts. Makes "everything produced
@@ -915,6 +936,8 @@ class Network:
             # healthy run teaches people to stop reading the column.
             if counts.get("errors"):
                 line += f"   errors {counts['errors']:>6}"
+            if counts.get("failures"):
+                line += f"   failed {counts['failures']:>6}"
             print(line)
 
         noisy = report.get("some_error_sources", [])
@@ -924,6 +947,21 @@ class Network:
                 print(f"  note: {name} reported {errors} error(s) among "
                       f"{sent} message(s). The office ran; that feed was "
                       f"partly unavailable.")
+
+        # Agents that could not do their job. This is the loudest thing
+        # the summary says, because it is the only one that means some
+        # of the work simply did not happen -- and because the office
+        # otherwise finished normally and looks like a success.
+        broken = report.get("failed_agents", [])
+        if broken:
+            print()
+            for name, count, detail in broken:
+                print(f"  {name} failed on {count} message(s) and they "
+                      f"were not processed.")
+                if detail:
+                    print(f"    first failure: {detail}")
+            print("  The office finished; this work did not. `dsl run` "
+                  "exits non-zero.")
 
     def _raise_if_no_source_produced_output(self) -> None:
         """Turn a silently empty run into a loud failure."""

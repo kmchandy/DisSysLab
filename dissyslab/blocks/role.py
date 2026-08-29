@@ -13,6 +13,7 @@ by recv(). No explicit STOP handling needed.
 
 from __future__ import annotations
 from typing import Callable, Any, Optional, List, Tuple, Dict
+import sys
 import traceback
 
 from dissyslab.core import Agent
@@ -145,9 +146,42 @@ class Role(Agent):
                     self.send(out_msg, self._status_to_port[status])
 
             except Exception as e:
-                print(f"[Role '{self.name}'] Error in fn: {e}")
-                print(traceback.format_exc())
-                return
+                # Record and carry on. This used to `return`, which
+                # ended the thread, so the agent never reached the
+                # shutdown protocol and the whole office hung for
+                # ever -- for any exception at all. A `1 / 0` in a
+                # first-year's role produced a program that never
+                # stopped, having printed the reason into a stream of
+                # other agents' output, spliced mid-line because two
+                # threads shared stdout.
+                #
+                # One bad message now costs that message. The run
+                # finishes, the summary says how many failed and
+                # quotes the first, and `dsl run` exits non-zero.
+                #
+                # The traceback prints once, on the first failure, for
+                # the same reason the count exists: five hundred
+                # messages failing the same way is one thing to say,
+                # not five hundred.
+                # One write, to stderr. Two prints to stdout came out
+                # spliced into another agent's output mid-line --
+                # "...division by zero[1] {'n': 2}" -- because agents
+                # are threads sharing one stream. Building the whole
+                # report first and writing it once keeps it readable,
+                # and stderr is where a diagnostic belongs: a student
+                # redirecting the office's output to a file still sees
+                # this on the terminal.
+                first = self.first_failure is None
+                self.record_failure(f"{type(e).__name__}: {e}")
+                if first:
+                    sys.stderr.write(
+                        f"\n[Role '{self.name}'] {type(e).__name__}: {e}\n"
+                        f"{traceback.format_exc()}"
+                        f"This message was not processed. The office "
+                        f"carries on; the run summary counts the rest.\n\n"
+                    )
+                    sys.stderr.flush()
+                continue
 
     def __repr__(self) -> str:
         fn_name = getattr(self._fn, "__name__", repr(self._fn))

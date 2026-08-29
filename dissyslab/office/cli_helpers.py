@@ -218,6 +218,15 @@ def cli_run(office_dir: Path) -> int:
         runpy.run_path(str(artifact), run_name="__main__")
     except KeyboardInterrupt:
         return 0
+    except SystemExit as exc:
+        # The artifact ends with `raise SystemExit(run_network())`, so
+        # `dsl run` and `python build/run.py` say the same thing: 0 when
+        # every agent did its job, 1 when one of them failed on a
+        # message and that work did not happen.
+        code = exc.code
+        if code is None:
+            return 0
+        return code if isinstance(code, int) else 1
     return 0
 
 
