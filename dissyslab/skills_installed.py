@@ -149,6 +149,9 @@ def search_roots(cwd: Path | None = None) -> list[Path]:
             / "local-agent-mode-sessions" / "skills-plugin",
             "*/*/skills",
         ),
+        # Account skills synced by Claude, one directory per sync:
+        # ~/.claude/skills/synced/<uuid>/<skill-name>/SKILL.md
+        (home / ".claude" / "skills", "synced/*"),
     ):
         if pattern_root.is_dir():
             roots.extend(sorted(p for p in pattern_root.glob(pattern) if p.is_dir()))
@@ -178,9 +181,10 @@ def deep_search(home: Path | None = None) -> list[FoundSkill]:
     and wrongly.
 
     This knows nothing about anyone's layout. It looks for a directory
-    called ``skills`` holding a subdirectory named after one of ours
-    holding ``SKILL.md``. Slower, and it keeps working when a vendor
-    renames something.
+    named after one of ours holding ``SKILL.md``, at any depth, under
+    any parent. Slower, and it keeps working when a vendor renames or
+    moves something -- which is the whole point, and which an earlier
+    version undid by also requiring the parent to be called ``skills``.
     """
     root = Path(home or Path.home())
     found: list[FoundSkill] = []
@@ -198,14 +202,27 @@ def deep_search(home: Path | None = None) -> list[FoundSkill]:
                 continue
             if entry.name in _DEEP_SKIP:
                 continue
-            if entry.name == "skills":
-                for candidate in DISSYSLAB_SKILLS:
-                    skill_md = entry / candidate / "SKILL.md"
-                    if skill_md.is_file() and skill_md.parent not in seen:
-                        skill = _read_skill(skill_md)
-                        if skill is not None:
-                            seen.add(skill_md.parent)
-                            found.append(skill)
+            # A skill is a directory named after one of ours holding a
+            # SKILL.md. **Wherever it is.**
+            #
+            # This used to also require the parent directory to be
+            # called `skills`, which sounded like a cheap way to avoid
+            # false positives and was in fact the same mistake the
+            # fast path makes: a guess about somebody else's layout.
+            # Claude's synced account skills land at
+            # `~/.claude/skills/synced/<uuid>/office-builder/`, two
+            # levels below `skills`, so the walk went past them and
+            # doctor told a user the skill was missing while he was
+            # using it -- then told him to install it from GitHub, and
+            # said the same thing again afterwards. A loop with no way
+            # out is worse than a wrong answer.
+            if entry.name in DISSYSLAB_SKILLS:
+                skill_md = entry / "SKILL.md"
+                if skill_md.is_file() and entry not in seen:
+                    skill = _read_skill(skill_md)
+                    if skill is not None:
+                        seen.add(entry)
+                        found.append(skill)
             walk(entry, depth + 1)
 
     walk(root, 0)

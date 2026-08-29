@@ -456,3 +456,68 @@ def test_a_missing_api_key_is_not_a_reason_to_say_not_ready(tmp_path, monkeypatc
 
     verdict, _detail, _smoke = _doctor_verdict()
     assert verdict.startswith("Ready")
+
+
+# ── the synced layout ─────────────────────────────────────────────────
+
+
+def test_a_synced_account_skill_is_found(tmp_path, monkeypatch):
+    """The layout that broke it, reported from a real session.
+
+    Claude syncs account skills to
+    `~/.claude/skills/synced/<uuid>/office-builder/SKILL.md` -- two
+    levels below `skills`. Both the fast path and `deep_search` walked
+    past, because the walk also required the *parent* directory to be
+    named `skills`.
+
+    The consequence was worse than a wrong answer. Doctor said the
+    skill was missing and told the user to install it from GitHub;
+    installing it changed nothing, because it was already there, and
+    doctor said the same thing again. A loop with no way out.
+    """
+    home = tmp_path / "home"
+    synced = home / ".claude" / "skills" / "synced" / "abc-123" / "office-builder"
+    synced.mkdir(parents=True)
+    (synced / "SKILL.md").write_text(
+        "---\nname: office-builder\ndescription: d\n---\n\n"
+        "**Skill version: `2026-01-01.abc1234`.**\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: home))
+
+    assert [s.name for s in deep_search(home)] == ["office-builder"]
+
+    found, _roots, _deep = locate(cwd=tmp_path)
+    assert [s.name for s in found] == ["office-builder"], (
+        "the fast path must find it too, or every session pays for a "
+        "home-wide walk"
+    )
+
+
+def test_a_skill_is_found_wherever_it_is(tmp_path, monkeypatch):
+    """The general rule that replaced the guess. A skill is a directory
+    named after one of ours holding SKILL.md -- under any parent, at
+    any depth. Requiring a `skills` parent was the same class of
+    mistake as the fast path's list of known directories: an assumption
+    about somebody else's product, correct until they move it."""
+    home = tmp_path / "home"
+    odd = home / "Library" / "whatever" / "v3" / "bundle" / "office-builder"
+    odd.mkdir(parents=True)
+    (odd / "SKILL.md").write_text(
+        "---\nname: office-builder\ndescription: d\n---\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: home))
+    assert [s.name for s in deep_search(home)] == ["office-builder"]
+
+
+def test_a_directory_that_is_not_ours_is_ignored(tmp_path, monkeypatch):
+    """Dropping the `skills` parent rule widened the net; it must not
+    have widened it to everyone else's skills."""
+    home = tmp_path / "home"
+    other = home / ".claude" / "skills" / "synced" / "x" / "someone-elses-skill"
+    other.mkdir(parents=True)
+    (other / "SKILL.md").write_text(
+        "---\nname: someone-elses-skill\ndescription: d\n---\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: home))
+    assert deep_search(home) == []
