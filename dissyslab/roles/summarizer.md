@@ -1,5 +1,6 @@
 ---
 emits: adds a `summary` field — one plain-English sentence
+outboxes: out
 ---
 # Role: summarizer
 

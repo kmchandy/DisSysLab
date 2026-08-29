@@ -1,4 +1,10 @@
-"""Local override of the framework's ``writer`` role: use Claude.
+"""
+---
+inboxes: in_
+outboxes: out
+---
+# built by nl_role from a prompt file, so nothing in this module names the ports.
+Local override of the framework's ``writer`` role: use Claude.
 
 This file is the ONLY thing that distinguishes ``situation_room_pro``
 from ``situation_room``. Everything else — sources, sinks, the four
@@ -43,6 +49,7 @@ from pathlib import Path
 
 import dissyslab
 from dissyslab.office import nl_role
+from dissyslab.office.role_ports import read_ports
 
 
 # Locate the framework's writer prompt without duplicating its text.
@@ -51,7 +58,14 @@ _FRAMEWORK_WRITER = (
     Path(dissyslab.__file__).resolve().parent / "roles" / "writer.md"
 )
 
+# The ports come from the framework's own writer.md too. This file
+# exists to change the backend and nothing else, and a second list of
+# port names here is the one thing that could drift away from it.
+_PORTS = read_ports(_FRAMEWORK_WRITER)
+
 role = nl_role(
     _FRAMEWORK_WRITER.read_text(encoding="utf-8"),
     AI="claude",
+    inboxes=_PORTS.inboxes,
+    outboxes=_PORTS.outboxes,
 )

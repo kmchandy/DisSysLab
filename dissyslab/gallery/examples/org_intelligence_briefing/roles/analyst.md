@@ -1,3 +1,6 @@
+---
+outboxes: editor, discard
+---
 # Role: analyst
 
 You are a news analyst who receives news articles and sends

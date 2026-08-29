@@ -1,6 +1,11 @@
 # dissyslab/gallery/apps/adaptive_tutor/roles/multiplication_facts_subject.py
 
 """
+---
+inboxes: in_
+outboxes: out
+---
+# built by register_subject_bank_role, so nothing in this module names the ports.
 MULTIPLICATION_FACTS subject -- second instance of adaptive_tutor's
 subject contract, added to prove the shared PLANNER/CHECKER/STUDENT
 machinery genuinely needs zero changes for a second subject (see

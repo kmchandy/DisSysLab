@@ -1,3 +1,6 @@
+---
+outboxes: briefing
+---
 # Role: editor
 
 You are an editor who receives keepers from the analyst and sends

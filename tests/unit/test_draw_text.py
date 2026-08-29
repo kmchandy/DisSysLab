@@ -20,6 +20,7 @@ from dissyslab.office.draw import text_office_dir
 
 _FILTER = """---
 emits: keeps some items
+outboxes: keep, discard
 ---
 # Role: my_filter
 

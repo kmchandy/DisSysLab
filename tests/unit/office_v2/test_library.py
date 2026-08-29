@@ -21,7 +21,6 @@ from dissyslab.office.library import (
     RoleEntry,
     Library,
     DEFAULT_AI,
-    _extract_send_to_ports,
     load_roles_dir,
     nl_role,
     specialist_role,
@@ -157,64 +156,60 @@ class TestOfficeRoleEntry:
             OfficeRoleEntry(name="x", path="")
 
 
-# ── _extract_send_to_ports — moved from parser.py in Step 4 ────────────
+# ── nl_role takes its ports from the declaration ───────────────────────
+#
+# ``_extract_send_to_ports`` used to live here, with six tests that all
+# passed. What none of them could test is the case that mattered: prose
+# that a reader would call correct and the regex would not. `send to
+# `keep`` -- backticks -- produced no port, and the failure was silent
+# all the way to a run that produced nothing. The scan is gone and the
+# ports are declared, so the tests below are about the declaration
+# being obeyed and its absence being refused.
 
 
-class TestExtractSendToPorts:
-    def test_simple(self):
-        assert _extract_send_to_ports("Always send to briefing.") == (
-            "briefing",
-        )
-
-    def test_two_lines(self):
-        text = "If X, send to keep.\nOtherwise send to discard."
-        assert _extract_send_to_ports(text) == ("keep", "discard")
-
-    def test_or_to_form(self):
-        text = "Send to keep or to discard."
-        assert _extract_send_to_ports(text) == ("keep", "discard")
-
-    def test_dedup_in_order(self):
-        text = "Send to A.\nLater send to A or to B."
-        assert _extract_send_to_ports(text) == ("A", "B")
-
-    def test_no_send_returns_empty(self):
-        text = "You are an analyst. Read carefully."
-        assert _extract_send_to_ports(text) == ()
-
-    def test_ignores_intro_about_sending(self):
-        # "responds by sending zero or more messages" should NOT
-        # contribute ports, because the line has no "send to".
-        text = (
-            "You respond by sending zero or more messages, each "
-            "addressed to a destination role."
-        )
-        assert _extract_send_to_ports(text) == ()
-
-
-# ── nl_role port extraction ────────────────────────────────────────────
-
-
-class TestNLRolePortExtraction:
+class TestNLRolePortsAreDeclared:
     def test_single_port(self):
-        entry = nl_role("You are a reporter. Always send to briefing.")
+        entry = nl_role("You are a reporter.", outboxes=["briefing"])
         assert entry.out_ports == ("briefing",)
         assert entry.in_ports == ("in_",)
 
-    def test_multiple_ports(self):
-        entry = nl_role("Triage incoming articles. Send to keep or to discard.")
+    def test_multiple_ports_keep_their_order(self):
+        # Order is meaning: out_ports[i] is the runtime's out_i, and
+        # out_ports[0] is where an undecided message goes. Sorting
+        # these would silently change both.
+        entry = nl_role("Triage articles.", outboxes=["keep", "discard"])
         assert entry.out_ports == ("keep", "discard")
+        assert nl_role("t", outboxes=["discard", "keep"]).out_ports == (
+            "discard",
+            "keep",
+        )
 
-    def test_no_send_to_raises(self):
-        with pytest.raises(ValueError, match="no output ports"):
+    def test_inboxes_default_to_in_and_can_be_given(self):
+        assert nl_role("x", outboxes=["out"]).in_ports == ("in_",)
+        entry = nl_role("x", outboxes=["out"], inboxes=["a", "b"])
+        assert entry.in_ports == ("a", "b")
+
+    def test_prose_no_longer_decides_anything(self):
+        # The sentence says keep and discard; the declaration says one
+        # port. The declaration wins, because it is the declaration.
+        entry = nl_role(
+            "Triage articles. Send to keep or to discard.",
+            outboxes=["only"],
+        )
+        assert entry.out_ports == ("only",)
+
+    def test_no_outboxes_raises_and_says_how_to_declare(self):
+        with pytest.raises(ValueError, match="no outboxes declared"):
             nl_role("You are a reporter.")
+        with pytest.raises(ValueError, match="outboxes:"):
+            nl_role("You are a reporter. Send to keep or to discard.")
 
     def test_empty_prompt_raises(self):
         with pytest.raises(ValueError, match="non-empty"):
-            nl_role("")
+            nl_role("", outboxes=["out"])
 
     def test_returns_agent_role_entry(self):
-        entry = nl_role("Send to summary.")
+        entry = nl_role("Summarise.", outboxes=['summary'])
         assert isinstance(entry, AgentRoleEntry)
         # The factory should not have been invoked yet (lazy backend).
         # No ANTHROPIC_API_KEY is required to construct the entry.
@@ -227,7 +222,7 @@ class TestNLRoleAgentBehaviour:
     def test_factory_returns_role_agent(self):
         _register_stub("stub-trivial", json.dumps(
             {"send_to": "out", "text": "ok"}))
-        entry = nl_role("Send to out.", AI="stub-trivial")
+        entry = nl_role("Send to out.", outboxes=['out'], AI="stub-trivial")
         agent = entry()
         assert isinstance(agent, Role)
         assert agent.statuses == ["out"]
@@ -238,7 +233,7 @@ class TestNLRoleAgentBehaviour:
             json.dumps({"send_to": "keep", "text": "interesting"}),
         )
         entry = nl_role(
-            "Triage emails. Send to keep or to discard.",
+            "Triage emails. Send to keep or to discard.", outboxes=['keep', 'discard'],
             AI="stub-keep",
         )
         agent = entry()
@@ -253,7 +248,7 @@ class TestNLRoleAgentBehaviour:
 
     def test_default_destination_when_send_to_missing(self):
         _register_stub("stub-no-key", json.dumps({"text": "no key here"}))
-        entry = nl_role("Send to first or to second.", AI="stub-no-key")
+        entry = nl_role("Send to first or to second.", outboxes=['first', 'second'], AI="stub-no-key")
         agent = entry()
         results = agent._fn({"x": 1})
         assert len(results) == 1
@@ -265,7 +260,7 @@ class TestNLRoleAgentBehaviour:
             "stub-list",
             json.dumps({"send_to": ["first", "second"], "text": "fan out"}),
         )
-        entry = nl_role("Send to first or to second.", AI="stub-list")
+        entry = nl_role("Send to first or to second.", outboxes=['first', 'second'], AI="stub-list")
         agent = entry()
         results = agent._fn({"k": 1})
         statuses = [s for _m, s in results]
@@ -273,7 +268,7 @@ class TestNLRoleAgentBehaviour:
 
     def test_plain_text_reply_routes_to_default(self):
         _register_stub("stub-text", "Just plain text")
-        entry = nl_role("Always send to summary.", AI="stub-text")
+        entry = nl_role("Always send to summary.", outboxes=['summary'], AI="stub-text")
         agent = entry()
         results = agent._fn({"k": 1})
         assert len(results) == 1
@@ -286,7 +281,7 @@ class TestNLRoleAgentBehaviour:
             raise RuntimeError("boom")
 
         _register_stub("stub-boom", boom)
-        entry = nl_role("Send to anywhere.", AI="stub-boom")
+        entry = nl_role("Send to anywhere.", outboxes=['anywhere'], AI="stub-boom")
         agent = entry()
         # Should swallow the error and return [] so the network does
         # not crash on a single bad LLM call.
@@ -300,7 +295,7 @@ class TestNLRoleAgentBehaviour:
             return json.dumps({"send_to": "out", "text": "ok"})
 
         _register_stub("stub-str", reply)
-        entry = nl_role("Send to out.", AI="stub-str")
+        entry = nl_role("Send to out.", outboxes=['out'], AI="stub-str")
         agent = entry()
         agent._fn("hello")
         assert captured["user"] == "hello"
@@ -428,7 +423,7 @@ class TestNLRoleAIAlias:
         # Constructing an entry with no AI argument should not require
         # any API key — the backend is resolved lazily inside the
         # factory, not at nl_role call time.
-        entry = nl_role("Send to out.")
+        entry = nl_role("Send to out.", outboxes=['out'])
         assert isinstance(entry, AgentRoleEntry)
         # The factory has not been called yet — backend not resolved.
 
@@ -445,7 +440,7 @@ class TestNLRoleAIAlias:
             json.dumps({"send_to": "out", "text": "ok"}),
         )
         monkeypatch.setenv("DSL_BACKEND", "stub-runtime-default")
-        entry = nl_role("Send to out.")  # no AI → defer to runtime
+        entry = nl_role("Send to out.", outboxes=['out'])  # no AI → defer to runtime
         agent = entry()
         agent._fn({"x": 1})
         assert stub.calls, (
@@ -463,7 +458,7 @@ class TestNLRoleAIAlias:
             json.dumps({"send_to": "out", "text": "should not be called"}),
         )
         monkeypatch.setenv("DSL_BACKEND", "stub-ignored")
-        entry = nl_role("Send to out.", AI="stub-explicit")
+        entry = nl_role("Send to out.", outboxes=['out'], AI="stub-explicit")
         agent = entry()
         agent._fn({"x": 1})
         assert explicit_stub.calls, (
@@ -488,9 +483,11 @@ class TestLoadRolesDir:
 
     def test_loads_md_files(self, tmp_path):
         (tmp_path / "analyst.md").write_text(
+            "---\noutboxes: brief\n---\n"
             "You are an analyst. Send to brief.\n"
         , encoding="utf-8")
         (tmp_path / "editor.md").write_text(
+            "---\noutboxes: publish, revise\n---\n"
             "You edit. Send to publish or to revise.\n"
         , encoding="utf-8")
         out = load_roles_dir(tmp_path)
@@ -546,7 +543,8 @@ class TestLoadRolesDir:
     def test_duplicate_stem_md_md(self, tmp_path):
         # Two .md files with the same stem can't co-exist; let's
         # simulate via .md and .py with the same stem.
-        (tmp_path / "x.md").write_text("Send to out.", encoding="utf-8")
+        (tmp_path / "x.md").write_text(
+            "---\noutboxes: out\n---\nSend to out.", encoding="utf-8")
         (tmp_path / "x.py").write_text(
             "from dissyslab.office.library import OfficeRoleEntry\n"
             "role = OfficeRoleEntry(name='x', path='./p')\n"
@@ -599,7 +597,7 @@ class TestNamedContracts:
             f"stub-contract-{contract}", '{"send_to": "out", "text": "ok"}'
         )
         entry = nl_role(
-            "You answer. Send to out.",
+            "You answer. Send to out.", outboxes=['out'],
             AI=f"stub-contract-{contract}",
             contract=contract,
         )
@@ -628,7 +626,7 @@ class TestNamedContracts:
 
     def test_unknown_contract_raises(self):
         with pytest.raises(ValueError) as exc:
-            nl_role("Send to out.", contract="bogus")
+            nl_role("Send to out.", outboxes=['out'], contract="bogus")
         assert "bogus" in str(exc.value)
         # Error names the legal values.
         assert "passthrough" in str(exc.value)
@@ -643,7 +641,7 @@ class TestNamedContracts:
             "stub-contract-default", '{"send_to": "out", "text": "ok"}'
         )
         entry = nl_role(
-            "You answer. Send to out.", AI="stub-contract-default",
+            "You answer. Send to out.", outboxes=['out'], AI="stub-contract-default",
         )
         agent = entry()
         agent._fn({"problem": "x"})
@@ -666,6 +664,7 @@ class TestRoleFrontMatter:
         (roles / "agent.md").write_text(
             "---\n"
             "contract: structured\n"
+            "outboxes: out\n"
             f"AI: stub-fm-structured\n"
             "---\n"
             "# Role: agent\n\n"
@@ -688,6 +687,7 @@ class TestRoleFrontMatter:
         roles = tmp_path / "roles"
         roles.mkdir()
         (roles / "agent.md").write_text(
+            "---\noutboxes: out\n---\n"
             "# Role: agent\n\n"
             "You answer. Send to out.\n"
         , encoding="utf-8")
@@ -711,6 +711,7 @@ class TestRoleFrontMatter:
         (roles / "agent.md").write_text(
             "---\n"
             "contract: structured\n"
+            "outboxes: out\n"
             f"AI: stub-fm-unknown\n"
             "future_feature: some_value\n"
             "---\n"
@@ -720,14 +721,15 @@ class TestRoleFrontMatter:
         lib = load_roles_dir(roles)
         assert "agent" in lib  # didn't raise
 
-    def test_unclosed_front_matter_leaves_file_unchanged(self, tmp_path):
-        """If the closing ``---`` is missing, treat the whole file as
-        prompt body. The role will fail at nl_role parse time if the
-        body doesn't declare any outports, but the loader itself
-        doesn't crash."""
-        stub = _register_stub(
-            "stub-fm-unclosed", '{"send_to": "out", "text": "ok"}'
-        )
+    def test_unclosed_front_matter_is_now_refused(self, tmp_path):
+        """A missing closing ``---`` used to load quietly. It cannot now.
+
+        With no closing marker there is no front matter, so the file
+        declares no ports and the loader says so by name. That is a
+        better answer than the old one: the block was silently read as
+        prose, and the ``contract: structured`` line in it was ignored
+        -- the role ran on the wrong contract and nothing said why.
+        """
         roles = tmp_path / "roles"
         roles.mkdir()
         (roles / "agent.md").write_text(
@@ -736,10 +738,8 @@ class TestRoleFrontMatter:
             "# Role: agent\n\n"
             "You answer. Send to out.\n"
         , encoding="utf-8")
-        # Should still load; the would-be front matter is treated as
-        # part of the prompt body.
-        lib = load_roles_dir(roles)
-        assert "agent" in lib
+        with pytest.raises(Exception, match="outboxes"):
+            load_roles_dir(roles)
 
     def test_front_matter_bad_line_shape_raises(self, tmp_path):
         """A front matter line with no colon is a typo we should
@@ -749,6 +749,7 @@ class TestRoleFrontMatter:
         (roles / "agent.md").write_text(
             "---\n"
             "contract structured\n"  # missing colon
+            "outboxes: out\n"
             "---\n"
             "# Role: agent\n\n"
             "Send to out.\n"

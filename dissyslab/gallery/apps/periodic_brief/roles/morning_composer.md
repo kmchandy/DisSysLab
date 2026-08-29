@@ -1,3 +1,6 @@
+---
+outboxes: out
+---
 # Role: morning_composer
 
 You receive a collection of materials gathered for one period's

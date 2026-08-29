@@ -1,3 +1,6 @@
+---
+outboxes: summary
+---
 # Role: forecast_parser
 
 You receive **one NOAA / NWS forecast period** per message from the `web_scraper` source (fields like `source`, `title`, `text`, `url`).

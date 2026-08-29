@@ -78,28 +78,26 @@ def builtin_roles_dir() -> Path:
     return Path(__file__).resolve().parent / "roles"
 
 
-def _outboxes_from(meta: dict[str, str], body: str) -> tuple[str, ...]:
-    """Declared outboxes, preferring what the role's own text says.
+def _outboxes_from(path: Path) -> tuple[str, ...]:
+    """The outboxes the role declares, read the way the loader reads them.
 
-    An English role's outboxes are extracted from its prompt by a
-    strict ``send to <name>`` rule — the same rule the framework uses,
-    so this cannot disagree with what the office will actually wire.
-    The front matter is the fallback, for Python roles whose outboxes
-    are in code.
+    This used to run its own ``send to <name>`` regex over the prompt
+    and sort the result. Two ways to be wrong at once: the scan could
+    disagree with the loader's scan about which ports exist, and the
+    sort disagreed with the loader about their order — and the order
+    decides which outbox is ``out_0``.
+
+    Now there is one reader. ``read_ports`` is the same function the
+    loader and ``dsl check`` call, so the catalogue cannot describe a
+    role differently from the office that uses it. A role that declares
+    nothing shows an empty list rather than a guess.
     """
-    # ``\s+`` and not a literal space: these prompts are wrapped, and
-    # "send to\nkeep" is the common case. With a literal space this
-    # missed every outbox that fell at the end of a line, and quietly
-    # returned a shorter list.
-    found = re.findall(r"\bsend\s+to\s+([a-z_][a-z0-9_]*)", body, re.I)
-    if found:
-        # Sorted, because that is what ``nl_role`` does, and the order
-        # decides which outbox is ``out_0``. A catalogue that disagreed
-        # with the framework about the order would be worse than no
-        # catalogue. ``test_roles_catalogue`` pins the two together.
-        return tuple(sorted(set(found)))
-    declared = meta.get("outboxes", "")
-    return tuple(sorted({p.strip() for p in declared.split(",") if p.strip()}))
+    from dissyslab.office.role_ports import PortDeclarationError, read_ports
+
+    try:
+        return read_ports(path).outboxes
+    except PortDeclarationError:
+        return ()
 
 
 def read_role(path: Path) -> RoleInfo | None:
@@ -125,7 +123,7 @@ def read_role(path: Path) -> RoleInfo | None:
     return RoleInfo(
         name=path.stem,
         emits=meta.get("emits", ""),
-        outboxes=_outboxes_from(meta, body),
+        outboxes=_outboxes_from(path),
         kind=kind,
         path=path,
     )

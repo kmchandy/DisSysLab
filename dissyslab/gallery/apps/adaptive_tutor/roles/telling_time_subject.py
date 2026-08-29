@@ -1,6 +1,11 @@
 # dissyslab/gallery/apps/adaptive_tutor/roles/telling_time_subject.py
 
 """
+---
+inboxes: in_
+outboxes: out
+---
+# built by register_subject_bank_role, so nothing in this module names the ports.
 TELLING_TIME subject -- third instance of adaptive_tutor's subject
 contract (see ``_subject_common.py``). Added to check the contract
 against a genuinely different problem *shape* than fractions or

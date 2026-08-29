@@ -5,6 +5,153 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/).
 
 
+## [1.9.0] — 2026-08-29
+
+**An agent's interface is now written down.** Every role declares its
+inboxes and outboxes, and the framework reads the declaration instead
+of guessing from English prose. That one change closes a trap, makes
+three checks possible that could not exist before, and is the reason
+this is 1.9.0 rather than 1.8.1.
+
+### Breaking — roles declare their ports
+
+A prose role declares in its front matter, beside `emits:`:
+
+```
+---
+emits: decides whether an item is worth passing on
+inboxes: in_
+outboxes: keep, discard
+---
+```
+
+`inboxes:` may be omitted and defaults to `in_`. A Python role already
+declared, in the `AgentRoleEntry` it builds — nothing was added to
+those files.
+
+**What breaks.** A `.md` role with no `outboxes:` in its front matter
+now fails to load, with an error naming the block to add. `nl_role()`
+takes `outboxes=` and `inboxes=` and raises without them. Every role
+in this repository — all 98 — was migrated, and **all 40 shipped
+offices compile to byte-identical code**, so an office is affected only
+through its own `roles/` folder.
+
+**What it fixes.** Ports used to come from a regular expression over
+the role's prompt: a line containing `send to` contributed every
+`to <name>` on it. So writing ``send to `keep` `` — backticks, as any
+careful writer puts round a port name — created no port at all. The
+office checked clean, built clean, ran clean, and produced nothing. No
+check could see it, because there was nothing for the wiring to
+disagree with: the prose *was* the declaration.
+
+It also meant `office.md` could not be understood by reading it.
+`Screen is a relevance_filter.` says nothing about Screen having an
+outbox called `discard`, and finding out meant opening a file that
+might be inside the installed package.
+
+Declarations are read **statically, never by importing** — `dsl check`
+has to be safe to run on code you did not write, and a Python role's
+ports are read out of its `AgentRoleEntry(...)` by AST.
+
+### Added — W13: a message sent to an inbox that does not exist
+
+```
+Screen's inbx is ...
+```
+
+was silent, in the worst way. The check passed, the build emitted a
+connection to a port that was never created, and the run failed with
+*"Agent 'Screen' inport 'in_' is not connected to any queue"* — naming
+`in_`, a port the writer never typed, about a line they did type.
+
+W13 names the line, the sender and the inboxes the agent actually has,
+and suggests the nearest spelling. A typo now produces **one** finding:
+a misspelled destination leaves the real inbox unwired by construction,
+so W1 would say the same thing a second way, and fixing the spelling
+fixes both.
+
+### Changed — W1 reaches every agent, and W2 works at all
+
+**W1** (an inbox nothing writes to — the usual reason an office hangs)
+used to reach only the three coordinator kinds that spell their inboxes
+on the agent line. It now covers every agent whose role declares
+inboxes, which is all of them. It stands down for an agent nothing
+reaches at all: W3 says that once and says why, and one W1 per inbox on
+top of it buries the finding that leads somewhere.
+
+**W2** (an outbox wired to nothing) was reserved for years on the
+grounds that it needed a resolved shape nothing had. It has one now.
+An unwired inbox blocks, which at least stops; an unwired outbox raises
+the first time it is used, so a filter wired only on `keep` passed
+every check and stopped on the first item it wanted to discard.
+
+Both are silent on all 40 shipped offices, pinned by a test.
+
+### Changed — `dsl draw` prints text by default
+
+`dsl draw <dir>` now prints the wiring as a table, both ports named on
+every edge, followed by what is unconnected. `--mermaid` gives the old
+diagram. **This is a breaking change to the command's output**, and it
+is the right default: a Mermaid diagram is something you paste into
+another program, and the question someone asks `dsl draw` is *where
+does this message go*.
+
+The picture and the checker now read ports through the same function,
+so a port drawn as unconnected is the port W1, W2 or W13 will name.
+
+### Changed — the office-builder skill is 84 lines
+
+It was 1,597, across five files. The grammar, the role list, the
+sources and sinks and the worked examples now ship **inside the
+package** and are printed by `dsl grammar`, `dsl grammar roles`,
+`dsl grammar sources` and `dsl grammar examples`.
+
+The reason is not brevity. A skill installs from GitHub and the package
+installs from PyPI, so anything written in both is a second copy on a
+second release path, and the two go out of step the first time either
+moves. A user with yesterday's skill was being taught a language their
+install did not have — silently, because nothing compared them.
+
+What is left is a version string derived from the file's own content, a
+retargeted `description:`, the command list, and "if a command below is
+missing, this install predates it". A test asks the CLI parser whether
+every command named in the file is real.
+
+### Added — `guard()`: your own checks around a model call, opt-in
+
+`guard(role, before=..., after=..., on_reject=...)` composes a check
+before a role and a check after it **inside one agent**, not three. The
+rejected alternative — a guard as its own agent — is written down in
+`docs/internals/design/guard_rails.md` along with why, and with a
+four-sitting micro-course on what these can and cannot do.
+
+### Fixed
+
+- **The skill search walked past where skills actually are.** Cowork
+  stores them at `~/.claude/skills/synced/<uuid>/<name>/SKILL.md`, and
+  `dsl doctor` reported "not installed" for a skill sitting on disk.
+  That produced a loop with no way out: doctor says install it,
+  installing changes nothing, doctor says it again. The search now
+  matches a known skill name with a `SKILL.md` under any parent at any
+  depth.
+- **`dsl doctor` is quiet when healthy.** It printed a wall of green
+  ticks that a beginner had to read to find the one line that mattered.
+  `--full` restores the detail. Its verdict no longer says "not
+  installed" for a skill that is in the repository but not installed —
+  those are different sentences and the fix for each is different.
+- **A packaged office no longer writes into itself.** `dsl run
+  periodic_brief` wrote `brief.html` inside site-packages, because the
+  generated artifact `chdir`s to the office so relative paths resolve
+  beside it. The artifact now decides for itself, so `python
+  build/run.py` behaves the same way. (`dsl run` still writes the
+  generated `build/run.py` into the installed package; that is
+  outstanding.)
+- **`dsl list` no longer describes offices by their own wiring**, and
+  `roles_catalogue` no longer runs a second, differently-ordered prose
+  scan of its own — it calls the same reader the loader calls, so the
+  catalogue cannot describe a role differently from the office that
+  uses it.
+
 ## [1.8.0] — 2026-08-27
 
 Fifty-five commits, and one theme runs through most of them: **the

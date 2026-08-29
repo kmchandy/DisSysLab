@@ -1,3 +1,6 @@
+---
+outboxes: keep, discard
+---
 # Role: analyst
 
 You are a news analyst who receives posts and articles and sends

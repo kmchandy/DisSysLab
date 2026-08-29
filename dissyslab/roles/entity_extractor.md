@@ -1,5 +1,6 @@
 ---
 emits: adds an `entities` field — the people, places and organisations named
+outboxes: out
 ---
 # Role: entity_extractor
 

@@ -1,3 +1,6 @@
+---
+outboxes: cover_letters
+---
 # Role: drafter
 
 You are a cover letter drafter. You receive one matched job posting at

@@ -1,5 +1,6 @@
 ---
 contract: structured
+outboxes: out
 ---
 # Role: qwen
 

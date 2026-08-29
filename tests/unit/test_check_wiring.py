@@ -278,6 +278,7 @@ def _office(tmp_path, office_md: str, roles: dict[str, str] | None = None):
 
 _FILTER = """---
 emits: keeps some items
+outboxes: keep, discard
 ---
 # Role: my_filter
 
@@ -324,14 +325,18 @@ def test_w2_is_silent_when_every_declared_outbox_is_wired(tmp_path):
     assert not [f for f in check_office_dir(d).findings if f.code == "W2"]
 
 
-def test_w2_uses_the_loader_s_own_extractor(tmp_path):
-    """The backtick trap, from the other side.
+def test_the_backtick_trap_no_longer_exists(tmp_path):
+    """The trap the whole change was made to close.
 
-    ``send to `keep` `` creates no port, because that is what the loader
-    does with it. So W2 must be silent here -- there is no declared
-    outbox to be unwired. Reporting one would mean the check and the
-    runtime disagreed about what the role says, and then neither could
-    be believed.
+    ``send to `keep` `` -- backticks, as any careful writer puts round a
+    port name -- used to create no port at all. The office checked
+    clean and produced nothing, and no check could see it, because the
+    ports came from the prose and there was no declaration to disagree
+    with.
+
+    Now the prose is prose. The declaration says ``keep, discard``, so
+    W2 names ``discard`` here exactly as it does without backticks, and
+    the writer's formatting has stopped being load-bearing.
     """
     from dissyslab.office.check_wiring import check_office_dir
 
@@ -339,14 +344,23 @@ def test_w2_uses_the_loader_s_own_extractor(tmp_path):
         "send to discard", "send to `discard`"
     )
     d = _office(tmp_path, _TWO_PORT_OFFICE, {"my_filter.md": backticked})
-    assert not [f for f in check_office_dir(d).findings if f.code == "W2"]
+    w2 = [f for f in check_office_dir(d).findings if f.code == "W2"]
+    assert len(w2) == 1 and "discard" in w2[0].message
 
 
-def test_a_python_role_is_exempt(tmp_path):
+def test_a_python_role_shadows_the_prose_one(tmp_path):
     """`mac_speed_suite` ships `roles/evaluator.py`, which shadows the
     library's prose `evaluator.md`. Read the wrong file and the check
     invents a fault in a working office -- the first version of this
-    check did exactly that."""
+    check did exactly that.
+
+    A `.py` role is no longer exempt: its ports are read out of the
+    ``AgentRoleEntry`` it builds, by AST and without importing it. So
+    what this pins now is *which* file gets read. The `.py` declares
+    one outbox, `keep`, and it is wired; the `.md` beside it declares
+    two. Reading the `.md` would report `discard` unwired on an office
+    that is right.
+    """
     from dissyslab.office.check_wiring import check_office_dir
 
     d = _office(
@@ -354,7 +368,12 @@ def test_a_python_role_is_exempt(tmp_path):
         _TWO_PORT_OFFICE,
         {
             "my_filter.md": _FILTER,
-            "my_filter.py": "def run(msg):\n    return [(msg, 'keep')]\n",
+            "my_filter.py": (
+                "from dissyslab.office.library import AgentRoleEntry\n"
+                "role = AgentRoleEntry(name='my_filter', in_ports=('in_',),\n"
+                "                      out_ports=('keep',),\n"
+                "                      factory=lambda: None)\n"
+            ),
         },
     )
     assert not [f for f in check_office_dir(d).findings if f.code == "W2"]
@@ -392,3 +411,173 @@ def test_no_shipped_office_trips_it():
         if [f for f in report.findings if f.code == "W2"]:
             firing.add(office_md.parent.name)
     assert firing == set()
+
+
+# ── W13 and W1: the inbox half, now that roles declare their inboxes ──
+#
+# W13 is new and W1 grew. Before roles declared inboxes, the only agents
+# with a known inbox set were the three coordinator kinds that spell
+# theirs on the agent line, so W1 checked those and W13 could not exist
+# at all. A misspelled destination -- `Screen's inbx is ...` -- passed
+# every check, built a connection to a port that was never created, and
+# failed at run time with
+#
+#     Agent 'Screen' inport 'in_' is not connected to any queue
+#
+# naming `in_`, a port the writer never typed, about a line they did.
+
+
+_ONE_INBOX_OFFICE = """\
+# Office: x
+
+Sources: starter
+Sinks: console_printer
+
+Agents:
+Screen is a my_filter.
+
+Connections:
+starter's destination is Screen{port}.
+Screen's keep is console_printer.
+Screen's discard is console_printer.
+"""
+
+
+def test_w13_catches_a_message_sent_to_an_inbox_that_does_not_exist(tmp_path):
+    d = _office(
+        tmp_path,
+        _ONE_INBOX_OFFICE.format(port="'s inbx"),
+        {"my_filter.md": _FILTER},
+    )
+    report = check_office_dir(d)
+    w13 = [f for f in report.findings if f.code == "W13"]
+    assert len(w13) == 1
+    assert "inbx" in w13[0].message and "starter" in w13[0].message
+    assert not report.ok, "a message that reaches nothing is a fault"
+    # The fix is named, and it is the one the writer can act on.
+    assert "in_" in w13[0].hint
+
+
+def test_w13_is_silent_when_the_inbox_is_spelt_right(tmp_path):
+    d = _office(
+        tmp_path, _ONE_INBOX_OFFICE.format(port=""), {"my_filter.md": _FILTER}
+    )
+    report = check_office_dir(d)
+    assert not [f for f in report.findings if f.code == "W13"]
+    assert report.ok
+
+
+def test_one_typo_gives_one_finding(tmp_path):
+    """A misspelled destination leaves the real inbox unwired by
+    construction, so W1 would fire too -- the same mistake said twice.
+    Fixing the spelling fixes both, so only W13 is reported."""
+    d = _office(
+        tmp_path,
+        _ONE_INBOX_OFFICE.format(port="'s inbx"),
+        {"my_filter.md": _FILTER},
+    )
+    codes = [f.code for f in check_office_dir(d).findings]
+    assert codes.count("W13") == 1
+    assert "W1" not in codes
+
+
+def test_w1_now_covers_an_agent_whose_role_declares_its_inboxes(tmp_path):
+    """W1 used to reach only the coordinators. A two-inbox prose role
+    with one of them unwired is the ordinary case, and it was silent."""
+    two_in = _FILTER.replace(
+        "emits: keeps some items",
+        "emits: keeps some items\ninboxes: articles, rules",
+    )
+    body = """\
+# Office: x
+
+Sources: starter
+Sinks: console_printer
+
+Agents:
+Screen is a my_filter.
+
+Connections:
+starter's destination is Screen's articles.
+Screen's keep is console_printer.
+Screen's discard is console_printer.
+"""
+    report = check_office_dir(_office(tmp_path, body, {"my_filter.md": two_in}))
+    w1 = [f for f in report.findings if f.code == "W1"]
+    assert len(w1) == 1 and "rules" in w1[0].message
+
+
+def test_an_unreachable_agent_is_not_also_reported_as_a_blocked_one(tmp_path):
+    """Nothing reaches the agent at all. W3 says that once and says
+    why; a W1 per inbox on top of it buries the finding that leads
+    somewhere."""
+    body = """\
+# Office: x
+
+Sources: starter
+Sinks: console_printer
+
+Agents:
+A is a summarizer.
+Screen is a my_filter.
+
+Connections:
+starter's destination is A.
+A's out is console_printer.
+Screen's keep is console_printer.
+Screen's discard is console_printer.
+"""
+    codes = [
+        f.code
+        for f in check_office_dir(_office(tmp_path, body, {"my_filter.md": _FILTER})).findings
+    ]
+    assert "W3" in codes
+    assert "W1" not in codes
+
+
+def test_a_coordinators_command_inbox_is_not_a_typo(tmp_path):
+    """`select(inboxes=[...], command='command')` has three inboxes, not
+    two: the command port is named in an argument of its own. Missing it
+    made `CLERK's command is SELECT's command.` -- a line two shipped
+    offices depend on -- look like a message sent nowhere."""
+    from dissyslab.office.check_wiring import declared_inports
+
+    class _Spec:
+        args = (("inports", ["ticket", "manager_reply"]), ("command", "command"))
+
+    assert declared_inports(_Spec()) == ["ticket", "manager_reply", "command"]
+
+
+def test_no_shipped_office_trips_the_inbox_checks():
+    """Pinned, the same way W2 is. Both new behaviours are silent on
+    every office we ship."""
+    from pathlib import Path
+
+    gallery = Path(__file__).resolve().parents[2] / "dissyslab" / "gallery"
+    firing = {}
+    for office_md in sorted(gallery.rglob("office.md")):
+        try:
+            report = check_office_dir(office_md.parent)
+        except Exception:  # noqa: BLE001 - other checks cover parse failures
+            continue
+        hits = [f.code for f in report.findings if f.code in ("W1", "W13")]
+        if hits:
+            firing[office_md.parent.name] = hits
+    assert firing == {}
+
+
+def test_w13_prints_the_corrected_line_when_there_is_one_inbox(tmp_path):
+    """The hint is the sentence to type, not a sentence with a gap.
+
+    An agent with one inbox is the ordinary case, and the default inbox
+    `in_` is not named in a connection at all -- which is exactly the
+    part a beginner will not guess. So the hint writes the whole line
+    out, sending port included.
+    """
+    d = _office(
+        tmp_path,
+        _ONE_INBOX_OFFICE.format(port="'s inbx"),
+        {"my_filter.md": _FILTER},
+    )
+    hint = [f for f in check_office_dir(d).findings if f.code == "W13"][0].hint
+    assert "Write: starter's destination is Screen." in hint

@@ -1,3 +1,6 @@
+---
+outboxes: keeper, discard
+---
 # Role: filter
 
 You are a content filter who receives news articles and sends

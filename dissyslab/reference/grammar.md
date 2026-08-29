@@ -157,13 +157,34 @@ news_monitor's article_out is news_editor's article_in.
 - A source's outbox may be written `destination` **or** `out`. Both legal;
   the compiler maps either to the same runtime port.
 - A sink has exactly one inbox and it is always `in_`. You never name it.
-- An agent's outboxes are whatever its role declares. A role can have several
-  — `Felix's keep` and `Felix's discard`, or `Riley's continue` and
-  `Riley's finish`.
-- A synchronizer's inboxes are either declared —
-  `synchronizer(inboxes=["a","b"])` — or inferred from what gets wired to it.
-  **If you declare them, wire every one.** A declared inbox nothing writes to
-  is an agent that blocks forever.
+- **An agent's ports are whatever its role declares, and every role
+  declares them.** A prose role says so in its front matter:
+
+  ```
+  ---
+  emits: decides whether an item is worth passing on
+  inboxes: in_
+  outboxes: keep, discard
+  ---
+  ```
+
+  `inboxes:` may be left out and defaults to `in_`, which is what almost
+  every role has. A Python role declares in the `AgentRoleEntry` it builds —
+  `in_ports=`, `out_ports=` — and needs no front matter.
+
+  So `Felix's keep` and `Felix's discard` are legal because
+  `relevance_filter` says `outboxes: keep, discard`, and `dsl draw` can show
+  you an agent's ports without running anything.
+- **Order is meaning.** `outboxes: keep, discard` and `outboxes: discard,
+  keep` are different roles: the first name is where a message goes when the
+  model does not choose one.
+- **Wire every declared port, both ways.** A declared inbox nothing writes to
+  is an agent that blocks forever (`W1`); a declared outbox wired to nothing
+  raises the first time it is used (`W2`); and a connection naming an inbox
+  the role does not declare is a message that reaches nothing (`W13`).
+- A coordinator has no role file, so it declares on its own agent line:
+  `synchronizer(inboxes=["a","b"])`, `select(inboxes=[...],
+  command="command")`.
 
 ## Cycles
 
@@ -212,6 +233,7 @@ and yours are not.
 | `W10` | problem | a sub-office that is not there |
 | `W11` | **note** | text from the open web reaching something that acts |
 | `W12` | **note** | a role's own Python reaching outside |
+| `W13` | problem | a connection writing to an inbox the agent does not have |
 | `G1` | problem | an agent with no job yet |
 | `G2` | problem | nothing leaves this office |
 

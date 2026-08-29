@@ -1,6 +1,11 @@
 # dissyslab/gallery/apps/adaptive_tutor/roles/fractions_subject.py
 
 """
+---
+inboxes: in_
+outboxes: out
+---
+# built by register_subject_bank_role, so nothing in this module names the ports.
 FRACTIONS subject -- first instance of adaptive_tutor's subject
 contract (see ``_subject_common.py``). Simplest example: addition and
 subtraction of two proper fractions with small denominators.

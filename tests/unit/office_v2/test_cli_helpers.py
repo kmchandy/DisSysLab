@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import io
 import time
+import re
 from pathlib import Path
 
 import pytest
@@ -29,6 +30,30 @@ from dissyslab.office.cli_helpers import (
 # ── Helpers ───────────────────────────────────────────────────────────
 
 
+def _declare_ports(prompt: str) -> str:
+    """Give a fixture prompt the front matter every role now needs.
+
+    Roles declare their ports; these fixtures were written when the
+    framework read them out of the prose. Rather than edit fifty
+    prompts, the helper derives the declaration from the same `send to
+    <name>` phrasing the old scan used, so each test still reads the
+    way its author wrote it. Real role files carry the block
+    themselves.
+    """
+    if prompt.lstrip().startswith("---"):
+        return prompt
+    ports: list[str] = []
+    for line in prompt.splitlines():
+        if not re.search(r"\bsend\s+to\b", line, re.I):
+            continue
+        for m in re.finditer(r"\bto\s+([A-Za-z_][A-Za-z0-9_]*)\b", line):
+            if m.group(1) not in ports:
+                ports.append(m.group(1))
+    if not ports:
+        return prompt
+    return "---\noutboxes: " + ", ".join(ports) + "\n---\n" + prompt
+
+
 def _write_office(office_dir: Path, body: str) -> None:
     office_dir.mkdir(parents=True, exist_ok=True)
     (office_dir / "office.md").write_text(body, encoding="utf-8")
@@ -37,7 +62,7 @@ def _write_office(office_dir: Path, body: str) -> None:
 def _write_role(office_dir: Path, role_name: str, prompt: str) -> None:
     rl = office_dir / "roles"
     rl.mkdir(parents=True, exist_ok=True)
-    (rl / f"{role_name}.md").write_text(prompt, encoding="utf-8")
+    (rl / f"{role_name}.md").write_text(_declare_ports(prompt), encoding="utf-8")
 
 
 def _make_tiny_office(office_dir: Path) -> None:

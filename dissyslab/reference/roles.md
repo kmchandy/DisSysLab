@@ -168,8 +168,73 @@ Write a new role when the job is genuinely not on this list:
 - wrapping a model or a library
 - reshaping records into a form a specific sink needs
 
-Then follow the English-or-Python guidance in `SKILL.md`. But say which of
-these applies — if you cannot, one of the nineteen above probably fits.
+Say which of these applies — if you cannot, one of the nineteen above
+probably fits.
+
+## Writing a role file
+
+A role goes in the office's `roles/` folder and is named after the role:
+`roles/screener.md` is the role `screener`, used as `Alex is a screener.`
+
+**In English — `roles/<name>.md`.** Front matter first, then the prompt:
+
+```markdown
+---
+emits: decides whether a job posting is worth reading
+outboxes: keep, discard
+---
+# Role: screener
+
+You read one job posting at a time and decide whether it is worth
+passing on.
+
+Input shape. Each item is a JSON object with `title`, `text`, `url`.
+
+If the posting is for a new graduate, send to keep.
+Otherwise send to discard.
+```
+
+- **`outboxes:` is required.** It is the role's interface: what the
+  framework builds, what `dsl check` compares the wiring against, and
+  what `dsl draw` shows. In order — the first name is the default
+  destination when the model does not choose one.
+- **`inboxes:` may be omitted** and defaults to `in_`, which is what
+  almost every role wants.
+- `emits:` is one line for `dsl roles` to print.
+- The prompt is prose for the model. It does **not** decide the ports.
+  Write `send to keep` in it because it tells the model what to do,
+  not because the framework reads it — it does not.
+
+The framework appends the JSON contract that says how to name the chosen
+outbox. Never write that by hand.
+
+**In Python — `roles/<name>.py`.** The module builds one top-level
+`role`, and the ports are the declaration:
+
+```python
+from dissyslab.office.library import AgentRoleEntry
+
+role = AgentRoleEntry(
+    name="threshold",
+    in_ports=("in_",),
+    out_ports=("high", "low"),
+    factory=lambda: ...,
+)
+```
+
+`dsl check` reads those two arguments **without importing the file** —
+it must be safe to check code you did not write. So spell them as
+literals. If the ports are computed and nothing readable is left, put
+the same front matter as a prose role at the top of the module
+docstring.
+
+**English or Python?** English for a judgment — relevance, tone, whether
+a briefing is good enough. Python for anything exact — arithmetic, a
+threshold, reshaping a record. A Python role costs nothing to run and
+gives the same answer every time; an English one costs a model call and
+is the only thing that can handle a fuzzy criterion. Writing a keyword
+list in Python to do an English role's job is the common mistake, and it
+fails quietly.
 
 ## Editing a shipped role — and the name-collision trap
 

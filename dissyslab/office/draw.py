@@ -203,21 +203,40 @@ _ARROW = "──▶"
 
 
 def _agent_ports(spec, office_dir: Path | None):
-    """Ports each agent declares, as far as anything can know them.
+    """Ports each agent declares, read the way the loader reads them.
 
-    Outboxes come from the role, resolved exactly as the loader
-    resolves it; inboxes from an `inboxes=` argument where there is
-    one. Both are best-effort: a `.py` role's ports live in its code and
-    a role with no `inboxes=` takes whatever is wired to it. Where
-    nothing is known the agent simply contributes no unconnected ports,
-    which is the honest answer rather than a guess.
+    Both halves now come from the role's own declaration -- inboxes as
+    well as outboxes -- through ``role_ports``, the same function
+    ``dsl check`` uses. So the picture and the check agree by
+    construction: a port drawn as unconnected here is the port W1, W2
+    or W13 will name.
+
+    Where a shape is unknown -- a role built by a library factory has
+    no file -- the agent contributes no unconnected ports rather than a
+    guess. A drawing must always finish, so anything unexpected leaves
+    that agent blank instead of raising.
     """
-    from dissyslab.office.check_wiring import declared_inports, declared_outports
+    from dissyslab.office.check_wiring import (
+        declared_inports,
+        declared_outports,
+        inports_for,
+    )
 
     outs: dict[str, tuple[str, ...]] = {}
     ins: dict[str, tuple[str, ...]] = {}
     for a in spec.agents:
-        ins[a.agent_name] = tuple(declared_inports(a))
+        try:
+            # With no directory there is no role file to read, so the
+            # agent line is all there is -- which is what this did
+            # before roles declared anything.
+            declared_in = (
+                inports_for(a, Path(office_dir))
+                if office_dir is not None
+                else tuple(declared_inports(a))
+            )
+        except Exception:  # noqa: BLE001 - a drawing must always finish
+            declared_in = None
+        ins[a.agent_name] = tuple(declared_in or ())
         role = getattr(a, "role_name", None)
         if office_dir is not None and role and role not in _UNASSIGNED and a.path is None:
             try:

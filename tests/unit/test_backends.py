@@ -273,7 +273,7 @@ def test_role_entry_call_forwards_ai_kwarg():
 
     # Build a role just like .md files do — no AI baked into the
     # factory. The codegen then has to be the one to supply the AI.
-    entry = nl_role("You triage. Send to keep or to discard.")
+    entry = nl_role("You triage. Send to keep or to discard.", outboxes=['keep', 'discard'])
 
     # The buggy version raised TypeError here.
     agent = entry(AI="anthropic")

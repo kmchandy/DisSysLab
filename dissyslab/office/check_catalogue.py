@@ -170,6 +170,16 @@ CHECKS: Dict[str, Check] = {
         "evaded. Its silence is not a clean bill of health -- read code you "
         "did not write.",
     ),
+    "W13": Check(
+        "W13",
+        "error",
+        "a message sent to an inbox that does not exist",
+        "A connection names an inbox the receiving agent does not have — "
+        "almost always a misspelling. Nothing arrives, the agent waits on "
+        "the inbox it does have, and the office hangs. Until roles declared "
+        "their inboxes this could not be seen at all: the office checked "
+        "clean, ran, and failed naming a port you never typed.",
+    ),
     "G1": Check(
         "G1",
         "error",

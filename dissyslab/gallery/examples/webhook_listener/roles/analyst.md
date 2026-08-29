@@ -1,3 +1,6 @@
+---
+outboxes: keep, discard
+---
 # Role: analyst
 
 You are an analyst who receives webhook payloads from external

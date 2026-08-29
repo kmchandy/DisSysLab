@@ -44,6 +44,7 @@ W11 (note) text from the open web can reach a sink that acts outside
 W12 (note) a role's own Python reaches the network, another program, or
     code built at run time -- a lint, and one that teaches rather than
     protects
+W13 a connection writing to an inbox the receiving agent does not have
 G1  an agent with a name and no job yet
 G2  nothing leaves the office -- it has no sink
 
@@ -68,17 +69,34 @@ diagnose from outside. Every other mistake announces itself; an office
 with no sink is structurally perfect, runs cleanly, exits zero and
 produces silence.
 
-W1 applies only where an agent *declares* its inboxes in ``office.md`` --
-``Sync is a synchronizer(inboxes=["entities", "severity", "topic"])``. Where
-ports are not declared they are inferred from the connections themselves, so
-an unwired port cannot arise and there is nothing to check.
+Ports are declared, so the port checks are subtraction
+------------------------------------------------------
+Every role says what its inboxes and outboxes are -- a prose role in
+its front matter, a Python role in the ``AgentRoleEntry`` it builds --
+and ``role_ports.read_ports`` is the one function that reads them.
+``dsl check``, the loader and ``dsl draw`` all call it, so they cannot
+disagree about the shape of an agent.
 
-W2 is the outbox half, and it was left unimplemented for years on the
-grounds that it needs the role's resolved shape. It does not: for a
-prose role the loader builds the ports by scanning for ``send to
-<name>``, and this check calls that same function on that same file, so
-the two cannot disagree about what a role declares. A ``.py`` role is
-exempt -- its ports come from its code, which is not readable here.
+Given the declared set on one side and what the connections wire on the
+other, three of the checks here are set subtraction:
+
+    W1   declared inbox  - wired  =  an agent that will block
+    W2   declared outbox - wired  =  a send that will raise
+    W13  wired inbox - declared   =  a message that reaches nothing
+
+None of the three was possible while an agent's interface was inferred.
+The ports came from a regular expression over the role's English
+(``send to keep``), so there was no declaration for the wiring to
+disagree with: write ``send to `keep``` and the port silently did not
+exist, the office checked clean, and it produced nothing. W1 worked
+only for the three coordinator kinds that spell their inboxes on the
+agent line, and W2 was left unimplemented for years on the grounds that
+it needed a resolved shape that nothing had.
+
+Where a shape genuinely is unknown -- a role built by a library factory
+has no file to read -- ``inports_for`` returns ``None`` and the checks
+stay quiet. A check that invents a port set is worse than one that says
+nothing.
 """
 
 from __future__ import annotations
@@ -88,6 +106,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Sequence, Set, Tuple
 
 from dissyslab.office.office_spec import UNASSIGNED, is_draft
+from dissyslab.office.role_ports import DEFAULT_INBOX, Ports
 from dissyslab.office.role_effects import scan_office
 from dissyslab.office.trust import (
     is_acting_sink,
@@ -103,13 +122,21 @@ __all__ = [
     "declared_inports",
     "declared_outports",
     "format_report",
+    "inports_for",
+    "role_ports_for",
 ]
 
 EXTERNAL = "external"
 
+#: Agent-line arguments whose *value* is the name of an inbox, rather
+#: than a setting. ``select(..., command="command")`` and
+#: ``gate(data="data", control="control")``; ``record(initial={...})``
+#: is not one, which is why this is a list and not "every string arg".
+_PORT_NAMING_ARGS = {"command", "data", "control"}
+
 # Findings that mean "not finished yet" rather than "wrong". In a draft
-# office these are the remaining work; W5 and W6 and W9 are not, because
-# a misspelled component name is as wrong now as it will be later.
+# office these are the remaining work; W5, W6, W9 and W13 are not,
+# because a misspelled name is as wrong now as it will be later.
 _INCOMPLETENESS_CODES = {"W1", "W2", "W3", "W4", "W8", "G1", "G2"}
 
 
@@ -294,17 +321,31 @@ def _looping_groups(
 
 
 def declared_inports(agent_spec) -> List[str]:
-    """Inports an agent spells out in office.md, if any.
+    """Inports an agent spells out on its own line in office.md, if any.
 
     ``Sync is a synchronizer(inboxes=["entities", "severity"])`` parses to
-    ``args=(("inports", ["entities", "severity"]),)``. Agents that do not
-    declare inports return an empty list, and are not checked -- their ports
-    are whatever gets wired to them.
+    ``args=(("inports", ["entities", "severity"]),)``. This is the
+    coordinator case: a role built by a factory has no file, so the
+    agent line is the only place its inboxes can be written down.
+
+    An empty list means "not said here", not "none" -- ask
+    ``inports_for`` next, which also looks at the role.
     """
-    for key, value in getattr(agent_spec, "args", ()) or ():
+    args = tuple(getattr(agent_spec, "args", ()) or ())
+    ports: List[str] = []
+    for key, value in args:
         if key == "inports" and isinstance(value, (list, tuple)):
-            return [str(port) for port in value]
-    return []
+            ports.extend(str(port) for port in value)
+    # A coordinator can name one more inbox in an argument of its own:
+    # `select(inboxes=[...], command="command")` has three inboxes, and
+    # a gate's are `data` and `control`. Missing these made every
+    # connection into a select's command port look like a message sent
+    # to a port that does not exist.
+    for key, value in args:
+        if key in _PORT_NAMING_ARGS and isinstance(value, str) and value:
+            if value not in ports:
+                ports.append(value)
+    return ports
 
 
 def _resolve_role_file(office_dir: Path, role: str) -> Path | None:
@@ -331,23 +372,62 @@ def _resolve_role_file(office_dir: Path, role: str) -> Path | None:
     return None
 
 
-def declared_outports(office_dir: Path, role: str) -> Tuple[str, ...]:
-    """The outboxes the loader will create for a prose role.
+def role_ports_for(office_dir: Path, role: str) -> "Ports | None":
+    """What a role declares, or None when nothing here can know.
 
-    Uses the loader's own extractor, so the check and the runtime can
-    never disagree about what a role file declares -- which is the only
-    way this check is worth having. A ``.py`` role returns nothing:
-    its ports come from its code and are not readable here.
+    A role built by a library factory -- ``synchronizer``, ``select``,
+    ``gate``, ``router`` -- has no file, and its ports come from the
+    agent line. Those are handled by ``declared_inports``; this returns
+    None for them rather than guessing, because a check that invents a
+    port set is worse than one that stays quiet.
     """
-    path = _resolve_role_file(office_dir, role)
-    if path is None or path.suffix != ".md":
-        return ()
-    try:
-        from dissyslab.office.library import _extract_send_to_ports  # noqa: WPS433
+    from dissyslab.office.role_ports import PortDeclarationError, read_ports
 
-        return _extract_send_to_ports(path.read_text(encoding="utf-8"))
-    except Exception:  # noqa: BLE001 - a check must always finish
-        return ()
+    path = _resolve_role_file(office_dir, role)
+    if path is None:
+        return None
+    try:
+        return read_ports(path)
+    except PortDeclarationError:
+        return None
+
+
+def declared_outports(office_dir: Path, role: str) -> Tuple[str, ...]:
+    """The outboxes a role declares. Empty when it declares none here."""
+    ports = role_ports_for(office_dir, role)
+    return ports.outboxes if ports else ()
+
+
+def inports_for(agent_spec, office_dir: Path) -> "Tuple[str, ...] | None":
+    """Every inbox this agent has, or None when nothing here can know.
+
+    Two places an inbox set can be written down, and they do not
+    overlap:
+
+    * the **agent line**, for a role built by a factory --
+      ``Sync is a synchronizer(inboxes=[...])``. There is no file to
+      read, so the line is the declaration.
+    * the **role file**, for everything else. Since roles declare
+      their ports, this is now known for every agent with a role file
+      rather than only for the three coordinator kinds.
+
+    None means unknown, and unknown must stay silent. A sub-office
+    declares its interface in its own ``office.md`` (``Inputs:``);
+    reading it from here is a different job and is not done yet, so a
+    sub-office returns None rather than an empty tuple -- which would
+    read as "has no inboxes" and make every connection into it a
+    fault.
+    """
+    on_the_line = declared_inports(agent_spec)
+    if on_the_line:
+        return tuple(on_the_line)
+    if getattr(agent_spec, "path", None) is not None:
+        return None
+    role = getattr(agent_spec, "role_name", None)
+    if not role or role == UNASSIGNED:
+        return None
+    ports = role_ports_for(office_dir, role)
+    return ports.inboxes if ports else None
 
 
 def _local_role_names(office_dir: Path) -> Set[str]:
@@ -460,22 +540,93 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
 
     named = graph.nodes | {EXTERNAL}
 
-    # W1 -- a declared inbox that no connection writes to.
+    # W1 and W13 -- the two halves of "the inboxes an agent has".
     #
-    # Only agents that spell their inports out in office.md can have this
-    # fault. Where the ports are not declared they are defined by whatever is
-    # wired, so an unwired one cannot exist. When it does exist it is not a
-    # style problem: the agent blocks on that port and never proceeds.
+    # Now that a role declares its inboxes, this set is known for every
+    # agent with a role file, not only for the three coordinator kinds
+    # that spelled theirs on the agent line. Both faults fall out of
+    # comparing the declaration against what the connections write to:
+    #
+    #   W1  declared and nothing writes to it -- the agent blocks there
+    #   W13 written to and not declared     -- the message goes nowhere
+    #
+    # W13 was silent until now, and silent in the worst way. `Screen's
+    # inbx is ...` checked clean, built a connection to a port that did
+    # not exist, and failed at run time with "Agent 'Screen' inport
+    # 'in_' is not connected to any queue" -- naming `in_`, a port the
+    # student never typed, about a line they did type.
+    #
+    # An unreachable agent (W3) has no inboxes wired at all, and would
+    # collect a W1 for each of them on top of the W3 that explains it.
+    # W3 is the finding that leads somewhere, so W1 stands down where
+    # nothing at all reaches the agent.
     for agent_spec in spec.agents:
-        declared = declared_inports(agent_spec)
-        if not declared:
+        declared_tuple = inports_for(agent_spec, office_dir)
+        if declared_tuple is None:
             continue
+        declared = list(declared_tuple)
         agent = agent_spec.agent_name
         written_to: Dict[str, Set[str]] = {}
+        # The sending end of each wire too, so the hint can print the
+        # corrected sentence rather than a sentence with a gap in it.
+        senders_of: Dict[str, List[Tuple[str, str]]] = {}
         for conn in spec.connections:
             for dest in conn.destinations:
                 if dest.name == agent:
                     written_to.setdefault(dest.port, set()).add(conn.source.name)
+                    senders_of.setdefault(dest.port, []).append(
+                        (conn.source.name, conn.source.port or "out")
+                    )
+
+        undeclared = sorted(set(written_to) - set(declared))
+        for port in undeclared:
+            senders = ", ".join(sorted(written_to[port]))
+            near = _closest(port, set(declared))
+            if near:
+                fix = (
+                    f"{agent}'s inboxes are: {', '.join(declared)}. "
+                    f"Did you mean {' or '.join(repr(c) for c in near)}?"
+                )
+            elif len(declared) == 1:
+                # One inbox, so the corrected line can be written out in
+                # full -- and when that inbox is the default it is not
+                # named at all, which is the part a beginner is least
+                # likely to guess.
+                only = declared[0]
+                from_name, from_port = senders_of[port][0]
+                tail = agent if only == DEFAULT_INBOX else f"{agent}'s {only}"
+                fix = (
+                    f"{agent} has one inbox, {only!r}. Write: "
+                    f"{from_name}'s {from_port} is {tail}."
+                )
+            else:
+                fix = (
+                    f"{agent}'s inboxes are: {', '.join(declared)}. "
+                    "Correct the spelling, or add the inbox to the role."
+                )
+            report.findings.append(
+                Finding(
+                    "W13",
+                    "error",
+                    agent,
+                    f"{senders} writes to {agent}'s {port!r}, but {agent} has "
+                    f"no inbox called {port!r} -- that message reaches nothing.",
+                    fix,
+                )
+            )
+
+        if not written_to:
+            # Nothing reaches this agent at all. W3 says that once and
+            # says why; one W1 per inbox on top of it is noise.
+            continue
+        if undeclared:
+            # One mistake, one finding. A misspelled destination leaves
+            # the real inbox unwired by construction, so every W1 here
+            # is the same typo said a second way -- and fixing the
+            # spelling fixes both. If the reader instead adds the port
+            # they typed to the role, W1 comes back on the next run,
+            # which is when it is news.
+            continue
         for port in declared:
             if port in written_to:
                 continue
@@ -508,11 +659,11 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
     # irrelevant article -- which, for a filter, is the point.
     #
     # This was reserved and left unimplemented because it needs the
-    # role's resolved shape. It does not: the loader builds those ports
-    # by scanning the role's prose, and this calls the same function on
-    # the same file, so the two cannot disagree.
+    # role's resolved shape. It has one now: the role declares its
+    # outboxes and ``read_ports`` is what the loader reads them with,
+    # so the check and the office cannot disagree.
     #
-    # Silent on all forty shipped offices.
+    # Silent on all forty-one shipped offices.
     for agent_spec in spec.agents:
         role = getattr(agent_spec, "role_name", None)
         if not role or role == UNASSIGNED or agent_spec.path is not None:
@@ -535,9 +686,9 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                     agent,
                     f"{agent!r} sends to {port!r}, but {port!r} is connected "
                     f"to nothing -- the run stops the first time it is used.",
-                    f"roles/{role}.md says 'send to {port}'. Either wire it "
-                    f"-- {agent}'s {port} is <somewhere>. -- or take that "
-                    "sentence out of the role.",
+                    f"The role {role!r} declares {port!r} as an outbox. "
+                    f"Either wire it -- {agent}'s {port} is <somewhere>. -- "
+                    f"or take {port!r} out of the role's outboxes.",
                     gap=f"{agent}'s {port!r} goes nowhere yet.",
                 )
             )

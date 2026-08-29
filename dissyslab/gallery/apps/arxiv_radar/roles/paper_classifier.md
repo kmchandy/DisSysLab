@@ -1,3 +1,6 @@
+---
+outboxes: out
+---
 # Role: paper_classifier
 
 You read one research paper at a time and classify it by type.

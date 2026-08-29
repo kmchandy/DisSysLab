@@ -1,5 +1,6 @@
 ---
 emits: adds `headline` and `summary` — the item rewritten for a reader
+outboxes: out
 ---
 # Role: writer
 

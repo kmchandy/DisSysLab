@@ -1,3 +1,6 @@
+---
+outboxes: briefing
+---
 # Role: analyst
 
 You are a weather analyst who receives current weather data.

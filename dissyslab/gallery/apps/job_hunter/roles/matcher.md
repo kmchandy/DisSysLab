@@ -1,5 +1,6 @@
 ---
 contract: structured
+outboxes: matched_jobs
 ---
 # Role: matcher
 

@@ -1,3 +1,6 @@
+---
+outboxes: client
+---
 # Role: writer
 
 You are a writer who receives one message and responds

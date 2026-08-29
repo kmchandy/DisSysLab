@@ -1,3 +1,6 @@
+---
+outboxes: keep, discard
+---
 # Role: mail_summariser
 
 You read one email at a time. For each email, decide whether it

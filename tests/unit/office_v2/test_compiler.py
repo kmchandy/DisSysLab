@@ -12,6 +12,7 @@ networks (no threads, no LLM calls); we just assert on the shape
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 import pytest
@@ -54,6 +55,30 @@ def _stub_default_send_to(out_port: str = "brief") -> str:
     return json.dumps({"send_to": out_port, "text": "ok"})
 
 
+def _declare_ports(prompt: str) -> str:
+    """Give a fixture prompt the front matter every role now needs.
+
+    Roles declare their ports; these fixtures were written when the
+    framework read them out of the prose. Rather than edit fifty
+    prompts, the helper derives the declaration from the same `send to
+    <name>` phrasing the old scan used, so each test still reads the
+    way its author wrote it. Real role files carry the block
+    themselves.
+    """
+    if prompt.lstrip().startswith("---"):
+        return prompt
+    ports: list[str] = []
+    for line in prompt.splitlines():
+        if not re.search(r"\bsend\s+to\b", line, re.I):
+            continue
+        for m in re.finditer(r"\bto\s+([A-Za-z_][A-Za-z0-9_]*)\b", line):
+            if m.group(1) not in ports:
+                ports.append(m.group(1))
+    if not ports:
+        return prompt
+    return "---\noutboxes: " + ", ".join(ports) + "\n---\n" + prompt
+
+
 def _write_office_md(office_dir: Path, body: str) -> None:
     office_dir.mkdir(parents=True, exist_ok=True)
     (office_dir / "office.md").write_text(body, encoding="utf-8")
@@ -63,7 +88,8 @@ def _write_role_md(office_dir: Path, role_name: str, prompt_body: str) -> None:
     """Drop a prompt file into ``<office_dir>/roles/`` for nl_role pickup."""
     roles_dir = office_dir / "roles"
     roles_dir.mkdir(parents=True, exist_ok=True)
-    (roles_dir / f"{role_name}.md").write_text(prompt_body, encoding="utf-8")
+    (roles_dir / f"{role_name}.md").write_text(
+        _declare_ports(prompt_body), encoding="utf-8")
 
 
 # ── Closed-office happy path ──────────────────────────────────────────
@@ -83,7 +109,7 @@ class TestClosedOffice:
             "Alex's brief is discard.\n"
         ))
         # Override library so we don't need a real LLM.
-        analyst = nl_role("You analyse. Send to brief.", AI="stub-c")
+        analyst = nl_role("You analyse. Send to brief.", outboxes=['brief'], AI="stub-c")
         net, warnings = compile_office(
             tmp_path, library={"analyst": analyst}
         )
@@ -107,7 +133,7 @@ class TestClosedOffice:
             tmp_path,
             library={
                 "analyst": nl_role(
-                    "You analyse. Send to brief.", AI="stub-st"
+                    "You analyse. Send to brief.", outboxes=['brief'], AI="stub-st"
                 )
             },
         )
@@ -131,7 +157,7 @@ class TestClosedOffice:
             tmp_path,
             library={
                 "analyst": nl_role(
-                    "You analyse. Send to brief or to skip.",
+                    "You analyse. Send to brief or to skip.", outboxes=['brief', 'skip'],
                     AI="stub-idx",
                 )
             },
@@ -160,7 +186,7 @@ class TestOpenOffice:
             tmp_path,
             library={
                 "analyst": nl_role(
-                    "You analyse. Send to brief.", AI="stub-open"
+                    "You analyse. Send to brief.", outboxes=['brief'], AI="stub-open"
                 )
             },
         )
@@ -204,7 +230,7 @@ class TestSubOffices:
         (sub / "roles" / "analyst.py").write_text(
             "from dissyslab.office import nl_role\n"
             "role = nl_role('You analyse. Send to brief.', "
-            "AI='stub-sub-explicit')\n"
+            "outboxes=['brief'], AI='stub-sub-explicit')\n"
         , encoding="utf-8")
 
         # Parent office that wires news_monitor as a sub-office.
@@ -242,7 +268,7 @@ class TestSubOffices:
         (sub / "roles" / "analyst.py").write_text(
             "from dissyslab.office import nl_role\n"
             "role = nl_role('You analyse. Send to brief.', "
-            "AI='stub-sugar')\n"
+            "outboxes=['brief'], AI='stub-sugar')\n"
         , encoding="utf-8")
 
         # Legacy form: "X is an office at <path>." — no library entry.
@@ -299,7 +325,7 @@ class TestErrors:
                 tmp_path,
                 library={
                     "analyst": nl_role(
-                        "You analyse. Send to brief.", AI="stub-err"
+                        "You analyse. Send to brief.", outboxes=['brief'], AI="stub-err"
                     )
                 },
             )
@@ -320,7 +346,7 @@ class TestErrors:
                 tmp_path,
                 library={
                     "analyst": nl_role(
-                        "You analyse. Send to brief.", AI="stub-bad"
+                        "You analyse. Send to brief.", outboxes=['brief'], AI="stub-bad"
                     )
                 },
             )
@@ -354,7 +380,7 @@ class TestLibraryScoping:
         (sub / "roles").mkdir()
         (sub / "roles" / "analyst.py").write_text(
             "from dissyslab.office import nl_role\n"
-            "role = nl_role('Send to brief.', AI='stub-iso')\n"
+            "role = nl_role('Send to brief.', outboxes=['brief'], AI='stub-iso')\n"
         , encoding="utf-8")
 
         # Parent that wires the child as an OfficeRoleEntry
@@ -447,7 +473,7 @@ class TestFnLibResolution:
         (roles_dir / "deduplicator.py").write_text(
             "from dissyslab.office import nl_role\n"
             "role = nl_role('Drop spam. Send to out.', "
-            "AI='stub-fn-override')\n"
+            "outboxes=['out'], AI='stub-fn-override')\n"
         , encoding="utf-8")
 
         net, _ = compile_office(tmp_path)
@@ -522,8 +548,8 @@ class TestParameterizedLibraryResolution:
         # The two echoers come from the test library; synchronizer comes
         # from PARAMETERIZED_LIBRARY (no static library entry needed).
         library = {
-            "echoer_a": nl_role("Echo. Send to a.", AI="stub-pl-a"),
-            "echoer_b": nl_role("Echo. Send to b.", AI="stub-pl-b"),
+            "echoer_a": nl_role("Echo. Send to a.", outboxes=['a'], AI="stub-pl-a"),
+            "echoer_b": nl_role("Echo. Send to b.", outboxes=['b'], AI="stub-pl-b"),
         }
         return library
 
@@ -622,7 +648,7 @@ class TestPatFriendlyErrors:
                 tmp_path,
                 library={
                     "analyst": nl_role(
-                        "Send to brief.", AI="stub-pf-src"
+                        "Send to brief.", outboxes=['brief'], AI="stub-pf-src"
                     )
                 },
             )
@@ -646,7 +672,7 @@ class TestPatFriendlyErrors:
                 tmp_path,
                 library={
                     "analyst": nl_role(
-                        "Send to brief.", AI="stub-pf-snk"
+                        "Send to brief.", outboxes=['brief'], AI="stub-pf-snk"
                     )
                 },
             )
@@ -685,7 +711,7 @@ class TestPatFriendlyErrors:
                 tmp_path,
                 library={
                     "analyst": nl_role(
-                        "Send to brief.", AI="stub-pf-kw"
+                        "Send to brief.", outboxes=['brief'], AI="stub-pf-kw"
                     )
                 },
             )
@@ -709,7 +735,7 @@ class TestPatFriendlyErrors:
                 tmp_path,
                 library={
                     "analyst": nl_role(
-                        "Send to brief.", AI="stub-pf-c1"
+                        "Send to brief.", outboxes=['brief'], AI="stub-pf-c1"
                     )
                 },
             )
@@ -733,7 +759,7 @@ class TestPatFriendlyErrors:
                 tmp_path,
                 library={
                     "analyst": nl_role(
-                        "Send to brief.", AI="stub-pf-c2"
+                        "Send to brief.", outboxes=['brief'], AI="stub-pf-c2"
                     )
                 },
             )

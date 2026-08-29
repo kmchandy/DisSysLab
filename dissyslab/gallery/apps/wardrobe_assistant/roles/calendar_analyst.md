@@ -1,3 +1,6 @@
+---
+outboxes: stylist
+---
 # Role: calendar_analyst
 
 You receive **one message per upcoming calendar event** from the calendar source (ICS fields such as `title`, `text`, `start`, `end`, `location`).

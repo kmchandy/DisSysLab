@@ -1,3 +1,6 @@
+---
+outboxes: compiler
+---
 # Role: wardrobe_stylist
 
 **Framework routing (required):** Always send to compiler.

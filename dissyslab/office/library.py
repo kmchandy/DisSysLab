@@ -69,51 +69,14 @@ import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Mapping, Tuple, Union
+from typing import Any, Callable, Dict, List, Mapping, Optional, Sequence, Tuple, Union
 
 from dissyslab.backends import get_backend
 from dissyslab.blocks.role import Role
 from dissyslab.blocks.select import Select
 from dissyslab.blocks.gate import Gate
 from dissyslab.core import Agent
-
-
-# ── Port extraction from a natural-language prompt ─────────────────────
-
-
-# A line containing the phrase "send to" is a port-naming line.
-_SEND_TO_LINE_RE = re.compile(r"\bsend\s+to\b", re.IGNORECASE)
-# Inside such a line, every "to <identifier>" yields a port name.
-_TO_NAME_RE = re.compile(r"\bto\s+([A-Za-z_][A-Za-z0-9_]*)\b")
-
-
-def _extract_send_to_ports(text: str) -> Tuple[str, ...]:
-    """Extract output port names from a prompt body.
-
-    Strict pattern: a line that contains the phrase ``send to`` is a
-    port-naming line. Within such a line, every ``to <identifier>``
-    contributes a port name. Examples of accepted phrasings::
-
-        Always send to briefing.            -> ("briefing",)
-        Send to keep or to discard.         -> ("keep", "discard")
-        If X, send to summary.              -> ("summary",)
-
-    Duplicates are removed but order of first appearance is preserved
-    — the compiler maps the i-th declared port to the runtime name
-    ``out_i``, so order matters.
-    """
-    seen: list[str] = []
-    seen_set: set[str] = set()
-    for raw in text.splitlines():
-        if not _SEND_TO_LINE_RE.search(raw):
-            continue
-        for m in _TO_NAME_RE.finditer(raw):
-            name = m.group(1)
-            if name in seen_set:
-                continue
-            seen_set.add(name)
-            seen.append(name)
-    return tuple(seen)
+from dissyslab.office.role_ports import DEFAULT_INBOX, read_ports
 
 
 # ── Type aliases ──────────────────────────────────────────────────────
@@ -174,8 +137,8 @@ class AgentRoleEntry:
     --------
     Build an LLM-driven role from a prompt:
 
-    >>> entry = nl_role(prompt="You triage emails. Send to keep "
-    ...                        "or to discard.")
+    >>> entry = nl_role(prompt="You triage emails.",
+    ...                 outboxes=["keep", "discard"])
     >>> entry.in_ports
     ('in_',)
     >>> entry.out_ports
@@ -394,21 +357,40 @@ def nl_role(
     prompt: str,
     AI: Optional[str] = None,
     contract: str = _NL_CONTRACT_DEFAULT,
+    outboxes: "Optional[Sequence[str]]" = None,
+    inboxes: "Optional[Sequence[str]]" = None,
 ) -> AgentRoleEntry:
     """Build an ``AgentRoleEntry`` from a natural-language prompt.
 
-    The output ports are extracted from the prompt by the same
-    ``send to <name>`` rule the parser already uses (strict — no LLM
-    fall-back). The JSON-output contract that tells the model how to
-    name the chosen outport is appended automatically; students never
-    write it by hand.
+    **The output ports are declared, not inferred.** ``outboxes=`` is
+    the role's interface; the loader reads it from the role file's
+    front matter and passes it here.
+
+    They used to be extracted from the prompt by scanning for ``send to
+    <name>``, which meant a sentence of English decided an agent's
+    shape. Writing ``send to `keep` `` -- backticks, as any careful
+    writer does -- created no port at all, the office checked clean and
+    produced nothing, and no check could see it because there was no
+    declaration for the scan to disagree with. The prompt is now prose
+    for the model to read, and nothing more.
+
+    The declared names are injected into the prompt, so the model is
+    told what it may choose between and the role file need not repeat
+    them. The JSON-output contract that says how to name the chosen
+    outport is appended automatically; students never write it by hand.
 
     Parameters
     ----------
     prompt
-        The role's natural-language description. Must contain at
-        least one ``send to <name>`` phrase so the framework knows
-        which destination ports the role can pick from.
+        The role's natural-language description. Prose for the model
+        to read; it no longer decides anything about the role's shape.
+    outboxes
+        The role's output ports, in order — ``out_ports[i]`` becomes
+        the runtime name ``out_i``, so the order is meaning. Required:
+        a role with no outboxes can send nowhere.
+    inboxes
+        The role's input ports. Defaults to ``("in_",)``, which is what
+        all but three of the shipped roles have.
     AI
         Human-readable name of the language-model backend to use for
         this role. When ``None`` (the default) the role uses whichever
@@ -457,32 +439,38 @@ def nl_role(
     Returns
     -------
     AgentRoleEntry
-        With ``name=""`` (the loader fills it in), ``in_ports=("in_",)``,
-        ``out_ports`` extracted from the prompt, and a ``factory`` that
-        builds a ``dissyslab.blocks.role.Role`` agent on demand.
+        With ``name=""`` (the loader fills it in), the declared ports,
+        and a ``factory`` that builds a ``dissyslab.blocks.role.Role``
+        agent on demand.
 
     Raises
     ------
     ValueError
-        If the prompt has no ``send to <name>`` phrase.
+        If no outboxes are declared. The role has no interface, and
+        guessing one is what this replaced.
 
     Examples
     --------
-    >>> entry = nl_role("You triage emails. Send to keep or to discard.")
+    >>> entry = nl_role("You triage emails.", outboxes=["keep", "discard"])
     >>> entry.out_ports
     ('keep', 'discard')
     """
     if not isinstance(prompt, str) or not prompt.strip():
         raise ValueError("nl_role prompt must be a non-empty string")
 
-    out_ports = _extract_send_to_ports(prompt)
+    out_ports = tuple(outboxes or ())
     if not out_ports:
         raise ValueError(
-            "nl_role prompt declares no output ports — the framework "
-            "extracts ports by scanning for the phrase 'send to <name>' "
-            "in the prompt body. Add at least one line such as 'Send to "
-            "<port>.' so the role's destinations are explicit."
+            "nl_role: no outboxes declared. A role says what its ports "
+            "are in its front matter:\n"
+            "    ---\n"
+            "    outboxes: keep, discard\n"
+            "    ---\n"
+            "This used to be guessed by scanning the prompt for 'send "
+            "to <name>', which missed `send to `keep`` and built a role "
+            "with no outboxes at all."
         )
+    in_ports = tuple(inboxes or (DEFAULT_INBOX,))
 
     # Validate the contract name early so a typo in a .md role file's
     # front matter surfaces at load time, not when the LLM is called.
@@ -590,7 +578,7 @@ def nl_role(
 
     return AgentRoleEntry(
         name="",
-        in_ports=("in_",),
+        in_ports=in_ports,
         out_ports=out_ports,
         factory=factory,
     )
@@ -1705,6 +1693,12 @@ def load_roles_dir(roles_dir: Union[str, Path]) -> Dict[str, RoleEntry]:
             nl_role_kwargs["contract"] = front_matter["contract"]
         if "AI" in front_matter:
             nl_role_kwargs["AI"] = front_matter["AI"]
+        # The role's interface, declared in the same block. Read from
+        # the file rather than from the stripped body, because the body
+        # is the prompt and the prompt no longer decides anything.
+        ports = read_ports(md_path)
+        nl_role_kwargs["outboxes"] = ports.outboxes
+        nl_role_kwargs["inboxes"] = ports.inboxes
         try:
             entry = nl_role(text, **nl_role_kwargs)
         except ValueError as e:

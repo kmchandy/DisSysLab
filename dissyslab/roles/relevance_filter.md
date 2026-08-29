@@ -1,5 +1,6 @@
 ---
 emits: decides whether an item is worth passing on
+outboxes: discard, keep
 ---
 # Role: relevance_filter
 
