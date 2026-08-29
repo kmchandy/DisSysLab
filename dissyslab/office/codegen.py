@@ -711,7 +711,83 @@ def render_run_py(
         "\n\n\n".join(_emit_builder(n) for n in nodes),
         _emit_main(root),
     ]
-    return "\n".join(parts)
+    source = "\n".join(parts)
+    _check_component_arguments(source)
+    return source
+
+
+def _check_component_arguments(source: str) -> None:
+    """An argument a source or sink does not have, caught before the run.
+
+    ``file_source(path="items.jsonl")`` passed ``dsl check`` clean and
+    died at run time with::
+
+        TypeError: FileSource.__init__() got an unexpected keyword
+        argument 'path'
+
+    -- naming a keyword the student typed, from inside generated code
+    they did not write. The real argument is ``filepath``. ``W5`` checks
+    that a component *name* exists; nothing checked its arguments, so
+    this is the same shape as W13 was before it existed.
+
+    **Why here and not in ``dsl check``.** Answering this needs the
+    component class, and the reliable way to know which class and which
+    arguments is to read the call codegen actually emits -- a registry
+    entry can map ``web(url=...)`` onto ``MCPSource(server=, tool=,
+    args=)``, and re-deriving those mappings would be a second copy of
+    codegen that drifts from it. But rendering means loading the
+    office's library, which **imports its Python roles**, and
+    ``dsl check`` must stay safe to run on code you do not trust. So
+    the check lives where the roles are imported anyway. ``dsl run``
+    builds before it runs, so a student meets this in the same command
+    either way -- just before the office starts rather than during it.
+
+    Silent where it cannot be sure: a class that takes ``**kwargs``
+    accepts anything, and one that will not import is not evidence of
+    anything. Both are skipped rather than guessed at.
+    """
+    import ast
+    import difflib
+    import importlib
+    import inspect
+
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:  # pragma: no cover - the emitter's own bug
+        return
+
+    where: dict = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.ImportFrom) and node.module:
+            for alias in node.names:
+                where[alias.asname or alias.name] = node.module
+
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        name = getattr(node.func, "id", "")
+        if name not in where:
+            continue
+        try:
+            cls = getattr(importlib.import_module(where[name]), name)
+            sig = inspect.signature(cls.__init__)
+        except Exception:  # noqa: BLE001 - unknown is not wrong
+            continue
+        if any(p.kind is p.VAR_KEYWORD for p in sig.parameters.values()):
+            continue
+        known = {n for n in sig.parameters if n != "self"}
+        for kw in node.keywords:
+            if not kw.arg or kw.arg in known:
+                continue
+            near = difflib.get_close_matches(kw.arg, sorted(known), n=2, cutoff=0.4)
+            hint = (
+                f" Did you mean {' or '.join(repr(n) for n in near)}?"
+                if near else
+                f" It takes: {', '.join(sorted(known))}."
+            )
+            raise CompileError(
+                f"{name} has no argument {kw.arg!r}.{hint}"
+            )
 
 
 def emit_run_py(

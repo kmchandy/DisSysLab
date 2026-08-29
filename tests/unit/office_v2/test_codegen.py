@@ -339,3 +339,98 @@ class TestDeterminism:
         a = render_run_py(tmp_path)
         b = render_run_py(tmp_path)
         assert a == b
+
+
+# ── an argument the component does not have ───────────────────────────
+
+
+class TestComponentArguments:
+    """`file_source(path=...)` checked clean and died at run time.
+
+    The real argument is `filepath`. `W5` checks that a component
+    *name* exists; nothing checked its arguments, so a typo reached the
+    student as
+
+        TypeError: FileSource.__init__() got an unexpected keyword
+        argument 'path'
+
+    from inside generated code they did not write, naming a keyword
+    they did type. Found by making exactly that mistake while probing
+    something else.
+    """
+
+    def _office(self, tmp_path, sources: str):
+        _write(tmp_path, (
+            "# Office: t\n\n"
+            f"Sources: {sources}\n"
+            "Sinks: discard\n\n"
+            "Agents:\nAlex is an analyst.\n\n"
+            "Connections:\n"
+            "file_source's destination is Alex.\n"
+            "Alex's brief is discard.\n"
+        ))
+        _write_role(tmp_path, "analyst", "You analyse. Send to brief.")
+        return tmp_path
+
+    def test_an_argument_that_does_not_exist_is_refused(self, tmp_path):
+        from dissyslab.office._internals import CompileError
+
+        d = self._office(tmp_path, 'file_source(path="items.jsonl")')
+        with pytest.raises(CompileError, match="no argument 'path'"):
+            render_run_py(d)
+
+    def test_it_suggests_the_real_name(self, tmp_path):
+        """A typo's whole value as a diagnostic is that the answer is
+        one character away."""
+        from dissyslab.office._internals import CompileError
+
+        d = self._office(tmp_path, 'file_source(path="items.jsonl")')
+        with pytest.raises(CompileError, match="filepath"):
+            render_run_py(d)
+
+    def test_the_right_argument_is_accepted(self, tmp_path):
+        """The half that matters more: a check that fires on a correct
+        office costs a student an afternoon deleting a line that was
+        right."""
+        d = self._office(tmp_path, 'file_source(filepath="items.jsonl")')
+        assert "FileSource(" in render_run_py(d)
+
+    def test_a_translated_argument_is_not_a_typo(self, tmp_path):
+        """`web(url=...)` is an `mcp_shortcut`: the registry maps it onto
+        `MCPSource(server=, tool=, args={"url": ...})`, so `url` is not
+        an argument of the class at all.
+
+        The first version of this check read the office.md line against
+        the class signature and reported `web_monitor` -- a shipped,
+        working office -- as broken. Reading the call codegen actually
+        emits gets it right, and needs no second copy of codegen's
+        per-component mappings to drift.
+        """
+        _write(tmp_path, (
+            "# Office: t\n\n"
+            'Sources: web(url="https://example.com", max_items=2)\n'
+            "Sinks: discard\n\n"
+            "Agents:\nAlex is an analyst.\n\n"
+            "Connections:\n"
+            "web's destination is Alex.\n"
+            "Alex's brief is discard.\n"
+        ))
+        _write_role(tmp_path, "analyst", "You analyse. Send to brief.")
+        assert "MCPSource(" in render_run_py(tmp_path)
+
+
+def test_every_shipped_office_still_compiles():
+    """Pinned. The check is silent on all forty."""
+    from pathlib import Path as _Path
+
+    import dissyslab.gallery as gallery
+
+    root = _Path(gallery.__file__).parent
+    for office_md in sorted(root.rglob("office.md")):
+        try:
+            render_run_py(office_md.parent)
+        except Exception as exc:  # noqa: BLE001
+            if "no argument" in str(exc):
+                raise AssertionError(
+                    f"{office_md.parent.name}: {exc}"
+                ) from exc

@@ -146,18 +146,32 @@ Two more things to say out loud:
   side of it in the run summary — that difference is the only evidence
   there is.
 
-## Always wire the reject port somewhere readable
+## While you are tuning a filter, wire its rejects somewhere readable
 
 ```
 Felix's keep is Riley.
 Felix's discard is jsonl_recorder.     # not `discard` — while you develop
 ```
 
-`examples/org_news_filter` does exactly this. Sending rejects to a recorder
-rather than to the `discard` sink is what turns an invisible mistake into a
-visible one: if the filter is dropping items it should keep, they are sitting
-in the rejects file where the user can see them. Swap to `discard` once the
-criteria are trusted.
+`examples/org_news_filter` does this. Sending rejects to a recorder rather
+than to the `discard` sink is what lets you read what the filter threw away.
+Swap to `discard` once the criteria are trusted.
+
+**The `discard` sink is not a blind spot, though — only a silent one.** It
+counts what it swallows and the run summary prints the count:
+
+```
+Run summary (messages):
+  Felix    sent     50   received     50
+  discard  sent      0   received     47
+```
+
+A filter that rejected 47 of 50 announces itself, and so does one that
+rejected none. What you lose is *which* items, not *how many*, and that is
+the whole difference: the count tells you the filter is roughly sane, and a
+recorder tells you whether it was right. Several shipped offices wire
+rejects to `discard` for exactly that reason — their criteria have been run
+and the count is enough.
 
 ## When to write your own instead
 
