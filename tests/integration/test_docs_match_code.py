@@ -1251,48 +1251,41 @@ def test_skill_front_matter_has_no_angle_bracket_tokens(skill_md):
     )
 
 
-# ── §11. A skill cannot require a version that does not exist yet ─────────────
+# ── §11. Every command a skill names is a real command ────────────────────────
 
 
-def test_the_skill_requires_a_version_that_has_shipped():
-    """`office-builder` names the dissyslab version it describes, so an
-    assistant can tell "the install did not take" from "this machine is
-    fine". That number has to be one a user can actually get.
+def test_the_skill_only_names_commands_that_exist():
+    """`office-builder` is now a pointer: nine lines of it are `dsl`
+    commands. A pointer to something that is not there is worse than
+    the paragraph it replaced.
 
-    The failure it guards is real and recent: a tester ran `pip install
-    dissyslab`, pip answered "Requirement already satisfied", and an
-    hour-old 1.8.0 release was tested as 1.7.1 — with a skill teaching
-    `dsl checks`, draft offices and `dsl draw`, none of which that
-    install had. The mismatch is invisible from inside the session: the
-    assistant reads the skill, believes the features exist, and every
-    later answer is wrong in a way the user cannot see.
-
-    So the skill states a floor. If it ever states one higher than the
-    package's own version, the skill is describing something unreleased
-    and this fails — which is the same coupling that makes the version
-    bump and the skill rebuild one act.
+    This replaced a version floor. The floor said "requires dissyslab
+    1.8.0 or later" while the file named `dsl grammar`, which 1.8.0
+    does not have -- and the test guarding it only checked the floor
+    was not *higher* than what had shipped, so it passed. A number that
+    has to be remembered is a fact that goes stale; asking the parser
+    what commands exist does not.
     """
-    import tomllib
+    import re
+
+    from dissyslab.cli import build_parser
+
+    parser = build_parser()
+    real = set()
+    for action in parser._actions:  # noqa: SLF001 - argparse has no public API
+        if hasattr(action, "choices") and action.choices:
+            real |= set(action.choices)
+    assert "check" in real, "could not read the subcommand list"
 
     skill = (REPO_ROOT / "skills" / "office-builder" / "SKILL.md").read_text(
         encoding="utf-8"
     )
-    m = re.search(r"[Rr]equires dissyslab (\d+\.\d+\.\d+) or later", skill)
-    assert m, (
-        "office-builder no longer names the dissyslab version it "
-        "describes. Without it an assistant cannot tell a failed "
-        "upgrade from a healthy machine."
-    )
-    required = tuple(int(x) for x in m.group(1).split("."))
+    named = set(re.findall(r"^dsl ([a-z-]+)", skill, re.M))
+    named |= set(re.findall(r"`dsl ([a-z-]+)", skill))
+    named.discard("install")  # `pip install`, not a dsl command
 
-    pyproject = tomllib.loads(
-        (REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8")
-    )
-    actual = tuple(int(x) for x in pyproject["project"]["version"].split("."))
-
-    assert required <= actual, (
-        f"office-builder requires dissyslab {m.group(1)}, but this "
-        f"repository is version {pyproject['project']['version']}. The "
-        "skill is promising a release that does not exist; either bump "
-        "the version or lower what the skill claims to need."
+    missing = sorted(n for n in named if n not in real and n != "--help")
+    assert not missing, (
+        f"office-builder tells an assistant to run {missing}, which "
+        "this package has no subcommand for."
     )

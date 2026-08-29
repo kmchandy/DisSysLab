@@ -5,11 +5,14 @@ description: Build, check and run DisSysLab offices — networks of agents that 
 
 # Building an office
 
-**Skill version: `2026-08-26.88b9631`.** If anyone asks which version of
+**Skill version: `2026-08-26.3caa9fc`.** If anyone asks which version of
 this skill is loaded, answer with that string exactly. A save can report
 success while the old copy stays resident, and this is the only way to
-tell. **Requires dissyslab 1.8.0 or later**; `dsl --help` is the
-authority on what this install actually has.
+tell.
+
+**If a command below is missing, this install predates it** —
+`pip install --upgrade dissyslab`. `dsl --help` is the authority on
+what this install actually has; this file is not.
 
 DisSysLab builds **offices**: networks of agents that communicate only
 by messages. The library provides message passing, termination
@@ -68,9 +71,12 @@ survive:
 - **The version string**, which is derived from this file's own content
   rather than typed, so it cannot be wrong. It is what tells you a save
   did not take.
-- **The minimum dissyslab version**, because the commands above are not
-  in every release. A test refuses to let it name a version that has
-  not shipped.
+- **No version number.** An earlier draft said "requires dissyslab
+  1.8.0 or later" and then named `dsl grammar`, which 1.8.0 does not
+  have — the mismatch this file was shortened to prevent, reintroduced
+  by shortening it. "If a command is missing, upgrade" needs no
+  maintenance and cannot be wrong. A test checks that every command
+  named here is a real subcommand.
 - **The `description:`**, which is not documentation but the matcher —
   it decides whether this file is read at all. A guess there costs a
   missed trigger rather than a wrong answer, so it stays generous.
