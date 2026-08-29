@@ -208,7 +208,10 @@ messages, written once and tested: agents as threads with named
 inboxes and outboxes, the network that connects them, distributed
 termination detection, the Chandy–Lamport global snapshot for
 checkpoint and resume, and a library of sources, sinks and roles to
-build from. `dsl list` shows the shipped offices; `dsl roles` the
+build from. `dsl grammar` prints the office reference — the language,
+the roles, the sources and sinks — which ships with the code rather
+than in a skill, so the two cannot disagree about what parses.
+`dsl list` shows the shipped offices; `dsl roles` the
 built-in roles and the field each one adds; `dsl skills` which skills
 are installed and where; `dsl check` reads an
 office and reports its structural faults without running it;

@@ -1,640 +1,78 @@
 ---
 name: office-builder
-description: Build, check, and run DisSysLab offices — networks of agents that monitor something and react to it, continuously. Use whenever someone wants to watch a feed, folder, sensor, inbox, page, or price and do something when it changes; wants a morning brief, a monitor, an alerter, a classifier pipeline, or a multi-agent enrichment pipeline; says "build me an office", "watch X and tell me Y", "check my office.md", "my office hangs", "my office produces nothing", "add an agent", "wire this to a sink"; or is a student building their first distributed application. Covers writing office.md, English roles, Python roles, and custom sinks. Requires the dissyslab package (pip install dissyslab).
+description: Build, check and run DisSysLab offices — networks of agents that communicate only by messages. Use when someone mentions an office, office.md, an agent, a role, a source or a sink; says "build an office", "add an agent", "wire this to a sink", "write a role", "check my office.md", "my office hangs", "my office produces nothing", "draw the network"; or is building an application out of message-passing agents. Requires the dissyslab package (pip install dissyslab).
 ---
 
 # Building an office
 
-**Skill version: `2026-08-26.376447e`.** If anyone asks which version of this
-skill is loaded, answer with that string, exactly. A skill update can
-report success while the old version stays resident, and until now there
-was no way to tell — the wrong version once ran for an entire test round.
-Now there is.
-
-An **office** is a network of agents, each with one job, that runs
-continuously: sources fetch from the world, agents transform the stream, sinks
-act on the result. The user describes it in English; you assemble it from the
-tested library rather than writing concurrency machinery.
-
-**The framework handles what is hard to get right**: message passing between
-agents, knowing when the office has finished (termination detection), and
-checkpoint/resume. Never reimplement any of that. If you find yourself writing
-queues, threads, locks, or completion flags, stop — the framework already did
-it, and yours will be subtly wrong in ways that only show up under load.
-
-## Check what this install actually has
-
-**Do this once, at the start of a session, before promising anything:**
-
-```bash
-dsl doctor
-```
-
-**Its first line is a verdict** — `Ready. You can build an office.` or
-`Not ready: <the one thing>`. That line, and the skill version, are the
-whole of what a beginner needs to hear back.
-
-**Do not read the rest of it out.** A first-time user who asked "did it
-work?" and received nine dependency ticks, two optional gaps and an
-offer to clone a repository has been answered in a language they do not
-speak. Reply with the verdict, the skill version, and an invitation:
-
-> *Ready — dissyslab 1.8.0, office-builder 2026-08-26. What would you
-> like to watch?*
-
-Everything else stays available when someone asks for it.
-
-### Most of this file is for your decisions, not for their screen
-
-This file tells you a great deal about editable installs, version
-strings, which release this skill was written against, and what an
-older package will lack. **All of that is how you decide what to do. None
-of it is something to say.** Written out, it reads as a specialist
-briefing a colleague, and the person in front of you has installed a
-package and does not yet know what an office is.
-
-Real output from a first session, after an upgrade:
-
-> *That's the whole output — a bare version string, no source directory
-> or commit appended (the skill notes `--version` does that only on an
-> editable install; this is a plain wheel from PyPI). Worth a quick
-> re-check now that the version moved: 1.8.0 is the release the
-> office-builder skill was written against, so the two gaps I flagged
-> earlier may have closed. Want me to re-run `dsl doctor` and check
-> whether it now leads with the `Ready.` verdict line, and whether
-> `dsl skills` exists?*
-
-Every clause is true and the whole is useless to a beginner. What it
-should have been:
-
-> *You're on 1.8.0 and ready to go. What would you like to watch?*
-
-Three rules, and they hold for the whole session, not only the setup:
-
-1. **Never narrate the tooling.** Editable installs, commits, which
-   release a skill was written against, gaps you noticed earlier, what
-   a flag does when it is not the flag they ran — none of it, unless
-   they ask.
-2. **Never ask permission to run something read-only.** *"Want me to
-   re-run `dsl doctor`?"* asks a beginner to judge whether a command
-   they have never heard of is worth running. Run it, and say what it
-   found.
-3. **Never ask a question the user has no way to answer.** This is the
-   general form of rule 2, and it is the same fault as printing a code
-   with nowhere to look it up. If answering needs knowledge they do not
-   yet have, it is your decision, not theirs.
-
-The test before you send a setup message: **could they have said this
-sentence to a friend?** *"I'm on 1.8.0 and ready"* passes. Anything with
-a version-coupling clause in it does not.
-
-### The first five minutes, as a script
-
-Say these things. Not approximations of them — these. A student's first
-five minutes decide whether they believe this is for them, and there is
-nothing to be gained here by being interesting.
-
----
-
-**They say:** *"The project is at https://github.com/kmchandy/DisSysLab.
-Install the latest version of its Python package `dissyslab` for me,
-then run `dsl doctor`."*
-
-Run `pip install --upgrade dissyslab`, then `dsl --version`, then
-`dsl doctor`.
-
-**You say:**
-
-> *Installed — dissyslab 1.8.0, and everything checks out. Next, install
-> the `office-builder` skill and we can start building.*
-
-If doctor says `Not ready`, say the one thing that is wrong and what to
-do about it. Nothing else from the report.
-
----
-
-**They say:** *"Install the `office-builder` skill from that repository,
-then run `dsl doctor` again."*
-
-**You say, when it worked:**
-
-> *Done — you're ready. What would you like to watch? A news feed, a
-> folder of photos, a price, your inbox — anything that changes.*
-
-**You say, when you cannot install it yourself:**
-
-> *I can't install skills from here, so I've put the file above — save
-> it and it will be ready next time you start a task. We can carry on
-> building in the meantime.*
-
-Not: read-only caches, synced directories, whether a save reports back,
-which version this session is running, what a container is.
-
----
-
-**They say:** *"I don't know. What can it do?"*
-
-> *It watches something and reacts when it changes. People have built a
-> morning news brief, an alert for when a room gets too loud, a filter
-> that keeps only the space stories from a feed.*
->
-> *What do you check every day that you would rather have checked for
-> you?*
-
----
-
-**They say:** *"Make an office with Dan and Jay."*
-
-Write `office.md` with two unassigned agents, then:
-
-> *The office has an agent called Dan with an unassigned role, and an
-> agent called Jay with an unassigned role. Tell me more about the
-> office.*
-
----
-
-#### The budget
-
-**Two sentences.** Three when one of them is a question. If a reply
-needs four, something in it is for you rather than for them.
-
-**These words do not appear**, in any setup message: container, cache,
-sync, repository, clone, commit, hash, editable, wheel, PyPI,
-subcommand, dependency, session, resident, false negative, finding.
-Each of them names something real, and none of them names something a
-student has met.
-
-**A number appears only when it is the answer.** *"dissyslab 1.8.0"*
-answers "did it install". Two version strings side by side answer a
-question nobody asked.
-
-**When you cannot do something, say what they should do.** One
-sentence, about their next action. Never a sentence about why the
-machinery stopped you — that is a fact about you, and they came here to
-build something.
-
-**Never report a problem you have not confirmed.** *"`dsl skills` is
-giving a false negative"* is a claim about the software, addressed to
-its author, delivered to someone on their first day. If you think you
-have found a bug, finish helping them first, then say it plainly and
-say what you actually ran.
-
-**Never suggest cloning the repository to a beginner.** They installed
-a package and a skill; that is the whole path. `dsl init <name> <folder>`
-copies a shipped office without a clone.
-
-When you need the subcommand list:
-
-```bash
-dsl --help
-```
-
-`dsl --help` prints the subcommands this install offers. Read that list. It is
-the authority on what exists here — not this file, not the repository, not the
-documentation.
-
-### Installing, and the word that decides whether it worked
-
-**Use `pip install --upgrade dissyslab`, never `pip install dissyslab`.**
-On a machine that already has an older release, the second prints
-*"Requirement already satisfied"* and changes nothing. That is a true
-sentence which reads as success, and it is how a tester spent an
-afternoon on 1.7.1 an hour after 1.8.0 was published — with a skill
-teaching behaviour the install did not have.
-
-**Then check, rather than assume.** `pip` reporting success is not
-evidence about what is now on the path:
-
-```bash
-dsl --version
-```
-
-**This file describes dissyslab 1.8.0 or later.** An older install lacks
-things taught here — `dsl checks`, draft offices, the optional article,
-`dsl draw`, `dsl fetch-prices` — so if `dsl --version` reports less than
-1.8.0 after an install, the install did not take. Say so and upgrade
-again, naming the version you saw. Do not proceed quietly; a mismatch
-between this skill and the package is the one fault that makes every
-later answer wrong in a way the user cannot see.
-
-**These instructions describe the current source. A user's `pip install
-dissyslab` may be an older release that lacks something described here.** When
-that happens:
-
-1. **Say so, once, plainly**, naming the version: *"your installed dissyslab
-   is 1.6.1, which has no `dsl check` — it exists in the repository but is not
-   in a release yet."* **Trust `dsl --help` over the version number.** On an
-   editable install the recorded version can be months behind the code: one
-   reported 1.6.1 while running 1.7.2 plus a week's work. `--version` now
-   appends the source directory and commit when it is editable, and that half
-   cannot go stale.
-2. **Carry on.** A missing convenience is not a reason to stop working.
-3. **Offer the two legitimate routes**, and let the user choose: install the
-   current source with `pip install git+https://github.com/kmchandy/DisSysLab`,
-   or continue without that capability.
-4. **Report the version in your first substantive message.** When a student
-   reports a problem, the version is the first thing anyone will need.
-
-### Never repair the installation
-
-If something documented is missing, that is a fact to report, not a defect to
-fix. **Do not:**
-
-- edit or add files under the installed package (`site-packages`)
-- copy modules from a clone into the installed package
-- monkeypatch anything at run time
-- `pip install` a local path to supply a missing feature unless the user
-  explicitly asks
-
-A patched install works for one user, diverges silently from everyone else's,
-vanishes on the next upgrade, and produces bug reports nobody can reproduce.
-In a class of thirty, this is far worse than the missing feature.
-
-## When the work belongs to a field, say so
-
-You are the skill that is always installed, which makes you the only one
-that can mention a skill nobody has installed yet. A skill that is not on
-this machine has no `description:` here, so you cannot match a user's
-words against it and will not think of it unless it is written down.
-
-| If the user is asking about | Tell them about |
-|---|---|
-| a trading rule, a strategy, a backtest, momentum, mean-reversion, Donchian, Turtle, RSI | `backtest-strategy-builder` |
-| classifying audio, images, camera-trap photos, bird calls, or a sensor reading crossing a threshold | `sensor-office-builder` |
-
-Offer once, then drop it if they are not interested:
-
-> *There is a `backtest-strategy-builder` skill for this — it brings the
-> strategy contract and the checks a backtester needs, look-ahead bias
-> among them. Want me to install it? I can build the office without it.*
-
-To see the full list, and which are already installed:
-
-```bash
-dsl skills
-```
-
-That command exists so the answer comes from the filesystem. **Do not
-tell a user which skills they have from your own knowledge** — a skill
-that never loaded is one you cannot see, and you will answer anyway.
-
-## The loop you must follow
-
-1. Draft `office.md` and the role files.
-2. **Run `dsl check <office_dir>`.** Before running anything — every time,
-   without being asked. If the probe above showed no `check` subcommand:
-   run `dsl build <office_dir>` instead, which catches **syntax errors and
-   unknown role names without running the office** — and say plainly that it
-   catches nothing about the graph. Verified against 1.6.1: `dsl build`
-   happily wrote `run.py` for an office whose `Connections` named an agent
-   that does not exist, and for offices with unreachable agents, dead ends,
-   and an unfed synchronizer inbox. There is no substitute for the
-   structural check; read the network yourself and say that is what you
-   did.
-3. Fix what it reports. Show the user what it found — do not silently repair.
-4. `dsl run <office_dir>`.
-5. Read the per-agent message counts printed at the end. The first agent
-   showing zero is where the flow stops.
-
-Skipping step 2 when the command exists wastes the user's time on faults that
-take one second to find.
-
-## An office.md
-
-Four sections. This is the whole program:
+**Skill version: `2026-08-26.88b9631`.** If anyone asks which version of
+this skill is loaded, answer with that string exactly. A save can report
+success while the old copy stays resident, and this is the only way to
+tell. **Requires dissyslab 1.8.0 or later**; `dsl --help` is the
+authority on what this install actually has.
+
+DisSysLab builds **offices**: networks of agents that communicate only
+by messages. The library provides message passing, termination
+detection and checkpoint/resume. **Never write your own** — if you find
+yourself writing threads, queues, locks or completion flags, stop. The
+framework already did it, and yours will be wrong in ways that only
+appear under load.
+
+Everything else is in the package, not in this file:
 
 ```
-# Office: situation_room
-
-Sources: bbc_world(max_articles=5), npr_news(max_articles=5)
-Sinks: intelligence_display, jsonl_recorder_briefing(path="briefings.jsonl")
-
-Agents:
-Sasha is a deduplicator(by="url").
-Eve is an entity_extractor.
-Sam is a severity_classifier.
-Sync is a synchronizer.
-Riley is a writer.
-
-Connections:
-bbc_world's destination is Sasha.
-npr_news's destination is Sasha.
-Sasha's out is Eve, Sam.
-Eve's out is Sync's entities.
-Sam's out is Sync's severity.
-Sync's out is Riley.
-Riley's out is intelligence_display, jsonl_recorder_briefing.
+dsl grammar          how office.md is written, and the traps in it
+dsl grammar roles    writing a role, in English or in Python
+dsl grammar sources  the sources and sinks, and their arguments
+dsl grammar examples offices built end to end
+dsl roles            the built-in roles and the field each one adds
+dsl draw <dir>       the wiring, port to port, and what is unconnected
+dsl check <dir>      the structural faults
+dsl checks <code>    what a finding means
+dsl doctor           whether this install can build an office
+dsl skills           which DisSysLab skills exist, and which are installed
 ```
 
-Notes that save debugging time:
-
-- A source's outbox may be written `destination` or `out`. Both are legal.
-- A sink has exactly one inbox, always `in_`.
-- `X's out is Y, Z.` is fan-out — one message to both.
-- `Eve's out is Sync's entities.` sends into a *named* inbox. A
-  synchronizer's inboxes are defined by whatever gets wired to it.
-- The network **may contain cycles**. Loops are legal and often intended. A
-  loop needs a `gate` if it is to terminate.
-- Keep `max_articles=N` / `max_readings=N` limits in place. They stop a
-  student running up an LLM bill by accident. Remove only when asked.
-
-## Before you write a role, check the nineteen you have
-
-**Nineteen names resolve without writing any file. Read
-`references/roles.md` before writing a role.** Most requests are one of them,
-sometimes with its criteria edited:
-
-- **annotators** that add a field and pass the item on — `topic_tagger`,
-  `category_classifier`, `severity_classifier`, `urgency_classifier`,
-  `sentiment_classifier`, `entity_extractor`, `geolocator`, `summarizer`
-- **writers** — `writer`, `summary_writer`
-- **filters with two outboxes** — `relevance_filter` (`keep` / `discard`),
-  `evaluator` (`publish` / `revise`)
-- **a Python gate** — `confidence_filter`
-- **six structural roles** with no file at all, built from `office.md`
-  arguments — `synchronizer`, `gate`, `select`, `router`, `record`,
-  `deduplicator`. `synchronizer` recombines a fan-out; `gate` is what lets a
-  loop terminate
-
-When the user says *"keep only the items about X"*, the answer is
-`relevance_filter` with its criteria block rewritten — not a Python role with
-a keyword list. Wire its `discard` port to a recorder while developing so the
-user can see what is being dropped.
-
-**Never give a new role one of these nineteen names.** A local
-`roles/X.md` does not sit alongside the shipped `X` — it replaces it, silently
-and only for that office. Reuse deliberately or name differently; there is no
-third option.
-
-## English role or Python role
-
-Each agent's job lives in `roles/<role_name>.md` (English, run by a language
-model) or `roles/<role_name>.py` (Python, deterministic and free).
-
-**The line to draw** — and the framework's own roles follow it: a role belongs
-in Python when its contract is on *content* or *arithmetic*; the generic
-behaviour around it belongs to the library. `wildlife_watcher` puts the image
-classifier in a local Python role because it is specific to ImageNet classes,
-and uses the library's `confidence_filter` for the gating that follows.
-
-Use **English** when the job needs judgment: classify severity, extract
-entities, tag a topic, write a briefing, decide whether an email is urgent.
-
-Use **Python** when the job is exact, numeric, or wraps a model: deduplicate,
-compute a moving average or RMS, threshold a reading, run a classifier,
-reshape a record. Python roles cost nothing per message; English roles call a
-model every time.
-
-Prefer Python whenever the job can be stated exactly. It is cheaper, faster,
-deterministic, and testable.
-
-**But exactness is a property of the criterion, not of the implementation.**
-This is where the rule is most often misapplied. "Keep the items about
-computer science" *feels* exactly statable — write a keyword list — and it is
-not. A keyword list is an exact implementation of a fuzzy criterion, and the
-gap between the two is where the failures live: a word boundary that refuses
-to match a plural, a synonym nobody listed, a casing difference. The office
-runs clean and quietly keeps too little, and no check can see it, because
-nothing knows what you meant.
-
-Ask what the *criterion* is before choosing the implementation:
-
-| Criterion | Implementation |
-|---|---|
-| fuzzy — "about X", "worth reading", "urgent", "positive" | a shipped English role, criteria block edited |
-| exact — a threshold, a ticker in a fixed list, a URL prefix, a field equality | Python, and plain string operations before regex |
-| exact but linguistically hard, at volume | then a library — and tell the user what the dependency costs |
-
-A first-year on a laptop should not be downloading an NLP corpus to decide
-whether an article is about computer science. `relevance_filter` already does
-it.
-
-### An English role — when none of the nineteen fit
-
-Note the name: `event_details` is **not** one of the nineteen. Writing
-`roles/topic_tagger.md` would have replaced the shipped `topic_tagger`
-instead of adding anything.
-
-`roles/event_details.md`:
-
-```
-# Role: event_details
-
-You read one event listing at a time and pull out when and
-where it happens.
-
-Input shape. Each listing is a JSON object with at least:
-
-- "title" — the event name (string)
-- "text"  — the listing body (string)
-- "url"   — link to the listing (string)
-
-Other fields may be present; preserve them.
-
-Your job. Add three new fields. Preserve every existing field
-exactly; only add these three.
-
-- "starts_at" — ISO 8601 when a date and time are both given,
-  a bare date when only a date is, "" when neither.
-- "venue"     — the building or room as written, "" if not
-  stated. Do not normalise or expand abbreviations.
-- "price"     — a number of dollars, 0 for free, null when not
-  stated. Do not guess from context.
-
-When the listing is ambiguous, prefer the empty value over a
-guess — a wrong time is worse than a missing one.
-
-Always send to out.
-```
-
-That shape is what the shipped roles use, and it is why they behave: **input
-shape, the job, the exact permitted values, and where to send.** Models are
-literal — a vague job description produces vague output, and an unstated
-default gets invented. Say what to do when the answer is not there.
-
-### A Python role
-
-The contract, taken from a working role:
-
-```python
-from __future__ import annotations
-
-from dissyslab.core import Agent
-from dissyslab.office.library import AgentRoleEntry
-
-
-class _InsideClassifier(Agent):
-    def __init__(self, name: str | None = None):
-        super().__init__(name=name, inboxes=["in_"], outboxes=["out_"])
-        self.count: int = 0
-
-    # Optional. Implementing these two is what lets an office
-    # checkpoint and resume this agent after a crash.
-    def save_state(self):
-        return {"count": self.count}
-
-    def load_state(self, state):
-        self.count = int((state or {}).get("count", 0))
-
-    def run(self):
-        while True:
-            msg = self.recv("in_")
-            if msg["x"] ** 2 + msg["y"] ** 2 < 1.0:
-                self.count += 1
-                self.send({"kind": "inside", "running_count": self.count}, "out_")
-
-
-role = AgentRoleEntry(
-    name="inside_classifier",
-    inboxes=("in_",),
-    outboxes=("out",),
-    factory=_InsideClassifier,
-)
-```
-
-Points that are easy to get wrong:
-
-- The module must end with a module-level `role = AgentRoleEntry(...)`.
-- **The port spellings differ between the two places.** `Agent.__init__` takes
-  `outboxes=["out_"]` (trailing underscore) while `AgentRoleEntry` takes
-  `outboxes=("out",)` (no underscore). Copy this exactly rather than
-  reasoning about it.
-- `run()` is an infinite loop over `self.recv(port)`. Never return from it
-  voluntarily — returning kills the agent's thread before the office can
-  finish polling it, and termination detection then blocks forever.
-- Emitting nothing for a message is fine: just don't call `send`.
-- Add `save_state`/`load_state` whenever the agent holds state worth keeping
-  across a crash. Without them the agent restarts empty.
-
-### A custom sink
-
-When no shipped sink produces the artifact the user wants — a styled HTML
-page, a particular report layout — write one in `<office_dir>/sinks/`. Read a
-shipped one first; two good models ship inside the installed package. Find
-them, since they are not in the working directory:
-
-```bash
-python3 -c "
-import dissyslab, pathlib
-g = pathlib.Path(dissyslab.__file__).parent / 'gallery' / 'apps'
-for p in (g/'periodic_brief/sinks/periodic_brief_html_sink.py',
-          g/'job_hunter/sinks/job_html_sink.py'):
-    print(p, p.exists())
-"
-```
-
-They live under `<site-packages>/dissyslab/gallery/apps/...`, **not** at a
-bare relative path — an earlier version of this file printed the relative
-form, and an agent that ran `cat gallery/apps/...` from the student's folder
-concluded the examples did not exist. Read them; do not edit them in place
-(see "Never repair the installation").
-
-Several offices fan multiple sources into a single sink that routes each
-message into the right section by its `source` field.
-
-## Sources and sinks
-
-`dsl list` shows every shipped office. `references/sources_and_sinks.md` in
-this bundle has the component list and the sink argument signatures — read it
-before writing a custom source, since the answer is usually already there.
-
-### When the data the user wants is not in the registry
-
-**Ask for `mcp_source` before you write anything.** Any service with an MCP
-server — a database, a broker, a file store, a search provider, hundreds in
-the public registry — can be an office's input or output without a single
-new line in the framework:
-
-```
-Sources: mcp_source(server="...", tool="...", args={...})
-Sinks:   mcp_sink(server="...", tool="...")
-```
-
-This is the answer most of the time, and it is the one users do not find on
-their own. A tester who wanted two market-data feeds instead wrote two
-registered sources, had to provision an API key for each, and concluded the
-framework was harder than just asking Claude — which, for what he was doing,
-it was. `mcp_source` would have avoided both.
-
-So, in order:
-
-1. **`mcp_source`** — the service has an MCP server. No framework change, and
-   often no credential the user does not already have.
-2. **`rss(url=...)`** — the service publishes a feed. Nothing to build.
-3. **`web_scraper` / `web`** — it is a page.
-4. **A registered source in the package** — only when the office needs it
-   repeatedly, the shape is stable, and it is worth someone else maintaining.
-   This is the most expensive option and the last one to reach for. Say so
-   before starting.
-5. **Do not build it at all** — if the user wants one answer to one question,
-   an office is the wrong shape and you should say so plainly.
-
-Being honest about (5) costs you nothing and buys the user's trust in the
-other four.
-
-**`docs/SOURCES_AND_SINKS.md` is the fuller prose catalogue, but it does not
-ship** — it exists in the GitHub repository and in no `pip install`. Do not
-send a student looking for it on their disk. Link it
-(https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md) or
-query the registry directly.
-
-Common ones: RSS/news feeds, weather, stock tickers, an image or audio folder,
-a webhook listener, Gmail; and for sinks, console, JSONL recorder, HTML
-writers, a discard.
-
-## Starting from a shipped office
-
-**Always `dsl init`, never `dsl run` on a shipped office.**
-
-```
-dsl init periodic_brief my_brief
-cd my_brief
-dsl run .
-```
-
-`dsl run periodic_brief` does work, but it writes its output *inside the
-installed package* rather than the user's folder, and they will not find it.
-`dsl init` makes an editable copy in the working directory.
-
-## What `dsl check` catches, and what it cannot
-
-It reads the network and reports every fault at once: a declared inbox
-nothing writes to, agents nothing can reach, work that reaches no sink, sinks
-nothing feeds, roles with no file behind them, unknown names in connections,
-and feedback loops with no gate.
-
-It is **structural**. It cannot see faults that depend on what happens at run
-time. An office whose diagram is perfectly correct can still get stuck,
-because getting stuck can depend on which messages actually arrive and in what
-order. If `dsl check` is clean and the office still hangs, the fault is in the
-run, not the wiring — look at which agent is blocked and on which inbox.
-
-Worth telling a student explicitly: the difference between what you can know
-from the diagram and what you can only know from an execution is one of the
-real ideas in this subject.
-
-## When something goes wrong
-
-| Symptom | First move |
-|---|---|
-| Hangs, nothing happens | `dsl check`. If clean, find which agent is blocked on which inbox and what would have to arrive. |
-| Runs, produces nothing | Per-agent message counts at the end of the run. First zero is where flow stops. A sink nothing feeds is the usual cause. |
-| A sink's file is empty | Almost always no connection writes to that sink. `dsl check` names it as W8. |
-| English role does something odd | The job description is underspecified. State the allowed values and where to send. |
-| Import or backend error | `dsl doctor`. |
-
-## Do not
-
-- Do not write threads, queues, locks, or your own termination logic.
-- Do not run an office before `dsl check` is clean.
-- Do not silently fix what the check reports — show the user; the fault is
-  often the lesson.
-- Do not remove `max_articles` / `max_readings` limits unless asked.
-- Do not put a model wrapper or a heavy dependency in an English role.
-- Do not repair or patch the installed package when something documented
-  is missing. Report the gap and carry on.
-
-## Requires
-
-`pip install dissyslab` (Python 3.10+). Without it there is nothing to build
-against — offer to install it before doing anything else.
+**When the work belongs to a field, say so.** You are the skill that is
+always installed, which makes you the only one that can mention a skill
+nobody has installed yet — an assistant cannot match a user's words
+against a `description:` that is not on this machine. There is a
+`backtest-strategy-builder` for trading strategies and a
+`sensor-office-builder` for audio, images and sensor thresholds. Run
+`dsl skills` for the current list and where each one is; offer once, and
+drop it if they are not interested.
+
+**Read `dsl grammar` before writing an office. Run `dsl check` and
+`dsl draw` before saying anything about one.**
+
+Never edit anything under `site-packages`. If something documented is
+missing, that is a fact to report, not a defect to repair: a patched
+install works for one user, diverges silently from everyone else's, and
+vanishes on the next upgrade.
+
+## Why this file is short
+
+It used to carry the grammar, the role list, the sources and sinks, the
+check codes and a version number. All of that now ships with the code
+and is printed by the commands above.
+
+The reason is not brevity. A skill installs from GitHub and the package
+installs from PyPI, so anything written here is a **second copy on a
+second release path**, and the two go out of step the first time either
+moves. A user with yesterday's skill was being taught a language their
+install did not have — silently, because nothing compares them.
+
+What is left is three facts and a habit, and each has a reason to
+survive:
+
+- **The version string**, which is derived from this file's own content
+  rather than typed, so it cannot be wrong. It is what tells you a save
+  did not take.
+- **The minimum dissyslab version**, because the commands above are not
+  in every release. A test refuses to let it name a version that has
+  not shipped.
+- **The `description:`**, which is not documentation but the matcher —
+  it decides whether this file is read at all. A guess there costs a
+  missed trigger rather than a wrong answer, so it stays generous.
+- **Pointing at `dsl skills`** rather than listing skills, so the list
+  stays true as skills are added.

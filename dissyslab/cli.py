@@ -764,6 +764,57 @@ def cmd_roles(args: argparse.Namespace) -> int:
     return 0
 
 
+#: What `dsl grammar <topic>` prints. The keys are what a person would
+#: type; the values are files in `dissyslab/reference/`.
+_REFERENCE_TOPICS = {
+    "office": ("grammar.md", "how office.md is written"),
+    "roles": ("roles.md", "writing a role, in English or in Python"),
+    "sources": ("sources_and_sinks.md", "the sources and sinks, and their arguments"),
+    "examples": ("worked_examples.md", "offices built end to end"),
+}
+
+
+def cmd_grammar(args: argparse.Namespace) -> int:
+    """Print the office reference, which ships with the code.
+
+    These four documents used to live inside the `office-builder`
+    skill. That put the language and the description of the language on
+    two release paths -- the skill from GitHub, the parser from PyPI --
+    so every grammar change meant re-stamping the skill and asking each
+    user to save it again, and a user with yesterday's skill was being
+    taught a language their install did not have.
+
+    Here there is one version. An assistant reads this rather than
+    carrying a copy, which is why the skill can now be twenty lines
+    that contain no facts.
+    """
+    from dissyslab.reference import __file__ as _ref_init
+
+    topic = (getattr(args, "topic", None) or "office").lower()
+    if topic not in _REFERENCE_TOPICS:
+        _eprint(
+            f"dsl grammar: no topic called {topic!r}.\n\n"
+            + "\n".join(
+                f"  {name:<10} {blurb}"
+                for name, (_f, blurb) in _REFERENCE_TOPICS.items()
+            )
+        )
+        return 2
+
+    filename, _blurb = _REFERENCE_TOPICS[topic]
+    path = Path(_ref_init).resolve().parent / filename
+    try:
+        print(path.read_text(encoding="utf-8"), end="")
+    except OSError as exc:
+        _eprint(
+            f"dsl grammar: could not read {filename} ({exc}). This is a "
+            "packaging bug -- please report it at\n"
+            "https://github.com/kmchandy/DisSysLab/issues."
+        )
+        return 2
+    return 0
+
+
 def cmd_checks(args: argparse.Namespace) -> int:
     """Say what a check code means.
 
@@ -2319,6 +2370,28 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p_roles.set_defaults(handler=cmd_roles)
+
+    p_grammar = sub.add_parser(
+        "grammar",
+        help="print the office reference: how office.md is written",
+        description=(
+            "Print the reference for the office language, which ships "
+            "with the package.\n\n"
+            "    dsl grammar            how office.md is written\n"
+            "    dsl grammar roles      writing a role, English or Python\n"
+            "    dsl grammar sources    the sources and sinks\n"
+            "    dsl grammar examples   offices built end to end\n\n"
+            "Read this before writing an office. It is here rather than "
+            "in a skill so that the language and its description ship "
+            "together and cannot disagree about what parses."
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    p_grammar.add_argument(
+        "topic", nargs="?",
+        help="office (default), roles, sources, or examples",
+    )
+    p_grammar.set_defaults(handler=cmd_grammar)
 
     p_checks = sub.add_parser(
         "checks",

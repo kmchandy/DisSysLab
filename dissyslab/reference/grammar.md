@@ -26,7 +26,7 @@ Sinks:   intelligence_display,
          jsonl_recorder_briefing(path="briefings.jsonl")
 ```
 
-Names must come from the registries — see `sources_and_sinks.md`. Arguments
+Names must come from the registries — see `dsl grammar sources`. Arguments
 are forwarded to the component's constructor.
 
 **Keep `max_articles=N` and `max_readings=N` in place.** They are what stops a

@@ -1277,7 +1277,7 @@ def test_the_skill_requires_a_version_that_has_shipped():
     skill = (REPO_ROOT / "skills" / "office-builder" / "SKILL.md").read_text(
         encoding="utf-8"
     )
-    m = re.search(r"describes dissyslab (\d+\.\d+\.\d+) or later", skill)
+    m = re.search(r"[Rr]equires dissyslab (\d+\.\d+\.\d+) or later", skill)
     assert m, (
         "office-builder no longer names the dissyslab version it "
         "describes. Without it an assistant cannot tell a failed "

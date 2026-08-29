@@ -152,6 +152,12 @@ exclude = [
   "gallery/**/*.md",
   "gallery/**/*.py",
   "roles/**/*.md",
+  # The office.md reference, printed by `dsl grammar`. It lives in the
+  # package rather than inside the skill so that the language and the
+  # description of the language ship together and cannot disagree --
+  # and so that changing the grammar does not require every user to
+  # re-save a skill.
+  "reference/*.md",
 ]
 
 # Generated and runtime output that lives inside gallery app folders.
