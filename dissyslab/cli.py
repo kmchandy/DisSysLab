@@ -1932,31 +1932,33 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             found, _roots, _deep = locate()
             installed = [s for s in found if not is_source_checkout(s.path)]
 
-            # Two copies of one skill is a finding, not a repetition:
-            # an assistant loads one of them and which one is not the
-            # user's to choose. The long form said so and the short
-            # form printed the same name twice with no comment, which
-            # reads as a display glitch rather than as the problem it is.
-            copies: dict[str, int] = {}
+            # Grouped by name, and the note about a skill printed under
+            # that skill. An indented note belongs to whatever is above
+            # it -- so a "2 copies of backtest-strategy-builder" line
+            # emitted after the loop landed under sensor-office-builder
+            # and read as being about it. Two copies of one skill is a
+            # finding, not a repetition: an assistant loads one of them
+            # and which one is not the user's to choose.
+            by_name: dict[str, list] = {}
             for s in installed:
-                copies[s.name] = copies.get(s.name, 0) + 1
+                by_name.setdefault(s.name, []).append(s)
 
-            for s in installed:
-                # `or` and not a bare print: a skill whose SKILL.md has
-                # no version line has ``version is None``, and printing
-                # it raw put the word `None` in front of a beginner.
-                print(f"{s.name} {s.version or 'no version string'}")
-                # A skill that is not the one this release expects
-                # survives the short form. It is the one thing here that
-                # changes what the user should do next.
-                for line in stale_message(s.name, s.version):
-                    print(f"  {line}")
-
-            for name, count in sorted(copies.items()):
-                if count > 1:
-                    print(f"  {count} copies of {name} are installed. An "
-                          "assistant loads one of")
-                    print("  them and which one is not yours to choose; "
+            for name, hits in sorted(by_name.items()):
+                for s in hits:
+                    # `or` and not a bare print: a skill whose SKILL.md
+                    # has no version line has ``version is None``, and
+                    # printing it raw put the word `None` in front of a
+                    # beginner.
+                    print(f"{name} {s.version or 'no version string'}")
+                    # A skill that is not the one this release expects
+                    # survives the short form. It is the one thing here
+                    # that changes what the user should do next.
+                    for line in stale_message(name, s.version):
+                        print(f"  {line}")
+                if len(hits) > 1:
+                    print(f"  {len(hits)} copies of {name} are installed. An "
+                          "assistant loads one")
+                    print("  of them and which one is not yours to choose; "
                           "`dsl doctor --full`")
                     print("  gives the folder of each.")
         except Exception:  # noqa: BLE001 - doctor must always finish

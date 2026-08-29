@@ -194,3 +194,29 @@ def test_two_copies_of_one_skill_are_reported_in_the_short_form(
     assert "2 copies of office-builder" in out, (
         f"the short form printed it twice and said nothing:\n{out}"
     )
+
+
+def test_the_duplicate_note_sits_under_the_skill_it_is_about(
+    healthy_home, capsys
+):
+    """An indented line belongs to whatever is above it.
+
+    The first version of the note was emitted after the whole loop, so
+    on a real machine `2 copies of backtest-strategy-builder` printed
+    underneath `sensor-office-builder` at the same indent as that
+    skill's own notes. Every word of it was true and it was attached to
+    the wrong skill -- the same defect as printing a fact where nobody
+    will look, one level down.
+    """
+    second = healthy_home / ".claude" / "skills" / "synced" / "abc"
+    _install_skill(second, "office-builder")
+    out = _doctor(capsys, ["doctor"])
+    _healthy_or_skip(out)
+
+    lines = out.splitlines()
+    note = next(i for i, ln in enumerate(lines) if "2 copies of" in ln)
+    above = [ln for ln in lines[:note] if ln and not ln.startswith(" ")]
+    assert above[-1].startswith("office-builder"), (
+        "the note is indented under "
+        f"{above[-1]!r}, which is not what it is about:\n{out}"
+    )
