@@ -130,8 +130,20 @@ def test_a_python_role_is_marked_as_costing_nothing():
 
 
 def test_the_listing_names_the_branching_roles(tmp_path):
+    """A filter's two outboxes, in the order the role declares them.
+
+    The order was hard-coded here as "discard or keep" and had to change
+    when `relevance_filter`'s declaration was corrected -- which is the
+    wrong way round: a test should not have to be edited because the
+    data it describes was wrong. It reads the declaration now, so the
+    listing and the role cannot drift apart and this cannot be the thing
+    that has to be updated.
+    """
+    from dissyslab.office.role_ports import read_ports
+
     text = format_catalogue(catalogue())
-    assert "sends to discard or keep" in text
+    declared = read_ports(builtin_roles_dir() / "relevance_filter.md").outboxes
+    assert f"sends to {' or '.join(declared)}" in text
     assert "Python, costs nothing to run" in text
     # and it tells the reader what to do when none of them fit
     assert "write the role from your words" in text
@@ -156,3 +168,70 @@ def test_dsl_roles_runs_and_lists_them():
     assert out.returncode == 0
     assert "summarizer" in out.stdout
     assert "`summary` field" in out.stdout
+
+
+# ── the first outbox is the fallback, so it has to be the one the
+#    role's own prose promises ──────────────────────────────────────────
+
+
+def test_a_role_that_names_a_fallback_declares_it_first():
+    """`out_ports[0]` is where a message goes when the model does not
+    choose, so a role that says "when in doubt, send to keep" and
+    declares `outboxes: discard, keep` does the opposite of what it says.
+
+    That was live in `relevance_filter` and it was caused by a line
+    wrap. The framework used to build the ports by scanning each line
+    for `send to <name>`, and the sentence that mattered wrapped:
+
+        Your job. Decide whether the item is relevant. If relevant, send to
+        keep. If not, send to discard.
+
+    The first line has `send to` and no name after it; the second has
+    `send to discard`. So `discard` was found first, became
+    `out_ports[0]`, and an item the model did not classify was silently
+    thrown away -- by a role whose own text says, twice, that
+    discarding a borderline item is the worse mistake. For a filter,
+    that is data loss you cannot see and cannot recover.
+
+    Ports are declared now, which stops the wrap deciding anything. It
+    does not by itself stop a declaration disagreeing with the prose
+    beside it, and the migration that introduced the declarations could
+    not have caught this: it checked that each declaration matched what
+    the scan produced, which is the wrong question. It proved the
+    behaviour was preserved. The behaviour was the bug.
+
+    This asks the other question. The body is unwrapped before matching,
+    because reading a prompt line by line is what caused it.
+    """
+    import re
+
+    from dissyslab.roles_catalogue import builtin_roles_dir
+    from dissyslab.office.role_ports import read_ports
+
+    fallback = re.compile(
+        r"(?:when|if)\s+in\s+doubt[^.]*?send\s+to\s+([a-z_][a-z0-9_]*)", re.I
+    )
+
+    roots = [Path(builtin_roles_dir())]
+    gallery = Path(__file__).resolve().parents[2] / "dissyslab" / "gallery"
+    roots += sorted(p for p in gallery.glob("**/roles") if p.is_dir())
+
+    checked = 0
+    for d in roots:
+        for path in sorted(d.glob("*.md")):
+            if path.stem == "README" or path.name.startswith("_"):
+                continue
+            body = " ".join(path.read_text(encoding="utf-8").split())
+            m = fallback.search(body)
+            if not m:
+                continue
+            promised = m.group(1)
+            declared = read_ports(path).outboxes
+            checked += 1
+            assert declared and declared[0] == promised, (
+                f"{path.name} promises 'when in doubt, send to {promised}' "
+                f"but declares outboxes {declared} -- so an unclassified "
+                f"message goes to {declared[0]!r}, the opposite of what the "
+                f"role says. Put {promised!r} first."
+            )
+    assert checked, "the fallback phrasing changed; this now checks nothing"
