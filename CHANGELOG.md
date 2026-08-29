@@ -5,6 +5,172 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/).
 
 
+## [1.10.0] — 2026-08-29
+
+**Two things a student could hit on their first afternoon, and both
+were silent.** An ordinary Python mistake in a role hung the office for
+ever; an annotator's field could go missing without a trace. Neither
+had a test, because neither was visible from inside the process it
+broke. Both were found by running the software rather than reading it.
+
+### Fixed — a role that fails no longer hangs the office
+
+`Role.run` ended with `print(...)` and `return`. The `return` ends the
+thread, so the agent never reaches the shutdown protocol, termination
+detection waits for an agent that is gone, and **the office runs for
+ever** — for any exception, in any role. A first-year's `1 / 0`
+produced a program that never stopped, having printed the reason into a
+stream of other agents' output, spliced mid-line because threads share
+one stdout:
+
+```
+...division by zero[1] {'n': 2}
+```
+
+`dsl check` said "no problems", correctly: it is a runtime fact.
+
+One bad message now costs that message. The failure is counted, the
+loop continues so shutdown still arrives, the run summary says how many
+failed and quotes the first, and **`dsl run` exits non-zero** — so does
+`python build/run.py`, because `run_network()` returns the code and the
+generated artifact raises `SystemExit` with it. A run that limped is
+never mistaken for one that worked. The report is a single write to
+stderr, so redirecting the office's output to a file still leaves the
+failure on the terminal, and it names the student's own file and line.
+
+### Breaking — the output contract is generated from `adds:`
+
+A role declares the fields it puts on the message, beside its ports:
+
+```
+---
+emits: one plain-English sentence saying what the item is about
+outboxes: out
+adds: summary
+---
+```
+
+Until now an annotator said so in prose — *"Return a single JSON object
+containing every field of the input plus `summary`"* — while the
+framework appended, as the last thing the model reads:
+
+```
+Return JSON only, no explanation, no nested JSON:
+{"send_to": "<one of: out>", "text": "<content>"}
+```
+
+Two keys. Not `summary`. A model obeying the last line returns those
+two and the field the role exists to add never appears; a model obeying
+the role ignores the contract. Which wins is up to the model, and the
+twelve shipped annotators worked only because capable models follow the
+longer, more specific block — not a guarantee, and weakest on exactly
+the small local models a beginner is pointed at.
+
+A second collision sat in those same two lines. `text` meant the
+article's body in the role's input shape and the role's own output in
+the contract, so a model obeying the contract **overwrote the body** —
+in roles promising, in the same prompt, to preserve every field.
+
+The contract is now generated from `outboxes` and `adds` and is the
+only statement of the reply shape anywhere:
+
+```
+relevance_filter  {"send_to": "<one of: keep, discard>"}
+summarizer        {"summary": <summary, as described above>}
+evaluator         {"send_to": ..., "verdict": ..., "feedback": ...}
+```
+
+There is no generic content slot, so `text` never appears except where
+a role genuinely writes and declares `adds: text` — which is what the
+sinks read; `gmail_sink` uses it as the email body. The collision is
+impossible by construction rather than renamed, so the 67 files that
+mention a `text` key are untouched.
+
+Three things follow. A filter is asked for `send_to` and nothing else;
+it decides, it does not produce, and asking invited the model to invent
+content. A single-outbox role is not asked to choose. And a reply
+missing a declared field is now an error — until now a missing
+annotation and a null one were the same thing.
+
+**What breaks.** A `.md` role that adds a field must declare it, or the
+model is never asked for it. All 44 prose roles in this repository were
+migrated. `nl_role` takes `adds=`.
+
+### Changed — report, do not repair
+
+The rule Mani set, applied to the Python/LLM boundary:
+
+- **`send_to` naming an outbox the role does not have** used to be
+  passed through to the crash above. It now stops, naming the value,
+  the declared outboxes, and the nearest match. An earlier draft routed
+  it to the default and counted it — worse than the crash it replaced:
+  a model answering `discrad` would have had the item it decided to
+  discard passed on as *kept*, the office would have exited 0, and
+  nothing on screen would be wrong. A hang at least stops.
+- **`send_to` absent** now defaults only where there is no choice to
+  get wrong — a single outbox. With two or more the model did not
+  decide, and nothing is entitled to decide for it.
+- **An exception in the call** used to print and return `[]`, dropping
+  the message and letting the office exit 0 having quietly produced
+  less than it should have.
+
+A plain-text reply is unchanged. The role's prompt did not necessarily
+ask for JSON, so it violates nothing.
+
+### Fixed — an argument a component does not have
+
+```
+Sources: file_source(path="items.jsonl")
+```
+
+checked clean and died at run time with `TypeError: FileSource.__init__()
+got an unexpected keyword argument 'path'` — from inside generated code
+the student did not write, naming a keyword they did type. It is
+`filepath`. `dsl build` now says so, with the nearest name.
+
+It is a build-time check and not a `dsl check` code deliberately:
+answering it needs the call codegen actually emits — a registry entry
+maps `web(url=...)` onto `MCPSource(server=, tool=, args=)` — and
+rendering imports the office's Python roles, which `dsl check` must
+never do.
+
+### Fixed — `relevance_filter` discarded what it promised to keep
+
+`out_ports[0]` is where a message goes when the model does not choose.
+The role declared `outboxes: discard, keep`, so an unclassified item
+was thrown away — by a role whose own text says twice that discarding a
+borderline item is the worse mistake. The cause was a line wrap: ports
+used to be built by scanning each line for `send to <name>`, and the
+sentence that decides this one wrapped between `send to` and `keep`.
+
+Found by comparing a shipped role against one an assistant wrote in a
+student session, which had put `keep` first and explained why. A test
+now asks whether a role's declared first outbox is the fallback its
+prose promises, reading the body unwrapped.
+
+### Changed — `dsl doctor` reads the hash, not the date
+
+The staleness check compared the hand-written date half of a skill
+version and discarded the hash — the half `stamp_skills.py` calls
+*"what proves an install took"*. On one machine that produced both
+wrong answers at once: a skill byte-identical to the release was told
+to reinstall, and one genuinely a commit behind passed in silence.
+Equal hashes are now silent whatever the dates say; a newer date is
+silent too, since a save that did not take cannot carry a future date.
+
+The short form also printed `None` for a skill with no version line,
+and printed a duplicated skill twice with no comment.
+
+### Also
+
+- `dsl roles` prints the declared fields. `emits:` says what a value
+  *means* and no longer names it — it had already drifted twice.
+- `dsl grammar roles` documents `adds:` and says not to write an
+  Output section.
+- `roles.md`'s claim that rejects sent to `discard` are invisible was
+  wrong: the sink counts them and the run summary prints the count.
+  What is lost is *which*, not how many.
+
 ## [1.9.0] — 2026-08-29
 
 **An agent's interface is now written down.** Every role declares its
