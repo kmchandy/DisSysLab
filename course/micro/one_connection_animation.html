@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Outbox, Channel, Inbox</title>
+<style>
+  :root{
+    --ink:#1e2430; --muted:#6b7280; --line:#d9d5cd;
+    --bg:#faf9f6; --panel:#ffffff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; padding:28px 20px 44px;
+    background:var(--bg); color:var(--ink);
+    font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+  }
+  .wrap{max-width:1240px; margin:0 auto}
+  h1{font-size:20px; margin:0 0 4px; font-weight:650; letter-spacing:-0.01em}
+  .sub{color:var(--muted); margin:0 0 20px; font-size:14px}
+  .stage{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:8px; overflow-x:auto;
+  }
+  canvas{display:block; width:100%; min-width:760px; height:auto}
+  .controls{
+    display:flex; flex-wrap:wrap; gap:18px 26px; align-items:flex-end;
+    margin-top:18px; padding:16px 18px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+  }
+  .ctl{display:flex; flex-direction:column; gap:5px; min-width:186px}
+  .ctl label{font-size:12.5px; color:var(--muted)}
+  .ctl .val{font-variant-numeric:tabular-nums; color:var(--ink)}
+  input[type=range]{width:100%; accent-color:#4a6fa5}
+  .buttons{display:flex; gap:8px; margin-left:auto}
+  button{
+    font:inherit; font-size:13.5px; padding:7px 15px; cursor:pointer;
+    background:#fff; color:var(--ink);
+    border:1px solid var(--line); border-radius:7px;
+  }
+  button:hover{background:#f2f0eb}
+  button.primary{background:#2f3d55; color:#fff; border-color:#2f3d55}
+  button.primary:hover{background:#3d4d69}
+  .notes{margin-top:22px; max-width:760px; color:#3b4353; font-size:14.5px}
+  .notes h2{font-size:14px; margin:0 0 8px; letter-spacing:.03em;
+            text-transform:uppercase; color:var(--muted); font-weight:600}
+  .notes li{margin-bottom:7px}
+  code{background:#efece6; padding:1px 5px; border-radius:4px; font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>How a message gets from agent X to agent Y</h1>
+  <p class="sub">Three queues, four independent actions. Nothing is synchronised.</p>
+
+  <div class="stage"><canvas id="c" width="1240" height="380"></canvas></div>
+
+  <div class="controls">
+    <div class="ctl">
+      <label>X writes into its outbox <span class="val" id="v0"></span></label>
+      <input type="range" id="r0" min="0" max="2" step="0.1" value="0.8">
+    </div>
+    <div class="ctl">
+      <label>channel takes from the outbox <span class="val" id="v1"></span></label>
+      <input type="range" id="r1" min="0" max="2" step="0.1" value="0.8">
+    </div>
+    <div class="ctl">
+      <label>inbox takes from the channel <span class="val" id="v2"></span></label>
+      <input type="range" id="r2" min="0" max="2" step="0.1" value="0.8">
+    </div>
+    <div class="ctl">
+      <label>Y reads its inbox <span class="val" id="v3"></span></label>
+      <input type="range" id="r3" min="0" max="2" step="0.1" value="0.8">
+    </div>
+    <div class="buttons">
+      <button id="step">Step</button>
+      <button id="reset">Reset</button>
+      <button id="play" class="primary">Pause</button>
+    </div>
+  </div>
+
+  <div class="notes">
+    <h2>What to notice</h2>
+    <ul>
+      <li>Each of the four actions happens on its own schedule. There is no
+        clock that they share, and no step where two of them agree to move
+        together. That is what <em>asynchronous</em> means here.</li>
+      <li>A message is only ever in one place: X's outbox, the channel, or
+        Y's inbox. Nothing is copied and nothing is shared.</li>
+      <li>Set <em>channel takes from the outbox</em> to 0 and watch X's outbox
+        fill up. X is now producing faster than the channel drains — and X
+        cannot tell, because it can only see its own outbox.</li>
+      <li>Order is kept inside each queue: first in, first out. A message
+        cannot overtake one ahead of it on this connection.</li>
+    </ul>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  const canvas = document.getElementById('c');
+  const ctx = canvas.getContext('2d');
+  const W = 1240, H = 380;
+
+  const CAP  = 6;      // slots per queue
+  const SLOT = 40;     // slot width in px
+  const MID  = 190;    // vertical centre of everything
+  const SPEED = 380;   // px per second for a moving message
+
+  // ── geometry ───────────────────────────────────────────────────────
+  const X_BODY = {x0:30,   x1:190,  y0:120, y1:260, label:'Agent X'};
+  const Y_BODY = {x0:1050, x1:1210, y0:120, y1:260, label:'Agent Y'};
+
+  function mkQueue(x0, name, caption){
+    return {x0, x1:x0 + CAP*SLOT, name, caption, items:[], flash:0, blocked:0};
+  }
+  const outbox  = mkQueue(210, 'outbox',  "X's outbox");
+  const channel = mkQueue(490, 'channel', 'the connection');
+  const inbox   = mkQueue(770, 'inbox',   "Y's inbox");
+  const queues  = [outbox, channel, inbox];
+
+  const slotX = (q,i) => q.x1 - (i + 0.5) * SLOT;
+
+  // ── state ──────────────────────────────────────────────────────────
+  let nextId = 1;
+  let leaving = [];          // messages travelling into Y, fading out
+  let status  = 'Press Play, or press Step to fire one action at a time.';
+  let statusAge = 0;
+  let playing = true;
+  let simTime = 0;
+
+  function newMessage(){
+    const n = nextId++;
+    return {
+      id:n, label:'m'+n, hue:(n*47) % 360,
+      x:X_BODY.x1, y:MID, alpha:1, settled:false
+    };
+  }
+
+  // ── the four actions ───────────────────────────────────────────────
+  // Each one is a separate actor with its own rate and its own next
+  // firing time. They never consult each other.
+  const actors = [
+    { key:'produce', rate:0.8, next:0,
+      run(){
+        if (outbox.items.length >= CAP)
+          return blocked(outbox, 'X wants to write, but its outbox is full.');
+        const m = newMessage();
+        outbox.items.push(m);
+        fire(outbox, `X put ${m.label} into its outbox.`);
+      }},
+    { key:'send', rate:0.8, next:0,
+      run(){
+        move(outbox, channel,
+             'the channel is empty — nothing for it to carry yet.',
+             'the channel is full; the outbox has to wait.',
+             (m)=>`the channel took ${m.label} off X's outbox.`);
+      }},
+    { key:'deliver', rate:0.8, next:0,
+      run(){
+        move(channel, inbox,
+             'nothing in the channel to deliver.',
+             "Y's inbox is full; the message stays in the channel.",
+             (m)=>`${m.label} arrived in Y's inbox.`);
+      }},
+    { key:'consume', rate:0.8, next:0,
+      run(){
+        const m = head(inbox);
+        if (!m) return note("Y looked at its inbox and found nothing.");
+        inbox.items.shift();
+        m.leavingFrom = m.x;
+        leaving.push(m);
+        fire(inbox, `Y read ${m.label} out of its inbox.`);
+      }}
+  ];
+
+  // head of a queue = the oldest message, drawn at the right-hand end.
+  // A message still gliding into place is not yet available to take.
+  function head(q){
+    const m = q.items[0];
+    return (m && m.settled) ? m : null;
+  }
+  function move(from, to, emptyMsg, fullMsg, ok){
+    const m = head(from);
+    if (!m)   return note(emptyMsg);
+    if (to.items.length >= CAP) return blocked(to, fullMsg);
+    from.items.shift();
+    to.items.push(m);          // it keeps its position and glides across
+    fire(to, ok(m));
+  }
+  function fire(q, text){ q.flash = 1; note(text); }
+  function blocked(q, text){ q.blocked = 1; note(text); }
+  function note(text){ status = text; statusAge = 0; }
+
+  // ── scheduling: independent, jittered, unsynchronised ──────────────
+  function interval(rate){
+    if (rate <= 0) return Infinity;
+    return (1/rate) * (0.45 + Math.random()*1.15);
+  }
+  function reschedule(a){ a.next = simTime + interval(a.rate); }
+  actors.forEach(reschedule);
+
+  function stepOnce(){
+    const due = actors.filter(a => isFinite(a.next))
+                      .sort((p,q) => p.next - q.next)[0];
+    if (!due) return;
+    simTime = Math.max(simTime, due.next);
+    due.run();
+    reschedule(due);
+  }
+
+  // ── update ─────────────────────────────────────────────────────────
+  function glide(m, tx, ty, dt){
+    const dx = tx - m.x, dy = ty - m.y;
+    const d = Math.hypot(dx, dy);
+    if (d <= SPEED*dt || d < 0.5){ m.x = tx; m.y = ty; m.settled = true; }
+    else { m.x += dx/d*SPEED*dt; m.y += dy/d*SPEED*dt; m.settled = false; }
+  }
+
+  function update(dt){
+    if (playing){
+      simTime += dt;
+      for (const a of actors){
+        while (simTime >= a.next){ a.run(); reschedule(a); }
+      }
+    }
+    for (const q of queues){
+      q.items.forEach((m,i) => glide(m, slotX(q,i), MID, dt));
+      q.flash   = Math.max(0, q.flash   - dt*1.6);
+      q.blocked = Math.max(0, q.blocked - dt*1.0);
+    }
+    for (const m of leaving){
+      glide(m, (Y_BODY.x0+Y_BODY.x1)/2, MID, dt);
+      m.alpha -= dt*1.1;
+    }
+    leaving = leaving.filter(m => m.alpha > 0);
+    statusAge += dt;
+  }
+
+  // ── drawing ────────────────────────────────────────────────────────
+  function roundRect(x0,y0,x1,y1,r){
+    ctx.beginPath();
+    ctx.moveTo(x0+r,y0);
+    ctx.arcTo(x1,y0,x1,y1,r); ctx.arcTo(x1,y1,x0,y1,r);
+    ctx.arcTo(x0,y1,x0,y0,r); ctx.arcTo(x0,y0,x1,y0,r);
+    ctx.closePath();
+  }
+
+  function drawAgent(b){
+    ctx.fillStyle = '#f3f1ec';
+    ctx.strokeStyle = '#2f3d55'; ctx.lineWidth = 2;
+    roundRect(b.x0,b.y0,b.x1,b.y1,12); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#2f3d55';
+    ctx.font = '600 17px -apple-system,Segoe UI,Helvetica,Arial,sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(b.label, (b.x0+b.x1)/2, MID - 12);
+    ctx.font = '13px -apple-system,Segoe UI,Helvetica,Arial,sans-serif';
+    ctx.fillStyle = '#7a8494';
+    ctx.fillText('a thread', (b.x0+b.x1)/2, MID + 12);
+  }
+
+  function drawQueue(q){
+    const y0 = MID - 28, y1 = MID + 28;
+    const full = q.items.length >= CAP;
+
+    ctx.fillStyle = '#fdfcfa';
+    roundRect(q.x0, y0, q.x1, y1, 8); ctx.fill();
+
+    ctx.strokeStyle = '#e6e2da'; ctx.lineWidth = 1;
+    for (let i=1;i<CAP;i++){
+      const x = q.x0 + i*SLOT;
+      ctx.beginPath(); ctx.moveTo(x,y0+6); ctx.lineTo(x,y1-6); ctx.stroke();
+    }
+
+    const warn = Math.max(q.blocked, full ? 0.55 : 0);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = warn > 0
+      ? `rgba(190,90,60,${0.35 + 0.65*warn})`
+      : `rgba(47,61,85,${0.30 + 0.55*q.flash})`;
+    roundRect(q.x0, y0, q.x1, y1, 8); ctx.stroke();
+
+    ctx.font = '13.5px -apple-system,Segoe UI,Helvetica,Arial,sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillStyle = '#6b7280';
+    ctx.fillText(q.caption, (q.x0+q.x1)/2, y1 + 12);
+
+    ctx.font = '11.5px -apple-system,Segoe UI,Helvetica,Arial,sans-serif';
+    ctx.textBaseline = 'bottom';
+    ctx.fillStyle = '#a9a294';
+    ctx.textAlign = 'left';  ctx.fillText('in', q.x0 + 3, y0 - 7);
+    ctx.textAlign = 'right'; ctx.fillText('out ▸', q.x1 - 3, y0 - 7);
+    if (full){
+      ctx.textAlign='center'; ctx.fillStyle='#b8563c';
+      ctx.fillText('full', (q.x0+q.x1)/2, y0 - 7);
+    }
+  }
+
+  function drawArrow(x0, x1){
+    ctx.strokeStyle = '#c9c3b8'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x0, MID); ctx.lineTo(x1-7, MID); ctx.stroke();
+    ctx.fillStyle = '#c9c3b8';
+    ctx.beginPath();
+    ctx.moveTo(x1, MID); ctx.lineTo(x1-8, MID-5); ctx.lineTo(x1-8, MID+5);
+    ctx.closePath(); ctx.fill();
+  }
+
+  function drawMessage(m){
+    const s = 30;
+    ctx.globalAlpha = Math.max(0, Math.min(1, m.alpha));
+    ctx.fillStyle   = `hsl(${m.hue} 52% 56%)`;
+    ctx.strokeStyle = `hsl(${m.hue} 52% 40%)`;
+    ctx.lineWidth = 1.5;
+    roundRect(m.x-s/2, m.y-s/2, m.x+s/2, m.y+s/2, 7);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#fff';
+    ctx.font = '600 12.5px -apple-system,Segoe UI,Helvetica,Arial,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(m.label, m.x, m.y+0.5);
+    ctx.globalAlpha = 1;
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+
+    drawArrow(X_BODY.x1 + 6, outbox.x0 - 6);
+    drawArrow(outbox.x1 + 6, channel.x0 - 6);
+    drawArrow(channel.x1 + 6, inbox.x0 - 6);
+    drawArrow(inbox.x1 + 6, Y_BODY.x0 - 6);
+
+    drawAgent(X_BODY); drawAgent(Y_BODY);
+    queues.forEach(drawQueue);
+
+    leaving.forEach(drawMessage);
+    queues.forEach(q => q.items.forEach(drawMessage));
+
+    ctx.globalAlpha = Math.max(0.35, 1 - statusAge*0.22);
+    ctx.fillStyle = '#3b4353';
+    ctx.font = '14.5px -apple-system,Segoe UI,Helvetica,Arial,sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(status, W/2, 336);
+    ctx.globalAlpha = 1;
+  }
+
+  // ── loop ───────────────────────────────────────────────────────────
+  let last = performance.now();
+  function frame(now){
+    const dt = Math.min(0.05, (now - last)/1000);
+    last = now;
+    update(dt); draw();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // ── controls ───────────────────────────────────────────────────────
+  actors.forEach((a,i) => {
+    const r = document.getElementById('r'+i);
+    const v = document.getElementById('v'+i);
+    const show = () => v.textContent = (+r.value === 0)
+      ? '— stopped' : `— about ${(+r.value).toFixed(1)}×/s`;
+    r.addEventListener('input', () => { a.rate = +r.value; reschedule(a); show(); });
+    a.rate = +r.value; show();
+  });
+
+  const playBtn = document.getElementById('play');
+  playBtn.onclick = () => {
+    playing = !playing;
+    playBtn.textContent = playing ? 'Pause' : 'Play';
+    if (playing) actors.forEach(reschedule);
+  };
+  document.getElementById('step').onclick = () => {
+    if (playing){ playing = false; playBtn.textContent = 'Play'; }
+    stepOnce();
+  };
+  document.getElementById('reset').onclick = () => {
+    queues.forEach(q => { q.items = []; q.flash = 0; q.blocked = 0; });
+    leaving = []; nextId = 1; simTime = 0;
+    actors.forEach(reschedule);
+    note('Reset.');
+  };
+})();
+</script>
+</body>
+</html>

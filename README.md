@@ -215,9 +215,21 @@ than in a skill, so the two cannot disagree about what parses.
 built-in roles and the field each one adds; `dsl skills` which skills
 are installed and where; `dsl check` reads an
 office and reports its structural faults without running it;
+`dsl checks` says what a code like `W2` or `G1` means;
 `dsl draw` lists its wiring, naming the outbox each connection leaves by
 and the inbox it arrives at, and every port connected to nothing;
 `dsl doctor` checks an installation.
+
+**An agent that fails does not take the office down with it.** An
+exception in one agent costs that message and nothing else: the failure
+is counted, the first one is quoted with its traceback on stderr, the
+run summary names the agent, and the process exits non-zero. That is
+worth stating plainly because it was false until recently — the handler
+ended the thread, termination detection then waited for an agent that
+was gone, and any exception at all produced an office that ran forever.
+The same four lines had been copied into five different blocks, so
+fixing one of them fixed nothing. The behaviour now lives in one place,
+with a test on each caller.
 
 ## The skills
 
@@ -337,10 +349,32 @@ dsl check my_office
 ```
 
 `dsl check` reports an office's structural faults before it runs: an
-inbox nothing writes to, an agent nothing can reach, work that reaches
-no sink, a sink nothing feeds, a role with no file behind it, a source
-or sink name in no registry with the nearest real name suggested, a
-sub-office whose folder is not there, a feedback loop with no gate.
+inbox nothing writes to, an outbox wired to nothing, a message addressed
+to an inbox that does not exist, a connection sending from an outbox
+that does not exist, a role file that does not say what its ports are,
+an agent nothing can reach, work that reaches no sink, a sink nothing
+feeds, a role with no file behind it, a source or sink name in no
+registry with the nearest real name suggested, a sub-office whose folder
+is not there, a feedback loop with no gate. Each finding leads with what
+is wrong and ends with the code, so `dsl checks W2` explains any of them.
+
+Four of those are one idea counted four ways, and they exist only
+because **a role declares its own ports**. A prose role says so in four
+lines of front matter — `inboxes:`, `outboxes:`, and `adds:` for the
+fields it puts on the message — and a Python role spells the same thing
+in its `AgentRoleEntry`. Both are read by parsing, never by importing,
+because `dsl check` has to be safe to run on code an assistant wrote and
+nobody has read yet. Compare the declared set against the wired set in
+both directions, for inboxes and for outboxes, and you have all four.
+The declarations also generate the output contract a language-model role
+is held to, so there is no gap between what a role says it emits and
+what the framework asks it for.
+
+Which is also why a role that declares *nothing* is reported. All four
+of those checks read a declaration, so with none they stand down, and
+the office used to report `no problems` — silence that meant *I checked
+nothing* and reads as *nothing is wrong*. A check whose silence has two
+meanings is worse than no check.
 
 One finding is not about structure but about consequence, and it is a
 note rather than a fault: **text from the open web reaching a sink that
@@ -532,7 +566,7 @@ then studies the algorithms underneath it.**
 | Path | Contents |
 |---|---|
 | [skills/](skills/) | Skills an assistant loads to build offices |
-| [course/](course/) | The course: setup, what you build, the catalogue |
+| [course/](course/) | The course: setup, what you build, the catalogue, and `micro/` — short self-paced sittings |
 | [docs/](docs/) | Reference: components, backends, algorithms, internals |
 | [dissyslab/](dissyslab/) | The library and the gallery |
 | [tests/](tests/) | The suite; CI runs it on Python 3.10–3.14 |

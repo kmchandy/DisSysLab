@@ -44,7 +44,10 @@ W11 (note) text from the open web can reach a sink that acts outside
 W12 (note) a role's own Python reaches the network, another program, or
     code built at run time -- a lint, and one that teaches rather than
     protects
-W13 a connection writing to an inbox the receiving agent does not have
+W13 a connection writing to an inbox the receiving agent does not have,
+    or naming any inbox on a sink, whose only one is ``in_``
+W14 a connection sending from an outbox the role does not declare
+W15 a role file that is there and does not say what its ports are
 G1  an agent with a name and no role yet
 G2  nothing leaves the office -- it has no sink
 
@@ -78,13 +81,32 @@ and ``role_ports.read_ports`` is the one function that reads them.
 disagree about the shape of an agent.
 
 Given the declared set on one side and what the connections wire on the
-other, three of the checks here are set subtraction:
+other, four of the checks here are set subtraction -- two sets, two
+directions, and every cell is a different way for an office to be wrong:
 
     W1   declared inbox  - wired  =  an agent that will block
     W2   declared outbox - wired  =  a send that will raise
-    W13  wired inbox - declared   =  a message that reaches nothing
+    W13  wired inbox  - declared  =  a message that reaches nothing
+    W14  wired outbox - declared  =  a connection nothing travels
 
-None of the three was possible while an agent's interface was inferred.
+W14 was the last cell filled, and its absence misdirected rather than
+merely staying quiet. Misspell ``Alex's briefing`` as ``Alex's summary``
+and the real outbox is left unwired *by construction*, so the office
+reported W2 about ``briefing`` -- the name spelled correctly -- and
+never mentioned ``summary``. The reader was told to wire or delete a
+port they had not touched. So W2 now stands down wherever W14 fires,
+the same way W1 stands down under W13: one mistake, one finding.
+
+W15 sits underneath all four. Each of them reads a declaration, so a
+role file that declares none makes every one of them stand down and the
+office reports ``no problems`` -- silence meaning "I checked nothing"
+and read as "nothing is wrong", while ``dsl build`` refuses the same
+file four commands later. That is the distinction
+``role_ports_or_problem`` exists to draw: unknown stays quiet,
+undeclared does not.
+
+None of the first three was possible while an agent's interface was
+inferred.
 The ports came from a regular expression over the role's English
 (``send to keep``), so there was no declaration for the wiring to
 disagree with: write ``send to `keep``` and the port silently did not
@@ -372,24 +394,47 @@ def _resolve_role_file(office_dir: Path, role: str) -> Path | None:
     return None
 
 
-def role_ports_for(office_dir: Path, role: str) -> "Ports | None":
-    """What a role declares, or None when nothing here can know.
+def role_ports_or_problem(
+    office_dir: Path, role: str
+) -> "Tuple[Ports | None, str | None]":
+    """``(ports, problem)`` -- at most one of them is not None.
 
-    A role built by a library factory -- ``synchronizer``, ``select``,
-    ``gate``, ``router`` -- has no file, and its ports come from the
-    agent line. Those are handled by ``declared_inports``; this returns
-    None for them rather than guessing, because a check that invents a
-    port set is worse than one that stays quiet.
+    The distinction this draws is the whole of W15. Two different
+    situations used to collapse into the same ``None``:
+
+    * **Nothing here can know.** A role built by a library factory --
+      ``synchronizer``, ``select``, ``gate``, ``router`` -- has no file,
+      and its ports come from the agent line instead. Silence is right:
+      a check that invents a port set is worse than one that says
+      nothing.
+    * **The file is there and will not say.** ``read_ports`` raises,
+      and the old code swallowed the exception. Every port check then
+      stood down for that agent and the office reported *no problems* --
+      which the reader takes as "your ports are fine" when it meant "you
+      declared nothing, so I checked nothing". ``dsl build`` refuses the
+      same role four commands later, with a message this one now quotes.
+
+    The rule the pair encodes: unknown stays quiet, undeclared does not.
     """
     from dissyslab.office.role_ports import PortDeclarationError, read_ports
 
     path = _resolve_role_file(office_dir, role)
     if path is None:
-        return None
+        return None, None
     try:
-        return read_ports(path)
-    except PortDeclarationError:
-        return None
+        return read_ports(path), None
+    except PortDeclarationError as exc:
+        return None, str(exc)
+
+
+def role_ports_for(office_dir: Path, role: str) -> "Ports | None":
+    """What a role declares, or None when it is unknown *or* undeclared.
+
+    Kept for callers that only want the ports. Anything that reports to
+    a person should use ``role_ports_or_problem`` instead, so that "I
+    cannot know" and "you did not say" do not print the same way.
+    """
+    return role_ports_or_problem(office_dir, role)[0]
 
 
 def declared_outports(office_dir: Path, role: str) -> Tuple[str, ...]:
@@ -540,6 +585,37 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
 
     named = graph.nodes | {EXTERNAL}
 
+    # W15 -- a role file that is there and will not say what its ports
+    # are.
+    #
+    # This has to run first, because every port check below reads a
+    # declaration. With none, W1, W2, W13 and W14 all stand down for
+    # that agent and the office reports "no problems" -- silence that
+    # meant "I checked nothing" and reads as "nothing is wrong". Delete
+    # the front matter from any prose role and the old checker was
+    # happy; `dsl build` then refused the same file, four commands
+    # later, with a message this finding now quotes.
+    for agent_spec in spec.agents:
+        role = getattr(agent_spec, "role_name", None)
+        if not role or role == UNASSIGNED or agent_spec.path is not None:
+            continue
+        _, problem = role_ports_or_problem(office_dir, role)
+        if problem is None:
+            continue
+        headline, _, remedy = problem.partition("\n")
+        agent = agent_spec.agent_name
+        report.findings.append(
+            Finding(
+                "W15",
+                "error",
+                agent,
+                f"{headline.rstrip('.')} -- so nothing about {agent}'s "
+                "wiring can be checked, and `dsl build` will refuse it.",
+                remedy.strip() or
+                "Declare the role's outboxes before wiring anything to it.",
+            )
+        )
+
     # W1 and W13 -- the two halves of "the inboxes an agent has".
     #
     # Now that a role declares its inboxes, this set is known for every
@@ -649,6 +725,110 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                 )
             )
 
+    # W13, at the other end of the wire -- a sink's inbox.
+    #
+    # A sink has exactly one inbox and it is always `in_`, which is why
+    # nobody writes it down. The agents loop above cannot see this: a
+    # sink is not an agent, has no role file, and declares nothing. So
+    # `Alex's briefing is console_printer's nope.` checked clean,
+    # compiled into run.py as ('Alex','out_','console_printer','nope'),
+    # and died at run time inside network.py with a ValueError -- a
+    # framework traceback, about a port the student did type, produced
+    # by the command the check exists to run before.
+    for conn in spec.connections:
+        for dest in conn.destinations:
+            if dest.name not in graph.sinks:
+                continue
+            if dest.port in (None, "", DEFAULT_INBOX):
+                continue
+            sender_port = conn.source.port or "out"
+            report.findings.append(
+                Finding(
+                    "W13",
+                    "error",
+                    dest.name,
+                    f"{conn.source.name} writes to {dest.name}'s "
+                    f"{dest.port!r}, but {dest.name} is a sink: its only "
+                    "inbox is 'in_', and it is never named.",
+                    f"Write: {conn.source.name}'s {sender_port} is "
+                    f"{dest.name}.",
+                )
+            )
+
+    # W14 -- a connection sending *from* an outbox the role does not
+    # declare.
+    #
+    # The fourth corner of the square, and the one that went missing
+    # longest. W1/W2 compare a declared inbox/outbox against what is
+    # wired; W13 compares a wired inbox against what is declared; this
+    # is the remaining cell.
+    #
+    # Its absence did more than stay silent, it misdirected. Misspell
+    # `Alex's briefing` as `Alex's summary` and the real outbox is left
+    # wired to nothing by construction, so the office reported W2 about
+    # `briefing` -- the name spelled correctly -- and never mentioned
+    # `summary` at all. The reader is told to wire or delete a port they
+    # did not touch, and the typo is not in the report.
+    #
+    # So W2 stands down wherever this fires, for the same reason W1
+    # stands down under W13 above: one mistake, one finding, and fixing
+    # the spelling fixes both.
+    misspelled_outbox: Set[str] = set()
+    for agent_spec in spec.agents:
+        role = getattr(agent_spec, "role_name", None)
+        if not role or role == UNASSIGNED or agent_spec.path is not None:
+            continue
+        declared_out = declared_outports(office_dir, role)
+        if not declared_out:
+            continue
+        agent = agent_spec.agent_name
+        # A single-outbox role is wired through a normalised `out` in
+        # several shipped offices -- the generator renamed it at build
+        # time and the connection was written against the new name.
+        # Both spellings reach the same port, so neither is a fault.
+        allowed = set(declared_out)
+        if len(declared_out) == 1:
+            allowed |= {"out", "out_"}
+        sent_from: Dict[str, Set[str]] = {}
+        for conn in spec.connections:
+            if conn.source.name != agent or not conn.source.port:
+                continue
+            sent_from.setdefault(conn.source.port, set()).update(
+                d.name for d in conn.destinations
+            )
+        for port in sorted(set(sent_from) - allowed):
+            misspelled_outbox.add(agent)
+            near = _closest(port, set(declared_out))
+            if near:
+                fix = (
+                    f"{agent}'s outboxes are: {', '.join(declared_out)}. "
+                    f"Did you mean {' or '.join(repr(c) for c in near)}?"
+                )
+            elif len(declared_out) == 1:
+                only = declared_out[0]
+                to = ", ".join(sorted(sent_from[port]))
+                fix = (
+                    f"{agent} has one outbox, {only!r}. Write: "
+                    f"{agent}'s {only} is {to}."
+                )
+            else:
+                fix = (
+                    f"{agent}'s outboxes are: {', '.join(declared_out)}. "
+                    "Correct the spelling, or add the outbox to the role."
+                )
+            report.findings.append(
+                Finding(
+                    "W14",
+                    "error",
+                    agent,
+                    f"{agent}'s {port!r} is wired to "
+                    f"{', '.join(sorted(sent_from[port]))}, but the role "
+                    f"{role!r} has no outbox called {port!r} -- nothing will "
+                    "ever be sent along that connection.",
+                    fix,
+                )
+            )
+
     # W2 -- an outbox the role declares and nothing is wired to.
     #
     # The symmetric hole beside W1, and a worse one: an unwired inbox
@@ -672,6 +852,11 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
         if not declared_out:
             continue
         agent = agent_spec.agent_name
+        if agent in misspelled_outbox:
+            # W14 has the typo. Reporting the correctly-spelled outbox
+            # as unwired on top of it is the same mistake said twice,
+            # and it is the half that misdirects.
+            continue
         wired_out = {
             conn.source.port for conn in spec.connections
             if conn.source.name == agent

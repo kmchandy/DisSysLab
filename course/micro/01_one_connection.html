@@ -1,0 +1,729 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Distributed Systems Micro-Course 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1a2e;
+    --paper:#faf8f3;
+    --panel:#ffffff;
+    --line:#ddd8cd;
+    --muted:#6f7583;
+    --body:rgba(26,26,46,.80);
+    --orange:#d13d0e;
+    --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--paper); color:var(--ink);
+    font:16.5px/1.65 var(--sans);
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:880px; margin:0 auto; padding:0 24px 100px}
+  .wide{max-width:1280px; margin:0 auto; padding:0 24px}
+
+  header.top{padding:64px 0 8px}
+  .kicker{
+    font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+    color:var(--orange); margin-bottom:18px;
+  }
+  h1{
+    font-family:var(--display); font-weight:800; font-size:clamp(38px,6vw,60px);
+    line-height:1.02; letter-spacing:-.02em; margin:0 0 18px;
+  }
+  .standfirst{font-size:20px; line-height:1.5; color:var(--body); max-width:620px; margin:0}
+  .meta{
+    margin-top:28px; padding-top:18px; border-top:1px solid var(--line);
+    display:flex; flex-wrap:wrap; gap:6px 30px; font-size:14px; color:var(--muted);
+  }
+  .meta b{color:var(--ink); font-weight:600}
+
+  h2{
+    font-family:var(--display); font-weight:600; font-size:29px; line-height:1.2;
+    letter-spacing:-.01em; margin:64px 0 14px;
+  }
+  h2 .n{
+    font:600 13px/1 var(--sans); letter-spacing:.12em; color:var(--orange);
+    display:block; margin-bottom:11px;
+  }
+  h3{font-size:17px; font-weight:650; margin:32px 0 8px}
+  p{margin:0 0 15px; color:var(--body)}
+  p.lead{font-size:18.5px; color:var(--ink)}
+  ul,ol{margin:0 0 15px; padding-left:22px; color:var(--body)}
+  li{margin-bottom:8px}
+  em.term{font-style:normal; font-weight:650; color:var(--ink)}
+  code{font-family:var(--mono); font-size:.885em; background:#efece5; padding:1.5px 5px; border-radius:4px}
+  pre{
+    font-family:var(--mono); font-size:13.5px; line-height:1.6;
+    background:#20232e; color:#e6e3da; padding:18px 20px; border-radius:10px;
+    overflow-x:auto; margin:0 0 18px;
+  }
+  pre .c{color:#8d94a5}
+  pre .k{color:#7fd1bd}
+
+  .stage{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    padding:10px; overflow-x:auto;
+  }
+  canvas{display:block; width:100%; min-width:740px; height:auto}
+
+  .controls{
+    display:flex; flex-wrap:wrap; gap:16px 26px; align-items:flex-end;
+    margin-top:14px; padding:16px 18px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+  }
+  .ctl{display:flex; flex-direction:column; gap:5px; min-width:182px; flex:1 1 182px}
+  .ctl label{font-size:12.5px; color:var(--muted)}
+  .ctl .val{color:var(--ink); font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%; accent-color:#2f3d55}
+  .btns{display:flex; gap:8px; flex-wrap:wrap}
+  button{
+    font:inherit; font-size:13.5px; padding:7px 15px; cursor:pointer;
+    background:#fff; color:var(--ink); border:1px solid var(--line); border-radius:7px;
+  }
+  button:hover{background:#f2efe8}
+  button.primary{background:#2f3d55; color:#fff; border-color:#2f3d55}
+  button.primary:hover{background:#3d4d69}
+
+  .task{
+    border-left:3px solid var(--orange); background:#fff;
+    padding:18px 22px; border-radius:0 10px 10px 0; margin:0 0 16px;
+    border-top:1px solid var(--line); border-right:1px solid var(--line);
+    border-bottom:1px solid var(--line);
+  }
+  .task h4{
+    margin:0 0 7px; font:600 12.5px/1 var(--sans);
+    letter-spacing:.1em; text-transform:uppercase; color:var(--orange);
+  }
+  .task p:last-child{margin-bottom:0}
+  details{margin-top:12px; border-top:1px dashed var(--line); padding-top:11px}
+  summary{cursor:pointer; font-size:14px; font-weight:600; color:var(--muted); list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"▸ "; color:var(--orange)}
+  details[open] summary::before{content:"▾ "}
+  details p{margin:11px 0 0; font-size:15.5px}
+
+  .axioms{list-style:none; padding:0; margin:22px 0 0; counter-reset:ax}
+  .axioms li{
+    counter-increment:ax; position:relative; padding:16px 20px 16px 62px;
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    margin-bottom:10px; color:var(--ink); font-size:17px;
+  }
+  .axioms li::before{
+    content:counter(ax); position:absolute; left:20px; top:14px;
+    font-family:var(--display); font-weight:800; font-size:22px; color:var(--orange);
+  }
+  .axioms li span{display:block; font-size:14.5px; color:var(--muted); margin-top:5px}
+
+  .verdict{
+    margin-top:14px; padding:15px 18px; border-radius:10px; font-size:16px;
+    background:#fff; border:1px solid var(--line); min-height:56px; color:var(--body);
+  }
+  .verdict b{color:var(--ink)}
+  .verdict.bad{border-color:#e0b3a2; background:#fdf4f0}
+  .verdict.good{border-color:#a8d8cd; background:#f0faf7}
+
+  .pull{
+    font-family:var(--display); font-weight:600; font-size:24px; line-height:1.35;
+    color:var(--ink); border-top:2px solid var(--ink); border-bottom:2px solid var(--ink);
+    padding:22px 0; margin:34px 0;
+  }
+  footer{
+    margin-top:70px; padding-top:24px; border-top:1px solid var(--line);
+    font-size:14.5px; color:var(--muted);
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab · Micro-course 1</div>
+    <h1>Introduction</h1>
+    <p class="standfirst">A distributed system is represented by an office
+      consisting of a set of agents - workers - and a network that connects 
+    them.</p>
+    <div class="meta">
+      <span><b>Time</b> ~30 minutes</span>
+      <span><b>Part 1</b> this page only</span>
+      <span><b>Part 2</b> a terminal, <code>dissyslab</code> installed</span>
+    </div>
+  </header>
+
+  <h2><span class="n">SECTION 1</span>A model of a distributed system</h2>
+  <p class="lead">An <em class="term">office</em> is a set of agents. Each agent
+    is executed in a separate thread of execution. Each agent has its own private state. 
+    Agents share no memory. The only way in which agents interact is 
+    that an agent can send a message to another agent.</p>
+  <p>That is the entire model of computation for this course. It is deliberately
+    poor. You cannot read another agent's variables, you cannot lock anything,
+    and there is no instant at which the office has a state that anybody is in a
+    position to observe. Every algorithm we study exists because of something
+    that model makes impossible.</p>
+  <p>A message leaves one agent's <em class="term">outbox</em>, travels along a
+    <em class="term">connection</em>, and arrives in another agent's
+    <em class="term">inbox</em>. All three are queues. The connection is a queue,
+    which is the part people get wrong, and it is the part that matters most.</p>
+</div>
+
+<div class="wide">
+  <div class="stage"><canvas id="simA" width="1240" height="380"></canvas></div>
+  <div class="controls" id="ctlA">
+    <div class="ctl">
+      <label>X writes into its outbox <span class="val"></span></label>
+      <input type="range" min="0" max="2" step="0.1" value="0.8">
+    </div>
+    <div class="ctl">
+      <label>connection takes from the outbox <span class="val"></span></label>
+      <input type="range" min="0" max="2" step="0.1" value="0.8">
+    </div>
+    <div class="ctl">
+      <label>inbox takes from the connection <span class="val"></span></label>
+      <input type="range" min="0" max="2" step="0.1" value="0.8">
+    </div>
+    <div class="ctl">
+      <label>Y reads its inbox <span class="val"></span></label>
+      <input type="range" min="0" max="2" step="0.1" value="0.8">
+    </div>
+    <div class="btns" style="margin-left:auto">
+      <button data-act="step">Step</button>
+      <button data-act="reset">Reset</button>
+      <button data-act="play" class="primary">Pause</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <p style="margin-top:22px">Four actions are going on there, and no two of them
+    are coordinated. <b>X</b> writes when it writes. The connection collects when
+    it collects. <b>Y</b> reads when it reads. Each has its own rate and its own
+    jitter, and nothing anywhere in the picture is waiting for a shared tick.
+    That word — <em class="term">asynchronous</em> — means exactly this and
+    nothing more mysterious.</p>
+
+  <h2><span class="n">SECTION 2</span>Three things to do with it</h2>
+  <p>Do these now, in the picture above. Each one takes a minute and each one is
+    a fact you will use in a proof later. Answer before you open the reveal;
+    guessing and being wrong is worth more here than reading the answer.</p>
+
+  <div class="task">
+    <h4>Task 1 · Prediction</h4>
+    <p>Press <b>Step</b> five times. Before each press, say out loud which
+      message will move and where it will go. Then say which <em>action</em>
+      will fire next.</p>
+    <details><summary>What you should have found</summary>
+      <p>The first prediction is easy: given an action, the message that moves is
+      determined — it is always the head of a queue, and it always goes to the
+      tail of the next one. The second prediction is impossible. You can know
+      what each action <em>does</em> and still not know which one happens next.
+      Distributed systems are exactly this: local behaviour that is completely
+      determined, composed into a global behaviour that is not.</p>
+    </details>
+  </div>
+
+  <div class="task">
+    <h4>Task 2 · What does X know?</h4>
+    <p>Set <b>connection takes from the outbox</b> to 0. Watch X's outbox fill
+      up and stop. Now answer: at that moment, what does X know about Y?</p>
+    <details><summary>What you should have found</summary>
+      <p>Nothing. X knows its own outbox is full. It does not know whether the
+      connection is slow, whether Y is slow, whether Y is running at all, or
+      whether every message it ever sent has already been read. A full outbox is
+      consistent with all of those. <b>An agent's knowledge is the contents of
+      its own boxes and nothing else</b> — and that single sentence is the reason
+      the algorithms in this course are hard rather than obvious.</p>
+    </details>
+  </div>
+
+  <div class="task">
+    <h4>Task 3 · Can a message overtake another?</h4>
+    <p>Try to get <code>m5</code> into Y's inbox before <code>m4</code>. Use any
+      combination of the sliders and Step that you like.</p>
+    <details><summary>What you should have found</summary>
+      <p>You cannot. Every stage is first-in-first-out, so order is preserved
+      along one connection. Be careful about how far that generalises: it is a
+      property of <em>this connection</em>, not of the office. If X reaches Y by
+      two different paths, or two agents both send to Y, nothing whatever is
+      guaranteed about the order in which those messages arrive. Almost every
+      wrong intuition about distributed systems is this local guarantee being
+      quietly promoted into a global one.</p>
+    </details>
+  </div>
+
+  <h2><span class="n">SECTION 3</span>Four facts, which are really axioms</h2>
+  <p>Write these down. Everything later in the term is derived from them, and
+    when a proof feels like magic it is usually because one of these was used
+    without being named.</p>
+
+  <ol class="axioms">
+    <li>A message is in exactly one place at a time.
+      <span>An outbox, a connection, or an inbox. It is never copied and never
+        shared. "Where is it?" always has one answer.</span></li>
+    <li>Messages on one connection keep their order.
+      <span>Per connection. Not across connections, and not across paths.</span></li>
+    <li>There is no clock the agents share.
+      <span>Each action happens when it happens. "At the same time" is not a
+        statement you are entitled to make about two different agents.</span></li>
+    <li>An agent knows only what is in its own boxes.
+      <span>It cannot see inside a connection, and it cannot see inside another
+        agent. Anything else it wants to know, it must be told — by a message,
+        which is subject to axioms 1 to 3.</span></li>
+  </ol>
+
+  <h2><span class="n">SECTION 4</span>The picture is the code</h2>
+  <p>That was not an analogy. The picture is what the framework runs, and the
+    framework will print it back to you. An office is described in a file of
+    English called <code>office.md</code>:</p>
+
+<pre># Office: my_first_office
+
+<span class="k">Sources:</span> hacker_news(max_articles=10, poll_interval=600)
+<span class="k">Sinks:</span> console_printer
+
+<span class="k">Agents:</span>
+Alex is an analyst.
+
+<span class="k">Connections:</span>
+hacker_news's destination is Alex.
+Alex's briefing is console_printer.</pre>
+
+  <p>Each line under <b>Connections</b> is one instance of the picture you just
+    played with — a named outbox, three queues, a named inbox. Ask the framework
+    to draw it and that is literally what it prints:</p>
+
+<pre>$ dsl draw my_first_office
+hacker_news  destination ──▶ in_  Alex
+Alex         briefing    ──▶ in_  console_printer</pre>
+
+  <p>Two connections, two copies of the animation, running at once and
+    independently. An office of forty agents is the same picture forty times.
+    There is nothing else in the model.</p>
+
+  <div class="task">
+    <h4>Task 4 · Run it</h4>
+    <p>Make yourself a copy, look at it, and run it:</p>
+<pre>$ dsl init my_first_office my_office
+$ dsl draw my_office     <span class="c"># the picture</span>
+$ dsl check my_office    <span class="c"># is the wiring sound?</span>
+$ dsl run my_office      <span class="c"># watch messages move</span></pre>
+    <p>Open <code>my_office/office.md</code> and <code>my_office/roles/analyst.md</code>
+      and satisfy yourself that you can point at the outbox named
+      <code>briefing</code> in both files, and at the connection it feeds.</p>
+  </div>
+
+  <div class="task">
+    <h4>Task 5 · Break it on purpose</h4>
+    <p>In <code>office.md</code>, change <code>Alex's briefing is
+      console_printer.</code> to <code>Alex's summary is console_printer.</code>
+      and run <code>dsl check</code> again. Read what it says. Then put it back.</p>
+    <p>Notice which kind of mistake that was: it is wrong in the
+      <em>structure</em>, so it can be caught without running anything. Hold on
+      to that distinction — you are about to meet a mistake that cannot be.</p>
+  </div>
+
+  <h2><span class="n">SECTION 5</span>Now the question</h2>
+  <p class="lead">Here is the same office, frozen. X's outbox is empty. Y's inbox
+    is empty. Both agents have finished everything they were given.</p>
+  <p>Your office is running. You would like to know whether it has finished, so
+    that you can print the results and stop. No agent can see the whole system —
+    axiom 4 — so you do the obvious thing and ask each agent whether it is idle.
+    Press the button.</p>
+</div>
+
+<div class="wide">
+  <div class="stage"><canvas id="simB" width="1240" height="380"></canvas></div>
+  <div class="controls">
+    <div class="btns">
+      <button data-b="poll" class="primary">Ask every agent: are you idle?</button>
+      <button data-b="move">Let one action happen</button>
+      <button data-b="reset">Reset the scenario</button>
+    </div>
+  </div>
+  <div class="verdict" id="verdictB">Ask them.</div>
+</div>
+
+<div class="wrap">
+  <div class="pull">Every agent is idle. Every agent's answer is true. The office
+    is not finished.</div>
+
+  <p>The message is in the connection: the one place in the model that belongs to
+    no agent, and that no agent can inspect. The predicate you actually needed is
+    not <em>every agent is idle</em>. It is:</p>
+
+<pre>every agent is idle   <span class="k">AND</span>   every connection is empty</pre>
+
+  <p>and the second conjunct mentions exactly the state that no agent has access
+    to. That is not a detail of this framework. It is a property of the model,
+    and it would be true of any system built on axioms 1 to 4.</p>
+
+  <p>It gets worse, and the second problem is sharper than the first. Suppose
+    every connection <em>is</em> empty. You still have to ask the agents one at a
+    time, because asking is itself a message. Ask X at 10:00 — idle, true. Ask Y
+    at 10:01 — idle, true. Between those two moments Y may have sent X a message
+    and X may have gone back to work. Both answers were true when given. Their
+    conjunction was never true of any single state of the office.</p>
+
+  <div class="pull">You cannot photograph a system whose parts are all still
+    moving by photographing them one at a time.</div>
+
+  <p>Two of this term's central algorithms are answers to that sentence.
+    <b>Termination detection</b> answers "has it finished?" without a global
+    observer. The <b>distributed snapshot</b> answers "what state was it in?"
+    without ever stopping it — and the reason a snapshot algorithm is subtle at
+    all, rather than being four lines of code, is precisely that it must record
+    the contents of the connections. Look at the picture again. That is where the
+    difficulty lives, and you can see it.</p>
+
+  <p>There is a postscript worth having. Getting termination detection wrong does
+    not produce a wrong answer; it produces an office that runs for ever. That
+    happened in this framework: an agent's thread ended without reaching the
+    shutdown protocol, detection waited for an agent that was gone, and the whole
+    office hung. <code>dsl check</code> was silent, and correctly so — the wiring
+    was fine. It was a fact about the execution, not about the structure. You met
+    that boundary in Task 5.</p>
+
+  <h2><span class="n">SECTION 6</span>Before the first class</h2>
+  <ol>
+    <li>Tasks 4 and 5 done, on your own machine.</li>
+    <li>The four axioms written down somewhere you will find again.</li>
+    <li>One sentence: <em>the thing I would like to have watched.</em> It will
+      become your own office. It does not have to be right — it has to be yours.</li>
+  </ol>
+
+  <h3>Where to get answers without asking anybody</h3>
+  <p>You are welcome to use an AI assistant in this course, and it will be wrong
+    about this framework in ways you cannot detect, because it has read a
+    thousand others. These four commands answer from your own installation, which
+    is the version you are actually running:</p>
+<pre>dsl grammar     <span class="c"># what office.md is allowed to say</span>
+dsl roles       <span class="c"># every role that ships, and what it emits</span>
+dsl checks      <span class="c"># every structural fault check knows how to find</span>
+dsl doctor      <span class="c"># what is installed, and whether it is stale</span></pre>
+  <p>A habit worth forming this week: when an assistant tells you something about
+    an office, ask it which command it read that from. If it cannot say, it did
+    not read it.</p>
+
+  <footer>
+    DisSysLab micro-course 1 of n. Next: <b>An office that cannot tell it has
+    finished</b> — you build the five-agent case, watch it hang, and then read
+    the algorithm that fixes it.
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const W=1240, H=380, CAP=6, SLOT=40, MID=190, SPEED=380;
+  const X_BODY={x0:30,x1:190,y0:120,y1:260,label:'Agent X'};
+  const Y_BODY={x0:1050,x1:1210,y0:120,y1:260,label:'Agent Y'};
+
+  function roundRect(ctx,x0,y0,x1,y1,r){
+    ctx.beginPath(); ctx.moveTo(x0+r,y0);
+    ctx.arcTo(x1,y0,x1,y1,r); ctx.arcTo(x1,y1,x0,y1,r);
+    ctx.arcTo(x0,y1,x0,y0,r); ctx.arcTo(x0,y0,x1,y0,r);
+    ctx.closePath();
+  }
+
+  // ── one simulation, self-contained, as many as we like on a page ───
+  function makeSim(canvas, opts){
+    opts = opts || {};
+    const ctx = canvas.getContext('2d');
+
+    const mkQ = (x0,caption) =>
+      ({x0, x1:x0+CAP*SLOT, caption, items:[], flash:0, blocked:0});
+    const outbox  = mkQ(210, "X's outbox");
+    const channel = mkQ(490, 'the connection');
+    const inbox   = mkQ(770, "Y's inbox");
+    const queues  = [outbox, channel, inbox];
+    const slotX = (q,i) => q.x1 - (i+0.5)*SLOT;
+
+    let nextId=1, leaving=[], simTime=0, statusAge=0;
+    let playing = opts.autoplay !== false;
+    let status = opts.status || '';
+    const sim = {};
+
+    function newMessage(){
+      const n = nextId++;
+      return {id:n,label:'m'+n,hue:(n*47)%360,x:X_BODY.x1,y:MID,alpha:1,settled:false};
+    }
+    function note(t){ status=t; statusAge=0; if(opts.onEvent) opts.onEvent(t); }
+    function fire(q,t){ q.flash=1; note(t); }
+    function blocked(q,t){ q.blocked=1; note(t); }
+    function head(q){ const m=q.items[0]; return (m&&m.settled)?m:null; }
+
+    function shift(from,to,emptyMsg,fullMsg,ok){
+      const m=head(from);
+      if(!m) return note(emptyMsg);
+      if(to.items.length>=CAP) return blocked(to,fullMsg);
+      from.items.shift();
+      to.items.push(m);              // keeps its position; glides across
+      fire(to, ok(m));
+    }
+
+    const actors=[
+      {key:'produce', rate:0.8, next:0, run(){
+        if(outbox.items.length>=CAP)
+          return blocked(outbox,'X wants to write, but its outbox is full.');
+        const m=newMessage(); outbox.items.push(m);
+        fire(outbox, 'X put '+m.label+' into its outbox.');
+      }},
+      {key:'send', rate:0.8, next:0, run(){
+        shift(outbox, channel,
+          'the outbox is empty — nothing for the connection to collect.',
+          'the connection is full; the outbox has to wait.',
+          m=>'the connection took '+m.label+' off X’s outbox.');
+      }},
+      {key:'deliver', rate:0.8, next:0, run(){
+        shift(channel, inbox,
+          'nothing in the connection to deliver.',
+          'Y’s inbox is full; the message stays in the connection.',
+          m=>m.label+' arrived in Y’s inbox.');
+      }},
+      {key:'consume', rate:0.8, next:0, run(){
+        const m=head(inbox);
+        if(!m) return note('Y looked in its inbox and found nothing.');
+        inbox.items.shift(); leaving.push(m);
+        fire(inbox,'Y read '+m.label+' out of its inbox.');
+      }}
+    ];
+    const byKey = k => actors.find(a=>a.key===k);
+
+    const interval = r => r>0 ? (1/r)*(0.45+Math.random()*1.15) : Infinity;
+    const reschedule = a => { a.next = simTime + interval(a.rate); };
+
+    if(opts.rates) actors.forEach(a=>{ a.rate = opts.rates[a.key]; });
+    actors.forEach(reschedule);
+
+    // ── update ───────────────────────────────────────────────────────
+    function glide(m,tx,ty,dt){
+      const dx=tx-m.x, dy=ty-m.y, d=Math.hypot(dx,dy);
+      if(d<=SPEED*dt||d<0.5){ m.x=tx; m.y=ty; m.settled=true; }
+      else { m.x+=dx/d*SPEED*dt; m.y+=dy/d*SPEED*dt; m.settled=false; }
+    }
+    function update(dt){
+      if(playing){
+        simTime+=dt;
+        for(const a of actors){
+          let guard=0;
+          while(simTime>=a.next && guard++<20){ a.run(); reschedule(a); }
+        }
+      }
+      for(const q of queues){
+        q.items.forEach((m,i)=>glide(m,slotX(q,i),MID,dt));
+        q.flash=Math.max(0,q.flash-dt*1.6);
+        q.blocked=Math.max(0,q.blocked-dt*1.0);
+      }
+      for(const m of leaving){
+        glide(m,(Y_BODY.x0+Y_BODY.x1)/2,MID,dt);
+        m.alpha-=dt*1.1;
+      }
+      leaving=leaving.filter(m=>m.alpha>0);
+      statusAge+=dt;
+    }
+
+    // ── draw ─────────────────────────────────────────────────────────
+    function drawAgent(b,bubble){
+      ctx.fillStyle='#f3f1ec'; ctx.strokeStyle='#2f3d55'; ctx.lineWidth=2;
+      roundRect(ctx,b.x0,b.y0,b.x1,b.y1,12); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#2f3d55'; ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.font='600 17px '+FS; ctx.fillText(b.label,(b.x0+b.x1)/2,MID-12);
+      ctx.font='13px '+FS; ctx.fillStyle='#7a8494';
+      ctx.fillText('a thread',(b.x0+b.x1)/2,MID+12);
+      if(bubble){
+        const cx=(b.x0+b.x1)/2, w=118, h=30, y1=b.y0-14, y0=y1-h;
+        ctx.fillStyle='#fff'; ctx.strokeStyle='#00947d'; ctx.lineWidth=1.5;
+        roundRect(ctx,cx-w/2,y0,cx+w/2,y1,8); ctx.fill(); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx-6,y1); ctx.lineTo(cx,y1+8); ctx.lineTo(cx+6,y1);
+        ctx.closePath(); ctx.fillStyle='#fff'; ctx.fill();
+        ctx.strokeStyle='#00947d'; ctx.beginPath();
+        ctx.moveTo(cx-6,y1); ctx.lineTo(cx,y1+8); ctx.lineTo(cx+6,y1); ctx.stroke();
+        ctx.fillStyle='#00947d'; ctx.font='600 13.5px '+FS;
+        ctx.fillText(bubble,cx,(y0+y1)/2+0.5);
+      }
+    }
+    function drawQueue(q){
+      const y0=MID-28, y1=MID+28, full=q.items.length>=CAP;
+      ctx.fillStyle='#fdfcfa'; roundRect(ctx,q.x0,y0,q.x1,y1,8); ctx.fill();
+      ctx.strokeStyle='#e6e2da'; ctx.lineWidth=1;
+      for(let i=1;i<CAP;i++){
+        const x=q.x0+i*SLOT;
+        ctx.beginPath(); ctx.moveTo(x,y0+6); ctx.lineTo(x,y1-6); ctx.stroke();
+      }
+      const warn=Math.max(q.blocked, full?0.55:0);
+      ctx.lineWidth=2;
+      ctx.strokeStyle = warn>0 ? 'rgba(190,90,60,'+(0.35+0.65*warn)+')'
+                               : 'rgba(47,61,85,'+(0.30+0.55*q.flash)+')';
+      roundRect(ctx,q.x0,y0,q.x1,y1,8); ctx.stroke();
+      ctx.font='13.5px '+FS; ctx.textAlign='center'; ctx.textBaseline='top';
+      ctx.fillStyle='#6b7280'; ctx.fillText(q.caption,(q.x0+q.x1)/2,y1+12);
+      ctx.font='11.5px '+FS; ctx.textBaseline='bottom'; ctx.fillStyle='#a9a294';
+      ctx.textAlign='left';  ctx.fillText('in',q.x0+3,y0-7);
+      ctx.textAlign='right'; ctx.fillText('out ▸',q.x1-3,y0-7);
+      if(full){ ctx.textAlign='center'; ctx.fillStyle='#b8563c';
+                ctx.fillText('full',(q.x0+q.x1)/2,y0-7); }
+    }
+    function drawArrow(x0,x1){
+      ctx.strokeStyle='#c9c3b8'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(x0,MID); ctx.lineTo(x1-7,MID); ctx.stroke();
+      ctx.fillStyle='#c9c3b8'; ctx.beginPath();
+      ctx.moveTo(x1,MID); ctx.lineTo(x1-8,MID-5); ctx.lineTo(x1-8,MID+5);
+      ctx.closePath(); ctx.fill();
+    }
+    function drawMessage(m){
+      const s=30;
+      ctx.globalAlpha=Math.max(0,Math.min(1,m.alpha));
+      ctx.fillStyle='hsl('+m.hue+' 52% 56%)';
+      ctx.strokeStyle='hsl('+m.hue+' 52% 40%)'; ctx.lineWidth=1.5;
+      roundRect(ctx,m.x-s/2,m.y-s/2,m.x+s/2,m.y+s/2,7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle='#fff'; ctx.font='600 12.5px '+FS;
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(m.label,m.x,m.y+0.5);
+      ctx.globalAlpha=1;
+    }
+    const FS='-apple-system,Segoe UI,Helvetica,Arial,sans-serif';
+
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      drawArrow(X_BODY.x1+6,outbox.x0-6);
+      drawArrow(outbox.x1+6,channel.x0-6);
+      drawArrow(channel.x1+6,inbox.x0-6);
+      drawArrow(inbox.x1+6,Y_BODY.x0-6);
+      drawAgent(X_BODY, sim.bubbleX); drawAgent(Y_BODY, sim.bubbleY);
+      queues.forEach(drawQueue);
+      leaving.forEach(drawMessage);
+      queues.forEach(q=>q.items.forEach(drawMessage));
+      if(status){
+        ctx.globalAlpha=Math.max(0.35,1-statusAge*0.22);
+        ctx.fillStyle='#3b4353'; ctx.font='14.5px '+FS;
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(status,W/2,336);
+        ctx.globalAlpha=1;
+      }
+    }
+
+    let last=performance.now();
+    (function frame(now){
+      const dt=Math.min(0.05,(now-last)/1000); last=now;
+      update(dt); draw();
+      requestAnimationFrame(frame);
+    })(last);
+
+    // ── handles ──────────────────────────────────────────────────────
+    Object.assign(sim,{
+      queues:{outbox,channel,inbox}, actors, byKey, note,
+      bubbleX:null, bubbleY:null,
+      isPlaying:()=>playing,
+      setPlaying(v){ playing=v; if(v) actors.forEach(reschedule); },
+      setRate(key,r){ const a=byKey(key); a.rate=r; reschedule(a); },
+      step(){
+        const due=actors.filter(a=>isFinite(a.next)).sort((p,q)=>p.next-q.next)[0];
+        if(!due) return;
+        simTime=Math.max(simTime,due.next); due.run(); reschedule(due);
+      },
+      fireOnce(key){ const a=byKey(key); a.run(); reschedule(a); },
+      clear(){
+        queues.forEach(q=>{q.items=[];q.flash=0;q.blocked=0;});
+        leaving=[]; nextId=1; simTime=0; actors.forEach(reschedule);
+      },
+      seedInto(q,n){
+        for(let i=0;i<n;i++){
+          const m=newMessage();
+          m.x=slotX(q,q.items.length); m.y=MID; m.settled=true;
+          q.items.push(m);
+        }
+      },
+      idleX:()=>outbox.items.length===0,
+      idleY:()=>inbox.items.length===0,
+      channelCount:()=>channel.items.length,
+      channelHead:()=>channel.items[0]
+    });
+    return sim;
+  }
+
+  // ── instance A: the free-running model ─────────────────────────────
+  const A = makeSim(document.getElementById('simA'),
+                    {status:'Four actions, four schedules, no coordination.'});
+  const panel=document.getElementById('ctlA');
+  const keys=['produce','send','deliver','consume'];
+  panel.querySelectorAll('.ctl').forEach((ctl,i)=>{
+    const r=ctl.querySelector('input'), v=ctl.querySelector('.val');
+    const show=()=>{ v.textContent = (+r.value===0) ? '— stopped'
+                                   : '— about '+(+r.value).toFixed(1)+'×/s'; };
+    r.addEventListener('input',()=>{ A.setRate(keys[i],+r.value); show(); });
+    show();
+  });
+  const playBtn=panel.querySelector('[data-act=play]');
+  playBtn.onclick=()=>{ A.setPlaying(!A.isPlaying());
+                        playBtn.textContent=A.isPlaying()?'Pause':'Play'; };
+  panel.querySelector('[data-act=step]').onclick=()=>{
+    if(A.isPlaying()){ A.setPlaying(false); playBtn.textContent='Play'; }
+    A.step();
+  };
+  panel.querySelector('[data-act=reset]').onclick=()=>{ A.clear(); A.note('Reset.'); };
+
+  // ── instance B: the frozen scenario behind Section 5 ───────────────
+  const B = makeSim(document.getElementById('simB'), {
+    autoplay:false,
+    rates:{produce:0,send:0,deliver:0,consume:0},
+    status:'Both agents idle. One message in the connection.'
+  });
+  const verdict=document.getElementById('verdictB');
+
+  function setScenario(){
+    B.clear(); B.bubbleX=null; B.bubbleY=null;
+    B.seedInto(B.queues.channel,1);
+    B.note('Both agents idle. One message in the connection.');
+    verdict.className='verdict';
+    verdict.innerHTML='Ask them.';
+  }
+  setScenario();
+
+  document.querySelector('[data-b=poll]').onclick=()=>{
+    const ix=B.idleX(), iy=B.idleY(), c=B.channelCount();
+    B.bubbleX = ix ? 'idle' : 'busy';
+    B.bubbleY = iy ? 'idle' : 'busy';
+    if(ix && iy && c>0){
+      const m=B.channelHead();
+      verdict.className='verdict bad';
+      verdict.innerHTML='<b>Both agents answer "idle", and both answers are '+
+        'true.</b> If the office concludes from that it has finished, it is '+
+        'wrong: <b>'+m.label+'</b> is in the connection, and it has not been '+
+        'delivered, let alone read. No agent can see it. The office would stop '+
+        'with work outstanding.';
+    } else if(ix && iy && c===0){
+      verdict.className='verdict good';
+      verdict.innerHTML='<b>Both idle, and every connection empty.</b> Now the '+
+        'office really is finished — and notice that the second half of '+
+        'that sentence is a fact no agent in the office is able to establish.';
+    } else {
+      verdict.className='verdict';
+      verdict.innerHTML='<b>Not everyone is idle.</b> '+
+        (ix?'':'X still has messages in its outbox. ')+
+        (iy?'':'Y still has messages in its inbox. ')+
+        'There is nothing to conclude yet.';
+    }
+  };
+  document.querySelector('[data-b=move]').onclick=()=>{
+    B.bubbleX=null; B.bubbleY=null;
+    verdict.className='verdict';
+    if(B.queues.channel.items.length) B.fireOnce('deliver');
+    else if(B.queues.inbox.items.length) B.fireOnce('consume');
+    else if(B.queues.outbox.items.length) B.fireOnce('send');
+    else B.fireOnce('produce');
+    verdict.innerHTML='One action happened. Ask them again — and notice '+
+      'that the answers changed without any agent being told anything.';
+  };
+  document.querySelector('[data-b=reset]').onclick=setScenario;
+})();
+</script>
+</body>
+</html>

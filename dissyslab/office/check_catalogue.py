@@ -180,6 +180,32 @@ CHECKS: Dict[str, Check] = {
         "their inboxes this could not be seen at all: the office checked "
         "clean, ran, and failed naming a port you never typed.",
     ),
+    "W14": Check(
+        "W14",
+        "error",
+        "sending from an outbox that does not exist",
+        "A connection sends from an outbox the role does not declare -- "
+        "`Alex's summary is ...` where the role declares `briefing`. The "
+        "fourth corner of the same square as W1, W2 and W13, and the one "
+        "that went missing longest: the misspelling leaves the real outbox "
+        "wired to nothing, so the office used to report W2 about the outbox "
+        "you spelled correctly and never mention the one you did not. "
+        "W2 stands down for an agent this fires on, because it is the same "
+        "typo said a second way.",
+    ),
+    "W15": Check(
+        "W15",
+        "error",
+        "a role file that does not say what its ports are",
+        "The file is there, and it declares no outboxes -- no `outboxes:` "
+        "in the front matter of a .md role, no literal `out_ports` in a .py "
+        "role's AgentRoleEntry. `dsl build` refuses it, so this is not a "
+        "matter of taste; the point of reporting it here is that it used to "
+        "be invisible. A role that declares nothing has nothing to check "
+        "against, so W1, W2, W13 and W14 all stand down for that agent and "
+        "the office reported `no problems` -- silence that meant `I checked "
+        "nothing` and read as `nothing is wrong`.",
+    ),
     "G1": Check(
         "G1",
         "error",

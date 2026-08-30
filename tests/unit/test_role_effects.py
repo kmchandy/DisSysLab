@@ -113,7 +113,21 @@ Connections:
 rss's destination is Casey.
 Casey's out is console_printer.
 """, encoding="utf-8")
-    _role(d, "import requests\n\ndef f(m):\n    return m\n", "link_checker.py")
+    # A real role, not a bare function: it declares its ports, so the
+    # only thing this office can be reported for is the lint. Before
+    # W15 existed a stub was enough here, and the assertion below passed
+    # partly because the port checks had quietly stood down.
+    _role(d, (
+        "import requests\n\n"
+        "from dissyslab.blocks.role import Role\n"
+        "from dissyslab.office.library import AgentRoleEntry\n\n"
+        "def f(m):\n"
+        "    return [(m, 'out')]\n\n"
+        "role = AgentRoleEntry(\n"
+        "    name='link_checker', in_ports=('in_',), out_ports=('out',),\n"
+        "    factory=lambda: Role(fn=f, statuses=['out']),\n"
+        ")\n"
+    ), "link_checker.py")
 
     report = check_office_dir(d)
     w12 = [f for f in report.findings if f.code == "W12"]

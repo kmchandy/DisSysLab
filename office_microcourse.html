@@ -366,6 +366,16 @@ html, body {
 }
 .s2c-body { padding: 18px 20px; }
 .s2c-para { font-size: 15px; line-height: 1.75; color: rgba(255,255,255,0.88); }
+.s2c-front {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.75;
+  color: rgba(255,255,255,0.42);
+  border-bottom: 1px dashed rgba(255,255,255,0.16);
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+.s2c-decl { color: var(--teal); }
 .s2c-caption {
   font-size: clamp(16px, 1.8vw, 19px);
   color: var(--text-body);
@@ -1099,6 +1109,7 @@ html, body {
         <span class="paper-title">analyst.md</span>
       </div>
       <div class="s2c-body">
+        <div class="s2c-front">---<br>outboxes: <span class="s2c-decl">editor, discard</span><br>adds: <span class="s2c-decl">importance, summary</span><br>---</div>
         <p class="s2c-para">You are a <span class="hl hl-yellow">news analyst</span> who receives posts and articles from social media and news sources. Your job is to assess whether each item is relevant to current world events. If relevant, <span class="hl hl-orange">send to editor.</span> Otherwise send to discard.</p>
       </div>
     </div>
@@ -1108,11 +1119,14 @@ html, body {
         <span class="paper-title">editor.md</span>
       </div>
       <div class="s2c-body">
+        <div class="s2c-front">---<br>outboxes: <span class="s2c-decl">situation_room</span><br>adds: <span class="s2c-decl">briefing, priority</span><br>---</div>
         <p class="s2c-para">You are an <span class="hl hl-yellow">editor</span> who receives classified articles from the analyst. Your job is to rewrite each article as a concise briefing note with a priority rating. <span class="hl hl-orange">Send to situation_room.</span></p>
       </div>
     </div>
   </div>
-  <p class="s2c-caption"></p>
+  <p class="s2c-caption">Prose for the job. Four lines at the top declaring the
+    outboxes it may send to and the fields it adds — so the office can be
+    checked before it is run.</p>
 </section>
 
 <!-- ═══════════════ S3 — What is an office ══════════════════════════════ -->
@@ -1328,16 +1342,20 @@ html, body {
   <p class="body-text" style="max-width:700px;margin-bottom:26px;">
     Most agents are small enough to specify in English. For deterministic work
     — dedupe by URL, sliding-window RMS, wrap an ML model — use Python.
-    The framework runs both the same way.
+    The framework runs both the same way, and <strong>both declare their
+    ports</strong>: prose in front matter, Python in <code>AgentRoleEntry</code>.
   </p>
 
-  <div style="display:flex;gap:24px;align-items:stretch;max-width:840px;width:100%;">
+  <div style="display:flex;gap:24px;align-items:stretch;max-width:860px;width:100%;">
     <div class="paper" style="flex:1;">
       <div class="paper-header">
         <div class="paper-dots"><div class="pd" style="background:#ff5f57;"></div><div class="pd" style="background:#ffbd2e;"></div><div class="pd" style="background:#28c840;"></div></div>
         <span class="paper-title">analyst.md</span>
       </div>
-      <div style="padding:20px;font-size:13px;color:rgba(255,255,255,0.92);line-height:1.65;font-family:var(--font-display);">
+      <div style="padding:18px 20px;font-size:12.5px;color:rgba(255,255,255,0.45);line-height:1.75;font-family:var(--font-mono);border-bottom:1px dashed rgba(255,255,255,0.16);">
+        ---<br>outboxes: <span style="color:var(--teal);">editor, discard</span><br>adds: <span style="color:var(--teal);">importance</span><br>---
+      </div>
+      <div style="padding:18px 20px;font-size:13px;color:rgba(255,255,255,0.92);line-height:1.65;font-family:var(--font-display);">
         You are a <span style="color:#fbbf24;">news analyst</span> who decides if each item is
         relevant to current world events.<br><br>
         <span style="color:rgba(255,255,255,0.75);">If relevant, <span style="color:#f97316;">send to editor</span>.<br>Otherwise send to discard.</span>
@@ -1348,16 +1366,25 @@ html, body {
         <div class="paper-dots"><div class="pd" style="background:#ff5f57;"></div><div class="pd" style="background:#ffbd2e;"></div><div class="pd" style="background:#28c840;"></div></div>
         <span class="paper-title">deduplicator.py</span>
       </div>
-      <div style="padding:20px;font-size:13px;color:rgba(255,255,255,0.92);line-height:1.85;font-family:var(--font-mono);">
-        <span style="color:#c084fc;">def</span> <span style="color:#fbbf24;">run</span>(msg):<br>
-        &nbsp;&nbsp;url = msg[<span style="color:#86efac;">"url"</span>]<br>
-        &nbsp;&nbsp;<span style="color:#c084fc;">if</span> url <span style="color:#c084fc;">in</span> seen:<br>
-        &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#c084fc;">return</span><br>
-        &nbsp;&nbsp;seen.add(url)<br>
-        &nbsp;&nbsp;send(<span style="color:#86efac;">"out"</span>, msg)
+      <div style="padding:18px 20px;font-size:12.5px;color:rgba(255,255,255,0.92);line-height:1.7;font-family:var(--font-mono);">
+        <span style="color:#c084fc;">def</span> <span style="color:#fbbf24;">dedupe</span>(msg):<br>
+        &nbsp;&nbsp;<span style="color:#c084fc;">if</span> msg[<span style="color:#86efac;">"url"</span>] <span style="color:#c084fc;">in</span> seen:<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;<span style="color:#c084fc;">return</span> <span style="color:#c084fc;">None</span><span style="color:rgba(255,255,255,0.4);">&nbsp;&nbsp;# drop it</span><br>
+        &nbsp;&nbsp;seen.add(msg[<span style="color:#86efac;">"url"</span>])<br>
+        &nbsp;&nbsp;<span style="color:#c084fc;">return</span> [(msg, <span style="color:#86efac;">"out"</span>)]<br><br>
+        role = <span style="color:#fbbf24;">AgentRoleEntry</span>(<br>
+        &nbsp;&nbsp;name=<span style="color:#86efac;">"deduplicator"</span>,<br>
+        &nbsp;&nbsp;in_ports=(<span style="color:var(--teal);">"in_"</span>,), out_ports=(<span style="color:var(--teal);">"out"</span>,),<br>
+        &nbsp;&nbsp;factory=<span style="color:#c084fc;">lambda</span>: Role(fn=dedupe,<br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;statuses=[<span style="color:#86efac;">"out"</span>]),<br>
+        )
       </div>
     </div>
   </div>
+  <p class="body-text" style="max-width:760px;margin-top:22px;font-size:15px;">
+    The declarations are why <code>dsl check</code> can find a message addressed
+    to an inbox that does not exist — it reads them without importing anything.
+  </p>
 </section>
 
 <!-- ═══════════════ S7 — Roles are reusable ═════════════════════════════ -->
@@ -1735,19 +1762,22 @@ html, body {
     </div>
     <div class="term-body"><span class="term-prompt">$</span> <span class="term-cmd">python -m venv venv</span>
 <span class="term-prompt">$</span> <span class="term-cmd">source venv/bin/activate</span>
-<span class="term-prompt">$</span> <span class="term-cmd">pip install dissyslab</span>
+<span class="term-prompt">$</span> <span class="term-cmd">pip install --upgrade dissyslab</span>
 <span class="term-dim">Collecting dissyslab</span>
-<span class="term-dim">  Downloading dissyslab-1.1.1-py3-none-any.whl</span>
+<span class="term-dim">  Downloading dissyslab-1.10.2-py3-none-any.whl</span>
 <span class="term-dim">  ...</span>
-<span class="term-out">Successfully installed dissyslab-1.1.1 anthropic-0.39.0 ...</span>
+<span class="term-out">Successfully installed dissyslab-1.10.2 anthropic-0.39.0 ...</span>
 
 <span class="term-prompt">$</span> <span class="term-cmd">dsl --help</span>
 <span class="term-out">Usage: dsl [COMMAND]</span>
-<span class="term-out">Commands: list, init, run</span><span class="term-blink"></span></div>
+<span class="term-out">Commands: list, init, run, check, draw, roles,</span>
+<span class="term-out">          grammar, checks, skills, doctor, ...</span><span class="term-blink"></span></div>
   </div>
 
   <p class="s12-caption">
-    One <code class="s12-pill">pip install</code> and every office in the gallery is yours. Works on Mac, Linux, and Windows.
+    <code class="s12-pill">--upgrade</code>, not <code class="s12-pill">install</code> — on a machine that already has an older one,
+    <code class="s12-pill">pip install</code> prints <em>"Requirement already satisfied"</em> and changes nothing.
+    Works on Mac, Linux, and Windows.
   </p>
 </section>
 
@@ -1824,6 +1854,64 @@ html, body {
   </div>
 
   <p class="s14-caption">This folder is <strong>yours</strong>. Edit any file. Run it when you want.</p>
+</section>
+
+<!-- ═══════════════ S14b — Read it, then check it ═══════════════════════ -->
+<section class="slide" id="s14b">
+  <div class="blob" style="width:340px;height:340px;background:var(--teal);top:-90px;right:-70px;opacity:0.12;"></div>
+  <div class="blob" style="width:280px;height:280px;background:var(--orange);bottom:-70px;left:-50px;opacity:0.11;"></div>
+
+  <div class="badge">Before you run it</div>
+  <h1 class="headline" style="font-size:clamp(28px,4.5vw,54px);margin-bottom:18px;">Two commands. <em>One second.</em></h1>
+
+  <div class="s14-split">
+    <div class="term-window">
+      <div class="term-chrome">
+        <div class="pd" style="background:#ff5f57;"></div>
+        <div class="pd" style="background:#ffbd2e;"></div>
+        <div class="pd" style="background:#28c840;"></div>
+        <span class="term-chrome-title">dsl draw — the wiring</span>
+      </div>
+      <div class="term-body"><span class="term-prompt">$</span> <span class="term-cmd">dsl draw my_weather</span>
+<span class="term-out">weather  destination ──▶ in_  Alex</span>
+<span class="term-out">Alex     briefing    ──▶ in_  console_printer</span>
+<span class="term-out">Alex     briefing    ──▶ in_  jsonl_recorder</span><span class="term-blink"></span></div>
+    </div>
+
+    <div class="term-window">
+      <div class="term-chrome">
+        <div class="pd" style="background:#ff5f57;"></div>
+        <div class="pd" style="background:#ffbd2e;"></div>
+        <div class="pd" style="background:#28c840;"></div>
+        <span class="term-chrome-title">dsl check — the faults</span>
+      </div>
+      <div class="term-body"><span class="term-prompt">$</span> <span class="term-cmd">dsl check my_weather</span>
+<span class="term-dim">check_wiring: my_weather/office.md -- 1 problem</span>
+
+<span class="term-hot">  problem</span>  <span class="term-out">Alex's 'summary' is wired to</span>
+<span class="term-out">           console_printer, but the role 'analyst'</span>
+<span class="term-out">           has no outbox called 'summary' -- nothing</span>
+<span class="term-out">           will ever be sent along that connection.</span>
+<span class="term-out">           Alex has one outbox, 'briefing'. Write:</span>
+<span class="term-out">           Alex's briefing is console_printer.</span>
+<span class="term-muted">           what this means: dsl checks W14</span><span class="term-blink"></span></div>
+    </div>
+  </div>
+
+  <p class="s14-caption" style="max-width:780px;">
+    <code>dsl draw</code> shows every connection, naming the outbox it leaves
+    by and the inbox it arrives at. <code>dsl check</code> reads the office and
+    reports its structural faults <strong>without running it</strong> — an inbox
+    nothing writes to, an agent nothing can reach, work that reaches no sink, a
+    message addressed to an inbox that does not exist.
+    <code>dsl checks</code> explains any code it prints.
+  </p>
+  <p class="s14-caption" style="max-width:780px;margin-top:12px;opacity:0.72;">
+    It is <em>structural</em>, and it stops where structure stops. An office
+    whose diagram is correct can still deadlock. That boundary — what is
+    knowable before you run and what is only knowable after — is the interesting
+    part, and you meet it the first time an office hangs.
+  </p>
 </section>
 
 <!-- ═══════════════ S15 — Add your API key ═══════════════════════════════ -->
