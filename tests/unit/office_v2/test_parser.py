@@ -537,3 +537,89 @@ class TestAgentKwargs:
         , encoding="utf-8")
         with pytest.raises(ParseError, match="Python literal"):
             parse_office_dir(tmp_path)
+
+
+# ── the form the grammar teaches ──────────────────────────────────────
+
+
+def test_the_one_per_line_form_the_grammar_teaches_parses():
+    """`dsl grammar` tells people to write Sources and Sinks one per
+    line. This is that block, verbatim from the reference.
+
+    A comma-separated `Sources:` line with five entries is one long run
+    of text in which adding or removing an entry means editing in the
+    middle of it, and a student cannot see how many there are without
+    reading it. One per line answers both, and the parser already
+    accepted it -- the documentation was simply teaching the other
+    form.
+
+    Nothing about this deprecates commas; `test_comma_form_still_parses`
+    below is the other half. But if one-per-line ever stopped working,
+    every office an assistant writes from the current grammar would
+    fail to parse, so it is pinned here rather than trusted.
+    """
+    import tempfile
+    from pathlib import Path
+
+    body = '''# Office: t
+
+Sources:
+  bbc_world(max_articles=5)
+  npr_news(max_articles=5)
+  weather(city="Pasadena", max_readings=1)
+
+Sinks:
+  console_printer
+  jsonl_recorder(path="briefings.jsonl")
+
+Agents:
+  Alex is a summarizer.
+  Sync is a synchronizer(inboxes=["news", "weather"]).
+
+Connections:
+  bbc_world's destination is Sync's news.
+  npr_news's destination is Sync's news.
+  weather's destination is Sync's weather.
+  Sync's out is Alex.
+  Alex's out is console_printer and jsonl_recorder.
+'''
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td)
+        (d / "office.md").write_text(body, encoding="utf-8")
+        spec = parse_office_dir(d)
+
+    assert [s.name for s in spec.sources] == ["bbc_world", "npr_news", "weather"]
+    assert [k.name for k in spec.sinks] == ["console_printer", "jsonl_recorder"]
+    assert {a.agent_name for a in spec.agents} == {"Alex", "Sync"}
+    # arguments survive the indentation, including a nested list
+    weather = next(s for s in spec.sources if s.name == "weather")
+    assert dict(weather.args)["city"] == "Pasadena"
+    sync = next(a for a in spec.agents if a.agent_name == "Sync")
+    assert dict(sync.args)["inports"] == ["news", "weather"]
+
+
+def test_comma_form_still_parses():
+    """No existing office becomes wrong. Every shipped office and every
+    office a student wrote before the grammar changed its advice uses
+    commas, and a documentation preference must not break them."""
+    import tempfile
+    from pathlib import Path
+
+    body = '''# Office: t
+
+Sources: bbc_world(max_articles=5), npr_news(max_articles=5)
+Sinks: console_printer
+
+Agents:
+Alex is a summarizer.
+
+Connections:
+bbc_world's destination is Alex.
+npr_news's destination is Alex.
+Alex's out is console_printer.
+'''
+    with tempfile.TemporaryDirectory() as td:
+        d = Path(td)
+        (d / "office.md").write_text(body, encoding="utf-8")
+        spec = parse_office_dir(d)
+    assert [s.name for s in spec.sources] == ["bbc_world", "npr_news"]

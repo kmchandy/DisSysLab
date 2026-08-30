@@ -17,17 +17,37 @@ fanning straight into one sink.
 
 ## Sources and Sinks
 
-Comma-separated, arguments in parentheses, may wrap across lines:
+**One per line, under the heading.** This is the form to write and the form
+to produce when you write an office for someone else:
 
 ```
-Sources: bbc_world(max_articles=5), npr_news(max_articles=5),
-         weather(city="Pasadena", max_readings=1)
-Sinks:   intelligence_display,
-         jsonl_recorder_briefing(path="briefings.jsonl")
+Sources:
+  bbc_world(max_articles=5)
+  npr_news(max_articles=5)
+  weather(city="Pasadena", max_readings=1)
+
+Sinks:
+  intelligence_display
+  jsonl_recorder_briefing(path="briefings.jsonl")
 ```
+
+A student scanning that can see how many sources there are without reading
+a sentence, and adding or removing one is a whole line rather than a comma
+in the middle of a run of text. The same goes for `Agents:` and
+`Connections:`, which have always been one per line.
+
+The comma-separated form still parses and is not deprecated —
+
+```
+Sources: bbc_world(max_articles=5), npr_news(max_articles=5)
+```
+
+— so no existing office is wrong. Prefer one per line for anything new,
+and especially for anything with more than two entries.
 
 Names must come from the registries — see `dsl grammar sources`. Arguments
-are forwarded to the component's constructor.
+are forwarded to the component's constructor, and `dsl build` refuses an
+argument the component does not have, suggesting the nearest real one.
 
 **Keep `max_articles=N` and `max_readings=N` in place.** They are what stops a
 shipped office from running forever and billing a student's API key. Remove
