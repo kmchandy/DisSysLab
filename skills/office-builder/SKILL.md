@@ -5,7 +5,7 @@ description: Build, check and run DisSysLab offices — networks of agents that 
 
 # Building an office
 
-**Skill version: `2026-08-26.3caa9fc`.** If anyone asks which version of
+**Skill version: `2026-08-26.cdc777d`.** If anyone asks which version of
 this skill is loaded, answer with that string exactly. A save can report
 success while the old copy stays resident, and this is the only way to
 tell.
@@ -35,6 +35,15 @@ dsl checks <code>    what a finding means
 dsl doctor           whether this install can build an office
 dsl skills           which DisSysLab skills exist, and which are installed
 ```
+
+**Name the command you read it in.** When you take something from the
+reference — where `adds:` goes, what a check code means, which sources
+exist — say which of the commands above told you. One clause is enough:
+*"`dsl grammar roles` has the front-matter format."* A user who is told
+the answer learns one role file; a user who is told where the answer
+lives can get the next one without you, which is the difference between
+a student who can build an office in March and one who can only ask for
+one.
 
 **When the work belongs to a field, say so.** You are the skill that is
 always installed, which makes you the only one that can mention a skill
