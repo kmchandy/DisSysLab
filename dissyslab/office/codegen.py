@@ -567,12 +567,39 @@ def _emit_imports(nodes: List[_OfficeNode]) -> str:
 def _emit_library_loads(
     nodes: List[_OfficeNode], top_dir: Path
 ) -> str:
-    """Module-level ``_ROLES_<OFFICE>`` declarations, one per office."""
-    run_py_dir = top_dir / "build"
+    """Module-level ``_ROLES_<OFFICE>`` declarations, one per office.
+
+    Each office's roles are located relative to something that will
+    still be true when the artifact runs. Which anchor depends on where
+    the two things are:
+
+    * **An office the user owns** -- relative to the artifact, which
+      sits in that office's own ``build/``. The pair moves together if
+      the folder is copied or renamed, which is what portability means
+      here.
+    * **A packaged office** -- relative to ``dissyslab`` itself. The
+      artifact is now in the user's directory and the office is inside
+      site-packages, so the two are unrelated: an absolute path would
+      break the moment the package moved to another virtualenv, and a
+      relative one would be a long climb through the filesystem that
+      breaks if the build folder is moved at all. The artifact already
+      imports ``dissyslab`` to find the built-in roles; this uses the
+      same anchor.
+
+    ``run_py_dir`` used to be ``top_dir / "build"``, which was true
+    while every artifact sat beside its office. When the packaged case
+    stopped doing that, every role lookup in a gallery office resolved
+    to the wrong directory and ``dsl run my_first_office`` died with
+    ``KeyError: 'analyst'``.
+    """
+    from dissyslab.office.cli_helpers import _build_artifact_path
+
+    run_py_dir = _build_artifact_path(top_dir).parent
     lines = [
         "",
         "_HERE = Path(__file__).resolve().parent",
-        "_BUILTIN_ROLES = Path(dissyslab.__file__).resolve().parent / 'roles'",
+        "_PKG = Path(dissyslab.__file__).resolve().parent",
+        "_BUILTIN_ROLES = _PKG / 'roles'",
         "",
         "",
         "def _load_lib(office_dir: Path):",
@@ -587,11 +614,27 @@ def _emit_library_loads(
         "",
         "",
     ]
+    pkg = Path(__import__("dissyslab").__file__).resolve().parent
     for node in nodes:
         var = f"_ROLES_{node.name.upper()}"
-        rel = os.path.relpath(node.office_dir, run_py_dir)
-        lines.append(f"{var} = _load_lib(_HERE / {rel!r})")
+        if _is_packaged(node.office_dir):
+            inside = os.path.relpath(node.office_dir, pkg)
+            lines.append(f"{var} = _load_lib(_PKG / {inside!r})")
+        else:
+            rel = os.path.relpath(node.office_dir, run_py_dir)
+            lines.append(f"{var} = _load_lib(_HERE / {rel!r})")
     return "\n".join(lines)
+
+
+def _is_packaged(office_dir: Path) -> bool:
+    """Is this office inside the installed dissyslab?
+
+    Same question ``cli_helpers.is_packaged_office`` answers, asked at
+    emit time so the artifact does not have to ask it at run time.
+    """
+    from dissyslab.office.cli_helpers import is_packaged_office
+
+    return is_packaged_office(office_dir)
 
 
 def _emit_main(root: _OfficeNode) -> str:
@@ -603,6 +646,18 @@ def _emit_main(root: _OfficeNode) -> str:
     environment variable. Pat does not see this choice; ``dsl run``
     exposes ``--processes`` as a power-user flag that sets the env
     var before invoking the artifact.
+
+    **The working directory is decided here, not by the artifact.** It
+    used to test ``_pkg not in _HERE.parents`` at run time -- asking
+    where ``run.py`` sat as a proxy for whether the office was
+    packaged. That was true only while a packaged office's artifact was
+    written into site-packages, which is the thing that stopped being
+    true: the artifact now goes to the user's own ``./build/<name>/``,
+    so the proxy would have inverted and a gallery office would have
+    started writing its output into the build folder. Codegen knows
+    which case it is emitting, so it emits the answer rather than the
+    question. The artifact still behaves identically however it is
+    invoked, which is what the run-time test was protecting.
 
     Also wires up ``DSL_SNAPSHOT_DIR``/``DSL_SNAPSHOT_INTERVAL``/
     ``DSL_RESUME`` (checkpoint-resume, v1.6) and ``DSL_TRACE`` (the
@@ -617,22 +672,23 @@ def _emit_main(root: _OfficeNode) -> str:
         "if __name__ == \"__main__\":\n"
         "    import os\n"
         "    from pathlib import Path as _P\n"
-        "    # Run from the office directory so relative paths in\n"
-        "    # office.md (audio_clip(path=\"./samples/...\"),\n"
-        "    # jsonl_recorder(path=\"out.jsonl\"), etc.) resolve next\n"
-        "    # to the office regardless of where dsl run was invoked.\n"
-        "    #\n"
-        "    # Except when the office *is* the installed package -- a\n"
-        "    # gallery office run by name, as `dsl run periodic_brief`.\n"
-        "    # Then \"next to the office\" is inside site-packages, and\n"
-        "    # the brief a student just made lands somewhere she cannot\n"
-        "    # find and did not ask to have written to. Relative paths\n"
-        "    # then resolve where she ran the command.\n"
-        "    import dissyslab as _dsl\n"
-        "    _pkg = _P(_dsl.__file__).resolve().parent\n"
-        "    if _pkg not in _HERE.parents:\n"
-        "        os.chdir(str(_HERE.parent))\n"
-        f"    _office = build_{root.name}()\n"
+        + (
+            # An office the user owns: run from the office directory so
+            # relative paths in office.md -- audio_clip(path="./samples/…"),
+            # jsonl_recorder(path="out.jsonl") -- resolve beside the
+            # office however dsl run was invoked.
+            "    # Run from the office folder, so paths in office.md\n"
+            "    # resolve beside it however this was invoked.\n"
+            "    os.chdir(str(_HERE.parent))\n"
+            if not _is_packaged(root.office_dir) else
+            # A packaged office -- `dsl run periodic_brief`. There is no
+            # folder of the user's to run from, so relative paths resolve
+            # where they ran the command, which is where the artifact
+            # was written and where they will look for the output.
+            "    # A gallery office, run by name. Its folder is inside\n"
+            "    # the installed package, so paths resolve here instead.\n"
+        )
+        + f"    _office = build_{root.name}()\n"
         "    # v1.6: checkpoint-resume opt-in via env vars set by\n"
         "    # `dsl run --snapshot-interval` / `--resume`. When these\n"
         "    # are unset (the common case) the office runs identically\n"
@@ -793,16 +849,23 @@ def _check_component_arguments(source: str) -> None:
 def emit_run_py(
     office_dir: Any, library: Optional[Library] = None
 ) -> Path:
-    """Render ``run.py`` and write it to ``<office_dir>/build/run.py``.
+    """Render ``run.py`` and write it where the office can keep it.
 
-    Returns the absolute path of the written file. Creates
-    ``<office_dir>/build/`` and a sibling ``__init__.py`` if needed.
+    ``<office_dir>/build/run.py`` for an office the user owns; for a
+    packaged one, ``./build/<office_name>/run.py`` in the current
+    directory -- see ``cli_helpers._build_artifact_path``, which is the
+    one place that decides, so ``dsl build``, ``dsl run`` and the
+    staleness check cannot disagree about where the artifact is.
+
+    Returns the absolute path of the written file.
     """
+    from dissyslab.office.cli_helpers import _build_artifact_path
+
     office_dir = Path(office_dir).resolve()
     text = render_run_py(office_dir, library)
-    out_dir = office_dir / "build"
+    out_path = _build_artifact_path(office_dir)
+    out_dir = out_path.parent
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_path = out_dir / "run.py"
     out_path.write_text(text, encoding="utf-8")
     init = out_dir / "__init__.py"
     if not init.exists():

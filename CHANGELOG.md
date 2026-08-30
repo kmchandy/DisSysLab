@@ -5,6 +5,55 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/).
 
 
+## [1.10.1] — 2026-08-29
+
+### Fixed — `dsl run <name>` no longer writes inside the installed package
+
+`dsl run periodic_brief` resolves a name against the shipped gallery,
+which lives in site-packages — and wrote its generated `build/run.py`
+there, then printed
+
+```
+Run with:  python /.../site-packages/dissyslab/gallery/apps/periodic_brief/build/run.py
+      or:  dsl run /.../site-packages/dissyslab/gallery/apps/periodic_brief
+```
+
+Three things wrong with that, for the one command a student is most
+likely to run first: it teaches a beginner that their office lives
+inside the package, it points them at a file the next
+`pip install --upgrade` deletes, and it fails outright where
+site-packages is read-only. Output already landed in the right place;
+the artifact did not.
+
+A packaged office's artifact now goes to `./build/<office_name>/run.py`
+in the current directory — named by office, so running two gallery
+offices from one folder does not collide — and the printed hint says
+`dsl run <name>`, the form they used and the one that keeps working.
+An office you own is unchanged: `build/run.py` beside it, which is the
+point of generating readable Python.
+
+Two consequences that had to move with it, both found by running the
+command rather than reading the code:
+
+- **The working directory is decided at build time.** The artifact used
+  to test `_pkg not in _HERE.parents` at run time, asking where
+  `run.py` sat as a proxy for whether the office was packaged. Moving
+  the artifact inverted the proxy, which would have sent a gallery
+  office's output into the build folder. Codegen knows which case it is
+  emitting, so it emits the answer instead of the question.
+- **A packaged office finds its roles through `dissyslab`.** The
+  artifact located them relative to its own `__file__`, correct while
+  it sat at `<office>/build/run.py`. Once the two were in unrelated
+  directories every lookup resolved wrongly and `dsl run
+  my_first_office` died with `KeyError: 'analyst'`. Anchored to the
+  package rather than to an absolute path, so it survives the package
+  being in a different virtualenv.
+
+`test_a_packaged_office_does_not_chdir_into_site_packages` asserted the
+old mechanism by name. It asserts the behaviour now, for both cases —
+a mechanism test cannot survive a change of mechanism, which is the
+whole reason to change it.
+
 ## [1.10.0] — 2026-08-29
 
 **Two things a student could hit on their first afternoon, and both

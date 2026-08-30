@@ -162,26 +162,72 @@ def test_every_shipped_office_draws(office):
 # ── where a run writes ────────────────────────────────────────────────
 
 
-def test_a_packaged_office_does_not_chdir_into_site_packages(tmp_path):
-    """`dsl run periodic_brief` used to write brief.html *inside the
-    installed package*, because the generated artifact chdir's to the
-    office so that relative paths resolve beside it. That is right for
-    an office she copied with `dsl init` and wrong for one that is part
-    of the library: "beside the office" is then site-packages, and her
-    brief lands somewhere she cannot find and did not ask to be written
-    to.
-
-    The artifact decides for itself rather than trusting a flag from
-    `dsl run`, so `python build/run.py` behaves the same way.
-    """
+def test_an_office_you_own_runs_from_its_own_folder(tmp_path):
+    """Relative paths in office.md -- jsonl_recorder(path="out.jsonl") --
+    must resolve beside the office however `dsl run` was invoked."""
     from dissyslab.office.cli_helpers import emit_run_py
 
     d = _office(tmp_path, _WIRED, {"my_filter.md": _FILTER})
     source = Path(emit_run_py(d)).read_text(encoding="utf-8")
+    assert "os.chdir" in source, "an office of her own must chdir"
 
-    assert "os.chdir" in source, "an office of her own must still chdir"
-    assert "_pkg not in _HERE.parents" in source, (
-        "the chdir must be skipped when the office is the installed "
-        "package; without the guard a gallery office writes into "
-        "site-packages"
+
+def test_a_packaged_office_does_not_chdir_into_site_packages():
+    """`dsl run periodic_brief` used to write brief.html *inside the
+    installed package*, because the artifact chdir's to the office so
+    relative paths resolve beside it. Right for an office she copied
+    with `dsl init`; wrong for one that is part of the library, where
+    "beside the office" is site-packages and her brief lands somewhere
+    she cannot find and did not ask to be written to.
+
+    This asserted the *mechanism* -- that the source contained
+    `_pkg not in _HERE.parents`, a run-time test of where run.py sat,
+    used as a proxy for whether the office was packaged. The proxy held
+    only while a packaged office's artifact was written into
+    site-packages, which is exactly what stopped being true: the
+    artifact now goes to the user's own ./build/<name>/, so the test
+    would have inverted and a gallery office would have started writing
+    its output into the build folder.
+
+    Codegen knows which case it is emitting, so it emits the answer.
+    The assertion is the behaviour either way, which is what mattered
+    and what a mechanism test cannot survive a change of mechanism to
+    check.
+    """
+    import dissyslab
+    from dissyslab.office.codegen import render_run_py
+
+    packaged = (Path(dissyslab.__file__).resolve().parent
+                / "gallery" / "examples" / "my_first_office")
+    source = render_run_py(packaged)
+    assert "os.chdir" not in source, (
+        "a gallery office must not chdir -- its folder is inside the "
+        "installed package, and output belongs where the user ran the "
+        "command"
+    )
+
+
+def test_a_packaged_office_finds_its_roles_through_the_package():
+    """And it must still find them.
+
+    The artifact used to locate roles relative to its own __file__,
+    which worked while it sat at <office>/build/run.py. Once a packaged
+    office's artifact moved to the user's directory the two were
+    unrelated, and every role lookup resolved to the wrong folder:
+    `dsl run my_first_office` died with `KeyError: 'analyst'`.
+
+    Anchored to `dissyslab` rather than to an absolute path, so it
+    survives the package being in a different virtualenv.
+    """
+    import dissyslab
+    from dissyslab.office.codegen import render_run_py
+
+    packaged = (Path(dissyslab.__file__).resolve().parent
+                / "gallery" / "examples" / "my_first_office")
+    source = render_run_py(packaged)
+    load = next(ln for ln in source.splitlines() if ln.startswith("_ROLES_"))
+    assert "_PKG /" in load, load
+    assert "_HERE" not in load, (
+        "relative to the artifact is wrong for a packaged office: they "
+        "are in unrelated directories now"
     )

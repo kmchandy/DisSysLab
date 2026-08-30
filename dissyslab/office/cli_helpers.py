@@ -90,9 +90,50 @@ def _office_tree_files(office_dir: Path) -> Iterator[Path]:
                 yield f
 
 
+def is_packaged_office(office_dir: Path) -> bool:
+    """Is this office part of the installed dissyslab, rather than the
+    user's own folder?
+
+    ``dsl run periodic_brief`` resolves a name against the shipped
+    gallery, which lives inside site-packages. That directory is not a
+    place a user can keep anything: an upgrade replaces it, a
+    system-wide install may not be writable at all, and nothing a
+    student put there is theirs.
+    """
+    try:
+        import dissyslab
+
+        pkg = Path(dissyslab.__file__).resolve().parent
+    except Exception:  # noqa: BLE001 - unknown is not packaged
+        return False
+    office = Path(office_dir).resolve()
+    return pkg == office or pkg in office.parents
+
+
 def _build_artifact_path(office_dir: Path) -> Path:
-    """The canonical location of the generated artifact."""
-    return Path(office_dir).resolve() / "build" / "run.py"
+    """Where the generated artifact goes.
+
+    Beside the office, for an office the user owns: ``build/run.py`` in
+    their own folder, which is the whole point of generating readable
+    Python -- *"so students can read the wiring as a Python module they
+    own"*.
+
+    For a **packaged** office, in the current directory instead, under
+    the office's name. ``dsl run periodic_brief`` used to write into
+    site-packages and then print
+
+        Run with:  python /.../site-packages/dissyslab/gallery/apps/
+                          periodic_brief/build/run.py
+
+    -- teaching a beginner that their work lives inside the package,
+    telling them to run a file an upgrade will delete, and failing
+    outright where site-packages is read-only. Named by office so
+    running two gallery offices from one folder does not collide.
+    """
+    office_dir = Path(office_dir).resolve()
+    if is_packaged_office(office_dir):
+        return Path.cwd().resolve() / "build" / office_dir.name / "run.py"
+    return office_dir / "build" / "run.py"
 
 
 def _framework_codegen_inputs() -> Iterator[Path]:
@@ -173,7 +214,15 @@ def cli_build(
 
     print(f"  Wrote {artifact}", file=fout)
     print(f"  Run with:  python {artifact}", file=fout)
-    print(f"        or:  dsl run {office_dir}", file=fout)
+    # Name the office rather than its directory when the directory is
+    # inside the installed package. `dsl run <name>` is how they got
+    # here and is the form that keeps working; printing the
+    # site-packages path taught a beginner that their office lives in
+    # the package, and it stops being true on the next upgrade.
+    if is_packaged_office(office_dir):
+        print(f"        or:  dsl run {Path(office_dir).name}", file=fout)
+    else:
+        print(f"        or:  dsl run {office_dir}", file=fout)
     return 0
 
 

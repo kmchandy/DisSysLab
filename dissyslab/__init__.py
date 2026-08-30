@@ -23,4 +23,4 @@ from dissyslab.builder import network
 
 __all__ = ['Agent', 'Network', 'OfficeRunError', 'network']
 
-__version__ = '1.10.0'
+__version__ = '1.10.1'
