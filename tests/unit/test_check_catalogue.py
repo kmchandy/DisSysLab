@@ -131,7 +131,32 @@ Connections:
 starter's destination is A.
 """, encoding="utf-8")
 
-    text = format_report(check_office_dir(d))
-    assert "dsl checks" in text
-    code = text.split("dsl checks ")[1].strip()
-    assert code in CHECKS, "the pointer must name a code this report used"
+    report = check_office_dir(d)
+    text = format_report(report)
+
+    # Every finding carries its own pointer now, beside the finding it
+    # explains, because the code no longer leads the line. It used to:
+    # `W4` was the first thing a reader saw, which is a token that
+    # means nothing on first meeting and pushed the sentence that means
+    # something to the right. The severity leads instead -- `problem`
+    # or `note` -- matching what the draft branch already did with
+    # `still to do`.
+    pointers = [ln for ln in text.splitlines() if "dsl checks" in ln]
+    assert len(pointers) == len(report.findings), (
+        "each finding needs the command that explains its code:\n" + text
+    )
+    for line in pointers:
+        code = line.split("dsl checks ")[1].strip()
+        assert code in CHECKS, f"{code!r} is not a real code"
+    assert {p.split("dsl checks ")[1].strip() for p in pointers} == {
+        f.code for f in report.findings
+    }, "a pointer must name the code of the finding it sits under"
+
+    # And the code is no longer what a reader meets first.
+    finding_lines = [ln for ln in text.splitlines()
+                     if ln.startswith("  problem") or ln.startswith("  note")]
+    assert finding_lines, text
+    for line in finding_lines:
+        assert not line.split()[0].startswith(("W", "G")), (
+            f"the code still leads the line: {line!r}"
+        )

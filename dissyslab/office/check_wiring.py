@@ -45,7 +45,7 @@ W12 (note) a role's own Python reaches the network, another program, or
     code built at run time -- a lint, and one that teaches rather than
     protects
 W13 a connection writing to an inbox the receiving agent does not have
-G1  an agent with a name and no job yet
+G1  an agent with a name and no role yet
 G2  nothing leaves the office -- it has no sink
 
 Drafts
@@ -933,7 +933,7 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
             )
         )
 
-    # G1 -- an agent with a name and no job yet.
+    # G1 -- an agent with a name and no role yet.
     for agent_spec in spec.agents:
         if agent_spec.role_name == UNASSIGNED and agent_spec.path is None:
             report.findings.append(
@@ -941,7 +941,7 @@ def check_spec(spec, office_dir: Path) -> WiringReport:
                     "G1",
                     "error",
                     agent_spec.agent_name,
-                    f"{agent_spec.agent_name!r} has no job yet.",
+                    f"{agent_spec.agent_name!r} has no role yet.",
                     "Say what it does and it will be written down.",
                 )
             )
@@ -1157,22 +1157,29 @@ def format_report(report: WiringReport) -> str:
 
     lines.append("")
     for finding in errors + notes:
-        label = finding.code if finding.is_error else f"{finding.code}  note:"
+        # The severity leads, not the code. `W13` is meaningless to
+        # someone meeting it for the first time, and it was the first
+        # thing on the line -- so every finding opened with a token
+        # that carried nothing and pushed the sentence that did carry
+        # something to the right. The draft branch above already reads
+        # `still to do`; this is the same choice for the other case.
+        #
+        # The code stays, at the end, next to the command that explains
+        # it. It is worth keeping: it survives rewording, it lets a
+        # test say which check it pins, and it lets two people refer to
+        # the same finding without quoting a sentence at each other.
+        # None of those readers is the student meeting it once.
+        label = "problem" if finding.is_error else "note"
         lines.append(f"  {label:<10}{finding.message}")
         if finding.hint:
             lines.extend(_hint_lines(finding.hint, 12))
+        lines.append(f"{' ' * 12}what this means: dsl checks {finding.code}")
         lines.append("")
     for skipped in report.skipped:
         lines.append(f"  skipped: {skipped}")
 
-    # The code is only useful if the reader can find out what it means,
-    # and until `dsl checks` existed there was nowhere to look. Say so
-    # here, using a code actually in this report, rather than assuming
-    # anyone will go looking for the command.
-    first = (errors + notes)[0].code
     while lines and not lines[-1]:
         lines.pop()
-    lines += ["", f"  What a code means: dsl checks {first}"]
     return "\n".join(lines).rstrip() + "\n"
 
 

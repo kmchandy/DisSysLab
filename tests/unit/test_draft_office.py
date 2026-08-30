@@ -202,7 +202,7 @@ def test_the_undecided_agent_is_named_as_a_missing_decision(tmp_path):
     report = check_office_dir(_office(tmp_path, NAMES_ONLY))
     g1 = [f for f in report.findings if f.code == "G1"]
     assert {f.subject for f in g1} == {"Dan", "Jay"}
-    assert "no job yet" in g1[0].message
+    assert "no role yet" in g1[0].message
 
 
 def test_no_role_file_is_not_reported_for_an_undecided_agent(tmp_path):
@@ -290,8 +290,8 @@ Jay is unassigned.
 
 def test_refusal_names_every_undecided_agent():
     msg = draft_refusal(["Dan", "Jay"])
-    assert "'Dan' and 'Jay' have no job yet" in msg
-    assert draft_refusal(["Dan"]).count("has no job yet") == 1
+    assert "'Dan' and 'Jay' have no role yet" in msg
+    assert draft_refusal(["Dan"]).count("has no role yet") == 1
 
 
 def test_run_and_build_refuse_a_draft(tmp_path):
@@ -317,7 +317,7 @@ def test_no_library_role_is_called_unassigned():
     clashes = [p.name for p in library.iterdir() if p.stem in reserved]
     assert not clashes, (
         f"{clashes} shadows the reserved role name {UNASSIGNED!r}. "
-        "An agent with no job yet would be read as having one."
+        "An agent with no role yet would be read as having one."
     )
 
     offices = list((REPO_ROOT / "dissyslab" / "gallery").glob("*/*/roles/*"))

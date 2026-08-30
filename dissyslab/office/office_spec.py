@@ -210,7 +210,7 @@ def is_draft(spec) -> bool:
 
 
 def unassigned_agents(spec) -> list:
-    """The agents with no job yet, in declaration order."""
+    """The agents with no role yet, in declaration order."""
     return [
         a.agent_name for a in spec.agents
         if a.role_name == UNASSIGNED and a.path is None
@@ -233,7 +233,7 @@ def draft_refusal(agents) -> str:
         names = repr(agents[0])
     return (
         f"this office is still a draft: {names} "
-        f"{'have' if many else 'has'} no job yet.\n"
+        f"{'have' if many else 'has'} no role yet.\n"
         f"Say what {'they do' if many else 'it does'} and it will be written "
         f"into office.md. `dsl check` lists everything still to do."
     )

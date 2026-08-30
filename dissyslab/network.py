@@ -333,6 +333,10 @@ class Network:
             num_outputs = len(outgoing)
             broadcast_name = f"broadcast_{broadcast_count}"
             broadcast = Broadcast(num_outputs=num_outputs, name=broadcast_name)
+            # Marked at creation, not matched by name later: the name is
+            # exactly the thing that means nothing to the person reading
+            # the run summary, so it is the wrong thing to key on.
+            broadcast.framework_inserted = True
             self.agents[broadcast_name] = broadcast
             broadcast_count += 1
             for c in outgoing:
@@ -357,6 +361,7 @@ class Network:
             num_inputs = len(incoming)
             merge_name = f"merge_{merge_count}"
             merge = MergeAsynch(num_inputs=num_inputs, name=merge_name)
+            merge.framework_inserted = True
             self.agents[merge_name] = merge
             merge_count += 1
             for c in incoming:
@@ -921,9 +926,31 @@ class Network:
 
     def print_run_summary(self) -> None:
         """Print per-agent message counts. Makes "everything produced
-        nothing" visible at a glance instead of looking like success."""
+        nothing" visible at a glance instead of looking like success.
+
+        **Only the agents the office actually names.** The compiler
+        inserts a ``Broadcast`` wherever an outbox feeds more than one
+        destination and a ``MergeAsynch`` wherever an inbox is fed by
+        more than one -- and they appeared here as ``broadcast_0`` and
+        ``merge_0``, beside rows named ``summer_hunt::Screen``. A
+        student had two lines they could not account for, in different
+        notation, for machinery they never wrote and cannot see in
+        ``office.md`` or in ``dsl draw``.
+
+        Worse with more than one: ``broadcast_0`` and ``broadcast_1``
+        are distinguishable only by an insertion order nothing prints,
+        so even a reader who knows what they are cannot tell which is
+        which. A row that cannot be identified is not information.
+
+        They are marked when they are created rather than matched by
+        name here, because the name is precisely the thing that carries
+        no meaning.
+        """
         report = self.run_report()
-        rows = sorted(report["agents"].items())
+        rows = sorted(
+            (name, counts) for name, counts in report["agents"].items()
+            if not getattr(self.agents.get(name), "framework_inserted", False)
+        )
         if not rows:
             return
         width = max(len(n) for n, _ in rows)

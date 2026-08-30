@@ -78,7 +78,7 @@ listed as *"still to do"*, and `dsl check` exits 0.
 check_wiring: office.md -- draft, 2 things still to do
 
   still to do   nothing reaches Jay yet.
-  still to do   'Jay' has no job yet.
+  still to do   'Jay' has no role yet.
 ```
 
 `dsl run` and `dsl build` refuse a draft, naming the agents whose job is
@@ -241,7 +241,7 @@ and yours are not.
 | `W11` | **note** | text from the open web reaching something that acts |
 | `W12` | **note** | a role's own Python reaching outside |
 | `W13` | problem | a connection writing to an inbox the agent does not have |
-| `G1` | problem | an agent with no job yet |
+| `G1` | problem | an agent with no role yet |
 | `G2` | problem | nothing leaves this office |
 
 A **problem** means the office is wrong. A **note** means read it and

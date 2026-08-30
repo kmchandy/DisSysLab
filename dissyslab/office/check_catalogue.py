@@ -183,7 +183,7 @@ CHECKS: Dict[str, Check] = {
     "G1": Check(
         "G1",
         "error",
-        "an agent with no job yet",
+        "an agent with no role yet",
         "You have written down a name -- `Jay is unassigned.` -- and not yet "
         "said what it does. In a draft office this is reported as something "
         "still to do and the check passes; `dsl run` refuses until you say.",
