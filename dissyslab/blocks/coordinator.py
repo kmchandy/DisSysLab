@@ -305,9 +305,8 @@ class Coordinator(Agent):
             try:
                 sends = self._step(msg, self._state, inport)
             except Exception as e:
-                print(f"[Coordinator '{self.name}'] Error in step: {e}", flush=True)
-                print(traceback.format_exc(), flush=True)
-                return
+                self.report_failure(e, doing="its next step")
+                continue
             for outport, out_msg in (sends or []):
                 self.send(out_msg, outport)
 

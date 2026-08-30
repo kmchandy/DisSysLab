@@ -98,9 +98,8 @@ class Split(Agent):
                     self.send(out_msg, f"out_{i}")
 
             except Exception as e:
-                print(f"[Split '{self.name}'] Error in fn: {e}")
-                print(traceback.format_exc())
-                return
+                self.report_failure(e, doing="splitting a message")
+                continue
 
     def __repr__(self) -> str:
         fn_name = getattr(self._fn, "__name__", repr(self._fn))

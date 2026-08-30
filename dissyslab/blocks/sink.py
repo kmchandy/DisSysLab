@@ -107,9 +107,11 @@ class Sink(Agent):
                 else:
                     self._fn(msg, state=self._state, **self._params)
             except Exception as e:
-                print(f"[Sink '{self.name}'] Error in fn: {e}")
-                print(traceback.format_exc())
-                return
+                # A sink meeting a full disk used to hang the whole
+                # office: the thread ended, termination detection waited
+                # for an agent that was gone, and nothing ever exited.
+                self.report_failure(e, doing="writing its output")
+                continue
 
     def __repr__(self) -> str:
         fn_name = getattr(self._fn, "__name__", repr(self._fn))

@@ -616,6 +616,51 @@ class Agent(ABC):
                         str(detail) if detail else str(msg.get("type"))
                     )
 
+    def report_failure(self, exc: BaseException, doing: str = "its work") -> None:
+        """One agent could not do its job for one message. Say so, once.
+
+        **The one implementation.** ``Role``, ``Transform``, ``Sink``,
+        ``Split`` and ``Coordinator`` each had their own copy of
+
+            except Exception as e:
+                print(...)
+                print(traceback.format_exc())
+                return
+
+        -- five copies of the same four lines, and therefore five
+        copies of the same defect. The ``return`` ends the thread, the
+        agent never reaches the shutdown protocol, and the office runs
+        for ever. Fixing ``Role`` alone left four, and a sink meeting a
+        full disk still hung everything.
+
+        So the caller now writes ``self.report_failure(e); continue``
+        and the behaviour lives here. One bad message costs that
+        message.
+
+        The report is a single write to stderr, on the first failure
+        only. Two prints to stdout came out spliced into another
+        agent's output mid-line, because agents are threads sharing one
+        stream; and five hundred messages failing the same way is one
+        thing to say, not five hundred. The rest are counted and the
+        run summary prints the count.
+        """
+        import sys
+        import traceback
+
+        first = self.first_failure is None
+        self.record_failure(f"{type(exc).__name__}: {exc}")
+        if not first:
+            return
+        sys.stderr.write(
+            f"\n[{type(self).__name__} '{self.name}'] "
+            f"{type(exc).__name__}: {exc}\n"
+            f"{traceback.format_exc()}"
+            f"This message was not processed while {self.name} was doing "
+            f"{doing}. The office carries on; the run summary counts the "
+            f"rest.\n\n"
+        )
+        sys.stderr.flush()
+
     def record_failure(self, detail: str) -> None:
         """Note that this agent could not do its job for one message.
 

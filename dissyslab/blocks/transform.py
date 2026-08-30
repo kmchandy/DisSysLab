@@ -132,9 +132,14 @@ class Transform(Agent):
                         msg, state=self._state, **self._params
                     )
             except Exception as e:
-                print(f"[Transform '{self.name}'] Error in fn: {e}", flush=True)
-                print(traceback.format_exc(), flush=True)
-                return
+                # Record and carry on. This used to `return`, ending the
+                # thread, so the agent never reached the shutdown
+                # protocol and the office ran for ever. See
+                # Agent.report_failure -- one implementation, because
+                # this same four-line block was copied into five files
+                # and so was the defect.
+                self.report_failure(e)
+                continue
             self.send(result, "out_")
 
     def __repr__(self) -> str:

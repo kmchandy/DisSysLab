@@ -5,6 +5,36 @@ loosely follows [Keep a Changelog](https://keepachangelog.com/);
 versions follow [SemVer](https://semver.org/).
 
 
+## [1.10.2] — 2026-08-30
+
+### Fixed — the hang was in five places; 1.10.0 fixed one
+
+`Role.run` ended with `print(...)` and `return`, which ended the
+thread, so the agent never reached the shutdown protocol and the
+office ran for ever. 1.10.0 fixed that and said the hang was fixed.
+
+It was not. `Transform`, `Sink`, `Split` and `Coordinator` each
+carried their own copy of the same four lines — and therefore their
+own copy of the same defect. **A sink meeting a full disk still hung
+the whole office**, silently, exactly as before.
+
+Found while checking whether a *backtest* role could hang: the
+question "which class do those roles build?" turned up `Role` and
+`Transform`, and `Transform` still had it.
+
+The behaviour now lives once, in `Agent.report_failure`. Each block
+writes `self.report_failure(e); continue`. One bad message costs that
+message; the run finishes, the summary counts the failures and quotes
+the first, and `dsl run` exits non-zero. A test per caller proves the
+sharing is real rather than assumed.
+
+That five copies of four lines meant five copies of one bug is the
+same lesson as the rest of this release series, arriving from the
+other direction: the earlier work removed duplicate *statements of
+fact* between prose and code, and this removes a duplicated
+*implementation*. Both drift, and the drift is invisible until
+something fails.
+
 ## [1.10.1] — 2026-08-29
 
 ### Fixed — `dsl run <name>` no longer writes inside the installed package

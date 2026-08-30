@@ -178,3 +178,114 @@ def test_a_clean_office_still_exits_zero(tmp_path):
     result = _run(_office(tmp_path, "pass"))
     assert result.returncode == 0, result.stdout + result.stderr
     assert "failed" not in result.stdout
+
+
+# ── the same defect, in the four blocks the first fix missed ──────────
+#
+# `Role.run` was fixed and reported as "the hang is fixed". It was not:
+# `Transform`, `Sink`, `Split` and `Coordinator` each carried their own
+# copy of
+#
+#     except Exception as e:
+#         print(...)
+#         print(traceback.format_exc())
+#         return
+#
+# -- four more copies of the same four lines, and therefore four more
+# copies of the same hang. A sink meeting a full disk still stopped
+# everything. Found a week later, while checking whether a backtest
+# role could hang, by asking which classes those roles actually build.
+#
+# The behaviour now lives once, in `Agent.report_failure`, and these
+# tests exercise every caller. A shared implementation is what stops
+# this recurring; a test per caller is what proves the sharing is real.
+
+import pytest as _pytest
+
+from dissyslab import network as _network
+from dissyslab.blocks import (
+    Coordinator as _Coordinator,
+    Sink as _Sink,
+    Source as _Source,
+    Split as _Split,
+    Transform as _Transform,
+)
+
+
+def _source(items, **kw):
+    data, i = list(items), [0]
+
+    def fn():
+        if i[0] >= len(data):
+            return None
+        i[0] += 1
+        return data[i[0] - 1]
+
+    return _Source(fn=fn, **kw)
+
+
+@_pytest.mark.timeout(60)
+def test_a_transform_that_raises_does_not_hang():
+    got = []
+    def boom(m):
+        if m == 3:
+            raise ValueError("boom")
+        return m
+
+    t = _Transform(fn=boom, name="T")
+    g = _network([(_source([1, 2, 3, 4, 5], name="s"), t),
+                  (t, _Sink(fn=got.append, name="k"))])
+    code = g.run_network(timeout=None)
+    assert code == 1, "an agent that failed must not report success"
+    assert got == [1, 2, 4, 5], "one bad message costs that message only"
+
+
+@_pytest.mark.timeout(60)
+def test_a_sink_that_raises_does_not_hang():
+    """A full disk, a bad path, a record the writer chokes on. The
+    office used to stop dead and never exit."""
+    seen = []
+    def boom(m):
+        seen.append(m)
+        if m == 3:
+            raise IOError("No space left on device")
+
+    g = _network([(_source([1, 2, 3, 4, 5], name="s"),
+                   _Sink(fn=boom, name="recorder"))])
+    code = g.run_network(timeout=None)
+    assert code == 1
+    assert seen == [1, 2, 3, 4, 5], "the sink kept receiving after the failure"
+
+
+@_pytest.mark.timeout(60)
+def test_a_split_that_raises_does_not_hang():
+    a, b = [], []
+    def boom(m):
+        if m == 3:
+            raise ValueError("boom")
+        return [m, m]
+
+    sp = _Split(fn=boom, num_outputs=2, name="S")
+    g = _network([(_source([1, 2, 3, 4, 5], name="s"), sp),
+                  (sp.out_0, _Sink(fn=a.append, name="a")),
+                  (sp.out_1, _Sink(fn=b.append, name="b"))])
+    code = g.run_network(timeout=None)
+    assert code == 1
+    assert a == [1, 2, 4, 5] and b == [1, 2, 4, 5]
+
+
+@_pytest.mark.timeout(60)
+def test_the_failure_is_counted_and_quoted_once_per_agent():
+    """Whichever block failed, the run summary answers the same two
+    questions: how many, and what was the first one."""
+    def boom(m):
+        raise ValueError(f"boom on {m}")
+
+    g = _network([(_source([1, 2, 3], name="s"),
+                   _Sink(fn=boom, name="recorder"))])
+    g.run_network(timeout=None)
+    report = g.run_report()
+    name = next(n for n in report["agents"] if n.endswith("recorder"))
+    assert report["agents"][name]["failures"] == 3
+    failed = dict((n, d) for n, _c, d in report["failed_agents"])
+    assert "ValueError: boom on 1" in failed[name], failed
