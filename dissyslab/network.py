@@ -964,11 +964,49 @@ class Network:
                   "exits non-zero.")
 
     def _raise_if_no_source_produced_output(self) -> None:
-        """Turn a silently empty run into a loud failure."""
+        """Turn a silently empty run into a loud failure.
+
+        **Only when the run really was empty.** This used to raise the
+        moment *any* source produced nothing, and a student running an
+        office with two job feeds -- one of which returned nothing that
+        poll, which is ordinary for RSS -- was told:
+
+            dsl run: the office ran but produced nothing.
+            ...so nothing downstream of them ran
+
+        Three false statements in one report. The office had written two
+        entries to its shortlist and three to its rejects file;
+        everything downstream had run, fed by the other feed; and the
+        run exited non-zero on a run that did its job.
+
+        The distinction this needed already existed one field over.
+        ``all_error_sources`` and ``some_error_sources`` split exactly
+        this way for errors -- every message a failure report means the
+        source is dead, some means the office is fine and the count is
+        worth printing. Emptiness had no such split, and that asymmetry
+        was the bug.
+
+        So: every source empty is still the loud failure this was
+        written for -- the clean, silent, entirely empty morning brief.
+        Some sources empty and others producing is a note in the run
+        summary and exit 0.
+        """
         report = self.run_report()
         failed, empty = report["failed_sources"], report["empty_sources"]
         all_errors = report["all_error_sources"]
         if not failed and not empty and not all_errors:
+            return
+
+        # Did anything reach the office at all? A source that sent
+        # messages is one that fed it, whatever the others did.
+        sources = self._source_names()
+        produced = [
+            name for name in sources
+            if report["agents"].get(name, {}).get("sent", 0) > 0
+            and name not in {n for n, *_ in all_errors}
+        ]
+        if produced and not failed and not all_errors:
+            self._note_empty_sources(empty, produced)
             return
 
         lines: List[str] = []
@@ -1022,6 +1060,36 @@ class Network:
                 "require_source_output=False to run_network()."
             )
         raise OfficeRunError("\n".join(lines))
+
+    def _source_names(self) -> List[str]:
+        """The names of this office's sources."""
+        from dissyslab.blocks.source import Source as _Source
+
+        return [n for n, a in self.agents.items() if isinstance(a, _Source)]
+
+    def _note_empty_sources(
+        self, empty: List[str], produced: List[str]
+    ) -> None:
+        """One feed was quiet; the office ran on the others.
+
+        Printed rather than raised, and worded so it cannot be read as
+        a failure. What a student needs to know here is that the run is
+        real but thinner than they expected, and which feed to look at
+        if they care -- not that something went wrong, because nothing
+        did.
+        """
+        if not empty:
+            return
+        print()
+        for name in empty:
+            print(f"  note: {name} produced nothing this run.")
+        print(f"        The office ran on {', '.join(produced)}, so its "
+              "output is real —")
+        print("        just missing whatever that source would have added. "
+              "An empty")
+        print("        feed is ordinary; a feed that is empty every run is "
+              "pointed at")
+        print("        something that is not there.")
 
     # ========== Process-based Execution ==========
 

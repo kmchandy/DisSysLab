@@ -100,6 +100,70 @@ class TestEmptyAndFailingSources:
         g.run_network(timeout=5)
         assert results == [1, 2, 3]
 
+    def test_one_empty_source_among_several_is_a_note_not_a_failure(self, capsys):
+        """Found by running a student's office with two job feeds.
+
+        One feed returned nothing that poll -- ordinary for RSS -- and
+        the guard raised, printing:
+
+            dsl run: the office ran but produced nothing.
+            ...so nothing downstream of them ran
+
+        Three false statements at once. The office had written two
+        entries to its shortlist and three to its rejects file, every
+        agent downstream had run on the other feed's messages, and the
+        run exited non-zero having done its job.
+
+        The distinction already existed one field over: `all_error_sources`
+        and `some_error_sources` split exactly this way. Emptiness did
+        not, and that asymmetry was the bug.
+        """
+        sink, results = collect_sink()
+        g = network([
+            (make_source([1, 2, 3], name="live"), sink),
+            (make_source([], name="quiet"), sink),
+        ])
+        g.run_network(timeout=5)          # must not raise
+        assert results == [1, 2, 3], "the office really did produce output"
+
+        out = capsys.readouterr().out
+        assert "quiet produced nothing" in out, out
+        assert "live" in out, "say which source did feed the office"
+        assert "produced nothing this run" in out
+        # The three false claims, none of which may come back.
+        assert "office ran but produced nothing" not in out
+        assert "nothing downstream" not in out
+
+    def test_every_source_empty_is_still_a_failure(self):
+        """The half the guard was written for, and it must survive.
+
+        An office whose sources all produced nothing is the clean,
+        silent, entirely empty morning brief -- structurally perfect,
+        exit 0, and useless. Softening the whole check to fix the
+        mixed case would have put that back.
+        """
+        sink, _ = collect_sink()
+        g = network([
+            (make_source([], name="quiet_a"), sink),
+            (make_source([], name="quiet_b"), sink),
+        ])
+        with pytest.raises(OfficeRunError, match="no messages at all"):
+            g.run_network(timeout=5)
+
+    def test_a_source_that_dies_is_a_failure_even_beside_a_working_one(self):
+        """Empty is ordinary; raising is not. A feed that threw has a
+        reason worth stopping for, whatever the other sources did."""
+        def boom():
+            raise FileNotFoundError("no such file: 'points.txt'")
+
+        sink, _ = collect_sink()
+        g = network([
+            (make_source([1, 2], name="live"), sink),
+            (Source(fn=boom, name="broken"), sink),
+        ])
+        with pytest.raises(OfficeRunError, match="broken"):
+            g.run_network(timeout=5)
+
     def test_run_report_counts_messages(self):
         sink, _ = collect_sink()
         g = network([(make_source([1, 2, 3]), sink)])
