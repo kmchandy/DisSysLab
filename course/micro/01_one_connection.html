@@ -111,6 +111,30 @@
   details[open] summary::before{content:"▾ "}
   details p{margin:11px 0 0; font-size:15.5px}
 
+  figure.fig{
+    margin:30px 0 26px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+  }
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig figcaption{
+    margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body);
+  }
+  figure.fig figcaption b{color:var(--ink)}
+  figure.fig figcaption code{font-size:.86em}
+  .figctl{
+    display:flex; flex-wrap:wrap; gap:14px 24px; align-items:flex-end;
+    margin-top:12px; padding-top:14px; border-top:1px solid var(--line);
+  }
+  .figctl .ctl{min-width:210px; flex:1 1 210px}
+  .figctl .btns{margin-left:auto}
+  .figkey{
+    display:flex; gap:20px; align-items:center; justify-content:flex-end;
+    margin-top:4px; font-size:12.5px; color:var(--muted);
+  }
+  .figkey span{display:inline-flex; align-items:center; gap:7px}
+  .figkey i{width:10px; height:10px; border-radius:2px; display:inline-block}
+
   .axioms{list-style:none; padding:0; margin:22px 0 0; counter-reset:ax}
   .axioms li{
     counter-increment:ax; position:relative; padding:16px 20px 16px 62px;
@@ -149,7 +173,7 @@
     <div class="kicker">DisSysLab · Micro-course 1</div>
     <h1>Introduction</h1>
     <p class="standfirst">A distributed system is represented by an office
-      consisting of a set of agents - workers - and a network that connects 
+      consisting of a set of agents -- workers -- and a network that connects 
     them.</p>
     <div class="meta">
       <span><b>Time</b> ~30 minutes</span>
@@ -159,34 +183,237 @@
   </header>
 
   <h2><span class="n">SECTION 1</span>A model of a distributed system</h2>
+
   <p class="lead">An <em class="term">office</em> is a set of agents and a
-    set of connections. Each agent
-    is executed in a separate thread of execution. Each agent has its own private state. 
-    Agents share no memory. The only way in which agents can interact is 
-    that an agent can send a message to another agent.</p>
-    
-  <p><b>Inboxes and Outboxes</b> 
-    Each agent has a set of outboxes and a set of inboxes. Inboxes and 
-    outboxes are queues of messages.
-    An agent receives messages from its inboxes and puts outgoing messages 
-    in its outboxes.
-    A <em class="source">outbox</em> agent is one with no inboxes and 
-    a <em class="sink">outbox</em> agent is one with no outboxes.
+    set of connections. Each agent runs in its own thread of execution, and
+    each agent has its own private state. Agents share no memory. The only
+    way in which agents can interact is that an agent can send a message to
+    another agent.</p>
+
+  <p><b>Inboxes and outboxes.</b>
+    Each agent has a set of inboxes and a set of outboxes. Inboxes and
+    outboxes are queues of messages. An agent receives messages from its
+    inboxes and puts outgoing messages in its outboxes.
+    A <em class="term">source</em> agent is one with no inboxes, and
+    a <em class="term">sink</em> agent is one with no outboxes.
   </p>
 
-  <p><b>Connections: Message Channels</b>
+  <figure class="fig">
+    <svg viewBox="0 0 1040 372" role="img" aria-labelledby="f1t f1d">
+      <title id="f1t">An office of six agents</title>
+      <desc id="f1d">An agent is represented by a box.
+        hacker_news and file_source are sources;
+        console_printer and jsonl_recorder are sinks. Screen has one
+        inbox and two outboxes, keep and discard.
+        Editor has two inboxes,
+        article and guidance, and one outbox.</desc>
+
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5"
+                markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="#9a9384"/>
+        </marker>
+      </defs>
+
+      <g fill="none" stroke="#9a9384" stroke-width="1.7" marker-end="url(#ah)">
+        <path d="M200,172 L244,172"/>
+        <path d="M420,60 C490,60 490,196 554,196"/>
+        <path d="M430,148 L554,148"/>
+        <path d="M430,196 C520,240 640,296 834,296"/>
+        <path d="M740,172 C790,172 790,152 834,152"/>
+      </g>
+
+      <g font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
+
+        <!-- ── source agents: no inboxes ────────────────────────────── -->
+        <g>
+          <rect x="30" y="142" width="170" height="60" rx="9"
+                fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
+          <text x="115" y="167" text-anchor="middle" font-size="13.5"
+                font-weight="600" fill="#1a1a2e">hacker_news</text>
+          <text x="115" y="184" text-anchor="middle" font-size="11"
+                fill="#8a8578" font-style="italic">source agent</text>
+          <rect x="196" y="168" width="8" height="8" rx="2" fill="#d13d0e"/>
+          <text x="192" y="160" text-anchor="end" font-size="10.5"
+                font-family="ui-monospace,Menlo,Consolas,monospace"
+                fill="#b0553a">destination</text>
+        </g>
+
+        <g>
+          <rect x="250" y="30" width="170" height="60" rx="9"
+                fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
+          <text x="335" y="55" text-anchor="middle" font-size="13.5"
+                font-weight="600" fill="#1a1a2e">file_source</text>
+          <text x="335" y="72" text-anchor="middle" font-size="11"
+                fill="#8a8578" font-style="italic">source agent</text>
+          <rect x="416" y="56" width="8" height="8" rx="2" fill="#d13d0e"/>
+          <text x="412" y="48" text-anchor="end" font-size="10.5"
+                font-family="ui-monospace,Menlo,Consolas,monospace"
+                fill="#b0553a">destination</text>
+        </g>
+
+        <!-- ── Screen: one inbox, two outboxes ──────────────────────── -->
+        <g>
+          <rect x="250" y="124" width="180" height="96" rx="10"
+                fill="#ffffff" stroke="#2f3d55" stroke-width="2"/>
+          <text x="340" y="167" text-anchor="middle" font-size="15"
+                font-weight="650" fill="#1a1a2e">Screen</text>
+          <text x="340" y="185" text-anchor="middle" font-size="11.5"
+                fill="#6f7583" font-style="italic">relevance_filter</text>
+          <rect x="246" y="168" width="8" height="8" rx="2" fill="#00947d"/>
+          <text x="258" y="176" font-size="10.5"
+                font-family="ui-monospace,Menlo,Consolas,monospace"
+                fill="#00806c">in_</text>
+          <rect x="426" y="144" width="8" height="8" rx="2" fill="#d13d0e"/>
+          <text x="422" y="152" text-anchor="end" font-size="10.5"
+                font-family="ui-monospace,Menlo,Consolas,monospace"
+                fill="#b0553a">keep</text>
+          <rect x="426" y="192" width="8" height="8" rx="2" fill="#d13d0e"/>
+          <text x="422" y="200" text-anchor="end" font-size="10.5"
+                font-family="ui-monospace,Menlo,Consolas,monospace"
+                fill="#b0553a">discard</text>
+        </g>
+
+        <!-- ── Editor: two inboxes, one outbox ──────────────────────── -->
+        <g>
+          <rect x="560" y="124" width="180" height="96" rx="10"
+                fill="#ffffff" stroke="#2f3d55" stroke-width="2"/>
+          <text x="655" y="167" text-anchor="middle" font-size="15"
+                font-weight="650" fill="#1a1a2e">Editor</text>
+          <text x="655" y="185" text-anchor="middle" font-size="11.5"
+                fill="#6f7583" font-style="italic">house_editor</text>
+          <rect x="556" y="144" width="8" height="8" rx="2" fill="#00947d"/>
+          <text x="568" y="152" font-size="10.5"
+                font-family="ui-monospace,Menlo,Consolas,monospace"
+                fill="#00806c">article</text>
+          <rect x="556" y="192" width="8" height="8" rx="2" fill="#00947d"/>
+          <text x="568" y="200" font-size="10.5"
+                font-family="ui-monospace,Menlo,Consolas,monospace"
+                fill="#00806c">guidance</text>
+          <rect x="736" y="168" width="8" height="8" rx="2" fill="#d13d0e"/>
+          <text x="732" y="160" text-anchor="end" font-size="10.5"
+                font-family="ui-monospace,Menlo,Consolas,monospace"
+                fill="#b0553a">out</text>
+        </g>
+
+        <!-- ── sink agents: no outboxes ─────────────────────────────── -->
+        <g>
+          <rect x="840" y="122" width="170" height="60" rx="9"
+                fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
+          <text x="925" y="147" text-anchor="middle" font-size="13.5"
+                font-weight="600" fill="#1a1a2e">console_printer</text>
+          <text x="925" y="164" text-anchor="middle" font-size="11"
+                fill="#8a8578" font-style="italic">sink agent</text>
+          <rect x="836" y="148" width="8" height="8" rx="2" fill="#00947d"/>
+          <text x="848" y="140" font-size="10.5"
+                font-family="ui-monospace,Menlo,Consolas,monospace"
+                fill="#00806c">in_</text>
+        </g>
+
+        <g>
+          <rect x="840" y="266" width="170" height="60" rx="9"
+                fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
+          <text x="925" y="291" text-anchor="middle" font-size="13.5"
+                font-weight="600" fill="#1a1a2e">jsonl_recorder</text>
+          <text x="925" y="308" text-anchor="middle" font-size="11"
+                fill="#8a8578" font-style="italic">sink agent</text>
+          <rect x="836" y="292" width="8" height="8" rx="2" fill="#00947d"/>
+          <text x="848" y="284" font-size="10.5"
+                font-family="ui-monospace,Menlo,Consolas,monospace"
+                fill="#00806c">in_</text>
+        </g>
+      </g>
+    </svg>
+
+    <div class="figkey">
+      <span><i style="background:#00947d"></i>inbox</span>
+      <span><i style="background:#d13d0e"></i>outbox</span>
+    </div>
+
+    <figcaption><b>Figure 1. An office of six agents.</b>
+      Each agent is represented by a box.
+      <code>hacker_news</code> and <code>file_source</code> are sources;
+      <code>console_printer</code> and
+      <code>jsonl_recorder</code> are sinks.
+      <code>Screen</code> has one inbox and two outboxes called
+      <code>keep</code> and <code>discard</code>.
+      <code>Editor</code> has two inboxes — <code>guidance</code>
+      and <code>article</code> — and one outbox.</figcaption>
+  </figure>
+
+  <p><b>Connections: message channels.</b>
     A connection is a message channel from an outbox of an agent to an inbox
-    of an inbox of an agent. A connection is specified by a 4-tuple:
+    of an agent. A connection is specified by a 4-tuple:
     sending agent, sending agent's outbox, receiving agent, receiving agent's inbox.
     Each message channel is a queue of messages.
   </p>
 
-  <p><b>Message Propagation</b>
-    The system removes a message from a nonempty outbox and puts a copy of the message
-    in every channel to which that outbox is connected. And the system removes a message
-    from a nonempty channel and puts the message in the inbox to which it is connected.
-    </p>
+  <p><b>Message propagation.</b>
+    The system removes a message from a nonempty outbox and puts a copy of the
+    message in every channel to which that outbox is connected. The system also
+    removes a message from a nonempty channel and puts the message in the inbox
+    to which the channel is connected.
+  </p>
 
+  <p>Two consequences of that rule deserve pictures, because they are the two
+    places where the number of connections at a port is not one.</p>
+
+  <figure class="fig">
+    <div class="stage" style="border:0;padding:0;background:none">
+      <canvas id="bcast" width="1040" height="300"></canvas>
+    </div>
+    <div class="figctl">
+      <div class="ctl">
+        <label>X writes into its outbox <span class="val"></span></label>
+        <input type="range" min="0" max="2" step="0.1" value="0.7" data-b="produce">
+      </div>
+      <div class="ctl">
+        <label>the system broadcasts one message <span class="val"></span></label>
+        <input type="range" min="0" max="2" step="0.1" value="0.6" data-b="broadcast">
+      </div>
+      <div class="btns">
+        <button data-b="step">Step</button>
+        <button data-b="reset">Reset</button>
+        <button data-b="play" class="primary">Pause</button>
+      </div>
+    </div>
+    <figcaption><b>Figure 2. Broadcast: one outbox, two connections.</b>
+      One removal, two copies. The message leaves the outbox exactly once, and
+      a copy of it is placed in each of the two channels — the two copies carry
+      the same label here so that this is visible. Neither channel is
+      privileged and neither waits for the other; once the copies are in the
+      channels they travel independently, and the message may be read by one
+      recipient long before the other.</figcaption>
+  </figure>
+
+  <figure class="fig">
+    <div class="stage" style="border:0;padding:0;background:none">
+      <canvas id="merge" width="1040" height="300"></canvas>
+    </div>
+    <div class="figctl">
+      <div class="ctl">
+        <label>channel from A delivers <span class="val"></span></label>
+        <input type="range" min="0" max="2" step="0.1" value="0.7" data-m="deliverA">
+      </div>
+      <div class="ctl">
+        <label>channel from B delivers <span class="val"></span></label>
+        <input type="range" min="0" max="2" step="0.1" value="0.7" data-m="deliverB">
+      </div>
+      <div class="btns">
+        <button data-m="step">Step</button>
+        <button data-m="reset">Reset</button>
+        <button data-m="play" class="primary">Pause</button>
+      </div>
+    </div>
+    <figcaption><b>Figure 3. Merge: two connections, one inbox.</b>
+      Each channel delivers on its own schedule, so the order in which the two
+      streams interleave in the inbox is arbitrary. Messages from A keep their
+      order relative to each other, and so do messages from B; nothing whatever
+      is determined about the order of an <code>a</code> relative to a
+      <code>b</code>. Set one channel's rate to 0 and the inbox fills from the
+      other alone — Y cannot tell from its inbox that a channel exists that has
+      stopped delivering.</figcaption>
+  </figure>
 
 </div>
 
@@ -218,12 +445,23 @@
 </div>
 
 <div class="wrap">
-  <p style="margin-top:22px">Four actions are going on there, and no two of them
-    are coordinated. <b>X</b> writes when it writes. The connection collects when
-    it collects. <b>Y</b> reads when it reads. Each has its own rate and its own
-    jitter, and nothing anywhere in the picture is waiting for a shared tick.
-    That word — <em class="term">asynchronous</em> — means exactly this and
-    nothing more mysterious.</p>
+  <p style="margin-top:22px">The diagram shows the following actions which proceed 
+    asynchronously.
+    <ol>
+      <li>
+     <b>X</b> puts messages on its outbox.
+     </li>
+     <li>
+      Messages from <b>X</b>'s outbox are put on the channel.
+    </li>
+    <li>
+      Messages from the channel are put in <b>Y</b>'s inbox.
+    </li>
+    <li>
+      <b>Y</b> gets messages from its inbox.
+    </li>
+  </ol>
+  </p>
 
   <h2><span class="n">SECTION 2</span>Three things to do with it</h2>
   <p>Do these now, in the picture above. Each one takes a minute and each one is
@@ -433,6 +671,278 @@ dsl doctor      <span class="c"># what is installed, and whether it is stale</sp
     the algorithm that fixes it.
   </footer>
 </div>
+
+<script>
+// ── Figures 2 and 3: broadcast and merge ─────────────────────────────
+//
+// Deliberately separate from the Section-5 simulation below. These two
+// illustrate one clause of the propagation rule each, so they carry no
+// agents' inboxes, no termination, and no failure -- only the queues the
+// clause mentions.
+(function(){
+  "use strict";
+
+  const SLOT = 38, TOK = 28, SPEED = 330;
+  const FS = '-apple-system,Segoe UI,Helvetica,Arial,sans-serif';
+  const MONO = 'ui-monospace,Menlo,Consolas,monospace';
+
+  function roundRect(c,x0,y0,x1,y1,r){
+    c.beginPath(); c.moveTo(x0+r,y0);
+    c.arcTo(x1,y0,x1,y1,r); c.arcTo(x1,y1,x0,y1,r);
+    c.arcTo(x0,y1,x0,y0,r); c.arcTo(x0,y0,x1,y0,r);
+    c.closePath();
+  }
+
+  // A queue drawn as `cap` slots, packed toward its exit (right) end, so
+  // the head -- the next message to leave -- is always the rightmost.
+  function Q(x0, y, cap, caption){
+    return {x0, y, cap, caption, x1:x0+cap*SLOT, items:[], flash:0};
+  }
+  const slotX = (q,i) => q.x1 - (i+0.5)*SLOT;
+
+  function drawQ(c,q){
+    const y0=q.y-22, y1=q.y+22;
+    c.fillStyle='#fdfcfa'; roundRect(c,q.x0,y0,q.x1,y1,7); c.fill();
+    c.strokeStyle='#e6e2da'; c.lineWidth=1;
+    for(let i=1;i<q.cap;i++){
+      const x=q.x0+i*SLOT;
+      c.beginPath(); c.moveTo(x,y0+5); c.lineTo(x,y1-5); c.stroke();
+    }
+    c.lineWidth=2;
+    c.strokeStyle='rgba(47,61,85,'+(0.28+0.55*q.flash)+')';
+    roundRect(c,q.x0,y0,q.x1,y1,7); c.stroke();
+    c.font='12.5px '+FS; c.fillStyle='#6b7280';
+    c.textAlign='center'; c.textBaseline='top';
+    c.fillText(q.caption,(q.x0+q.x1)/2,y1+9);
+  }
+
+  function drawBox(c,x0,y0,x1,y1,name,sub){
+    c.fillStyle='#f3f1ec'; c.strokeStyle='#2f3d55'; c.lineWidth=2;
+    roundRect(c,x0,y0,x1,y1,11); c.fill(); c.stroke();
+    c.fillStyle='#2f3d55'; c.textAlign='center'; c.textBaseline='middle';
+    c.font='600 16px '+FS; c.fillText(name,(x0+x1)/2,(y0+y1)/2-9);
+    c.font='12.5px '+FS; c.fillStyle='#7a8494';
+    c.fillText(sub,(x0+x1)/2,(y0+y1)/2+11);
+  }
+
+  function drawTok(c,m){
+    c.globalAlpha=Math.max(0,Math.min(1,m.alpha));
+    c.fillStyle='hsl('+m.hue+' 52% 56%)';
+    c.strokeStyle='hsl('+m.hue+' 52% 40%)'; c.lineWidth=1.5;
+    roundRect(c,m.x-TOK/2,m.y-TOK/2,m.x+TOK/2,m.y+TOK/2,6);
+    c.fill(); c.stroke();
+    c.fillStyle='#fff'; c.font='600 12px '+FS;
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillText(m.label,m.x,m.y+0.5);
+    c.globalAlpha=1;
+  }
+
+  function arrow(c,x0,y0,x1,y1){
+    c.strokeStyle='#c9c3b8'; c.lineWidth=1.5;
+    const a=Math.atan2(y1-y0,x1-x0), hx=x1-8*Math.cos(a), hy=y1-8*Math.sin(a);
+    c.beginPath(); c.moveTo(x0,y0); c.lineTo(hx,hy); c.stroke();
+    c.fillStyle='#c9c3b8';
+    c.beginPath(); c.moveTo(x1,y1);
+    c.lineTo(hx-5*Math.sin(a),hy+5*Math.cos(a));
+    c.lineTo(hx+5*Math.sin(a),hy-5*Math.cos(a));
+    c.closePath(); c.fill();
+  }
+
+  function glide(m,tx,ty,dt){
+    const dx=tx-m.x, dy=ty-m.y, d=Math.hypot(dx,dy);
+    if(d<=SPEED*dt||d<0.5){ m.x=tx; m.y=ty; m.settled=true; }
+    else { m.x+=dx/d*SPEED*dt; m.y+=dy/d*SPEED*dt; m.settled=false; }
+  }
+  const head = q => { const m=q.items[0]; return (m&&m.settled)?m:null; };
+
+  // Independent, jittered schedules: no two actors ever agree on a tick.
+  function scheduler(actors){
+    let t=0, playing=true;
+    const gap = r => r>0 ? (1/r)*(0.45+Math.random()*1.15) : Infinity;
+    const re = a => { a.next = t + gap(a.rate); };
+    actors.forEach(re);
+    return {
+      actors, re,
+      isPlaying:()=>playing,
+      setPlaying(v){ playing=v; if(v) actors.forEach(re); },
+      setRate(key,r){ const a=actors.find(x=>x.key===key); a.rate=r; re(a); },
+      tick(dt){
+        if(!playing) return;
+        t+=dt;
+        for(const a of actors){
+          let guard=0;
+          while(t>=a.next && guard++<20){ a.run(); re(a); }
+        }
+      },
+      step(){
+        const due=actors.filter(a=>isFinite(a.next)).sort((p,q)=>p.next-q.next)[0];
+        if(!due) return;
+        t=Math.max(t,due.next); due.run(); re(due);
+      },
+      reset(){ t=0; actors.forEach(re); }
+    };
+  }
+
+  function wire(root, attr, sched, extra){
+    root.querySelectorAll('input[data-'+attr+']').forEach(inp=>{
+      const val=inp.closest('.ctl').querySelector('.val');
+      const show=()=>{ val.textContent = (+inp.value===0) ? '— stopped'
+                                       : '— about '+(+inp.value).toFixed(1)+'×/s'; };
+      inp.addEventListener('input',()=>{ sched.setRate(inp.dataset[attr],+inp.value); show(); });
+      sched.setRate(inp.dataset[attr],+inp.value); show();
+    });
+    const play=root.querySelector('[data-'+attr+'=play]');
+    play.onclick=()=>{ sched.setPlaying(!sched.isPlaying());
+                       play.textContent=sched.isPlaying()?'Pause':'Play'; };
+    root.querySelector('[data-'+attr+'=step]').onclick=()=>{
+      if(sched.isPlaying()){ sched.setPlaying(false); play.textContent='Play'; }
+      sched.step();
+    };
+    root.querySelector('[data-'+attr+'=reset]').onclick=extra;
+  }
+
+  function loop(fn){
+    let last=performance.now();
+    (function frame(now){
+      const dt=Math.min(0.05,(now-last)/1000); last=now;
+      fn(dt); requestAnimationFrame(frame);
+    })(last);
+  }
+
+  // ══ Figure 2 — broadcast ═══════════════════════════════════════════
+  (function(){
+    const cv=document.getElementById('bcast'); if(!cv) return;
+    const c=cv.getContext('2d'), W=1040, H=300;
+
+    const outbox = Q(230, 150, 5, "X's outbox");
+    const up     = Q(520,  62, 5, 'channel to Y');
+    const down   = Q(520, 238, 5, 'channel to Z');
+    const qs=[outbox,up,down];
+    let n=1, leaving=[];
+
+    function actorProduce(){
+      if(outbox.items.length>=outbox.cap) return;
+      const k=n++;
+      outbox.items.push({label:'m'+k, hue:(k*47)%360, x:190, y:150, alpha:1});
+      outbox.flash=1;
+    }
+    // The rule, exactly: one removal from the outbox, one copy into each
+    // channel the outbox is connected to.
+    function actorBroadcast(){
+      const m=head(outbox);
+      if(!m) return;
+      if(up.items.length>=up.cap || down.items.length>=down.cap) return;
+      outbox.items.shift();
+      const a={...m}, b={...m};
+      up.items.push(a); down.items.push(b);
+      up.flash=1; down.flash=1;
+    }
+    function drain(q,tx){
+      const m=head(q); if(!m) return;
+      q.items.shift(); m.target=tx; leaving.push(m);
+    }
+
+    const sched=scheduler([
+      {key:'produce',   rate:0.7, next:0, run:actorProduce},
+      {key:'broadcast', rate:0.6, next:0, run:actorBroadcast},
+      {key:'toY', rate:0.5, next:0, run:()=>drain(up,860)},
+      {key:'toZ', rate:0.5, next:0, run:()=>drain(down,860)}
+    ]);
+
+    loop(dt=>{
+      sched.tick(dt);
+      qs.forEach(q=>{
+        q.items.forEach((m,i)=>glide(m,slotX(q,i),q.y,dt));
+        q.flash=Math.max(0,q.flash-dt*1.6);
+      });
+      leaving.forEach(m=>{ glide(m,m.target,m.y,dt); m.alpha-=dt*0.9; });
+      leaving=leaving.filter(m=>m.alpha>0);
+
+      c.clearRect(0,0,W,H);
+      drawBox(c,40,100,190,200,'Agent X','a thread');
+      arrow(c,196,150,outbox.x0-6,150);
+      arrow(c,outbox.x1+6,144,up.x0-6,70);
+      arrow(c,outbox.x1+6,156,down.x0-6,230);
+      arrow(c,up.x1+6,62,838,62);
+      arrow(c,down.x1+6,238,838,238);
+      qs.forEach(q=>drawQ(c,q));
+      c.font='13px '+FS; c.fillStyle='#8a8578'; c.textAlign='left';
+      c.textBaseline='middle';
+      c.fillText('to Y',846,62); c.fillText('to Z',846,238);
+      leaving.forEach(m=>drawTok(c,m));
+      qs.forEach(q=>q.items.forEach(m=>drawTok(c,m)));
+    });
+
+    wire(cv.closest('figure'),'b',sched,()=>{
+      qs.forEach(q=>{q.items=[];q.flash=0;}); leaving=[]; n=1; sched.reset();
+    });
+  })();
+
+  // ══ Figure 3 — merge ═══════════════════════════════════════════════
+  (function(){
+    const cv=document.getElementById('merge'); if(!cv) return;
+    const c=cv.getContext('2d'), W=1040, H=300;
+
+    const chA   = Q(180,  62, 5, 'channel from A');
+    const chB   = Q(180, 238, 5, 'channel from B');
+    const inbox = Q(560, 150, 6, "Y's inbox");
+    const qs=[chA,chB,inbox];
+    let na=1, nb=1, leaving=[];
+
+    function fill(q,letter,hue,count){
+      if(q.items.length>=q.cap) return count;
+      q.items.push({label:letter+count, hue, x:q.x0-30, y:q.y, alpha:1});
+      q.flash=1;
+      return count+1;
+    }
+    // Each channel delivers into the same inbox, on its own schedule.
+    // Order within a channel is kept; order between them is not.
+    function deliver(q){
+      const m=head(q);
+      if(!m || inbox.items.length>=inbox.cap) return;
+      q.items.shift(); inbox.items.push(m); inbox.flash=1;
+    }
+    function consume(){
+      const m=head(inbox); if(!m) return;
+      inbox.items.shift(); leaving.push(m);
+    }
+
+    const sched=scheduler([
+      {key:'fillA',    rate:0.9, next:0, run:()=>{ na=fill(chA,'a',205,na); }},
+      {key:'fillB',    rate:0.9, next:0, run:()=>{ nb=fill(chB,'b',28,nb); }},
+      {key:'deliverA', rate:0.7, next:0, run:()=>deliver(chA)},
+      {key:'deliverB', rate:0.7, next:0, run:()=>deliver(chB)},
+      {key:'read',     rate:0.7, next:0, run:consume}
+    ]);
+
+    loop(dt=>{
+      sched.tick(dt);
+      qs.forEach(q=>{
+        q.items.forEach((m,i)=>glide(m,slotX(q,i),q.y,dt));
+        q.flash=Math.max(0,q.flash-dt*1.6);
+      });
+      leaving.forEach(m=>{ glide(m,930,150,dt); m.alpha-=dt*1.1; });
+      leaving=leaving.filter(m=>m.alpha>0);
+
+      c.clearRect(0,0,W,H);
+      c.font='13px '+FS; c.fillStyle='#8a8578';
+      c.textAlign='right'; c.textBaseline='middle';
+      c.fillText('from A',168,62); c.fillText('from B',168,238);
+      arrow(c,chA.x1+6,70,inbox.x0-6,144);
+      arrow(c,chB.x1+6,230,inbox.x0-6,156);
+      arrow(c,inbox.x1+6,150,854,150);
+      drawBox(c,860,100,1010,200,'Agent Y','a thread');
+      qs.forEach(q=>drawQ(c,q));
+      leaving.forEach(m=>drawTok(c,m));
+      qs.forEach(q=>q.items.forEach(m=>drawTok(c,m)));
+    });
+
+    wire(cv.closest('figure'),'m',sched,()=>{
+      qs.forEach(q=>{q.items=[];q.flash=0;}); leaving=[]; na=1; nb=1; sched.reset();
+    });
+  })();
+})();
+</script>
 
 <script>
 (function(){
