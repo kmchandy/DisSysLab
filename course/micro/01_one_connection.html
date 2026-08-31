@@ -527,22 +527,22 @@
 We will reason about the correct behavior of a distributed system using UNITY logic
 which is a simple fragment of temporal logic. The model of computation in UNITY is
 as follows. A program is a set of actions and an initial state. Computation proceeds
-by executing <b>any</b> action in the set. Actions are selected nondeterministically
-and every action is executed eventually.
+by executing <b>any</b> action in the set. Actions are selected nondeterministically 
+and every action is executed infinitely often.
 </p>
 
-<p>
-Consider a computation with actions <b>x</b> and <b>y</b>. A computation can
-proceed by selecting either <b>x</b> or <b>y</b>, for example a computation could be
-<b>x, x, x, y, x, ...</b>. The requirement that every action is executed eventually
-means that there is no infinite computation that stops executing an action after
-some point. For example there is no computation that stops executing <b>y</b> after 
-executing <b>N</b> actions for any <b>N</b>. The requirement that every action is
-selected eventually is called a <b>fairness</b> requirement.
-</p>
 
 <p>
-  <b>Actions.</b> The system has three types of actions: agent, outbox, and channel
+  <strong>An infinite computation is an infinite sequence of action executions in which every 
+    action occurs infinitely often.</strong>
+  The requirement that every action is executed infinitely often in an infinite
+  computation is called a <b>weak fairness</b> requirement.
+  The word "fairness" in this context does not have the usual English meaning --
+  fairness does not imply that actions are selected equally often.
+  </p>
+
+<p>
+  <b>Actions of a System</b> The system has three types of actions: agent, outbox, and channel
   actions. A computation proceeds by selecting any agent, outbox or channel and
   executing its action.
   </p>
@@ -550,8 +550,11 @@ selected eventually is called a <b>fairness</b> requirement.
   <ol>
     <li>
       <b>Agent action</b> If the inbox for which the agent is waiting is empty then
-      the action is a skip -- do nothing -- else remove a message from the inbox and
-      process it.
+      the action is a skip -- do nothing -- and so the agent continues waiting for a
+      message from the same inbox. If the inbox is empty then the agent removes a 
+      message from the inbox and processes the message which may cause the agent to 
+      put messages in its outboxes. The processing terminates and the agent starts
+      waiting on the same or a different inbox.
     </li>
     <li>
       <b>Outbox action</b> If the outbox is empty then skip else remove a message from
@@ -605,19 +608,17 @@ selected eventually is called a <b>fairness</b> requirement.
     </div>
     <figcaption>
       <b>Figure 6. Selecting any action.</b>
-      The office of Figure 2, described a second way. Its four actions are four
+      Actions of the office of Figure 2,represented as
       balls in a jar; a step draws one ball, executes that action, and puts the
-      ball back — so an action is never used up and may be drawn again at once.
-      Executing an action whose queue is empty is a <b>skip</b>: it happens, it
-      counts as a step, and it changes nothing.
+      ball back. So an action may be drawn again.
       The bars record how many steps have passed since each action was last
-      drawn. <b>Fairness is the claim that no bar grows without bound.</b>
-      <em>Any</em> does not mean <em>at random</em>: rotation is just as legal
-      as random, and both are computations. Press <b>never the channel</b> and
-      watch what an unfair selection looks like — one bar climbing for ever
-      while the office silts up behind it. Press <b>still producing</b> to stop
-      the source, and every action becomes a skip: the terminated state, still
-      executing for ever, still changing nothing.
+      drawn. 
+      Press <b>never the channel</b> and
+      watch what an unfair selection looks like for a finite number of steps — 
+      one bar climbing for ever while the office does nothing. 
+      Press <b>still producing</b> to stop
+      the source, and eventually every action becomes a skip: the terminated state --
+      a state that remains unchanged as computation proceeds.
     </figcaption>
   </figure>
 
@@ -627,7 +628,7 @@ selected eventually is called a <b>fairness</b> requirement.
 In this course, the specification of a distributed system does not include
 anything to do with time or performance. You can see why the use of a 
 weak model of computation -- execute any action -- without any mention of
-time limits what we can prove about systems.
+time, restricts what we can prove about systems.
 </p>
 
 <p>
@@ -649,19 +650,32 @@ time limits what we can prove about systems.
   time interval between the steps.
 </p>
 
+<p>
+  We use a weak model of computation because our reasoning, based on the
+  model, applies to all systems that satisfy the model. Our weak model
+  allows us to reason about systems in which agents execute in Python threads
+  or processes, or Go subroutines, or Erlang processes, and which don't 
+  require RTOS (real-time operating systems). The UNITY computational model
+  -- execute actions fairly -- also allows for simple rules for reasoning
+  about correctness.
+</p>
 
 
-  <h2><span class="n">SECTION 4</span>Four things to do with it</h2>
-  <p>Do these now, in the figures above — Tasks 1 to 3 in <b>Figure 2</b> and
-    Task 4 in <b>Figure 5</b>. Each takes a minute, and each is a fact you will
-    use in a proof later. Answer before you open the reveal; guessing and being
-    wrong is worth more here than reading the answer.</p>
+
+  <h2><span class="n">SECTION 4</span>Exercises</h2>
+  <
 
   <div class="task">
-    <h4>Task 1 · Prediction</h4>
-    <p>In <b>Figure 2</b>, press <b>Step</b> five times. Before each press, say out loud which
-      message will move and where it will go. Then say which <em>action</em>
-      will fire next.</p>
+    <h4>Task 1 · Message Ordering</h4>
+    <p>
+      An office has three agents <b>X, Y, Z</b>. Agent <b>X</b> has two
+      outboxes <b>to_Y</b> and <b>to_Z</b>. Agents <b>Y</b> and <b>Z</b>
+      each have one inbox <b>in</b> and one outbox <b>out</b>. The
+      connections are:
+      (<b>X, to_Y, Y, in</b>), 
+      (<b>X, to_Z, Z, in</b>),
+      (<b>Y, out, Z, in</b>)
+    </p>
     <details><summary>What you should have found</summary>
       <p>The first prediction is easy: given an action, the message that moves is
       determined — it is always the head of a queue, and it always goes to the
