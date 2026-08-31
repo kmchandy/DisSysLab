@@ -256,3 +256,26 @@ sp100_data/
 
 # stray synthetic report preview (generated during review; safe to delete)
 .report_preview_synthetic.html
+
+# Correspondence, and drafts of it. Not repository content, and the one
+# category here whose harm is not ours to undo: a letter to a collaborator
+# names them, says what they are working on, and is theirs to disclose. In
+# trading that is the whole of the sensitivity -- people do not want other
+# people knowing what they are testing.
+#
+# On 2026-08-30 two letters were written to the repository root, swept into
+# a commit by `git add -A`, and were public for a few hours before 21e710a
+# removed them. Neither the author nor the check noticed, because an
+# untracked file at the root looks exactly like a file that belongs there.
+#
+# Keep correspondence outside the repository. This rule is the second line
+# of defence, not the first.
+message_to_*.md
+letter_to_*.md
+*_draft.md
+
+# Transfer artefacts. `_to_delete/` is scratch by its own name, and
+# dsl.bundle is a copy of this repository's own history -- committing it
+# puts the repo inside itself.
+_to_delete/
+*.bundle
