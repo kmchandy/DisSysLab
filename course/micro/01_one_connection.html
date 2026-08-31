@@ -159,19 +159,35 @@
   </header>
 
   <h2><span class="n">SECTION 1</span>A model of a distributed system</h2>
-  <p class="lead">An <em class="term">office</em> is a set of agents. Each agent
+  <p class="lead">An <em class="term">office</em> is a set of agents and a
+    set of connections. Each agent
     is executed in a separate thread of execution. Each agent has its own private state. 
-    Agents share no memory. The only way in which agents interact is 
+    Agents share no memory. The only way in which agents can interact is 
     that an agent can send a message to another agent.</p>
-  <p>That is the entire model of computation for this course. It is deliberately
-    poor. You cannot read another agent's variables, you cannot lock anything,
-    and there is no instant at which the office has a state that anybody is in a
-    position to observe. Every algorithm we study exists because of something
-    that model makes impossible.</p>
-  <p>A message leaves one agent's <em class="term">outbox</em>, travels along a
-    <em class="term">connection</em>, and arrives in another agent's
-    <em class="term">inbox</em>. All three are queues. The connection is a queue,
-    which is the part people get wrong, and it is the part that matters most.</p>
+    
+  <p><b>Inboxes and Outboxes</b> 
+    Each agent has a set of outboxes and a set of inboxes. Inboxes and 
+    outboxes are queues of messages.
+    An agent receives messages from its inboxes and puts outgoing messages 
+    in its outboxes.
+    A <em class="source">outbox</em> agent is one with no inboxes and 
+    a <em class="sink">outbox</em> agent is one with no outboxes.
+  </p>
+
+  <p><b>Connections: Message Channels</b>
+    A connection is a message channel from an outbox of an agent to an inbox
+    of an inbox of an agent. A connection is specified by a 4-tuple:
+    sending agent, sending agent's outbox, receiving agent, receiving agent's inbox.
+    Each message channel is a queue of messages.
+  </p>
+
+  <p><b>Message Propagation</b>
+    The system removes a message from a nonempty outbox and puts a copy of the message
+    in every channel to which that outbox is connected. And the system removes a message
+    from a nonempty channel and puts the message in the inbox to which it is connected.
+    </p>
+
+
 </div>
 
 <div class="wide">
