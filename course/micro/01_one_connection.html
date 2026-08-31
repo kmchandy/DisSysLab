@@ -116,6 +116,14 @@
     background:var(--panel); border:1px solid var(--line); border-radius:12px;
   }
   figure.fig svg{display:block; width:100%; height:auto}
+  /* A figure that needs more measure than the text column. Prose stays at a
+     readable 880px, but a diagram whose port labels are 10px does not
+     survive being squeezed into it, so these break out of the column. */
+  figure.fig.wideout{
+    width:min(1240px, calc(100vw - 40px));
+    max-width:none;
+    position:relative; left:50%; transform:translateX(-50%);
+  }
   figure.fig figcaption{
     margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
     font-size:14.5px; line-height:1.55; color:var(--body);
@@ -172,11 +180,9 @@
   <header class="top">
     <div class="kicker">DisSysLab · Micro-course 1</div>
     <h1>Introduction</h1>
-    <p class="standfirst">A distributed system is represented by an office
-      consisting of a set of agents -- workers -- and a network that connects 
-    them.</p>
+    
     <div class="meta">
-      <span><b>Time</b> ~30 minutes</span>
+      <span><b>Time</b> ~45 minutes</span>
       <span><b>Part 1</b> this page only</span>
       <span><b>Part 2</b> a terminal, <code>dissyslab</code> installed</span>
     </div>
@@ -198,7 +204,7 @@
     a <em class="term">sink</em> agent is one with no outboxes.
   </p>
 
-  <figure class="fig">
+  <figure class="fig wideout">
     <svg viewBox="0 0 1040 372" role="img" aria-labelledby="f1t f1d">
       <title id="f1t">An office of six agents</title>
       <desc id="f1d">An agent is represented by a box.
@@ -234,7 +240,7 @@
           <text x="115" y="184" text-anchor="middle" font-size="11"
                 fill="#8a8578" font-style="italic">source agent</text>
           <rect x="196" y="168" width="8" height="8" rx="2" fill="#d13d0e"/>
-          <text x="192" y="160" text-anchor="end" font-size="10.5"
+          <text x="200" y="136" text-anchor="end" font-size="10.5"
                 font-family="ui-monospace,Menlo,Consolas,monospace"
                 fill="#b0553a">destination</text>
         </g>
@@ -247,7 +253,7 @@
           <text x="335" y="72" text-anchor="middle" font-size="11"
                 fill="#8a8578" font-style="italic">source agent</text>
           <rect x="416" y="56" width="8" height="8" rx="2" fill="#d13d0e"/>
-          <text x="412" y="48" text-anchor="end" font-size="10.5"
+          <text x="420" y="24" text-anchor="end" font-size="10.5"
                 font-family="ui-monospace,Menlo,Consolas,monospace"
                 fill="#b0553a">destination</text>
         </g>
@@ -345,7 +351,9 @@
     A connection is a message channel from an outbox of an agent to an inbox
     of an agent. A connection is specified by a 4-tuple:
     sending agent, sending agent's outbox, receiving agent, receiving agent's inbox.
-    Each message channel is a queue of messages.
+    Each message channel is a queue of messages. The words
+    <em class="term">connection</em> and <em class="term">channel</em> are used
+    interchangeably throughout.
   </p>
 
   <p><b>Message propagation.</b>
@@ -355,10 +363,56 @@
     to which the channel is connected.
   </p>
 
-  <p>Two consequences of that rule deserve pictures, because they are the two
-    places where the number of connections at a port is not one.</p>
 
-  <figure class="fig">
+  <figure class="fig wideout">
+    <div class="stage" style="border:0;padding:0;background:none">
+      <canvas id="simA" width="1240" height="380"></canvas>
+    </div>
+    <div class="figctl" id="ctlA">
+      <div class="ctl">
+        <label>X writes into its outbox <span class="val"></span></label>
+        <input type="range" min="0" max="2" step="0.1" value="0.8">
+      </div>
+      <div class="ctl">
+        <label>connection takes from the outbox <span class="val"></span></label>
+        <input type="range" min="0" max="2" step="0.1" value="0.8">
+      </div>
+      <div class="ctl">
+        <label>inbox takes from the connection <span class="val"></span></label>
+        <input type="range" min="0" max="2" step="0.1" value="0.8">
+      </div>
+      <div class="ctl">
+        <label>Y reads its inbox <span class="val"></span></label>
+        <input type="range" min="0" max="2" step="0.1" value="0.8">
+      </div>
+      <div class="btns">
+        <button data-act="step">Step</button>
+        <button data-act="reset">Reset</button>
+        <button data-act="play" class="primary">Pause</button>
+      </div>
+    </div>
+    <figcaption>
+      <b>Figure 2. Message propagation.</b>
+    </figcaption>
+  </figure>
+
+  <p style="margin-top:22px">The diagram shows the following actions, which proceed
+    asynchronously.</p>
+
+  <ol>
+    <li><b>X</b> puts messages on its outbox.</li>
+    <li>Messages from <b>X</b>'s outbox are put on the channel.</li>
+    <li>Messages from the channel are put in <b>Y</b>'s inbox.</li>
+    <li><b>Y</b> gets messages from its inbox.</li>
+  </ol>
+
+
+  <p>
+    The next diagram illustrates an outbox connected to two channels.
+    The following diagram shows two channels connected to the same inbox.
+  </p>
+
+  <figure class="fig wideout">
     <div class="stage" style="border:0;padding:0;background:none">
       <canvas id="bcast" width="1040" height="300"></canvas>
     </div>
@@ -377,16 +431,12 @@
         <button data-b="play" class="primary">Pause</button>
       </div>
     </div>
-    <figcaption><b>Figure 2. Broadcast: one outbox, two connections.</b>
-      One removal, two copies. The message leaves the outbox exactly once, and
-      a copy of it is placed in each of the two channels — the two copies carry
-      the same label here so that this is visible. Neither channel is
-      privileged and neither waits for the other; once the copies are in the
-      channels they travel independently, and the message may be read by one
-      recipient long before the other.</figcaption>
+    <figcaption>
+      <b>Figure 3. Broadcast: one outbox, two connections.</b>
+    </figcaption>
   </figure>
 
-  <figure class="fig">
+  <figure class="fig wideout">
     <div class="stage" style="border:0;padding:0;background:none">
       <canvas id="merge" width="1040" height="300"></canvas>
     </div>
@@ -405,72 +455,166 @@
         <button data-m="play" class="primary">Pause</button>
       </div>
     </div>
-    <figcaption><b>Figure 3. Merge: two connections, one inbox.</b>
-      Each channel delivers on its own schedule, so the order in which the two
-      streams interleave in the inbox is arbitrary. Messages from A keep their
-      order relative to each other, and so do messages from B; nothing whatever
-      is determined about the order of an <code>a</code> relative to a
-      <code>b</code>. Set one channel's rate to 0 and the inbox fills from the
-      other alone — Y cannot tell from its inbox that a channel exists that has
-      stopped delivering.</figcaption>
+    <figcaption>
+      <b>Figure 4. Merge: two connections, one inbox.</b>
+      Messages from channel A keep their order relative to each other,
+       and so do messages from B. The relative order by which messages from
+       channels A and B are placed in the inbox is unspecified.</figcaption>
   </figure>
 
-</div>
-
-<div class="wide">
-  <div class="stage"><canvas id="simA" width="1240" height="380"></canvas></div>
-  <div class="controls" id="ctlA">
-    <div class="ctl">
-      <label>X writes into its outbox <span class="val"></span></label>
-      <input type="range" min="0" max="2" step="0.1" value="0.8">
-    </div>
-    <div class="ctl">
-      <label>connection takes from the outbox <span class="val"></span></label>
-      <input type="range" min="0" max="2" step="0.1" value="0.8">
-    </div>
-    <div class="ctl">
-      <label>inbox takes from the connection <span class="val"></span></label>
-      <input type="range" min="0" max="2" step="0.1" value="0.8">
-    </div>
-    <div class="ctl">
-      <label>Y reads its inbox <span class="val"></span></label>
-      <input type="range" min="0" max="2" step="0.1" value="0.8">
-    </div>
-    <div class="btns" style="margin-left:auto">
-      <button data-act="step">Step</button>
-      <button data-act="reset">Reset</button>
-      <button data-act="play" class="primary">Pause</button>
-    </div>
-  </div>
-</div>
-
-<div class="wrap">
-  <p style="margin-top:22px">The diagram shows the following actions which proceed 
-    asynchronously.
-    <ol>
-      <li>
-     <b>X</b> puts messages on its outbox.
-     </li>
-     <li>
-      Messages from <b>X</b>'s outbox are put on the channel.
-    </li>
-    <li>
-      Messages from the channel are put in <b>Y</b>'s inbox.
-    </li>
-    <li>
-      <b>Y</b> gets messages from its inbox.
-    </li>
-  </ol>
+  <p>
+    <b>Agent Actions.</b>
+    We first describe actions for agents other than sources and then describe
+    source actions.
+    An agent waits to receive messages from exactly one of its inboxes.
+    If that inbox is empty then the agent does nothing, and continues waiting
+    for a message in that inbox. If the inbox is not empty then the agent 
+    removes a message from the inbox and processes it.
+    While it is processing the message the agent may put messages on its outboxes.
+    The processing of a message always terminates. After the message is processed
+    the agent waits again for a message from an inbox, possibly a different one.
   </p>
 
-  <h2><span class="n">SECTION 2</span>Three things to do with it</h2>
-  <p>Do these now, in the picture above. Each one takes a minute and each one is
-    a fact you will use in a proof later. Answer before you open the reveal;
-    guessing and being wrong is worth more here than reading the answer.</p>
+  <figure class="fig wideout">
+    <div class="stage" style="border:0;padding:0;background:none">
+      <canvas id="agent" width="1040" height="330"></canvas>
+    </div>
+    <div class="figctl">
+      <div class="ctl">
+        <label>messages arriving at U <span class="val"></span></label>
+        <input type="range" min="0" max="2" step="0.1" value="0.6" data-a="arriveU">
+      </div>
+      <div class="ctl">
+        <label>messages arriving at V <span class="val"></span></label>
+        <input type="range" min="0" max="2" step="0.1" value="0.6" data-a="arriveV">
+      </div>
+      <div class="ctl">
+        <label>the agent's own speed <span class="val"></span></label>
+        <input type="range" min="0.1" max="2" step="0.1" value="0.8" data-a="speed">
+      </div>
+      <div class="btns">
+        <button data-a="step">Step</button>
+        <button data-a="reset">Reset</button>
+        <button data-a="play" class="primary">Pause</button>
+      </div>
+    </div>
+    <figcaption>
+      <b>Figure 5. What an agent does.</b>
+      The agent waits on exactly one inbox at a time. While it waits on
+      <b>U</b>, messages arriving at <b>V</b> accumulate and are not processed.
+       After getting a message from the inbox, the agent processes it to
+      completion, and only then waits again to receive a message, possibly 
+      from the same or another inbox. While the agent processes a message
+      it may put messages on the agent's outboxes. </figcaption>
+  </figure>
+
+  <p>
+  <b>Source Actions.</b>
+  A source receives messages from an external message source such as a
+  social media stream — not through an inbox, since a source has none, but
+  from outside the office. When the external source generates a message it
+  is processed by the source, which puts messages on the source's outboxes.
+</p>
+
+<p>
+  <b>Sink Actions.</b>
+  A sink removes a message from its inbox and sends messages to external devices
+  such as actuators, databases, or files.
+</p>
+
+<h2><span class="n">SECTION 2</span>Model of Computation</h2>
+<p>
+We will reason about the correct behavior of a distributed system using UNITY logic
+which is a simple fragment of temporal logic. The model of computation in UNITY is
+as follows. A program is a set of actions and an initial state. Computation proceeds
+by executing <b>any</b> action in the set. Actions are selected nondeterministically
+and every action is executed eventually.
+</p>
+
+<p>
+Consider a computation with actions <b>x</b> and <b>y</b>. A computation can
+proceed by selecting either <b>x</b> or <b>y</b>, for example a computation could be
+<b>x, x, x, y, x, ...</b>. The requirement that every action is executed eventually
+means that there is no infinite computation that stops executing an action after
+some point. For example there is no computation that stops executing <b>y</b> after 
+executing <b>N</b> actions for any <b>N</b>. The requirement that every action is
+selected eventually is called a <b>fairness</b> requirement.
+</p>
+
+<p>
+  <b>Actions</b> The system has three types of actions: agent, outbox, and channel 
+  actions. A computation proceeds by selecting any agent, outbox or channel and
+  executing its action.
+  <ol>
+    <li>
+      <b>Agent action</b> If the inbox for which the agent is waiting is empty then
+      the action is a skip -- do nothing -- else remove a message from the inbox and
+      process it.
+    </li>
+    <li>
+      <b>Outbox action</b> If the outbox is empty then skip else remove a message from
+      the outbox and put copies of the messages in all the channels to which the
+      outbox is connected.
+    </li>
+    <li>
+      <b>Channel action</b> If the channel is empty then skip else remove a message
+      from the channel and put a copy of the message in the inbox to which the 
+      channel is connected.
+    </li>
+  </ol>
+</p>
+
+<p>A source agent is treated like any other agent -- the action is if there
+  are no messages from the source to be processed by the agent then skip else
+  take on message from the source and process it.
+</p>
+
+<p>
+  <b>Terminated state:</b> What is the computation after the system reaches a
+  terminated state in which sources have stopped and all channels are empty? The
+  computation continues forever, even from a terminated state, but every action is
+  a skip and so the state doesn't change. It's convenient to assume that computations
+  are infinite though distributed systems deal with termination.
+</p>
+
+<h2><span class="n">SECTION 3</span>Correctness and Performance</h2>
+<p>
+In this course, the specification of a distributed system does not include
+anything to do with time or performance. You can see why the use of a 
+weak model of computation -- execute any action -- without any mention of
+time limits what we can prove about systems.
+</p>
+
+<p>
+  In practice, we are concerned about performance too; however,
+  performance depends on the underlying programming language and operating
+  system. We won't prove performance properties but we will discuss likely 
+  behavior.
+</p>
+
+<p>
+  An example of how we treat performance is a type of agent called an
+  <b>alarm</b>. An alarm has an inbox and an outbox; it's action is to
+  remove the message from the inbox, wait for a time specified in the
+  alarm, and then send a message on the outbox. The wait time can be 
+  any value -- we assume that the implementation attempts to wait for
+  the specified time but we don't rely on it. So, when we reason about
+  correct behavior we specify the action of an alarm as: Remove a message
+  from the inbox and put a message on the outbox without mentioning the
+  time interval between the steps.
+</p>
+
+
+
+  <h2><span class="n">SECTION 2</span>Four things to do with it</h2>
+  <p>Do these now, in the figures above — Tasks 1 to 3 in <b>Figure 2</b> and
+    Task 4 in <b>Figure 5</b>. Each takes a minute, and each is a fact you will
+    use in a proof later. Answer before you open the reveal; guessing and being
+    wrong is worth more here than reading the answer.</p>
 
   <div class="task">
     <h4>Task 1 · Prediction</h4>
-    <p>Press <b>Step</b> five times. Before each press, say out loud which
+    <p>In <b>Figure 2</b>, press <b>Step</b> five times. Before each press, say out loud which
       message will move and where it will go. Then say which <em>action</em>
       will fire next.</p>
     <details><summary>What you should have found</summary>
@@ -485,7 +629,7 @@
 
   <div class="task">
     <h4>Task 2 · What does X know?</h4>
-    <p>Set <b>connection takes from the outbox</b> to 0. Watch X's outbox fill
+    <p>In <b>Figure 2</b>, set <b>connection takes from the outbox</b> to 0. Watch X's outbox fill
       up and stop. Now answer: at that moment, what does X know about Y?</p>
     <details><summary>What you should have found</summary>
       <p>Nothing. X knows its own outbox is full. It does not know whether the
@@ -499,8 +643,8 @@
 
   <div class="task">
     <h4>Task 3 · Can a message overtake another?</h4>
-    <p>Try to get <code>m5</code> into Y's inbox before <code>m4</code>. Use any
-      combination of the sliders and Step that you like.</p>
+    <p>In <b>Figure 2</b>, try to get <code>m5</code> into Y's inbox before
+      <code>m4</code>. Use any combination of the sliders and Step you like.</p>
     <details><summary>What you should have found</summary>
       <p>You cannot. Every stage is first-in-first-out, so order is preserved
       along one connection. Be careful about how far that generalises: it is a
@@ -512,15 +656,37 @@
     </details>
   </div>
 
+  <div class="task">
+    <h4>Task 4 · Make an agent wait for ever</h4>
+    <p>In <b>Figure 5</b>, wait until the agent is waiting on <b>U</b>, then set
+      <b>messages arriving at U</b> to 0 and leave <b>V</b> running. Watch for
+      half a minute. Now answer two questions: is the agent broken, and is
+      anything in its own state different from a moment ago?</p>
+    <details><summary>What you should have found</summary>
+      <p>The agent is doing exactly what it was told: waiting on one inbox for a
+      message that is not going to come. Nothing in its state is wrong, nothing
+      is different from any other wait, and V goes on filling. This is the
+      shape of almost every office that hangs — not a crash, not an error, but
+      an agent correctly waiting for something that will never arrive. Notice
+      also that <em>you</em> can see the problem only because you can see both
+      inboxes at once. The agent cannot. Neither can any other agent.</p>
+    </details>
+  </div>
+
   <h2><span class="n">SECTION 3</span>Four facts, which are really axioms</h2>
-  <p>Write these down. Everything later in the term is derived from them, and
-    when a proof feels like magic it is usually because one of these was used
-    without being named.</p>
+  <p>Section 1 stated the model; the four tasks let you watch it. These four
+    facts are what you should now have seen, and they are the form in which the
+    model gets used. Write them down: everything later in the term is derived
+    from them, and when a proof feels like magic it is usually because one of
+    these was used without being named.</p>
 
   <ol class="axioms">
-    <li>A message is in exactly one place at a time.
-      <span>An outbox, a connection, or an inbox. It is never copied and never
-        shared. "Where is it?" always has one answer.</span></li>
+    <li>Every message is somewhere definite.
+      <span>A message is in exactly one outbox, one connection, or one inbox,
+        and nowhere else. Broadcast is the one thing that makes more of them:
+        an outbox connected to two channels yields one copy in each, and from
+        that moment they are two messages with two independent fates. Nothing
+        is ever <em>shared</em>, and no message is in two places at once.</span></li>
     <li>Messages on one connection keep their order.
       <span>Per connection. Not across connections, and not across paths.</span></li>
     <li>There is no clock the agents share.
@@ -562,7 +728,7 @@ Alex         briefing    ──▶ in_  console_printer</pre>
     There is nothing else in the model.</p>
 
   <div class="task">
-    <h4>Task 4 · Run it</h4>
+    <h4>Task 5 · Run it</h4>
     <p>Make yourself a copy, look at it, and run it:</p>
 <pre>$ dsl init my_first_office my_office
 $ dsl draw my_office     <span class="c"># the picture</span>
@@ -574,7 +740,7 @@ $ dsl run my_office      <span class="c"># watch messages move</span></pre>
   </div>
 
   <div class="task">
-    <h4>Task 5 · Break it on purpose</h4>
+    <h4>Task 6 · Break it on purpose</h4>
     <p>In <code>office.md</code>, change <code>Alex's briefing is
       console_printer.</code> to <code>Alex's summary is console_printer.</code>
       and run <code>dsl check</code> again. Read what it says. Then put it back.</p>
@@ -584,27 +750,33 @@ $ dsl run my_office      <span class="c"># watch messages move</span></pre>
   </div>
 
   <h2><span class="n">SECTION 5</span>Now the question</h2>
-  <p class="lead">Here is the same office, frozen. X's outbox is empty. Y's inbox
-    is empty. Both agents have finished everything they were given.</p>
+  <p class="lead">Here is the office of <b>Figure 2</b> again, frozen. X's outbox
+    is empty. Y's inbox is empty. Both agents have finished everything they were
+    given.</p>
   <p>Your office is running. You would like to know whether it has finished, so
     that you can print the results and stop. No agent can see the whole system —
     axiom 4 — so you do the obvious thing and ask each agent whether it is idle.
     Press the button.</p>
-</div>
 
-<div class="wide">
-  <div class="stage"><canvas id="simB" width="1240" height="380"></canvas></div>
-  <div class="controls">
-    <div class="btns">
-      <button data-b="poll" class="primary">Ask every agent: are you idle?</button>
-      <button data-b="move">Let one action happen</button>
-      <button data-b="reset">Reset the scenario</button>
+  <figure class="fig wideout">
+    <div class="stage" style="border:0;padding:0;background:none">
+      <canvas id="simB" width="1240" height="380"></canvas>
     </div>
-  </div>
-  <div class="verdict" id="verdictB">Ask them.</div>
-</div>
+    <div class="figctl">
+      <div class="btns">
+        <button data-s="poll" class="primary">Ask every agent: are you idle?</button>
+        <button data-s="move">Let one action happen</button>
+        <button data-s="reset">Reset the scenario</button>
+      </div>
+    </div>
+    <div class="verdict" id="verdictB">Ask them.</div>
+    <figcaption>
+      <b>Figure 6. Asking every agent whether it is idle.</b>
+      The office of Figure 2, frozen: both agents have finished everything
+      they were given, and one message is still in the connection between them.
+    </figcaption>
+  </figure>
 
-<div class="wrap">
   <div class="pull">Every agent is idle. Every agent's answer is true. The office
     is not finished.</div>
 
@@ -642,11 +814,11 @@ $ dsl run my_office      <span class="c"># watch messages move</span></pre>
     shutdown protocol, detection waited for an agent that was gone, and the whole
     office hung. <code>dsl check</code> was silent, and correctly so — the wiring
     was fine. It was a fact about the execution, not about the structure. You met
-    that boundary in Task 5.</p>
+    that boundary in Task 6.</p>
 
   <h2><span class="n">SECTION 6</span>Before the first class</h2>
   <ol>
-    <li>Tasks 4 and 5 done, on your own machine.</li>
+    <li>Tasks 5 and 6 done, on your own machine.</li>
     <li>The four axioms written down somewhere you will find again.</li>
     <li>One sentence: <em>the thing I would like to have watched.</em> It will
       become your own office. It does not have to be right — it has to be yours.</li>
@@ -941,6 +1113,160 @@ dsl doctor      <span class="c"># what is installed, and whether it is stale</sp
       qs.forEach(q=>{q.items=[];q.flash=0;}); leaving=[]; na=1; nb=1; sched.reset();
     });
   })();
+
+  // ══ Figure 5 — what one agent does ═════════════════════════════════
+  //
+  // The agent is not a Poisson actor like the transports around it: it
+  // is a small state machine, because the paragraph it illustrates is
+  // about sequence. Wait on ONE inbox; take a message only from that
+  // one; process it to completion; then choose again. The cost of that
+  // rule is the thing worth seeing -- while it waits on U, V fills, and
+  // nothing in the agent's state says so.
+  (function(){
+    const cv=document.getElementById('agent'); if(!cv) return;
+    const c=cv.getContext('2d'), W=1040, H=330;
+
+    const U = Q(150,  72, 4, 'inbox U');
+    const V = Q(150, 232, 4, 'inbox V');
+    const X = Q(660,  72, 4, 'outbox X');
+    const Y = Q(660, 232, 4, 'outbox Y');
+    const qs=[U,V,X,Y];
+    const BX0=430, BX1=620, BY0=104, BY1=200, BCX=(BX0+BX1)/2, BCY=152;
+
+    let nu=1, nv=1, leaving=[], held=null;
+    let sel='U', phase='waiting', timer=0;
+
+    const inbox = k => k==='U' ? U : V;
+
+    function arrive(q,letter,hue,n){
+      if(q.items.length>=q.cap) return n;
+      q.items.push({label:letter+n, hue, x:q.x0-34, y:q.y, alpha:1});
+      q.flash=1; return n+1;
+    }
+    function emit(q){
+      if(q.items.length>=q.cap || !held) return;
+      q.items.push({...held, x:BCX, y:BCY}); q.flash=1;
+    }
+
+    // One turn of the agent's loop, driven by its own clock.
+    function agentTick(dt, rate){
+      timer += dt*rate;
+      if(phase==='waiting'){
+        const m = (function(){ const h=inbox(sel).items[0]; return (h&&h.settled)?h:null; })();
+        if(!m) return;                       // the inbox is empty: do nothing
+        inbox(sel).items.shift();
+        held=m; phase='processing'; timer=0;
+      } else if(phase==='processing'){
+        if(timer < 1.1) return;              // processing always terminates
+        const roll=Math.random();
+        if(roll<0.45){ emit(X); }
+        else if(roll<0.8){ emit(Y); }
+        else if(roll<0.93){ emit(X); emit(Y); }
+        // else: this message produced nothing
+        held=null; phase='waiting'; timer=0;
+        sel = Math.random()<0.5 ? 'U' : 'V';  // possibly a different one
+      }
+    }
+
+    const sched=scheduler([
+      {key:'arriveU', rate:0.6, next:0, run:()=>{ nu=arrive(U,'u',205,nu); }},
+      {key:'arriveV', rate:0.6, next:0, run:()=>{ nv=arrive(V,'v',28,nv); }},
+      {key:'drainX',  rate:0.6, next:0, run:()=>{ const m=head(X); if(m){X.items.shift(); m.tx=980; leaving.push(m);} }},
+      {key:'drainY',  rate:0.6, next:0, run:()=>{ const m=head(Y); if(m){Y.items.shift(); m.tx=980; leaving.push(m);} }}
+    ]);
+    let speed=0.8;
+
+    function status(){
+      if(phase==='processing')
+        return 'processing ' + (held?held.label:'') + ' — neither inbox is being read';
+      const other = sel==='U' ? V : U;
+      const waiting = inbox(sel).items.length;
+      if(waiting) return 'waiting on ' + sel + ' — about to take its first message';
+      const n=other.items.length;
+      return 'waiting on ' + sel + ' (empty)' +
+             (n ? ' — ' + n + (n===1?' message is':' messages are') + ' waiting in ' +
+                  (sel==='U'?'V':'U') + ', and will not be looked at'
+                : '');
+    }
+
+    loop(dt=>{
+      if(sched.isPlaying()) agentTick(dt, speed);
+      sched.tick(dt);
+      qs.forEach(q=>{
+        q.items.forEach((m,i)=>glide(m,slotX(q,i),q.y,dt));
+        q.flash=Math.max(0,q.flash-dt*1.6);
+      });
+      if(held) glide(held,BCX,BCY,dt);
+      leaving.forEach(m=>{ glide(m,m.tx,m.y,dt); m.alpha-=dt*1.0; });
+      leaving=leaving.filter(m=>m.alpha>0);
+
+      c.clearRect(0,0,W,H);
+
+      // arrows in and out
+      arrow(c,58,72,U.x0-6,72); arrow(c,58,232,V.x0-6,232);
+      arrow(c,U.x1+6,80,BX0-6,138); arrow(c,V.x1+6,224,BX0-6,166);
+      arrow(c,BX1+6,138,X.x0-6,80); arrow(c,BX1+6,166,Y.x0-6,224);
+      arrow(c,X.x1+6,72,974,72);   arrow(c,Y.x1+6,232,974,232);
+
+      // the agent, with the inbox it is attending to picked out
+      const busy = phase==='processing';
+      c.fillStyle = busy ? '#eef4f2' : '#f3f1ec';
+      c.strokeStyle='#2f3d55'; c.lineWidth=2;
+      roundRect(c,BX0,BY0,BX1,BY1,11); c.fill(); c.stroke();
+      c.fillStyle='#2f3d55'; c.textAlign='center'; c.textBaseline='middle';
+      c.font='600 16px '+FS; c.fillText('the agent',BCX,BY0+22);
+      c.font='12.5px '+FS; c.fillStyle= busy ? '#00806c' : '#8a8578';
+      c.fillText(busy?'processing':'waiting on '+sel, BCX, BY1-18);
+
+      // a ring on the inbox being waited on
+      if(!busy){
+        const q=inbox(sel);
+        c.strokeStyle='#00947d'; c.lineWidth=2.5; c.setLineDash([5,4]);
+        roundRect(c,q.x0-5,q.y-27,q.x1+5,q.y+27,9); c.stroke();
+        c.setLineDash([]);
+      }
+
+      qs.forEach(q=>drawQ(c,q));
+      leaving.forEach(m=>drawTok(c,m));
+      qs.forEach(q=>q.items.forEach(m=>drawTok(c,m)));
+      if(held) drawTok(c,held);
+
+      c.font='14px '+FS; c.fillStyle='#3b4353';
+      c.textAlign='center'; c.textBaseline='middle';
+      c.fillText(status(), W/2, 300);
+    });
+
+    const fig=cv.closest('figure');
+    fig.querySelectorAll('input[data-a]').forEach(inp=>{
+      const val=inp.closest('.ctl').querySelector('.val');
+      const show=()=>{ val.textContent = (+inp.value===0) ? '— stopped'
+                                       : '— about '+(+inp.value).toFixed(1)+'×/s'; };
+      inp.addEventListener('input',()=>{
+        if(inp.dataset.a==='speed') speed=+inp.value;
+        else sched.setRate(inp.dataset.a,+inp.value);
+        show();
+      });
+      if(inp.dataset.a==='speed') speed=+inp.value;
+      else sched.setRate(inp.dataset.a,+inp.value);
+      show();
+    });
+    const play=fig.querySelector('[data-a=play]');
+    play.onclick=()=>{ sched.setPlaying(!sched.isPlaying());
+                       play.textContent=sched.isPlaying()?'Pause':'Play'; };
+    fig.querySelector('[data-a=step]').onclick=()=>{
+      if(sched.isPlaying()){ sched.setPlaying(false); play.textContent='Play'; }
+      // one step means one thing happening: the agent's next move if it
+      // can make one, otherwise the next transport event.
+      const before=phase;
+      agentTick(2, 1);
+      if(phase===before && !(before==='waiting' && held)) sched.step();
+    };
+    fig.querySelector('[data-a=reset]').onclick=()=>{
+      qs.forEach(q=>{q.items=[];q.flash=0;});
+      leaving=[]; held=null; nu=1; nv=1; sel='U'; phase='waiting'; timer=0;
+      sched.reset();
+    };
+  })();
 })();
 </script>
 
@@ -1213,7 +1539,7 @@ dsl doctor      <span class="c"># what is installed, and whether it is stale</sp
   }
   setScenario();
 
-  document.querySelector('[data-b=poll]').onclick=()=>{
+  document.querySelector('[data-s=poll]').onclick=()=>{
     const ix=B.idleX(), iy=B.idleY(), c=B.channelCount();
     B.bubbleX = ix ? 'idle' : 'busy';
     B.bubbleY = iy ? 'idle' : 'busy';
@@ -1238,7 +1564,7 @@ dsl doctor      <span class="c"># what is installed, and whether it is stale</sp
         'There is nothing to conclude yet.';
     }
   };
-  document.querySelector('[data-b=move]').onclick=()=>{
+  document.querySelector('[data-s=move]').onclick=()=>{
     B.bubbleX=null; B.bubbleY=null;
     verdict.className='verdict';
     if(B.queues.channel.items.length) B.fireOnce('deliver');
@@ -1248,7 +1574,7 @@ dsl doctor      <span class="c"># what is installed, and whether it is stale</sp
     verdict.innerHTML='One action happened. Ask them again — and notice '+
       'that the answers changed without any agent being told anything.';
   };
-  document.querySelector('[data-b=reset]').onclick=setScenario;
+  document.querySelector('[data-s=reset]').onclick=setScenario;
 })();
 </script>
 </body>
