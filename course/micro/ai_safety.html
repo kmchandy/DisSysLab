@@ -1,0 +1,47 @@
+<ol>
+    <li>
+        You don't know precisely what an LLM will say in response to a given input and 
+        prompt. That is both the strength and weakness of LLMs.
+    </li>
+    <li>
+        Don't put anything confidential inside a conversation with an LLM. Don't enter
+        passwords, financial information, or other data unless you are absolutely 
+        confident that the LLM you use will deal with the data appropriately.
+    </li>
+    <li>
+        Do not use sensors that gather confidential information, 
+        and don't use sources of information that may be
+        private to other people. An audio sensor may seem harmless but may
+        accidentally gather private information.
+    </li>
+    <li>
+        In this course, we don't allow an AI agent to create another AI agent.
+        A danger is that the created agent may create more agents. Allowing
+        agents to create agents is powerful; but we choose not to exercise that
+        power.
+    </li>
+    <li>
+        
+        You can build systems in which AI agents share arbitrary information. 
+        For example, build a system with a shared whiteboard that agents read 
+        and write. Agents can create prompts and write them on the whiteboard.
+        So, agents can  completely change their behavior based on what they read. 
+        Creating new prompts and new agents allows for the collective behavior
+        of a multi-agent system to evolve.
+        In this course, we build multi-agent systems and we design them so that
+        their behaviors satisfy specifications - we do not want their behaviors
+        to evolve in unpredicatable ways.
+        We constrain how AI agents communicate by limiting
+        communication to flow along a static network that you define. 
+        The AI agents that ship with this framework have fixed prompts.
+        They can change values of their parameters -- eg scores that determine
+        whether an article is positive, neutral, or negative -- 
+        but they do not substantially change behavior
+    </li>
+    <li>
+        We are careful about which devices outside our system are accessed --
+        external websites, sensors, actuators. A system that generates new
+        external devices (eg new urls) for the system to access are powerful
+        but potentially dangerous. We choose not to do this.
+    </li>
+</ol>
