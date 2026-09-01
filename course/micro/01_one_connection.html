@@ -551,7 +551,7 @@ and every action is executed infinitely often.
     <li>
       <b>Agent action</b> If the inbox for which the agent is waiting is empty then
       the action is a skip -- do nothing -- and so the agent continues waiting for a
-      message from the same inbox. If the inbox is empty then the agent removes a 
+      message from the same inbox. If the inbox is not empty then the agent removes a 
       message from the inbox and processes the message which may cause the agent to 
       put messages in its outboxes. The processing terminates and the agent starts
       waiting on the same or a different inbox.
@@ -629,6 +629,16 @@ In this course, the specification of a distributed system does not include
 anything to do with time or performance. You can see why the use of a 
 weak model of computation -- execute any action -- without any mention of
 time, restricts what we can prove about systems.
+</p>
+
+<p>
+  We use a weak model of computation because our reasoning, based on the
+  model, applies to all systems that satisfy the model. Our weak model
+  allows us to reason about systems in which agents execute in Python threads
+  or processes, or Go subroutines, or Erlang processes, and which don't 
+  require RTOS (real-time operating systems). The UNITY computational model
+  -- execute actions fairly -- also allows for simple rules for reasoning
+  about correctness.
 </p>
 
 <p>
