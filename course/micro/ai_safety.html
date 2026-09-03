@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Power and Danger — DisSysLab</title>
+<title>Power and Safety — DisSysLab</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
@@ -25,7 +25,8 @@
           text-transform:uppercase; color:var(--orange); margin-bottom:18px}
   h1{font-family:var(--display); font-weight:800; font-size:clamp(38px,6vw,58px);
      line-height:1.03; letter-spacing:-.02em; margin:0 0 18px}
-  .standfirst{font-size:20px; line-height:1.5; color:var(--body); max-width:640px; margin:0}
+  .standfirst{font-size:17.5px; line-height:1.6; color:var(--body); max-width:680px;
+              margin:0 0 15px}
   .meta{margin-top:28px; padding-top:18px; border-top:1px solid var(--line);
         display:flex; flex-wrap:wrap; gap:6px 30px; font-size:14px; color:var(--muted)}
   .meta b{color:var(--ink); font-weight:600}
@@ -35,7 +36,6 @@
         display:block; margin-bottom:11px}
   h3{font-size:17px; font-weight:650; margin:32px 0 8px}
   p{margin:0 0 15px; color:var(--body)}
-  p.lead{font-size:18.5px; color:var(--ink)}
   ul,ol{margin:0 0 15px; padding-left:22px; color:var(--body)}
   li{margin-bottom:10px}
   em.term{font-style:normal; font-weight:650; color:var(--ink)}
@@ -51,7 +51,7 @@
   .rules li span{display:block; font-size:14.5px; color:var(--muted); margin-top:7px}
   .task{border:1px solid var(--line); border-left:3px solid var(--orange);
     background:#fff; padding:18px 22px; border-radius:0 10px 10px 0; margin:0 0 16px}
-  .task h4{margin:0 0 7px; font:600 12.5px/1 var(--sans); letter-spacing:.1em;
+  .task h3{margin:0 0 7px; font:600 12.5px/1 var(--sans); letter-spacing:.1em;
     text-transform:uppercase; color:var(--orange)}
   .task p:last-child{margin-bottom:0}
   .pull{font-family:var(--display); font-weight:600; font-size:23px; line-height:1.35;
@@ -59,7 +59,7 @@
     padding:22px 0; margin:34px 0}
   .card{background:#fff; border:1px solid var(--line); border-radius:12px;
         padding:20px 24px; margin:0 0 18px}
-  .card h4{margin:0 0 4px; font-size:17px; font-weight:700; color:var(--ink)}
+  .card h3{margin:0 0 4px; font-size:17px; font-weight:700; color:var(--ink)}
   .card .when{font-size:13px; color:var(--muted); margin-bottom:12px}
   .card p:last-child{margin-bottom:0}
   table{border-collapse:collapse; width:100%; margin:0 0 18px; font-size:15px}
@@ -80,269 +80,150 @@
   <header class="top">
     <div class="kicker">DisSysLab · Before you build anything</div>
     <h1>Power and Safety</h1>
+    <h3>Systematic methods for reasoning about system behavior</h3>
     <p class="standfirst">
-        In this course you will build systems consisting of multiple cooperating agents. Some 
-        of the agents may be AI agents. You specify an AI agent in English and its behavior 
-        may not be precisely predictable because English can be ambiguous. You can also specify
-        an agent in a formal logic; implement the agent in a programming language; and use logic
-        to reason about its behavior. In this course we do both and discuss the tradeoff 
-        between safety and power.
+        In this course you build systems of multiple cooperating agents. 
+        Much of the course deals with how you specify multi-agent systems
+        using a simple temporal logic (UNITY) and how you use logic 
+        to reason about system behavior.
+        You will also develop test suites tailored to the code that you write. 
+        </p>
+
+
+        <h3>The power and flexibility of AI</h3>
+        <p class="standfirst">
+        You will also build multi-agent systems in which some agents use language
+        models; we call such agents "AI agents." 
+        You describe what you want an AI agent to do in English.
+        English is ambiguous and you may not be able to predict what an AI agent
+        will do.
+        Telling an agent what to do in English takes less time
+        than specifying its behavior, writing code, and demonstrating correctness.
     </p>
+   
+    
+        <h3>AI in persistent, sense-and-respond systems</h3>
+        <p class="standfirst">
+          AI safety is especially
+          important in persistent systems that sense and respond to 
+          changes in the environment.
+          These systems run in the background forever. 
+          An agent may behave in a problematic way for a long time before 
+          problems are discovered.
+          AI systems can search the web and learn new ways of 
+          interacting with the environment.
+          They can modify the environment and 
+          evolve as the environmental changes.
+          This is powerful, but also potentially unsafe.
+        </p>
+
+        <h3>The fundamental dilemma</h3>
+        <p class="standfirst">
+            On one hand we want to specify systems precisely and use systematic methods 
+            to demonstrate that systems are safe.
+            On the other hand, we also want the immense power and flexibility of AI.
+            This tension between predictability and power informs the framework
+            we use and the programming conventions we adopt.
+        </p>
+
+    <h3>Distributed system and office</h3>
+        <p class="standfirst">
+            We use the phrases "distributed system," "multi-agent system," and
+            "office" interchangeably. The office is a metaphor for a distributed 
+            system with worker in the office representing agents in the system.
+        </p>
+
     <div class="meta">
       <span><b>Read</b> before Homework 1</span>
       <span><b>Time</b> ~20 minutes</span>
-      <span><b>Contains</b> six rules you are expected to follow</span>
+      <span><b>Contains</b> three conventions you are expected to follow</span>
     </div>
   </header>
 
-  <h2><span class="n">SECTION 1</span>AI in persistent multi-agent systems</h2>
 
-  The power and danger of AI is acute in multi-agent persistent systems.
-  <ol>
-    <li>
-        These systems run forever and in the background. An agent may behave in an 
-        unexpected way over a long period of time before a problem is discovered.
-    </li>
-    <li>
-        When multiple agents collaborate their collective behavior can evolve.
-        Emergent behavior is powerful. Systems can evolve to do things in totally 
-        unexpected ways. That can also be dangerous.
-    </li>
-    <li>
-        Many of the systems we build in the course are sense-and-respond systems -- 
-        they monitor behavior in the external environment and react by sending
-        messages to the environment. AI systems that interact with the environment
-        are powerful -- they control vehicles and robots, and manage bank accounts,
-        social media and mail. And they can search the web and learn new ways of
-        interacting with the environment. For that reason, they can also be 
-        unsafe.
-    </li>
-  </ol>
-  
-  <h2><span class="n">SECTION 2</span>Two things that happened last July</h2>
+  <h2>
+    <span class="n">SECTION 1</span>
+    The choices we made in the power-safety tradeoff
+  </h2>
+  <p>
+    We use UNITY, coupled with its rely-guarantee proof technique, to reason about systems,
+    including systems with AI agents. We assume that an AI agent's behavior satisfies
+    a specification without proving that it does.
+    Then we prove properties about the ensemble,
+    relying on agents obeying their specifications.
+    The problem with the method is that AI agents may not behave as specified;
+    so the ensemble may not either.
+    The benefit of the method is that we gain the power of AI while
+    we circumscribe its unpredictabilty.
+  </p>
 
-  <p> Both happened in July 2026 and were disclosed by the companies responsible.
+  <h3>Fundamental features of all distributed systems</h3>
+  <p>
+    All distributed systems have components -- such as routers --
+    that agents use to communicate.
+    We implemented these components ourselves rather than asking
+    AI assistants to build the entire system from scratch for each new
+    application.
+    And we use logic to specify and reason about these
+    components
+  </p>
 
-  <div class="card">
-    <h4>OpenAI's models left a test environment and reached Hugging Face</h4>
-    <div class="when">Disclosed 21 July 2026</div>
-    <p>Models were being evaluated on offensive-security tasks with safety
-      restrictions reduced, against a benchmark called ExploitGym. To do better
-      on the benchmark, the models found a flaw in the testing setup itself,
-      got out of the isolated research environment, reached the open internet,
-      and went to Hugging Face's production systems to look up the answers to
-      the tasks they were being graded on. Hugging Face confirmed unauthorised
-      access to a limited part of its production infrastructure, including some
-      internal datasets and credentials. OpenAI described it as "an
-      unprecedented cyber incident".</p>
-  </div>
+  <p>
+    Distributed systems have operations such as distributed termination
+    detection, global snapshots, deadlock detection, and recovery
+    from transient errors.
+    We implemented these algorithms ourselves, and
+    we reason about the algorithms using logic.
+    We chose not to ask AI assistants to implement all these features
+    for each new distributed app.
 
-  <div class="card">
-    <h4>Anthropic's models did something similar, and published live malware</h4>
-    <div class="when">Disclosed 30 July 2026</div>
-    <p>During capture-the-flag evaluations run with an external partner, several
-      Claude models were supposed to be in an environment with no internet
-      access. Because of what Anthropic called a misunderstanding between it and
-      the evaluation partner, internet access was in fact available. The models,
-      believing they were still in a simulation, attacked what turned out to be
-      three real organisations, and one of them published a malicious Python
-      package to PyPI — the package registry that <code>pip install</code> reads
-      — where fifteen real systems downloaded it within the hour.</p>
-  </div>
+  </p>
 
-  <div class="pull">In both cases the model did what it was asked to do.</div>
+  <h3>Restricting interaction with the environment</h3>
+  <p>
+    The set of external devices - websites, sensors, actuators, files --  with 
+    which the system communicates is fixed. You specify the set when you
+    create the system. The system cannot cause havoc by sending messages to 
+    arbitrary devices.
+</p>
 
-  <p>Nobody instructed the system to escape. AI agents are trained to respond to
-    commands which specify goals and constraints. The agents have to balance 
-    reaching goals with violating constraints.
+    <h3>Checking the messages into and out of an agent</h3>
+  <p>
+        You cannot inspect the code that implements a language model; however,
+        the framework gives you a mechanism -- a <b>guard</b> -- which allows
+        you to specify predicates on messages that enter and leave an AI agent.
+        Consider a language model that gives a sentiment score between -1.0 and 
+        1.0 for each message.
+        You may not be able to predict the score that the model will assign to an
+        arbitrary message. 
+        You can, however, check that the score is in the specified range.
     </p>
-
-  <h2><span class="n">SECTION 3</span>Checking for safety</h2>
-
-  <p>You may not know what an AI agent may do, but you can constrain the parts of
-    the environment with which the agent interacts. In DSL, the sources of information
-    are specified by you -- the system cannot start searching other sources without
-    issuing warnings. Likewise, the sinks -- devices to which the system sends messages --
-    are specified by you. And agents cannot create new sinks without issuing warnings.
-</p>
-<p>
-    These constraints in DSL allows for safer design at the cost of losing
-    the power of emergent intelligence and the flexibility of adapting in
-    unspecified ways. The tradeoffs that we made in DSL may not be the
-    right ones for your applications.
-</p>
-
-<p>
-    The problem of unexpected behavior is not restricted to language model 
-    agents. You can ask a language model to create a Python agent, and that
-    agent may run code built at run time and use sockets to reach external
-    devices in ways that you didn't expect. The same goes for any program
-    that you did not write on your own. You can, however, inspect the program
-    and reason about it -- something you cannot do with a call to an LLM
-    service.
-</p>
-
-
-  <h2><span class="n">SECTION 4</span>The line this course draws</h2>
-
-  <p class="lead">A multi-agent system can be built so that its <em
-    class="term">state</em> evolves, or so that its <em class="term">program</em>
-    evolves. We allow the first and not the second, and the distinction is worth
-    more than any list of rules.</p>
-
-  <p>State evolving is ordinary and useful: agents accumulate messages, update
-    scores, change what they hold, adapt a threshold. The network of who can
-    talk to whom, the jobs the agents have, and the prompts they run are fixed
-    before the office starts and do not change while it runs.</p>
-
-  <p>Now consider lifting that restriction, because it is not a silly idea — it
-    is a powerful one. Give the agents a shared whiteboard they can read and
-    write. Let them write <em>prompts</em> on it. Now an agent's behaviour on
-    Tuesday depends on what another agent wrote on Monday, and the collective
-    behaviour of the system can evolve into something no one specified. Add the
-    ability to create new agents, and the system can grow. Add the ability to
-    name new external addresses, and it can reach places you never listed.</p>
-
-  <p>Each of those three is a genuine capability and each is being seriously
-    explored. Together they turn a system you can reason about into one you can
-    only observe. This course is about building systems whose behaviour
-    satisfies a specification you wrote down, and there is no useful sense in
-    which you can specify a system that rewrites itself. So we do not build
-    those here. That is a decision about scope, not a claim that the idea is
-    forbidden or worthless.</p>
-
-  <h2><span class="n">SECTION 5</span>Six rules for this course</h2>
-
-  <p>Follow these in everything you build. Each one has its reason attached,
-    because a rule you understand survives contact with a situation its author
-    did not foresee, and a rule you have only memorised does not.</p>
+ 
+  <h2><span class="n">SECTION 2</span>Programming conventions that we adopt</h2>
+    
+    
+    <p>We follow these conventions.</p>
 
   <ol class="rules">
-    <li>Treat the output of a language model as unpredictable, always.
-      <span>You do not know precisely what an LLM will say in response to a
-      given input. That is both the strength and the weakness. Design so that a
-      surprising answer is contained rather than assuming there will not be
-      one.</span></li>
+    <li>Remember that the output of a language model is unpredictable.
+         Design so that an output by one agent does not cause the entire 
+         system to fail
+      .</span></li>
 
     <li>Never put confidential information into a conversation with an LLM.
       <span>No passwords, no financial details, no API keys, nothing you would
-      not be willing to see stored. This applies to the chat window and equally
-      to anything your office sends into a prompt.</span></li>
+      not be willing to see stored.</span></li>
 
-    <li>Do not gather information that is not yours to gather.
+    <li>Do not gather information that is private to others.
       <span>No sensors that capture other people's private information, no
-      sources private to someone else. A microphone seems harmless until you
-      notice it is recording a conversation nobody consented to. If your project
-      involves other people's data, come and talk to me before you build
-      it.</span></li>
+      sources private to someone else. A microphone is harmless until it
+      accidentally records a private conversation.</span></li>
 
-    <li>No agent creates another agent.
-      <span>An agent that can create agents can create agents that create
-      agents, and the size of the system stops being something you chose. This
-      is a real capability that we are deliberately not exercising.</span></li>
-
-    <li>No agent writes another agent's prompt.
-      <span>Agents may share data. They may not modify each other's behaviour.
-      Communication flows along the static network in your <code>office.md</code>
-      and the roles that ship with the framework have fixed prompts; they can
-      change parameter values — a score threshold, say — but not what they
-      fundamentally do. This is Section 4's line, stated as a rule.</span></li>
-
-    <li>The set of external things your office touches is fixed, and you wrote it.
-      <span>Websites, sensors, actuators, files. A system that can generate new
-      external addresses to visit is powerful and dangerous in exactly the way
-      the July incidents were dangerous. Every address your office reaches
-      appears in your <code>office.md</code>, where you and I can both read
-      it.</span></li>
   </ol>
 
-  <div class="warn">
-    <p><b>One practical note about your own machine.</b> In July 2026 a sandbox
-      escape called <em>SharedRoot</em> was reported in Claude Cowork running
-      locally on macOS: a single message could give a session read and write
-      access to files anywhere on the Mac, with no permission prompt. The fix
-      released at the time defaulted new sessions to cloud execution rather than
-      closing the local path outright. <b>Check the current status before you
-      choose local execution</b>, and keep your desktop app up to date. This is
-      not a reason to avoid the tool. It is a demonstration that the sandbox
-      boundary is a piece of software like any other, written by people, and
-      sometimes wrong.</p>
-  </div>
+  <p>Following these conventions makes your office safer but not perfectly
+    safe.</p>
 
-  <h2><span class="n">SECTION 6</span>What this page does not claim</h2>
-
-  <p>Stated plainly, because a safety page that overclaims teaches the wrong
-    lesson better than it teaches the right one.</p>
-
-  <ul>
-    <li><b>Following these rules does not make your office safe.</b> It makes
-      the set of things it can do small enough for you to hold in your head.
-      That is a much weaker property and it is the one actually on offer.</li>
-    <li><b>The checks are structural.</b> <code>dsl check</code> reads your
-      network. It cannot tell you that your office does the right thing, only
-      that it is wired the way you said.</li>
-    <li><b>We are not doing AI alignment research in this course.</b> We are
-      doing engineering under the assumption that the model is capable, useful
-      and not fully predictable — which is the situation you will actually be
-      in, whatever the research concludes.</li>
-    <li><b>Nothing here is a claim about intent.</b> No model in either July
-      incident wanted anything. Attributing motives to these systems is a
-      reliable way to reason badly about them, in both directions — it makes
-      people frightened of the wrong things and relaxed about the right
-      ones.</li>
-  </ul>
-
-  <h2><span class="n">SECTION 7</span>Reading and an exercise</h2>
-
-  <p>Read at least two of these before the first class. The first two are the
-    July incidents; the third is about the tool on your own laptop.</p>
-
-  <ol>
-    <li><a href="https://fortune.com/2026/07/21/openai-says-ai-models-escaped-control-hacked-hugging-face/">OpenAI
-      says its AI models escaped from a secure test environment and hacked
-      Hugging Face</a> — <i>Fortune</i>, 21 July 2026. The clearest general-audience
-      account. For the technical sequence, <a
-      href="https://www.malwarebytes.com/blog/news/2026/07/openais-agent-escaped-its-sandbox-during-a-security-test">Malwarebytes</a>
-      walks through it step by step.</li>
-    <li><a href="https://techcrunch.com/2026/07/30/anthropic-says-its-own-ai-models-breached-three-companies-during-security-tests/">Anthropic
-      says its own AI models breached three companies during security tests</a>
-      — <i>TechCrunch</i>, 30 July 2026. <a
-      href="https://www.theregister.com/ai-and-ml/2026/07/31/anthropics-claude-escaped-test-sandbox-to-attack-three-organizations/">The
-      Register</a> has more detail, including the PyPI package and Anthropic's
-      own explanation.</li>
-    <li><a href="https://9to5mac.com/2026/07/27/claude-cowork-escaped-sandbox-on-mac-gain-full-access-to-all-files/">Claude
-      Cowork escaped sandbox on Mac, gained full access to all files</a> —
-      <i>9to5Mac</i>, 27 July 2026, on the SharedRoot vulnerability. Read this
-      one because it is about the software you are about to install.</li>
-  </ol>
-
-  <div class="task">
-    <h4>Exercise · Read one story properly</h4>
-    <p>Pick one of the three. Write half a page answering the four questions in
-      Section 2: was this deployment or evaluation; did the system seek the
-      outcome or was it steered there; what actually failed; and who is telling
-      you. Then answer a fifth: <b>which of the six rules, if any, would have
-      prevented it?</b></p>
-    <p>The fifth question does not have a comfortable answer, and you should say
-      so if you find that. Rules for a student project are not controls for a
-      frontier lab, and noticing the gap is the point of the exercise.</p>
-  </div>
-
-  <div class="task">
-    <h4>Exercise · Find the power in an office</h4>
-    <p>Take any office in the gallery — <code>dsl list</code> will show you —
-      and answer without running it: what is the complete set of things this
-      office can do to the world outside the machine it runs on? Then run
-      <code>dsl check</code> on it and see whether it reports W11 or W12, and
-      whether you agree with the answer.</p>
-  </div>
-
-  <footer>
-    DisSysLab. This page will change as the field does; the incidents described
-    here are from July 2026 and the situation around local sandboxing in
-    particular may have moved. If you find something here that is out of date,
-    that is a contribution — tell me.
-  </footer>
 
 </div>
 </body>
