@@ -279,3 +279,19 @@ letter_to_*.md
 # puts the repo inside itself.
 _to_delete/
 *.bundle
+
+# Podium notes. The slides are for the room; the notes are for the person
+# holding the clicker -- timings, the abort rule, the cut-list for when the
+# class is running late, and which beats to refuse out loud. Publishing a
+# lecture's cut-list to the students sitting in that lecture is a different
+# decision from publishing the lecture, and it is not one to make by
+# forgetting.
+#
+# Named by property rather than by class number, so class02 does not have to
+# remember. Scoped to `course/**` and not a bare `*_notes.html`, so a notes
+# file elsewhere in the repository is not silently swallowed.
+#
+# This works only because no notes file is tracked yet. Git never un-tracks a
+# file because a later rule ignores it -- the same trap the `dev/` note above
+# records.
+course/**/*_notes.html

@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 1 — slides</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1a2e; --paper:#faf8f3; --line:#ddd8cd; --muted:#6f7583;
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%; margin:0; overflow:hidden; background:var(--paper);
+            color:var(--ink); font-family:var(--sans)}
+  .slide{position:absolute; inset:0; display:none; flex-direction:column;
+         justify-content:center; padding:6vh 8vw 10vh}
+  .slide.on{display:flex}
+  .slide.dark{background:#16161f; color:#f4f1ea}
+  .kick{font:700 clamp(13px,1.4vw,18px)/1 var(--sans); letter-spacing:.16em;
+        text-transform:uppercase; color:var(--orange); margin-bottom:3vh}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(40px,7vw,104px);
+     line-height:1.02; letter-spacing:-.02em; margin:0 0 3vh}
+  h2{font-family:var(--display); font-weight:600; font-size:clamp(30px,4.6vw,64px);
+     line-height:1.1; letter-spacing:-.015em; margin:0 0 4vh}
+  p{font-size:clamp(19px,2.1vw,34px); line-height:1.45; margin:0 0 2.4vh;
+    max-width:22em; color:#2f3242}
+  .dark p{color:#d9d5cc}
+  .big{font-family:var(--display); font-weight:600;
+       font-size:clamp(28px,4.2vw,60px); line-height:1.22; max-width:19em}
+  .date{font:600 clamp(13px,1.3vw,17px)/1 var(--sans); letter-spacing:.1em;
+        text-transform:uppercase; color:var(--orange); margin-bottom:1.4vh}
+  .two{display:flex; gap:5vw; flex-wrap:wrap}
+  .two > div{flex:1 1 320px}
+  ol.big-list{font-size:clamp(19px,2.1vw,32px); line-height:1.4; padding-left:1.2em;
+     max-width:24em}
+  ol.big-list li{margin-bottom:2.2vh}
+  code{font-family:var(--mono); font-size:.86em; background:rgba(26,26,46,.07);
+       padding:2px 7px; border-radius:5px}
+  .dark code{background:rgba(255,255,255,.12)}
+  pre{font-family:var(--mono); font-size:clamp(15px,1.6vw,26px); line-height:1.6;
+      background:#20232e; color:#e6e3da; padding:3vh 3vw; border-radius:14px;
+      margin:0; overflow:auto; max-width:100%}
+  pre .k{color:#7fd1bd} pre .c{color:#8d94a5}
+  /* The whole office on one slide: smaller, because seeing all of it
+     at once is the point. */
+  pre.tight{font-size:clamp(11px,1.16vw,19px); line-height:1.5; padding:2.4vh 2.6vw}
+  pre .e{color:#f0b072}   /* the English half of a role file */
+  pre .f{color:#8d94a5; font-style:italic}
+
+  .stage-wrap{width:100%; max-width:1280px; margin:0 auto}
+  canvas{display:block; width:100%; height:auto}
+  .stagebar{display:flex; gap:14px; align-items:center; margin-top:1.6vh;
+            font:600 clamp(12px,1.2vw,16px)/1 var(--sans); color:var(--muted)}
+  .stagebar b{color:var(--orange); letter-spacing:.1em; text-transform:uppercase}
+  ol.rules0{list-style:none; padding:0; margin:0; counter-reset:r -1;
+            font-size:clamp(17px,1.9vw,29px); line-height:1.35; max-width:26em}
+  ol.rules0 li{counter-increment:r; position:relative; padding:0 0 2.6vh 2.6em}
+  ol.rules0 li::before{content:"R" counter(r); position:absolute; left:0; top:.1em;
+    font:800 .78em var(--sans); color:var(--orange); letter-spacing:-.02em}
+  ol.rules0 li span{display:block; font-size:.66em; color:var(--muted);
+    line-height:1.45; margin-top:.5vh}
+  .nav{position:fixed; right:18px; bottom:14px; font:600 13px var(--sans);
+       color:var(--muted); letter-spacing:.06em}
+  .hint{position:fixed; left:18px; bottom:14px; font:13px var(--sans);
+        color:var(--muted)}
+</style>
+</head>
+<body>
+
+<section class="slide on">
+  <div class="kick">CS · Distributed systems · Winter 2027</div>
+  <h1>Multi-agent systems</h1>
+</section>
+
+<section class="slide">
+  <div class="kick">Safety</div>
+  <div class="two">
+    <div>
+      <div class="date">21 July 2026 · OpenAI</div>
+      <p>Models being tested on security tasks found a hole in the test rig,
+         reached the internet, and went to Hugging&nbsp;Face's production systems
+         to look up the answers to the benchmark they were being graded on.</p>
+    </div>
+    <div>
+      <div class="date">30 July 2026 · Anthropic</div>
+      <p>Models believed to have no internet access got access. 
+        They attacked three organisations and published a 
+        malicious package to PyPI.</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide dark">
+  <div class="big">In both cases the model did<br>what it was asked.<br>
+    The fence around them failed.</div>
+</section>
+
+<section class="slide">
+  <div class="kick">What this course is about</div>
+  <h2>Safety:<br>
+    Build multi-agent systems<br>
+    that satisfy specifications.<br>
+  </h2>
+</section>
+
+<section class="slide">
+  <div class="kick">What this course is about</div>
+  <h2>Safety:<br>
+    <br>
+    We prove algorithm correctness using
+    <br>
+    UNITY: A simple fragment of temporal logic
+    <br>
+    <br>
+    We demonstrate program correctness by<br>
+    systematically testing multi-agent systems 
+  </h2>
+</section>
+
+
+<section class="slide">
+  <div class="kick">Two kinds of agent · press <span style="color:#1a1a2e">↓</span> to advance</div>
+  <div class="stage-wrap">
+    <canvas id="tension" width="1280" height="650"></canvas>
+  </div>
+  <div class="stagebar"><b id="stlabel">Stage 1 of 3</b>
+    <span id="stcap">Send one document to each.</span></div>
+</section>
+
+<section class="slide dark">
+  <div class="kick" style="color:#e8703f">The fundamental dilemma</div>
+  <div class="big">We want systems that
+    <br> satisfy specifications,
+    <br> and AI agents too. </div>
+  <p style="margin-top:3vh">Tradeoff: safety vs expressive power, <br>
+    months of skilled labor vs English sentences. <br>
+    <br>
+    We study logic and proofs, software engineering and systematic
+    testing, and digital fences.</p>
+</section>
+
+<section class="slide">
+  <div class="kick">Four rules, from today</div>
+  <ol class="rules0">
+    <li>Obey the honor code.
+      <span> Systems that seem harmless -- e.g. analyzing audio streams in public
+        spaces -- may violate the honor code. Be sensitive to the privacy of others.
+      </span>
+    </li>
+    <li>Remember that the output of a language model is unpredictable.
+      <span>Design so that an output by one agent does not cause the entire
+        system to fail.</span></li>
+    <li>Never put confidential information into a conversation with an LLM.
+      <span>No passwords, no financial details, no API keys, nothing you would
+        not be willing to see stored.</span></li>
+    <li>Do not gather information that is private to others.
+      <span>No sensors that capture other people's private information, no
+        sources private to someone else.</span></li>
+  </ol>
+</section>
+
+<section class="slide">
+  <div class="kick">A distributed system — the whole program</div>
+<pre class="tight"><span class="c"># Office: caltech_radar</span>
+
+<span class="k">Sources:</span> rss(url="https://www.caltech.edu/campus-life-events/calendar/rss",
+             name="caltech_calendar", max_articles=15),
+         arxiv_cs_ai(max_articles=10),
+         weather(city="Pasadena", max_readings=1)
+<span class="k">Sinks:</span>   periodic_brief_html_sink(path="radar.html"),
+         jsonl_recorder(path="not_for_me.jsonl")
+
+<span class="k">Agents:</span>
+Screen is a cs_ai_filter.
+
+<span class="k">Connections:</span>
+rss's destination is Screen.
+arxiv_cs_ai's destination is Screen.
+Screen's keep is periodic_brief_html_sink.
+Screen's discard is jsonl_recorder.
+weather's destination is periodic_brief_html_sink.</pre>
+  <p style="margin-top:2.4vh"><b>Office</b>, <b>Sources</b>, <b>Sinks</b>,
+     <b>Agents</b>, <b>Connections</b>.
+     <br>
+     Six agents, six threads, no shared memory. Everything they know
+     about each other is on this page.</p>
+</section>
+
+<section class="slide">
+  <div class="kick">And the whole of what Screen does</div>
+<pre class="tight"><span class="f">---
+outboxes: keep, discard
+adds: reason
+---</span>
+<span class="c"># Role: cs_ai_filter</span>
+
+<span class="e">You receive two kinds of message: talks and events from the
+Caltech Institute Calendar, and new paper listings from arXiv
+cs.AI. Each message has a `title` and a `text`.
+
+Decide whether the message is about computer science or
+artificial intelligence.  ...
+
+A seismology talk that is mostly about a new neural network
+counts. A seismology talk that happens to mention a computer
+does not.
+
+If the message is about computer science or AI, send it to
+keep. Otherwise send it to discard.</span></pre>
+  <p style="margin-top:2.4vh">The two lines between the dashes are checked before
+     the office runs, and enforced while it runs. The orange is the program.</p>
+</section>
+
+<section class="slide dark">
+  <div class="big">Same words in.<br>Different program out.</div>
+  <p style="margin-top:3vh">Nobody did anything wrong. This is what it means to
+     describe a job in English instead of specifying it.</p>
+</section>
+
+<section class="slide">
+  <div class="kick">What you are here for</div>
+  <div class="big">
+  YOU are going to determine system safety and power
+  in one of the most critical times in human history.
+  </div>
+  <br>
+  <br>
+  <div class="big">
+  You are here to think for yourselves, explore, and
+  prepare for this task.
+  </div>
+</section>
+
+<section class="slide">
+  <div class="kick">What you should do in this class</div>
+  <ol class="big-list">
+    <li>Collaborate.</li>
+    <li>Do homework and projects in groups of 2 or 3.</li>
+    <li>Use everything -- e.g. Claude Cowork -- that helps you learn and explore.</li>
+    <li>This course is graded pass/fail. You will get a pass if you turn in
+        homework.
+    </li>
+    <li>
+        Help me help you explore. Give me ideas for the course.
+    </li>
+    <li>
+        This course is about safety and power. Be safe.
+    </li>
+  </ol>
+</section>
+
+<section class="slide">
+  <div class="kick">Homework 1</div>
+  <ol class="big-list">
+    <ul>
+      <li>
+        Build a cool distributed system -- an office of workers that does
+        something interesting or useful.
+      </li>
+      <li>
+        Homework 1 is due in 2 weeks.
+      </li>
+  </ul>
+  </ol>
+</section>
+
+
+<section class="slide">
+  <div class="kick">Before next class</div>
+<pre>pip install --upgrade dissyslab
+dsl init periodic_brief my_brief
+cd my_brief &amp;&amp; dsl run .</pre>
+  <p style="margin-top:3vh">Read <b>ai_safety.html</b>. Read
+     <b>01_one_connection.html</b> and do Tasks 1–4 — browser only.</p>
+</section>
+
+<section class="slide dark" style="justify-content:center;align-items:center">
+  <div class="big" style="text-align:center;opacity:.35">terminal</div>
+</section>
+
+<div class="nav" id="nav"></div>
+<div class="hint">← → or space · <b>B</b> blanks the screen</div>
+
+<script>
+(function(){
+  const s=[...document.querySelectorAll('.slide')];
+  let i=0, blank=false;
+  const nav=document.getElementById('nav');
+  function draw(){
+    s.forEach((el,n)=>el.classList.toggle('on', n===i && !blank));
+    nav.textContent = (i+1)+' / '+s.length;
+    document.body.style.background = blank ? '#000'
+      : (s[i].classList.contains('dark') ? '#16161f' : 'var(--paper)');
+  }
+  function go(d){ i=Math.max(0,Math.min(s.length-1,i+d)); blank=false; draw(); }
+  addEventListener('keydown',e=>{
+    if(['ArrowRight',' ','PageDown','n'].includes(e.key)){ e.preventDefault(); go(1); }
+    else if(['ArrowLeft','PageUp','p'].includes(e.key)){ e.preventDefault(); go(-1); }
+    else if(e.key==='Home'){ i=0; blank=false; draw(); }
+    else if(e.key==='End'){ i=s.length-1; blank=false; draw(); }
+    else if(e.key==='ArrowDown'){ e.preventDefault();
+      if(window.__tensionAdvance && s[i].querySelector('#tension')) window.__tensionAdvance(1); }
+    else if(e.key==='ArrowUp'){ e.preventDefault();
+      if(window.__tensionAdvance && s[i].querySelector('#tension')) window.__tensionAdvance(-1); }
+    else if(e.key==='b'||e.key==='B'){ blank=!blank; draw(); }
+  });
+  addEventListener('click',e=>go(e.clientX < innerWidth*0.25 ? -1 : 1));
+  draw();
+})();
+</script>
+
+<script>
+// ── Two kinds of agent: the tension, animated ────────────────────────
+// Left: code you can read, test and reason about -> the same answer
+// every time. Right: one English sentence and a box you cannot open ->
+// answers that scatter. Stage 3 adds the thing that makes it matter:
+// it runs for a long time with nobody watching.
+(function(){
+  const cv=document.getElementById('tension'); if(!cv) return;
+  const c=cv.getContext('2d'), W=1280, H=650;
+  const FS='-apple-system,Segoe UI,Helvetica,Arial,sans-serif';
+  const MONO='ui-monospace,Menlo,Consolas,monospace';
+
+  const L={x0:60,x1:600}, R={x0:680,x1:1220};
+  const BY0=104, BY1=356, TALLY=406;
+  const SPREAD=[0.71,0.66,0.80,0.62,0.75,0.58,0.69,0.83,0.64,0.77,0.55,0.72];
+
+  let stage=0, left=[], right=[], flying=[], counter=0, spin=false, rogue=false;
+
+  function rr(x0,y0,x1,y1,r){ c.beginPath(); c.moveTo(x0+r,y0);
+    c.arcTo(x1,y0,x1,y1,r); c.arcTo(x1,y1,x0,y1,r);
+    c.arcTo(x0,y1,x0,y0,r); c.arcTo(x0,y0,x1,y0,r); c.closePath(); }
+
+  function send(n){
+    for(let i=0;i<n;i++){
+      setTimeout(()=>{
+        const li=left.length, ri=right.length;
+        flying.push({side:'L', x:(L.x0+L.x1)/2, y:BY0-40, v:0.62, i:li});
+        flying.push({side:'R', x:(R.x0+R.x1)/2, y:BY0-40,
+                     v:SPREAD[ri % SPREAD.length], i:ri});
+        left.push(null); right.push(null);
+      }, i*230);
+    }
+  }
+
+  function chipXY(side,i){
+    const b = side==='L'?L:R, per=6, w=76;
+    const col=i%per, row=Math.floor(i/per);
+    return [b.x0+18+col*w+w/2, TALLY+26+row*46];
+  }
+
+  function drawChip(x,y,v,red){
+    rr(x-33,y-17,x+33,y+17,8);
+    c.fillStyle = red ? '#c0563a' : (v===0.62 ? '#00947d' : '#4a6fa5');
+    c.fill();
+    c.fillStyle='#fff'; c.font='700 17px '+FS;
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillText(v.toFixed(2), x, y+1);
+  }
+
+  function panel(b,title,sub){
+    c.fillStyle='#fff'; c.strokeStyle='#2f3d55'; c.lineWidth=2.5;
+    rr(b.x0,BY0,b.x1,BY1,14); c.fill(); c.stroke();
+    c.fillStyle='#2f3d55'; c.font='700 20px '+MONO;
+    c.textAlign='left'; c.textBaseline='top';
+    c.fillText(title, b.x0+22, BY0+18);
+    c.font='15px '+FS; c.fillStyle='#7a8494';
+    c.fillText(sub, b.x0+22, BY0+46);
+  }
+
+  function frame(){
+    c.clearRect(0,0,W,H);
+
+    panel(L,'sentiment.py','you can read it');
+    c.fillStyle='#3b4353'; c.font='16px '+MONO; c.textBaseline='top';
+    ['def score(doc):','    hits = POSITIVE & words(doc)','    return len(hits) / len(words(doc))']
+      .forEach((t,i)=>c.fillText(t, L.x0+22, BY0+92+i*30));
+    c.fillStyle='#00947d'; c.font='600 15px '+FS;
+    c.fillText('test it · prove things about it', L.x0+22, BY1-42);
+
+    panel(R,'sentiment.md','you cannot open it');
+    c.fillStyle='#3b4353'; c.font='16px '+FS;
+    c.fillText('"Score this document from 0 to 1', R.x0+22, BY0+92);
+    c.fillText(' by how positive it is."', R.x0+22, BY0+116);
+    // the part you cannot see
+    const FY0=BY0+146, FY1=BY1-16;
+    c.save(); rr(R.x0+16,FY0,R.x1-16,FY1,10); c.clip();
+    c.fillStyle='#e9e4da'; c.fillRect(R.x0,FY0,R.x1,FY1);
+    c.strokeStyle='#d3ccbd'; c.lineWidth=3;
+    for(let x=R.x0-260;x<R.x1+260;x+=18){
+      c.beginPath(); c.moveTo(x,FY1); c.lineTo(x+260,FY0); c.stroke(); }
+    c.restore();
+    c.strokeStyle='#cfc7b7'; c.lineWidth=1.5; rr(R.x0+16,FY0,R.x1-16,FY1,10); c.stroke();
+    c.textAlign='center'; c.textBaseline='middle';
+    c.fillStyle='#9a917f'; c.font='700 34px '+FS;
+    c.fillText('?', (R.x0+R.x1)/2, (FY0+FY1)/2 - 12);
+    c.font='600 15px '+FS;
+    c.fillText('no code · no training data · no tests',
+               (R.x0+R.x1)/2, (FY0+FY1)/2 + 20);
+    c.textBaseline='top';
+
+    // tallies
+    c.textAlign='left'; c.textBaseline='top';
+    c.font='600 15px '+FS; c.fillStyle='#6f7583';
+    c.fillText('answers', L.x0, TALLY-18);
+    c.fillText('answers', R.x0, TALLY-18);
+    left.forEach((v,i)=>{ if(v!=null){ const [x,y]=chipXY('L',i); drawChip(x,y,v,false);} });
+    right.forEach((v,i)=>{ if(v!=null){ const [x,y]=chipXY('R',i);
+       drawChip(x,y,v, v<0.2); } });
+
+    flying.forEach(f=>{
+      const [tx,ty]=chipXY(f.side,f.i);
+      f.x += (tx-f.x)*0.16; f.y += (ty-f.y)*0.16;
+      drawChip(f.x,f.y,f.v,false);
+      if(Math.abs(f.x-tx)<1 && Math.abs(f.y-ty)<1){
+        (f.side==='L'?left:right)[f.i]=f.v; f.done=true;
+      }
+    });
+    flying=flying.filter(f=>!f.done);
+
+    if(spin){
+      counter += 3;
+      c.textAlign='center'; c.textBaseline='alphabetic';
+      c.font='700 30px '+FS; c.fillStyle='#2f3d55';
+      c.fillText(counter.toLocaleString()+' documents scored', W/2, H-46);
+      c.font='17px '+FS; c.fillStyle='#c0563a';
+      c.fillText('running since Tuesday · nobody watching', W/2, H-16);
+      c.textBaseline='top';
+    }
+    requestAnimationFrame(frame);
+  }
+  frame();
+
+  const label=document.getElementById('stlabel'), cap=document.getElementById('stcap');
+  const CAPS=['Send one document to each.',
+              'Now send twelve more.',
+              'And let it run.'];
+  function advance(d){
+    stage=Math.max(0,Math.min(3,stage+d));
+    if(d>0){
+      if(stage===1) send(1);
+      else if(stage===2) send(12);
+      else if(stage===3){ spin=true; counter=14382;
+        right.push(null); flying.push({side:'R',x:(R.x0+R.x1)/2,y:BY0-40,
+                                       v:0.04,i:right.length-1}); }
+    }
+    if(d<0 && stage<3){ spin=false; }
+    if(d<0 && stage<2){ left=[]; right=[]; flying=[]; }
+    if(d<0 && stage<1){ left=[]; right=[]; flying=[]; }
+    label.textContent='Stage '+Math.max(1,stage)+' of 3';
+    cap.textContent=CAPS[Math.max(0,stage-1)] || CAPS[0];
+  }
+  window.__tensionAdvance=advance;
+})();
+</script>
+</body>
+</html>

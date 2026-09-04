@@ -206,4 +206,4 @@ def test_only_the_office_we_expect_trips_it():
     for office_md in sorted(GALLERY.rglob("office.md")):
         if scan_office(office_md.parent):
             firing.add(office_md.parent.name)
-    assert firing == {"periodic_brief"}
+    assert firing == {"periodic_brief", "caltech_radar"}

@@ -15,9 +15,6 @@ Sources, sinks, transforms, coordinators, alarm
 Examples
 Homework 1: Build your first office with a basic skill.
 
-January 7:
-Distributed AI basics: Open-Router, RAG, skill
-Example: Backtesting. 
 
 ------------------------WEEK 2-------------------------
 
