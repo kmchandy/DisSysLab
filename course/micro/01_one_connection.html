@@ -182,10 +182,10 @@
     <h1>Introduction</h1>
 
     <p>The focus of this course is the safety of multi-agent systems. We use
-      extremely simple models of distributed systems because simple models let
-      us prove that algorithms satisfy their specifications, and an algorithm
-      proved to satisfy its specification is one we can call safe. This page
-      gives the model. Everything the course proves later is proved about it.</p>
+       simple models of distributed systems that allow us to show 
+       that algorithms satisfy their specifications. An algorithm
+      proved to satisfy its specification is safe. This page
+      gives the model.</p>
 
     <div class="meta">
       <span><b>Time</b> ~45 minutes</span>
@@ -470,15 +470,16 @@
 
   <p>
     <b>Agent Actions.</b>
-    We first describe actions for agents other than sources and then describe
-    source actions.
-    An agent waits to receive messages from exactly one of its inboxes.
-    If that inbox is empty then the agent does nothing, and continues waiting
+    We first describe actions for agents other than sources.
+    An agent waits to receive a message from exactly one of its inboxes.
+    If that inbox is empty then the agent does nothing and continues waiting
     for a message in that inbox. If the inbox is not empty then the agent 
     removes a message from the inbox and processes it.
-    While it is processing the message the agent may put messages on its outboxes.
+    While it is processing the message the agent may put messages on its outboxes
+    and change values of its variables.
     The processing of a message always terminates. After the message is processed
-    the agent waits again for a message from an inbox, possibly a different one.
+    the agent waits again for a message from an inbox which may be the
+    same inbox that it was waiting for earlier or a different one.
   </p>
 
   <figure class="fig wideout">
@@ -528,64 +529,42 @@
   such as actuators, databases, or files.
 </p>
 
-<h2><span class="n">SECTION 2</span>Model of Computation</h2>
-<p>
-We will reason about the correct behavior of a distributed system using UNITY logic
-which is a simple fragment of temporal logic. The model of computation in UNITY is
-as follows. A program is a set of actions and an initial state. Computation proceeds
-by executing <b>any</b> action in the set. Actions are selected nondeterministically 
-and every action is executed infinitely often.
-</p>
+<h2><span class="n">SECTION 2</span>A Model of Computation</h2>
 
-
-<p>
-  <strong>An infinite computation is an infinite sequence of action executions in which every 
-    action occurs infinitely often.</strong>
-  The requirement that every action is executed infinitely often in an infinite
-  computation is called a <b>weak fairness</b> requirement.
-  The word "fairness" in this context does not have the usual English meaning --
-  fairness does not imply that actions are selected equally often.
-  </p>
-
-<p>
-  <b>Actions of a System</b> The system has three types of actions: agent, outbox, and channel
+<h3>The Actions of a System</h3>
+The system has three types of actions: agent actions, outbox actions, and channel
   actions. A computation proceeds by selecting any agent, outbox or channel and
-  executing its action.
+  executing its action. We have described agent actions. Next we describe outbox
+  and channel actions.
   </p>
 
   <ol>
     <li>
-      <b>Agent action</b> If the inbox for which the agent is waiting is empty then
-      the action is a skip -- do nothing -- and so the agent continues waiting for a
-      message from the same inbox. If the inbox is not empty then the agent removes a 
-      message from the inbox and processes the message which may cause the agent to 
-      put messages in its outboxes. The processing terminates and the agent starts
-      waiting on the same or a different inbox.
-    </li>
-    <li>
-      <b>Outbox action</b> If the outbox is empty then skip else remove a message from
+      <b>Outbox action</b> If the outbox is empty then the action does nothing.
+      If the outbox is not empty then the action removes one message from
       the outbox and put copies of the messages in all the channels to which the
       outbox is connected.
     </li>
     <li>
-      <b>Channel action</b> If the channel is empty then skip else remove a message
-      from the channel and put a copy of the message in the inbox to which the 
+      <b>Channel action</b> If the channel is empty then the action does nothing.
+      If the channel is not empty the action removes one message
+      from the channel and puts a copy of the message in the inbox to which the 
       channel is connected.
     </li>
   </ol>
-
-<p>A source agent is treated like any other agent -- the action is if there
-  are no messages from the source to be processed by the agent then skip else
-  take one message from the source and process it.
+<p>
+  The computation of a system proceeds as follows: for ever 
+  execute any action selected nondeterministically.
 </p>
 
 <p>
-  <b>Terminated state:</b> What is the computation after the system reaches a
-  terminated state in which sources have stopped and all channels are empty? The
-  computation continues forever, even from a terminated state, but every action is
-  a skip and so the state doesn't change. It's convenient to assume that computations
-  are infinite though distributed systems deal with termination.
+  The figure below illustrates how a computation proceeds.
+  Think of actions of the system (see Figure 2),represented as
+  balls in a jar. Each step of a computation draws any one ball
+  from the jar, executes that action, and puts the ball back 
+  in the jar. Do that step forever.
 </p>
+
 
   <figure class="fig wideout">
     <div class="stage" style="border:0;padding:0;background:none">
@@ -615,8 +594,7 @@ and every action is executed infinitely often.
     <figcaption>
       <b>Figure 6. Selecting any action.</b>
       Actions of the office of Figure 2,represented as
-      balls in a jar; a step draws one ball, executes that action, and puts the
-      ball back. So an action may be drawn again.
+      balls in a jar.
       The bars record how many steps have passed since each action was last
       drawn. 
       Press <b>never the channel</b> and
@@ -629,52 +607,44 @@ and every action is executed infinitely often.
   </figure>
 
 
+<p>
+  You have probably already asked yourself at least
+  two questions: (1) Can some actions
+  be never selected? (2) If actions are selected infinitely often
+  then how is program termination represented? We give answers
+  to both questions later.
+</p>
+
+
 <h2><span class="n">SECTION 3</span>Correctness and Performance</h2>
 <p>
 In this course, the specification of a distributed system does not include
-anything to do with time or performance. You can see why the use of a 
-weak model of computation -- execute any action -- without any mention of
-time, restricts what we can prove about systems.
+anything to do with time, and so we do not prove properties about system
+performance.
 </p>
 
 <p>
-  We use a weak model of computation because our reasoning, based on the
-  model, applies to all systems that satisfy the model. Our weak model
+  We use a weak model of computation because our reasoning
+  applies to all systems that satisfy the model. Our model
   allows us to reason about systems in which agents execute in Python threads
   or processes, or Go subroutines, or Erlang processes, and which don't 
-  require RTOS (real-time operating systems). The UNITY computational model
-  -- execute actions fairly -- also allows for simple rules for reasoning
-  about correctness.
+  require RTOS (real-time operating systems). We discuss 
+  system performance informally without using a computation model.
 </p>
 
-<p>
-  In practice, we are concerned about performance too; however,
-  performance depends on the underlying programming language and operating
-  system. We won't prove performance properties but we will discuss likely 
-  behavior.
-</p>
 
 <p>
   An example of how we treat performance is a type of agent called an
   <b>alarm</b>. An alarm has an inbox and an outbox; its action is to
   remove the message from the inbox, wait for a time specified in the
-  alarm, and then send a message on the outbox. The wait time can be 
-  any value -- we assume that the implementation attempts to wait for
-  the specified time but we don't rely on it. So, when we reason about
-  correct behavior we specify the action of an alarm as: Remove a message
-  from the inbox and put a message on the outbox without mentioning the
-  time interval between the steps.
+  alarm, and then send a message on the outbox. We assume that the 
+  implementation attempts to wait for the specified time but we don't 
+  rely on that assumption. So, when we reason about a system we specify the action 
+  of an alarm as: Remove a message from the inbox and put a message on
+  the outbox. The specification doesn't mention the delay between 
+  the agent receiving the set-alarm message and its sending the wakeup message.
 </p>
 
-<p>
-  We use a weak model of computation because our reasoning, based on the
-  model, applies to all systems that satisfy the model. Our weak model
-  allows us to reason about systems in which agents execute in Python threads
-  or processes, or Go subroutines, or Erlang processes, and which don't 
-  require RTOS (real-time operating systems). The UNITY computational model
-  -- execute actions fairly -- also allows for simple rules for reasoning
-  about correctness.
-</p>
 
 
 
