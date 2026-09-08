@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Class 1 — slides</title>
+<title>Lecture 1 — Why you are here</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
@@ -114,30 +114,82 @@
     <li>The channel was taken away. They built another, encoding messages
         in <b>directory names</b>.</li>
   </ol>
-  <p style="margin-top:2.4vh; max-width:27em">Nobody asked them for a distributed
-     system. They needed to coordinate, so they built one — and every problem
-     they ran into is a problem in this course.</p>
+  <p style="margin-top:2.4vh; max-width:27em">The <b>collective</b> of agents 
+    needed to collaborate; so they built a collaboration mechanism.
+  </p>
 </section>
 
 <section class="slide">
-  <div class="kick">And not only by accident</div>
-  <div class="date">13 August 2026 · Anthropic</div>
-  <p>Three agents, one code base, instructions that could not all be satisfied
-     at once. None of them was told the others existed.</p>
-  <p>They sabotaged each other with self-replicating malware — each concluding
-     that something was obstructing it on purpose.</p>
-  <p style="margin-top:2.4vh"><b>This one was a deliberate experiment.</b> Their
-     conclusion: agents may be talking to each other far more than we talk to
-     them, well before anyone knows how to make that go well.</p>
-</section>
-
-<section class="slide">
-  <div class="kick">What this course is about</div>
-  <h2>Safety:<br>
-    Build multi-agent systems<br>
-    that satisfy specifications.<br>
+  <div class="kick">AI in persistent sense-respond systems</div>
+  <h2>
+    Safety is especially important in 
+    <br>
+    persistent sense & respond systems.
   </h2>
+  <ol class="big-list" style="font-size:clamp(17px,1.85vw,28px); max-width:27em">
+      <li>
+        Systems operate in the background forever. So errors may not
+        be caught for a long time.
+      </li>
+      <li>
+        Agents can read and write documents on the web; send messages and texts
+        to people; learn new behaviors.
+      </li>
+      <li>
+        They modify their environment - vehicles, finances, robots.
+      </li>
+  </ol>
+  </h3>
 </section>
+
+<section class="slide dark">
+  <div class="kick" style="color:#e8703f">The fundamental dilemma</div>
+  <div class="big">We want systems that
+    <br> satisfy specifications,
+    <br> but also have AI agents. </div>
+  <p style="margin-top:3vh">
+    tradeoff:
+    <br>
+    safety obtained by months of skilled labor
+    <br>
+    versus
+    <br>
+    programs specified in English
+    </p>
+</section>
+
+
+<section class="slide">
+  <div class="kick">What this course is about: Safety</div>
+  <ol class="big-list" style="font-size:clamp(17px,1.85vw,28px); max-width:27em">
+    <li>
+      Use (UNITY) logic to show that programs satisfy specs.
+    </li>
+    <li>
+      Build our own distributed system infrastructure: Do not depend on LM.
+      <br>
+      <span style="opacity:.62">Routers, termination detection, global
+      snapshots, deadlock detection, recovery from transient errors.</span>
+    </li>
+    <li>
+      Use guards to test data in and out of agents.
+      <br>
+      <span style="opacity:.62">e.g. runtime check that a score computed by an LM lies in
+      &minus;1.0 and 1.0.</span>
+    </li>
+    <li>
+      Build digital fences: restrict what devices agents can access.
+    </li>
+    <li>
+      rely-guarantee proofs: guarantee system behavior
+      only <strong>IF</strong> AI behaves as specified.
+      <br>
+      <span style="opacity:.62">Warn about assumptions. Check assumptons if possible.
+      </span>
+    </li>
+  </ol>
+</section>
+
 
 <section class="slide">
   <div class="kick">What this course is about</div>
@@ -163,17 +215,6 @@
     <span id="stcap">Two ways to write the same job. Press ↓ to send the first document.</span></div>
 </section>
 
-<section class="slide dark">
-  <div class="kick" style="color:#e8703f">The fundamental dilemma</div>
-  <div class="big">We want systems that
-    <br> satisfy specifications,
-    <br> and AI agents too. </div>
-  <p style="margin-top:3vh">Tradeoff: safety vs expressive power, <br>
-    months of skilled labor vs English sentences. <br>
-    <br>
-    We study logic and proofs, software engineering and systematic
-    testing, and digital fences.</p>
-</section>
 
 <section class="slide">
   <div class="kick">Four rules, from today</div>
@@ -189,11 +230,21 @@
         not be willing to see stored.</span></li>
     <li>Do not gather information that is private to others.
       <span>
-        Be sensitive. A sense-and-respond system may gather private 
+        Be sensitive. A sense-and-respond system may gather private
         information without your intending it to.
       </span>
     </li>
   </ol>
+  <p style="margin-top:2.4vh; max-width:30em">Following these rules makes your
+     office <b>safer</b>. It does not make it safe.</p>
+</section>
+
+<section class="slide">
+  <div class="kick">Three words for the same thing</div>
+  <div class="big">distributed system<br>multi-agent system<br>office</div>
+  <p style="margin-top:3vh; max-width:30em">We use all three interchangeably.
+     <b>Office</b> is the metaphor: the workers in an office are the agents in
+     the system, and they exchange messages.</p>
 </section>
 
 <section class="slide">
@@ -249,8 +300,8 @@ keep. Otherwise send it to discard.</span></pre>
 </section>
 
 <section class="slide dark">
-  <div class="big">You can describe a program with the same words.
-    but AI generates different programs,
+  <div class="big">AI, with the same description,
+   can generate different distributed systems.
     <br>
     <br>
     SAFETY: You must verify programs.
@@ -260,8 +311,8 @@ keep. Otherwise send it to discard.</span></pre>
 <section class="slide">
   <div class="kick">What you are here for</div>
   <div class="big">
-  YOU are going to determine system safety and power
-  in one of the most critical times in human history.
+  YOU are going to determine the power and safety of
+  systems in a critical time in human history.
   </div>
   <br>
   <br>
@@ -308,8 +359,6 @@ keep. Otherwise send it to discard.</span></pre>
 <pre>pip install --upgrade dissyslab
 dsl init periodic_brief my_brief
 cd my_brief &amp;&amp; dsl run .</pre>
-  <p style="margin-top:3vh">Read <b>ai_safety.html</b>. Read
-     <b>01_one_connection.html</b> and do Tasks 1–4 — browser only.</p>
 </section>
 
 <section class="slide dark" style="justify-content:center;align-items:center">
@@ -333,7 +382,7 @@ cd my_brief &amp;&amp; dsl run .</pre>
   function go(d){ i=Math.max(0,Math.min(s.length-1,i+d)); blank=false; draw(); }
   addEventListener('keydown',e=>{
     if(['ArrowRight',' ','PageDown','n'].includes(e.key)){ e.preventDefault(); go(1); }
-    else if(['ArrowLeft','PageUp','p'].includes(e.key)){ e.preventDefault(); go(-1); }
+    else if(['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); go(-1); }
     else if(e.key==='Home'){ i=0; blank=false; draw(); }
     else if(e.key==='End'){ i=s.length-1; blank=false; draw(); }
     else if(e.key==='ArrowDown'){ e.preventDefault();
