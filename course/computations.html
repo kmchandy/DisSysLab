@@ -1,0 +1,1463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Computations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  p{color:var(--body); margin:0 0 15px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  figure.fig{margin:30px 0 26px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  input[type=range]{flex:1 1 200px; min-width:160px; accent-color:var(--orange)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
+          font-size:13.5px; color:var(--muted)}
+  .legend i{font-style:normal; color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em}
+  .hint{font-size:13px; color:var(--muted)}
+  table.state{width:100%; margin-top:14px; border-collapse:collapse;
+              font:13.5px/1.5 var(--mono)}
+  table.state th{text-align:left; font:600 11.5px var(--sans); letter-spacing:.12em;
+    text-transform:uppercase; color:var(--muted); padding:0 12px 6px 0; font-weight:700}
+  table.state td{padding:5px 12px 5px 0; border-top:1px solid var(--line);
+                 vertical-align:baseline}
+  table.state td.k{color:var(--muted); white-space:nowrap; width:104px}
+  table.state td b{color:var(--ink)}
+  .none{color:#b9b4a8}
+  .hot{color:var(--orange); font-weight:700}
+  .chan{color:var(--teal); font-weight:700}
+  .facts{margin-top:14px; font:14px/1.7 var(--mono)}
+  .facts div{display:flex; gap:10px; align-items:baseline; padding:5px 0;
+             border-top:1px solid var(--line)}
+  .facts .k{width:172px; flex:none; font:600 11.5px var(--sans);
+            letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+  .fixed{color:var(--teal); font-weight:700}
+  .moved{color:var(--ink); font-weight:700}
+  .ok{color:var(--teal); font-weight:700}
+  .bad{color:var(--orange); font-weight:700}
+  .dn{color:var(--orange); font-weight:700}
+  .up{color:var(--teal); font-weight:700}
+  .cc{color:#8d8878; font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab &middot; Lecture 2</div>
+    <h1>Computations</h1>
+    <p class="lead">A computation drawn as a picture: what each agent is doing
+      at each moment, which message went where, what the state is at a given
+      time, which events could have been reordered, and which events could
+      possibly have heard of which others.</p>
+    <div class="meta">
+      <span><b>Five figures</b> all of one computation</span>
+      <span><b>Press P</b> to present</span>
+    </div>
+  </header>
+
+<h2>A computation diagram</h2>
+  <p>Two agents. Time runs left to right. A <b>thin line</b> is an agent waiting.
+     A <b>bar</b> is an agent active — it has taken one message from one inbox and
+     is processing it, and the bar is labelled with that inbox. A <b>message line</b>
+     leaves the sender's line tagged with the outbox it was put on, and arrives at
+     the receiver's line tagged with the inbox it arrives in.</p>
+
+  <figure class="fig wideout">
+    <svg id="c1_tl" viewBox="0 0 1240 470" role="img"
+         aria-label="Computation diagram for two agents X and Y"></svg>
+
+    <div class="ctrls">
+      <button id="c1_play" class="primary">Play</button>
+      <button id="c1_step">Step</button>
+      <button id="c1_reset">Reset</button>
+      <input id="c1_scrub" type="range" min="0" max="100" step="0.25" value="100">
+      <span class="status" id="c1_status"></span>
+    </div>
+
+    <div class="legend">
+      <span><i>▬</i> bar = active, labelled with the inbox it took from</span>
+      <span><i>╱</i> message line, tagged outbox → inbox</span>
+      <span><i>│</i> thin line = waiting</span>
+    </div>
+
+    <figcaption>
+      <b>Figure. One computation of a two-agent office.</b>
+      X has inboxes <code>R</code>, <code>S</code> and outboxes <code>A</code>,
+      <code>B</code>; Y has inboxes <code>U</code>, <code>V</code> and outboxes
+      <code>P</code>, <code>Q</code>. Y waits on <code>U</code> throughout.
+      Watch the first message: it is put on outbox <code>A</code>, it arrives in
+      inbox <code>V</code> — and nothing happens. Y is not waiting on
+      <code>V</code>, so the message stays there for the rest of the diagram.
+      The second message arrives in <code>U</code>, and even then Y does not
+      start at once: the gap between the arrowhead and the start of the bar is
+      the difference between <b>delivered</b> and <b>received</b>.
+      Y's one bar is labelled <code>U</code>, so you can tell which of the two
+      messages it took.
+    </figcaption>
+  </figure>
+
+<h2>The state at time <i>t</i></h2>
+  <p>The same computation, finished. A vertical line at time <i>t</i> cuts it.
+     Where the line crosses an <b>agent line</b> it gives that agent's state.
+     Where it crosses a <b>message line</b> it has found a message that has been
+     sent and not yet delivered — a message in a channel. Those crossings, all
+     of them together, are the state of the system at <i>t</i>.</p>
+
+  <figure class="fig wideout">
+    <svg id="c2_tl" viewBox="0 0 1240 470" role="img"
+         aria-label="Computation diagram with a vertical state line"></svg>
+
+    <div class="ctrls">
+      <button id="c2_prev">← event</button>
+      <button id="c2_next">event →</button>
+      <input id="c2_scrub" type="range" min="0" max="100" step="0.25" value="45">
+      <span class="hint">drag the diagram to move <i>t</i></span>
+    </div>
+
+    <table class="state">
+      <tr><th colspan="3">state at t = <span id="c2_tv"></span></th></tr>
+      <tr><td class="k">agent X</td><td id="c2_sx"></td><td id="c2_ix"></td></tr>
+      <tr><td class="k">agent Y</td><td id="c2_sy"></td><td id="c2_iy"></td></tr>
+      <tr><td class="k">channels</td><td id="c2_ch" colspan="2"></td></tr>
+    </table>
+
+    <figcaption>
+      <b>Figure. A state is a vertical line.</b>
+      The state of the system is a tuple: one element for each agent, one for
+      each channel. <code>x<sub>k</sub></code> is X's state after it has
+      completed <i>k</i> actions. Slide <i>t</i> and watch which elements change — nothing
+      changes except at an event, and each event changes exactly one agent and
+      the channels it sends on or receives from. Two moments are worth stopping
+      at. Around <code>t = 45</code> a message is in a channel and another is
+      already sitting in inbox <code>V</code>: the first is on a line the cut
+      crosses, the second is not — it is inside Y. And if the line falls inside
+      a bar, the agent is part-way through an action, so there is no state to
+      read: the tuple is only defined between events.
+    </figcaption>
+  </figure>
+
+<h2>Moving events in time</h2>
+  <p>Six events, named <code>0</code> to <code>5</code>. Events <code>2</code>
+     and <code>3</code> happen at different agents and neither depends on the
+     other. Slide them: <code>2</code> to the right, <code>3</code> to the
+     left, until they change places. Each agent's own sequence of actions never
+     changes — only where they sit in time. As long as every message arrow
+     still points forward, what you are looking at is another computation of
+     the same system.</p>
+
+  <figure class="fig wideout">
+    <svg id="c3_tl" viewBox="0 0 1240 470" role="img"
+         aria-label="Timeline diagram in which two independent events can be moved"></svg>
+
+    <div class="ctrls">
+      <button id="c3_slide" class="primary">Slide 2 and 3 past each other</button>
+      <button id="c3_reset">Reset</button>
+      <span class="hint">or drag event <b>2</b> or event <b>3</b> along its own line</span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Agent X does</span><span id="c3_seqx"></span></div>
+      <div><span class="k">Agent Y does</span><span id="c3_seqy"></span></div>
+      <div><span class="k">Computation</span><span id="c3_seqg"></span></div>
+      <div><span class="k">Arrows</span><span id="c3_valid"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure. Two independent events changing places.</b>
+      The top two rows never change, however far you drag: an agent's own
+      actions keep their order, because an agent does one thing at a time, and
+      the arrows along each line say so. The third row does change. Events at
+      the same time are unordered and are shown together in braces, so
+      <code>0</code> and <code>1</code> are always <code>{0,1}</code>, and
+      half way through the slide <code>2</code> and <code>3</code> are
+      <code>{2,3}</code> too. Every sequence you can read off this row is a
+      computation of the same system. Drag further and the fourth row turns:
+      push <code>2</code> far enough right and it sends <code>m3</code> after
+      <code>m3</code> arrived, and push <code>3</code> far enough left and it
+      takes <code>m2</code> out of inbox <code>V</code> before <code>m2</code>
+      got there. Those are the only limits.
+    </figcaption>
+  </figure>
+
+<h2>What influences what</h2>
+  <p>An <b>event</b> is an action by an agent. This computation has six of them,
+     numbered <code>0</code> to <code>5</code>. The numbers are names; they do
+     not say which happened first, and events <code>0</code> and <code>1</code>
+     happen at the same time.</p>
+  <p>Ask of any two events: <b>could news of the first have reached the
+     second?</b> There are only two ways news travels. An agent remembers what
+     it did, so news passes from each of its events to the next. And a message
+     carries news from the event that sent it to the event that received it.
+     Draw those two kinds of arrow and the question becomes a question about
+     the picture: <b>e influences e′ when you can get from e to e′ by
+     following arrows.</b></p>
+
+  <figure class="fig wideout">
+    <svg id="c4_tl" viewBox="0 0 1240 470" role="img"
+         aria-label="Influences diagram derived from the timeline"></svg>
+
+    <div class="ctrls">
+      <button id="c4_derive" class="primary">Derive the influences diagram</button>
+      <button id="c4_clear">Clear selection</button>
+      <span class="hint">click any event</span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Event <span id="c4_sel"></span> influences</span>
+           <span id="c4_dn"></span></div>
+      <div><span class="k">is influenced by</span><span id="c4_up"></span></div>
+      <div><span class="k">is concurrent with</span><span id="c4_cc"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure. The influences diagram.</b>
+      Press <i>Derive</i>: each bar shrinks to a dot, and each message
+      arrowhead slides forward along the receiving agent's line from the inbox
+      it landed in to the event that actually took it out. The timeline cares
+      when a message was <i>delivered</i>; influence cares only which event
+      <i>received</i> it, and the gap between the two is the time the message
+      spent waiting in an inbox. Message <code>m2</code> has the longest slide.
+      What is left is six events and two kinds of arrow. Click an event: what
+      it influences is orange, what influences it is green, and what is left
+      grey is <b>concurrent</b> with it — neither could have heard of the
+      other. Only two pairs are concurrent here, <code>0</code> and
+      <code>1</code>, and <code>2</code> and <code>3</code> — and
+      <code>2</code> and <code>3</code> are exactly the two events that can
+      slide past each other.
+    </figcaption>
+  </figure>
+
+<h2>A message that changes nothing</h2>
+  <p>The same six events, and almost the same messages. One thing is different.
+     In event <code>2</code>, agent X sends a message to Y as before — but into
+     inbox <code>W</code>, and Y never waits on <code>W</code>. The message
+     arrives on time, between events <code>3</code> and <code>4</code>. It is
+     simply never taken out.</p>
+  <p>So no event of Y is an event that received it, and the arrow it would have
+     contributed to the influences diagram does not exist. Click event
+     <code>2</code>: in the previous figure it influenced <code>4</code>.
+     Here it does not. The message crossed from one agent to the other and
+     arrived before event <code>4</code> in time — and carried no influence
+     at all.</p>
+
+  <figure class="fig wideout">
+    <svg id="c5_tl" viewBox="0 0 1240 470" role="img"
+         aria-label="Influences diagram derived from the timeline"></svg>
+
+    <div class="ctrls">
+      <button id="c5_derive" class="primary">Derive the influences diagram</button>
+      <button id="c5_clear">Clear selection</button>
+      <span class="hint">click any event</span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Event <span id="c5_sel"></span> influences</span>
+           <span id="c5_dn"></span></div>
+      <div><span class="k">is influenced by</span><span id="c5_up"></span></div>
+      <div><span class="k">is concurrent with</span><span id="c5_cc"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure. The same computation, with one message redirected.</b>
+      Everything is as before except that event <code>2</code> sends into
+      inbox <code>W</code>, and Y waits on <code>V</code> and then on
+      <code>U</code> — never on <code>W</code>. Press <i>Derive</i>: the other
+      arrowheads slide forward to the events that received them, and
+      <code>m3</code>'s head lifts off Y's line and carries on, dotted, past
+      the edge of the picture. The message is real and it really arrived. The
+      event that takes it out of <code>W</code> is real too — it is just not
+      in this computation, so the edge has no vertex to end at.
+      Now click event <code>2</code>. It influences only <code>5</code>, by
+      way of X's own line. Events <code>3</code> and <code>4</code> are both
+      grey — <b>concurrent</b> with it. In the previous figure <code>2</code>
+      influenced <code>4</code>; here it does not, and the only thing that
+      changed was which inbox the message went to.
+    </figcaption>
+  </figure>
+</div>
+
+<script>
+(function(){
+  const PFX='c1_', $=id=>document.getElementById(PFX+id);
+  const NS='http://www.w3.org/2000/svg';
+  const svg=$('tl');
+  const T0=0, T1=100;
+  const X0=140, X1=1180;              // time axis in svg units
+  const YX=150, YY=340;               // the two agent lines
+  const BAR=20;                       // bar height
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d', paper:'#faf8f3'};
+
+  const xOf=t=>X0+(t-T0)/(T1-T0)*(X1-X0);
+  const yOf=a=>a==='X'?YX:YY;
+
+  // ── the computation ────────────────────────────────────────────────
+  // Two faint arrivals from before this window, so X has work to do.
+  const PRE=[{t:4,agent:'X',tag:'R'},{t:20,agent:'X',tag:'S'}];
+
+  const BARS=[
+    {agent:'X', t0:8,  t1:17, label:'R'},
+    {agent:'X', t0:33, t1:41, label:'S'},
+    {agent:'Y', t0:66, t1:79, label:'U'},
+  ];
+
+  // consumedAt: when a bar took this message out of its inbox (null = never,
+  // within this window).
+  const MSGS=[
+    {from:'X', ts:14, out:'A', to:'Y', tr:29, inb:'V', consumedAt:null},
+    {from:'X', ts:37, out:'B', to:'Y', tr:52, inb:'U', consumedAt:66},
+    {from:'Y', ts:70, out:'P', to:'X', tr:86, inb:'R', consumedAt:null},
+    {from:'Y', ts:76, out:'Q', to:'X', tr:94, inb:'S', consumedAt:null},
+  ];
+
+  // Y waits on U for the whole window -- which is why the V message is never
+  // taken. X alternates between the inbox it is about to read.
+  const WAITING={X:[[0,8,'R'],[17,33,'S'],[41,100,'R']], Y:[[0,66,'U'],[79,100,'U']]};
+
+  const STOPS=[...new Set([0,...PRE.map(p=>p.t),
+      ...BARS.flatMap(b=>[b.t0,b.t1]),
+      ...MSGS.flatMap(m=>[m.ts,m.tr]),100])].sort((a,b)=>a-b);
+
+  // ── drawing helpers ────────────────────────────────────────────────
+  function el(n,attrs,text){
+    const e=document.createElementNS(NS,n);
+    for(const k in attrs) e.setAttribute(k,attrs[k]);
+    if(text!=null) e.textContent=text;
+    return e;
+  }
+  function tag(g,x,y,s,fill){
+    const t=el('text',{x,y,'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':16,'font-weight':700,fill:fill||C.ink,
+      'text-anchor':'middle','dominant-baseline':'middle',
+      stroke:'#fff','stroke-width':4,'paint-order':'stroke'},s);
+    g.appendChild(t);
+  }
+
+  function draw(now){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{});
+    svg.appendChild(g);
+
+    // marker for arrowheads
+    const defs=el('defs',{});
+    for(const [id,col] of [['ah',C.ink],['ahO',C.orange]]){
+      const m=el('marker',{id,viewBox:'0 0 10 10',refX:9,refY:5,
+        markerWidth:7,markerHeight:7,orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:col}));
+      defs.appendChild(m);
+    }
+    svg.appendChild(defs);
+
+    // ── agent lines: full extent faint, realised part solid ──────────
+    for(const a of ['X','Y']){
+      const y=yOf(a);
+      g.appendChild(el('line',{x1:X0,y1:y,x2:X1,y2:y,
+        stroke:C.line,'stroke-width':2}));
+      g.appendChild(el('line',{x1:X0,y1:y,x2:xOf(now),y2:y,
+        stroke:C.ink,'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18,y:y,'font-family':'inherit','font-size':19,
+        'font-weight':700,fill:C.ink,'text-anchor':'end',
+        'dominant-baseline':'middle'},'Agent '+a));
+    }
+
+    // ── what each agent is waiting on, under its line ────────────────
+    // Suppressed for short stretches: a label wider than the stretch it
+    // describes points at the wrong part of the line.
+    for(const a of ['X','Y']){
+      for(const [s,e,inb] of WAITING[a]){
+        if(now<=s) continue;
+        const xa=xOf(s), xb=xOf(Math.min(e,now));
+        if(xb-xa<115) continue;
+        g.appendChild(el('text',{x:(xa+xb)/2, y:yOf(a)+(a==='X'?-48:50),
+          'font-size':13,fill:C.muted,'text-anchor':'middle',
+          'font-family':'ui-monospace,Menlo,Consolas,monospace'},
+          'waiting on '+inb));
+      }
+    }
+
+    // ── arrivals from before the window, so X has work to do ─────────
+    for(const p of PRE){
+      if(now<p.t) continue;
+      const x=xOf(p.t), y=yOf(p.agent);
+      g.appendChild(el('line',{x1:x-96,y1:y-74,x2:x-4,y2:y-4,
+        stroke:C.line,'stroke-width':2,'marker-end':'url(#ah)'}));
+      tag(g,x-24,y-26,p.tag,C.muted);
+    }
+
+    // ── bars: the agent is active ────────────────────────────────────
+    for(const b of BARS){
+      if(now<=b.t0) continue;
+      const xa=xOf(b.t0), xb=xOf(Math.min(b.t1,now)), y=yOf(b.agent);
+      g.appendChild(el('rect',{x:xa,y:y-BAR/2,width:Math.max(xb-xa,1),height:BAR,
+        rx:4,fill:C.ink}));
+      if(xb-xa>26)
+        g.appendChild(el('text',{x:(xa+xb)/2,y:y+1,'font-size':14,
+          'font-weight':700,fill:'#fff','text-anchor':'middle',
+          'dominant-baseline':'middle',
+          'font-family':'ui-monospace,Menlo,Consolas,monospace'},b.label));
+    }
+
+    // ── message lines ────────────────────────────────────────────────
+    for(const m of MSGS){
+      if(now<m.ts) continue;
+      const x1=xOf(m.ts), y1=yOf(m.from), x2=xOf(m.tr), y2=yOf(m.to);
+      const f=Math.min(1,(now-m.ts)/(m.tr-m.ts));
+      const cx=x1+(x2-x1)*f, cy=y1+(y2-y1)*f;
+      // the one that is never taken is drawn in the accent colour
+      const hot=(m.consumedAt===null && m.to==='Y');
+      const col=hot?C.orange:C.teal;
+      // Stop 5px short so the arrowhead touches the agent line rather than
+      // crossing it.
+      const dx=(x2-x1), dy=(y2-y1), L=Math.hypot(dx,dy);
+      const ex=cx-(f>=1?dx/L*5:0), ey=cy-(f>=1?dy/L*5:0);
+      g.appendChild(el('line',{x1,y1,x2:ex,y2:ey,stroke:col,
+        'stroke-width':hot?2.6:2,
+        'marker-end':f>=1?(hot?'url(#ahO)':'url(#ah)'):''}));
+      // Tags sit clear of the line on a fixed side, so they never land on a
+      // bar: leaving X or arriving at Y puts the tag below that line;
+      // leaving Y or arriving at X puts it above.
+      const below=(a)=>a==='X'?24:26;
+      tag(g, x1+22, y1+(m.from==='X'? below('X') : -26), m.out, col);
+      if(f>=1) tag(g, x2-22, y2+(m.to==='Y'? below('Y') : -24), m.inb, col);
+    }
+
+    // ── the moving "now" cursor ──────────────────────────────────────
+    if(now<T1){
+      const x=xOf(now);
+      g.appendChild(el('line',{x1:x,y1:60,x2:x,y2:400,stroke:C.orange,
+        'stroke-width':1.5,'stroke-dasharray':'5 5',opacity:.75}));
+    }
+
+    // ── time arrow ───────────────────────────────────────────────────
+    g.appendChild(el('line',{x1:X0,y1:432,x2:X0+180,y2:432,stroke:C.muted,
+      'stroke-width':2,'marker-end':'url(#ah)'}));
+    g.appendChild(el('text',{x:X0+192,y:432,'font-size':15,fill:C.muted,
+      'dominant-baseline':'middle'},'time'));
+
+    // ── status readout ───────────────────────────────────────────────
+    const st=a=>{
+      const b=BARS.find(b=>b.agent===a && now>b.t0 && now<=b.t1);
+      if(b) return 'active on '+b.label;
+      const w=(WAITING[a].find(([s,e])=>now>=s&&now<=e)||[,, '?'])[2];
+      return 'waiting on '+w;
+    };
+    const out=MSGS.filter(m=>m.tr<=now && (m.consumedAt===null||m.consumedAt>now)).length;
+    $('status').innerHTML =
+      'X <b>'+st('X')+'</b> · Y <b>'+st('Y')+'</b> · delivered, not received <b>'+out+'</b>';
+  }
+
+  // ── controls ───────────────────────────────────────────────────────
+  const scrub=$('scrub');
+  const playBtn=$('play');
+  let now=100, playing=false, last=0;
+
+  function set(v){ now=Math.max(0,Math.min(100,v)); scrub.value=now; draw(now); }
+
+  function frame(ts){
+    if(!playing) return;
+    if(!last) last=ts;
+    const dt=(ts-last)/1000; last=ts;
+    set(now+dt*14);
+    if(now>=100){ playing=false; playBtn.textContent='Replay'; }
+    requestAnimationFrame(frame);
+  }
+  playBtn.onclick=()=>{
+    if(playing){ playing=false; playBtn.textContent='Play'; return; }
+    if(now>=100) now=0;
+    playing=true; last=0; playBtn.textContent='Pause';
+    requestAnimationFrame(frame);
+  };
+  $('step').onclick=()=>{
+    playing=false; playBtn.textContent='Play';
+    const nxt=STOPS.find(t=>t>now+0.01);
+    set(nxt===undefined?100:nxt);
+  };
+  $('reset').onclick=()=>{
+    playing=false; playBtn.textContent='Play'; set(0);
+  };
+  scrub.oninput=()=>{ playing=false; playBtn.textContent='Play'; set(+scrub.value); };
+
+  set(100);
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='c2_', $=id=>document.getElementById(PFX+id);
+  const NS='http://www.w3.org/2000/svg';
+  const svg=$('tl');
+  const T1=100, X0=140, X1=1180, YX=150, YY=340, BAR=20;
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const xOf=t=>X0+t/T1*(X1-X0);
+  const tOf=x=>(x-X0)/(X1-X0)*T1;
+  const yOf=a=>a==='X'?YX:YY;
+
+  // ── the same computation as the previous figure ────────────────────
+  const PRE=[{t:4,agent:'X',tag:'R'},{t:20,agent:'X',tag:'S'}];
+  const BARS=[
+    {agent:'X', t0:8,  t1:17, label:'R'},
+    {agent:'X', t0:33, t1:41, label:'S'},
+    {agent:'Y', t0:66, t1:79, label:'U'},
+  ];
+  const MSGS=[
+    {name:'m1', from:'X', ts:14, out:'A', to:'Y', tr:29, inb:'V', consumedAt:null},
+    {name:'m2', from:'X', ts:37, out:'B', to:'Y', tr:52, inb:'U', consumedAt:66},
+    {name:'m3', from:'Y', ts:70, out:'P', to:'X', tr:86, inb:'R', consumedAt:null},
+    {name:'m4', from:'Y', ts:76, out:'Q', to:'X', tr:94, inb:'S', consumedAt:null},
+  ];
+  const WAITING={X:[[0,8,'R'],[17,33,'S'],[41,100,'R']], Y:[[0,66,'U'],[79,100,'U']]};
+  const CHANNELS=[['A','V'],['B','U'],['P','R'],['Q','S']];
+  const STOPS=[...new Set([0,...PRE.map(p=>p.t),...BARS.flatMap(b=>[b.t0,b.t1]),
+      ...MSGS.flatMap(m=>[m.ts,m.tr]),100])].sort((a,b)=>a-b);
+  const SUB='₀₁₂₃₄₅₆₇₈₉';
+
+  function el(n,a,txt){const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt; return e;}
+  function tag(g,x,y,s,fill,size){
+    g.appendChild(el('text',{x,y,'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||16,'font-weight':700,fill:fill||C.ink,'text-anchor':'middle',
+      'dominant-baseline':'middle',stroke:'#fff','stroke-width':4,
+      'paint-order':'stroke'},s));
+  }
+
+  // ── state of the world at time t ───────────────────────────────────
+  const actionsDone=(a,t)=>BARS.filter(b=>b.agent===a && b.t1<=t).length;
+  const midAction=(a,t)=>BARS.find(b=>b.agent===a && t>b.t0 && t<b.t1);
+  const inChannel=t=>MSGS.filter(m=>m.ts<t && t<m.tr);
+  const inInbox=(a,t)=>MSGS.filter(m=>m.to===a && m.tr<=t &&
+                                    (m.consumedAt===null||m.consumedAt>t));
+
+  function draw(t){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    for(const [id,col] of [['ah',C.ink],['ahO',C.orange],['ahT',C.teal]]){
+      const m=el('marker',{id,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,
+        markerHeight:7,orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:col}));
+      defs.appendChild(m);
+    }
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+
+    // agent lines
+    for(const a of ['X','Y']){
+      const y=yOf(a);
+      g.appendChild(el('line',{x1:X0,y1:y,x2:X1,y2:y,stroke:C.ink,'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18,y,'font-size':19,'font-weight':700,
+        fill:C.ink,'text-anchor':'end','dominant-baseline':'middle'},'Agent '+a));
+    }
+    for(const a of ['X','Y'])
+      for(const [s,e,inb] of WAITING[a]){
+        const xa=xOf(s), xb=xOf(e);
+        if(xb-xa<115) continue;
+        g.appendChild(el('text',{x:(xa+xb)/2,y:yOf(a)+(a==='X'?-48:50),'font-size':13,
+          fill:C.muted,'text-anchor':'middle',
+          'font-family':'ui-monospace,Menlo,Consolas,monospace'},'waiting on '+inb));
+      }
+    for(const p of PRE){
+      const x=xOf(p.t), y=yOf(p.agent);
+      g.appendChild(el('line',{x1:x-96,y1:y-74,x2:x-4,y2:y-4,stroke:C.line,
+        'stroke-width':2,'marker-end':'url(#ah)'}));
+      tag(g,x-24,y-26,p.tag,C.muted);
+    }
+    for(const b of BARS){
+      const xa=xOf(b.t0), xb=xOf(b.t1), y=yOf(b.agent);
+      g.appendChild(el('rect',{x:xa,y:y-BAR/2,width:xb-xa,height:BAR,rx:4,fill:C.ink}));
+      g.appendChild(el('text',{x:(xa+xb)/2,y:y+1,'font-size':14,'font-weight':700,
+        fill:'#fff','text-anchor':'middle','dominant-baseline':'middle',
+        'font-family':'ui-monospace,Menlo,Consolas,monospace'},b.label));
+    }
+    for(const m of MSGS){
+      const x1=xOf(m.ts),y1=yOf(m.from),x2=xOf(m.tr),y2=yOf(m.to);
+      const hot=(m.consumedAt===null && m.to==='Y');
+      const col=hot?C.orange:C.teal;
+      const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy);
+      g.appendChild(el('line',{x1,y1,x2:x2-dx/L*5,y2:y2-dy/L*5,stroke:col,
+        'stroke-width':hot?2.6:2,'marker-end':hot?'url(#ahO)':'url(#ahT)'}));
+      tag(g,x1+22,y1+(m.from==='X'?24:-26),m.out,col);
+      tag(g,x2-22,y2+(m.to==='Y'?26:-24),m.inb,col);
+    }
+
+    // ── the state line ───────────────────────────────────────────────
+    const x=xOf(t);
+    g.appendChild(el('line',{x1:x,y1:56,x2:x,y2:412,stroke:C.ink,'stroke-width':2,
+      'stroke-dasharray':'7 5'}));
+    g.appendChild(el('rect',{x:x-16,y:36,width:32,height:22,rx:5,fill:C.ink}));
+    g.appendChild(el('text',{x,y:48,'font-size':14,'font-weight':700,fill:'#fff',
+      'text-anchor':'middle','dominant-baseline':'middle',
+      'font-family':'ui-monospace,Menlo,Consolas,monospace'},'t'));
+
+    // crossings with agent lines
+    for(const a of ['X','Y']){
+      const y=yOf(a), mid=midAction(a,t);
+      g.appendChild(el('circle',{cx:x,cy:y,r:7,fill:mid?'#fff':C.ink,
+        stroke:C.ink,'stroke-width':mid?2.5:2}));
+      const lab = mid ? 'mid-action'
+                      : a.toLowerCase()+SUB[actionsDone(a,t)];
+      // Offset to the left of the cut so the dashed line does not run
+      // through the label.
+      tag(g,x-(mid?42:24),y+(a==='X'?-24:32),lab,mid?C.muted:C.ink,mid?12.5:15);
+    }
+    // crossings with message lines: messages inside a channel
+    for(const m of inChannel(t)){
+      const y1=yOf(m.from),y2=yOf(m.to);
+      const f=(t-m.ts)/(m.tr-m.ts), cy=y1+(y2-y1)*f;
+      const hot=(m.consumedAt===null && m.to==='Y');
+      g.appendChild(el('circle',{cx:x,cy,r:6.5,fill:'#fff',
+        stroke:hot?C.orange:C.teal,'stroke-width':2.5}));
+      tag(g,x+34,cy,m.name,hot?C.orange:C.teal,14);
+    }
+
+    // time arrow
+    g.appendChild(el('line',{x1:X0,y1:440,x2:X0+180,y2:440,stroke:C.muted,
+      'stroke-width':2,'marker-end':'url(#ah)'}));
+    g.appendChild(el('text',{x:X0+192,y:440,'font-size':15,fill:C.muted,
+      'dominant-baseline':'middle'},'time'));
+
+    readout(t);
+  }
+
+  function readout(t){
+    $('tv').textContent=t.toFixed(0);
+    for(const a of ['X','Y']){
+      const mid=midAction(a,t), cell=$('s'+a.toLowerCase());
+      cell.innerHTML = mid
+        ? '<span class="none">mid-action ('+mid.label+') — no state</span>'
+        : '<b>'+a.toLowerCase()+SUB[actionsDone(a,t)]+'</b>';
+      const boxes = a==='X' ? ['R','S'] : ['U','V'];
+      const held = inInbox(a,t);
+      $('i'+a.toLowerCase()).innerHTML =
+        'inboxes ' + boxes.map(b=>{
+          const m=held.find(h=>h.inb===b);
+          const hot=(b==='V');
+          return b+' '+(m?'<span class="'+(hot?'hot':'chan')+'">'+m.name+'</span>'
+                          :'<span class="none">–</span>');
+        }).join('&nbsp;&nbsp; ');
+    }
+    const live=inChannel(t);
+    $('ch').innerHTML = CHANNELS.map(([o,i])=>{
+      const m=live.find(v=>v.out===o);
+      return o+'→'+i+' '+(m?'<span class="chan">'+m.name+'</span>'
+                           :'<span class="none">–</span>');
+    }).join('&nbsp;&nbsp; ');
+  }
+
+  // ── controls ───────────────────────────────────────────────────────
+  const scrub=$('scrub');
+  let t=45;
+  const set=v=>{t=Math.max(0,Math.min(100,v)); scrub.value=t; draw(t);};
+  scrub.oninput=()=>set(+scrub.value);
+  $('next').onclick=()=>{
+    const n=STOPS.find(s=>s>t+0.01); set(n===undefined?100:n+0.5);};
+  $('prev').onclick=()=>{
+    const p=[...STOPS].reverse().find(s=>s<t-0.6); set(p===undefined?0:p+0.5);};
+
+  let drag=false;
+  const fromEvt=e=>{
+    const r=svg.getBoundingClientRect();
+    return tOf((e.clientX-r.left)/r.width*1240);
+  };
+  svg.addEventListener('pointerdown',e=>{drag=true; svg.setPointerCapture(e.pointerId);
+    set(fromEvt(e));});
+  svg.addEventListener('pointermove',e=>{ if(drag) set(fromEvt(e)); });
+  svg.addEventListener('pointerup',()=>drag=false);
+  svg.addEventListener('pointercancel',()=>drag=false);
+
+  set(45);
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='c3_', $=id=>document.getElementById(PFX+id);
+  const NS='http://www.w3.org/2000/svg';
+  const svg=$('tl');
+  const T1=100, X0=140, X1=1180, YX=150, YY=340, BAR=26, DUR=8;
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const xOf=t=>X0+t/T1*(X1-X0);
+  const tOf=x=>(x-X0)/(X1-X0)*T1;
+  const yOf=a=>a==='X'?YX:YY;
+
+  // ── the computation: six events, named 0..5 ────────────────────────
+  // 2 and 3 are independent: 2 receives m1, 3 receives m2, and neither
+  // depends on the other.
+  const BASE={ '2':22, '3':40 };
+  const BARS=[
+    {id:'0', agent:'X', t0:4,  dur:6,   move:false},
+    {id:'1', agent:'Y', t0:4,  dur:6,   move:false},
+    {id:'2', agent:'X', t0:22, dur:DUR, inbox:'R', move:true},
+    {id:'3', agent:'Y', t0:40, dur:DUR, inbox:'V', move:true},
+    {id:'4', agent:'Y', t0:62, dur:DUR, inbox:'U', move:false},
+    {id:'5', agent:'X', t0:82, dur:DUR, inbox:'S', move:false},
+  ];
+  const bar=id=>BARS.find(b=>b.id===id);
+  const MSGS=[
+    {name:'m1', src:'1', out:'P', at:4, arr:18, to:'X', inb:'R', by:'2', lp:.80},
+    {name:'m2', src:'0', out:'A', at:4, arr:20, to:'Y', inb:'V', by:'3', lp:.20},
+    {name:'m3', src:'2', out:'B', at:6, arr:50, to:'Y', inb:'U', by:'4', lp:.50},
+    {name:'m4', src:'4', out:'Q', at:6, arr:78, to:'X', inb:'S', by:'5', lp:.50},
+  ];
+  const sendT=m=>bar(m.src).t0+m.at;
+  // An agent does one thing at a time, so its events keep their order however
+  // far they slide. These pairs are therefore fixed.
+  const AGENT_EDGES=[['0','2'],['2','5'],['1','3'],['3','4']];
+  // How far a movable event may slide before it would overlap a neighbour on
+  // its own line. Violations of message order are deliberately NOT clamped --
+  // seeing an arrow point backwards is the point.
+  const RANGE={'2':[10,74], '3':[10,54]};
+
+  function violations(){
+    const v=[];
+    for(const m of MSGS){
+      if(sendT(m)>=m.arr)
+        v.push(m.name+' would arrive before it was sent');
+      else if(m.arr>bar(m.by).t0)
+        v.push('event '+m.by+' takes '+m.name+' out of '+m.inb+
+               ' before it arrives');
+    }
+    return v;
+  }
+
+  function el(n,a,txt){const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt; return e;}
+  function tag(g,x,y,s,fill,size){
+    g.appendChild(el('text',{x,y,'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||15,'font-weight':700,fill:fill||C.ink,'text-anchor':'middle',
+      'dominant-baseline':'middle',stroke:'#fff','stroke-width':4,
+      'paint-order':'stroke'},s));
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    for(const [id,col] of [['ah',C.ink],['ahT',C.teal],['ahO',C.orange]]){
+      const m=el('marker',{id,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,
+        markerHeight:7,orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:col}));
+      defs.appendChild(m);
+    }
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+
+    for(const a of ['X','Y']){
+      const y=yOf(a);
+      g.appendChild(el('line',{x1:X0,y1:y,x2:X1,y2:y,stroke:C.ink,'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18,y,'font-size':19,'font-weight':700,fill:C.ink,
+        'text-anchor':'end','dominant-baseline':'middle'},'Agent '+a));
+    }
+
+    // an agent's events, in order, joined by arrows pointing forward in time
+    for(const [a,b] of AGENT_EDGES){
+      const A=bar(a), B=bar(b), y=yOf(A.agent);
+      g.appendChild(el('line',{x1:xOf(A.t0+A.dur),y1:y,x2:xOf(B.t0)-3,y2:y,
+        stroke:C.ink,'stroke-width':2.4,'marker-end':'url(#ah)'}));
+    }
+
+    // ghosts: where the movable events started
+    for(const id of ['2','3']){
+      const b=bar(id);
+      if(Math.abs(b.t0-BASE[id])<0.5) continue;
+      g.appendChild(el('rect',{x:xOf(BASE[id]),y:yOf(b.agent)-BAR/2,
+        width:xOf(BASE[id]+b.dur)-xOf(BASE[id]),height:BAR,rx:5,fill:'none',
+        stroke:C.line,'stroke-width':2,'stroke-dasharray':'5 4'}));
+    }
+
+    const bad=new Set();
+    for(const m of MSGS) if(sendT(m)>=m.arr) bad.add(m.name);
+    for(const m of MSGS){
+      const s=bar(m.src), x1=xOf(sendT(m)), y1=yOf(s.agent);
+      const x2=xOf(m.arr), y2=yOf(m.to);
+      const broke=bad.has(m.name);
+      const col=broke?C.orange:C.teal;
+      const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy)||1;
+      g.appendChild(el('line',{x1,y1,x2:x2-dx/L*5,y2:y2-dy/L*5,stroke:col,
+        'stroke-width':broke?3.2:2,'marker-end':broke?'url(#ahO)':'url(#ahT)'}));
+      tag(g,x1+dx/L*34,y1+dy/L*34,m.out,col,15);
+      tag(g,x2-22,y2+(m.to==='Y'?28:-26),m.inb,col,15);
+      tag(g,x1+dx*m.lp+18,y1+dy*m.lp,m.name,col,13.5);
+    }
+
+    for(const b of BARS){
+      const xa=xOf(b.t0), xb=xOf(b.t0+b.dur), y=yOf(b.agent);
+      if(b.inbox) tag(g,(xa+xb)/2,y+(b.agent==='X'?-30:34),b.inbox,C.muted,12.5);
+      g.appendChild(el('rect',{x:xa,y:y-BAR/2,width:xb-xa,height:BAR,rx:5,
+        fill:C.ink, stroke:b.move?C.orange:'none','stroke-width':b.move?2.5:0,
+        style:b.move?'cursor:ew-resize':''}));
+      g.appendChild(el('text',{x:(xa+xb)/2,y:y+1,'font-size':16,'font-weight':700,
+        fill:'#fff','text-anchor':'middle','dominant-baseline':'middle',
+        'font-family':'ui-monospace,Menlo,Consolas,monospace',
+        style:'pointer-events:none'},b.id));
+    }
+
+    g.appendChild(el('line',{x1:X0,y1:440,x2:X0+180,y2:440,stroke:C.muted,
+      'stroke-width':2,'marker-end':'url(#ah)'}));
+    g.appendChild(el('text',{x:X0+192,y:440,'font-size':15,fill:C.muted,
+      'dominant-baseline':'middle'},'time'));
+
+    facts();
+  }
+
+  // Events whose intervals overlap are not ordered by the diagram, so they are
+  // reported together in braces. Merging overlapping intervals rather than
+  // comparing start times keeps the grouping well defined for any number of
+  // events.
+  function partialOrder(){
+    const ord=[...BARS].sort((p,q)=>p.t0-q.t0);
+    const groups=[]; let cur=[ord[0]], end=ord[0].t0+ord[0].dur;
+    for(let i=1;i<ord.length;i++){
+      const b=ord[i];
+      if(b.t0 < end-1e-9){ cur.push(b); end=Math.max(end,b.t0+b.dur); }
+      else { groups.push(cur); cur=[b]; end=b.t0+b.dur; }
+    }
+    groups.push(cur);
+    return groups.map(gp=>gp.length===1 ? gp[0].id
+      : '{'+gp.map(b=>b.id).sort().join(',')+'}');
+  }
+
+  function facts(){
+    const seq=a=>BARS.filter(b=>b.agent===a).sort((p,q)=>p.t0-q.t0)
+                     .map(b=>b.id).join(', ');
+    $('seqx').innerHTML=
+      '<span class="fixed">'+seq('X')+'</span> &nbsp;— unchanged';
+    $('seqy').innerHTML=
+      '<span class="fixed">'+seq('Y')+'</span> &nbsp;— unchanged';
+    $('seqg').innerHTML=
+      '<span class="moved">[ '+partialOrder().join(', ')+' ]</span>';
+    const v=violations();
+    $('valid').innerHTML = v.length
+      ? '<span class="bad">✗ '+v[0]+'</span>'
+      : '<span class="ok">✓ every arrow points forward — this is a computation</span>';
+  }
+
+  // ── dragging ───────────────────────────────────────────────────────
+  let held=null;
+  const evT=e=>{const r=svg.getBoundingClientRect();
+    return tOf((e.clientX-r.left)/r.width*1240);};
+  const evY=e=>{const r=svg.getBoundingClientRect();
+    return (e.clientY-r.top)/r.height*470;};
+  svg.addEventListener('pointerdown',e=>{
+    const t=evT(e), y=evY(e);
+    held=BARS.find(b=>b.move && Math.abs(y-yOf(b.agent))<26 &&
+                      t>b.t0-3 && t<b.t0+b.dur+3);
+    if(held){ held.grab=t-held.t0; svg.setPointerCapture(e.pointerId); }
+  });
+  svg.addEventListener('pointermove',e=>{
+    if(!held) return;
+    const [lo,hi]=RANGE[held.id];
+    held.t0=Math.max(lo,Math.min(hi,evT(e)-held.grab));
+    draw();
+  });
+  const drop=()=>{held=null;};
+  svg.addEventListener('pointerup',drop);
+  svg.addEventListener('pointercancel',drop);
+
+  // ── the animated slide ─────────────────────────────────────────────
+  const SWAP={'2':34, '3':22};
+  let anim=null, swapped=false;
+  function glide(targets,ms){
+    if(anim) cancelAnimationFrame(anim);
+    const from={'2':bar('2').t0, '3':bar('3').t0}, t0=performance.now();
+    (function step(now){
+      const k=Math.min(1,(now-t0)/ms);
+      const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+      for(const id of ['2','3']) bar(id).t0=from[id]+(targets[id]-from[id])*e;
+      draw();
+      if(k<1) anim=requestAnimationFrame(step);
+    })(t0);
+  }
+  const slideBtn=$('slide');
+  slideBtn.onclick=()=>{
+    swapped=!swapped;
+    glide(swapped?SWAP:BASE,1600);
+    slideBtn.textContent=swapped?'Slide them back':'Slide 2 and 3 past each other';
+  };
+  $('reset').onclick=()=>{
+    if(anim) cancelAnimationFrame(anim);
+    swapped=false; slideBtn.textContent='Slide 2 and 3 past each other';
+    bar('2').t0=BASE['2']; bar('3').t0=BASE['3']; draw();
+  };
+
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='c4_', $=id=>document.getElementById(PFX+id);
+  const NS='http://www.w3.org/2000/svg';
+  const svg=$('tl');
+  const X0=140, X1=1180, YX=150, YY=340, BARH=24, R=16;
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d', grey:'#c3bfb4'};
+  const xOf=t=>X0+t/100*(X1-X0);
+  const yOf=a=>a==='X'?YX:YY;
+  const lerp=(a,b,k)=>a+(b-a)*k;
+
+  // ── the computation: six events, numbered 0..5 ─────────────────────
+  const EV=[
+    {n:0, agent:'X', t0:4,  dur:6},
+    {n:1, agent:'Y', t0:4,  dur:6},
+    {n:2, agent:'X', t0:22, dur:8, inbox:'R'},
+    {n:3, agent:'Y', t0:40, dur:8, inbox:'V'},
+    {n:4, agent:'Y', t0:62, dur:8, inbox:'U'},
+    {n:5, agent:'X', t0:82, dur:8, inbox:'S'},
+  ];
+  const ev=n=>EV[n];
+  // at: offset into the sending event; arr: when it lands in the inbox;
+  // to: the event that takes it out of that inbox.
+  const MSG=[
+    {name:'m1', src:1, out:'P', at:4, arr:18, to:2, inb:'R', lp:.80},
+    {name:'m2', src:0, out:'A', at:4, arr:20, to:3, inb:'V', lp:.20},
+    {name:'m3', src:2, out:'B', at:6, arr:50, to:4, inb:'U', lp:.50},
+    {name:'m4', src:4, out:'Q', at:6, arr:78, to:5, inb:'S', lp:.50},
+  ];
+  // agent edges: consecutive events at the same agent
+  const AGENT_EDGES=[];
+  for(const a of ['X','Y']){
+    const es=EV.filter(e=>e.agent===a).sort((p,q)=>p.t0-q.t0);
+    for(let i=0;i<es.length-1;i++) AGENT_EDGES.push([es[i].n, es[i+1].n]);
+  }
+  const EDGES=[...AGENT_EDGES, ...MSG.map(m=>[m.src,m.to])];
+
+  // ── reachability ───────────────────────────────────────────────────
+  function reach(from,fwd){
+    const seen=new Set(), q=[from];
+    while(q.length){
+      const u=q.pop();
+      for(const [a,b] of EDGES){
+        const [s,t]=fwd?[a,b]:[b,a];
+        if(s===u && !seen.has(t) && t!==from){ seen.add(t); q.push(t); }
+      }
+    }
+    return seen;
+  }
+  const DOWN=EV.map(e=>reach(e.n,true));
+  const UP=EV.map(e=>reach(e.n,false));
+
+  let d=0, sel=2, anim=null;
+
+  function el(n,a,txt){const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt; return e;}
+  function tag(g,x,y,s,fill,size,op){
+    if(op<=0.02) return;
+    g.appendChild(el('text',{x,y,'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||15,'font-weight':700,fill:fill||C.ink,'text-anchor':'middle',
+      'dominant-baseline':'middle',stroke:'#fff','stroke-width':4,
+      'paint-order':'stroke',opacity:op==null?1:op},s));
+  }
+  // half-width of an event's shape at the current morph
+  const halfW=e=>lerp((xOf(e.t0+e.dur)-xOf(e.t0))/2, R, d);
+  const cxOf=e=>xOf(e.t0+e.dur/2);
+
+  function roleOf(n){
+    if(sel==null) return 'none';
+    if(n===sel) return 'sel';
+    if(DOWN[sel].has(n)) return 'down';
+    if(UP[sel].has(n)) return 'up';
+    return 'conc';
+  }
+  const COL={none:C.ink, sel:C.ink, down:C.orange, up:C.teal, conc:C.grey};
+
+  function edgeCol(a,b){
+    if(sel==null) return C.ink;
+    const A=roleOf(a), B=roleOf(b);
+    if((A==='sel'||A==='down') && B==='down') return C.orange;
+    if(A==='up' && (B==='up'||B==='sel')) return C.teal;
+    return C.grey;
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    for(const [id,col] of [['ah',C.ink],['ahO',C.orange],['ahT',C.teal],
+                           ['ahG',C.grey],['ahM',C.muted]]){
+      const m=el('marker',{id,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,
+        markerHeight:7,orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:col}));
+      defs.appendChild(m);
+    }
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+    const mk={[C.ink]:'url(#ah)',[C.orange]:'url(#ahO)',[C.teal]:'url(#ahT)',
+              [C.grey]:'url(#ahG)'};
+
+    for(const a of ['X','Y']){
+      const y=yOf(a);
+      // Solid while this is a timeline -- the thin stretches mean waiting.
+      // Faint once it is a graph, where the edges carry the meaning.
+      g.appendChild(el('line',{x1:X0,y1:y,x2:X1,y2:y,stroke:C.ink,'stroke-width':2,
+        opacity:lerp(1,.22,d)}));
+      g.appendChild(el('text',{x:X0-18,y,'font-size':19,'font-weight':700,fill:C.ink,
+        'text-anchor':'end','dominant-baseline':'middle'},'Agent '+a));
+    }
+
+    // agent edges
+    for(const [a,b] of AGENT_EDGES){
+      const A=ev(a), B=ev(b), y=yOf(A.agent), col=edgeCol(a,b);
+      g.appendChild(el('line',{x1:cxOf(A)+halfW(A),y1:y,x2:cxOf(B)-halfW(B)-3,y2:y,
+        stroke:col,'stroke-width':2.4,'marker-end':mk[col]}));
+    }
+
+    // message edges: tail slides to the sending event, head to the
+    // receiving event, as d goes 0 -> 1
+    for(const m of MSG){
+      const S=ev(m.src), D=ev(m.to);
+      const x1=lerp(xOf(S.t0+m.at), cxOf(S), d), y1=yOf(S.agent);
+      const x2=lerp(xOf(m.arr),     cxOf(D), d), y2=yOf(D.agent);
+      const col=edgeCol(m.src,m.to);
+      const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1;
+      const sx=x1+dx/L*halfW(S)*d, sy=y1+dy/L*halfW(S)*d;
+      const exx=x2-dx/L*(5+halfW(D)*d), eyy=y2-dy/L*(5+halfW(D)*d);
+      g.appendChild(el('line',{x1:sx,y1:sy,x2:exx,y2:eyy,stroke:col,
+        'stroke-width':2.4,'marker-end':mk[col]}));
+      // port tags belong to the timeline, not to the influences graph
+      const fade=1-d;
+      tag(g,x1+22,y1+(S.agent==='X'?26:-28),m.out,col,15,fade);
+      tag(g,x2-22,y2+(D.agent==='Y'?28:-26),m.inb,col,15,fade);
+      tag(g,x1+dx*m.lp+18,y1+dy*m.lp,m.name,col,13.5,1);
+    }
+
+    // events
+    for(const e of EV){
+      const cx=cxOf(e), y=yOf(e.agent), hw=halfW(e);
+      const h=lerp(BARH,2*R,d), rx=lerp(5,R,d), role=roleOf(e.n);
+      g.appendChild(el('rect',{x:cx-hw,y:y-h/2,width:2*hw,height:h,rx,
+        fill:COL[role], stroke:role==='sel'?C.orange:'none',
+        'stroke-width':role==='sel'?3.5:0, style:'cursor:pointer'}));
+      if(e.inbox) tag(g,cx,y+(e.agent==='X'?-34:38),e.inbox,C.muted,12.5,1-d);
+      g.appendChild(el('text',{x:cx,y:y+1,'font-size':16,'font-weight':700,
+        fill:'#fff','text-anchor':'middle','dominant-baseline':'middle',
+        'font-family':'ui-monospace,Menlo,Consolas,monospace',
+        style:'pointer-events:none'},e.n));
+    }
+
+    g.appendChild(el('line',{x1:X0,y1:440,x2:X0+180,y2:440,stroke:C.muted,
+      'stroke-width':2,'marker-end':'url(#ahM)'}));
+    g.appendChild(el('text',{x:X0+192,y:440,'font-size':15,fill:C.muted,
+      'dominant-baseline':'middle'},'time'));
+
+    facts();
+  }
+
+  function facts(){
+    const list=(s,cls)=>s.size
+      ? '<span class="'+cls+'">'+[...s].sort((a,b)=>a-b).join(', ')+'</span>'
+      : '<span style="color:#b9b4a8">nothing</span>';
+    $('sel').textContent = sel==null?'—':sel;
+    if(sel==null){
+      for(const id of ['dn','up','cc'])
+        $(id).innerHTML='<span style="color:#b9b4a8">—</span>';
+      return;
+    }
+    const conc=new Set(EV.map(e=>e.n).filter(n=>n!==sel &&
+      !DOWN[sel].has(n) && !UP[sel].has(n)));
+    $('dn').innerHTML=list(DOWN[sel],'dn');
+    $('up').innerHTML=list(UP[sel],'up');
+    $('cc').innerHTML=list(conc,'cc');
+  }
+
+  // ── interaction ────────────────────────────────────────────────────
+  svg.addEventListener('pointerdown',e=>{
+    const r=svg.getBoundingClientRect();
+    const px=(e.clientX-r.left)/r.width*1240, py=(e.clientY-r.top)/r.height*470;
+    const hit=EV.find(v=>Math.abs(py-yOf(v.agent))<24 &&
+                         Math.abs(px-cxOf(v))<halfW(v)+4);
+    if(hit){ sel=hit.n; draw(); }
+  });
+  $('clear').onclick=()=>{ sel=null; draw(); };
+
+  const btn=$('derive');
+  let derived=false;
+  btn.onclick=()=>{
+    derived=!derived;
+    const from=d, to=derived?1:0, t0=performance.now(), MS=1500;
+    if(anim) cancelAnimationFrame(anim);
+    (function step(now){
+      const k=Math.min(1,(now-t0)/MS);
+      const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+      d=lerp(from,to,e); draw();
+      if(k<1) anim=requestAnimationFrame(step);
+    })(t0);
+    btn.textContent=derived?'Back to the timeline':'Derive the influences diagram';
+  };
+
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='c5_', $=id=>document.getElementById(PFX+id);
+  const NS='http://www.w3.org/2000/svg';
+  const svg=$('tl');
+  const X0=140, X1=1180, YX=150, YY=340, BARH=24, R=16;
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d', grey:'#c3bfb4'};
+  const xOf=t=>X0+t/100*(X1-X0);
+  const yOf=a=>a==='X'?YX:YY;
+  const lerp=(a,b,k)=>a+(b-a)*k;
+
+  // ── the computation: six events, numbered 0..5 ─────────────────────
+  const EV=[
+    {n:0, agent:'X', t0:4,  dur:6},
+    {n:1, agent:'Y', t0:4,  dur:6},
+    {n:2, agent:'X', t0:22, dur:8, inbox:'R'},
+    {n:3, agent:'Y', t0:40, dur:8, inbox:'V'},
+    {n:4, agent:'Y', t0:62, dur:8, inbox:'U'},
+    {n:5, agent:'X', t0:82, dur:8, inbox:'S'},
+  ];
+  const ev=n=>EV[n];
+  // at: offset into the sending event; arr: when it lands in the inbox;
+  // to: the event that takes it out of that inbox.
+  // to:null means no event ever takes this message out of its inbox, so it
+  // contributes no edge to the influences diagram.
+  const MSG=[
+    {name:'m1', src:1, out:'P', at:4, arr:18, to:2,    inb:'R', lp:.80, tp:34},
+    {name:'m2', src:0, out:'A', at:4, arr:20, to:3,    inb:'V', lp:.20, tp:72},
+    {name:'m5', src:0, out:'C', at:4, arr:30, to:4,    inb:'U', lp:.46, tp:30},
+    {name:'m3', src:2, out:'B', at:6, arr:50, to:null, inb:'W', lp:.50, tp:34},
+    {name:'m4', src:4, out:'Q', at:6, arr:78, to:5,    inb:'S', lp:.50, tp:34},
+  ];
+  // agent edges: consecutive events at the same agent
+  const AGENT_EDGES=[];
+  for(const a of ['X','Y']){
+    const es=EV.filter(e=>e.agent===a).sort((p,q)=>p.t0-q.t0);
+    for(let i=0;i<es.length-1;i++) AGENT_EDGES.push([es[i].n, es[i+1].n]);
+  }
+  const EDGES=[...AGENT_EDGES,
+    ...MSG.filter(m=>m.to!==null).map(m=>[m.src,m.to])];
+
+  // ── reachability ───────────────────────────────────────────────────
+  function reach(from,fwd){
+    const seen=new Set(), q=[from];
+    while(q.length){
+      const u=q.pop();
+      for(const [a,b] of EDGES){
+        const [s,t]=fwd?[a,b]:[b,a];
+        if(s===u && !seen.has(t) && t!==from){ seen.add(t); q.push(t); }
+      }
+    }
+    return seen;
+  }
+  const DOWN=EV.map(e=>reach(e.n,true));
+  const UP=EV.map(e=>reach(e.n,false));
+
+  let d=0, sel=2, anim=null;
+
+  function el(n,a,txt){const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt; return e;}
+  function tag(g,x,y,s,fill,size,op){
+    if(op<=0.02) return;
+    g.appendChild(el('text',{x,y,'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||15,'font-weight':700,fill:fill||C.ink,'text-anchor':'middle',
+      'dominant-baseline':'middle',stroke:'#fff','stroke-width':4,
+      'paint-order':'stroke',opacity:op==null?1:op},s));
+  }
+  // half-width of an event's shape at the current morph
+  const halfW=e=>lerp((xOf(e.t0+e.dur)-xOf(e.t0))/2, R, d);
+  const cxOf=e=>xOf(e.t0+e.dur/2);
+
+  function roleOf(n){
+    if(sel==null) return 'none';
+    if(n===sel) return 'sel';
+    if(DOWN[sel].has(n)) return 'down';
+    if(UP[sel].has(n)) return 'up';
+    return 'conc';
+  }
+  const COL={none:C.ink, sel:C.ink, down:C.orange, up:C.teal, conc:C.grey};
+
+  function edgeCol(a,b){
+    if(sel==null) return C.ink;
+    const A=roleOf(a), B=roleOf(b);
+    if((A==='sel'||A==='down') && B==='down') return C.orange;
+    if(A==='up' && (B==='up'||B==='sel')) return C.teal;
+    return C.grey;
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    for(const [id,col] of [['ah',C.ink],['ahO',C.orange],['ahT',C.teal],
+                           ['ahG',C.grey],['ahM',C.muted]]){
+      const m=el('marker',{id,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,
+        markerHeight:7,orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:col}));
+      defs.appendChild(m);
+    }
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+    const mk={[C.ink]:'url(#ah)',[C.orange]:'url(#ahO)',[C.teal]:'url(#ahT)',
+              [C.grey]:'url(#ahG)'};
+
+    for(const a of ['X','Y']){
+      const y=yOf(a);
+      // Solid while this is a timeline -- the thin stretches mean waiting.
+      // Faint once it is a graph, where the edges carry the meaning.
+      g.appendChild(el('line',{x1:X0,y1:y,x2:X1,y2:y,stroke:C.ink,'stroke-width':2,
+        opacity:lerp(1,.22,d)}));
+      g.appendChild(el('text',{x:X0-18,y,'font-size':19,'font-weight':700,fill:C.ink,
+        'text-anchor':'end','dominant-baseline':'middle'},'Agent '+a));
+    }
+
+    // agent edges
+    for(const [a,b] of AGENT_EDGES){
+      const A=ev(a), B=ev(b), y=yOf(A.agent), col=edgeCol(a,b);
+      g.appendChild(el('line',{x1:cxOf(A)+halfW(A),y1:y,x2:cxOf(B)-halfW(B)-3,y2:y,
+        stroke:col,'stroke-width':2.4,'marker-end':mk[col]}));
+    }
+
+    // message edges: tail slides to the sending event, head to the
+    // receiving event, as d goes 0 -> 1
+    for(const m of MSG){
+      const dead=(m.to===null);
+      const S=ev(m.src), D=dead?null:ev(m.to);
+      const x1=lerp(xOf(S.t0+m.at), cxOf(S), d), y1=yOf(S.agent);
+      // A message nobody takes has no receiving event on this diagram. Its
+      // head lifts off the line where it landed and carries on past the right
+      // edge, aimed at a receive event that has not happened yet.
+      const x2=dead? lerp(xOf(m.arr), 1222, d) : lerp(xOf(m.arr), cxOf(D), d);
+      const y2=dead? lerp(YY, 302, d)          : yOf(D.agent);
+      const col=dead? C.muted : edgeCol(m.src,m.to);
+      const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1;
+      const sx=x1+dx/L*halfW(S)*d, sy=y1+dy/L*halfW(S)*d;
+      const hwD=dead?0:halfW(D);
+      const exx=x2-dx/L*(5+hwD*d), eyy=y2-dy/L*(5+hwD*d);
+      const dotted = dead && d>0.04;
+      g.appendChild(el('line',{x1:sx,y1:sy,x2:exx,y2:eyy,stroke:col,
+        'stroke-width':dead?2.2:2.4,
+        // no arrowhead once it points at nothing
+        'marker-end':(dead&&d>0.15)?'none':mk[col],
+        'stroke-dasharray':dotted?'2.5 7':'none','stroke-linecap':'round'}));
+      if(dead){
+        tag(g,(sx+exx)/2+6,(sy+eyy)/2+26,'never received here',C.muted,12.5,1-d);
+        tag(g,1078,308,'the event that receives it',C.muted,13,d);
+        tag(g,1078,327,'is not in this diagram',C.muted,13,d);
+      }
+      // port tags belong to the timeline, not to the influences graph
+      const fade=1-d;
+      tag(g,x1+dx/L*m.tp,y1+dy/L*m.tp,m.out,col,15,fade);
+      tag(g,x2-22,y2+((dead?'Y':D.agent)==='Y'?28:-26),m.inb,col,15,fade);
+      tag(g,x1+dx*m.lp+18,y1+dy*m.lp,m.name,col,13.5,1);
+    }
+
+    // events
+    for(const e of EV){
+      const cx=cxOf(e), y=yOf(e.agent), hw=halfW(e);
+      const h=lerp(BARH,2*R,d), rx=lerp(5,R,d), role=roleOf(e.n);
+      g.appendChild(el('rect',{x:cx-hw,y:y-h/2,width:2*hw,height:h,rx,
+        fill:COL[role], stroke:role==='sel'?C.orange:'none',
+        'stroke-width':role==='sel'?3.5:0, style:'cursor:pointer'}));
+      if(e.inbox) tag(g,cx,y+(e.agent==='X'?-34:38),e.inbox,C.muted,12.5,1-d);
+      g.appendChild(el('text',{x:cx,y:y+1,'font-size':16,'font-weight':700,
+        fill:'#fff','text-anchor':'middle','dominant-baseline':'middle',
+        'font-family':'ui-monospace,Menlo,Consolas,monospace',
+        style:'pointer-events:none'},e.n));
+    }
+
+    g.appendChild(el('line',{x1:X0,y1:440,x2:X0+180,y2:440,stroke:C.muted,
+      'stroke-width':2,'marker-end':'url(#ahM)'}));
+    g.appendChild(el('text',{x:X0+192,y:440,'font-size':15,fill:C.muted,
+      'dominant-baseline':'middle'},'time'));
+
+    facts();
+  }
+
+  function facts(){
+    const list=(s,cls)=>s.size
+      ? '<span class="'+cls+'">'+[...s].sort((a,b)=>a-b).join(', ')+'</span>'
+      : '<span style="color:#b9b4a8">nothing</span>';
+    $('sel').textContent = sel==null?'—':sel;
+    if(sel==null){
+      for(const id of ['dn','up','cc'])
+        $(id).innerHTML='<span style="color:#b9b4a8">—</span>';
+      return;
+    }
+    const conc=new Set(EV.map(e=>e.n).filter(n=>n!==sel &&
+      !DOWN[sel].has(n) && !UP[sel].has(n)));
+    $('dn').innerHTML=list(DOWN[sel],'dn');
+    $('up').innerHTML=list(UP[sel],'up');
+    $('cc').innerHTML=list(conc,'cc');
+  }
+
+  // ── interaction ────────────────────────────────────────────────────
+  svg.addEventListener('pointerdown',e=>{
+    const r=svg.getBoundingClientRect();
+    const px=(e.clientX-r.left)/r.width*1240, py=(e.clientY-r.top)/r.height*470;
+    const hit=EV.find(v=>Math.abs(py-yOf(v.agent))<24 &&
+                         Math.abs(px-cxOf(v))<halfW(v)+4);
+    if(hit){ sel=hit.n; draw(); }
+  });
+  $('clear').onclick=()=>{ sel=null; draw(); };
+
+  const btn=$('derive');
+  let derived=false;
+  btn.onclick=()=>{
+    derived=!derived;
+    const from=d, to=derived?1:0, t0=performance.now(), MS=1500;
+    if(anim) cancelAnimationFrame(anim);
+    (function step(now){
+      const k=Math.min(1,(now-t0)/MS);
+      const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+      d=lerp(from,to,e); draw();
+      if(k<1) anim=requestAnimationFrame(step);
+    })(t0);
+    btn.textContent=derived?'Back to the timeline':'Derive the influences diagram';
+  };
+
+  draw();
+})();
+</script>
+
+<!-- ─────────────────────────────────────────────────────────────────────
+     Present mode. Append this block verbatim to any course page whose
+     content sits inside <div class="wrap">.
+
+     The page stays a scrolling document. Pressing P (or the button)
+     shows one chunk at a time at projector size; arrows move between
+     chunks; Esc leaves. Chunks are worked out at load time from the
+     page's own headings and figures, so nothing in the prose has to be
+     marked up, and adding a section needs no change here.
+
+     The wrapper divs are display:contents while not presenting, so
+     layout in reading mode is byte-for-byte what it was before.
+     ───────────────────────────────────────────────────────────────── -->
+<style>
+  .pslide{display:contents}
+  .presentbar{position:fixed; right:16px; bottom:14px; z-index:60;
+    display:flex; gap:8px; align-items:center}
+  .presentbar button{font:600 13px var(--sans,sans-serif); color:var(--ink,#1a1a2e);
+    background:#fff; border:1px solid var(--line,#ddd8cd); border-radius:8px;
+    padding:6px 12px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .presentbar button:hover{border-color:var(--muted,#6f7583)}
+  .presentbar .pnum{font:600 12px var(--mono,monospace); color:var(--muted,#6f7583)}
+
+  body.present{overflow:hidden}
+  body.present .wrap{max-width:none; padding:0; margin:0}
+  body.present .pslide{display:none}
+  body.present .pslide.on{
+    display:block; position:fixed; inset:0; overflow:auto;
+    padding:5vh 6vw 9vh; font-size:clamp(17px,1.55vw,25px);
+  }
+  /* Everything inside a shown chunk grows with it. */
+  body.present .pslide.on p,
+  body.present .pslide.on li{font-size:1em; line-height:1.5; max-width:34em}
+  body.present .pslide.on h1{font-size:2.5em}
+  body.present .pslide.on h2{font-size:1.9em; margin-top:0}
+  body.present .pslide.on h3{font-size:1.35em}
+  body.present .pslide.on figure.fig{margin:1.4vh 0; padding:14px 16px 12px}
+  /* A figure already breaks out of the text column; in present mode the
+     column is the screen, so the trick has to be switched off or it
+     shifts the figure sideways. */
+  body.present .pslide.on figure.fig.wideout{
+    width:auto; max-width:none; position:static; left:auto; transform:none}
+  body.present .pslide.on figcaption{font-size:.62em; line-height:1.5}
+  body.present .pslide.on .task{font-size:.9em}
+  body.present .presentbar{background:rgba(250,248,243,.9); border-radius:10px;
+    padding:4px 6px}
+</style>
+<script>
+(function(){
+  const wrap=document.querySelector('.wrap');
+  if(!wrap) return;
+
+  // ── group the page's own children into chunks ──────────────────────
+  // A heading, a figure or a task starts a chunk; a run of prose longer
+  // than five blocks starts one too, so no chunk overflows the screen.
+  const STARTS=el=>{
+    const t=el.tagName;
+    return t==='HEADER'||t==='H1'||t==='H2'||t==='H3'||t==='FIGURE'||
+           el.classList.contains('task');
+  };
+  const ALONE=el=>el.tagName==='FIGURE'||el.classList.contains('task');
+
+  const kids=[...wrap.children];
+  const groups=[]; let cur=null;
+  for(const el of kids){
+    if(!cur || STARTS(el) || cur.length>=5 || (cur.length&&ALONE(cur[cur.length-1])))
+      groups.push(cur=[]);
+    cur.push(el);
+  }
+  const slides=groups.filter(g=>g.length).map(g=>{
+    const d=document.createElement('div');
+    d.className='pslide';
+    wrap.insertBefore(d,g[0]);
+    g.forEach(el=>d.appendChild(el));
+    return d;
+  });
+
+  // ── the bar ────────────────────────────────────────────────────────
+  const bar=document.createElement('div');
+  bar.className='presentbar';
+  bar.innerHTML='<span class="pnum" hidden></span>'+
+                '<button type="button">Present</button>';
+  document.body.appendChild(bar);
+  const num=bar.querySelector('.pnum'), btn=bar.querySelector('button');
+
+  let on=false, i=0;
+  function show(){
+    slides.forEach((s,n)=>s.classList.toggle('on', on && n===i));
+    num.hidden=!on;
+    num.textContent=(i+1)+' / '+slides.length;
+    btn.textContent=on?'Exit':'Present';
+    // A canvas that was hidden may need a nudge to repaint.
+    if(on) window.dispatchEvent(new Event('resize'));
+  }
+  function enter(){ on=true;  document.body.classList.add('present');    show(); }
+  function leave(){ on=false; document.body.classList.remove('present');
+                    show(); slides[i].scrollIntoView({block:'start'}); }
+  btn.onclick=()=>on?leave():enter();
+
+  addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if(!on){ if(e.key==='p'||e.key==='P'){ e.preventDefault(); enter(); } return; }
+    if(e.key==='Escape'){ e.preventDefault(); leave(); }
+    else if(['ArrowRight',' ','PageDown','n'].includes(e.key)){
+      e.preventDefault(); i=Math.min(slides.length-1,i+1); show(); }
+    else if(['ArrowLeft','PageUp','b'].includes(e.key)){
+      e.preventDefault(); i=Math.max(0,i-1); show(); }
+    else if(e.key==='Home'){ e.preventDefault(); i=0; show(); }
+    else if(e.key==='End'){ e.preventDefault(); i=slides.length-1; show(); }
+  });
+
+  show();
+})();
+</script>
+
+</body>
+</html>

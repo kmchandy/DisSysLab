@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Multi-agent systems — course index</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:840px; margin:0 auto; padding:52px 20px 90px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em;
+    text-transform:uppercase; color:var(--orange); margin-bottom:14px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(36px,6vw,58px);
+     line-height:1.03; letter-spacing:-.025em; margin:0 0 16px}
+  .lead{font-size:20px; line-height:1.55; color:var(--body); max-width:640px;
+     margin:0 0 10px}
+  .meta{margin:26px 0 0; padding-top:18px; border-top:1px solid var(--line);
+    display:flex; flex-wrap:wrap; gap:6px 30px; font-size:14px; color:var(--muted)}
+  h2{font-family:var(--display); font-weight:600; font-size:26px;
+     margin:52px 0 4px; letter-spacing:-.01em}
+  .sub{font-size:14.5px; color:var(--muted); margin:0 0 18px}
+
+  ol.plan{list-style:none; padding:0; margin:0; counter-reset:lec}
+  ol.plan > li{counter-increment:lec; margin:0 0 14px; background:var(--panel);
+    border:1px solid var(--line); border-radius:12px; padding:18px 20px 16px;
+    display:flex; gap:18px; align-items:flex-start}
+  ol.plan > li::before{content:"Lecture " counter(lec);
+    font:700 11.5px var(--sans); letter-spacing:.1em; text-transform:uppercase;
+    color:var(--orange); flex:none; width:92px; padding-top:5px}
+  .li-body{flex:1 1 auto; min-width:0}
+  .li-body h3{margin:0 0 4px; font-size:19px; font-weight:700}
+  .li-body p{margin:0 0 10px; font-size:15px; color:var(--body)}
+  .links{display:flex; flex-wrap:wrap; gap:8px}
+  .links a{font:600 13.5px var(--sans); text-decoration:none;
+    color:var(--ink); background:var(--paper); border:1px solid var(--line);
+    border-radius:8px; padding:6px 12px}
+  .links a:hover{border-color:var(--teal); color:var(--teal)}
+  .links a.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .links a.primary:hover{background:#000; color:#fff}
+  .soon{opacity:.55}
+  .soon .li-body h3{font-weight:600}
+
+  ul.plain{list-style:none; padding:0; margin:0}
+  ul.plain li{padding:11px 0; border-top:1px solid var(--line);
+    display:flex; gap:16px; align-items:baseline}
+  ul.plain li a{font-weight:700; color:var(--ink); text-decoration:none;
+    flex:none; min-width:150px}
+  ul.plain li a:hover{color:var(--teal)}
+  ul.plain li span{font-size:14.5px; color:var(--body)}
+  .note{margin-top:30px; padding:14px 18px; background:var(--panel);
+    border:1px solid var(--line); border-left:3px solid var(--teal);
+    border-radius:0 10px 10px 0; font-size:14.5px; color:var(--body)}
+  footer{margin-top:56px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:14px; color:var(--muted)}
+  footer a{color:var(--teal)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">Caltech &middot; Winter 2027 &middot; 4 January – 10 March</div>
+  <h1>Multi-agent systems</h1>
+  <p class="lead">The safety of systems built from many agents. We prove
+     algorithms correct with UNITY, a small fragment of temporal logic; we
+     demonstrate programs correct by testing them systematically; we check what
+     goes into and out of every agent; and we fence the whole thing in. Along
+     the way you build a distributed system you would actually check.</p>
+  <div class="meta">
+    <span><b>Every page</b> is HTML — press <b>P</b> to present</span>
+    <span><b>Graded</b> pass/fail</span>
+  </div>
+
+  <h2>Lectures</h2>
+  <p class="sub">Each lecture is one page. Read it before or after; it is the
+     same page either way.</p>
+
+  <ol class="plan">
+    <li>
+      <div class="li-body">
+        <h3>Why you are here</h3>
+        <p>Two labs lost control of their agents in one month, and what came out
+           later was that the agents had built a distributed system in order to
+           coordinate. The dilemma this course lives in, the four rules, and a
+           program that watches your own campus.</p>
+        <div class="links">
+          <a class="primary" href="lecture-1.html">Slides</a>
+          <a href="safety.html">Power and safety</a>
+        </div>
+      </div>
+    </li>
+    <li>
+      <div class="li-body">
+        <h3>One connection, and the shape of a computation</h3>
+        <p>The model: agents, inboxes, outboxes, connections, and the four
+           axioms everything later is proved from. Then a computation drawn as a
+           picture — states, reordering, and which events could possibly have
+           heard of which others.</p>
+        <div class="links">
+          <a class="primary" href="one-connection.html">The model</a>
+          <a href="computations.html">Computations</a>
+        </div>
+      </div>
+    </li>
+    <li class="soon">
+      <div class="li-body">
+        <h3>Termination detection</h3>
+        <p>An office that cannot tell it has finished. Build the case, watch it
+           hang, then read the algorithm that fixes it.</p>
+        <div class="links"><a href="#">Not written yet</a></div>
+      </div>
+    </li>
+    <li class="soon">
+      <div class="li-body">
+        <h3>Global snapshots</h3>
+        <p>Photographing a system whose parts are all still moving, and why
+           consistent cuts are the right notion of "at the same time".</p>
+        <div class="links"><a href="#">Not written yet</a></div>
+      </div>
+    </li>
+  </ol>
+
+  <h2>Before the first class</h2>
+  <p class="sub">Half an hour, on your own machine, no API key.</p>
+  <ul class="plain">
+    <li><a href="setup.html">setup.html</a>
+        <span>Install it, run one office, read what you ran, and give your
+              assistant the skill.</span></li>
+  </ul>
+
+  <h2>Everything, one list</h2>
+  <p class="sub">The order lives here and nowhere else. If you want to
+     reorder the course, this is the only file that changes.</p>
+  <ul class="plain">
+    <li><a href="setup.html">setup.html</a>
+        <span>Setting up.</span></li>
+    <li><a href="lecture-1.html">lecture-1.html</a>
+        <span>Lecture 1, as presented.</span></li>
+    <li><a href="safety.html">safety.html</a>
+        <span>Power and safety: the tradeoff we made, and the four rules.</span></li>
+    <li><a href="one-connection.html">one-connection.html</a>
+        <span>A model of a distributed system, and the four axioms.</span></li>
+    <li><a href="computations.html">computations.html</a>
+        <span>Timelines, states, reordering, and the influences relation.</span></li>
+  </ul>
+
+  <div class="note">
+    <b>Presenting.</b> Every page here is both a reading and a talk. Press
+    <b>P</b> to show it one piece at a time at projector size, arrow keys to
+    move, <b>Esc</b> to go back to reading. The animations keep running either
+    way.
+  </div>
+
+  <footer>
+    Code, offices and issues:
+    <a href="https://github.com/kmchandy/DisSysLab">github.com/kmchandy/DisSysLab</a>
+    &middot; K. Mani Chandy
+  </footer>
+</div>
+</body>
+</html>

@@ -532,6 +532,7 @@
 <h2><span class="n">SECTION 2</span>A Model of Computation</h2>
 
 <h3>The Actions of a System</h3>
+<p>
 The system has three types of actions: agent actions, outbox actions, and channel
   actions. A computation proceeds by selecting any agent, outbox or channel and
   executing its action. We have described agent actions. Next we describe outbox
@@ -1868,5 +1869,120 @@ dsl doctor      <span class="c"># what is installed, and whether it is stale</sp
   document.querySelector('[data-s=reset]').onclick=setScenario;
 })();
 </script>
+<!-- ─────────────────────────────────────────────────────────────────────
+     Present mode. Append this block verbatim to any course page whose
+     content sits inside <div class="wrap">.
+
+     The page stays a scrolling document. Pressing P (or the button)
+     shows one chunk at a time at projector size; arrows move between
+     chunks; Esc leaves. Chunks are worked out at load time from the
+     page's own headings and figures, so nothing in the prose has to be
+     marked up, and adding a section needs no change here.
+
+     The wrapper divs are display:contents while not presenting, so
+     layout in reading mode is byte-for-byte what it was before.
+     ───────────────────────────────────────────────────────────────── -->
+<style>
+  .pslide{display:contents}
+  .presentbar{position:fixed; right:16px; bottom:14px; z-index:60;
+    display:flex; gap:8px; align-items:center}
+  .presentbar button{font:600 13px var(--sans,sans-serif); color:var(--ink,#1a1a2e);
+    background:#fff; border:1px solid var(--line,#ddd8cd); border-radius:8px;
+    padding:6px 12px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .presentbar button:hover{border-color:var(--muted,#6f7583)}
+  .presentbar .pnum{font:600 12px var(--mono,monospace); color:var(--muted,#6f7583)}
+
+  body.present{overflow:hidden}
+  body.present .wrap{max-width:none; padding:0; margin:0}
+  body.present .pslide{display:none}
+  body.present .pslide.on{
+    display:block; position:fixed; inset:0; overflow:auto;
+    padding:5vh 6vw 9vh; font-size:clamp(17px,1.55vw,25px);
+  }
+  /* Everything inside a shown chunk grows with it. */
+  body.present .pslide.on p,
+  body.present .pslide.on li{font-size:1em; line-height:1.5; max-width:34em}
+  body.present .pslide.on h1{font-size:2.5em}
+  body.present .pslide.on h2{font-size:1.9em; margin-top:0}
+  body.present .pslide.on h3{font-size:1.35em}
+  body.present .pslide.on figure.fig{margin:1.4vh 0; padding:14px 16px 12px}
+  /* A figure already breaks out of the text column; in present mode the
+     column is the screen, so the trick has to be switched off or it
+     shifts the figure sideways. */
+  body.present .pslide.on figure.fig.wideout{
+    width:auto; max-width:none; position:static; left:auto; transform:none}
+  body.present .pslide.on figcaption{font-size:.62em; line-height:1.5}
+  body.present .pslide.on .task{font-size:.9em}
+  body.present .presentbar{background:rgba(250,248,243,.9); border-radius:10px;
+    padding:4px 6px}
+</style>
+<script>
+(function(){
+  const wrap=document.querySelector('.wrap');
+  if(!wrap) return;
+
+  // ── group the page's own children into chunks ──────────────────────
+  // A heading, a figure or a task starts a chunk; a run of prose longer
+  // than five blocks starts one too, so no chunk overflows the screen.
+  const STARTS=el=>{
+    const t=el.tagName;
+    return t==='HEADER'||t==='H1'||t==='H2'||t==='H3'||t==='FIGURE'||
+           el.classList.contains('task');
+  };
+  const ALONE=el=>el.tagName==='FIGURE'||el.classList.contains('task');
+
+  const kids=[...wrap.children];
+  const groups=[]; let cur=null;
+  for(const el of kids){
+    if(!cur || STARTS(el) || cur.length>=5 || (cur.length&&ALONE(cur[cur.length-1])))
+      groups.push(cur=[]);
+    cur.push(el);
+  }
+  const slides=groups.filter(g=>g.length).map(g=>{
+    const d=document.createElement('div');
+    d.className='pslide';
+    wrap.insertBefore(d,g[0]);
+    g.forEach(el=>d.appendChild(el));
+    return d;
+  });
+
+  // ── the bar ────────────────────────────────────────────────────────
+  const bar=document.createElement('div');
+  bar.className='presentbar';
+  bar.innerHTML='<span class="pnum" hidden></span>'+
+                '<button type="button">Present</button>';
+  document.body.appendChild(bar);
+  const num=bar.querySelector('.pnum'), btn=bar.querySelector('button');
+
+  let on=false, i=0;
+  function show(){
+    slides.forEach((s,n)=>s.classList.toggle('on', on && n===i));
+    num.hidden=!on;
+    num.textContent=(i+1)+' / '+slides.length;
+    btn.textContent=on?'Exit':'Present';
+    // A canvas that was hidden may need a nudge to repaint.
+    if(on) window.dispatchEvent(new Event('resize'));
+  }
+  function enter(){ on=true;  document.body.classList.add('present');    show(); }
+  function leave(){ on=false; document.body.classList.remove('present');
+                    show(); slides[i].scrollIntoView({block:'start'}); }
+  btn.onclick=()=>on?leave():enter();
+
+  addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if(!on){ if(e.key==='p'||e.key==='P'){ e.preventDefault(); enter(); } return; }
+    if(e.key==='Escape'){ e.preventDefault(); leave(); }
+    else if(['ArrowRight',' ','PageDown','n'].includes(e.key)){
+      e.preventDefault(); i=Math.min(slides.length-1,i+1); show(); }
+    else if(['ArrowLeft','PageUp','b'].includes(e.key)){
+      e.preventDefault(); i=Math.max(0,i-1); show(); }
+    else if(e.key==='Home'){ e.preventDefault(); i=0; show(); }
+    else if(e.key==='End'){ e.preventDefault(); i=slides.length-1; show(); }
+  });
+
+  show();
+})();
+</script>
+
 </body>
 </html>
