@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Computation diagram — two agents</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  p{color:var(--body); margin:0 0 15px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+
+  figure.fig{margin:30px 0 26px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  input[type=range]{flex:1 1 200px; min-width:160px; accent-color:var(--orange)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
+          font-size:13.5px; color:var(--muted)}
+  .legend i{font-style:normal; color:var(--ink); font-weight:600}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">DisSysLab · Micro-course 2 · draft figure</div>
+  <h1>A computation diagram</h1>
+  <p>Two agents. Time runs left to right. A <b>thin line</b> is an agent waiting.
+     A <b>bar</b> is an agent active — it has taken one message from one inbox and
+     is processing it, and the bar is labelled with that inbox. A <b>message line</b>
+     leaves the sender's line tagged with the outbox it was put on, and arrives at
+     the receiver's line tagged with the inbox it arrives in.</p>
+
+  <figure class="fig wideout">
+    <svg id="tl" viewBox="0 0 1240 470" role="img"
+         aria-label="Computation diagram for two agents X and Y"></svg>
+
+    <div class="ctrls">
+      <button id="play" class="primary">Play</button>
+      <button id="step">Step</button>
+      <button id="reset">Reset</button>
+      <input id="scrub" type="range" min="0" max="100" step="0.25" value="100">
+      <span class="status" id="status"></span>
+    </div>
+
+    <div class="legend">
+      <span><i>▬</i> bar = active, labelled with the inbox it took from</span>
+      <span><i>╱</i> message line, tagged outbox → inbox</span>
+      <span><i>│</i> thin line = waiting</span>
+    </div>
+
+    <figcaption>
+      <b>Figure. One computation of a two-agent office.</b>
+      X has inboxes <code>R</code>, <code>S</code> and outboxes <code>A</code>,
+      <code>B</code>; Y has inboxes <code>U</code>, <code>V</code> and outboxes
+      <code>P</code>, <code>Q</code>. Y waits on <code>U</code> throughout.
+      Watch the first message: it is put on outbox <code>A</code>, it arrives in
+      inbox <code>V</code> — and nothing happens. Y is not waiting on
+      <code>V</code>, so the message stays there for the rest of the diagram.
+      The second message arrives in <code>U</code>, and even then Y does not
+      start at once: the gap between the arrowhead and the start of the bar is
+      the difference between <b>delivered</b> and <b>received</b>.
+      Y's one bar is labelled <code>U</code>, so you can tell which of the two
+      messages it took.
+    </figcaption>
+  </figure>
+</div>
+
+<script>
+(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const svg=document.getElementById('tl');
+  const T0=0, T1=100;
+  const X0=140, X1=1180;              // time axis in svg units
+  const YX=150, YY=340;               // the two agent lines
+  const BAR=20;                       // bar height
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d', paper:'#faf8f3'};
+
+  const xOf=t=>X0+(t-T0)/(T1-T0)*(X1-X0);
+  const yOf=a=>a==='X'?YX:YY;
+
+  // ── the computation ────────────────────────────────────────────────
+  // Two faint arrivals from before this window, so X has work to do.
+  const PRE=[{t:4,agent:'X',tag:'R'},{t:20,agent:'X',tag:'S'}];
+
+  const BARS=[
+    {agent:'X', t0:8,  t1:17, label:'R'},
+    {agent:'X', t0:33, t1:41, label:'S'},
+    {agent:'Y', t0:66, t1:79, label:'U'},
+  ];
+
+  // consumedAt: when a bar took this message out of its inbox (null = never,
+  // within this window).
+  const MSGS=[
+    {from:'X', ts:14, out:'A', to:'Y', tr:29, inb:'V', consumedAt:null},
+    {from:'X', ts:37, out:'B', to:'Y', tr:52, inb:'U', consumedAt:66},
+    {from:'Y', ts:70, out:'P', to:'X', tr:86, inb:'R', consumedAt:null},
+    {from:'Y', ts:76, out:'Q', to:'X', tr:94, inb:'S', consumedAt:null},
+  ];
+
+  // Y waits on U for the whole window -- which is why the V message is never
+  // taken. X alternates between the inbox it is about to read.
+  const WAITING={X:[[0,8,'R'],[17,33,'S'],[41,100,'R']], Y:[[0,66,'U'],[79,100,'U']]};
+
+  const STOPS=[...new Set([0,...PRE.map(p=>p.t),
+      ...BARS.flatMap(b=>[b.t0,b.t1]),
+      ...MSGS.flatMap(m=>[m.ts,m.tr]),100])].sort((a,b)=>a-b);
+
+  // ── drawing helpers ────────────────────────────────────────────────
+  function el(n,attrs,text){
+    const e=document.createElementNS(NS,n);
+    for(const k in attrs) e.setAttribute(k,attrs[k]);
+    if(text!=null) e.textContent=text;
+    return e;
+  }
+  function tag(g,x,y,s,fill){
+    const t=el('text',{x,y,'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':16,'font-weight':700,fill:fill||C.ink,
+      'text-anchor':'middle','dominant-baseline':'middle',
+      stroke:'#fff','stroke-width':4,'paint-order':'stroke'},s);
+    g.appendChild(t);
+  }
+
+  function draw(now){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{});
+    svg.appendChild(g);
+
+    // marker for arrowheads
+    const defs=el('defs',{});
+    for(const [id,col] of [['ah',C.ink],['ahO',C.orange]]){
+      const m=el('marker',{id,viewBox:'0 0 10 10',refX:9,refY:5,
+        markerWidth:7,markerHeight:7,orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:col}));
+      defs.appendChild(m);
+    }
+    svg.appendChild(defs);
+
+    // ── agent lines: full extent faint, realised part solid ──────────
+    for(const a of ['X','Y']){
+      const y=yOf(a);
+      g.appendChild(el('line',{x1:X0,y1:y,x2:X1,y2:y,
+        stroke:C.line,'stroke-width':2}));
+      g.appendChild(el('line',{x1:X0,y1:y,x2:xOf(now),y2:y,
+        stroke:C.ink,'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18,y:y,'font-family':'inherit','font-size':19,
+        'font-weight':700,fill:C.ink,'text-anchor':'end',
+        'dominant-baseline':'middle'},'Agent '+a));
+    }
+
+    // ── what each agent is waiting on, under its line ────────────────
+    // Suppressed for short stretches: a label wider than the stretch it
+    // describes points at the wrong part of the line.
+    for(const a of ['X','Y']){
+      for(const [s,e,inb] of WAITING[a]){
+        if(now<=s) continue;
+        const xa=xOf(s), xb=xOf(Math.min(e,now));
+        if(xb-xa<115) continue;
+        g.appendChild(el('text',{x:(xa+xb)/2, y:yOf(a)+(a==='X'?-48:50),
+          'font-size':13,fill:C.muted,'text-anchor':'middle',
+          'font-family':'ui-monospace,Menlo,Consolas,monospace'},
+          'waiting on '+inb));
+      }
+    }
+
+    // ── arrivals from before the window, so X has work to do ─────────
+    for(const p of PRE){
+      if(now<p.t) continue;
+      const x=xOf(p.t), y=yOf(p.agent);
+      g.appendChild(el('line',{x1:x-96,y1:y-74,x2:x-4,y2:y-4,
+        stroke:C.line,'stroke-width':2,'marker-end':'url(#ah)'}));
+      tag(g,x-24,y-26,p.tag,C.muted);
+    }
+
+    // ── bars: the agent is active ────────────────────────────────────
+    for(const b of BARS){
+      if(now<=b.t0) continue;
+      const xa=xOf(b.t0), xb=xOf(Math.min(b.t1,now)), y=yOf(b.agent);
+      g.appendChild(el('rect',{x:xa,y:y-BAR/2,width:Math.max(xb-xa,1),height:BAR,
+        rx:4,fill:C.ink}));
+      if(xb-xa>26)
+        g.appendChild(el('text',{x:(xa+xb)/2,y:y+1,'font-size':14,
+          'font-weight':700,fill:'#fff','text-anchor':'middle',
+          'dominant-baseline':'middle',
+          'font-family':'ui-monospace,Menlo,Consolas,monospace'},b.label));
+    }
+
+    // ── message lines ────────────────────────────────────────────────
+    for(const m of MSGS){
+      if(now<m.ts) continue;
+      const x1=xOf(m.ts), y1=yOf(m.from), x2=xOf(m.tr), y2=yOf(m.to);
+      const f=Math.min(1,(now-m.ts)/(m.tr-m.ts));
+      const cx=x1+(x2-x1)*f, cy=y1+(y2-y1)*f;
+      // the one that is never taken is drawn in the accent colour
+      const hot=(m.consumedAt===null && m.to==='Y');
+      const col=hot?C.orange:C.teal;
+      // Stop 5px short so the arrowhead touches the agent line rather than
+      // crossing it.
+      const dx=(x2-x1), dy=(y2-y1), L=Math.hypot(dx,dy);
+      const ex=cx-(f>=1?dx/L*5:0), ey=cy-(f>=1?dy/L*5:0);
+      g.appendChild(el('line',{x1,y1,x2:ex,y2:ey,stroke:col,
+        'stroke-width':hot?2.6:2,
+        'marker-end':f>=1?(hot?'url(#ahO)':'url(#ah)'):''}));
+      // Tags sit clear of the line on a fixed side, so they never land on a
+      // bar: leaving X or arriving at Y puts the tag below that line;
+      // leaving Y or arriving at X puts it above.
+      const below=(a)=>a==='X'?24:26;
+      tag(g, x1+22, y1+(m.from==='X'? below('X') : -26), m.out, col);
+      if(f>=1) tag(g, x2-22, y2+(m.to==='Y'? below('Y') : -24), m.inb, col);
+    }
+
+    // ── the moving "now" cursor ──────────────────────────────────────
+    if(now<T1){
+      const x=xOf(now);
+      g.appendChild(el('line',{x1:x,y1:60,x2:x,y2:400,stroke:C.orange,
+        'stroke-width':1.5,'stroke-dasharray':'5 5',opacity:.75}));
+    }
+
+    // ── time arrow ───────────────────────────────────────────────────
+    g.appendChild(el('line',{x1:X0,y1:432,x2:X0+180,y2:432,stroke:C.muted,
+      'stroke-width':2,'marker-end':'url(#ah)'}));
+    g.appendChild(el('text',{x:X0+192,y:432,'font-size':15,fill:C.muted,
+      'dominant-baseline':'middle'},'time'));
+
+    // ── status readout ───────────────────────────────────────────────
+    const st=a=>{
+      const b=BARS.find(b=>b.agent===a && now>b.t0 && now<=b.t1);
+      if(b) return 'active on '+b.label;
+      const w=(WAITING[a].find(([s,e])=>now>=s&&now<=e)||[,, '?'])[2];
+      return 'waiting on '+w;
+    };
+    const out=MSGS.filter(m=>m.tr<=now && (m.consumedAt===null||m.consumedAt>now)).length;
+    document.getElementById('status').innerHTML =
+      'X <b>'+st('X')+'</b> · Y <b>'+st('Y')+'</b> · delivered, not received <b>'+out+'</b>';
+  }
+
+  // ── controls ───────────────────────────────────────────────────────
+  const scrub=document.getElementById('scrub');
+  const playBtn=document.getElementById('play');
+  let now=100, playing=false, last=0;
+
+  function set(v){ now=Math.max(0,Math.min(100,v)); scrub.value=now; draw(now); }
+
+  function frame(ts){
+    if(!playing) return;
+    if(!last) last=ts;
+    const dt=(ts-last)/1000; last=ts;
+    set(now+dt*14);
+    if(now>=100){ playing=false; playBtn.textContent='Replay'; }
+    requestAnimationFrame(frame);
+  }
+  playBtn.onclick=()=>{
+    if(playing){ playing=false; playBtn.textContent='Play'; return; }
+    if(now>=100) now=0;
+    playing=true; last=0; playBtn.textContent='Pause';
+    requestAnimationFrame(frame);
+  };
+  document.getElementById('step').onclick=()=>{
+    playing=false; playBtn.textContent='Play';
+    const nxt=STOPS.find(t=>t>now+0.01);
+    set(nxt===undefined?100:nxt);
+  };
+  document.getElementById('reset').onclick=()=>{
+    playing=false; playBtn.textContent='Play'; set(0);
+  };
+  scrub.oninput=()=>{ playing=false; playBtn.textContent='Play'; set(+scrub.value); };
+
+  set(100);
+})();
+</script>
+</body>
+</html>

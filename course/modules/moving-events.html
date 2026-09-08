@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moving independent events</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  p{color:var(--body); margin:0 0 15px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  code{font-family:var(--mono); font-size:.88em}
+
+  figure.fig{margin:30px 0 26px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto; touch-action:none;
+    user-select:none}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .hint{font-size:13px; color:var(--muted); margin-left:auto}
+
+  .facts{margin-top:14px; font:14px/1.7 var(--mono)}
+  .facts div{display:flex; gap:10px; align-items:baseline; padding:5px 0;
+             border-top:1px solid var(--line)}
+  .facts .k{width:172px; flex:none; font:600 11.5px var(--sans);
+            letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+  .fixed{color:var(--teal); font-weight:700}
+  .moved{color:var(--ink); font-weight:700}
+  .ok{color:var(--teal); font-weight:700}
+  .bad{color:var(--orange); font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="kicker">DisSysLab · Micro-course 2 · draft figure</div>
+  <h1>Moving events in time</h1>
+  <p>Six events, named <code>0</code> to <code>5</code>. Events <code>2</code>
+     and <code>3</code> happen at different agents and neither depends on the
+     other. Slide them: <code>2</code> to the right, <code>3</code> to the
+     left, until they change places. Each agent's own sequence of actions never
+     changes — only where they sit in time. As long as every message arrow
+     still points forward, what you are looking at is another computation of
+     the same system.</p>
+
+  <figure class="fig wideout">
+    <svg id="tl" viewBox="0 0 1240 470" role="img"
+         aria-label="Timeline diagram in which two independent events can be moved"></svg>
+
+    <div class="ctrls">
+      <button id="slide" class="primary">Slide 2 and 3 past each other</button>
+      <button id="reset">Reset</button>
+      <span class="hint">or drag event <b>2</b> or event <b>3</b> along its own line</span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Agent X does</span><span id="seqx"></span></div>
+      <div><span class="k">Agent Y does</span><span id="seqy"></span></div>
+      <div><span class="k">Computation</span><span id="seqg"></span></div>
+      <div><span class="k">Arrows</span><span id="valid"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure. Two independent events changing places.</b>
+      The top two rows never change, however far you drag: an agent's own
+      actions keep their order, because an agent does one thing at a time, and
+      the arrows along each line say so. The third row does change. Events at
+      the same time are unordered and are shown together in braces, so
+      <code>0</code> and <code>1</code> are always <code>{0,1}</code>, and
+      half way through the slide <code>2</code> and <code>3</code> are
+      <code>{2,3}</code> too. Every sequence you can read off this row is a
+      computation of the same system. Drag further and the fourth row turns:
+      push <code>2</code> far enough right and it sends <code>m3</code> after
+      <code>m3</code> arrived, and push <code>3</code> far enough left and it
+      takes <code>m2</code> out of inbox <code>V</code> before <code>m2</code>
+      got there. Those are the only limits.
+    </figcaption>
+  </figure>
+</div>
+
+<script>
+(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const svg=document.getElementById('tl');
+  const T1=100, X0=140, X1=1180, YX=150, YY=340, BAR=26, DUR=8;
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const xOf=t=>X0+t/T1*(X1-X0);
+  const tOf=x=>(x-X0)/(X1-X0)*T1;
+  const yOf=a=>a==='X'?YX:YY;
+
+  // ── the computation: six events, named 0..5 ────────────────────────
+  // 2 and 3 are independent: 2 receives m1, 3 receives m2, and neither
+  // depends on the other.
+  const BASE={ '2':22, '3':40 };
+  const BARS=[
+    {id:'0', agent:'X', t0:4,  dur:6,   move:false},
+    {id:'1', agent:'Y', t0:4,  dur:6,   move:false},
+    {id:'2', agent:'X', t0:22, dur:DUR, inbox:'R', move:true},
+    {id:'3', agent:'Y', t0:40, dur:DUR, inbox:'V', move:true},
+    {id:'4', agent:'Y', t0:62, dur:DUR, inbox:'U', move:false},
+    {id:'5', agent:'X', t0:82, dur:DUR, inbox:'S', move:false},
+  ];
+  const bar=id=>BARS.find(b=>b.id===id);
+  const MSGS=[
+    {name:'m1', src:'1', out:'P', at:4, arr:18, to:'X', inb:'R', by:'2', lp:.80},
+    {name:'m2', src:'0', out:'A', at:4, arr:20, to:'Y', inb:'V', by:'3', lp:.20},
+    {name:'m3', src:'2', out:'B', at:6, arr:50, to:'Y', inb:'U', by:'4', lp:.50},
+    {name:'m4', src:'4', out:'Q', at:6, arr:78, to:'X', inb:'S', by:'5', lp:.50},
+  ];
+  const sendT=m=>bar(m.src).t0+m.at;
+  // An agent does one thing at a time, so its events keep their order however
+  // far they slide. These pairs are therefore fixed.
+  const AGENT_EDGES=[['0','2'],['2','5'],['1','3'],['3','4']];
+  // How far a movable event may slide before it would overlap a neighbour on
+  // its own line. Violations of message order are deliberately NOT clamped --
+  // seeing an arrow point backwards is the point.
+  const RANGE={'2':[10,74], '3':[10,54]};
+
+  function violations(){
+    const v=[];
+    for(const m of MSGS){
+      if(sendT(m)>=m.arr)
+        v.push(m.name+' would arrive before it was sent');
+      else if(m.arr>bar(m.by).t0)
+        v.push('event '+m.by+' takes '+m.name+' out of '+m.inb+
+               ' before it arrives');
+    }
+    return v;
+  }
+
+  function el(n,a,txt){const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt; return e;}
+  function tag(g,x,y,s,fill,size){
+    g.appendChild(el('text',{x,y,'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||15,'font-weight':700,fill:fill||C.ink,'text-anchor':'middle',
+      'dominant-baseline':'middle',stroke:'#fff','stroke-width':4,
+      'paint-order':'stroke'},s));
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    for(const [id,col] of [['ah',C.ink],['ahT',C.teal],['ahO',C.orange]]){
+      const m=el('marker',{id,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,
+        markerHeight:7,orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M 0 0 L 10 5 L 0 10 z',fill:col}));
+      defs.appendChild(m);
+    }
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+
+    for(const a of ['X','Y']){
+      const y=yOf(a);
+      g.appendChild(el('line',{x1:X0,y1:y,x2:X1,y2:y,stroke:C.ink,'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18,y,'font-size':19,'font-weight':700,fill:C.ink,
+        'text-anchor':'end','dominant-baseline':'middle'},'Agent '+a));
+    }
+
+    // an agent's events, in order, joined by arrows pointing forward in time
+    for(const [a,b] of AGENT_EDGES){
+      const A=bar(a), B=bar(b), y=yOf(A.agent);
+      g.appendChild(el('line',{x1:xOf(A.t0+A.dur),y1:y,x2:xOf(B.t0)-3,y2:y,
+        stroke:C.ink,'stroke-width':2.4,'marker-end':'url(#ah)'}));
+    }
+
+    // ghosts: where the movable events started
+    for(const id of ['2','3']){
+      const b=bar(id);
+      if(Math.abs(b.t0-BASE[id])<0.5) continue;
+      g.appendChild(el('rect',{x:xOf(BASE[id]),y:yOf(b.agent)-BAR/2,
+        width:xOf(BASE[id]+b.dur)-xOf(BASE[id]),height:BAR,rx:5,fill:'none',
+        stroke:C.line,'stroke-width':2,'stroke-dasharray':'5 4'}));
+    }
+
+    const bad=new Set();
+    for(const m of MSGS) if(sendT(m)>=m.arr) bad.add(m.name);
+    for(const m of MSGS){
+      const s=bar(m.src), x1=xOf(sendT(m)), y1=yOf(s.agent);
+      const x2=xOf(m.arr), y2=yOf(m.to);
+      const broke=bad.has(m.name);
+      const col=broke?C.orange:C.teal;
+      const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy)||1;
+      g.appendChild(el('line',{x1,y1,x2:x2-dx/L*5,y2:y2-dy/L*5,stroke:col,
+        'stroke-width':broke?3.2:2,'marker-end':broke?'url(#ahO)':'url(#ahT)'}));
+      tag(g,x1+dx/L*34,y1+dy/L*34,m.out,col,15);
+      tag(g,x2-22,y2+(m.to==='Y'?28:-26),m.inb,col,15);
+      tag(g,x1+dx*m.lp+18,y1+dy*m.lp,m.name,col,13.5);
+    }
+
+    for(const b of BARS){
+      const xa=xOf(b.t0), xb=xOf(b.t0+b.dur), y=yOf(b.agent);
+      if(b.inbox) tag(g,(xa+xb)/2,y+(b.agent==='X'?-30:34),b.inbox,C.muted,12.5);
+      g.appendChild(el('rect',{x:xa,y:y-BAR/2,width:xb-xa,height:BAR,rx:5,
+        fill:C.ink, stroke:b.move?C.orange:'none','stroke-width':b.move?2.5:0,
+        style:b.move?'cursor:ew-resize':''}));
+      g.appendChild(el('text',{x:(xa+xb)/2,y:y+1,'font-size':16,'font-weight':700,
+        fill:'#fff','text-anchor':'middle','dominant-baseline':'middle',
+        'font-family':'ui-monospace,Menlo,Consolas,monospace',
+        style:'pointer-events:none'},b.id));
+    }
+
+    g.appendChild(el('line',{x1:X0,y1:440,x2:X0+180,y2:440,stroke:C.muted,
+      'stroke-width':2,'marker-end':'url(#ah)'}));
+    g.appendChild(el('text',{x:X0+192,y:440,'font-size':15,fill:C.muted,
+      'dominant-baseline':'middle'},'time'));
+
+    facts();
+  }
+
+  // Events whose intervals overlap are not ordered by the diagram, so they are
+  // reported together in braces. Merging overlapping intervals rather than
+  // comparing start times keeps the grouping well defined for any number of
+  // events.
+  function partialOrder(){
+    const ord=[...BARS].sort((p,q)=>p.t0-q.t0);
+    const groups=[]; let cur=[ord[0]], end=ord[0].t0+ord[0].dur;
+    for(let i=1;i<ord.length;i++){
+      const b=ord[i];
+      if(b.t0 < end-1e-9){ cur.push(b); end=Math.max(end,b.t0+b.dur); }
+      else { groups.push(cur); cur=[b]; end=b.t0+b.dur; }
+    }
+    groups.push(cur);
+    return groups.map(gp=>gp.length===1 ? gp[0].id
+      : '{'+gp.map(b=>b.id).sort().join(',')+'}');
+  }
+
+  function facts(){
+    const seq=a=>BARS.filter(b=>b.agent===a).sort((p,q)=>p.t0-q.t0)
+                     .map(b=>b.id).join(', ');
+    document.getElementById('seqx').innerHTML=
+      '<span class="fixed">'+seq('X')+'</span> &nbsp;— unchanged';
+    document.getElementById('seqy').innerHTML=
+      '<span class="fixed">'+seq('Y')+'</span> &nbsp;— unchanged';
+    document.getElementById('seqg').innerHTML=
+      '<span class="moved">[ '+partialOrder().join(', ')+' ]</span>';
+    const v=violations();
+    document.getElementById('valid').innerHTML = v.length
+      ? '<span class="bad">✗ '+v[0]+'</span>'
+      : '<span class="ok">✓ every arrow points forward — this is a computation</span>';
+  }
+
+  // ── dragging ───────────────────────────────────────────────────────
+  let held=null;
+  const evT=e=>{const r=svg.getBoundingClientRect();
+    return tOf((e.clientX-r.left)/r.width*1240);};
+  const evY=e=>{const r=svg.getBoundingClientRect();
+    return (e.clientY-r.top)/r.height*470;};
+  svg.addEventListener('pointerdown',e=>{
+    const t=evT(e), y=evY(e);
+    held=BARS.find(b=>b.move && Math.abs(y-yOf(b.agent))<26 &&
+                      t>b.t0-3 && t<b.t0+b.dur+3);
+    if(held){ held.grab=t-held.t0; svg.setPointerCapture(e.pointerId); }
+  });
+  svg.addEventListener('pointermove',e=>{
+    if(!held) return;
+    const [lo,hi]=RANGE[held.id];
+    held.t0=Math.max(lo,Math.min(hi,evT(e)-held.grab));
+    draw();
+  });
+  const drop=()=>{held=null;};
+  svg.addEventListener('pointerup',drop);
+  svg.addEventListener('pointercancel',drop);
+
+  // ── the animated slide ─────────────────────────────────────────────
+  const SWAP={'2':34, '3':22};
+  let anim=null, swapped=false;
+  function glide(targets,ms){
+    if(anim) cancelAnimationFrame(anim);
+    const from={'2':bar('2').t0, '3':bar('3').t0}, t0=performance.now();
+    (function step(now){
+      const k=Math.min(1,(now-t0)/ms);
+      const e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+      for(const id of ['2','3']) bar(id).t0=from[id]+(targets[id]-from[id])*e;
+      draw();
+      if(k<1) anim=requestAnimationFrame(step);
+    })(t0);
+  }
+  const slideBtn=document.getElementById('slide');
+  slideBtn.onclick=()=>{
+    swapped=!swapped;
+    glide(swapped?SWAP:BASE,1600);
+    slideBtn.textContent=swapped?'Slide them back':'Slide 2 and 3 past each other';
+  };
+  document.getElementById('reset').onclick=()=>{
+    if(anim) cancelAnimationFrame(anim);
+    swapped=false; slideBtn.textContent='Slide 2 and 3 past each other';
+    bar('2').t0=BASE['2']; bar('3').t0=BASE['3']; draw();
+  };
+
+  draw();
+})();
+</script>
+</body>
+</html>
