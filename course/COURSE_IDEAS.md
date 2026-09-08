@@ -28,11 +28,11 @@ Any sequence whose projections are computations are computations
 Computation is a DAG, Any DAG is a computation.
 Cuts in an instant of time
 
-January 14: Global Snapshot
+January 14: Logical clocks. Termination detection. Deadlock.
 
 Homework 1 due
 Homework 2: Global snapshot
-Homework 2: Build: Design a skill.
+Homework 2: Identify an app
 
 Consistent cuts
 The global snapshot problem.
@@ -41,14 +41,14 @@ What the global snapshot provides about reachable states.
 
 -------------------------------------------------------
 
-January 19: Termination Detection, Deadlock detection
-
-January 21: Logical Clocks
-
--------------------------------------------------------
-Skills, shared-memory. Roman's problems
+January 19: Skills. OpenRouter. Debate. Shared memory.
 
 January 21: What Agent's know
+
+-------------------------------------------------------
+
+
+January 21: 
 
 January 26: The Paxos algorithm
 
