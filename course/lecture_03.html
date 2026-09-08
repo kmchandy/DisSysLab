@@ -73,12 +73,91 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="kicker">DisSysLab &middot; Lecture 2</div>
+    <div class="kicker">DisSysLab &middot; Class 3</div>
     <h1>Computations</h1>
-    <p class="lead">A computation drawn as a picture: what each agent is doing
-      at each moment, which message went where, what the state is at a given
-      time, which events could have been reordered, and which events could
-      possibly have heard of which others.</p>
+    <p class="lead">
+      Review:
+      A computation is a sequence of actions.
+      An action is an agent action or an outbox action or a channel action.
+    </p>
+    <h2>
+      Timeline Diagrams
+    </h2>
+    <p>
+      A <strong>timeline diagram</strong> is a pictorial representation 
+      of system behavior as it evolves over time.
+      We don't use time in reasoning about system behavior; the timeline
+      diagram is merely a way to visualize behavior
+    </p>
+
+    <h3>
+      Agent timelines
+    </h3>
+    <p>
+      Time flows from left to right in the diagram. For each agent,
+      the diagram has a horizontal line that shows the behavior of that agent
+      over time. We call the line for agent X the X-timeline.
+      The diagram below shows a timeline diagram with two agents X and Y.
+    </p>
+    <p>
+      A <b>thin line</b> depicts an agent waiting to receive a message.
+      A thick line or <b>bar</b> shows an active agent - this is an agent that
+      has got a message from an inbox for which it was waiting, and the bar
+      represents the agent processing the message.
+      The bar is labeled with inbox from which the agent got the message.
+      In the diagram, t earliest action by agent X is one in which it receives a message
+      on inbox R. So the first (i.e., leftmost) bar on X's horizontal line is
+      labeled R.
+    </p>
+
+    <figure class="fig wideout">
+      <svg id="c1_tl" viewBox="0 0 1240 470" role="img"
+           aria-label="Computation diagram for two agents X and Y"></svg>
+  
+      <div class="ctrls">
+        <button id="c1_play" class="primary">Play</button>
+        <button id="c1_step">Step</button>
+        <button id="c1_reset">Reset</button>
+        <input id="c1_scrub" type="range" min="0" max="100" step="0.25" value="100">
+        <span class="status" id="c1_status"></span>
+      </div>
+  
+      <div class="legend">
+        <span><i>▬</i> bar = active, labelled with the inbox it took from</span>
+        <span><i>╱</i> message line, tagged outbox → inbox</span>
+        <span><i>│</i> thin line = waiting</span>
+      </div>
+  
+      <figcaption>
+        <b>Figure. One computation of a two-agent office.</b>
+        X has inboxes <code>R</code>, <code>S</code> and outboxes <code>A</code>,
+        <code>B</code>; Y has inboxes <code>U</code>, <code>V</code> and outboxes
+        <code>P</code>, <code>Q</code>. Y waits on <code>U</code> throughout.
+        Watch the first message: it is put on outbox <code>A</code>, it arrives in
+        inbox <code>V</code> — and nothing happens. Y is not waiting on
+        <code>V</code>, so the message stays there for the rest of the diagram.
+        The second message arrives in <code>U</code>, and even then Y does not
+        start at once: the gap between the arrowhead and the start of the bar is
+        the difference between <b>delivered</b> and <b>received</b>.
+        Y's one bar is labelled <code>U</code>, so you can tell which of the two
+        messages it took.
+      </figcaption>
+    </figure>
+
+    <h3>
+      Message timelines
+    </h3>
+    <p>
+      A message placed on an outbox by an agent X at a point in time t 
+      and which arrives at an inbox of an agent Y at a time t' is 
+      represented by an arrow that starts at the X-timeline at t 
+      and ends at the Y-timeline at t'. 
+      The starting point of the arrow is labeled with the outbox 
+      in which the message was placed.
+      The ending point is labeled with the destination inbox.
+      In the diagram, the first message sent by agent X is put in outbox 
+      A and is delivered to inbox V of agent Y.
+    </p>
     <div class="meta">
       <span><b>Five figures</b> all of one computation</span>
       <span><b>Press P</b> to present</span>
@@ -86,45 +165,13 @@
   </header>
 
 <h2>A computation diagram</h2>
-  <p>Two agents. Time runs left to right. A <b>thin line</b> is an agent waiting.
+  <p>Two agents. Time runs left to right. 
      A <b>bar</b> is an agent active — it has taken one message from one inbox and
      is processing it, and the bar is labelled with that inbox. A <b>message line</b>
      leaves the sender's line tagged with the outbox it was put on, and arrives at
      the receiver's line tagged with the inbox it arrives in.</p>
 
-  <figure class="fig wideout">
-    <svg id="c1_tl" viewBox="0 0 1240 470" role="img"
-         aria-label="Computation diagram for two agents X and Y"></svg>
 
-    <div class="ctrls">
-      <button id="c1_play" class="primary">Play</button>
-      <button id="c1_step">Step</button>
-      <button id="c1_reset">Reset</button>
-      <input id="c1_scrub" type="range" min="0" max="100" step="0.25" value="100">
-      <span class="status" id="c1_status"></span>
-    </div>
-
-    <div class="legend">
-      <span><i>▬</i> bar = active, labelled with the inbox it took from</span>
-      <span><i>╱</i> message line, tagged outbox → inbox</span>
-      <span><i>│</i> thin line = waiting</span>
-    </div>
-
-    <figcaption>
-      <b>Figure. One computation of a two-agent office.</b>
-      X has inboxes <code>R</code>, <code>S</code> and outboxes <code>A</code>,
-      <code>B</code>; Y has inboxes <code>U</code>, <code>V</code> and outboxes
-      <code>P</code>, <code>Q</code>. Y waits on <code>U</code> throughout.
-      Watch the first message: it is put on outbox <code>A</code>, it arrives in
-      inbox <code>V</code> — and nothing happens. Y is not waiting on
-      <code>V</code>, so the message stays there for the rest of the diagram.
-      The second message arrives in <code>U</code>, and even then Y does not
-      start at once: the gap between the arrowhead and the start of the bar is
-      the difference between <b>delivered</b> and <b>received</b>.
-      Y's one bar is labelled <code>U</code>, so you can tell which of the two
-      messages it took.
-    </figcaption>
-  </figure>
 
 <h2>The state at time <i>t</i></h2>
   <p>The same computation, finished. A vertical line at time <i>t</i> cuts it.
