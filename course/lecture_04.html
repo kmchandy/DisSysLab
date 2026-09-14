@@ -127,9 +127,26 @@ resources) when the checkpoint algorithm runs.
     </figcaption>
   </figure>
 
+<h3>OS Managers</h3>
+<p>
+We will use operating systems agents that are not associated with any
+specific client.
+In many distributed OS algorithms we assume an OS systems-manager agent or a
+set of such agents that manage the entire client systems.
+OS messages are exchanged between the OS systems-manager and the OS agents responsible
+for each client.
+</p>
 
+<p>
+In the global snapshot algorithm, the OS systems-manager sends messages to each of the OS client-managers
+to take local snapshots of their agents if they haven't already done so.
+We call these messages <b>markers</b>.
+When a client-manager completes taking its local snapshot it send its local
+snapshot information to the systems manager.
+The systems manager then collates information from each client manager to form a global
+snapshot.
 
-<h2>A snapshot at one instant</h2>
+<h2>A global snapshot at an instant in time</h2>
   <p>
     <i>Prose to come.</i> We want a picture of the whole system at once: the
     state of every agent, and every message on its way from one agent to
@@ -472,7 +489,7 @@ recent checkpoint (a global snapshot) and continue execution from there.
   then it continues to hold thereafter. Examples of stable properties are
   that the system has terminated, or that a set of agents is deadlocked.
   Let P be a stable property. A problem is to develop an
-  algorithm that detect whether P holds.
+  algorithm that detects whether P holds.
 </p>
 
 <ol>
@@ -498,11 +515,11 @@ recent checkpoint (a global snapshot) and continue execution from there.
 <p>
 Assume that each agent takes its local snapshot (i.e. records its
 own state) at some point in a computation.
-The points of local snapshot correspond to a global snapshot exactly 
+The points of local snapshots correspond to a global snapshot exactly 
 when for every connection from outbox b of agent X to inbox b' of agent
 X':
 <strong>the number of messages received by X' from inbox b' is less than
-or equal to the number of messages sent through outbox b by agent X.
+or equal to the number of messages placed in outbox b by agent X.
 </strong>
 </p>
 
@@ -557,19 +574,21 @@ is sent before it is received are system computations.
   Let agent computations be recorded during a system computation C.
   Define all events at an agent before the agent takes its local snapshot
   as <strong>past</strong> events, and the other events at that agent as
-  <strong>future</strong> events
+  <strong>future</strong> events.
 Construct an interleaving C' of agent computations as follows:
 In C', the relative ordering of past events is the
 same as in C, and the relative ordering of future events
 is also the same as in C, but past events appear before future ones.
 The interleaving C' satisfies the conditions of the theorem:
 each message is sent before it is received.
+</p>
 
 
 <h2>States of channels in global snapshots</h2>
 <p>
 The global snapshot theorem says that the points of local snapshots
-exactly when no message sent in the future is received in the past.
+correspond to a global snapshot exactly when no message sent in the future
+is received in the past.
 (Equivalently, all messages received in the past are sent in the past.
 And all messages sent in the future are received in the future.)
 </p>
@@ -579,19 +598,19 @@ And all messages sent in the future are received in the future.)
   been placed in an outbox and not yet removed from the inbox to which the
   outbox is connected. A message in transit may be in an outbox, or in the
   channel connecting the outbox to an inbox, or in an inbox. Define
-  messsages in transit in a snapshot as messages sent, and not received, in
+  messages in transit in a snapshot as messages sent, and not received, in
   the past.
 </p>
 
 <p>
-  In the example, x1, y1, y2, z1, z2, z3 are past events and the other
-  events are future events.
-  The message sent at z1 and received at x2 is a message in the snapshot
+  In the example (Figure 10), x1, y1, y2, z1, z2, z3 are past events and the
+  other events are future events.
+  The message sent at z1 and received at x2 is in transit in the snapshot
   because it is sent in the past and not received in the past.
-  Likewise, the message sent in z2 and received in x3 is also in the snapshot.
-  By contrast, the message sent at y2 and received at z3 is not in the
-  snapshot because it is sent and received in the past.
-  Likewise, the message from y3 to x4 is not in the snapshot because it
+  Likewise, the message sent at z2 and received at x3 is in transit.
+  By contrast, the message sent at y2 and received at z3 is not in transit
+  because it is sent and received in the past.
+  Likewise, the message from y3 to x4 is not in transit because it
   is sent and received in the future.
 </p>
 
@@ -636,6 +655,21 @@ And all messages sent in the future are received in the future.)
 
 <h2>The global snapshot algorithm</h2>
 
+<h3>What the algorithm assumes</h3>
+<p>
+  Outboxes, channels connecting outboxes to inboxes, and inboxes are queues.
+  So messages placed in an outbox arrive in the inbox it is connected to 
+  in the same sequence. 
+</p>
+
+<p>
+  <i>Draft &mdash; please edit.</i>
+  We assume too that every agent can be reached, by some path of
+  connections, from the agent that starts the algorithm. Otherwise an agent
+  is never sent a marker, never takes its local snapshot, and there is no
+  global snapshot to speak of.
+</p>
+
 <h3>When agents take local snapshots</h3>
 <ol>
   <li>
@@ -650,10 +684,60 @@ And all messages sent in the future are received in the future.)
   </li>
 </ol>
 
+<h3>What the agents record</h3>
+<p>
+  <i>Draft &mdash; please edit.</i>
+  The two rules above say <b>when</b> each agent takes its local snapshot.
+  They do not yet say how the messages in transit get recorded, and those are
+  half of the state. Two more rules do it.
+</p>
+<ol>
+  <li>
+    When an agent takes its local snapshot it records its own state, and from
+    that moment it also records, for each of its inboxes, every message it
+    removes from that inbox.
+  </li>
+  <li>
+    When an agent receives the marker on one of its inboxes it stops
+    recording for that inbox. What it recorded there is the state of that
+    connection: the messages that were in transit on it.
+  </li>
+</ol>
+<p>
+  <i>Draft &mdash; please edit.</i>
+  So an agent's part of the snapshot is its own recorded state together with
+  one recorded sequence per inbox, and it is finished when it has received a
+  marker on every inbox. The snapshot is finished when every agent is.
+  Note that this records exactly the messages the previous section described:
+  a message counted here was placed in its outbox before the sender recorded
+  (or the marker would have gone first) and removed from its inbox after the
+  receiver recorded &mdash; sent in the past and received in the future.
+</p>
+
 <h3>Correctness of the snapshot algorithm</h3>
 <p>
-  Message sent in the future (i.e. after a marker is sent on a channel) are not
-  received in the past (i.e. before the marker is received on the channel).
+  We show that messages sent in the future (i.e. after a marker is sent on a channel) are
+  not received in the past (i.e. before the marker is received on the channel).
+</p>
+
+<p>
+  Consider any connection from
+  an outbox b of an agent X to an inbox b' of an agent Y.
+  Let m be a message that X places in outbox b in the future &mdash; 
+  that is, after X has taken its local snapshot.
+  By the first rule X put a marker in outbox b when it records its own state;
+  so the marker is placed in the oubox before m is. 
+  Because the connection delivers messages in order, Y
+  receives the marker before it receives m. By the second rule Y takes its
+  local snapshot when the marker arrives. So Y records its state
+  before m arrives. Hence m is received in the future.
+</p>
+
+<p>
+  <i>Draft &mdash; please edit.</i>
+  Because all messages sent in the future are received in the future,
+  the Global Snapshot Theorem tells us that the set of agent and channel
+  snapshots is a global snapshot.
 </p>
 
 </div>
