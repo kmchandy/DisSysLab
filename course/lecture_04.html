@@ -98,6 +98,35 @@ resources) when the checkpoint algorithm runs.
   Client agents never receive or send OS messages.
 </p>
 
+  <figure class="fig wideout">
+    <svg id="os_g" viewBox="0 0 1240 500" role="img"
+         aria-label="An OS agent surrounding each client agent; OS messages are trapped at the boundary while client messages pass through"></svg>
+
+    <div class="ctrls">
+      <button id="os_send" class="primary">Send one of each</button>
+      <button id="os_reset">Reset</button>
+      <span class="status" id="os_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 1. An OS agent around every client agent.</b>
+      <i>Prose to come.</i> Every client agent sits inside an OS agent, and
+      everything the client sends leaves through it. The channel between two
+      OS agents carries both kinds of message — the client's own, and the
+      ones the OS sends on the client's behalf.
+      Press the button and watch what happens when they arrive. The
+      <span style="color:#3a6ea8"><b>client message</b></span> is passed
+      straight on to the client inside. The
+      <span style="color:#d13d0e"><b>OS message</b></span> is trapped at the
+      boundary and goes no further: the client never sees it, and never sends
+      one either.
+      That is what lets an OS algorithm — taking checkpoints, or a global
+      snapshot — run without changing the client's execution at all. The
+      client's algorithm sends and receives exactly the messages it would have
+      sent and received on its own.
+    </figcaption>
+  </figure>
+
 
 
 <h2>A snapshot at one instant</h2>
@@ -122,7 +151,7 @@ resources) when the checkpoint algorithm runs.
     </div>
 
     <figcaption>
-      <b>Figure 1. A snapshot at one instant.</b>
+      <b>Figure 2. A snapshot at one instant.</b>
       <i>Prose to come.</i> Three agents, and one message in each direction
       between every pair. The pale line sweeping left to right is ordinary
       time. All three agents record at <code>t = 50</code>, so the snapshot is
@@ -158,7 +187,7 @@ resources) when the checkpoint algorithm runs.
     </div>
 
     <figcaption>
-      <b>Figure 2. Each agent on its own.</b>
+      <b>Figure 3. Each agent on its own.</b>
       <i>Prose to come.</i> Y records first, between its first and second
       events. X does not record until much later, between its third and
       fourth. Z is last. The first vertical line marks where the global
@@ -198,7 +227,7 @@ resources) when the checkpoint algorithm runs.
     </div>
 
     <figcaption>
-      <b>Figure 3. What the snapshot claims.</b>
+      <b>Figure 4. What the snapshot claims.</b>
       <i>Prose to come.</i> This starts as figure 2, unchanged, and stays
       that way. Press the button and a <span style="color:#00947d"><b>ghost</b></span>
       of each record circle lifts off and slides until the three line up —
@@ -238,7 +267,7 @@ resources) when the checkpoint algorithm runs.
     </div>
 
     <figcaption>
-      <b>Figure 4. A snapshot the system could have been in.</b>
+      <b>Figure 5. A snapshot the system could have been in.</b>
       <i>Prose to come.</i> The same computation, the same three agents, and
       the only change is <i>when</i> each one records. X records first, so the
       <i>starts</i> line is X's own moment; Y records between its second and
@@ -283,7 +312,7 @@ resources) when the checkpoint algorithm runs.
     </div>
 
     <figcaption>
-      <b>Figure 5. The channels hold what crosses the cut.</b>
+      <b>Figure 6. The channels hold what crosses the cut.</b>
       <i>Prose to come.</i> Look first at the stretch of the dashed red line
       between X's record and Y's. Two messages cross it, and each crossing is
       marked: <code>1&rarr;3</code> and <code>1&rarr;4</code>. Both were sent
@@ -337,7 +366,7 @@ resources) when the checkpoint algorithm runs.
     </div>
 
     <figcaption>
-      <b>Figure 6. Three states, and the messages in flight at each.</b>
+      <b>Figure 7. Three states, and the messages in flight at each.</b>
       <i>Prose to come.</i> Press <i>Align the records</i> first: the three
       records slide onto one line, as before. That line is where
       S_snap sits.
@@ -394,7 +423,7 @@ resources) when the checkpoint algorithm runs.
     </div>
 
     <figcaption>
-      <b>Figure 7. The snapshot's computation.</b>
+      <b>Figure 8. The snapshot's computation.</b>
       <i>Prose to come.</i> The two grey lines are fixed: the algorithm starts
       at the first record and finishes at the last. <i>Align the records</i>
       brings the three local snapshots onto one line, as before.
@@ -464,6 +493,18 @@ recent checkpoint (a global snapshot) and continue execution from there.
   in the snapshot.
 </p>
 
+
+<h2>The Global Snapshot Theorem</h2>
+Assume that each agent takes its local snapshot (i.e. records its
+own state) at some point in a computation.
+The points of local snapshot correspond to a global snapshot exactly 
+when for every connection from outbox b of agent X to inbox b' of agent
+X':
+<strong>the number of messages received by X' from inbox b' is less than
+or equal to the number of messages placed in outbox b by agent X.
+</strong>
+
+
 <h2>The Global Snapshot: past and future events</h2>
 <p>
 Assume that each agent takes its local snapshot (i.e. records its
@@ -509,7 +550,7 @@ Or, all messages sent in the future are received in the future.)
     </div>
 
     <figcaption>
-      <b>Figure 8. Past and future.</b>
+      <b>Figure 9. Past and future.</b>
       <i>Prose to come.</i> The line joining the three local snapshots divides
       the picture in two. Everything to its left is the <b>past</b> — the
       events each agent had already performed when it recorded — and
@@ -529,6 +570,28 @@ Or, all messages sent in the future are received in the future.)
       the receiver recorded taking and the sender recorded never sending.
     </figcaption>
   </figure>
+
+
+<h2>The global snapshot algorithm</h2>
+
+<h3>When agents take local snapshots</h3>
+<ol>
+  <li>
+    When an agent takes its local snapshot (i.e. records its own state)
+    the agent puts a special message that we call a <b>marker</b> on each of
+    its outboxes.
+  </li>
+  <li>
+    When an agent receives a marker from any inbox it takes its local
+    snapshot if it hasn't already done so. Note that by the previous rule
+    it puts markers on its outboxes when it takes its local snapshot.
+  </li>
+</ol>
+
+<h3>Messages in a snapshot</h3>
+<p>
+  The sequence of messages between an outbox
+</p>
 
 </div>
 
@@ -2035,6 +2098,130 @@ Or, all messages sent in the future are received in the future.)
 })();
 </script>
 
+<script>
+(function(){
+  const PFX='os_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g');
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           os:'#d13d0e', client:'#3a6ea8'};
+  const MID=250, OSR=150, CLR=74;
+  const LOS=330, ROS=910;                    // centres of the two OS agents
+  const A=LOS+CLR, B=LOS+OSR, D=ROS-OSR, F=ROS-CLR;   // 404, 480, 760, 836
+
+  let p=0, anim=null;                        // 0 = nothing sent, 1 = arrived
+  const xC=function(){return A+(F-A)*p;};             // the client message
+  const xO=function(){return Math.min(A+(F-A)*p, D);};// the OS message
+  const trapped=function(){return xO()>=D-0.5;};
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function txt(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':size||16, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle'}, str));
+  }
+  function leader(g,x1,y1,x2,y2,col){
+    g.appendChild(el('line',{x1:x1, y1:y1, x2:x2, y2:y2, stroke:col,
+      'stroke-width':1.6, 'stroke-dasharray':'4 4',
+      'marker-end':'url(#'+PFX+'tip)'}));
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    [['ac',C.client],['ak',C.ink],['ao',C.os]].forEach(function(q){
+      const m=el('marker',{id:PFX+q[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:6, markerHeight:6, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:q[1]}));
+      defs.appendChild(m);
+    });
+    const t=el('marker',{id:PFX+'tip', viewBox:'0 0 10 10', refX:9, refY:5,
+      markerWidth:5, markerHeight:5, orient:'auto-start-reverse'});
+    t.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:C.muted}));
+    defs.appendChild(t);
+    svg.appendChild(defs);
+    const g=el('g',{});
+    svg.appendChild(g);
+
+    // the two OS agents, each wrapped round a client agent
+    [LOS,ROS].forEach(function(cx){
+      g.appendChild(el('circle',{cx:cx, cy:MID, r:OSR, fill:'#fff',
+        stroke:C.os, 'stroke-width':3}));
+      g.appendChild(el('circle',{cx:cx, cy:MID, r:CLR, fill:'#fff',
+        stroke:C.client, 'stroke-width':3}));
+      txt(g,cx, MID+6, 'client', C.ink, 20);
+      txt(g,cx, 470, 'OS', C.os, 20);
+      leader(g,cx, 452, cx, MID+OSR+8, C.os);
+    });
+
+    // out of the client, across the channel, and into the other client
+    g.appendChild(el('line',{x1:A+4, y1:MID, x2:B-10, y2:MID,
+      stroke:C.client, 'stroke-width':16, 'marker-end':'url(#'+PFX+'ac)'}));
+    g.appendChild(el('line',{x1:B, y1:MID, x2:D-8, y2:MID,
+      stroke:C.ink, 'stroke-width':18, 'marker-end':'url(#'+PFX+'ak)'}));
+    g.appendChild(el('line',{x1:D+6, y1:MID, x2:F-10, y2:MID,
+      stroke:C.client, 'stroke-width':16, 'marker-end':'url(#'+PFX+'ac)'}));
+
+    // the annotations, as on the blackboard
+    txt(g,236, 150, 'Client messages', C.ink, 17);
+    leader(g,262, 162, A+34, MID-16, C.client);
+
+    txt(g,612, 52,  'OS messages trapped by OS', C.ink, 17);
+    txt(g,612, 76,  'OS messages invisible to clients', C.ink, 17);
+    leader(g,660, 90, D-6, MID-16, C.os);
+
+    txt(g,1010, 118, 'Client messages passed', C.ink, 17);
+    txt(g,1010, 142, 'on to clients', C.ink, 17);
+    leader(g,980, 154, F-30, MID-16, C.client);
+
+    txt(g,620, 392, 'OS and client messages', C.ink, 17);
+    leader(g,620, 374, 620, MID+16, C.ink);
+
+    // what is in flight
+    if(p>0.001){
+      g.appendChild(el('circle',{cx:xC(), cy:MID-9, r:9,
+        fill:C.client, stroke:'#fff', 'stroke-width':2}));
+      g.appendChild(el('circle',{cx:xO(), cy:MID+9, r:9,
+        fill:C.os, stroke:'#fff', 'stroke-width':2}));
+      if(trapped()){
+        const r=13;
+        g.appendChild(el('line',{x1:D-r, y1:MID+9-r, x2:D+r, y2:MID+9+r,
+          stroke:C.os, 'stroke-width':3}));
+        g.appendChild(el('line',{x1:D+r, y1:MID+9-r, x2:D-r, y2:MID+9+r,
+          stroke:C.os, 'stroke-width':3}));
+      }
+    }
+
+    $('status').innerHTML = p<0.001 ? ''
+      : (p>=0.999
+         ? '<b>client message</b> delivered &middot; '+
+           '<b style="color:'+C.os+'">OS message</b> trapped at the boundary'
+         : 'in the channel &hellip;');
+  }
+
+  function play(){
+    if(anim) cancelAnimationFrame(anim);
+    p=0;
+    const t0=performance.now(), dur=2600;
+    (function step(t){
+      const q=Math.min(1,(t-t0)/dur);
+      p=q; draw();
+      if(q<1) anim=requestAnimationFrame(step); else { p=1; draw(); }
+    })(t0);
+  }
+  $('send').onclick=play;
+  $('reset').onclick=function(){
+    if(anim) cancelAnimationFrame(anim); p=0; draw(); };
+  draw();
+})();
+</script>
+
 <style>
   .pslide{display:contents}
   .presentbar{position:fixed; right:16px; bottom:14px; z-index:60;
@@ -2137,25 +2324,6 @@ Or, all messages sent in the future are received in the future.)
   show();
 })();
 </script>
-
-<h2>The global snapshot algorithm</h2>
-
-<h3>When agents take local snapshots</h3>
-<ol>
-  <li>
-    When an agent takes its local snapshot (i.e. records its own state)
-    the agent puts a special message that we call a <b>marker</b> on each of
-    its outboxes.
-  </li>
-  <li>
-    When an agent receives a marker from any inbox it takes its local
-    snapshot if it hasn't already done so. Note that by the previous rule
-    it puts markers on its outboxes when it takes its local snapshot.
-  </li>
-</ol>
-
-<h3>Messages in a snapshot</h3>
-The sequence of messages between an outbox
 
 </body>
 </html>
