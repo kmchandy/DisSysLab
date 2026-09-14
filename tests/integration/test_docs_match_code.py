@@ -39,6 +39,16 @@ subcommands   A1 (skill mandates a command absent from the release)
 catalogue     A2 / B5 (catalogue lists offices the wheel does not ship)
 ============  =========================================================
 
+The catalogue used to live in ``START_HERE.md`` under the course
+folder -- written that way here because a live path in this file is a
+path this file's own check will follow. The course
+became a set of HTML pages on 2026-09-08 and that file went with it,
+which broke this suite for six days -- the failure these checks are
+*for*, landing on the checks themselves. The catalogue is now
+``dissyslab/gallery/README.md``, which is the better home anyway: it
+sits next to the offices it lists, so a new office and its entry are
+one directory apart.
+
 On failure, prefer fixing the *document*. These tests encode "the
 prose is a promise to a first-year", not "the code is right".
 """
@@ -53,7 +63,7 @@ import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 SOURCES_DOC = REPO_ROOT / "docs" / "SOURCES_AND_SINKS.md"
-START_HERE = REPO_ROOT / "course" / "START_HERE.md"
+CATALOGUE = REPO_ROOT / "dissyslab" / "gallery" / "README.md"
 CLI_PY = REPO_ROOT / "dissyslab" / "cli.py"
 
 
@@ -327,7 +337,7 @@ def test_documented_dsl_subcommands_exist():
 
 
 # ---------------------------------------------------------------------------
-# 3. Every office in START_HERE's catalogue must actually ship
+# 3. Every office the catalogue advertises must actually ship
 # ---------------------------------------------------------------------------
 #
 # Issues A2 and B5. START_HERE catalogued 38 examples; the 1.6.1 wheel
@@ -341,29 +351,21 @@ def test_documented_dsl_subcommands_exist():
 
 
 def _catalogue_names() -> set[str]:
-    """Office names from START_HERE's catalogue section.
+    """Office names the gallery README advertises.
 
-    Scoped to section 5 so that `office.md`, `dsl run` and similar
-    backticked tokens elsewhere in the document are not mistaken for
-    office names.
+    An entry is a *link into the office's own directory* --
+    ``[returns_desk](apps/returns_desk/)`` -- and nothing else counts.
+    That rule needs no section boundary to keep it honest, which the
+    backtick rule it replaces did: a backtick around `backyard_birds`
+    is an entry, but the `birdnetlib` in its description is a PyPI
+    package, and only position told them apart. A link to
+    ``apps/<name>/`` cannot be anything but a pointer at that office.
     """
-    text = START_HERE.read_text(encoding="utf-8")
-    m = re.search(r"^## 5\.[^\n]*\n(.*?)(?=^## )", text, re.M | re.S)
-    assert m, "could not find section 5 (the catalogue) in START_HERE.md"
-    body = m.group(1)
-
-    # Only *entry positions* count, not every backtick in the section.
-    # The catalogue writes an entry as a name at the start of a line, or
-    # after a middot when several share one description, or bolded in
-    # the first cell of the teaching-shapes table. Anything else is
-    # commentary -- and commentary names real things that are not
-    # offices: `backyard_birds` is an entry, the `birdnetlib` in its
-    # description is a PyPI package.
-    names: set[str] = set()
-    names |= set(re.findall(r"^\*{0,2}`([a-z][a-z0-9_]+)`", body, re.M))
-    names |= set(re.findall(r"·\s*\*{0,2}`([a-z][a-z0-9_]+)`", body))
-    names |= set(re.findall(r"^\|\s*\*{0,2}`([a-z][a-z0-9_]+)`", body, re.M))
-    return names
+    text = CATALOGUE.read_text(encoding="utf-8")
+    return {
+        m.group(1)
+        for m in re.finditer(r"\]\((?:apps|examples)/([a-z][a-z0-9_]+)/", text)
+    }
 
 
 def _shipped_offices() -> set[str]:
@@ -376,7 +378,7 @@ def _shipped_offices() -> set[str]:
     all. `dissyslab/cli.py`'s `_find_packaged_office` accepts both, so
     a rule here that accepts only one is narrower than the thing it is
     checking, and would report the app as uncatalogued the moment
-    anyone added it to START_HERE.
+    anyone added it to the catalogue.
     """
     import dissyslab.gallery as gallery
     root = Path(gallery.__file__).parent
@@ -391,14 +393,14 @@ def _shipped_offices() -> set[str]:
     return names
 
 
-def test_start_here_catalogue_matches_the_gallery():
+def test_catalogue_matches_the_gallery():
     catalogued = _catalogue_names()
     shipped = _shipped_offices()
     assert shipped, "found no shipped offices — is dissyslab importable?"
 
     missing = sorted(catalogued - shipped)
     assert not missing, (
-        f"START_HERE.md catalogues offices that are not installed: "
+        f"the gallery README catalogues offices that are not installed: "
         f"{missing}.\n"
         f"Installed: {sorted(shipped)}.\n"
         f"If you are running against an editable install this means the "
@@ -590,7 +592,7 @@ MODULES_WITHOUT_DOCS: dict[str, str] = {
         "one question with one answer -- which DisSysLab skills are on "
         "this machine. Its own docstring carries the reasoning, and the "
         "part worth documenting is the *decision* not to ask the "
-        "assistant, which belongs in course/SETUP.md where the person "
+        "assistant, which belongs in course/setup.html where the person "
         "following the steps will read it"
     ),
 }
@@ -812,7 +814,7 @@ def test_every_document_referenced_from_source_exists():
     )
 
 
-def test_start_here_catalogue_is_not_silently_incomplete():
+def test_catalogue_is_not_silently_incomplete():
     """The reverse direction, as a floor rather than an equality.
 
     Not every shipped office has to be catalogued — some are deliberate
@@ -823,9 +825,13 @@ def test_start_here_catalogue_is_not_silently_incomplete():
     catalogued = _catalogue_names()
     shipped = _shipped_offices()
     uncatalogued = sorted(shipped - catalogued)
+    # The two that are meant to stay unlisted are `investment_club` and
+    # `trading_room`: validation fixtures for the generic `record`/`gate`
+    # and `select` roles, kept small on purpose and of no use to a
+    # student picking a project. Anything beyond those two is drift.
     assert len(uncatalogued) <= 4, (
-        f"{len(uncatalogued)} shipped offices are missing from "
-        f"START_HERE's catalogue: {uncatalogued}.\n"
+        f"{len(uncatalogued)} shipped offices are missing from the "
+        f"gallery README's catalogue: {uncatalogued}.\n"
         f"Add them, or raise this threshold deliberately with a note "
         f"about which ones are meant to stay unlisted."
     )
@@ -907,7 +913,7 @@ def test_retired_vocabulary_does_not_return():
 # 8. Link labels are plain text, never inline code
 # ---------------------------------------------------------------------------
 #
-# ``[`course/SETUP.md`](course/SETUP.md)`` renders as a link *and* a code span at
+# ``[`docs/WINDOWS.md`](docs/WINDOWS.md)`` renders as a link *and* a code span at
 # once. Several markdown viewers give a code span a dark background and a
 # link dark blue text, and the two together are unreadable -- reported from
 # the repository's own README, where the path was invisible while the same
@@ -933,8 +939,8 @@ def test_link_labels_are_not_inline_code():
     assert not offenders, (
         "Link labels wrapped in backticks (unreadable in some viewers):\n"
         + "\n".join(f"  {f}: {n}" for f, n in sorted(offenders.items()))
-        + "\n\nWrite [course/SETUP.md](course/SETUP.md), not "
-        "[`course/SETUP.md`](course/SETUP.md)."
+        + "\n\nWrite [docs/WINDOWS.md](docs/WINDOWS.md), not "
+        "[`docs/WINDOWS.md`](docs/WINDOWS.md)."
     )
 
 

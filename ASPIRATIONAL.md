@@ -314,10 +314,10 @@ worked example to start from:
 > *Listen to my garden recordings and tell me which birds are there.*
 > — needs a folder of recordings and a bird-call model
 
-[course/SETUP.md](course/SETUP.md) is this same path at more length,
-with what to do when a step misbehaves. **Students** begin at
-[course/START_HERE.md](course/START_HERE.md). **Contributors** begin
-at [CONTRIBUTING.md](CONTRIBUTING.md).
+[course/setup.html](course/setup.html) is this same path at more
+length, with what to do when a step misbehaves. **Students** begin at
+[course/index.html](course/index.html). **Contributors** begin at
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
@@ -334,8 +334,9 @@ at [CONTRIBUTING.md](CONTRIBUTING.md).
 | **Learning and argument** | an adaptive tutor, a structured debate |
 
 `dsl list` shows them once the library is installed, and
-[course/START_HERE.md](course/START_HERE.md) describes each one. Tell
-the assistant to start from the nearest one and change it.
+[dissyslab/gallery/README.md](dissyslab/gallery/README.md) describes
+each one. Tell the assistant to start from the nearest one and change
+it.
 
 Some offices use language models; others are pure Python and free to
 run. Where an agent uses a model you choose which, and agents in the

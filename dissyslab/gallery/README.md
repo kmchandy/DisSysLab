@@ -51,6 +51,9 @@ output in seconds.
 | [loudness_monitor](apps/loudness_monitor/) | Live mic or audio file → sliding-window RMS → threshold-crossing alert. | Pure signal processing, no LLM. Demonstrates streaming sense-respond. |
 | [backyard_birds](apps/backyard_birds/) | Audio clips (mic or files) → BirdNET classifier → bird species per clip with confidence scores. | Local ML model, no LLM. BirdNET runs in-process via a Python role. |
 | [wildlife_watcher](apps/wildlife_watcher/) | Image files (e.g. camera-trap photos) → ML classifier → species labels with confidence filtering. | Local image classifier, no LLM. A `confidence_filter` role drops low-confidence predictions. |
+| [adaptive_tutor](apps/adaptive_tutor/) | Practice drills that adapt: a planner picks the next problem and a checker marks the answer, with three subjects — fractions, multiplication facts, telling time — running side by side on one shared contract. | No LLM; every role is Python. Adding a subject is one new `generate_problem` function, not a change to the roles. |
+| [paper_trader](apps/paper_trader/) | Paper trading against real price history. Each run advances the book over every trading day it has not seen yet — sizing, filling and exiting positions — and prints a brief. Simulated fills only. | No LLM. The same local CSV prices as `mac_speed_suite`, and a durable book with commit and recovery. |
+| [salton_sea_dashboard](apps/salton_sea_dashboard/) | Live wind readings from NASA/JPL's Salton Sea buoys merged with H<sub>2</sub>S readings for four CARB sites into one snapshot, written out as a dashboard page. | No LLM — two sources joined into one record. The H<sub>2</sub>S readings are placeholders until that feed exists. |
 | [recovery_demo](apps/recovery_demo/) | Monte Carlo π estimator that demonstrates v1.6 checkpoint-recovery. With `--snapshot-interval N` the office takes a distributed snapshot every N seconds; with `--resume latest` it restarts from the most recent snapshot. | Pure Python, no LLM. Demonstrates the Chandy-Lamport distributed snapshot algorithm; see [docs/algorithms/CHECKPOINT_RESUME.md](../../docs/algorithms/CHECKPOINT_RESUME.md). |
 
 Start with `periodic_brief` — it's the cleanest demo of the
@@ -81,6 +84,8 @@ they take 1–5 minutes — fast enough for an interactive demo.
 | [new_grad_jobs](apps/new_grad_jobs/) | Watches Hacker News' Who's Hiring thread; screens postings for entry-level / new-grad fit; reformats matches as structured briefs. | OpenRouter or Claude key (hundreds of postings × 2 LLM calls). |
 | [job_hunter](apps/job_hunter/) | RSS job feeds → screen for relevance → match to your resume → produce a tailored cover letter, tailored resume, and company background brief per match. | OpenRouter or Claude key. Your resume as a markdown file. |
 | [wardrobe_assistant](apps/wardrobe_assistant/) | Calendar + weather + your wardrobe inventory → daily outfit recommendation. | OpenRouter or Claude key; `CALENDAR_ICS_URL`. |
+| [caltech_radar](apps/caltech_radar/) | Caltech's Institute Calendar, new arXiv cs.AI papers and Pasadena weather watched at once. One agent decides which events and papers are about computing; the rest go to a file, so you can see what it threw away. | OpenRouter or Claude key. No third-party signups. |
+| [situation_room_requests](apps/situation_room_requests/) | `situation_room`'s pipeline turned into publish/subscribe: a registry holds the computed features in memory and serves a changing set of stakeholder subscriptions out of it, and a subscriber may publish back into the same pipeline. | OpenRouter or Claude key; a webhook port for subscriptions. |
 | [debate](apps/debate/) | Four panellists on different LLM backends discuss a problem; a moderator summarizes consensus and disagreement per round. Optional interactive step-through via `DSL_DEBATE_STEP`. | Multiple LLM keys recommended (Anthropic, OpenAI, Google, OpenRouter) to make the per-role backend variety visible. |
 
 Each app's own README documents which env vars to export and what
@@ -113,6 +118,20 @@ read the office.md and immediately see what's going on.
 | [examples/webhook_listener](examples/webhook_listener/) | HTTP source — listens on `localhost:8000/webhook` for POSTs. |
 | [examples/web_monitor](examples/web_monitor/) | Page-watching via the MCP web source. |
 | [examples/gmail_monitor](examples/gmail_monitor/) | Pulls unread mail from Gmail (requires App Password). |
+
+---
+
+## One coordinator at a time
+
+Each generic coordinator has a worked example: a small office whose
+only job is to make one coordination rule visible. Read the
+`office.md` and the rule is the whole file.
+
+| Office | The rule it shows |
+|---|---|
+| [returns_desk](apps/returns_desk/) | `select` — a clerk escalates the hard tickets to a manager, and the queue is held still until the manager answers. |
+| [room_climate_monitor](apps/room_climate_monitor/) | `synchronizer` — temperature and humidity report independently, and the checker waits for both before judging the room. |
+| [shipment_release](apps/shipment_release/) | `match` — a scan and a manifest arrive separately, and nothing is released until the two agree. |
 
 ---
 

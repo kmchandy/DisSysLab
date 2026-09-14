@@ -188,14 +188,14 @@ is a specification you can read without reading Python.
 | **Learning and argument** | an adaptive tutor, a structured debate |
 
 `dsl list` shows all forty — 31 applications and 9 smaller examples —
-and [course/START_HERE.md](course/START_HERE.md) describes each one.
-The quickest way to something you want is to start from the nearest
-one and say what should be different.
+and [dissyslab/gallery/README.md](dissyslab/gallery/README.md)
+describes each one. The quickest way to something you want is to
+start from the nearest one and say what should be different.
 
-[course/SETUP.md](course/SETUP.md) is the same path at more length,
-with what to do when a step misbehaves. **Students** begin at
-[course/START_HERE.md](course/START_HERE.md). **Contributors** begin
-at [CONTRIBUTING.md](CONTRIBUTING.md).
+[course/setup.html](course/setup.html) is the same path at more
+length, with what to do when a step misbehaves. **Students** begin at
+[course/index.html](course/index.html). **Contributors** begin at
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ---
 
