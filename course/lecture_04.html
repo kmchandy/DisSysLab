@@ -495,37 +495,99 @@ recent checkpoint (a global snapshot) and continue execution from there.
 
 
 <h2>The Global Snapshot Theorem</h2>
+<p>
 Assume that each agent takes its local snapshot (i.e. records its
 own state) at some point in a computation.
 The points of local snapshot correspond to a global snapshot exactly 
 when for every connection from outbox b of agent X to inbox b' of agent
 X':
 <strong>the number of messages received by X' from inbox b' is less than
-or equal to the number of messages placed in outbox b by agent X.
+or equal to the number of messages sent through outbox b by agent X.
 </strong>
+</p>
 
 
-<h2>The Global Snapshot: past and future events</h2>
+  <figure class="fig wideout">
+    <svg id="thm_g" viewBox="0 0 1240 470" role="img"
+         aria-label="Two agents and five events; X's snapshot is fixed and Y's can be moved to see where it may lie"></svg>
+
+    <div class="ctrls">
+      <button id="thm_b0">Before 0</button>
+      <button id="thm_b1" class="primary">Between 0 and 2</button>
+      <button id="thm_b2">Between 2 and 4</button>
+      <button id="thm_b3">After 4</button>
+      <span class="hint">or drag Y's snapshot along its timeline</span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">X's outbox &rarr; Y's inbox</span><span id="thm_xy"></span></div>
+      <div><span class="k">Y's outbox &rarr; X's inbox</span><span id="thm_yx"></span></div>
+      <div><span class="k">A global snapshot?</span><span id="thm_ok"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 9. Where may Y's snapshot lie?</b>
+      <i>Prose to come.</i> Five events and four messages, zig-zagging between
+      the two agents: <code>0&rarr;1</code>, <code>1&rarr;2</code>,
+      <code>2&rarr;3</code>, <code>3&rarr;4</code>. X's snapshot is fixed,
+      between its two events. The question is where Y's may go.
+      <b>It cannot be to the right of event 4.</b> Then Y's record shows two
+      messages received from X, while X's record shows only one placed in its
+      outbox — two received, one sent, and the theorem's inequality fails.
+      <b>It cannot be to the left of event 0.</b> Then X's record shows one
+      message received from Y, while Y's record shows none sent at all.
+      So Y's snapshot must lie after event <code>0</code> and before event
+      <code>4</code> — the shaded stretch. Either gap inside it will do, and
+      the two give different snapshots: put Y's record in the first gap and
+      <code>1&rarr;2</code> is the message in the channel; put it in the
+      second and <code>2&rarr;3</code> is.
+      Drag it and watch the two counts. The snapshot is good exactly while
+      neither line reads more received than sent, which is the theorem.
+    </figcaption>
+  </figure>
+
+<h3>Proof</h3>
 <p>
-Assume that each agent takes its local snapshot (i.e. records its
-own state) at some point in a computation.
-Define all events at an agent before the agent takes its local snapshot
-as <strong>past</strong> events.
-Similarly, define all events at an agent after the agent takes its local snapshot
-as <strong>future</strong> events.
-Define the messages at the snapshot as messages sent in the past and
-received in the future.
-The snapshot is a global snapshot exactly when there is no message sent
-in the future and received in the past.
+The proof follows from the theorem of lecture 3:
+Given a set of agent computations recorded in a system computation,
+all interleavings of agent computations in which each message
+is sent before it is received are system computations.
+</p>
+<p>
+  Let agent computations be recorded during a system computation C.
+  Define all events at an agent before the agent takes its local snapshot
+  as <strong>past</strong> events, and the other events at that agent as
+  <strong>future</strong> events
+Construct an interleaving C' of agent computations as follows:
+In C', the relative ordering of past events is the
+same as in C, and the relative ordering of future events
+is also the same as in C, but past events appear before future ones.
+The interleaving C' satisfies the conditions of the theorem:
+each message is sent before it is received.
+
+
+<h2>States of channels in global snapshots</h2>
+<p>
+The global snapshot theorem says that the points of local snapshots
+exactly when no message sent in the future is received in the past.
 (Equivalently, all messages received in the past are sent in the past.
-Or, all messages sent in the future are received in the future.)
+And all messages sent in the future are received in the future.)
+</p>
+
+<p>
+  A message in transit at a point in a computation is a message that has
+  been placed in an outbox and not yet removed from the inbox to which the
+  outbox is connected. A message in transit may be in an outbox, or in the
+  channel connecting the outbox to an inbox, or in an inbox. Define
+  messsages in transit in a snapshot as messages sent, and not received, in
+  the past.
 </p>
 
 <p>
   In the example, x1, y1, y2, z1, z2, z3 are past events and the other
   events are future events.
   The message sent at z1 and received at x2 is a message in the snapshot
-  because it is sent in the past and received in the future.
+  because it is sent in the past and not received in the past.
   Likewise, the message sent in z2 and received in x3 is also in the snapshot.
   By contrast, the message sent at y2 and received at z3 is not in the
   snapshot because it is sent and received in the past.
@@ -550,7 +612,7 @@ Or, all messages sent in the future are received in the future.)
     </div>
 
     <figcaption>
-      <b>Figure 9. Past and future.</b>
+      <b>Figure 10. Past and future.</b>
       <i>Prose to come.</i> The line joining the three local snapshots divides
       the picture in two. Everything to its left is the <b>past</b> — the
       events each agent had already performed when it recorded — and
@@ -588,9 +650,10 @@ Or, all messages sent in the future are received in the future.)
   </li>
 </ol>
 
-<h3>Messages in a snapshot</h3>
+<h3>Correctness of the snapshot algorithm</h3>
 <p>
-  The sequence of messages between an outbox
+  Message sent in the future (i.e. after a marker is sent on a channel) are not
+  received in the past (i.e. before the marker is received on the channel).
 </p>
 
 </div>
@@ -2218,6 +2281,164 @@ Or, all messages sent in the future are received in the future.)
   $('send').onclick=play;
   $('reset').onclick=function(){
     if(anim) cancelAnimationFrame(anim); p=0; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='thm_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g');
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const X0=210, X1=1180, R=9;
+  const AY={X:140, Y:300};
+  const ay=function(a){return AY[a];};
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+  const tOf=function(x){return (x-X0)/(X1-X0)*100;};
+
+  // 1 and 3 happen at X; 0, 2 and 4 at Y
+  const E={0:['Y',12], 1:['X',32], 2:['Y',52], 3:['X',72], 4:['Y',90]};
+  const MSG=[[0,1],[1,2],[2,3],[3,4]];
+  const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
+  const CUTX=48;                             // X's snapshot, fixed
+  let cutY=30, drag=false;                   // Y's snapshot, movable
+  const cut=function(a){return a==='X'?CUTX:cutY;};
+  const past=function(n){return tm(n) < cut(ag(n));};
+
+  // the theorem, one connection at a time
+  function tally(from,to){
+    const ms=MSG.filter(function(m){return ag(m[0])===from && ag(m[1])===to;});
+    const placed  =ms.filter(function(m){return past(m[0]);}).length;
+    const received=ms.filter(function(m){return past(m[1]);}).length;
+    return {ms:ms, placed:placed, received:received, ok:received<=placed,
+            inChannel:ms.filter(function(m){return past(m[0]) && !past(m[1]);}),
+            broken:ms.filter(function(m){return !past(m[0]) && past(m[1]);})};
+  }
+  const LO=tm(0), HI=tm(4);                  // the acceptable stretch
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,s,fill,size,weight){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, s));
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    [['ah',C.ink],['ahO',C.orange],['ahT',C.teal]].forEach(function(q){
+      const m=el('marker',{id:PFX+q[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:q[1]}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{});
+    svg.appendChild(g);
+    const XY=tally('X','Y'), YX=tally('Y','X');
+    const good=XY.ok && YX.ok;
+    const bad={}; XY.broken.concat(YX.broken).forEach(function(m){ bad[m]=1; });
+    const chan={}; XY.inChannel.concat(YX.inChannel).forEach(function(m){ chan[m]=1; });
+
+    // where Y's snapshot may be
+    g.appendChild(el('rect',{x:xOf(LO), y:ay('Y')-34, width:xOf(HI)-xOf(LO),
+      height:68, rx:8, fill:C.teal, opacity:.10}));
+    tag(g,(xOf(LO)+xOf(HI))/2, ay('Y')+58,
+        "Y's snapshot must lie in here", C.teal, 13, 700);
+
+    ['X','Y'].forEach(function(a){
+      const y=ay(a);
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y,
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-16, y:y,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+    });
+
+    MSG.forEach(function(m){
+      const ya=ay(ag(m[0])), yb=ay(ag(m[1])), d=(yb>ya?1:-1);
+      const isBad=bad[m], isCh=chan[m];
+      const col=isBad?C.orange:(isCh?C.teal:C.ink);
+      g.appendChild(el('line',{x1:xOf(tm(m[0])), y1:ya+d*R,
+        x2:xOf(tm(m[1])), y2:yb-d*R, stroke:col,
+        'stroke-width':(isBad||isCh)?3.5:2,
+        'stroke-dasharray':isBad?'7 4':'none',
+        'marker-end':'url(#'+PFX+(isBad?'ahO':(isCh?'ahT':'ah'))+')'}));
+      const mx=(xOf(tm(m[0]))+xOf(tm(m[1])))/2, my=(ya+yb)/2;
+      tag(g,mx+20, my, m[0]+'→'+m[1], col, 12.5);
+      if(isBad) tag(g,mx-72, my, 'received in the past,', C.orange, 12, 700),
+                tag(g,mx-72, my+16, 'sent in the future', C.orange, 12, 700);
+    });
+
+    Object.keys(E).forEach(function(n){
+      const x=xOf(tm(n)), y=ay(ag(n));
+      g.appendChild(el('circle',{cx:x, cy:y, r:R,
+        fill:past(n)?C.ink:'#fff', stroke:C.ink, 'stroke-width':2.5}));
+      tag(g,x, y-24, n, C.ink, 13, 700);
+    });
+
+    // the two snapshots and the cut joining them
+    g.appendChild(el('line',{x1:xOf(CUTX), y1:ay('X'), x2:xOf(cutY), y2:ay('Y'),
+      stroke:good?C.teal:C.orange, 'stroke-width':2.5,
+      'stroke-dasharray':'8 5'}));
+    [['X',CUTX],['Y',cutY]].forEach(function(q){
+      g.appendChild(el('circle',{cx:xOf(q[1]), cy:ay(q[0]), r:13,
+        fill:'#fff', stroke:good?C.teal:C.orange, 'stroke-width':4,
+        cursor:q[0]==='Y'?'grab':'default'}));
+    });
+    tag(g,xOf(CUTX), ay('X')-40, "X's snapshot", C.muted, 12.5, 700);
+    tag(g,xOf(cutY), ay('Y')+34, "Y's snapshot  (drag me)", C.muted, 12.5, 700);
+
+    readout(XY,YX,good);
+  }
+
+  function line(t){
+    return 'placed in the outbox <b>'+t.placed+'</b>, received from the inbox <b>'+
+      t.received+'</b> &nbsp; '+
+      (t.ok ? '<span class="ok">'+t.received+' &le; '+t.placed+
+              (t.inChannel.length ? ' — '+t.inChannel.length+' in the channel' : '')+
+              '</span>'
+            : '<span class="bad">'+t.received+' &gt; '+t.placed+
+              ' — more received than sent</span>');
+  }
+  function readout(XY,YX,good){
+    $('xy').innerHTML=line(XY);
+    $('yx').innerHTML=line(YX);
+    $('ok').innerHTML = good
+      ? '<span class="ok">yes — neither connection has more received than '+
+        'placed</span>'
+      : '<span class="bad">no</span> <span class="none">— '+
+        (XY.ok?'':"X's outbox to Y fails")+(!XY.ok&&!YX.ok?'; ':'')+
+        (YX.ok?'':"Y's outbox to X fails")+'</span>';
+  }
+
+  [[ 'b0', 6],['b1',30],['b2',68],['b3',96]].forEach(function(q){
+    $(q[0]).onclick=function(){ cutY=q[1]; draw(); };
+  });
+  function put(e){
+    const r=svg.getBoundingClientRect();
+    cutY=Math.max(3, Math.min(98, tOf((e.clientX-r.left)/r.width*1240)));
+    draw();
+  }
+  svg.style.touchAction='none';
+  svg.addEventListener('pointerdown',function(e){
+    const r=svg.getBoundingClientRect();
+    const vy=(e.clientY-r.top)/r.height*470;
+    if(Math.abs(vy-ay('Y'))<34){ drag=true; put(e); }
+  });
+  svg.addEventListener('pointermove',function(e){ if(drag) put(e); });
+  svg.addEventListener('pointerup',function(){ drag=false; });
+  svg.addEventListener('pointercancel',function(){ drag=false; });
   draw();
 })();
 </script>
