@@ -233,6 +233,24 @@ per-instrument code and call it Turtle. The gap is invisible in the
 output. The skill needs to state the signal contract and say when a
 request needs portfolio state the office does not have.
 
+**A whiteboard office for strategy search — sketched, not built.**
+Agents share a write-once board of results and spawn agents to explore
+promising parameter regions, instead of `office.md` wiring eleven
+backtesters by hand. The two pieces it needs already exist: the
+`VARIANTS` / `compute_variant_signal` split makes a proposed strategy
+*data* rather than code, so agents extend families and humans add them;
+and `_contract_checks.py` is already the gatekeeper, promoted from a
+per-run assertion to a capability. The reason to care is that a swarm
+searching a fixed history is a machine for overfitting — the same
+failure as an agent reverse-engineering its grader — so the budget
+invariant doubles as a multiple-comparisons bound, and the held-out
+window becomes a capability held by one agent that cannot spawn.
+Schema, verbs and invariants in
+[whiteboard_backtest_design.md](design/whiteboard_backtest_design.md).
+Open, and worth settling first: whether the referee ranks or only
+records. If it ranks, it is a scorer, and a swarm reverse-engineers its
+scorer.
+
 ## 4. Debt, after January
 
 **Processes, steps 3–5** — `Channel`/`PipeChannel`, boundary agents,

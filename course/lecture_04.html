@@ -141,10 +141,56 @@ for each client.
 In the global snapshot algorithm, the OS systems-manager sends messages to each of the OS client-managers
 to take local snapshots of their agents if they haven't already done so.
 We call these messages <b>markers</b>.
-When a client-manager completes taking its local snapshot it send its local
+When a client-manager completes taking its local snapshot it sends its local
 snapshot information to the systems manager.
 The systems manager then collates information from each client manager to form a global
 snapshot.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="mg_g" viewBox="0 0 1240 580" role="img"
+         aria-label="An OS systems-manager sends markers to three OS client-managers, which return their local snapshots as jigsaw pieces that the manager fits together"></svg>
+
+    <div class="ctrls">
+      <button id="mg_play" class="primary">Run the algorithm</button>
+      <button id="mg_reset">Reset</button>
+      <input id="mg_scrub" type="range" min="0" max="1000" step="1" value="0">
+      <span class="status" id="mg_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Markers arrived at</span><span id="mg_out"></span></div>
+      <div><span class="k">Local snapshots back</span><span id="mg_in"></span></div>
+      <div><span class="k">Client-to-client messages</span><span id="mg_chat"></span></div>
+      <div><span class="k">Global snapshot</span><span id="mg_done"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 2. The systems-manager and the client-managers.</b>
+      <i>Prose to come.</i> One OS systems-manager on the left, and three
+      clients on the right — x, y and z — each wrapped in its own OS
+      client-manager, exactly as in the previous figure.
+      Press the button. The systems-manager sends a <b>marker</b> to each
+      client-manager. The markers travel at different speeds and arrive at
+      different times; nothing makes them arrive together and nothing needs
+      to. When a marker arrives, that client-manager records its client's
+      state and sends the result back — and those replies travel at different
+      speeds too. Watch y: its marker arrives last of the three and its reply
+      gets home first.
+      Notice what happens between the marker landing and the reply setting off.
+      The client does not answer at once. It goes on computing, and it goes on
+      exchanging messages with the other clients along the arcs on the right;
+      the ring around it fills while it works. Only when that traffic has died
+      down &mdash; when each client has finished and has a result worth
+      sending &mdash; does its reply leave, and the three of them finish at
+      different times. Recording takes time, and it takes a different amount of
+      time at each one &mdash; the ring around the client fills while it works.
+      Each reply is one piece of the picture. The systems-manager fits them
+      together as they arrive, and when the last piece is in, the border
+      closes round the finished picture. It is a picture no single agent ever saw, assembled
+      out of three that each saw only their own part.
+    </figcaption>
+  </figure>
 
 <h2>A global snapshot at an instant in time</h2>
   <p>
@@ -168,7 +214,7 @@ snapshot.
     </div>
 
     <figcaption>
-      <b>Figure 2. A snapshot at one instant.</b>
+      <b>Figure 3. A snapshot at one instant.</b>
       <i>Prose to come.</i> Three agents, and one message in each direction
       between every pair. The pale line sweeping left to right is ordinary
       time. All three agents record at <code>t = 50</code>, so the snapshot is
@@ -204,7 +250,7 @@ snapshot.
     </div>
 
     <figcaption>
-      <b>Figure 3. Each agent on its own.</b>
+      <b>Figure 4. Each agent on its own.</b>
       <i>Prose to come.</i> Y records first, between its first and second
       events. X does not record until much later, between its third and
       fourth. Z is last. The first vertical line marks where the global
@@ -244,7 +290,7 @@ snapshot.
     </div>
 
     <figcaption>
-      <b>Figure 4. What the snapshot claims.</b>
+      <b>Figure 5. What the snapshot claims.</b>
       <i>Prose to come.</i> This starts as figure 2, unchanged, and stays
       that way. Press the button and a <span style="color:#00947d"><b>ghost</b></span>
       of each record circle lifts off and slides until the three line up —
@@ -284,7 +330,7 @@ snapshot.
     </div>
 
     <figcaption>
-      <b>Figure 5. A snapshot the system could have been in.</b>
+      <b>Figure 6. A snapshot the system could have been in.</b>
       <i>Prose to come.</i> The same computation, the same three agents, and
       the only change is <i>when</i> each one records. X records first, so the
       <i>starts</i> line is X's own moment; Y records between its second and
@@ -329,7 +375,7 @@ snapshot.
     </div>
 
     <figcaption>
-      <b>Figure 6. The channels hold what crosses the cut.</b>
+      <b>Figure 7. The channels hold what crosses the cut.</b>
       <i>Prose to come.</i> Look first at the stretch of the dashed red line
       between X's record and Y's. Two messages cross it, and each crossing is
       marked: <code>1&rarr;3</code> and <code>1&rarr;4</code>. Both were sent
@@ -383,7 +429,7 @@ snapshot.
     </div>
 
     <figcaption>
-      <b>Figure 7. Three states, and the messages in flight at each.</b>
+      <b>Figure 8. Three states, and the messages in flight at each.</b>
       <i>Prose to come.</i> Press <i>Align the records</i> first: the three
       records slide onto one line, as before. That line is where
       S_snap sits.
@@ -440,7 +486,7 @@ snapshot.
     </div>
 
     <figcaption>
-      <b>Figure 8. The snapshot's computation.</b>
+      <b>Figure 9. The snapshot's computation.</b>
       <i>Prose to come.</i> The two grey lines are fixed: the algorithm starts
       at the first record and finishes at the last. <i>Align the records</i>
       brings the three local snapshots onto one line, as before.
@@ -543,7 +589,7 @@ or equal to the number of messages placed in outbox b by agent X.
     </div>
 
     <figcaption>
-      <b>Figure 9. Where may Y's snapshot lie?</b>
+      <b>Figure 10. Where may Y's snapshot lie?</b>
       <i>Prose to come.</i> Five events and four messages, zig-zagging between
       the two agents: <code>0&rarr;1</code>, <code>1&rarr;2</code>,
       <code>2&rarr;3</code>, <code>3&rarr;4</code>. X's snapshot is fixed,
@@ -631,7 +677,7 @@ And all messages sent in the future are received in the future.)
     </div>
 
     <figcaption>
-      <b>Figure 10. Past and future.</b>
+      <b>Figure 11. Past and future.</b>
       <i>Prose to come.</i> The line joining the three local snapshots divides
       the picture in two. Everything to its left is the <b>past</b> — the
       events each agent had already performed when it recorded — and
@@ -662,13 +708,6 @@ And all messages sent in the future are received in the future.)
   in the same sequence. 
 </p>
 
-<p>
-  <i>Draft &mdash; please edit.</i>
-  We assume too that every agent can be reached, by some path of
-  connections, from the agent that starts the algorithm. Otherwise an agent
-  is never sent a marker, never takes its local snapshot, and there is no
-  global snapshot to speak of.
-</p>
 
 <h3>When agents take local snapshots</h3>
 <ol>
@@ -2523,6 +2562,275 @@ And all messages sent in the future are received in the future.)
   svg.addEventListener('pointermove',function(e){ if(drag) put(e); });
   svg.addEventListener('pointerup',function(){ drag=false; });
   svg.addEventListener('pointercancel',function(){ drag=false; });
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='mg_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g');
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           os:'#d13d0e', client:'#3a6ea8', piece:'#00947d'};
+
+  const MGR={cx:250, cy:190, w:250, h:112};
+  const PORT={x:MGR.cx+MGR.w/2, y:MGR.cy};
+  const CL=[{k:'x', cy:110}, {k:'y', cy:290}, {k:'z', cy:470}];
+  const CX=850, OSR=78, CLR=38;
+  const inPort=function(c){return {x:CX-OSR, y:c.cy};};
+
+  // the assembled picture sits under the manager
+  const PW=76, PH=96, PY=380, PX0=MGR.cx-1.5*PW;
+  const slot=function(i){return {x:PX0+i*PW, y:PY};};
+
+  // markers go out at different speeds, replies come back at different
+  // speeds, and the two orders are not the same
+  const MARK  ={x:0.12, y:0.21, z:0.16};   // a marker lands
+  const DEPART={x:0.50, y:0.47, z:0.54};   // work over, the reply leaves
+  const BACK  ={x:0.68, y:0.62, z:0.76};   // reply reaches the manager
+  const LAST=Math.max(BACK.x,BACK.y,BACK.z);
+
+  // clients talk to each other as well. Which message goes where, and
+  // when, does not matter: the point is only that this traffic exists
+  // and keeps flowing while the snapshot is being taken.
+  const IDX={x:0, y:1, z:2};
+  // No client reports until this traffic has died down: the clients are
+  // still computing, and a result is only worth sending once it is final.
+  const CHAT=[
+    {f:'x', to:'y', a:0.15, b:0.22}, {f:'z', to:'y', a:0.18, b:0.25},
+    {f:'x', to:'z', a:0.22, b:0.28}, {f:'y', to:'x', a:0.25, b:0.31},
+    {f:'y', to:'z', a:0.28, b:0.35}, {f:'z', to:'x', a:0.32, b:0.38},
+    {f:'x', to:'y', a:0.35, b:0.41}, {f:'y', to:'z', a:0.38, b:0.44}
+  ];
+  const QUIET=Math.max.apply(null, CHAT.map(function(m){return m.b;}));
+  // a point on the rim of a client's OS ring, theta from straight down
+  function rim(c,theta,dir){
+    return {x:CX+OSR*Math.sin(theta), y:c.cy+dir*OSR*Math.cos(theta)};
+  }
+  // one arc per pair of clients, in the lane to the right of the column
+  function arcOf(ka,kb){
+    const i=Math.min(IDX[ka],IDX[kb]), j=Math.max(IDX[ka],IDX[kb]);
+    const far=(j-i===2), th=far?1.22:0.785, bow=far?1300:1080;
+    const up=rim(CL[i],th,+1), dn=rim(CL[j],th,-1);
+    return {p0:up, p1:{x:bow, y:(up.y+dn.y)/2}, p2:dn,
+            flip:(IDX[ka]>IDX[kb])};
+  }
+  function bez(A,k){
+    const u=1-k;
+    return {x:u*u*A.p0.x+2*u*k*A.p1.x+k*k*A.p2.x,
+            y:u*u*A.p0.y+2*u*k*A.p1.y+k*k*A.p2.y};
+  }
+  const PAIRS=[['x','y'],['y','z'],['x','z']];
+  const SEAL=0.12;                         // how long the border takes to close
+
+  let t=0, anim=null;
+  const clamp=function(v){return Math.max(0,Math.min(1,v));};
+  const lerp=function(a,b,k){return a+(b-a)*k;};
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function label(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':size||15, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle'}, str));
+  }
+
+  // one jigsaw piece. left/right: 0 flat, +1 tab, -1 blank
+  function jig(x,y,w,h,left,right){
+    const cy=y+h/2, r=h*0.17, d=r*1.7;
+    let p='M'+x+','+y+' L'+(x+w)+','+y+' ';
+    if(right===0) p+='L'+(x+w)+','+(y+h)+' ';
+    else {
+      p+='L'+(x+w)+','+(cy-r)+' C'+(x+w+right*d)+','+(cy-r)+' '+
+         (x+w+right*d)+','+(cy+r)+' '+(x+w)+','+(cy+r)+' L'+(x+w)+','+(y+h)+' ';
+    }
+    p+='L'+x+','+(y+h)+' ';
+    if(left===0) p+='Z';
+    else {
+      p+='L'+x+','+(cy+r)+' C'+(x-left*d)+','+(cy+r)+' '+
+         (x-left*d)+','+(cy-r)+' '+x+','+(cy-r)+' Z';
+    }
+    return p;
+  }
+  const EDGES=[[0,1],[-1,1],[-1,0]];
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    [['ao',C.os],['ap',C.piece]].forEach(function(q){
+      const m=el('marker',{id:PFX+q[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:6, markerHeight:6, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:q[1]}));
+      defs.appendChild(m);
+    });
+    const mc=el('marker',{id:PFX+'ac', viewBox:'0 0 10 10', refX:9, refY:5,
+      markerWidth:6, markerHeight:6, orient:'auto-start-reverse'});
+    mc.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:C.client}));
+    defs.appendChild(mc);
+    svg.appendChild(defs);
+    const g=el('g',{});
+    svg.appendChild(g);
+
+    // the routes, drawn faintly so the motion has something to follow
+    CL.forEach(function(c){
+      const q=inPort(c);
+      g.appendChild(el('line',{x1:PORT.x, y1:PORT.y, x2:q.x, y2:q.y,
+        stroke:C.line, 'stroke-width':2, 'stroke-dasharray':'3 7'}));
+    });
+
+    // the lanes the clients use to talk to one another
+    PAIRS.forEach(function(pr){
+      const A=arcOf(pr[0],pr[1]);
+      g.appendChild(el('path',{d:'M'+A.p0.x+','+A.p0.y+' Q'+A.p1.x+','+
+        A.p1.y+' '+A.p2.x+','+A.p2.y, fill:'none', stroke:C.line,
+        'stroke-width':2, 'stroke-dasharray':'3 7'}));
+    });
+
+    // the systems-manager
+    g.appendChild(el('rect',{x:MGR.cx-MGR.w/2, y:MGR.cy-MGR.h/2,
+      width:MGR.w, height:MGR.h, rx:14, fill:'#fff',
+      stroke:C.os, 'stroke-width':3}));
+    label(g,MGR.cx, MGR.cy-12, 'OS', C.os, 19);
+    label(g,MGR.cx, MGR.cy+12, 'systems-manager', C.ink, 16);
+
+    // the three clients, each inside its own OS client-manager
+    CL.forEach(function(c){
+      g.appendChild(el('circle',{cx:CX, cy:c.cy, r:OSR, fill:'#fff',
+        stroke:C.os, 'stroke-width':3}));
+      g.appendChild(el('circle',{cx:CX, cy:c.cy, r:CLR, fill:'#fff',
+        stroke:C.client, 'stroke-width':3}));
+      label(g,CX, c.cy, c.k, C.ink, 22);
+      label(g,CX+OSR+52, c.cy, 'OS client-', C.os, 13);
+      label(g,CX+OSR+52, c.cy+16, 'manager for '+c.k, C.os, 13);
+      // once its marker lands it records, and that takes a while
+      if(t>=MARK[c.k] && t<DEPART[c.k]){
+        const rr=CLR+16, circ=2*Math.PI*rr;
+        const prog=clamp((t-MARK[c.k])/(DEPART[c.k]-MARK[c.k]));
+        g.appendChild(el('circle',{cx:CX, cy:c.cy, r:rr, fill:'none',
+          stroke:C.line, 'stroke-width':5}));
+        g.appendChild(el('circle',{cx:CX, cy:c.cy, r:rr, fill:'none',
+          stroke:C.piece, 'stroke-width':5, 'stroke-linecap':'round',
+          'stroke-dasharray':circ, 'stroke-dashoffset':circ*(1-prog),
+          transform:'rotate(-90 '+CX+' '+c.cy+')'}));
+        label(g,CX, c.cy-OSR-16,
+          t<QUIET ? 'computing' : 'done \u2014 reporting', C.piece, 13);
+      }
+    });
+
+    // where the picture is assembled
+    for(let i=0;i<3;i++){
+      const sl=slot(i);
+      g.appendChild(el('path',{d:jig(sl.x,sl.y,PW,PH,EDGES[i][0],EDGES[i][1]),
+        fill:'none', stroke:C.line, 'stroke-width':2,
+        'stroke-dasharray':'5 5'}));
+    }
+    const home=CL.filter(function(c){return t>=BACK[c.k];}).length;
+    const whole=(t>=LAST);
+    label(g,MGR.cx, PY+PH+64,
+      whole ? 'the global snapshot \u2713'
+            : 'assembling the global snapshot ('+home+' of 3)',
+      whole?C.os:C.muted, whole?16:14, 700);
+
+    // markers on their way out
+    CL.forEach(function(c){
+      const q=inPort(c);
+      const k=clamp((t-0.05)/(MARK[c.k]-0.05));
+      if(k<=0 || k>=1) return;
+      const x=lerp(PORT.x,q.x,k), y=lerp(PORT.y,q.y,k);
+      g.appendChild(el('line',{x1:x-16, y1:y, x2:x+10, y2:y, stroke:C.os,
+        'stroke-width':4, 'marker-end':'url(#'+PFX+'ao)'}));
+      label(g,x, y-17, 'marker', C.os, 12);
+    });
+
+    // replies on their way back, each one a piece of the picture
+    CL.forEach(function(c,i){
+      if(t<DEPART[c.k]) return;
+      const q=inPort(c), sl=slot(i);
+      const k=clamp((t-DEPART[c.k])/(BACK[c.k]-DEPART[c.k]));
+      const x=lerp(q.x-PW/2, sl.x, k), y=lerp(q.y-PH/2, sl.y, k);
+      g.appendChild(el('path',{d:jig(x,y,PW,PH,EDGES[i][0],EDGES[i][1]),
+        fill:C.piece, 'fill-opacity':k>=1?0.22:0.14,
+        stroke:C.piece, 'stroke-width':k>=1?3:2.5}));
+      label(g,x+PW/2, y+PH/2, c.k, C.piece, 20);
+    });
+
+    // client-to-client messages, in flight
+    CHAT.forEach(function(m){
+      if(t<m.a || t>m.b) return;
+      const A=arcOf(m.f,m.to);
+      let k=(t-m.a)/(m.b-m.a);
+      if(A.flip) k=1-k;                       // travelling up the arc
+      const d=A.flip?-0.02:0.02;
+      const P=bez(A,clamp(k)), Q=bez(A,clamp(k+d));
+      g.appendChild(el('line',{x1:P.x, y1:P.y, x2:Q.x, y2:Q.y,
+        stroke:C.client, 'stroke-width':4, 'stroke-linecap':'round',
+        'marker-end':'url(#'+PFX+'ac)'}));
+      g.appendChild(el('circle',{cx:P.x, cy:P.y, r:5, fill:C.client}));
+    });
+
+    // the picture is whole: seal it, then let it breathe
+    if(t>=LAST){
+      const X=slot(0).x, W=slot(2).x+PW-slot(0).x, per=2*(W+PH);
+      const seal=clamp((t-LAST)/SEAL);
+      g.appendChild(el('rect',{x:X, y:PY, width:W, height:PH, rx:5,
+        fill:'none', stroke:C.os, 'stroke-width':5,
+        'stroke-linecap':'round', 'stroke-dasharray':per,
+        'stroke-dashoffset':per*(1-seal)}));
+      if(seal>=1){
+        const pu=((t-LAST-SEAL)/0.13)%1;
+        g.appendChild(el('rect',{x:X-8-16*pu, y:PY-8-16*pu,
+          width:W+16+32*pu, height:PH+16+32*pu, rx:14,
+          fill:'none', stroke:C.os, 'stroke-width':3,
+          opacity:0.45*(1-pu)}));
+      }
+    }
+
+    readout();
+  }
+
+  function readout(){
+    const got=CL.filter(function(c){return t>=MARK[c.k];}).map(function(c){return c.k;});
+    const back=CL.filter(function(c){return t>=BACK[c.k];}).map(function(c){return c.k;});
+    $('out').innerHTML = got.length
+      ? '<b>'+got.join(', ')+'</b>'+(got.length<3?' <span class="none">so far</span>':'')
+      : '<span class="none">none yet</span>';
+    $('in').innerHTML = back.length
+      ? '<b>'+back.join(', ')+'</b>'+(back.length<3?' <span class="none">so far</span>':'')
+      : '<span class="none">none yet</span>';
+    const flying=CHAT.filter(function(m){return t>=m.a && t<=m.b;}).length;
+    const sent=CHAT.filter(function(m){return t>=m.a;}).length;
+    $('chat').innerHTML = !sent ? '<span class="none">none yet</span>'
+      : flying ? '<b>'+sent+'</b> sent, <b>'+flying+'</b> in flight'
+      : '<b>'+sent+'</b> sent <span class="none">&mdash; all quiet</span>';
+    $('done').innerHTML = back.length===3
+      ? '<span class="ok">complete — three pieces, one picture</span>'
+      : '<span class="none">'+back.length+' of 3 pieces</span>';
+    $('status').innerHTML = t<=0 ? ''
+      : (t>=LAST ? '<b>done</b>' : 'running &hellip;');
+    $('scrub').value = Math.round(t*1000);
+  }
+
+  function play(){
+    if(anim) cancelAnimationFrame(anim);
+    const t0=performance.now(), dur=9000;
+    (function step(now){
+      const p=Math.min(1,(now-t0)/dur);
+      t=p; draw();
+      if(p<1) anim=requestAnimationFrame(step); else { t=1; draw(); }
+    })(t0);
+  }
+  $('play').onclick=play;
+  $('reset').onclick=function(){
+    if(anim) cancelAnimationFrame(anim); t=0; draw(); };
+  $('scrub').oninput=function(){
+    if(anim) cancelAnimationFrame(anim);
+    t=(+$('scrub').value)/1000; draw(); };
   draw();
 })();
 </script>
