@@ -1,0 +1,1916 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lecture 4 — Global snapshots</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+
+
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  p{color:var(--body); margin:0 0 15px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  figure.fig{margin:30px 0 26px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  input[type=range]{flex:1 1 200px; min-width:160px; accent-color:var(--orange)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
+          font-size:13.5px; color:var(--muted)}
+  .legend i{font-style:normal; color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em}
+  .hint{font-size:13px; color:var(--muted)}
+  table.state{width:100%; margin-top:14px; border-collapse:collapse;
+              font:13.5px/1.5 var(--mono)}
+  table.state th{text-align:left; font:600 11.5px var(--sans); letter-spacing:.12em;
+    text-transform:uppercase; color:var(--muted); padding:0 12px 6px 0; font-weight:700}
+  table.state td{padding:5px 12px 5px 0; border-top:1px solid var(--line);
+                 vertical-align:baseline}
+  table.state td.k{color:var(--muted); white-space:nowrap; width:104px}
+  table.state td b{color:var(--ink)}
+  .none{color:#b9b4a8}
+  .hot{color:var(--orange); font-weight:700}
+  .chan{color:var(--teal); font-weight:700}
+  .facts{margin-top:14px; font:14px/1.7 var(--mono)}
+  .facts div{display:flex; gap:10px; align-items:baseline; padding:5px 0;
+             border-top:1px solid var(--line)}
+  .facts .k{width:172px; flex:none; font:600 11.5px var(--sans);
+            letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+  .fixed{color:var(--teal); font-weight:700}
+  .moved{color:var(--ink); font-weight:700}
+  .ok{color:var(--teal); font-weight:700}
+  .bad{color:var(--orange); font-weight:700}
+  .dn{color:var(--orange); font-weight:700}
+  .up{color:var(--teal); font-weight:700}
+  .cc{color:#8d8878; font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab &middot; Class 4</div>
+    <h1>Global snapshots</h1>
+
+    <p><i>Prose to come.</i></p>
+  </header>
+
+<h2>A snapshot at one instant</h2>
+  <p>
+    <i>Prose to come.</i> We want a picture of the whole system at once: the
+    state of every agent, and every message on its way from one agent to
+    another. Suppose for a moment that there were a clock every agent could
+    read, and that all three recorded their state at the same instant.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="inst_g" viewBox="0 0 1240 520" role="img"
+         aria-label="Three agent timelines with all three agents recording their state at the same instant"></svg>
+
+    <div class="ctrls">
+      <button id="inst_play" class="primary">Take the snapshot</button>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Recorded at</span><span id="inst_when"></span></div>
+      <div><span class="k">In the channels</span><span id="inst_chan"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 1. A snapshot at one instant.</b>
+      <i>Prose to come.</i> Three agents, and one message in each direction
+      between every pair. The pale line sweeping left to right is ordinary
+      time. All three agents record at <code>t = 50</code>, so the snapshot is
+      a single vertical line. The two messages the line crosses,
+      <code>m4</code> and <code>m5</code>, had been sent and had not yet
+      arrived: they are the contents of the channels, and they belong in the
+      snapshot just as much as the agents' own states do.
+    </figcaption>
+  </figure>
+
+<h2>Each agent on its own</h2>
+  <p>
+    <i>Prose to come.</i> There is no such clock. Taking a snapshot needs
+    coordination, coordination needs messages, and messages take time. So
+    each agent records its own state when it gets round to it, and those
+    moments are different. The snapshot is no longer an instant — it has a
+    beginning and an end, and the system keeps running throughout.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="own_g" viewBox="0 0 1240 520" role="img"
+         aria-label="Three agents recording their states at different moments, producing a snapshot that could not have happened"></svg>
+
+    <div class="ctrls">
+      <button id="own_play" class="primary">Take the snapshot</button>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Recorded at</span><span id="own_when"></span></div>
+      <div><span class="k">Recorded so far</span><span id="own_who"></span></div>
+      <div><span class="k">In the channels</span><span id="own_chan"></span></div>
+      <div><span class="k">Impossible</span><span id="own_bad"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 2. Each agent on its own.</b>
+      <i>Prose to come.</i> Y records first, between its first and second
+      events. X does not record until much later, between its third and
+      fourth. Z is last. The first vertical line marks where the global
+      snapshot <b>starts</b> and the second where it <b>ends</b>; the shaded
+      band between them is how long the whole thing took, and the system went
+      on running the entire time.
+      Now look at <code>m5</code>. X took it at 58, before X recorded, so
+      X's state includes having received it. Y sent it at 40, after Y
+      recorded, so Y's state includes never having sent it. Put the three
+      records side by side and they describe a system in which a message
+      arrived that nobody sent. That is not an inaccurate picture of some
+      state the system was in — it is a state the system could never have
+      been in at all. The last row of the table names it.
+    </figcaption>
+  </figure>
+
+<h2>Lining the records up</h2>
+  <p>
+    <i>Prose to come.</i> Keep the same three records, and slide the moments
+    at which they were taken: Y's to the right, X's and Z's to the left,
+    until all three line up.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="line_g" viewBox="0 0 1240 520" role="img"
+         aria-label="The three local snapshots sliding until they line up vertically"></svg>
+
+    <div class="ctrls">
+      <button id="line_go" class="primary">Line them up</button>
+      <button id="line_back">Back</button>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Recorded at</span><span id="line_when"></span></div>
+      <div><span class="k">In the channels</span><span id="line_chan"></span></div>
+      <div><span class="k">Impossible</span><span id="line_bad"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 3. What the snapshot claims.</b>
+      <i>Prose to come.</i> This starts as figure 2, unchanged, and stays
+      that way. Press the button and a <span style="color:#00947d"><b>ghost</b></span>
+      of each record circle lifts off and slides until the three line up —
+      because lining them up is exactly what the snapshot asserts, that these
+      three moments were one moment.
+      The ghost carries the two ends of <code>m5</code> with it: the end where
+      Y sent it travels right with Y's record, and the end where X received it
+      travels left with X's. Watch what becomes of the arrow between them.
+      It <b>reverses</b>. In the world the snapshot describes, Y sends
+      <code>m5</code> at 65 and X receives it at 38 — twenty-seven units
+      before it was sent. The solid picture underneath shows what really
+      happened, and the two cannot both be true.
+    </figcaption>
+  </figure>
+
+<h2>Recording at better moments</h2>
+  <p>
+    <i>Prose to come.</i> Nothing was wrong with the idea of each agent
+    recording on its own. What was wrong was <i>when</i>. Keep the same
+    computation and the same three agents, and only change the moments at
+    which they record.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="ok_g" viewBox="0 0 1240 520" role="img"
+         aria-label="The same computation recorded at moments that produce a snapshot the system could have been in"></svg>
+
+    <div class="ctrls">
+      <button id="ok_go" class="primary">Line them up</button>
+      <button id="ok_back">Back</button>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Recorded at</span><span id="ok_when"></span></div>
+      <div><span class="k">In the channels</span><span id="ok_chan"></span></div>
+      <div><span class="k">Impossible</span><span id="ok_bad"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 4. A snapshot the system could have been in.</b>
+      <i>Prose to come.</i> The same computation, the same three agents, and
+      the only change is <i>when</i> each one records. X records first, so the
+      <i>starts</i> line is X's own moment; Y records between its second and
+      third events, and is last. Both grey lines stay where they are and no
+      message line moves.
+      Press the button and only the ghost circles travel. They reach a common
+      moment without anything else having to give — and that is the whole
+      difference from the previous figure, where bringing the records together
+      dragged <code>m5</code> backward through time. Here there is a moment
+      the three records could genuinely share.
+      The last row says why: nothing is impossible. The two messages the cut
+      crosses, <code>m4</code> and <code>m5</code>, are simply in the
+      channels — sent and not yet delivered — which is exactly what a snapshot
+      ought to record about them. And the moment the ghosts settle on is a
+      real one: at that instant each agent really had done exactly the actions
+      its record claims.
+    </figcaption>
+  </figure>
+
+<h2>What is in the channels</h2>
+  <p>
+    <i>Prose to come.</i> A fragment of three timelines — no initial actions,
+    just a stretch of an execution already under way. Each agent records once:
+    X between its events <code>0</code> and <code>3</code>, Y between
+    <code>1</code> and <code>5</code>, Z between <code>2</code> and
+    <code>6</code>.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="ch_g" viewBox="0 0 1240 520" role="img"
+         aria-label="Three timeline fragments showing which messages are in the channels at a snapshot"></svg>
+
+    <div class="ctrls">
+      <button id="ch_go" class="primary">Line them up</button>
+      <button id="ch_back">Back</button>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Recorded at</span><span id="ch_when"></span></div>
+      <div><span class="k">Crossing X&ndash;Y</span><span id="ch_xy"></span></div>
+      <div><span class="k">In the channels</span><span id="ch_chan"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 5. The channels hold what crosses the cut.</b>
+      <i>Prose to come.</i> Look first at the stretch of the dashed red line
+      between X's record and Y's. Two messages cross it, and each crossing is
+      marked: <code>1&rarr;3</code> and <code>1&rarr;4</code>. Both were sent
+      by Y <b>before</b> Y recorded, and both were received by X <b>after</b>
+      X recorded — so at the moment the snapshot describes, they had left Y
+      and had not reached X. They were in the channel, and a snapshot that did
+      not mention them would describe a system missing two messages.
+      Now press the button. The red line steps back and the records slide
+      onto a single green line, vertical, at one moment. The messages do not
+      move — only the line does — and the two marks travel along their own
+      message lines and settle on it.
+      <b>The same two messages cross.</b> <code>1&rarr;3</code> and
+      <code>1&rarr;4</code> cross the green line between X and Y just as they
+      crossed the red one, and <code>0&rarr;2</code> crosses neither.
+      That is the thing to hold on to: what puts a message in a channel is not
+      where the line is drawn. It is that the sender had already sent it and
+      the receiver had not yet taken it. The crooked cut and the straight one
+      disagree about <i>when</i>, and agree exactly about <i>what was in the
+      channels</i>.
+    </figcaption>
+  </figure>
+
+<h2>The state the snapshot records</h2>
+  <p>
+    <i>Prose to come.</i> The algorithm begins when the first agent records
+    and finishes when the last one does. Call the global state at the start
+    <b>S<sub>init</sub></b>, the state at the finish <b>S<sub>fini</sub></b>,
+    and the state the algorithm writes down <b>S<sub>snap</sub></b>.
+    The system really did go from S<sub>init</sub> to S<sub>fini</sub>. It may
+    never have been in S<sub>snap</sub> at all — and yet there is a
+    computation S<sub>init</sub> &rarr; S<sub>snap</sub> &rarr;
+    S<sub>fini</sub>.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="st_g" viewBox="0 0 1240 470" role="img"
+         aria-label="Three timelines with the states at the start, the snapshot and the finish, and the messages in the channels at each"></svg>
+
+    <div class="ctrls">
+      <button id="st_align" class="primary">Align the records</button>
+      <button id="st_init">S_init</button>
+      <button id="st_snap">S_snap</button>
+      <button id="st_fini">S_fini</button>
+      <button id="st_clear">Clear</button>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">State</span><span id="st_what"></span></div>
+      <div><span class="k">Actions completed</span><span id="st_done"></span></div>
+      <div><span class="k">In the channels</span><span id="st_chan"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 6. Three states, and the messages in flight at each.</b>
+      <i>Prose to come.</i> Press <i>Align the records</i> first: the three
+      records slide onto one line, as before. That line is where
+      S<sub>snap</sub> sits.
+      Then take the three states in turn. At <b>S<sub>init</sub></b>, where
+      the algorithm starts, three messages are in the channels:
+      <code>m1</code>, <code>m2</code>, <code>m3</code>. At
+      <b>S<sub>snap</sub></b> the channels hold <code>m3</code>,
+      <code>m4</code>, <code>m5</code> — and these are exactly the messages
+      the algorithm records, each one sent before its sender's record and
+      received after its receiver's. At <b>S<sub>fini</sub></b>, where the
+      algorithm finishes, they are <code>m4</code>, <code>m6</code>,
+      <code>m7</code>.
+      Three different sets, overlapping. <code>m1</code> and <code>m2</code>
+      are delivered before the snapshot; <code>m3</code> survives from the
+      start into it; <code>m4</code> survives from the snapshot to the finish;
+      <code>m6</code> and <code>m7</code> are sent too late to be recorded at
+      all. Look at <code>m6</code> in particular: Y sent it after Y had
+      recorded, so the snapshot knows nothing about it — but it is genuinely
+      in flight when the algorithm finishes.
+      Every crossing of the vertical line is one element of the state. Where
+      it meets an agent's line, marked with a ring, it gives that agent's
+      state. Where it meets a message still in flight, marked with a cross,
+      it gives a message in a channel. Those crossings together <i>are</i> the
+      global state — which is the same reading as the vertical line in the
+      previous lecture, now with three agents and a snapshot to compare it to.
+      The snapshot is not a photograph of the channels at the start, nor at
+      the finish. It is the channel state of a system that passed through
+      S<sub>snap</sub> on its way from one to the other.
+    </figcaption>
+  </figure>
+
+<h2>Why the recorded state is reachable</h2>
+  <p>
+    <i>Prose to come.</i> The same kind of picture, with the algorithm
+    starting when X records and finishing when Z records. Six events happen
+    while it runs. Below the timelines they are listed in the order they
+    actually occurred, from S<sub>init</sub> to S<sub>fini</sub>.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="rr_g" viewBox="0 0 1240 640" role="img"
+         aria-label="Timelines with fixed start and finish lines, and the events reordered into the snapshot's computation"></svg>
+
+    <div class="ctrls">
+      <button id="rr_align" class="primary">Align the records</button>
+      <button id="rr_reorder">Reorder the events</button>
+      <button id="rr_reset">Reset</button>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Before its own record</span><span id="rr_p"></span></div>
+      <div><span class="k">After its own record</span><span id="rr_q"></span></div>
+      <div><span class="k">Still a computation</span><span id="rr_ok"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 7. The snapshot's computation.</b>
+      <i>Prose to come.</i> The two grey lines are fixed: the algorithm starts
+      at the first record and finishes at the last. <i>Align the records</i>
+      brings the three local snapshots onto one line, as before.
+      Then press <i>Reorder the events</i>. The six events slide into a
+      different order — the shaded ones, which happened before their own
+      agent recorded, move to the front. Nothing is added or removed, no
+      agent's own order changes, and every message is still sent before it is
+      received, so by the theorem of the previous lecture this is a
+      computation of the same system.
+      And now a state appears in the middle of it. After the first three
+      events the system is in exactly the state the algorithm wrote down:
+      <b>S<sub>snap</sub></b>. So although the system may never have been in
+      S<sub>snap</sub>, there is a computation S<sub>init</sub> &rarr;
+      S<sub>snap</sub> &rarr; S<sub>fini</sub>, which is what the algorithm
+      guarantees.
+      Compare the two rows of the strip and note which events moved:
+      <code>x2</code> happened early but is recorded as not yet done, and
+      <code>z2</code> and <code>z3</code> happened later but are recorded as
+      done. That is the whole content of the reordering.
+    </figcaption>
+  </figure>
+
+</div>
+
+<script>
+(function(){
+  const PFX='inst_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g');
+
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const X0=210, X1=1190, R=6;
+  const AY={X:130, Y:270, Z:410};
+  const AGENTS=['X','Y','Z'];
+  const ay=function(a){return AY[a];};
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+
+  // -- the computation: one message in each direction between every pair --
+  const EV={X:[8,30,58,82], Y:[10,40,68,90], Z:[12,26,52,74]};
+  const MSG=[
+    {n:'m1', from:'X', ts: 8, to:'Y', tr:40},
+    {n:'m2', from:'Y', ts:10, to:'Z', tr:26},
+    {n:'m3', from:'Z', ts:12, to:'X', tr:30},
+    {n:'m4', from:'X', ts:30, to:'Z', tr:52},
+    {n:'m5', from:'Y', ts:40, to:'X', tr:58},
+    {n:'m6', from:'Z', ts:52, to:'Y', tr:68}
+  ];
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,s,fill,size,weight){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, s));
+  }
+  function heads(svg,pfx){
+    const defs=el('defs',{});
+    [['ah',C.ink],['ahO',C.orange]].forEach(function(p){
+      const m=el('marker',{id:pfx+p[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:p[1]}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+  }
+  function rails(g){
+    AGENTS.forEach(function(a){
+      const y=ay(a);
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y,
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18, y:y,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+      g.appendChild(el('text',{x:X0-18, y:y+19,
+        'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+        'font-size':11.5, fill:C.muted, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, 'agent'));
+    });
+  }
+  function dots(g){
+    AGENTS.forEach(function(a){
+      EV[a].forEach(function(t){
+        g.appendChild(el('circle',{cx:xOf(t), cy:ay(a), r:R,
+          fill:C.ink, stroke:'#fff', 'stroke-width':2}));
+      });
+    });
+  }
+
+  // every agent records at the same instant
+  const T=50;
+  let now=100, anim=null;
+  const taken=function(){return now>=T;};
+  function inTransit(){
+    return MSG.filter(function(m){ return m.ts < T && m.tr > T; });
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    heads(svg,PFX);
+    const g=el('g',{});
+    svg.appendChild(g);
+    const transit=inTransit(), isT={};
+    transit.forEach(function(m){ isT[m.n]=1; });
+
+    if(now>0 && now<100)
+      g.appendChild(el('line',{x1:xOf(now), y1:60, x2:xOf(now), y2:470,
+        stroke:C.line, 'stroke-width':2}));
+
+    rails(g);
+
+    MSG.forEach(function(m){
+      const ya=ay(m.from), yb=ay(m.to), d=(yb>ya?1:-1);
+      const hot=taken() && isT[m.n];
+      g.appendChild(el('line',{x1:xOf(m.ts), y1:ya+d*R, x2:xOf(m.tr), y2:yb-d*R,
+        stroke:hot?C.orange:C.ink, 'stroke-width':hot?3:2,
+        'marker-end':'url(#'+PFX+(hot?'ahO':'ah')+')'}));
+      tag(g,(xOf(m.ts)+xOf(m.tr))/2+14,(ay(m.from)+ay(m.to))/2, m.n,
+          hot?C.orange:C.muted, 12.5);
+    });
+
+    dots(g);
+
+    if(taken()){
+      g.appendChild(el('line',{x1:xOf(T), y1:60, x2:xOf(T), y2:470,
+        stroke:C.orange, 'stroke-width':2.5, 'stroke-dasharray':'8 5'}));
+      AGENTS.forEach(function(a){
+        g.appendChild(el('circle',{cx:xOf(T), cy:ay(a), r:11,
+          fill:'#fff', stroke:C.orange, 'stroke-width':4}));
+      });
+      tag(g,xOf(T), 42, 'every agent records here', C.orange, 13, 700);
+    }
+    readout(transit);
+  }
+  function readout(transit){
+    $('when').innerHTML = taken()
+      ? 'all three at <b>t = '+T+'</b>, the same instant'
+      : '<span class="none">not yet</span>';
+    $('chan').innerHTML = !taken() ? '<span class="none">—</span>'
+      : (transit.length
+         ? '<span class="chan">'+transit.map(function(m){
+             return m.n+' ('+m.from+'&rarr;'+m.to+')';}).join(', ')+'</span>'
+         : '<span class="none">none</span>');
+  }
+  function play(){
+    if(anim) cancelAnimationFrame(anim);
+    now=0;
+    const t0=performance.now(), dur=2600;
+    (function step(t){
+      const p=Math.min(1,(t-t0)/dur);
+      now=p*100; draw();
+      if(p<1) anim=requestAnimationFrame(step); else { now=100; draw(); }
+    })(t0);
+  }
+  $('play').onclick=play;
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='own_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g');
+
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const X0=210, X1=1190, R=6;
+  const AY={X:130, Y:270, Z:410};
+  const AGENTS=['X','Y','Z'];
+  const ay=function(a){return AY[a];};
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+
+  // -- the computation: one message in each direction between every pair --
+  const EV={X:[8,30,58,82], Y:[10,40,68,90], Z:[12,26,52,74]};
+  const MSG=[
+    {n:'m1', from:'X', ts: 8, to:'Y', tr:40},
+    {n:'m2', from:'Y', ts:10, to:'Z', tr:26},
+    {n:'m3', from:'Z', ts:12, to:'X', tr:30},
+    {n:'m4', from:'X', ts:30, to:'Z', tr:52},
+    {n:'m5', from:'Y', ts:40, to:'X', tr:58},
+    {n:'m6', from:'Z', ts:52, to:'Y', tr:68}
+  ];
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,s,fill,size,weight){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, s));
+  }
+  function heads(svg,pfx){
+    const defs=el('defs',{});
+    [['ah',C.ink],['ahO',C.orange]].forEach(function(p){
+      const m=el('marker',{id:pfx+p[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:p[1]}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+  }
+  function rails(g){
+    AGENTS.forEach(function(a){
+      const y=ay(a);
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y,
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18, y:y,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+      g.appendChild(el('text',{x:X0-18, y:y+19,
+        'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+        'font-size':11.5, fill:C.muted, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, 'agent'));
+    });
+  }
+  function dots(g){
+    AGENTS.forEach(function(a){
+      EV[a].forEach(function(t){
+        g.appendChild(el('circle',{cx:xOf(t), cy:ay(a), r:R,
+          fill:C.ink, stroke:'#fff', 'stroke-width':2}));
+      });
+    });
+  }
+
+  // Each agent records when it gets round to it. X waits until between its
+  // third and fourth events; Y records early, between its first and second.
+  const CUT={X:70, Y:25, Z:78};
+  const FIRST=Math.min(CUT.X,CUT.Y,CUT.Z);     // the snapshot begins
+  const LAST =Math.max(CUT.X,CUT.Y,CUT.Z);     // and ends
+  let now=100, anim=null;
+  const taken=function(a){return now>=CUT[a];};
+
+  function inTransit(){
+    return MSG.filter(function(m){ return m.ts < CUT[m.from] && m.tr > CUT[m.to]; });
+  }
+  // The reverse is impossible: the receiver recorded taking a message that
+  // the sender recorded never sending.
+  function impossible(){
+    return MSG.filter(function(m){ return m.ts > CUT[m.from] && m.tr < CUT[m.to]; });
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    heads(svg,PFX);
+    const g=el('g',{});
+    svg.appendChild(g);
+    const transit=inTransit(), impos=impossible();
+    const isT={}, isX={};
+    transit.forEach(function(m){ isT[m.n]=1; });
+    impos.forEach(function(m){ isX[m.n]=1; });
+
+    // how long the whole snapshot took
+    if(now>=FIRST){
+      const right=Math.min(now, LAST);
+      g.appendChild(el('rect',{x:xOf(FIRST), y:54, width:xOf(right)-xOf(FIRST),
+        height:416, fill:C.orange, opacity:.05}));
+      g.appendChild(el('line',{x1:xOf(FIRST), y1:54, x2:xOf(FIRST), y2:470,
+        stroke:C.muted, 'stroke-width':2}));
+      tag(g,xOf(FIRST), 38, 'global snapshot starts', C.muted, 13, 700);
+    }
+    if(now>=LAST){
+      g.appendChild(el('line',{x1:xOf(LAST), y1:54, x2:xOf(LAST), y2:470,
+        stroke:C.muted, 'stroke-width':2}));
+      tag(g,xOf(LAST), 38, 'global snapshot ends', C.muted, 13, 700);
+    }
+
+    if(now>0 && now<100)
+      g.appendChild(el('line',{x1:xOf(now), y1:60, x2:xOf(now), y2:470,
+        stroke:C.line, 'stroke-width':2}));
+
+    rails(g);
+
+    MSG.forEach(function(m){
+      const ya=ay(m.from), yb=ay(m.to), d=(yb>ya?1:-1);
+      const settled=taken(m.from) && taken(m.to);
+      const hot=settled && (isT[m.n] || isX[m.n]);
+      const mx=(xOf(m.ts)+xOf(m.tr))/2, my=(ya+yb)/2;
+      g.appendChild(el('line',{x1:xOf(m.ts), y1:ya+d*R, x2:xOf(m.tr), y2:yb-d*R,
+        stroke:hot?C.orange:C.ink, 'stroke-width':hot?3:2,
+        'marker-end':'url(#'+PFX+(hot?'ahO':'ah')+')'}));
+      tag(g,mx+14, my, m.n, hot?C.orange:C.muted, 12.5);
+    });
+
+    dots(g);
+
+    const done=AGENTS.filter(taken);
+    if(done.length){
+      const pts=[[xOf(CUT[done[0]]), ay(done[0])-70]];
+      done.forEach(function(a){ pts.push([xOf(CUT[a]), ay(a)]); });
+      const last=done[done.length-1];
+      pts.push([xOf(CUT[last]), ay(last)+70]);
+      g.appendChild(el('polyline',{
+        points:pts.map(function(p){return p[0]+','+p[1];}).join(' '),
+        fill:'none', stroke:C.orange, 'stroke-width':2.5,
+        'stroke-dasharray':'8 5'}));
+      done.forEach(function(a){
+        g.appendChild(el('circle',{cx:xOf(CUT[a]), cy:ay(a), r:11,
+          fill:'#fff', stroke:C.orange, 'stroke-width':4}));
+        tag(g,xOf(CUT[a]), ay(a)-26, a+' records', C.orange, 12.5, 700);
+      });
+    }
+    readout(transit, impos);
+  }
+
+  function readout(transit, impos){
+    const done=AGENTS.filter(taken);
+    $('when').innerHTML=AGENTS.map(function(a){
+      return a+' at <b>'+CUT[a]+'</b>';}).join(' &nbsp;·&nbsp; ')+
+      ' <span class="none">— it begins at '+FIRST+' and ends at '+LAST+'</span>';
+    $('who').innerHTML = done.length===0
+      ? '<span class="none">none yet</span>'
+      : (done.length===3 ? '<span class="ok">all three</span>'
+                         : '<b>'+done.join(', ')+'</b> <span class="none">so far</span>');
+    $('chan').innerHTML = transit.length
+      ? '<span class="chan">'+transit.map(function(m){
+          return m.n+' ('+m.from+'&rarr;'+m.to+')';}).join(', ')+'</span>'
+      : '<span class="none">none</span>';
+    $('bad').innerHTML = impos.length
+      ? '<span class="bad">'+impos.map(function(m){
+          return m.n+': '+m.to+' recorded taking it, '+m.from+
+                 ' recorded never sending it';}).join('; ')+'</span>'
+      : '<span class="ok">none</span>';
+  }
+  function play(){
+    if(anim) cancelAnimationFrame(anim);
+    now=0;
+    const t0=performance.now(), dur=3400;
+    (function step(t){
+      const p=Math.min(1,(t-t0)/dur);
+      now=p*100; draw();
+      if(p<1) anim=requestAnimationFrame(step); else { now=100; draw(); }
+    })(t0);
+  }
+  $('play').onclick=play;
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='line_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g');
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const X0=210, X1=1190, R=6;
+  const AY={X:130, Y:270, Z:410};
+  const AGENTS=['X','Y','Z'];
+  const ay=function(a){return AY[a];};
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+
+  const EV={X:[8,30,58,82], Y:[10,40,68,90], Z:[12,26,52,74]};
+  const MSG=[
+    {n:'m1', from:'X', ts: 8, to:'Y', tr:40},
+    {n:'m2', from:'Y', ts:10, to:'Z', tr:26},
+    {n:'m3', from:'Z', ts:12, to:'X', tr:30},
+    {n:'m4', from:'X', ts:30, to:'Z', tr:52},
+    {n:'m5', from:'Y', ts:40, to:'X', tr:58},
+    {n:'m6', from:'Z', ts:52, to:'Y', tr:68}
+  ];
+  const CUT={X:70, Y:25, Z:78};
+  const V=50;                                 // where the ghosts line up
+  const FIRST=Math.min(CUT.X,CUT.Y,CUT.Z), LAST=Math.max(CUT.X,CUT.Y,CUT.Z);
+
+  const IMPOSSIBLE=MSG.filter(function(m){
+    return m.ts > CUT[m.from] && m.tr < CUT[m.to]; });
+  const INTRANSIT=MSG.filter(function(m){
+    return m.ts < CUT[m.from] && m.tr > CUT[m.to]; });
+  const BAD=IMPOSSIBLE[0];                    // the one the ghosts expose
+
+  // q = 0 is figure 2, untouched. As q grows, a ghost of each record circle
+  // -- and of the two ends of the offending message -- slides by however far
+  // that agent's record has to move to reach the common line.
+  let q=0, anim=null;
+  const slide=function(a){return q*(V-CUT[a]);};
+  const gh=function(a,t){return t+slide(a);};
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,s,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, s);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    [['ah',C.ink],['ahO',C.orange],['ahG',C.teal]].forEach(function(p){
+      const m=el('marker',{id:PFX+p[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:p[1]}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{});
+    svg.appendChild(g);
+
+    // ── the diagram from figure 2, exactly as it was ─────────────────
+    g.appendChild(el('rect',{x:xOf(FIRST), y:54, width:xOf(LAST)-xOf(FIRST),
+      height:416, fill:C.orange, opacity:.05}));
+    [[FIRST,'global snapshot starts'],[LAST,'global snapshot ends']]
+      .forEach(function(b){
+        g.appendChild(el('line',{x1:xOf(b[0]), y1:54, x2:xOf(b[0]), y2:470,
+          stroke:C.muted, 'stroke-width':2}));
+        tag(g,xOf(b[0]), 38, b[1], C.muted, 13, 700);
+      });
+
+    AGENTS.forEach(function(a){
+      const y=ay(a);
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y,
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18, y:y,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+      g.appendChild(el('text',{x:X0-18, y:y+19,
+        'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+        'font-size':11.5, fill:C.muted, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, 'agent'));
+    });
+
+    const hotset={};
+    INTRANSIT.concat(IMPOSSIBLE).forEach(function(m){ hotset[m.n]=1; });
+    MSG.forEach(function(m){
+      const ya=ay(m.from), yb=ay(m.to), d=(yb>ya?1:-1);
+      const hot=hotset[m.n];
+      g.appendChild(el('line',{x1:xOf(m.ts), y1:ya+d*R, x2:xOf(m.tr), y2:yb-d*R,
+        stroke:hot?C.orange:C.ink, 'stroke-width':hot?3:2,
+        'marker-end':'url(#'+PFX+(hot?'ahO':'ah')+')'}));
+      tag(g,(xOf(m.ts)+xOf(m.tr))/2+14,(ya+yb)/2, m.n,
+          hot?C.orange:C.muted, 12.5);
+    });
+
+    AGENTS.forEach(function(a){
+      EV[a].forEach(function(t){
+        g.appendChild(el('circle',{cx:xOf(t), cy:ay(a), r:R,
+          fill:C.ink, stroke:'#fff', 'stroke-width':2}));
+      });
+    });
+
+    const pts=[[xOf(CUT.X), ay('X')-70]];
+    AGENTS.forEach(function(a){ pts.push([xOf(CUT[a]), ay(a)]); });
+    pts.push([xOf(CUT.Z), ay('Z')+70]);
+    g.appendChild(el('polyline',{
+      points:pts.map(function(p){return p[0]+','+p[1];}).join(' '),
+      fill:'none', stroke:C.orange, 'stroke-width':2.5,
+      'stroke-dasharray':'8 5'}));
+    AGENTS.forEach(function(a){
+      g.appendChild(el('circle',{cx:xOf(CUT[a]), cy:ay(a), r:11,
+        fill:'#fff', stroke:C.orange, 'stroke-width':4}));
+      tag(g,xOf(CUT[a]), ay(a)-26, a+' records', C.orange, 12.5, 700);
+    });
+
+    // ── the ghosts, laid over the top ────────────────────────────────
+    if(q>0.001){
+      const op=Math.min(1, q*5);
+      const gg=el('g',{opacity:op});
+      g.appendChild(gg);
+
+      // the line the ghosts are being brought onto
+      const gpts=[[xOf(gh('X',CUT.X)), ay('X')-70]];
+      AGENTS.forEach(function(a){ gpts.push([xOf(gh(a,CUT[a])), ay(a)]); });
+      gpts.push([xOf(gh('Z',CUT.Z)), ay('Z')+70]);
+      gg.appendChild(el('polyline',{
+        points:gpts.map(function(p){return p[0]+','+p[1];}).join(' '),
+        fill:'none', stroke:C.teal, 'stroke-width':2.5,
+        'stroke-dasharray':'3 5'}));
+
+      // the ghost of the offending message, its ends carried by their agents
+      if(BAD){
+        const ya=ay(BAD.from), yb=ay(BAD.to), d=(yb>ya?1:-1);
+        const xs=xOf(gh(BAD.from, BAD.ts)), xr=xOf(gh(BAD.to, BAD.tr));
+        gg.appendChild(el('line',{x1:xs, y1:ya+d*R, x2:xr, y2:yb-d*R,
+          stroke:C.teal, 'stroke-width':3.5, 'stroke-dasharray':'3 5',
+          'marker-end':'url(#'+PFX+'ahG)'}));
+        [[xs,ya],[xr,yb]].forEach(function(pt){
+          gg.appendChild(el('circle',{cx:pt[0], cy:pt[1], r:R+1,
+            fill:'#fff', stroke:C.teal, 'stroke-width':2.5}));
+        });
+        tag(gg,(xs+xr)/2-16,(ya+yb)/2, BAD.n, C.teal, 12.5);
+        if(q>0.6)
+          tag(gg,(xs+xr)/2,(ya+yb)/2+32, 'backward in time', C.teal, 13, 700,
+              (q-0.6)/0.4);
+      }
+
+      // the ghost record circles themselves
+      AGENTS.forEach(function(a){
+        gg.appendChild(el('circle',{cx:xOf(gh(a,CUT[a])), cy:ay(a), r:11,
+          fill:'none', stroke:C.teal, 'stroke-width':3.5,
+          'stroke-dasharray':'3 4'}));
+      });
+
+      if(q>0.7){
+        const o=(q-0.7)/0.3;
+        tag(gg,xOf(V), 496, 'what the snapshot claims was one moment',
+            C.teal, 13, 700, o);
+      }
+    }
+
+    readout();
+  }
+
+  function readout(){
+    $('when').innerHTML=AGENTS.map(function(a){
+      return a+' at <b>'+CUT[a]+'</b>';}).join(' &nbsp;·&nbsp; ')+
+      ' <span class="none">— begins at '+FIRST+', ends at '+LAST+'</span>';
+    $('chan').innerHTML = INTRANSIT.length
+      ? '<span class="chan">'+INTRANSIT.map(function(m){
+          return m.n+' ('+m.from+'&rarr;'+m.to+')';}).join(', ')+'</span>'
+      : '<span class="none">none</span>';
+    if(!BAD){ $('bad').innerHTML='<span class="ok">none</span>'; return; }
+    const xs=gh(BAD.from,BAD.ts), xr=gh(BAD.to,BAD.tr);
+    $('bad').innerHTML = q<0.02
+      ? '<span class="bad">'+BAD.n+'</span> <span class="none">— press the '+
+        'button to see what the snapshot makes of it</span>'
+      : '<span class="bad">'+BAD.n+'</span> <span class="none">sent by '+
+        BAD.from+' at '+Math.round(xs)+', received by '+BAD.to+' at '+
+        Math.round(xr)+(xr<xs? ' — '+Math.round(xs-xr)+
+        ' earlier than it was sent' : '')+'</span>';
+  }
+
+  function glide(to){
+    if(anim) cancelAnimationFrame(anim);
+    const from=q, t0=performance.now(), dur=2400;
+    (function step(t){
+      const p=Math.min(1,(t-t0)/dur);
+      q=from+(to-from)*(p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2);
+      draw();
+      if(p<1) anim=requestAnimationFrame(step); else { q=to; draw(); }
+    })(t0);
+  }
+  $('go').onclick=function(){ glide(1); };
+  $('back').onclick=function(){ glide(0); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='ok_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g');
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const X0=210, X1=1190, R=6;
+  const AY={X:130, Y:270, Z:410};
+  const AGENTS=['X','Y','Z'];
+  const ay=function(a){return AY[a];};
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+
+  const EV={X:[8,30,58,82], Y:[10,40,68,90], Z:[12,26,52,74]};
+  const MSG=[
+    {n:'m1', from:'X', ts: 8, to:'Y', tr:40},
+    {n:'m2', from:'Y', ts:10, to:'Z', tr:26},
+    {n:'m3', from:'Z', ts:12, to:'X', tr:30},
+    {n:'m4', from:'X', ts:30, to:'Z', tr:52},
+    {n:'m5', from:'Y', ts:40, to:'X', tr:58},
+    {n:'m6', from:'Z', ts:52, to:'Y', tr:68}
+  ];
+  // X goes first, so the snapshot starts at X's own moment. Y records
+  // between its second and third events. V, where the ghosts meet, sits
+  // between Z's second and third events -- clear of every event dot, and
+  // far enough from the ends that the two labels do not collide.
+  const CUT={X:35, Y:62, Z:45};
+  const V=47;
+  const FIRST=Math.min(CUT.X,CUT.Y,CUT.Z), LAST=Math.max(CUT.X,CUT.Y,CUT.Z);
+
+  const IMPOSSIBLE=MSG.filter(function(m){
+    return m.ts > CUT[m.from] && m.tr < CUT[m.to]; });
+  const INTRANSIT=MSG.filter(function(m){
+    return m.ts < CUT[m.from] && m.tr > CUT[m.to]; });
+
+  let q=0, anim=null;
+  const slide=function(a){return q*(V-CUT[a]);};
+  const gh=function(a,t){return t+slide(a);};
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,s,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, s);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    [['ah',C.ink],['ahO',C.orange],['ahG',C.teal]].forEach(function(p){
+      const m=el('marker',{id:PFX+p[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:p[1]}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{});
+    svg.appendChild(g);
+
+    // ── what actually happened ───────────────────────────────────────
+    g.appendChild(el('rect',{x:xOf(FIRST), y:54, width:xOf(LAST)-xOf(FIRST),
+      height:416, fill:C.orange, opacity:.05}));
+    [[FIRST,'global snapshot starts'],[LAST,'global snapshot ends']]
+      .forEach(function(b){
+        g.appendChild(el('line',{x1:xOf(b[0]), y1:54, x2:xOf(b[0]), y2:470,
+          stroke:C.muted, 'stroke-width':2}));
+        tag(g,xOf(b[0]), 38, b[1], C.muted, 13, 700);
+      });
+
+    AGENTS.forEach(function(a){
+      const y=ay(a);
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y,
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18, y:y,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+      g.appendChild(el('text',{x:X0-18, y:y+19,
+        'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+        'font-size':11.5, fill:C.muted, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, 'agent'));
+    });
+
+    const hot={}; INTRANSIT.forEach(function(m){ hot[m.n]=1; });
+    MSG.forEach(function(m){
+      const ya=ay(m.from), yb=ay(m.to), d=(yb>ya?1:-1);
+      g.appendChild(el('line',{x1:xOf(m.ts), y1:ya+d*R, x2:xOf(m.tr), y2:yb-d*R,
+        stroke:hot[m.n]?C.orange:C.ink, 'stroke-width':hot[m.n]?3:2,
+        'marker-end':'url(#'+PFX+(hot[m.n]?'ahO':'ah')+')'}));
+      tag(g,(xOf(m.ts)+xOf(m.tr))/2+14,(ay(m.from)+ay(m.to))/2, m.n,
+          hot[m.n]?C.orange:C.muted, 12.5);
+    });
+    AGENTS.forEach(function(a){
+      EV[a].forEach(function(t){
+        g.appendChild(el('circle',{cx:xOf(t), cy:ay(a), r:R,
+          fill:C.ink, stroke:'#fff', 'stroke-width':2}));
+      });
+    });
+
+    // no joining line through the records here -- the ghosts do the telling
+    AGENTS.forEach(function(a){
+      g.appendChild(el('circle',{cx:xOf(CUT[a]), cy:ay(a), r:11,
+        fill:'#fff', stroke:C.orange, 'stroke-width':4}));
+      tag(g,xOf(CUT[a]), ay(a)-26, a+' records', C.orange, 12.5, 700);
+    });
+
+    // ── the ghosts: this time every message comes along ──────────────
+    if(q>0.001){
+      const gg=el('g',{opacity:Math.min(1, q*5)});
+      g.appendChild(gg);
+
+      const gpts=[[xOf(gh('X',CUT.X)), ay('X')-70]];
+      AGENTS.forEach(function(a){ gpts.push([xOf(gh(a,CUT[a])), ay(a)]); });
+      gpts.push([xOf(gh('Z',CUT.Z)), ay('Z')+70]);
+      gg.appendChild(el('polyline',{
+        points:gpts.map(function(p){return p[0]+','+p[1];}).join(' '),
+        fill:'none', stroke:C.teal, 'stroke-width':2.5,
+        'stroke-dasharray':'3 5'}));
+
+      AGENTS.forEach(function(a){
+        gg.appendChild(el('circle',{cx:xOf(gh(a,CUT[a])), cy:ay(a), r:11,
+          fill:'none', stroke:C.teal, 'stroke-width':3.5,
+          'stroke-dasharray':'3 4'}));
+      });
+
+      if(q>0.7)
+        tag(gg,xOf(V), 496, 'one moment the three records could share',
+            C.teal, 13, 700, (q-0.7)/0.3);
+    }
+
+    readout();
+  }
+
+  function readout(){
+    $('when').innerHTML=AGENTS.map(function(a){
+      return a+' at <b>'+CUT[a]+'</b>';}).join(' &nbsp;·&nbsp; ')+
+      ' <span class="none">— begins at '+FIRST+' with X, ends at '+LAST+'</span>';
+    $('chan').innerHTML = INTRANSIT.length
+      ? '<span class="chan">'+INTRANSIT.map(function(m){
+          return m.n+' ('+m.from+'&rarr;'+m.to+')';}).join(', ')+'</span>'
+      : '<span class="none">none</span>';
+    $('bad').innerHTML = IMPOSSIBLE.length
+      ? '<span class="bad">'+IMPOSSIBLE.map(function(m){return m.n;}).join(', ')+'</span>'
+      : '<span class="ok">none — every message that arrived had been sent</span>';
+  }
+
+  function glide(to){
+    if(anim) cancelAnimationFrame(anim);
+    const from=q, t0=performance.now(), dur=2400;
+    (function step(t){
+      const p=Math.min(1,(t-t0)/dur);
+      q=from+(to-from)*(p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2);
+      draw();
+      if(p<1) anim=requestAnimationFrame(step); else { q=to; draw(); }
+    })(t0);
+  }
+  $('go').onclick=function(){ glide(1); };
+  $('back').onclick=function(){ glide(0); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='ch_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g');
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const X0=210, X1=1190, R=7;
+  const AY={X:130, Y:270, Z:410};
+  const AGENTS=['X','Y','Z'];
+  const ay=function(a){return AY[a];};
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+
+  // a fragment of an execution: seven events, five messages
+  const E={
+    0:{ag:'X', t:10}, 3:{ag:'X', t:56}, 4:{ag:'X', t:74},
+    1:{ag:'Y', t:16}, 5:{ag:'Y', t:66},
+    2:{ag:'Z', t:26}, 6:{ag:'Z', t:72}
+  };
+  const MSG=[[0,2],[1,3],[1,4],[2,5],[1,6]];
+  const CUT={X:32, Y:52, Z:44};
+  const V=40;                                  // where the ghosts meet
+
+  const ag=function(n){return E[n].ag;};
+  const tm=function(n){return E[n].t;};
+  const name=function(m){return m[0]+'→'+m[1];};
+
+  // in a channel: its sender had sent it, its receiver had not taken it
+  function inChannel(){
+    return MSG.filter(function(m){
+      return tm(m[0]) < CUT[ag(m[0])] && tm(m[1]) > CUT[ag(m[1])]; });
+  }
+  const CHAN=inChannel();
+  const isChan={}; CHAN.forEach(function(m){ isChan[name(m)]=1; });
+  // the two the caption points at: those crossing the X-to-Y segment
+  const XY=CHAN.filter(function(m){
+    const p=[ag(m[0]),ag(m[1])].sort().join('');
+    return p==='XY'; });
+
+  let q=0, anim=null;
+  const slide=function(a){return q*(V-CUT[a]);};
+  const gx=function(n){return tm(n)+slide(ag(n));};
+  const gcut=function(a){return CUT[a]+slide(a);};
+
+  // Where a message meets the X-to-Y stretch of the cut. Both segments span
+  // the band between the two agent lines, so parameterise by y and bisect.
+  function meet(m){
+    const cA={x:xOf(gcut('X')), y:ay('X')}, cB={x:xOf(gcut('Y')), y:ay('Y')};
+    const pA={x:xOf(tm(m[0])), y:ay(ag(m[0]))},
+          pB={x:xOf(tm(m[1])), y:ay(ag(m[1]))};
+    const cx=function(y){return cA.x+(cB.x-cA.x)*(y-cA.y)/(cB.y-cA.y);};
+    const mx=function(y){return pA.x+(pB.x-pA.x)*(y-pA.y)/(pB.y-pA.y);};
+    const f=function(y){return cx(y)-mx(y);};
+    let lo=Math.min(cA.y,cB.y), hi=Math.max(cA.y,cB.y);
+    if(f(lo)*f(hi)>0) return null;
+    for(let i=0;i<50;i++){
+      const mid=(lo+hi)/2;
+      if(f(lo)*f(mid)<=0) hi=mid; else lo=mid;
+    }
+    const y=(lo+hi)/2;
+    return {x:cx(y), y:y};
+  }
+  function cross(g,pt,col){
+    const r=8;
+    g.appendChild(el('line',{x1:pt.x-r, y1:pt.y-r, x2:pt.x+r, y2:pt.y+r,
+      stroke:'#fff', 'stroke-width':6}));
+    g.appendChild(el('line',{x1:pt.x+r, y1:pt.y-r, x2:pt.x-r, y2:pt.y+r,
+      stroke:'#fff', 'stroke-width':6}));
+    g.appendChild(el('line',{x1:pt.x-r, y1:pt.y-r, x2:pt.x+r, y2:pt.y+r,
+      stroke:col, 'stroke-width':3}));
+    g.appendChild(el('line',{x1:pt.x+r, y1:pt.y-r, x2:pt.x-r, y2:pt.y+r,
+      stroke:col, 'stroke-width':3}));
+  }
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,s,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, s);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+  function arrow(g,x1,y1,x2,y2,col,w,dash,head){
+    const a={x1:x1, y1:y1, x2:x2, y2:y2, stroke:col, 'stroke-width':w,
+             'marker-end':'url(#'+PFX+head+')'};
+    if(dash) a['stroke-dasharray']=dash;
+    g.appendChild(el('line',a));
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    [['ah',C.ink],['ahO',C.orange],['ahG',C.teal]].forEach(function(p){
+      const m=el('marker',{id:PFX+p[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:p[1]}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{});
+    svg.appendChild(g);
+
+    AGENTS.forEach(function(a){
+      const y=ay(a);
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y,
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18, y:y,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+      g.appendChild(el('text',{x:X0-18, y:y+19,
+        'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+        'font-size':11.5, fill:C.muted, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, 'agent'));
+    });
+
+    // messages as they happened; the ones in the channels stand out
+    MSG.forEach(function(m){
+      const ya=ay(ag(m[0])), yb=ay(ag(m[1])), d=(yb>ya?1:-1);
+      const hot=isChan[name(m)];
+      arrow(g, xOf(tm(m[0])), ya+d*R, xOf(tm(m[1])), yb-d*R,
+            hot?C.orange:C.ink, hot?3:2, null, hot?'ahO':'ah');
+      tag(g,(xOf(tm(m[0]))+xOf(tm(m[1])))/2+18,(ya+yb)/2, name(m),
+          hot?C.orange:C.muted, 12.5);
+    });
+
+    Object.keys(E).forEach(function(n){
+      const y=ay(ag(n)), x=xOf(tm(n));
+      g.appendChild(el('circle',{cx:x, cy:y, r:R, fill:C.ink,
+        stroke:'#fff', 'stroke-width':2}));
+      tag(g,x, y-22, n, C.ink, 13, 700);
+    });
+
+    // the records, and the line joining them
+    const pts=[[xOf(CUT.X), ay('X')-64]];
+    AGENTS.forEach(function(a){ pts.push([xOf(CUT[a]), ay(a)]); });
+    pts.push([xOf(CUT.Z), ay('Z')+64]);
+    g.appendChild(el('polyline',{
+      points:pts.map(function(p){return p[0]+','+p[1];}).join(' '),
+      fill:'none', stroke:C.orange, 'stroke-width':2.5,
+      'stroke-dasharray':'8 5', opacity:Math.max(0, 1-q*3)}));
+    AGENTS.forEach(function(a){
+      g.appendChild(el('circle',{cx:xOf(CUT[a]), cy:ay(a), r:11,
+        fill:'#fff', stroke:C.orange, 'stroke-width':4}));
+      tag(g,xOf(CUT[a]), ay(a)+28, a+' records', C.orange, 12.5, 700);
+    });
+
+    // ── the ghosts: the whole fragment travels with its agent ────────
+    if(q>0.001){
+      const gg=el('g',{opacity:Math.min(1, q*5)});
+      g.appendChild(gg);
+      const gp=[[xOf(gcut('X')), ay('X')-64]];
+      AGENTS.forEach(function(a){ gp.push([xOf(gcut(a)), ay(a)]); });
+      gp.push([xOf(gcut('Z')), ay('Z')+64]);
+      gg.appendChild(el('polyline',{
+        points:gp.map(function(p){return p[0]+','+p[1];}).join(' '),
+        fill:'none', stroke:C.teal, 'stroke-width':2.5,
+        'stroke-dasharray':'3 5'}));
+      AGENTS.forEach(function(a){
+        gg.appendChild(el('circle',{cx:xOf(gcut(a)), cy:ay(a), r:11,
+          fill:'none', stroke:C.teal, 'stroke-width':3.5,
+          'stroke-dasharray':'3 4'}));
+      });
+      if(q>0.7)
+        tag(gg,xOf(V), 494, 'the same messages cross', C.teal, 13, 700,
+            (q-0.7)/0.3);
+    }
+
+    // the two messages that cross between X and Y, marked where they cross
+    XY.forEach(function(m){
+      const pt=meet(m);
+      if(pt) cross(g, pt, C.ink);
+    });
+
+    readout();
+  }
+
+  function readout(){
+    $('when').innerHTML=AGENTS.map(function(a){
+      return a+' at <b>'+CUT[a]+'</b>';}).join(' &nbsp;·&nbsp; ');
+    $('xy').innerHTML='<span class="chan">'+XY.map(name).join(', ')+'</span>'+
+      ' <span class="none">— sent by Y before it recorded, taken by X after</span>';
+    // read off wherever the cut currently is: each end against its own
+    // agent's record, which is what "in a channel" means
+    const now=MSG.filter(function(m){
+      return tm(m[0]) < gcut(ag(m[0])) && tm(m[1]) > gcut(ag(m[1])); });
+    $('chan').innerHTML='<span class="chan">'+now.map(name).join(', ')+'</span>'+
+      ' <span class="none">'+(q>0.02?'— unchanged':'')+'</span>';
+  }
+
+  function glide(to){
+    if(anim) cancelAnimationFrame(anim);
+    const from=q, t0=performance.now(), dur=2400;
+    (function step(t){
+      const p=Math.min(1,(t-t0)/dur);
+      q=from+(to-from)*(p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2);
+      draw();
+      if(p<1) anim=requestAnimationFrame(step); else { q=to; draw(); }
+    })(t0);
+  }
+  $('go').onclick=function(){ glide(1); };
+  $('back').onclick=function(){ glide(0); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='st_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g');
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const X0=210, X1=1180, R=7;
+  const AY={X:130, Y:240, Z:350};
+  const AGENTS=['X','Y','Z'];
+  const ay=function(a){return AY[a];};
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+
+  const E={x1:['X',10], x2:['X',68], x3:['X',86],
+           y1:['Y',16], y2:['Y',38], y3:['Y',62],
+           z1:['Z',22], z2:['Z',46], z3:['Z',80]};
+  const MSG=[['m1','x1','y2'],['m2','y1','z2'],['m3','z1','x2'],
+             ['m4','y2','z3'],['m5','z2','y3'],['m6','y3','x3'],
+             ['m7','x2','z3']];
+  const CUT={X:30, Y:42, Z:72};
+  const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
+  const FIRST=Math.min(CUT.X,CUT.Y,CUT.Z), LAST=Math.max(CUT.X,CUT.Y,CUT.Z);
+  // A vertical line here cuts every agent exactly where its own record does,
+  // so it stands for the recorded state. Such a line exists only because the
+  // three records happen to share a window between events.
+  const V=54;
+
+  const AT={init:{t:FIRST, label:'S_init'},
+            snap:{t:V,     label:'S_snap'},
+            fini:{t:LAST,  label:'S_fini'}};
+  const crossing=function(T){
+    return MSG.filter(function(m){ return tm(m[1])<T && tm(m[2])>T; }); };
+  const recorded=MSG.filter(function(m){
+    return tm(m[1])<CUT[ag(m[1])] && tm(m[2])>CUT[ag(m[2])]; });
+
+  let q=0, sel=null, anim=null;
+  const gcut=function(a){return CUT[a]+q*(V-CUT[a]);};
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,s,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, s);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+
+  function mark(g,x,y){
+    const r=8;
+    [['#fff',6],[C.ink,3]].forEach(function(st){
+      g.appendChild(el('line',{x1:x-r, y1:y-r, x2:x+r, y2:y+r,
+        stroke:st[0], 'stroke-width':st[1]}));
+      g.appendChild(el('line',{x1:x+r, y1:y-r, x2:x-r, y2:y+r,
+        stroke:st[0], 'stroke-width':st[1]}));
+    });
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    [['ah',C.ink],['ahO',C.orange]].forEach(function(p){
+      const m=el('marker',{id:PFX+p[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:p[1]}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{});
+    svg.appendChild(g);
+
+    const hot={};
+    if(sel) crossing(AT[sel].t).forEach(function(m){ hot[m[0]]=1; });
+
+    // the state being looked at
+    if(sel){
+      const x=xOf(AT[sel].t);
+      g.appendChild(el('line',{x1:x, y1:62, x2:x, y2:400,
+        stroke:C.ink, 'stroke-width':3}));
+      tag(g,x, 44, AT[sel].label, C.ink, 15, 700);
+    }
+
+    AGENTS.forEach(function(a){
+      const y=ay(a);
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y,
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-16, y:y,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':18,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+    });
+
+    MSG.forEach(function(m){
+      const ya=ay(ag(m[1])), yb=ay(ag(m[2])), d=(yb>ya?1:-1);
+      const on=hot[m[0]];
+      g.appendChild(el('line',{x1:xOf(tm(m[1])), y1:ya+d*R,
+        x2:xOf(tm(m[2])), y2:yb-d*R,
+        stroke:on?C.orange:C.ink, 'stroke-width':on?3.5:2,
+        'marker-end':'url(#'+PFX+(on?'ahO':'ah')+')'}));
+      tag(g,(xOf(tm(m[1]))+xOf(tm(m[2])))/2+16,(ya+yb)/2, m[0],
+          on?C.orange:C.muted, 12.5);
+    });
+
+    Object.keys(E).forEach(function(n){
+      const x=xOf(tm(n)), y=ay(ag(n));
+      g.appendChild(el('circle',{cx:x, cy:y, r:R, fill:C.ink,
+        stroke:'#fff', 'stroke-width':2}));
+      tag(g,x, y-21, n, C.ink, 12.5, 700);
+    });
+
+    // where each agent recorded, and the line joining them
+    const pts=[[xOf(CUT.X), ay('X')-56]];
+    AGENTS.forEach(function(a){ pts.push([xOf(CUT[a]), ay(a)]); });
+    pts.push([xOf(CUT.Z), ay('Z')+56]);
+    g.appendChild(el('polyline',{
+      points:pts.map(function(p){return p[0]+','+p[1];}).join(' '),
+      fill:'none', stroke:C.orange, 'stroke-width':2.5,
+      'stroke-dasharray':'8 5', opacity:Math.max(0, 1-q*3)}));
+    AGENTS.forEach(function(a){
+      g.appendChild(el('circle',{cx:xOf(CUT[a]), cy:ay(a), r:11,
+        fill:'none', stroke:C.orange, 'stroke-width':4,
+        opacity:Math.max(0, 1-q*3)}));
+      if(q<0.2) tag(g,xOf(CUT[a]), ay(a)+26, a+' records', C.orange, 12, 700);
+    });
+
+    // the records, brought onto one line
+    if(q>0.001){
+      const gg=el('g',{opacity:Math.min(1, q*5)});
+      g.appendChild(gg);
+      const gp=[[xOf(gcut('X')), ay('X')-56]];
+      AGENTS.forEach(function(a){ gp.push([xOf(gcut(a)), ay(a)]); });
+      gp.push([xOf(gcut('Z')), ay('Z')+56]);
+      gg.appendChild(el('polyline',{
+        points:gp.map(function(p){return p[0]+','+p[1];}).join(' '),
+        fill:'none', stroke:C.teal, 'stroke-width':2.5,
+        'stroke-dasharray':'3 5'}));
+      AGENTS.forEach(function(a){
+        gg.appendChild(el('circle',{cx:xOf(gcut(a)), cy:ay(a), r:11,
+          fill:'none', stroke:C.teal, 'stroke-width':3.5,
+          'stroke-dasharray':'3 4'}));
+      });
+    }
+
+    // Every crossing of the vertical line is one element of the state: an
+    // agent line gives that agent's state, a message line gives a message
+    // still in a channel.
+    if(sel){
+      const T=AT[sel].t, x=xOf(T);
+      AGENTS.forEach(function(a){
+        g.appendChild(el('circle',{cx:x, cy:ay(a), r:8, fill:'#fff',
+          stroke:C.ink, 'stroke-width':3.5}));
+      });
+      crossing(T).forEach(function(m){
+        const xs=xOf(tm(m[1])), xr=xOf(tm(m[2]));
+        const ys=ay(ag(m[1])), yr=ay(ag(m[2]));
+        mark(g, x, ys+(yr-ys)*(x-xs)/(xr-xs));
+      });
+    }
+
+    readout();
+  }
+
+  function readout(){
+    if(!sel){
+      $('what').innerHTML='<span class="none">pick a state</span>';
+      $('done').innerHTML=''; $('chan').innerHTML='';
+      return;
+    }
+    const T=AT[sel].t;
+    $('what').innerHTML='<b>'+AT[sel].label+'</b> <span class="none">— '+
+      (sel==='init' ? 'when the algorithm starts, at t = '+T
+       : sel==='snap' ? 'what the algorithm records; the line the three '+
+                        'records meet on, at t = '+T
+       : 'when the algorithm finishes, at t = '+T)+'</span>';
+    $('done').innerHTML=AGENTS.map(function(a){
+      const d=Object.keys(E).filter(function(n){
+        return ag(n)===a && tm(n)<T; });
+      return a+' <b>'+d.length+'</b>';}).join(' &nbsp;·&nbsp; ')+
+      ' <span class="none">('+Object.keys(E).filter(function(n){return tm(n)<T;})
+        .sort(function(a,b){return tm(a)-tm(b);}).join(', ')+')</span>';
+    const cr=crossing(T);
+    $('chan').innerHTML='<span class="chan">'+cr.map(function(m){
+        return m[0]+' ('+m[1]+'&rarr;'+m[2]+')';}).join(', ')+'</span>'+
+      (sel==='snap'
+        ? ' <span class="ok">— exactly the messages the algorithm records</span>'
+        : '');
+  }
+
+  function glide(to, then){
+    if(anim) cancelAnimationFrame(anim);
+    const from=q, t0=performance.now(), dur=1800;
+    (function step(t){
+      const p=Math.min(1,(t-t0)/dur);
+      q=from+(to-from)*(p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2);
+      draw();
+      if(p<1) anim=requestAnimationFrame(step);
+      else { q=to; draw(); if(then) then(); }
+    })(t0);
+  }
+  $('align').onclick=function(){ glide(q>0.5?0:1); };
+  $('init').onclick=function(){ sel='init'; draw(); };
+  $('fini').onclick=function(){ sel='fini'; draw(); };
+  $('snap').onclick=function(){
+    sel='snap';
+    if(q<0.99) glide(1); else draw();
+  };
+  $('clear').onclick=function(){ sel=null; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='rr_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g');
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const X0=210, X1=1180, R=7;
+  const AY={X:120, Y:215, Z:310};
+  const AGENTS=['X','Y','Z'];
+  const ay=function(a){return AY[a];};
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+
+  const E={x1:['X',10], x2:['X',38], x3:['X',62], x4:['X',90],
+           y1:['Y',16], y2:['Y',34], y3:['Y',70],
+           z1:['Z',22], z2:['Z',48], z3:['Z',58], z4:['Z',80]};
+  const MSG=[['m1','x1','y2'],['m2','y1','z2'],['m3','z1','x2'],
+             ['m4','y2','z3'],['m5','z2','x3'],['m6','x3','z4'],
+             ['m7','y3','x4']];
+  const CUT={X:30, Y:42, Z:72};
+  const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
+  const FIRST=Math.min(CUT.X,CUT.Y,CUT.Z), LAST=Math.max(CUT.X,CUT.Y,CUT.Z);
+  const V=43;                               // where the records are brought
+
+  // what happens while the algorithm runs, split by which side of its own
+  // agent's record it falls
+  const SEG=Object.keys(E).filter(function(n){
+    return tm(n)>FIRST && tm(n)<LAST; }).sort(function(a,b){return tm(a)-tm(b);});
+  const P=SEG.filter(function(n){return tm(n)<CUT[ag(n)];});
+  const Q=SEG.filter(function(n){return tm(n)>CUT[ag(n)];});
+  const inP={}; P.forEach(function(n){ inP[n]=1; });
+  const SNAP=P.concat(Q);
+  const rIdx={}, sIdx={};
+  SEG.forEach(function(n,i){ rIdx[n]=i; });
+  SNAP.forEach(function(n,i){ sIdx[n]=i; });
+
+  const SX0=310, SX1=1050, SY=512;
+  const slot=function(i){return SX0+i*(SX1-SX0)/(SEG.length-1);};
+  const SNAPX=(slot(P.length-1)+slot(P.length))/2;
+
+  let qa=0, qr=0, anim=null;                // align, reorder
+  const lerp=function(a,b,k){return a+(b-a)*k;};
+  const gcut=function(a){return CUT[a]+qa*(V-CUT[a]);};
+  const tokX=function(n){return lerp(slot(rIdx[n]), slot(sIdx[n]), qr);};
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,s,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, s);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+  function stateMark(g,x,label,op){
+    g.appendChild(el('line',{x1:x, y1:SY-40, x2:x, y2:SY+40,
+      stroke:C.ink, 'stroke-width':2.5, opacity:(op==null?1:op)}));
+    const t=el('text',{x:x, y:SY+60,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':14,
+      'font-weight':700, fill:C.ink, 'text-anchor':'middle'}, label);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    [['ah',C.ink]].forEach(function(p){
+      const m=el('marker',{id:PFX+p[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:p[1]}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{});
+    svg.appendChild(g);
+
+    // fixed: where the algorithm starts and finishes
+    g.appendChild(el('rect',{x:xOf(FIRST), y:56, width:xOf(LAST)-xOf(FIRST),
+      height:300, fill:C.orange, opacity:.05}));
+    [[FIRST,'S_init'],[LAST,'S_fini']].forEach(function(b){
+      g.appendChild(el('line',{x1:xOf(b[0]), y1:56, x2:xOf(b[0]), y2:356,
+        stroke:C.muted, 'stroke-width':2}));
+      tag(g,xOf(b[0]), 40, b[1], C.ink, 14, 700);
+    });
+
+    AGENTS.forEach(function(a){
+      const y=ay(a);
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y,
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-16, y:y,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':18,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+    });
+
+    MSG.forEach(function(m){
+      const ya=ay(ag(m[1])), yb=ay(ag(m[2])), d=(yb>ya?1:-1);
+      g.appendChild(el('line',{x1:xOf(tm(m[1])), y1:ya+d*R,
+        x2:xOf(tm(m[2])), y2:yb-d*R, stroke:C.ink, 'stroke-width':2,
+        'marker-end':'url(#'+PFX+'ah)'}));
+      tag(g,(xOf(tm(m[1]))+xOf(tm(m[2])))/2+15,(ya+yb)/2, m[0], C.muted, 12);
+    });
+
+    Object.keys(E).forEach(function(n){
+      const x=xOf(tm(n)), y=ay(ag(n));
+      const during=(tm(n)>FIRST && tm(n)<LAST);
+      g.appendChild(el('circle',{cx:x, cy:y, r:R,
+        fill:during?(inP[n]?'#f7d9cd':'#fff'):C.ink,
+        stroke:during?C.orange:'#fff', 'stroke-width':during?2.5:2}));
+      tag(g,x, y-20, n, C.ink, 12, 700);
+    });
+
+    AGENTS.forEach(function(a){
+      g.appendChild(el('circle',{cx:xOf(CUT[a]), cy:ay(a), r:11,
+        fill:'none', stroke:C.orange, 'stroke-width':4,
+        opacity:Math.max(0, 1-qa*3)}));
+    });
+    if(qa>0.001){
+      const gg=el('g',{opacity:Math.min(1, qa*5)});
+      g.appendChild(gg);
+      const gp=[[xOf(gcut('X')), ay('X')-52]];
+      AGENTS.forEach(function(a){ gp.push([xOf(gcut(a)), ay(a)]); });
+      gp.push([xOf(gcut('Z')), ay('Z')+52]);
+      gg.appendChild(el('polyline',{
+        points:gp.map(function(p){return p[0]+','+p[1];}).join(' '),
+        fill:'none', stroke:C.teal, 'stroke-width':2.5,
+        'stroke-dasharray':'3 5'}));
+      AGENTS.forEach(function(a){
+        gg.appendChild(el('circle',{cx:xOf(gcut(a)), cy:ay(a), r:11,
+          fill:'none', stroke:C.teal, 'stroke-width':3.5,
+          'stroke-dasharray':'3 4'}));
+      });
+    }
+
+    // ── the same events, as a sequence ───────────────────────────────
+    g.appendChild(el('line',{x1:SX0-140, y1:SY, x2:SX1+140, y2:SY,
+      stroke:C.line, 'stroke-width':2.5, 'marker-end':'url(#'+PFX+'ah)'}));
+    tag(g,(SX0+SX1)/2, SY-74,
+        qr<0.5 ? 'the order it happened in' : "the snapshot's order",
+        C.muted, 13, 700);
+    stateMark(g, SX0-140, 'S_init');
+    stateMark(g, SX1+140, 'S_fini');
+    if(qr>0.6) stateMark(g, SNAPX, 'S_snap', (qr-0.6)/0.4);
+
+    SEG.forEach(function(n){
+      const x=tokX(n), w=50, h=30;
+      g.appendChild(el('rect',{x:x-w/2, y:SY-h/2, width:w, height:h, rx:6,
+        fill:inP[n]?'#f7d9cd':'#fff', stroke:C.orange, 'stroke-width':2.5}));
+      g.appendChild(el('text',{x:x, y:SY,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':13,
+        'font-weight':700, fill:C.ink, 'text-anchor':'middle',
+        'dominant-baseline':'middle'}, n));
+    });
+
+    readout();
+  }
+
+  function readout(){
+    $('p').innerHTML='<span class="chan">'+P.join(', ')+'</span>'+
+      ' <span class="none">— the snapshot counts these as done</span>';
+    $('q').innerHTML='<span class="chan">'+Q.join(', ')+'</span>'+
+      ' <span class="none">— it does not</span>';
+    const pos={}; SNAP.forEach(function(n,i){ pos[n]=i; });
+    const broken=MSG.filter(function(m){
+      return pos[m[1]]!=null && pos[m[2]]!=null && pos[m[1]]>=pos[m[2]]; });
+    let agentsOk=true;
+    AGENTS.forEach(function(a){
+      const mine=SNAP.filter(function(n){return ag(n)===a;});
+      for(let i=0;i<mine.length-1;i++)
+        if(tm(mine[i])>tm(mine[i+1])) agentsOk=false;
+    });
+    $('ok').innerHTML=(broken.length===0 && agentsOk)
+      ? '<span class="ok">yes — each agent keeps its own order, and every '+
+        'message is still sent before it is received</span>'
+      : '<span class="bad">no</span>';
+  }
+
+  function glide(get,set,to,dur){
+    if(anim) cancelAnimationFrame(anim);
+    const from=get(), t0=performance.now();
+    (function step(t){
+      const p=Math.min(1,(t-t0)/dur);
+      set(from+(to-from)*(p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2));
+      draw();
+      if(p<1) anim=requestAnimationFrame(step); else { set(to); draw(); }
+    })(t0);
+  }
+  $('align').onclick=function(){
+    glide(function(){return qa;}, function(v){qa=v;}, qa>0.5?0:1, 1800); };
+  $('reorder').onclick=function(){
+    glide(function(){return qr;}, function(v){qr=v;}, qr>0.5?0:1, 2200); };
+  $('reset').onclick=function(){
+    if(anim) cancelAnimationFrame(anim); qa=0; qr=0; draw(); };
+  draw();
+})();
+</script>
+
+<style>
+  .pslide{display:contents}
+  .presentbar{position:fixed; right:16px; bottom:14px; z-index:60;
+    display:flex; gap:8px; align-items:center}
+  .presentbar button{font:600 13px var(--sans,sans-serif); color:var(--ink,#1a1a2e);
+    background:#fff; border:1px solid var(--line,#ddd8cd); border-radius:8px;
+    padding:6px 12px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .presentbar button:hover{border-color:var(--muted,#6f7583)}
+  .presentbar .pnum{font:600 12px var(--mono,monospace); color:var(--muted,#6f7583)}
+
+  body.present{overflow:hidden}
+  body.present .wrap{max-width:none; padding:0; margin:0}
+  body.present .pslide{display:none}
+  body.present .pslide.on{
+    display:block; position:fixed; inset:0; overflow:auto;
+    padding:5vh 6vw 9vh; font-size:clamp(17px,1.55vw,25px);
+  }
+  /* Everything inside a shown chunk grows with it. */
+  body.present .pslide.on p,
+  body.present .pslide.on li{font-size:1em; line-height:1.5; max-width:34em}
+  body.present .pslide.on h1{font-size:2.5em}
+  body.present .pslide.on h2{font-size:1.9em; margin-top:0}
+  body.present .pslide.on h3{font-size:1.35em}
+  body.present .pslide.on figure.fig{margin:1.4vh 0; padding:14px 16px 12px}
+  /* A figure already breaks out of the text column; in present mode the
+     column is the screen, so the trick has to be switched off or it
+     shifts the figure sideways. */
+  body.present .pslide.on figure.fig.wideout{
+    width:auto; max-width:none; position:static; left:auto; transform:none}
+  body.present .pslide.on figcaption{font-size:.62em; line-height:1.5}
+  body.present .pslide.on .task{font-size:.9em}
+  body.present .presentbar{background:rgba(250,248,243,.9); border-radius:10px;
+    padding:4px 6px}
+</style>
+
+<script>
+(function(){
+  const wrap=document.querySelector('.wrap');
+  if(!wrap) return;
+
+  // ── group the page's own children into chunks ──────────────────────
+  // A heading, a figure or a task starts a chunk; a run of prose longer
+  // than five blocks starts one too, so no chunk overflows the screen.
+  const STARTS=el=>{
+    const t=el.tagName;
+    return t==='HEADER'||t==='H1'||t==='H2'||t==='H3'||t==='FIGURE'||
+           el.classList.contains('task');
+  };
+  const ALONE=el=>el.tagName==='FIGURE'||el.classList.contains('task');
+
+  const kids=[...wrap.children];
+  const groups=[]; let cur=null;
+  for(const el of kids){
+    if(!cur || STARTS(el) || cur.length>=5 || (cur.length&&ALONE(cur[cur.length-1])))
+      groups.push(cur=[]);
+    cur.push(el);
+  }
+  const slides=groups.filter(g=>g.length).map(g=>{
+    const d=document.createElement('div');
+    d.className='pslide';
+    wrap.insertBefore(d,g[0]);
+    g.forEach(el=>d.appendChild(el));
+    return d;
+  });
+
+  // ── the bar ────────────────────────────────────────────────────────
+  const bar=document.createElement('div');
+  bar.className='presentbar';
+  bar.innerHTML='<span class="pnum" hidden></span>'+
+                '<button type="button">Present</button>';
+  document.body.appendChild(bar);
+  const num=bar.querySelector('.pnum'), btn=bar.querySelector('button');
+
+  let on=false, i=0;
+  function show(){
+    slides.forEach((s,n)=>s.classList.toggle('on', on && n===i));
+    num.hidden=!on;
+    num.textContent=(i+1)+' / '+slides.length;
+    btn.textContent=on?'Exit':'Present';
+    // A canvas that was hidden may need a nudge to repaint.
+    if(on) window.dispatchEvent(new Event('resize'));
+  }
+  function enter(){ on=true;  document.body.classList.add('present');    show(); }
+  function leave(){ on=false; document.body.classList.remove('present');
+                    show(); slides[i].scrollIntoView({block:'start'}); }
+  btn.onclick=()=>on?leave():enter();
+
+  addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if(!on){ if(e.key==='p'||e.key==='P'){ e.preventDefault(); enter(); } return; }
+    if(e.key==='Escape'){ e.preventDefault(); leave(); }
+    else if(['ArrowRight',' ','PageDown','n'].includes(e.key)){
+      e.preventDefault(); i=Math.min(slides.length-1,i+1); show(); }
+    else if(['ArrowLeft','PageUp','b'].includes(e.key)){
+      e.preventDefault(); i=Math.max(0,i-1); show(); }
+    else if(e.key==='Home'){ e.preventDefault(); i=0; show(); }
+    else if(e.key==='End'){ e.preventDefault(); i=slides.length-1; show(); }
+  });
+
+  show();
+})();
+</script>
+
+<h2>The Global Snapshot</h2>
+<p>
+  Let S_init and S_fini be the states of the system
+  at which the global snapshot algorithm starts
+  and finishes, respectively. 
+  The global snapshot is a state S_snap of the system 
+  such that there is a computation from S_init to S_snap to 
+  S_fini.
+</p>
+
+<h3>Why is the global snapshot useful?</h3>
+<p>
+  <strong>Checkpoint, rollback and recover</strong>
+</br>
+In the event of a transient error the system can restart from the most
+recent checkpoint (a global snapshot) and continue execution from there.
+</p>
+
+<p>
+  <strong>Detecting stable properties</strong>
+  <br>
+  A stable property is one that if it holds at any point in a computation
+  then it continues to hold therafter. Examples of stable properties are
+  the system has terminated computation, or a set of agents are deadlocked.
+  Let P be a stable property. A problem is to detect whether P holds.
+  <ol>
+    <li>
+      If P holds when a global snapshot algorithm starts then P 
+      holds in the snapshot.
+    </li>
+
+    <li>
+      If P holds in the snapshot then P
+      holds when the global snapshot terminates.
+    </li>
+  </ol> 
+  One way of detecting a stable property P is to take 
+  global snapshots repeatedly and check whether P holds
+  in the snapshot.
+</p>
+
+<h2>The Global Snapshot: past and future events</h2>
+<p>
+Assume that each agent takes its local snapshot (i.e. records its
+own state) at some point in a computation.
+Define all events at an agent before the agent takes its local snapshot
+as <strong>past</strong> events.
+Similarly, define all events at an agent after the agent takes its local snapshot
+as <strong>future</strong> events.
+Define the messages at the snapshot as messages sent in the past and
+received in the future.
+The snapshot is a global snapshot exactly when there is no message sent
+in the future and received in the past.
+(Equivalently, all messages received in the past are sent in the past.
+Or, all messages sent in the future are received in the future.)
+</p>
+
+<p>
+  In the example, x1, y1, y2, z1, z2, z3 are past events and the other
+  events are future events.
+  The message sent at z1 and received at x2 is a message in the snapshot
+  because it is send in the past and received in the future.
+  By contrast, the message sent in y2 and received in z3 is not in the
+  snapshot because it is sent and received in the past.
+  Likewise, the message from y3 to x4 is not in the snapshot because it
+  is sent and received in the future.
+</p>
+
+</body>
+</html>
