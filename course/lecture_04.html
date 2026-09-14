@@ -81,6 +81,25 @@
     <p><i>Prose to come.</i></p>
   </header>
 
+<h2>Distributed perating system algorithms</h2>
+<p>
+An operating system (OS) carries out actions on behalf of its client without
+changes to the execution of the client algorithm.
+For example, an OS algorithm takes repeated checkpoints of the client's 
+execution. The execution of the client algorithm remains unchanged
+(except that it may run slower because the OS and client use the same
+resources) when the checkpoint algorithm runs.
+</p>
+
+<p>
+  The OS may use the same processes, threads, and queues that the client does.
+  We build systems with an OS agent for every client agent.
+  OS messages are trapped by the OS agent and not passed on to the client  agents.
+  Client agents never receive or send OS messages.
+</p>
+
+
+
 <h2>A snapshot at one instant</h2>
   <p>
     <i>Prose to come.</i> We want a picture of the whole system at once: the
@@ -291,12 +310,12 @@
   <p>
     <i>Prose to come.</i> The algorithm begins when the first agent records
     and finishes when the last one does. Call the global state at the start
-    <b>S<sub>init</sub></b>, the state at the finish <b>S<sub>fini</sub></b>,
-    and the state the algorithm writes down <b>S<sub>snap</sub></b>.
-    The system really did go from S<sub>init</sub> to S<sub>fini</sub>. It may
-    never have been in S<sub>snap</sub> at all — and yet there is a
-    computation S<sub>init</sub> &rarr; S<sub>snap</sub> &rarr;
-    S<sub>fini</sub>.
+    <b>S_init</b>, the state at the finish <b>S_fini</b>,
+    and the state the algorithm writes down <b>S_snap</b>.
+    The system really did go from S_init to S_fini. It may
+    never have been in S_snap at all — and yet there is a
+    computation S_init &rarr; S_snap &rarr;
+    S_fini.
   </p>
 
   <figure class="fig wideout">
@@ -321,14 +340,14 @@
       <b>Figure 6. Three states, and the messages in flight at each.</b>
       <i>Prose to come.</i> Press <i>Align the records</i> first: the three
       records slide onto one line, as before. That line is where
-      S<sub>snap</sub> sits.
-      Then take the three states in turn. At <b>S<sub>init</sub></b>, where
+      S_snap sits.
+      Then take the three states in turn. At <b>S_init</b>, where
       the algorithm starts, three messages are in the channels:
       <code>m1</code>, <code>m2</code>, <code>m3</code>. At
-      <b>S<sub>snap</sub></b> the channels hold <code>m3</code>,
+      <b>S_snap</b> the channels hold <code>m3</code>,
       <code>m4</code>, <code>m5</code> — and these are exactly the messages
       the algorithm records, each one sent before its sender's record and
-      received after its receiver's. At <b>S<sub>fini</sub></b>, where the
+      received after its receiver's. At <b>S_fini</b>, where the
       algorithm finishes, they are <code>m4</code>, <code>m6</code>,
       <code>m7</code>.
       Three different sets, overlapping. <code>m1</code> and <code>m2</code>
@@ -346,7 +365,7 @@
       previous lecture, now with three agents and a snapshot to compare it to.
       The snapshot is not a photograph of the channels at the start, nor at
       the finish. It is the channel state of a system that passed through
-      S<sub>snap</sub> on its way from one to the other.
+      S_snap on its way from one to the other.
     </figcaption>
   </figure>
 
@@ -355,7 +374,7 @@
     <i>Prose to come.</i> The same kind of picture, with the algorithm
     starting when X records and finishing when Z records. Six events happen
     while it runs. Below the timelines they are listed in the order they
-    actually occurred, from S<sub>init</sub> to S<sub>fini</sub>.
+    actually occurred, from S_init to S_fini.
   </p>
 
   <figure class="fig wideout">
@@ -387,14 +406,127 @@
       computation of the same system.
       And now a state appears in the middle of it. After the first three
       events the system is in exactly the state the algorithm wrote down:
-      <b>S<sub>snap</sub></b>. So although the system may never have been in
-      S<sub>snap</sub>, there is a computation S<sub>init</sub> &rarr;
-      S<sub>snap</sub> &rarr; S<sub>fini</sub>, which is what the algorithm
+      <b>S_snap</b>. So although the system may never have been in
+      S_snap, there is a computation S_init &rarr;
+      S_snap &rarr; S_fini, which is what the algorithm
       guarantees.
       Compare the two rows of the strip and note which events moved:
       <code>x2</code> happened early but is recorded as not yet done, and
       <code>z2</code> and <code>z3</code> happened later but are recorded as
       done. That is the whole content of the reordering.
+    </figcaption>
+  </figure>
+
+
+<h2>The Global Snapshot</h2>
+<p>
+  Let S_init and S_fini be the states of the system
+  at which the global snapshot algorithm starts
+  and finishes, respectively. 
+  The global snapshot is a state S_snap of the system 
+  such that there is a computation from S_init to S_snap to 
+  S_fini.
+</p>
+
+<h3>Why is the global snapshot useful?</h3>
+<p>
+  <strong>Checkpoint, rollback and recovery</strong>
+<br>
+In the event of a transient error the system can restart from the most
+recent checkpoint (a global snapshot) and continue execution from there.
+</p>
+
+<p>
+  <strong>Detecting stable properties</strong>
+  <br>
+  A stable property is one that if it holds at any point in a computation
+  then it continues to hold thereafter. Examples of stable properties are
+  that the system has terminated, or that a set of agents is deadlocked.
+  Let P be a stable property. A problem is to develop an
+  algorithm that detect whether P holds.
+</p>
+
+<ol>
+    <li>
+      If P holds when the algorithm starts then P 
+      holds in the snapshot.
+    </li>
+
+    <li>
+      If P holds in the snapshot then P
+      holds when the algorithm terminates.
+    </li>
+</ol>
+
+<p>
+  One way of detecting a stable property P is to take
+  global snapshots repeatedly and check whether P holds
+  in the snapshot.
+</p>
+
+<h2>The Global Snapshot: past and future events</h2>
+<p>
+Assume that each agent takes its local snapshot (i.e. records its
+own state) at some point in a computation.
+Define all events at an agent before the agent takes its local snapshot
+as <strong>past</strong> events.
+Similarly, define all events at an agent after the agent takes its local snapshot
+as <strong>future</strong> events.
+Define the messages at the snapshot as messages sent in the past and
+received in the future.
+The snapshot is a global snapshot exactly when there is no message sent
+in the future and received in the past.
+(Equivalently, all messages received in the past are sent in the past.
+Or, all messages sent in the future are received in the future.)
+</p>
+
+<p>
+  In the example, x1, y1, y2, z1, z2, z3 are past events and the other
+  events are future events.
+  The message sent at z1 and received at x2 is a message in the snapshot
+  because it is sent in the past and received in the future.
+  Likewise, the message sent in z2 and received in x3 is also in the snapshot.
+  By contrast, the message sent at y2 and received at z3 is not in the
+  snapshot because it is sent and received in the past.
+  Likewise, the message from y3 to x4 is not in the snapshot because it
+  is sent and received in the future.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="pf_g" viewBox="0 0 1240 470" role="img"
+         aria-label="The same computation with past events and future events coloured, and the messages between them"></svg>
+
+    <div class="ctrls">
+      <button id="pf_reveal" class="primary">Dim the future</button>
+      <span class="hint">the boundary is the line joining the local snapshots</span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Past events</span><span id="pf_past"></span></div>
+      <div><span class="k">Future events</span><span id="pf_fut"></span></div>
+      <div><span class="k">In the snapshot</span><span id="pf_in"></span></div>
+      <div><span class="k">Not in it</span><span id="pf_out"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 8. Past and future.</b>
+      <i>Prose to come.</i> The line joining the three local snapshots divides
+      the picture in two. Everything to its left is the <b>past</b> — the
+      events each agent had already performed when it recorded — and
+      everything to its right is the <b>future</b>. The two regions are
+      shaded, and each event takes the colour of the region it is in.
+      A message belongs to the snapshot exactly when it crosses from the past
+      into the future: sent by an agent before that agent recorded, received
+      by another after that one did. Two messages do this,
+      <code>m3</code> and <code>m5</code>, and they are the ones drawn
+      crossing the boundary.
+      The rest do not. <code>m1</code>, <code>m2</code> and <code>m4</code>
+      are sent and received entirely in the past, so the snapshot has them
+      already delivered. <code>m6</code> and <code>m7</code> are sent and
+      received entirely in the future, so it has them not yet sent.
+      And there is no message running the other way — future to past — which
+      is what makes this a global snapshot at all. Such a message would be one
+      the receiver recorded taking and the sender recorded never sending.
     </figcaption>
   </figure>
 
@@ -1741,6 +1873,168 @@
 })();
 </script>
 
+<script>
+(function(){
+  const PFX='pf_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g');
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const X0=210, X1=1180, R=8, TOP=54, BOT=402;
+  const AY={X:120, Y:215, Z:310};
+  const AGENTS=['X','Y','Z'];
+  const ay=function(a){return AY[a];};
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+
+  // the computation of the previous figure
+  const E={x1:['X',10], x2:['X',38], x3:['X',62], x4:['X',90],
+           y1:['Y',16], y2:['Y',34], y3:['Y',70],
+           z1:['Z',22], z2:['Z',48], z3:['Z',58], z4:['Z',80]};
+  const MSG=[['m1','x1','y2'],['m2','y1','z2'],['m3','z1','x2'],
+             ['m4','y2','z3'],['m5','z2','x3'],['m6','x3','z4'],
+             ['m7','y3','x4']];
+  const CUT={X:30, Y:42, Z:72};
+  const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
+
+  // an event is past if its agent had already performed it when it recorded
+  const past=function(n){return tm(n) < CUT[ag(n)];};
+  const PAST=Object.keys(E).filter(past).sort(function(a,b){return tm(a)-tm(b);});
+  const FUT =Object.keys(E).filter(function(n){return !past(n);})
+                           .sort(function(a,b){return tm(a)-tm(b);});
+  // a message is in the snapshot when it runs from the past to the future
+  const IN =MSG.filter(function(m){ return  past(m[1]) && !past(m[2]); });
+  const OUT=MSG.filter(function(m){ return !(past(m[1]) && !past(m[2])); });
+  const BACK=MSG.filter(function(m){ return !past(m[1]) && past(m[2]); });
+  const isIn={}; IN.forEach(function(m){ isIn[m[0]]=1; });
+
+  let dim=0, anim=null;                      // 0 = both lit, 1 = future dimmed
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,s,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, s);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    [['ahP',C.teal],['ahF',C.orange],['ahI',C.ink]].forEach(function(p){
+      const m=el('marker',{id:PFX+p[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:p[1]}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{});
+    svg.appendChild(g);
+    const fo=1-0.78*dim;                     // how lit the future is
+
+    // the boundary, and the two regions it divides
+    const spine=AGENTS.map(function(a){return [xOf(CUT[a]), ay(a)];});
+    const left=[[X0-30,TOP],[xOf(CUT.X),TOP]]
+      .concat(spine).concat([[xOf(CUT.Z),BOT],[X0-30,BOT]]);
+    const right=[[X1+30,TOP],[xOf(CUT.X),TOP]]
+      .concat(spine).concat([[xOf(CUT.Z),BOT],[X1+30,BOT]]);
+    g.appendChild(el('polygon',{
+      points:left.map(function(p){return p[0]+','+p[1];}).join(' '),
+      fill:C.teal, opacity:.09}));
+    g.appendChild(el('polygon',{
+      points:right.map(function(p){return p[0]+','+p[1];}).join(' '),
+      fill:C.orange, opacity:.09*fo}));
+    tag(g,(X0+xOf(CUT.X))/2-10, TOP+22, 'past', C.teal, 15, 700);
+    tag(g,(X1+xOf(CUT.Z))/2+10, BOT-22, 'future', C.orange, 15, 700, fo);
+
+    AGENTS.forEach(function(a){
+      const y=ay(a);
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y,
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-16, y:y,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':18,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+    });
+
+    MSG.forEach(function(m){
+      const ya=ay(ag(m[1])), yb=ay(ag(m[2])), d=(yb>ya?1:-1);
+      const crosses=isIn[m[1]+m[2]]||isIn[m[0]];
+      // a message takes the colour of where it lives, or ink when it crosses
+      const col=crosses ? C.ink : (past(m[1]) ? C.teal : C.orange);
+      const head=crosses ? 'ahI' : (past(m[1]) ? 'ahP' : 'ahF');
+      const op=crosses ? 1 : (past(m[1]) ? 1 : fo);
+      g.appendChild(el('line',{x1:xOf(tm(m[1])), y1:ya+d*R,
+        x2:xOf(tm(m[2])), y2:yb-d*R, stroke:col,
+        'stroke-width':crosses?3.5:2, opacity:op,
+        'marker-end':'url(#'+PFX+head+')'}));
+      tag(g,(xOf(tm(m[1]))+xOf(tm(m[2])))/2+15,(ya+yb)/2, m[0],
+          crosses?C.ink:col, crosses?13:12, 700, op);
+    });
+
+    Object.keys(E).forEach(function(n){
+      const x=xOf(tm(n)), y=ay(ag(n)), p=past(n);
+      g.appendChild(el('circle',{cx:x, cy:y, r:R,
+        fill:p?C.teal:C.orange, stroke:'#fff', 'stroke-width':2,
+        opacity:p?1:fo}));
+      tag(g,x, y-21, n, p?C.teal:C.orange, 12.5, 700, p?1:fo);
+    });
+
+    const pts=[[xOf(CUT.X), TOP]].concat(spine).concat([[xOf(CUT.Z), BOT]]);
+    g.appendChild(el('polyline',{
+      points:pts.map(function(p){return p[0]+','+p[1];}).join(' '),
+      fill:'none', stroke:C.ink, 'stroke-width':2.5,
+      'stroke-dasharray':'8 5'}));
+    AGENTS.forEach(function(a){
+      g.appendChild(el('circle',{cx:xOf(CUT[a]), cy:ay(a), r:11,
+        fill:'#fff', stroke:C.ink, 'stroke-width':3.5}));
+      tag(g,xOf(CUT[a]), ay(a)+27, a+' records', C.ink, 12, 700);
+    });
+
+    readout();
+  }
+
+  function readout(){
+    $('past').innerHTML='<span style="color:'+C.teal+'"><b>'+PAST.join(', ')+
+      '</b></span> <span class="none">— performed before that agent recorded</span>';
+    $('fut').innerHTML='<span style="color:'+C.orange+'"><b>'+FUT.join(', ')+
+      '</b></span> <span class="none">— performed after</span>';
+    $('in').innerHTML='<b>'+IN.map(function(m){
+        return m[0]+' ('+m[1]+'&rarr;'+m[2]+')';}).join(', ')+
+      '</b> <span class="none">— sent in the past, received in the future</span>';
+    $('out').innerHTML='<span class="none">'+OUT.map(function(m){
+        return m[0]+' ('+(past(m[1])?'past':'future')+'&rarr;'+
+               (past(m[2])?'past':'future')+')';}).join(', ')+'</span>'+
+      (BACK.length ? ' <span class="bad">— and '+BACK.length+
+                     ' running future to past</span>'
+                   : ' <span class="ok">— none runs future to past</span>');
+  }
+
+  function glide(to){
+    if(anim) cancelAnimationFrame(anim);
+    const from=dim, t0=performance.now(), dur=900;
+    (function step(t){
+      const p=Math.min(1,(t-t0)/dur);
+      dim=from+(to-from)*p; draw();
+      if(p<1) anim=requestAnimationFrame(step); else { dim=to; draw(); }
+    })(t0);
+  }
+  $('reveal').onclick=function(){
+    const to=dim>0.5?0:1;
+    glide(to);
+    $('reveal').textContent = to>0.5 ? 'Bring the future back' : 'Dim the future';
+  };
+  draw();
+})();
+</script>
+
 <style>
   .pslide{display:contents}
   .presentbar{position:fixed; right:16px; bottom:14px; z-index:60;
@@ -1844,73 +2138,24 @@
 })();
 </script>
 
-<h2>The Global Snapshot</h2>
-<p>
-  Let S_init and S_fini be the states of the system
-  at which the global snapshot algorithm starts
-  and finishes, respectively. 
-  The global snapshot is a state S_snap of the system 
-  such that there is a computation from S_init to S_snap to 
-  S_fini.
-</p>
+<h2>The global snapshot algorithm</h2>
 
-<h3>Why is the global snapshot useful?</h3>
-<p>
-  <strong>Checkpoint, rollback and recover</strong>
-</br>
-In the event of a transient error the system can restart from the most
-recent checkpoint (a global snapshot) and continue execution from there.
-</p>
+<h3>When agents take local snapshots</h3>
+<ol>
+  <li>
+    When an agent takes its local snapshot (i.e. records its own state)
+    the agent puts a special message that we call a <b>marker</b> on each of
+    its outboxes.
+  </li>
+  <li>
+    When an agent receives a marker from any inbox it takes its local
+    snapshot if it hasn't already done so. Note that by the previous rule
+    it puts markers on its outboxes when it takes its local snapshot.
+  </li>
+</ol>
 
-<p>
-  <strong>Detecting stable properties</strong>
-  <br>
-  A stable property is one that if it holds at any point in a computation
-  then it continues to hold therafter. Examples of stable properties are
-  the system has terminated computation, or a set of agents are deadlocked.
-  Let P be a stable property. A problem is to detect whether P holds.
-  <ol>
-    <li>
-      If P holds when a global snapshot algorithm starts then P 
-      holds in the snapshot.
-    </li>
-
-    <li>
-      If P holds in the snapshot then P
-      holds when the global snapshot terminates.
-    </li>
-  </ol> 
-  One way of detecting a stable property P is to take 
-  global snapshots repeatedly and check whether P holds
-  in the snapshot.
-</p>
-
-<h2>The Global Snapshot: past and future events</h2>
-<p>
-Assume that each agent takes its local snapshot (i.e. records its
-own state) at some point in a computation.
-Define all events at an agent before the agent takes its local snapshot
-as <strong>past</strong> events.
-Similarly, define all events at an agent after the agent takes its local snapshot
-as <strong>future</strong> events.
-Define the messages at the snapshot as messages sent in the past and
-received in the future.
-The snapshot is a global snapshot exactly when there is no message sent
-in the future and received in the past.
-(Equivalently, all messages received in the past are sent in the past.
-Or, all messages sent in the future are received in the future.)
-</p>
-
-<p>
-  In the example, x1, y1, y2, z1, z2, z3 are past events and the other
-  events are future events.
-  The message sent at z1 and received at x2 is a message in the snapshot
-  because it is send in the past and received in the future.
-  By contrast, the message sent in y2 and received in z3 is not in the
-  snapshot because it is sent and received in the past.
-  Likewise, the message from y3 to x4 is not in the snapshot because it
-  is sent and received in the future.
-</p>
+<h3>Messages in a snapshot</h3>
+The sequence of messages between an outbox
 
 </body>
 </html>
