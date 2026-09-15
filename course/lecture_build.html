@@ -1,0 +1,505 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Building with DisSysLab</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+
+
+
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  p{color:var(--body); margin:0 0 15px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  figure.fig{margin:30px 0 26px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  input[type=range]{flex:1 1 200px; min-width:160px; accent-color:var(--orange)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
+          font-size:13.5px; color:var(--muted)}
+  .legend i{font-style:normal; color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em}
+  .hint{font-size:13px; color:var(--muted)}
+  table.state{width:100%; margin-top:14px; border-collapse:collapse;
+              font:13.5px/1.5 var(--mono)}
+  table.state th{text-align:left; font:600 11.5px var(--sans); letter-spacing:.12em;
+    text-transform:uppercase; color:var(--muted); padding:0 12px 6px 0; font-weight:700}
+  table.state td{padding:5px 12px 5px 0; border-top:1px solid var(--line);
+                 vertical-align:baseline}
+  table.state td.k{color:var(--muted); white-space:nowrap; width:104px}
+  table.state td b{color:var(--ink)}
+  .none{color:#b9b4a8}
+  .hot{color:var(--orange); font-weight:700}
+  .chan{color:var(--teal); font-weight:700}
+  .facts{margin-top:14px; font:14px/1.7 var(--mono)}
+  .facts div{display:flex; gap:10px; align-items:baseline; padding:5px 0;
+             border-top:1px solid var(--line)}
+  .facts .k{width:172px; flex:none; font:600 11.5px var(--sans);
+            letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+  .fixed{color:var(--teal); font-weight:700}
+  .moved{color:var(--ink); font-weight:700}
+  .ok{color:var(--teal); font-weight:700}
+  .bad{color:var(--orange); font-weight:700}
+  .dn{color:var(--orange); font-weight:700}
+  .up{color:var(--teal); font-weight:700}
+  .cc{color:#8d8878; font-weight:700}
+
+  pre{background:var(--panel); border:1px solid var(--line); border-radius:10px;
+      padding:14px 17px; overflow-x:auto; font:13.5px/1.6 var(--mono);
+      margin:18px 0; color:var(--ink)}
+  pre .c{color:var(--muted)}
+  table.zoo{width:100%; border-collapse:collapse; margin:18px 0; font-size:15px}
+  table.zoo th{text-align:left; font:600 11.5px var(--sans); letter-spacing:.12em;
+    text-transform:uppercase; color:var(--muted); padding:0 14px 8px 0}
+  table.zoo td{padding:8px 14px 8px 0; border-top:1px solid var(--line);
+    vertical-align:baseline; color:var(--body)}
+  table.zoo td:first-child{font-family:var(--mono); font-size:13.5px;
+    color:var(--ink); white-space:nowrap}
+  .activity{margin:20px 0 28px; padding:15px 19px; background:var(--panel);
+    border:1px solid var(--line); border-left:3px solid var(--orange);
+    border-radius:0 10px 10px 0; font-size:15px; color:var(--body)}
+  .activity b{color:var(--ink)}
+  .activity .k{font:700 11px var(--sans); letter-spacing:.14em;
+    text-transform:uppercase; color:var(--orange); display:block;
+    margin-bottom:6px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab &middot; Building</div>
+    <h1>Building with DisSysLab</h1>
+
+    <p>
+      In the first class you built an office. This one is about the rest of
+      what is in the box. Seven things, each with something to do at your own
+      machine, and each chosen because it is the difference between an office
+      that works and an office you would be willing to leave running.
+    </p>
+
+    <p>
+      Two of them also pay off later. The next two classes are theory — how
+      to reason about a system when there is no clock any agent can read — and
+      the last thing in this class is how to make DisSysLab show you your own
+      system's records and its own global snapshots. You will be reasoning
+      about your own office rather than mine.
+    </p>
+  </header>
+
+<h2>1. The agent zoo, by what it does to the message</h2>
+  <p>
+    Every agent has inboxes, outboxes and a worker. What distinguishes the
+    kinds is what the worker does to a message, and the built-in roles fall
+    into five families. <code>dsl roles</code> prints the live list from your
+    install, with the field each one adds.
+  </p>
+
+  <table class="zoo">
+    <tr><th>family</th><th>what it does</th></tr>
+    <tr><td>annotators</td><td>add one field and always send to <code>out</code> — <code>topic_tagger</code>, <code>category_classifier</code>, <code>severity_classifier</code>, <code>urgency_classifier</code>, <code>sentiment_classifier</code>, <code>entity_extractor</code>, <code>geolocator</code>, <code>summarizer</code></td></tr>
+    <tr><td>writers</td><td>turn whatever annotations are present into prose, and ignore the ones that are not — <code>writer</code>, <code>summary_writer</code></td></tr>
+    <tr><td>filters</td><td><b>two outboxes</b>, <code>keep</code> and <code>discard</code> — <code>relevance_filter</code>, <code>evaluator</code></td></tr>
+    <tr><td>the Python role</td><td>your own function, no model involved</td></tr>
+    <tr><td>structural</td><td><code>synchronizer</code>, <code>gate</code>, <code>select</code>, <code>router</code>, <code>record</code>, <code>deduplicator</code> — they move messages rather than change them</td></tr>
+  </table>
+
+  <p>
+    The families matter because they tell you the shape of the wiring before
+    you write any. An annotator has one outbox, so it can only ever be a link
+    in a chain. A filter has two, and the second one is the one people forget.
+  </p>
+
+  <div class="activity">
+    <span class="k">Do this</span>
+    Wire a <code>relevance_filter</code> into an office and leave its
+    <code>discard</code> outbox unconnected. Then run
+    <b><code>dsl draw</code></b>. It lists every edge port to port, and puts
+    everything connected to nothing in a block of its own:
+<pre>Screen   keep        ──▶  in_  Write
+
+Not connected:
+  Screen's discard  ──▶  nothing</pre>
+    That block is your list of gaps, in the form you can act on. While you are
+    tuning a filter, wire its rejects to a readable sink instead of
+    <code>discard</code> — you cannot tune what you cannot see.
+  </div>
+
+<h2>2. Cost is an architectural choice</h2>
+  <p>
+    An office does not have to use one model. Each agent can name its own,
+    and this is the whole of the syntax:
+  </p>
+
+<pre>Eve is an entity_extractor.
+Eve's AI is ollama.          <span class="c"># local, free — fine for extraction</span>
+Riley is a writer.
+Riley's AI is claude.        <span class="c"># the one place quality shows</span></pre>
+
+  <p>
+    Those two lines are the difference between a uniformly expensive office
+    and a tiered one. The backends are <code>anthropic</code> (alias
+    <code>claude</code>), <code>openai</code> (alias <code>gpt</code>),
+    <code>gemini</code>, <code>openrouter</code> and <code>ollama</code>, and
+    each has <code>_creative</code> and <code>_precise</code> variants — which
+    are temperature 1.0 and temperature 0.1, nothing more mysterious than
+    that. Only English roles use a backend at all; a Python role ignores the
+    line.
+  </p>
+
+  <p>
+    The interesting question is not which model is best. It is <b>how small a
+    model each role can get away with</b>, and the roles differ enormously.
+    Pulling organisation names out of a news item is a job a 7B model does
+    well. Writing the final briefing that a person will actually read is not.
+    An office that sends both to the same frontier model is paying a writer's
+    rate for an extractor's work, on every item, for ever.
+  </p>
+
+  <p>
+    <code>openrouter</code> exists in DisSysLab to let you find that line.
+    One key reaches dozens of models — Qwen, Llama, Mistral, DeepSeek, and the
+    closed ones too — so you can swap a role's model without installing
+    another SDK. Its default is <code>qwen/qwen-2.5-7b-instruct</code>, and you
+    override it per experiment with the <code>OPENROUTER_MODEL</code>
+    environment variable. When you have found a small model that holds up, run
+    it locally under <code>ollama</code> with the same model name: same
+    prompts, same model, different inference path, no per-token cost.
+  </p>
+
+  <div class="activity">
+    <span class="k">Do this</span>
+    Take an office of yours that works, and push every annotator down to a
+    small model while leaving the writer where it is. Run it on the same input
+    twice and read both outputs side by side.
+    Then push the writer down too, and read that. <b>Where does it stop being
+    acceptable?</b> That boundary is a real engineering result about your
+    office, and it is two lines of <code>office.md</code> to find.
+  </div>
+
+<h2>3. Loops, gates, and why stopping is hard</h2>
+  <p>
+    A DisSysLab network may contain cycles, and that is a feature rather than
+    an oversight. It is also the reason an end-of-stream marker is not enough
+    and real termination detection is needed: in a loop there is no last
+    message.
+  </p>
+
+  <p>
+    A loop should contain a <code>gate</code>, and the gate is what decides
+    when to stop. The <code>debate</code> office in the gallery loops three
+    panellists through a moderator and back until they agree, gated by the
+    moderator. <code>dsl check</code> reports <code>W7</code> for a feedback
+    loop and tells you whether anything gates it.
+  </p>
+
+  <div class="activity">
+    <span class="k">Do this</span>
+    Run the <code>debate</code> office. Then take the gate out and run it
+    again. Then put it back. <b>Nothing in this course motivates the next two
+    classes better than watching a correct-looking office refuse to finish.</b>
+  </div>
+
+<h2>4. <code>dsl check</code> is a safety tool, not a linter</h2>
+  <p>
+    Every finding <code>dsl check</code> makes carries a code, and the codes
+    split into two kinds. A <b>problem</b> means the office is wrong —
+    <code>W1</code>, an inbox nothing writes to, is the usual reason an office
+    hangs. A <b>note</b> means read it and decide: the office is not wrong and
+    the check still passes. You do not need to memorise any of them, because
+    <code>dsl checks W11</code> tells you what one means and
+    <code>dsl checks</code> lists them all.
+  </p>
+
+  <p>
+    Two of the notes are the ones worth your attention, because they are about
+    what your office can do rather than whether it runs:
+  </p>
+
+  <table class="zoo">
+    <tr><th>code</th><th>what it is telling you</th></tr>
+    <tr><td>W11</td><td>text from the open web is reaching something that acts</td></tr>
+    <tr><td>W12</td><td>a role's own Python is reaching outside the office</td></tr>
+  </table>
+
+  <p>
+    Neither is a bug. Both are the shape of an office that can be talked into
+    doing something by whatever it just read. Knowing which of your agents sit
+    on that path is the difference between a system you can reason about and
+    one you are hoping about.
+  </p>
+
+  <div class="activity">
+    <span class="k">Do this</span>
+    Run <code>dsl check</code> on your own office and read every note, not
+    just the problems. For each one, say in a sentence what the worst thing
+    that could come through that path is. <b>Keep the sentences.</b> They are
+    the beginning of a threat model, and you will want them later in the
+    course.
+  </div>
+
+<h2>5. Sources and sinks are the surface area</h2>
+  <p>
+    The install ships 46 sources and 26 sinks, and the point of knowing the
+    range is that where a message comes from and where the answer goes are
+    independent of everything in between. The same five agents can watch a
+    news feed or a microphone, and can end in a file or in your inbox.
+  </p>
+
+  <table class="zoo">
+    <tr><th>group</th><th>examples</th></tr>
+    <tr><td>news and feeds</td><td><code>bbc_world</code>, <code>hacker_news</code>, <code>rss</code> (any feed), <code>bluesky</code></td></tr>
+    <tr><td>research</td><td><code>arxiv_cs_ai</code>, <code>arxiv_cs_lg</code>, and three more</td></tr>
+    <tr><td>markets, weather</td><td><code>stocks</code>, <code>kalshi</code>, <code>weather</code></td></tr>
+    <tr><td>sensors</td><td><code>audio_mic</code>, <code>image_folder</code>, <code>audio_clip</code></td></tr>
+    <tr><td>personal</td><td><code>gmail</code>, <code>calendar</code></td></tr>
+    <tr><td>plumbing</td><td><code>webhook</code> (listens for POSTs), <code>starter</code> (one message to kick off a loop), <code>mcp_source</code></td></tr>
+    <tr><td>sinks that act</td><td><code>slack_sink</code>, <code>gmail_sink</code>, <code>webhook_sink</code>, <code>mcp_sink</code></td></tr>
+    <tr><td>sinks that record</td><td><code>jsonl_recorder</code>, <code>markdown_digest</code>, <code>report_html</code>, <code>console_printer</code></td></tr>
+  </table>
+
+  <p>
+    Note which of those are <em>effectors</em> — Slack, Gmail, a webhook, an
+    MCP tool. Everything else computes; those four reach the world. That is
+    also exactly the list <code>W11</code> is worried about.
+  </p>
+
+  <div class="activity">
+    <span class="k">Do this</span>
+    Take one working office and change only its sink, three times:
+    <code>console_printer</code>, then <code>markdown_digest</code>, then one
+    that acts. <b>Nothing else in the file should need to change.</b> If it
+    does, that tells you something about how your agents are coupled.
+  </div>
+
+<h2>6. An office can be a component of an office</h2>
+  <p>
+    Two lines of grammar make composition possible. The first is the
+    sub-office:
+  </p>
+
+<pre>news_monitor is an office at ../news_monitor.</pre>
+
+  <p>
+    The office at that path becomes one agent in this one. Build something
+    small that works, then use it twice.
+  </p>
+
+  <p>
+    The second is for an office you have not finished:
+  </p>
+
+<pre>Jay is unassigned.</pre>
+
+  <p>
+    An office holding one of those is a <b>draft</b>, and that changes what
+    the report means rather than what it says — the gaps are listed as
+    <em>still to do</em> and <code>dsl check</code> exits 0.
+    <code>dsl run</code> will refuse it, naming the agents whose job is
+    undecided. Write down the names you know and leave the rest undecided;
+    an unfinished office is not a broken one.
+  </p>
+
+  <div class="activity">
+    <span class="k">Do this</span>
+    Split an office you have already built into two, so that the inner one
+    would be useful on its own, and wire it in with <code>office at</code>.
+    Then run <code>dsl draw</code> on the outer one and see what it shows you
+    about the inner.
+  </div>
+
+<h2>7. Watch your own system run</h2>
+  <p>
+    The last one is the bridge to the next two classes. DisSysLab will hand
+    you its own records of an execution, and they are exactly the objects the
+    theory is about.
+  </p>
+
+<pre>dsl run  --trace              <span class="c"># one JSONL file per agent</span>
+dsl explain-trace             <span class="c"># merge them into one ordered sequence</span>
+
+dsl run  --snapshot-interval 5 <span class="c"># take a global snapshot every 5 steps</span>
+dsl show-checkpoint            <span class="c"># read one back as JSON</span>
+
+dsl run  --processes          <span class="c"># one OS process per agent, real parallelism</span></pre>
+
+  <p>
+    <code>--trace</code> writes <b>one file per agent</b>, each holding only
+    what that agent did. That is not a convenience of the implementation; it
+    is the only thing an agent can honestly record, and reconstructing one
+    system-wide order from those files is the subject of the next class.
+    <code>dsl explain-trace</code> does the reconstruction for you, so you can
+    check your own answer against it.
+  </p>
+
+  <p>
+    <code>--snapshot-interval</code> writes, for each checkpoint, a directory
+    holding <code>manifest.json</code>, a pickled state per agent under
+    <code>agents/</code>, and — the interesting part — a pickled list of
+    in-flight messages per channel under <code>channels/</code>. Those files
+    are a global snapshot of your office: agent states, and the messages that
+    were in transit. Why such a thing can be taken at all, when no two agents
+    share a clock, is the class after next.
+  </p>
+
+  <div class="activity">
+    <span class="k">Do this</span>
+    Run an office of yours with <code>--snapshot-interval 5</code>, then open
+    one <code>channels/</code> file and <b>find a message that was in
+    transit</b> — sent by one agent and not yet taken by another. Keep the
+    checkpoint. You will be asked what it means in two weeks' time.
+  </div>
+
+<h2>Homework 2</h2>
+  <p>
+    Build an office that does something you actually want, and that has all
+    four of these:
+  </p>
+
+  <table class="zoo">
+    <tr><td>a loop</td><td>with a gate that decides when it stops</td></tr>
+    <tr><td>a filter</td><td>with <em>both</em> outboxes wired somewhere you can read</td></tr>
+    <tr><td>two backends</td><td>at least two agents naming different models, with a sentence on why each</td></tr>
+    <tr><td>a trace</td><td>hand in the <code>--trace</code> output with the office</td></tr>
+  </table>
+
+  <p>
+    Hand in the office directory, the trace, and a paragraph answering one
+    question: <b>which of your agents can be reached by text from the open
+    web, and what is the worst thing that text could ask them to do?</b>
+  </p>
+
+</div>
+
+<style>
+  .pslide{display:contents}
+  .presentbar{position:fixed; right:16px; bottom:14px; z-index:60;
+    display:flex; gap:8px; align-items:center}
+  .presentbar button{font:600 13px var(--sans,sans-serif); color:var(--ink,#1a1a2e);
+    background:#fff; border:1px solid var(--line,#ddd8cd); border-radius:8px;
+    padding:6px 12px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .presentbar button:hover{border-color:var(--muted,#6f7583)}
+  .presentbar .pnum{font:600 12px var(--mono,monospace); color:var(--muted,#6f7583)}
+
+  body.present{overflow:hidden}
+  body.present .wrap{max-width:none; padding:0; margin:0}
+  body.present .pslide{display:none}
+  body.present .pslide.on{
+    display:block; position:fixed; inset:0; overflow:auto;
+    padding:5vh 6vw 9vh; font-size:clamp(17px,1.55vw,25px);
+  }
+  /* Everything inside a shown chunk grows with it. */
+  body.present .pslide.on p,
+  body.present .pslide.on li{font-size:1em; line-height:1.5; max-width:34em}
+  body.present .pslide.on h1{font-size:2.5em}
+  body.present .pslide.on h2{font-size:1.9em; margin-top:0}
+  body.present .pslide.on h3{font-size:1.35em}
+  body.present .pslide.on figure.fig{margin:1.4vh 0; padding:14px 16px 12px}
+  /* A figure already breaks out of the text column; in present mode the
+     column is the screen, so the trick has to be switched off or it
+     shifts the figure sideways. */
+  body.present .pslide.on figure.fig.wideout{
+    width:auto; max-width:none; position:static; left:auto; transform:none}
+  body.present .pslide.on figcaption{font-size:.62em; line-height:1.5}
+  body.present .pslide.on .task{font-size:.9em}
+  body.present .presentbar{background:rgba(250,248,243,.9); border-radius:10px;
+    padding:4px 6px}
+</style>
+
+<script>
+(function(){
+  const wrap=document.querySelector('.wrap');
+  if(!wrap) return;
+
+  // ── group the page's own children into chunks ──────────────────────
+  // A heading, a figure or a task starts a chunk; a run of prose longer
+  // than five blocks starts one too, so no chunk overflows the screen.
+  const STARTS=el=>{
+    const t=el.tagName;
+    return t==='HEADER'||t==='H1'||t==='H2'||t==='H3'||t==='FIGURE'||
+           el.classList.contains('task');
+  };
+  const ALONE=el=>el.tagName==='FIGURE'||el.classList.contains('task');
+
+  const kids=[...wrap.children];
+  const groups=[]; let cur=null;
+  for(const el of kids){
+    if(!cur || STARTS(el) || cur.length>=5 || (cur.length&&ALONE(cur[cur.length-1])))
+      groups.push(cur=[]);
+    cur.push(el);
+  }
+  const slides=groups.filter(g=>g.length).map(g=>{
+    const d=document.createElement('div');
+    d.className='pslide';
+    wrap.insertBefore(d,g[0]);
+    g.forEach(el=>d.appendChild(el));
+    return d;
+  });
+
+  // ── the bar ────────────────────────────────────────────────────────
+  const bar=document.createElement('div');
+  bar.className='presentbar';
+  bar.innerHTML='<span class="pnum" hidden></span>'+
+                '<button type="button">Present</button>';
+  document.body.appendChild(bar);
+  const num=bar.querySelector('.pnum'), btn=bar.querySelector('button');
+
+  let on=false, i=0;
+  function show(){
+    slides.forEach((s,n)=>s.classList.toggle('on', on && n===i));
+    num.hidden=!on;
+    num.textContent=(i+1)+' / '+slides.length;
+    btn.textContent=on?'Exit':'Present';
+    // A canvas that was hidden may need a nudge to repaint.
+    if(on) window.dispatchEvent(new Event('resize'));
+  }
+  function enter(){ on=true;  document.body.classList.add('present');    show(); }
+  function leave(){ on=false; document.body.classList.remove('present');
+                    show(); slides[i].scrollIntoView({block:'start'}); }
+  btn.onclick=()=>on?leave():enter();
+
+  addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if(!on){ if(e.key==='p'||e.key==='P'){ e.preventDefault(); enter(); } return; }
+    if(e.key==='Escape'){ e.preventDefault(); leave(); }
+    else if(['ArrowRight',' ','PageDown','n'].includes(e.key)){
+      e.preventDefault(); i=Math.min(slides.length-1,i+1); show(); }
+    else if(['ArrowLeft','PageUp','b'].includes(e.key)){
+      e.preventDefault(); i=Math.max(0,i-1); show(); }
+    else if(e.key==='Home'){ e.preventDefault(); i=0; show(); }
+    else if(e.key==='End'){ e.preventDefault(); i=slides.length-1; show(); }
+  });
+
+  show();
+})();
+</script>
+
+</body>
+</html>

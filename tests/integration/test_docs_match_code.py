@@ -694,6 +694,29 @@ def pathlib_suffix(name: str) -> str:
     return Path(name).suffix.lower()
 
 
+def _tracked_files() -> set[str]:
+    """Every path in the repository, as git sees it.
+
+    A link check that only asks "does this file exist" has a blind spot
+    the width of an untracked file. `docs/internals/STATUS.md` linked to
+    a design note that was written but never `git add`ed: the author's
+    working tree satisfied the link, every fresh checkout did not, and
+    the failure landed in CI where it is slowest to read. The file is on
+    disk for exactly the person least able to notice.
+
+    So the question is not whether the target is on this machine. It is
+    whether it is in the repository, which is what the reader following
+    the link will have.
+    """
+    import subprocess
+
+    out = subprocess.run(
+        ["git", "ls-files"],
+        cwd=REPO_ROOT, capture_output=True, text=True,
+    ).stdout.splitlines()
+    return {f.strip() for f in out if f.strip()}
+
+
 def _markdown_files() -> list[Path]:
     import subprocess
 
@@ -711,6 +734,7 @@ def _markdown_files() -> list[Path]:
 
 def test_every_relative_link_resolves():
     broken: dict[str, list[str]] = {}
+    tracked = _tracked_files()
 
     for path in _markdown_files():
         text = path.read_text(encoding="utf-8", errors="replace")
@@ -721,9 +745,27 @@ def test_every_relative_link_resolves():
             if not _looks_like_a_path(target):
                 continue
             resolved = (path.parent / target.split("#")[0]).resolve()
+            key = str(path.relative_to(REPO_ROOT))
             if not resolved.exists():
-                key = str(path.relative_to(REPO_ROOT))
                 broken.setdefault(key, []).append(target)
+                continue
+            # It exists here. Does it exist for anyone else? A directory
+            # is not in `git ls-files` -- its contents are -- so a link
+            # to `apps/adaptive_tutor/` is judged by whether the
+            # repository holds anything inside it. A target outside the
+            # repository is not this check's business.
+            try:
+                rel = resolved.relative_to(REPO_ROOT).as_posix()
+            except ValueError:
+                continue
+            present = (
+                rel in tracked if resolved.is_file()
+                else any(f.startswith(rel + "/") for f in tracked)
+            )
+            if not present:
+                broken.setdefault(key, []).append(
+                    target + "  (on this machine, but not in the repository)"
+                )
 
     assert not broken, (
         "These documents link to files that do not exist:\n"
@@ -732,7 +774,10 @@ def test_every_relative_link_resolves():
             for f, targets in sorted(broken.items())
         )
         + "\n\nA dead link is worse than no link: it reads as though the "
-        "document exists and the reader simply cannot find it."
+        "document exists and the reader simply cannot find it. If the "
+        "target is on your disk but not in the repository, `git add` it "
+        "or drop the link: `git commit -a` will not pick up a new file, "
+        "and the reader following the link has only what was pushed."
     )
 
 
