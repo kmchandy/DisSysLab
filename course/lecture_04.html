@@ -98,32 +98,33 @@ resources) when the checkpoint algorithm runs.
   Client agents never receive or send OS messages.
 </p>
 
+<p>
+  In the figure below, the client agents are depicted as blue circles. The OS
+  manager of a client is shown as a red circle surrounding the client's blue circle.
+  An OS message is shown in red and a client message in blue. 
+  OS and client messages are sent in the same way. Click the buttons to see
+  OS messages getting trapped by the OS manager and client messages going through.
+</p>
   <figure class="fig wideout">
     <svg id="os_g" viewBox="0 0 1240 500" role="img"
          aria-label="An OS agent surrounding each client agent; OS messages are trapped at the boundary while client messages pass through"></svg>
 
     <div class="ctrls">
-      <button id="os_send" class="primary">Send one of each</button>
+      <button id="os_cl" class="primary">Send a client message</button>
+      <button id="os_os">Send an OS message</button>
       <button id="os_reset">Reset</button>
       <span class="status" id="os_status"></span>
     </div>
 
     <figcaption>
       <b>Figure 1. An OS agent around every client agent.</b>
-      <i>Prose to come.</i> Every client agent sits inside an OS agent, and
-      everything the client sends leaves through it. The channel between two
-      OS agents carries both kinds of message — the client's own, and the
-      ones the OS sends on the client's behalf.
-      Press the button and watch what happens when they arrive. The
+      Press the buttons and watch what happens when a message arrives. The
       <span style="color:#3a6ea8"><b>client message</b></span> is passed
       straight on to the client inside. The
       <span style="color:#d13d0e"><b>OS message</b></span> is trapped at the
-      boundary and goes no further: the client never sees it, and never sends
-      one either.
-      That is what lets an OS algorithm — taking checkpoints, or a global
-      snapshot — run without changing the client's execution at all. The
-      client's algorithm sends and receives exactly the messages it would have
-      sent and received on its own.
+      OS boundary and goes no further: the client never sees it. Both
+      messages travel the same channel at the same speed; the only difference
+      is what the OS agent does with them on arrival.
     </figcaption>
   </figure>
 
@@ -138,13 +139,34 @@ for each client.
 </p>
 
 <p>
-In the global snapshot algorithm, the OS systems-manager sends messages to each of the OS client-managers
-to take local snapshots of their agents if they haven't already done so.
-We call these messages <b>markers</b>.
+  We begin with a simple algorithm that we will refine to make more efficient.
+In the simple global snapshot algorithm, the OS systems-manager sends messages to the OS client-managers
+to take local snapshots of their agents.
 When a client-manager completes taking its local snapshot it sends its local
 snapshot information to the systems manager.
 The systems manager then collates information from each client manager to form a global
 snapshot.
+</p>
+
+<p>
+  For brevity, when we describe OS algorithms we will use <b>agent X</b>instead of the longer,
+  and correct, <b>OS client manager of agent X</b>. We don't consider the client agent's
+  computations and so we don't need to distinguish the manager of agent from the agent
+  itself.
+</p>
+
+<p>
+  The figure below shows how global snapshots are composed from local information
+  sent by agents.
+  The systems manager starts the simple global snapshot algorithm by sending messages
+  to the OS client managers.
+  The client managers communicate among themselves and send information (shown as
+  pieces of a jigsay puzzle) to the
+  systems manager which puts the information together to get a global snapshot.
+</p>
+
+<p>
+  Click the button that says <b>run the algorithm</b>.
 </p>
 
   <figure class="fig wideout">
@@ -193,11 +215,47 @@ snapshot.
   </figure>
 
 <h2>A global snapshot at an instant in time</h2>
+
+<p>
+  For brevity, when we describe OS algorithms we will use <b>agent X</b> instead of the longer,
+  and correct, <b>OS client manager of agent X</b>. The OS algorithm is independent
+  of client computations; so, while describing OS algorithms we don't need to 
+  distinguish the manager of agent from the agent itself.
+</p>
+
   <p>
-    <i>Prose to come.</i> We want a picture of the whole system at once: the
-    state of every agent, and every message on its way from one agent to
-    another. Suppose for a moment that there were a clock every agent could
-    read, and that all three recorded their state at the same instant.
+    If we could, we would get a global snapshot by having all agents record 
+    their states at the same instant in time.
+    The diagram below shows the state at different points in a computation.
+  </p>
+
+  <p>
+    Click on <b>Take the snapshot</b> in the diagram below.
+  </p>
+
+  <p>
+    The vertical dotted red line represents an instant <b>t</b> in time.
+    The state of an agent at <b>t</b> is given by the label on the agent
+    timeline at <b>t</b>.
+    Define the <strong>past</strong> at <b>t</b> as the events that occur
+    before <b>t</b>.
+    <br>
+    <strong>The messages in transit at <b>t</b> are the messages sent in
+      the past and not received in the past.</strong>
+  </p>
+
+  <p>
+    In the diagram, messages in transit at <b>t</b> are represented by the message
+    lines that cross the vertical line at <b>t</b>.
+    Message m2 is not in transit in the snapshot because it
+    is sent and received in the past.
+    Likewise, message m7 is not in the snapshot because it is sent
+    and received in the future.
+    Messages m4 and m5 are in the snapshot because they were sent in the past and
+    not received in the past -- the message lines cross the vertical line at
+    <b>t</b>.
+    And because messages are received only after they are sent, there is no
+    message to the past from the future.
   </p>
 
   <figure class="fig wideout">
@@ -214,14 +272,7 @@ snapshot.
     </div>
 
     <figcaption>
-      <b>Figure 3. A snapshot at one instant.</b>
-      <i>Prose to come.</i> Three agents, and one message in each direction
-      between every pair. The pale line sweeping left to right is ordinary
-      time. All three agents record at <code>t = 50</code>, so the snapshot is
-      a single vertical line. The two messages the line crosses,
-      <code>m4</code> and <code>m5</code>, had been sent and had not yet
-      arrived: they are the contents of the channels, and they belong in the
-      snapshot just as much as the agents' own states do.
+      <b>Figure 3. A snapshot at an instant in time.</b>
     </figcaption>
   </figure>
 
@@ -2318,10 +2369,19 @@ And all messages sent in the future are received in the future.)
   const LOS=330, ROS=910;                    // centres of the two OS agents
   const A=LOS+CLR, B=LOS+OSR, D=ROS-OSR, F=ROS-CLR;   // 404, 480, 760, 836
 
-  let p=0, anim=null;                        // 0 = nothing sent, 1 = arrived
-  const xC=function(){return A+(F-A)*p;};             // the client message
-  const xO=function(){return Math.min(A+(F-A)*p, D);};// the OS message
-  const trapped=function(){return xO()>=D-0.5;};
+  // One message at a time, and the buttons choose which kind. The two
+  // travel the same channel at the same speed; all that differs is what
+  // the far OS agent does on arrival, so sending them separately is what
+  // makes that difference the thing you are watching.
+  let p=0, kind=null, anim=null;             // 0 = nothing sent, 1 = arrived
+  const KIND={
+    client:{col:C.client, dy:-9, name:'client message',
+            x:function(q){return A+(F-A)*q;}},
+    os:    {col:C.os,     dy:+9, name:'OS message',
+            x:function(q){return Math.min(A+(F-A)*q, D);}}
+  };
+  const trapped  =function(){return kind==='os' && KIND.os.x(p)>=D-0.5;};
+  const delivered=function(){return kind==='client' && p>=0.999;};
 
   function el(n,a,txt){
     const e=document.createElementNS(NS,n);
@@ -2392,31 +2452,39 @@ And all messages sent in the future are received in the future.)
     txt(g,620, 392, 'OS and client messages', C.ink, 17);
     leader(g,620, 374, 620, MID+16, C.ink);
 
-    // what is in flight
-    if(p>0.001){
-      g.appendChild(el('circle',{cx:xC(), cy:MID-9, r:9,
-        fill:C.client, stroke:'#fff', 'stroke-width':2}));
-      g.appendChild(el('circle',{cx:xO(), cy:MID+9, r:9,
-        fill:C.os, stroke:'#fff', 'stroke-width':2}));
+    // the one message in flight
+    if(kind && p>0.001){
+      const K=KIND[kind], x=K.x(p), y=MID+K.dy;
+      g.appendChild(el('circle',{cx:x, cy:y, r:9,
+        fill:K.col, stroke:'#fff', 'stroke-width':2}));
       if(trapped()){
         const r=13;
-        g.appendChild(el('line',{x1:D-r, y1:MID+9-r, x2:D+r, y2:MID+9+r,
+        g.appendChild(el('line',{x1:D-r, y1:y-r, x2:D+r, y2:y+r,
           stroke:C.os, 'stroke-width':3}));
-        g.appendChild(el('line',{x1:D+r, y1:MID+9-r, x2:D-r, y2:MID+9+r,
+        g.appendChild(el('line',{x1:D+r, y1:y-r, x2:D-r, y2:y+r,
           stroke:C.os, 'stroke-width':3}));
+        txt(g,D, y+44, 'trapped here', C.os, 15);
+      }
+      if(delivered()){                       // it reached the client inside
+        g.appendChild(el('circle',{cx:ROS, cy:MID, r:CLR+9, fill:'none',
+          stroke:C.client, 'stroke-width':3}));
+        txt(g,ROS, MID+CLR+36, 'delivered to the client', C.client, 15);
       }
     }
 
-    $('status').innerHTML = p<0.001 ? ''
-      : (p>=0.999
-         ? '<b>client message</b> delivered &middot; '+
-           '<b style="color:'+C.os+'">OS message</b> trapped at the boundary'
-         : 'in the channel &hellip;');
+    $('status').innerHTML = (!kind || p<0.001) ? ''
+      : p<0.999 ? 'the <b style="color:'+KIND[kind].col+'">'+
+                  KIND[kind].name+'</b> is in the channel &hellip;'
+      : kind==='os'
+        ? '<b style="color:'+C.os+'">OS message</b> trapped at the '+
+          'boundary &mdash; the client never sees it'
+        : '<b style="color:'+C.client+'">client message</b> passed '+
+          'straight through to the client';
   }
 
-  function play(){
+  function play(which){
     if(anim) cancelAnimationFrame(anim);
-    p=0;
+    kind=which; p=0;
     const t0=performance.now(), dur=2600;
     (function step(t){
       const q=Math.min(1,(t-t0)/dur);
@@ -2424,9 +2492,10 @@ And all messages sent in the future are received in the future.)
       if(q<1) anim=requestAnimationFrame(step); else { p=1; draw(); }
     })(t0);
   }
-  $('send').onclick=play;
+  $('cl').onclick=function(){play('client');};
+  $('os').onclick=function(){play('os');};
   $('reset').onclick=function(){
-    if(anim) cancelAnimationFrame(anim); p=0; draw(); };
+    if(anim) cancelAnimationFrame(anim); kind=null; p=0; draw(); };
   draw();
 })();
 </script>
