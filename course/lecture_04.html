@@ -701,11 +701,11 @@ And all messages sent in the future are received in the future.)
 
 <h2>The global snapshot algorithm</h2>
 
-<h3>What the algorithm assumes</h3>
 <p>
-  Outboxes, channels connecting outboxes to inboxes, and inboxes are queues.
-  So messages placed in an outbox arrive in the inbox it is connected to 
-  in the same sequence. 
+  The algorithm uses the fact that
+  outboxes, channels connecting outboxes to inboxes, and inboxes are queues.
+  So if <b>m</b> is placed in the outbox before <b>m'</b>
+  then <b>m</b> is received before <b>m'</b>.
 </p>
 
 
@@ -723,7 +723,30 @@ And all messages sent in the future are received in the future.)
   </li>
 </ol>
 
-<h3>What the agents record</h3>
+<h3>How agents record messages in transit</h3>
+
+<p>
+  Assume that each message has a unique id. So when a message
+  <b>m</b> is received from an inbox we can uniquely identify
+  the event in which <b>m</b> is placed in the outbox to which
+  the inbox is connected. Assume that each agent keeps track of
+  the sequence of messages it places on each outbox and the
+  number of messages it receives from each inbox. When an
+  agent sends a message to the OS manager the message includes
+  this information. 
+  
+  So for each agent X and for each 
+  outbox b of X the OS manager gets the sequence of messages
+  sent on b before X takes its snapshot -- these are the messages
+  sent in the past through outbox b. 
+  Let this outbox be connected to inbox b' of agent X'.
+  So the OS manager has the number of messages that were received on b'
+  in the past.
+  The sequence of messages in transit, sent though b to b', in the snapshot are the
+  past messages placed in b excluding the number of messages received in b' in the past.
+</p>
+
+
 <p>
   <i>Draft &mdash; please edit.</i>
   The two rules above say <b>when</b> each agent takes its local snapshot.
