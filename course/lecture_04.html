@@ -276,15 +276,6 @@ snapshot.
     </figcaption>
   </figure>
 
-<h2>Each agent on its own</h2>
-  <p>
-    <i>Prose to come.</i> There is no such clock. Taking a snapshot needs
-    coordination, coordination needs messages, and messages take time. So
-    each agent records its own state when it gets round to it, and those
-    moments are different. The snapshot is no longer an instant — it has a
-    beginning and an end, and the system keeps running throughout.
-  </p>
-
   <figure class="fig wideout">
     <svg id="own_g" viewBox="0 0 1240 520" role="img"
          aria-label="Three agents recording their states at different moments, producing a snapshot that could not have happened"></svg>
@@ -877,7 +868,11 @@ And all messages sent in the future are received in the future.)
     {n:'m3', from:'Z', ts:12, to:'X', tr:30},
     {n:'m4', from:'X', ts:30, to:'Z', tr:52},
     {n:'m5', from:'Y', ts:40, to:'X', tr:58},
-    {n:'m6', from:'Z', ts:52, to:'Y', tr:68}
+    {n:'m6', from:'Z', ts:52, to:'Y', tr:68},
+    // X's third event both receives m5 and sends m7. m7 is sent and
+    // received after t, so it is the example of a message the snapshot
+    // has as not yet sent -- the prose above the figure names it.
+    {n:'m7', from:'X', ts:58, to:'Y', tr:90}
   ];
 
   function el(n,a,txt){
