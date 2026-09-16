@@ -324,15 +324,14 @@ snapshot.
 <p>
   An algorithm to determine a global snapshot is not instantaneous:
   it starts at some point and finishes at a later point.
-  <br>
-  <strong>
-  Let S_init and S_fini be the states of the system
-  at which the global snapshot algorithm starts
-  and finishes, respectively. 
-  The global snapshot is a state S_snap of the system 
-  such that there is a computation from S_init to S_snap to 
-  S_fini.
-  </strong>
+</p>
+
+<p class="key">
+  <span class="lead-in">The global snapshot</span>
+  Let S_init and S_fini be the states of the system at which the global
+  snapshot algorithm starts and finishes, respectively. The global snapshot
+  is a state S_snap of the system such that <strong>there is a computation
+  from S_init to S_snap to S_fini</strong>.
 </p>
 
 <h2>Why is the global snapshot useful?</h2>
@@ -374,7 +373,11 @@ recent checkpoint (a global snapshot) and continue execution from there.
 <h2>When should agents take local snapshots?</h2>
 <p>
 The diagram below shows a timeline with agents X, Y, and Z.
+</p>
+<p>
 <b>Click the button Take the snapshot.</b>
+</p>
+<p>
 The animation shows Y taking its local snapshot first (shown as a red
 circle), then X and then Z.
 The global snapshot algorithm in this case starts when Y takes its local
@@ -402,20 +405,7 @@ The dotted red lines connect the points at which agents take local snapshots.
   </div>
 
   <figcaption>
-    <b>Figure 4. Each agent on its own.</b>
-    <i>Prose to come.</i> Y records first, between its first and second
-    events. X does not record until much later, between its third and
-    fourth. Z is last. The first vertical line marks where the global
-    snapshot <b>starts</b> and the second where it <b>ends</b>; the shaded
-    band between them is how long the whole thing took, and the system went
-    on running the entire time.
-    Now look at <code>m5</code>. X took it at 58, before X recorded, so
-    X's state includes having received it. Y sent it at 40, after Y
-    recorded, so Y's state includes never having sent it. Put the three
-    records side by side and they describe a system in which a message
-    arrived that nobody sent. That is not an inaccurate picture of some
-    state the system was in — it is a state the system could never have
-    been in at all. The last row of the table names it.
+    <b>Figure 4. Agents take local snapshots at different points.
   </figcaption>
 </figure>
 
