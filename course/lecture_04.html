@@ -103,7 +103,7 @@ resources) when the checkpoint algorithm runs.
 <p>
   The OS may use the same processes, threads, and queues that the client does.
   We build systems with an OS agent for every client agent.
-  OS messages are trapped by the OS agent and not passed on to the client  agents.
+  OS messages are trapped by the OS agent and not passed on to the client agents.
   Client agents never receive or send OS messages.
 </p>
 
@@ -139,10 +139,9 @@ resources) when the checkpoint algorithm runs.
 
 <h3>OS Managers</h3>
 <p>
-We will use operating systems agents that are not associated with any
-specific client.
+We will use OS agents that are not associated with any specific client.
 In many distributed OS algorithms we assume an OS systems-manager agent or a
-set of such agents that manage the entire client systems.
+set of such agents that manage the entire client system.
 OS messages are exchanged between the OS systems-manager and the OS agents responsible
 for each client.
 </p>
@@ -150,7 +149,7 @@ for each client.
 <p>
   We begin with a simple algorithm that we will refine to make more efficient.
 In the simple global snapshot algorithm, the OS systems-manager sends messages to the OS client-managers
-to take local snapshots of their agents.
+to take local snapshots of their clients.
 When a client-manager completes taking its local snapshot it sends its local
 snapshot information to the systems manager.
 The systems manager then collates information from each client manager to form a global
@@ -158,79 +157,14 @@ snapshot.
 </p>
 
 <p>
-  For brevity, when we describe OS algorithms we will use <b>agent X</b>instead of the longer,
-  and correct, <b>OS client manager of agent X</b>. We don't consider the client agent's
-  computations and so we don't need to distinguish the manager of agent from the agent
-  itself.
+  For brevity, when we describe OS algorithms we will use <b>agent X</b> instead of
+  the longer, and correct, <b>OS client-manager of agent X</b>. The OS algorithm is
+  independent of client computations, so while describing OS algorithms we need not
+  distinguish the manager of an agent from the agent itself.
 </p>
 
-<p>
-  The figure below shows how global snapshots are composed from local information
-  sent by agents.
-  The systems manager starts the simple global snapshot algorithm by sending messages
-  to the OS client managers.
-  The client managers communicate among themselves and send information (shown as
-  pieces of a jigsay puzzle) to the
-  systems manager which puts the information together to get a global snapshot.
-</p>
-
-<p>
-  Click the button that says <b>run the algorithm</b>.
-</p>
-
-  <figure class="fig wideout">
-    <svg id="mg_g" viewBox="0 0 1240 580" role="img"
-         aria-label="An OS systems-manager sends markers to three OS client-managers, which return their local snapshots as jigsaw pieces that the manager fits together"></svg>
-
-    <div class="ctrls">
-      <button id="mg_play" class="primary">Run the algorithm</button>
-      <button id="mg_reset">Reset</button>
-      <input id="mg_scrub" type="range" min="0" max="1000" step="1" value="0">
-      <span class="status" id="mg_status"></span>
-    </div>
-
-    <div class="facts">
-      <div><span class="k">Markers arrived at</span><span id="mg_out"></span></div>
-      <div><span class="k">Local snapshots back</span><span id="mg_in"></span></div>
-      <div><span class="k">Client-to-client messages</span><span id="mg_chat"></span></div>
-      <div><span class="k">Global snapshot</span><span id="mg_done"></span></div>
-    </div>
-
-    <figcaption>
-      <b>Figure 2. The systems-manager and the client-managers.</b>
-      <i>Prose to come.</i> One OS systems-manager on the left, and three
-      clients on the right — x, y and z — each wrapped in its own OS
-      client-manager, exactly as in the previous figure.
-      Press the button. The systems-manager sends a <b>marker</b> to each
-      client-manager. The markers travel at different speeds and arrive at
-      different times; nothing makes them arrive together and nothing needs
-      to. When a marker arrives, that client-manager records its client's
-      state and sends the result back — and those replies travel at different
-      speeds too. Watch y: its marker arrives last of the three and its reply
-      gets home first.
-      Notice what happens between the marker landing and the reply setting off.
-      The client does not answer at once. It goes on computing, and it goes on
-      exchanging messages with the other clients along the arcs on the right;
-      the ring around it fills while it works. Only when that traffic has died
-      down &mdash; when each client has finished and has a result worth
-      sending &mdash; does its reply leave, and the three of them finish at
-      different times. Recording takes time, and it takes a different amount of
-      time at each one &mdash; the ring around the client fills while it works.
-      Each reply is one piece of the picture. The systems-manager fits them
-      together as they arrive, and when the last piece is in, the border
-      closes round the finished picture. It is a picture no single agent ever saw, assembled
-      out of three that each saw only their own part.
-    </figcaption>
-  </figure>
 
 <h2>A global snapshot at an instant in time</h2>
-
-<p>
-  For brevity, when we describe OS algorithms we will use <b>agent X</b> instead of the longer,
-  and correct, <b>OS client manager of agent X</b>. The OS algorithm is independent
-  of client computations; so, while describing OS algorithms we don't need to 
-  distinguish the manager of agent from the agent itself.
-</p>
 
   <p>
     If we could, we would get a global snapshot by having all agents record 
@@ -262,8 +196,8 @@ snapshot.
     lines that cross the vertical line at <b>t</b>.
     Message m2 is not in transit in the snapshot because it
     is sent and received in the past.
-    Likewise, message m7 is not in the snapshot because it is sent
-    and received in the future.
+    Likewise, message m7 is not in the snapshot because it is not sent
+    in the past.
     Messages m4 and m5 are in the snapshot because they were sent in the past and
     not received in the past.
     And because messages are received only after they are sent, there is no
@@ -292,8 +226,8 @@ snapshot.
 
     <h2>What agents tell the systems manager</h2>
     <p>
-    Assume that agents could take their local snapshots (i.e., record their own)
-    states at the same instant. And assume that each agent has a unique id.
+      Assume that agents could take their local snapshots (i.e., record their
+      own states) at the same instant.
     What do agents tell the systems manager?
     </p>
 
@@ -302,9 +236,9 @@ snapshot.
       local state and the sequence of messages it has placed on each of its
       outboxes and the sequence of messages it has received from each of its
       inboxes -- these are the messages that the agent sent and received in
-      the past. For each connected outbox-inbox pair the systems manager 
-      determines the messages in transit as the past messages sent on that outbox
-      excluding past messages received from the inbox.
+      the past. For each connected outbox-inbox pair the systems manager
+      determines the messages in transit: the messages sent in the past on that
+      outbox, with the messages received in the past from the inbox removed.
       (We will see later that the entire sequence of messages need not be stored.)
     </p>
 
@@ -316,9 +250,9 @@ snapshot.
   their local clocks are at <b>t</b> the snapshots may not be taken at the
   same instant.
   In the simple algorithm, the systems manager sends messages to the agents.
-  If each agent take its local snapshot when it receives the message from
-  the systems manager, the agents may not take local snapshot at
-  the same instant. This is because message delays are arbitrary.
+  If each agent takes its local snapshot when it receives the message from
+  the systems manager, the agents may still not take their local snapshots at
+  the same instant.
 </p>
 
 <p>
@@ -336,20 +270,19 @@ snapshot.
 
 <h2>Why is the global snapshot useful?</h2>
 <p>
-  <strong>Checkpoint, rollback and recovery</strong>
-<br>
+  <b>Checkpoint, rollback and recovery.</b>
 In the event of a transient error the system can restart from the most
 recent checkpoint (a global snapshot) and continue execution from there.
 </p>
 
 <p>
-  <strong>Detecting stable properties</strong>
-  <br>
+    <b>Detecting stable properties.</b>
   A stable property is one that if it holds at any point in a computation
   then it continues to hold thereafter. Examples of stable properties are
   that the system has terminated, or that a set of agents is deadlocked.
-  Let P be a stable property. A problem is to develop an
-  algorithm that detects whether P holds.
+    Let P be a stable property. The problem is to develop an
+    algorithm that detects whether P holds. A global snapshot answers it
+    because of two facts:
 </p>
 
 <ol>
@@ -373,9 +306,7 @@ recent checkpoint (a global snapshot) and continue execution from there.
 <h2>When should agents take local snapshots?</h2>
 <p>
 The diagram below shows a timeline with agents X, Y, and Z.
-</p>
-<p>
-<b>Click the button Take the snapshot.</b>
+Click the button <b>Take the snapshot.</b>
 </p>
 <p>
 The animation shows Y taking its local snapshot first (shown as a red
@@ -383,7 +314,7 @@ circle), then X and then Z.
 The global snapshot algorithm in this case starts when Y takes its local
 snapshot and terminates when Z takes its local snapshot.
 So S_init is the global state at the point at which Y takes its snapshot;
-diagramatically it is determined by the agent timelines and message
+diagrammatically it is determined by the agent timelines and message
 lines that intersect the vertical line at that point.
 Likewise, S_fini is the global state at the point at which Z takes its snapshot.
 The dotted red lines connect the points at which agents take local snapshots.
@@ -405,7 +336,7 @@ The dotted red lines connect the points at which agents take local snapshots.
   </div>
 
   <figcaption>
-    <b>Figure 4. Agents take local snapshots at different points.
+    <b>Figure 4. Agents take local snapshots at different points.</b>
   </figcaption>
 </figure>
 
@@ -441,9 +372,9 @@ local snapshots are taken.
   <p>
     The alignment shows a problem: there is a message from the future to the
     past, shown as a blue arrow. 
-    There is no global state in which a channel delivers a message that
-    has not been sent. So, in the figure,the collection of points at 
-    which local snapshots do not correspond to a global snapshot.
+      There is no global state in which a channel delivers a message that
+      has not been sent. So, in the figure, the points at which the agents take
+      their local snapshots do not correspond to a global snapshot.
   </p>
 
   <figure class="fig wideout">
@@ -462,21 +393,7 @@ local snapshots are taken.
     </div>
 
     <figcaption>
-      <b>Figure 5. What the snapshot claims.</b>
-      <i>Prose to come.</i> This starts as figure 2, unchanged, and stays
-      that way. Press the button and a <span style="color:#00947d"><b>ghost</b></span>
-      of each record circle lifts off and slides until the three line up —
-      because lining them up is exactly what the snapshot asserts, that these
-      three moments were one moment.
-      The ghost carries the two ends of <code>m5</code> with it: the end where
-      Y sent it travels right with Y's record, and the end where X received it
-      travels left with X's. Watch what becomes of the arrow between them.
-      It <b>reverses</b> &mdash; and the moment it does it thickens and turns
-      <span style="color:#1a5fd0"><b>blue</b></span>, because it has stopped
-      being a message and become the thing that cannot happen. In the world the snapshot describes, Y sends
-      <code>m5</code> at 65 and X receives it at 38 — twenty-seven units
-      before it was sent. The solid picture underneath shows what really
-      happened, and the two cannot both be true.
+      <b>Figure 5. An infeasible global snapshot: message from future to past</b>
     </figcaption>
   </figure>
 
@@ -485,21 +402,19 @@ local snapshots are taken.
     The next diagram shows a timeline with a different set of points
     at which agents take local snapshots.
     Can these points correspond to a global snapshot?
-  </p>
-
-  <p><b>Click the button: Line them up</b></p>
+    Click the button: <b>Line them up</b>
+</p>
 
   <p>
     <b>We see that every message received in the past is sent in the past.</b>
-  </p>
-  <p>
     Equivalently, no message is sent from the future to the past.
-  </p>
-
-  <p>
-    Let S_snap be the state at the vertical line where the local snapshots
-    are aligned. The timeline shows a computation from S_init to S_snap to
-    S_fini.
+    The global snapshot, S_init, is the state shown when the times of the agent snapshots
+    are aligned. This is the state at the dotted green vertical line.
+    The past is before this line and the future is after the line.
+    The timeline shows a computation from S_init to S_snap to S_fini.
+    The state of an agent in S_snap is its local snapshot, and the messages
+    in transit in S_snap are the messages that are sent in the past and
+    not received in the past. Messages m4 and m5 are in transit in S_snap.
   </p>
 
   <figure class="fig wideout">
@@ -518,25 +433,161 @@ local snapshots are taken.
     </div>
 
     <figcaption>
-      <b>Figure 6. A snapshot the system could have been in.</b>
-      <i>Prose to come.</i> The same computation, the same three agents, and
-      the only change is <i>when</i> each one records. X records first, so the
-      <i>starts</i> line is X's own moment; Y records between its second and
-      third events, and is last. Both grey lines stay where they are and no
-      message line moves.
-      Press the button and only the ghost circles travel. They reach a common
-      moment without anything else having to give — and that is the whole
-      difference from the previous figure, where bringing the records together
-      dragged <code>m5</code> backward through time. Here there is a moment
-      the three records could genuinely share.
-      The last row says why: nothing is impossible. The two messages the cut
-      crosses, <code>m4</code> and <code>m5</code>, are simply in the
-      channels — sent and not yet delivered — which is exactly what a snapshot
-      ought to record about them. And the moment the ghosts settle on is a
-      real one: at that instant each agent really had done exactly the actions
-      its record claims.
+      <b>Figure 6. A global snapshot: messages received in
+        the past are sent in the past.</b>
     </figcaption>
   </figure>
+
+<h2>The Global Snapshot Theorem</h2>
+<p>
+The points of local snapshots correspond to a global snapshot exactly
+when:
+<strong>every message received in the past is sent in the past.</strong>
+</p>
+
+<h3>Proof</h3>
+<p>
+The proof follows immediately from the theorem of lecture 3:
+Given a set of agent computations recorded in a system computation,
+all interleavings of agent computations in which <strong>each message
+is received only after it is sent</strong> are system computations.
+</p>
+<p>
+  Let agent computations be recorded during a system computation C.
+Construct an interleaving C' of agent computations as follows:
+In C', the relative ordering of past events is the
+same as in C, and the relative ordering of future events
+is also the same as in C, but past events appear before future ones.
+The interleaving C' satisfies the conditions of the theorem:
+each message is received only after it is sent.
+</p>
+
+
+<h2>Example illustrating the proof idea</h2>
+  <p>
+    Click on <b>Align the local snapshots</b>. The given computation C is
+    the sequence of events in the timeline. The reordered computation C' is
+    the sequence when local snapshots are aligned.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="rr_g" viewBox="0 0 1240 640" role="img"
+         aria-label="Timelines with fixed start and finish lines, and the events reordered into the snapshot's computation"></svg>
+
+    <div class="ctrls">
+      <button id="rr_align" class="primary">Align the records</button>
+      <button id="rr_reorder">Reorder the events</button>
+      <button id="rr_reset">Reset</button>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Before its own record</span><span id="rr_p"></span></div>
+      <div><span class="k">After its own record</span><span id="rr_q"></span></div>
+      <div><span class="k">Still a computation</span><span id="rr_ok"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 9. Illustration of the proof</b>
+    </figcaption>
+  </figure>
+
+
+
+
+  <h2>A Global Snapshot Algorithm</h2>
+
+  <h3>Local snapshots</h3>
+  An agent takes its local snapshot by recording (1) its own state; and (2) for each
+  outbox, the sequence of messages it placed on the outbox; and (3) for each inbox,
+  the sequence of messages it received from the inbox.
+  <br>
+  When an agent takes its local snapshot it sends this information to the OS
+  systems manager.
+
+  <p>
+    Global snapshot algorithms are based on this principle: <strong>select points
+    at which agents take local snapshots so that messages received
+    in the past are sent in the past.</strong>
+  </p>
+  
+  <h3>When agents take local snapshots</h3>
+  <ol>
+    <li>
+      When an agent takes its local snapshot
+      the agent puts a special message that we call a <b>marker</b> on each of
+      its outboxes.
+    </li>
+    <li>
+      When an agent receives a marker from any inbox, if the agent has already
+      taken its local snapshot then the agent does nothing.
+      If the agent has not taken its local snapshot then it does so 
+      and (from the previous rule) puts a marker on each of its
+      outboxes.
+    </li>
+  </ol> 
+
+
+  <h3>Proof that messages received in the past are sent in the past.</h3>
+    We will show that all messages received in the past are sent in the
+    past.
+    Let m be a message received from inbox b by agent X in the past.
+    Let m be sent by agent X' on outbox b'.
+    We will show that m is sent in the past
+  </p>
+
+  <p>
+    X receives m in the past, i.e., before X takes its local snapshot.
+    X takes its local snapshot when it receives a marker if X has not
+    already taken its snapshot.
+    So X receives m before it receives a marker.
+  </p>
+
+  <p>
+    Outboxes, connections, and inboxes are queues - so messages are received
+    in an inbox in the order sent in the outbox to which it is connected.
+    Therefore X' put m' on outbox b' before X' put the marker on b'. 
+    When X' takes its snapshot it puts a marker on all its outboxes.
+    So, X' put m' on b' before in took its snapshot, i.e. in the past.
+  </p>
+
+  
+<h3>Starting the algorithm</h3>
+ The algorithm requires every agent to send its snapshot to the systems manager.
+ The proof that messages received in the past are sent in the past requires that
+ each agent takes its snapshot when or before it receives a marker.
+ The following mechanism can be used to start the algorithm: each agent takes its
+ snapshot when its local clock reaches <b>T</b> if the agent has not already taken
+ its snapshot. 
+ This only requires that clock times increase forever; it does not require that
+ clocks be synchronized.
+
+
+<h1>END</h1>
+  
+  <p>
+    Assume that each message has a unique id. So when a message
+    <b>m</b> is received from an inbox we can uniquely identify
+    the event in which <b>m</b> is placed in the outbox to which
+    the inbox is connected. Assume that each agent keeps track of
+    the sequence of messages it places on each outbox and the
+    number of messages it receives from each inbox. When an
+    agent sends a message to the OS manager the message includes
+    this information. 
+    
+    So for each agent X and for each 
+    outbox b of X the OS manager gets the sequence of messages
+    sent on b before X takes its snapshot -- these are the messages
+    sent in the past through outbox b. 
+    Let this outbox be connected to inbox b' of agent X'.
+    So the OS manager has the number of messages that were received on b'
+    in the past.
+    The messages in transit from b to b' in the snapshot are therefore the messages
+    placed in b in the past, with the first k removed, where k is the number of
+    messages received from b' in the past.
+  </p>
+
+
+
 
 <h2>What is in the channels</h2>
   <p>
@@ -649,66 +700,8 @@ local snapshots are taken.
     </figcaption>
   </figure>
 
-<h2>Why the recorded state is reachable</h2>
-  <p>
-    <i>Prose to come.</i> The same kind of picture, with the algorithm
-    starting when X records and finishing when Z records. Six events happen
-    while it runs. Below the timelines they are listed in the order they
-    actually occurred, from S_init to S_fini.
-  </p>
-
-  <figure class="fig wideout">
-    <svg id="rr_g" viewBox="0 0 1240 640" role="img"
-         aria-label="Timelines with fixed start and finish lines, and the events reordered into the snapshot's computation"></svg>
-
-    <div class="ctrls">
-      <button id="rr_align" class="primary">Align the records</button>
-      <button id="rr_reorder">Reorder the events</button>
-      <button id="rr_reset">Reset</button>
-    </div>
-
-    <div class="facts">
-      <div><span class="k">Before its own record</span><span id="rr_p"></span></div>
-      <div><span class="k">After its own record</span><span id="rr_q"></span></div>
-      <div><span class="k">Still a computation</span><span id="rr_ok"></span></div>
-    </div>
-
-    <figcaption>
-      <b>Figure 9. The snapshot's computation.</b>
-      <i>Prose to come.</i> The two grey lines are fixed: the algorithm starts
-      at the first record and finishes at the last. <i>Align the records</i>
-      brings the three local snapshots onto one line, as before.
-      Then press <i>Reorder the events</i>. The six events slide into a
-      different order — the shaded ones, which happened before their own
-      agent recorded, move to the front. Nothing is added or removed, no
-      agent's own order changes, and every message is still sent before it is
-      received, so by the theorem of the previous lecture this is a
-      computation of the same system.
-      And now a state appears in the middle of it. After the first three
-      events the system is in exactly the state the algorithm wrote down:
-      <b>S_snap</b>. So although the system may never have been in
-      S_snap, there is a computation S_init &rarr;
-      S_snap &rarr; S_fini, which is what the algorithm
-      guarantees.
-      Compare the two rows of the strip and note which events moved:
-      <code>x2</code> happened early but is recorded as not yet done, and
-      <code>z2</code> and <code>z3</code> happened later but are recorded as
-      done. That is the whole content of the reordering.
-    </figcaption>
-  </figure>
 
 
-<h2>The Global Snapshot Theorem</h2>
-<p>
-Assume that each agent takes its local snapshot (i.e. records its
-own state) at some point in a computation.
-The points of local snapshots correspond to a global snapshot exactly 
-when for every connection from outbox b of agent X to inbox b' of agent
-X':
-<strong>the number of messages received by X' from inbox b' is less than
-or equal to the number of messages placed in outbox b by agent X.
-</strong>
-</p>
 
 
   <figure class="fig wideout">
@@ -750,25 +743,7 @@ or equal to the number of messages placed in outbox b by agent X.
     </figcaption>
   </figure>
 
-<h3>Proof</h3>
-<p>
-The proof follows from the theorem of lecture 3:
-Given a set of agent computations recorded in a system computation,
-all interleavings of agent computations in which each message
-is sent before it is received are system computations.
-</p>
-<p>
-  Let agent computations be recorded during a system computation C.
-  Define all events at an agent before the agent takes its local snapshot
-  as <strong>past</strong> events, and the other events at that agent as
-  <strong>future</strong> events.
-Construct an interleaving C' of agent computations as follows:
-In C', the relative ordering of past events is the
-same as in C, and the relative ordering of future events
-is also the same as in C, but past events appear before future ones.
-The interleaving C' satisfies the conditions of the theorem:
-each message is sent before it is received.
-</p>
+
 
 
 <h2>States of channels in global snapshots</h2>
@@ -792,15 +767,15 @@ which still leaves it in transit.)
 </p>
 
 <p>
-  In the example (Figure 10), x1, y1, y2, z1, z2, z3 are past events and the
+  In the example (Figure 11), x1, y1, y2, z1, z2, z3 are past events and the
   other events are future events.
   The message sent at z1 and received at x2 is in transit in the snapshot
   because it is sent in the past and not received in the past.
   Likewise, the message sent at z2 and received at x3 is in transit.
   By contrast, the message sent at y2 and received at z3 is not in transit
   because it is sent and received in the past.
-  Likewise, the message from y3 to x4 is not in transit because it
-  is sent and received in the future.
+  Likewise, the message from y3 to x4 is not in transit because it is not
+  sent in the past.
 </p>
 
   <figure class="fig wideout">
@@ -844,53 +819,6 @@ which still leaves it in transit.)
   </figure>
 
 
-<h2>The global snapshot algorithm</h2>
-
-<p>
-  The algorithm uses the fact that
-  outboxes, channels connecting outboxes to inboxes, and inboxes are queues.
-  So if <b>m</b> is placed in the outbox before <b>m'</b>
-  then <b>m</b> is received before <b>m'</b>.
-</p>
-
-
-<h3>When agents take local snapshots</h3>
-<ol>
-  <li>
-    When an agent takes its local snapshot (i.e. records its own state)
-    the agent puts a special message that we call a <b>marker</b> on each of
-    its outboxes.
-  </li>
-  <li>
-    When an agent receives a marker from any inbox it takes its local
-    snapshot if it hasn't already done so. Note that by the previous rule
-    it puts markers on its outboxes when it takes its local snapshot.
-  </li>
-</ol>
-
-<h3>How agents record messages in transit</h3>
-
-<p>
-  Assume that each message has a unique id. So when a message
-  <b>m</b> is received from an inbox we can uniquely identify
-  the event in which <b>m</b> is placed in the outbox to which
-  the inbox is connected. Assume that each agent keeps track of
-  the sequence of messages it places on each outbox and the
-  number of messages it receives from each inbox. When an
-  agent sends a message to the OS manager the message includes
-  this information. 
-  
-  So for each agent X and for each 
-  outbox b of X the OS manager gets the sequence of messages
-  sent on b before X takes its snapshot -- these are the messages
-  sent in the past through outbox b. 
-  Let this outbox be connected to inbox b' of agent X'.
-  So the OS manager has the number of messages that were received on b'
-  in the past.
-  The sequence of messages in transit, sent though b to b', in the snapshot are the
-  past messages placed in b excluding the number of messages received in b' in the past.
-</p>
-
 
 <p>
   <i>Draft &mdash; please edit.</i>
@@ -933,7 +861,7 @@ which still leaves it in transit.)
   Let m be a message that X places in outbox b in the future &mdash; 
   that is, after X has taken its local snapshot.
   By the first rule X put a marker in outbox b when it records its own state;
-  so the marker is placed in the oubox before m is. 
+so the marker is placed in the outbox before m is.
   Because the connection delivers messages in order, Y
   receives the marker before it receives m. By the second rule Y takes its
   local snapshot when the marker arrives. So Y records its state
