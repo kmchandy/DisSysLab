@@ -420,6 +420,19 @@ The dotted red lines connect the points at which agents take local snapshots.
 </figure>
 
 
+<h2>Past and Future</h2>
+
+
+When there are perfect clocks, the past at time t is obvious.
+Because agents don't take local snapshots at the same instant, we define
+past and future with respect to the points at which
+local snapshots are taken.
+An event at an agent is a <strong>past</strong> event exactly when it occurs before the
+agent takes its local snapshot.
+Therefore an event at an agent is a <strong>future</strong> event exactly when it occurs after the
+agent takes its local snapshot.
+
+
 <h2>Example 1: Can this state be a global snapshot?</h2>
   <p>
     Recall that <strong>past</strong> events are events at an agent before
@@ -480,6 +493,19 @@ The dotted red lines connect the points at which agents take local snapshots.
   </p>
 
   <p><b>Click the button: Line them up</b></p>
+
+  <p>
+    <b>We see that every message received in the past is sent in the past.</b>
+  </p>
+  <p>
+    Equivalently, no message is sent from the future to the past.
+  </p>
+
+  <p>
+    Let S_snap be the state at the vertical line where the local snapshots
+    are aligned. The timeline shows a computation from S_init to S_snap to
+    S_fini.
+  </p>
 
   <figure class="fig wideout">
     <svg id="ok_g" viewBox="0 0 1240 520" role="img"
@@ -1584,9 +1610,25 @@ which still leaves it in transit.)
     const g=el('g',{});
     svg.appendChild(g);
 
+    // The records reach a common moment, and that moment divides the
+    // picture into a past and a future -- same two colours as the
+    // previous figure, and as the instant figure before it. Here they
+    // mean something: no message has to be dragged across the line for
+    // the three records to meet.
+    const bo=Math.max(0, Math.min(1,(q-0.85)/0.15));
+    if(bo>0){
+      const L=X0-30, Rt=X1+30, cut=xOf(V);
+      g.appendChild(el('rect',{x:L, y:54, width:cut-L, height:416,
+        fill:C.teal, opacity:.09*bo}));
+      g.appendChild(el('rect',{x:cut, y:54, width:Rt-cut, height:416,
+        fill:C.orange, opacity:.09*bo}));
+      tag(g,(L+cut)/2, ay('X')-22, 'past', C.teal, 15, 700, bo);
+      tag(g,(cut+Rt)/2, ay('X')-22, 'future', C.orange, 15, 700, bo);
+    }
+
     // ── what actually happened ───────────────────────────────────────
     g.appendChild(el('rect',{x:xOf(FIRST), y:54, width:xOf(LAST)-xOf(FIRST),
-      height:416, fill:C.orange, opacity:.05}));
+      height:416, fill:C.orange, opacity:.05*(1-bo)}));
     [[FIRST,'global snapshot starts'],[LAST,'global snapshot ends']]
       .forEach(function(b){
         g.appendChild(el('line',{x1:xOf(b[0]), y1:54, x2:xOf(b[0]), y2:470,
