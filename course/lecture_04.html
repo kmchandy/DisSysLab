@@ -74,8 +74,8 @@
      is one beat in present mode and one thing to look at on the page. */
   p.key{margin:20px 0 18px; padding:15px 18px 15px 20px; color:var(--ink);
     background:#fff6ef; border:1px solid #f3d3c0; border-left:5px solid var(--orange);
-    border-radius:0 10px 10px 0; font-size:18px; line-height:1.5; font-weight:700}
-  p.key b, p.key strong{color:var(--ink)}
+    border-radius:0 10px 10px 0; font-size:18px; line-height:1.5; font-weight:600}
+  p.key b, p.key strong{color:var(--ink); font-weight:800}
   p.key .lead-in{display:block; font:700 11.5px/1 var(--sans);
     letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
     margin-bottom:8px}
@@ -422,15 +422,20 @@ The dotted red lines connect the points at which agents take local snapshots.
 
 <h2>Past and Future</h2>
 
-
+<p>
 When there are perfect clocks, the past at time t is obvious.
 Because agents don't take local snapshots at the same instant, we define
 past and future with respect to the points at which
 local snapshots are taken.
-An event at an agent is a <strong>past</strong> event exactly when it occurs before the
-agent takes its local snapshot.
-Therefore an event at an agent is a <strong>future</strong> event exactly when it occurs after the
-agent takes its local snapshot.
+</p>
+
+<p class="key">
+  <span class="lead-in">Past and future events</span>
+  An event at an agent is a <strong>past</strong> event exactly when it occurs
+  before the agent takes its local snapshot.
+  Events that are not <strong>past</strong> events are
+  <strong>future</strong> events.
+</p>
 
 
 <h2>Example 1: Can this state be a global snapshot?</h2>
