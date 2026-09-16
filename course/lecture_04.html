@@ -420,13 +420,22 @@ The dotted red lines connect the points at which agents take local snapshots.
 </figure>
 
 
-<h2>Can this state be a global snapshot?</h2>
+<h2>Example 1: Can this state be a global snapshot?</h2>
   <p>
     Recall that <strong>past</strong> events are events at an agent before
     the agent takes its local snapshot, and the other events are 
     <strong>future</strong> events. Let's align the points at which agents
     take local snapshots so that past events are before the aligned points
     and future events are after the aligned points.
+    <b>Click the button: Line them up</b>
+  </p>
+
+  <p>
+    The alignment shows a problem: there is a message from the future to the
+    past, shown as a blue arrow. 
+    There is no global state in which a channel delivers a message that
+    has not been sent. So, in the figure,the collection of points at 
+    which local snapshots do not correspond to a global snapshot.
   </p>
 
   <figure class="fig wideout">
@@ -454,20 +463,23 @@ The dotted red lines connect the points at which agents take local snapshots.
       The ghost carries the two ends of <code>m5</code> with it: the end where
       Y sent it travels right with Y's record, and the end where X received it
       travels left with X's. Watch what becomes of the arrow between them.
-      It <b>reverses</b>. In the world the snapshot describes, Y sends
+      It <b>reverses</b> &mdash; and the moment it does it thickens and turns
+      <span style="color:#1a5fd0"><b>blue</b></span>, because it has stopped
+      being a message and become the thing that cannot happen. In the world the snapshot describes, Y sends
       <code>m5</code> at 65 and X receives it at 38 — twenty-seven units
       before it was sent. The solid picture underneath shows what really
       happened, and the two cannot both be true.
     </figcaption>
   </figure>
 
-<h2>Recording at better moments</h2>
+  <h2>Example 2: Can this state be a global snapshot?</h2>  
   <p>
-    <i>Prose to come.</i> Nothing was wrong with the idea of each agent
-    recording on its own. What was wrong was <i>when</i>. Keep the same
-    computation and the same three agents, and only change the moments at
-    which they record.
+    The next diagram shows a timeline with a different set of points
+    at which agents take local snapshots.
+    Can these points correspond to a global snapshot?
   </p>
+
+  <p><b>Click the button: Line them up</b></p>
 
   <figure class="fig wideout">
     <svg id="ok_g" viewBox="0 0 1240 520" role="img"
@@ -1219,6 +1231,13 @@ which still leaves it in transit.)
         points:pts.map(function(p){return p[0]+','+p[1];}).join(' '),
         fill:'none', stroke:C.orange, 'stroke-width':2.5,
         'stroke-dasharray':'8 5'}));
+      // X and Z are joined directly too. Every pair of agents has a
+      // channel, and it is the line between *those two* records that a
+      // message between them has to cross: X-Y for m5, X-Z for m4.
+      if(taken('X') && taken('Z'))
+        g.appendChild(el('line',{x1:xOf(CUT.X), y1:ay('X'),
+          x2:xOf(CUT.Z), y2:ay('Z'), stroke:C.orange, 'stroke-width':2.5,
+          'stroke-dasharray':'8 5'}));
       done.forEach(function(a){
         g.appendChild(el('circle',{cx:xOf(CUT[a]), cy:ay(a), r:11,
           fill:'#fff', stroke:C.orange, 'stroke-width':4}));
@@ -1268,7 +1287,7 @@ which still leaves it in transit.)
   const svg=$('g');
   const NS='http://www.w3.org/2000/svg';
   const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
-           orange:'#d13d0e', teal:'#00947d'};
+           orange:'#d13d0e', teal:'#00947d', back:'#1a5fd0'};
   const X0=210, X1=1190, R=6;
   const AY={X:130, Y:270, Z:410};
   const AGENTS=['X','Y','Z'];
@@ -1320,7 +1339,8 @@ which still leaves it in transit.)
   function draw(){
     while(svg.firstChild) svg.removeChild(svg.firstChild);
     const defs=el('defs',{});
-    [['ah',C.ink],['ahO',C.orange],['ahG',C.teal]].forEach(function(p){
+    [['ah',C.ink],['ahO',C.orange],['ahG',C.teal],['ahB',C.back]]
+      .forEach(function(p){
       const m=el('marker',{id:PFX+p[0], viewBox:'0 0 10 10', refX:9, refY:5,
         markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
       m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:p[1]}));
@@ -1330,9 +1350,22 @@ which still leaves it in transit.)
     const g=el('g',{});
     svg.appendChild(g);
 
-    // ── the diagram from figure 2, exactly as it was ─────────────────
+    // Once the records sit on one line there is a past and a future
+    // again, exactly as in the instant figure, and in the same colours.
+    const bo=Math.max(0, Math.min(1,(q-0.85)/0.15));
+    if(bo>0){
+      const L=X0-30, Rt=X1+30, cut=xOf(V);
+      g.appendChild(el('rect',{x:L, y:54, width:cut-L, height:416,
+        fill:C.teal, opacity:.09*bo}));
+      g.appendChild(el('rect',{x:cut, y:54, width:Rt-cut, height:416,
+        fill:C.orange, opacity:.09*bo}));
+      tag(g,cut-130, ay('X')-22, 'past', C.teal, 15, 700, bo);
+      tag(g,cut+130, ay('X')-22, 'future', C.orange, 15, 700, bo);
+    }
+
+    // ── the diagram from figure 4, exactly as it was ─────────────────
     g.appendChild(el('rect',{x:xOf(FIRST), y:54, width:xOf(LAST)-xOf(FIRST),
-      height:416, fill:C.orange, opacity:.05}));
+      height:416, fill:C.orange, opacity:.05*(1-bo)}));
     [[FIRST,'global snapshot starts'],[LAST,'global snapshot ends']]
       .forEach(function(b){
         g.appendChild(el('line',{x1:xOf(b[0]), y1:54, x2:xOf(b[0]), y2:470,
@@ -1380,6 +1413,9 @@ which still leaves it in transit.)
       points:pts.map(function(p){return p[0]+','+p[1];}).join(' '),
       fill:'none', stroke:C.orange, 'stroke-width':2.5,
       'stroke-dasharray':'8 5'}));
+    g.appendChild(el('line',{x1:xOf(CUT.X), y1:ay('X'),
+      x2:xOf(CUT.Z), y2:ay('Z'), stroke:C.orange, 'stroke-width':2.5,
+      'stroke-dasharray':'8 5'}));
     AGENTS.forEach(function(a){
       g.appendChild(el('circle',{cx:xOf(CUT[a]), cy:ay(a), r:11,
         fill:'#fff', stroke:C.orange, 'stroke-width':4}));
@@ -1400,21 +1436,31 @@ which still leaves it in transit.)
         points:gpts.map(function(p){return p[0]+','+p[1];}).join(' '),
         fill:'none', stroke:C.teal, 'stroke-width':2.5,
         'stroke-dasharray':'3 5'}));
+      // the X-Z segment travels with them, and lands on the same line
+      gg.appendChild(el('line',{x1:xOf(gh('X',CUT.X)), y1:ay('X'),
+        x2:xOf(gh('Z',CUT.Z)), y2:ay('Z'), stroke:C.teal,
+        'stroke-width':2.5, 'stroke-dasharray':'3 5'}));
 
       // the ghost of the offending message, its ends carried by their agents
       if(BAD){
         const ya=ay(BAD.from), yb=ay(BAD.to), d=(yb>ya?1:-1);
         const xs=xOf(gh(BAD.from, BAD.ts)), xr=xOf(gh(BAD.to, BAD.tr));
+        // The moment the receiving end passes the sending end, the arrow
+        // is running backwards. It stops being a ghost of a message and
+        // becomes the thing that cannot happen, so it changes colour and
+        // thickens rather than staying one dashed line among three.
+        const rev=xr<xs, col=rev?C.back:C.teal;
         gg.appendChild(el('line',{x1:xs, y1:ya+d*R, x2:xr, y2:yb-d*R,
-          stroke:C.teal, 'stroke-width':3.5, 'stroke-dasharray':'3 5',
-          'marker-end':'url(#'+PFX+'ahG)'}));
+          stroke:col, 'stroke-width':rev?6:3.5,
+          'stroke-dasharray':rev?'none':'3 5', 'stroke-linecap':'round',
+          'marker-end':'url(#'+PFX+(rev?'ahB':'ahG')+')'}));
         [[xs,ya],[xr,yb]].forEach(function(pt){
           gg.appendChild(el('circle',{cx:pt[0], cy:pt[1], r:R+1,
-            fill:'#fff', stroke:C.teal, 'stroke-width':2.5}));
+            fill:'#fff', stroke:col, 'stroke-width':rev?3.5:2.5}));
         });
-        tag(gg,(xs+xr)/2-16,(ya+yb)/2, BAD.n, C.teal, 12.5);
+        tag(gg,(xs+xr)/2-16,(ya+yb)/2, BAD.n, col, 12.5);
         if(q>0.6)
-          tag(gg,(xs+xr)/2,(ya+yb)/2+32, 'backward in time', C.teal, 13, 700,
+          tag(gg,(xs+xr)/2,(ya+yb)/2+32, 'backward in time', col, 13, 700,
               (q-0.6)/0.4);
       }
 
