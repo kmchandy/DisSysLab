@@ -36,7 +36,7 @@
   ol.plan > li{counter-increment:lec; margin:0 0 14px; background:var(--panel);
     border:1px solid var(--line); border-radius:12px; padding:18px 20px 16px;
     display:flex; gap:18px; align-items:flex-start}
-  ol.plan > li::before{content:"Lecture " counter(lec);
+  ol.plan > li::before{content:"Class " counter(lec);
     font:700 11.5px var(--sans); letter-spacing:.1em; text-transform:uppercase;
     color:var(--orange); flex:none; width:92px; padding-top:5px}
   .li-body{flex:1 1 auto; min-width:0}
@@ -84,12 +84,13 @@
 
   <h2>Lectures</h2>
   <p class="sub">Each lecture is one page. Read it before or after; it is the
-     same page either way.</p>
+     same page either way. What goes into the four labs, and the demos in
+     order, is in <a href="labs.html">labs.html</a>.</p>
 
   <ol class="plan">
     <li>
       <div class="li-body">
-        <h3>Why you are here</h3>
+        <h3>Introduction to distributed systems</h3>
         <p>Two labs lost control of their agents in one month, and what came out
            later was that the agents had built a distributed system in order to
            coordinate. The dilemma this course lives in, the four rules, and a
@@ -101,10 +102,10 @@
     </li>
     <li>
       <div class="li-body">
-        <h3>One connection</h3>
-        <p>The model: agents, inboxes, outboxes, connections, and the four
-           axioms everything later is proved from. Two agents and one channel
-           are enough to raise every question in the course.</p>
+        <h3>Model of a distributed system</h3>
+        <p>Agents, inboxes, outboxes, connections, and the four axioms
+           everything later is proved from. Two agents and one channel are
+           enough to raise every question in the course.</p>
         <div class="links">
           <a class="primary" href="lecture_02.html">Open</a>
         </div>
@@ -112,9 +113,22 @@
     </li>
     <li>
       <div class="li-body">
-        <h3>Timeline diagrams</h3>
-        <p>A computation drawn as a picture — a line for every agent and every
-           one of its boxes, and a state as a vertical line. Then, with no
+        <h3>Lab: building distributed systems</h3>
+        <p>What the framework will do once you ask it for more than a pipeline:
+           the kinds of agent it ships, offices built out of offices, and the
+           coordinators &mdash; <code>select</code>, <code>gate</code>,
+           <code>match</code>, <code>synchronizer</code> &mdash; that hold a
+           queue still until an answer comes back.</p>
+        <div class="links">
+          <a class="primary" href="lecture_build.html">Open</a>
+        </div>
+      </div>
+    </li>
+    <li>
+      <div class="li-body">
+        <h3>Message Ordering</h3>
+        <p>A computation drawn as a picture &mdash; a line for every agent and
+           every one of its boxes, and a state as a vertical line. Then, with no
            clocks: what each agent can record, the dataflow graph built from
            those records, and which orderings of them are computations.</p>
         <div class="links">
@@ -122,19 +136,55 @@
         </div>
       </div>
     </li>
+    <li>
+      <div class="li-body">
+        <h3>Global Snapshots</h3>
+        <p>Photographing a system whose parts are all still moving. Why no
+           instant is available, which collections of local snapshots are
+           states the system could have been in, and the algorithm that finds
+           one &mdash; proved from the previous class's theorem.</p>
+        <div class="links">
+          <a class="primary" href="lecture_04.html">Open</a>
+        </div>
+      </div>
+    </li>
     <li class="soon">
       <div class="li-body">
-        <h3>Logical clocks, termination detection, deadlock</h3>
-        <p>An office that cannot tell it has finished. Build the case, watch it
-           hang, then read the algorithm that fixes it.</p>
+        <h3>Lab: watching and extending a system</h3>
+        <p>Start from an office that senses something real, then take it apart:
+           trace and snapshot a run, kill it and resume from a checkpoint, read
+           the Python the office compiles to, find out what
+           <code>dsl check</code> refuses to run, and write a source or a sink
+           of your own.</p>
         <div class="links"><a href="#">Not written yet</a></div>
       </div>
     </li>
     <li class="soon">
       <div class="li-body">
-        <h3>Global snapshots</h3>
-        <p>Photographing a system whose parts are all still moving, and why
-           consistent cuts are the right notion of "at the same time".</p>
+        <h3>Logical time, termination and deadlock detection</h3>
+        <p>An office that cannot tell it has finished. Build the case, watch it
+           hang, then read the algorithms that fix it.</p>
+        <div class="links"><a href="#">Not written yet</a></div>
+      </div>
+    </li>
+    <li class="soon">
+      <div class="li-body">
+        <h3>Lab: AI skills</h3>
+        <p>Extend a contract that already has a checker &mdash; the backtester
+           &mdash; then write the contract, and the checks, for a domain you
+           care about. Then try to pass your own checks while being wrong. And
+           what each agent's choice of model costs to run.</p>
+        <div class="links"><a href="#">Not written yet</a></div>
+      </div>
+    </li>
+    <li class="soon">
+      <div class="li-body">
+        <h3>Lab: agents that create agents, fenced in</h3>
+        <p>Least privilege at the boundary, capabilities that can only be
+           split, a budget that bounds how much a population can try, and a
+           shared write-once whiteboard. Alongside it, the primary reports on
+           agents that got out &mdash; the reports themselves, not the coverage
+           of them.</p>
         <div class="links"><a href="#">Not written yet</a></div>
       </div>
     </li>
@@ -150,22 +200,34 @@
 
   <h2>Everything, one list</h2>
   <p class="sub">The order lives here and nowhere else. If you want to
-     reorder the course, this is the only file that changes.</p>
+     reorder the course, this is the only file that changes. The pages are
+     named for their subject and numbered only by their position here, so
+     moving one costs an edit to this list and nothing else.</p>
   <ul class="plain">
     <li><a href="setup.html">setup.html</a>
         <span>Setting up.</span></li>
     <li><a href="lecture_01.html">lecture_01.html</a>
-        <span>Why you are here: power, safety, and the four rules.</span></li>
+        <span>Introduction to distributed systems: power, safety, and the four
+              rules.</span></li>
     <li><a href="lecture_02.html">lecture_02.html</a>
-        <span>A model of a distributed system, and the four axioms.</span></li>
+        <span>Model of a distributed system, and the four axioms.</span></li>
+    <li><a href="lecture_build.html">lecture_build.html</a>
+        <span>Lab: building distributed systems with <code>dsl</code>.</span></li>
     <li><a href="lecture_03.html">lecture_03.html</a>
-        <span>Timelines, states, the dataflow graph, and which interleavings
-              of agent computations are system computations.</span></li>
+        <span>Message ordering: timelines, states, the dataflow graph, and which
+              interleavings of agent computations are system
+              computations.</span></li>
+    <li><a href="labs.html">labs.html</a>
+        <span>What goes into each lab, and the demos in order. A planning
+              document, not a class.</span></li>
+    <li><a href="lecture_04.html">lecture_04.html</a>
+        <span>Global snapshots: consistent cuts, the snapshot theorem, and the
+              marker algorithm.</span></li>
   </ul>
 
   <div class="note">
-    <b>Presenting.</b> Lecture 1 is already a deck: open it and use the arrow
-    keys, <b>B</b> to blank the screen. Lectures 2 and 3 are readings that
+    <b>Presenting.</b> The first class is already a deck: open it and use the
+    arrow keys, <b>B</b> to blank the screen. The rest are readings that
     become talks — press <b>P</b> to show one piece at a time at projector
     size, arrow keys to move, <b>Esc</b> to go back to reading. The animations
     keep running either way. <b>P</b> never means "go back".
