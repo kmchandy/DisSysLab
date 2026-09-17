@@ -1,0 +1,370 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab plans</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:48px 20px 90px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em;
+    text-transform:uppercase; color:var(--orange); margin-bottom:14px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(32px,5vw,46px);
+     line-height:1.05; letter-spacing:-.022em; margin:0 0 14px}
+  .lead{font-size:19px; line-height:1.55; color:var(--body); max-width:660px;
+     margin:0 0 8px}
+  h2{font-family:var(--display); font-weight:600; font-size:27px;
+     margin:54px 0 2px; letter-spacing:-.01em}
+  .where{font:600 12px/1 var(--sans); letter-spacing:.12em;
+     text-transform:uppercase; color:var(--teal); margin:0 0 14px}
+  h3{font-size:16px; font-weight:700; margin:26px 0 8px;
+     letter-spacing:.01em}
+  p{color:var(--body); margin:0 0 14px}
+  ul,ol{color:var(--body); margin:0 0 14px; padding-left:22px}
+  li{margin:0 0 7px}
+  li b{color:var(--ink)}
+  code{font-family:var(--mono); font-size:.88em; color:var(--ink)}
+  .demo{list-style:none; padding:0; margin:0 0 14px; counter-reset:d}
+  .demo li{counter-increment:d; position:relative; padding:0 0 0 38px;
+    margin:0 0 12px}
+  .demo li::before{content:counter(d); position:absolute; left:0; top:1px;
+    width:24px; height:24px; border-radius:50%; background:var(--panel);
+    border:1px solid var(--line); color:var(--muted);
+    font:700 12px/23px var(--sans); text-align:center}
+  .demo .cmd{display:block; font-family:var(--mono); font-size:13.5px;
+    color:var(--ink); margin-bottom:2px}
+  .hands{margin:18px 0 0; padding:13px 18px; background:var(--panel);
+    border:1px solid var(--line); border-left:3px solid var(--teal);
+    border-radius:0 10px 10px 0; font-size:15px; color:var(--body)}
+  .hands b{color:var(--ink)}
+  .gap{margin:14px 0 0; padding:13px 18px; background:#fff6ef;
+    border:1px solid #f3d3c0; border-left:3px solid var(--orange);
+    border-radius:0 10px 10px 0; font-size:15px; color:var(--body)}
+  .gap b{color:var(--ink)}
+  footer{margin-top:62px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:14px; color:var(--muted)}
+  footer a{color:var(--teal)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">DisSysLab &middot; planning document</div>
+  <h1>Lab plans</h1>
+  <p class="lead">What goes into each lab, and the demos in the order a class
+     would meet them. Four labs, three sessions each. The order of the course
+     lives in <a href="index.html">index.html</a>; this page says only what is
+     inside the labs.</p>
+  <p class="lead">Each demo is something that runs on a student's own machine.
+     Where a demo needs something the framework does not have yet, it says so.</p>
+
+  <h2>Lab 1 &middot; Building distributed systems</h2>
+  <p class="where">Class 3 &middot; the page exists: lecture_build.html</p>
+
+  <p>The first lab where a student builds rather than runs. It answers "what
+     will this framework do once I ask it for more than a pipeline?" and it now
+     carries the two pieces of distributed-systems content that no other class
+     covers: systems built out of systems, and the coordinators.</p>
+
+  <h3>What goes in</h3>
+  <ul>
+    <li><b>The agent zoo.</b> The roles that ship &mdash; annotators, writers,
+        filters, Python roles, structural roles &mdash; and which jobs each is
+        for.</li>
+    <li><b>Per-agent backends.</b> One office, different models behind
+        different agents; the <code>_creative</code> and <code>_precise</code>
+        variants.</li>
+    <li><b>Coordinators.</b> <code>synchronizer</code>, <code>select</code>,
+        <code>match</code>, <code>gate</code>: what each one holds still, and
+        why a queue has to be held at all.</li>
+    <li><b>Composition.</b> An office whose agents are offices
+        (<code>network.md</code>, <code>office at</code>), and the
+        <code>{{include}}</code> directive.</li>
+    <li><b>Static checking.</b> What <code>dsl check</code> reads off the graph
+        before anything runs.</li>
+  </ul>
+
+  <h3>Demos, in order</h3>
+  <ol class="demo">
+    <li><span class="cmd">dsl list</span>
+        The forty offices. Everyone picks one they would use.</li>
+    <li><span class="cmd">dsl run periodic_brief</span>
+        An office that senses and responds, with no API key and no waiting.
+        The output is the point: it is a page, not a log.</li>
+    <li><span class="cmd">dsl show periodic_brief</span>
+        The same office as English: agents, roles, connections. Read the
+        <code>office.md</code> next to the output it just produced.</li>
+    <li><span class="cmd">dsl draw periodic_brief</span>
+        The graph, drawn from the same file. Two representations of one thing,
+        which is the habit the whole course is built on.</li>
+    <li><span class="cmd">dsl roles &nbsp;&middot;&nbsp; dsl grammar</span>
+        The vocabulary: every role name that exists, and the grammar an
+        <code>office.md</code> has to satisfy.</li>
+    <li><span class="cmd">dsl run room_climate_monitor</span>
+        <b>synchronizer.</b> Two sensors report independently; the checker
+        waits for both. Comment out the join and watch it judge the room on
+        half the data.</li>
+    <li><span class="cmd">dsl run returns_desk</span>
+        <b>select.</b> A clerk escalates to a manager, and the ticket queue is
+        held still until the manager answers.</li>
+    <li><span class="cmd">dsl run shipment_release</span>
+        <b>match.</b> A scan and a manifest arrive separately; nothing is
+        released until the two agree.</li>
+    <li><span class="cmd">dsl run org_two_office_news</span>
+        <b>Composition.</b> One office feeding another, wired in
+        <code>network.md</code>. Draw it, then draw one of its two halves.</li>
+    <li><span class="cmd">dsl check my_office</span>
+        Break an office on purpose &mdash; delete a connection, misname an
+        inbox &mdash; and read the code it comes back with.</li>
+  </ol>
+
+  <div class="hands"><b>Hand in.</b> An office of their own that uses at least
+    one coordinator, passes <code>dsl check</code>, and produces output someone
+    other than the author would want to look at.</div>
+
+  <h2>Lab 2 &middot; Watching and extending a system</h2>
+  <p class="where">Class 6 &middot; not written yet</p>
+
+  <p>The instrumentation lab, and the one that closes the loop on the two
+     theory classes: a trace <i>is</i> the dataflow graph of Message Ordering,
+     and a checkpoint on disk <i>is</i> a global snapshot with its channel
+     state. It starts from something real so that there is a reason to want
+     any of it, and it ends with the student having extended the framework
+     rather than used it.</p>
+
+  <h3>What goes in</h3>
+  <ul>
+    <li><b>Sensing something real</b> as the on-ramp: a model wrapped as one
+        Python role, and the gate that drops what it is not sure about.</li>
+    <li><b>Observability.</b> <code>--trace</code> and
+        <code>explain-trace</code>; reading a run as a sequence of events.</li>
+    <li><b>Snapshots.</b> <code>--snapshot-interval</code> and
+        <code>show-checkpoint</code>; what is in a checkpoint and why the
+        channel contents have to be there.</li>
+    <li><b>Recovery.</b> Kill a run and resume it. What survives, what is
+        repeated, and what that costs.</li>
+    <li><b>Codegen.</b> <code>dsl build</code>, then read
+        <code>build/run.py</code>: the English mapped onto Python.</li>
+    <li><b>Extending the framework.</b> Writing a sink, then a source.</li>
+    <li><b>Parallelism.</b> The same office across processes.</li>
+  </ul>
+
+  <h3>Demos, in order</h3>
+  <ol class="demo">
+    <li><span class="cmd">dsl run backyard_birds &nbsp;&middot;&nbsp; dsl run wildlife_watcher</span>
+        Bring your own recordings or photos. A local model, no key, and an
+        answer about your own garden. This is the on-ramp, and it is why
+        anyone would care what the run did.</li>
+    <li><span class="cmd">dsl run situation_room --trace</span>
+        The same office, now recording what it did.</li>
+    <li><span class="cmd">dsl explain-trace</span>
+        The run as events, in order, with the messages between them. Draw the
+        dataflow graph of Class 4 on the board from the trace on the screen.</li>
+    <li><span class="cmd">dsl run recovery_demo --snapshot-interval 5</span>
+        Snapshots accumulate on disk while the office runs.</li>
+    <li><span class="cmd">dsl show-checkpoint</span>
+        Open one: every agent's state, and the messages in the channels.
+        Name the parts against Class 5's S_snap.</li>
+    <li><span class="cmd">Ctrl-C, then dsl run recovery_demo --resume latest</span>
+        Containment. The run continues from a state the system may never have
+        been in &mdash; which is exactly what the theorem licensed.</li>
+    <li><span class="cmd">dsl build my_office &nbsp;&middot;&nbsp; less build/run.py</span>
+        The Python their English compiled to. Find their own agents in it.</li>
+    <li><span class="cmd">dsl check &nbsp;&middot;&nbsp; dsl checks</span>
+        Provoke the wiring checks one at a time &mdash; an inbox nothing writes
+        to, an undeclared port, a loop &mdash; and read what each code is
+        protecting.</li>
+    <li><span class="cmd">write a sink, then a source</span>
+        Twenty lines of Python that put the output where the student actually
+        wants it. Then the same in reverse for input.</li>
+    <li><span class="cmd">dsl run my_office --processes 4</span>
+        One office, several processes, same result &mdash; and the first
+        occasion to ask what "same result" means.</li>
+  </ol>
+
+  <div class="hands"><b>Hand in.</b> Their sensing office; a trace and a
+    checkpoint from one run of it; and a resumed run that continues from that
+    checkpoint. Plus a paragraph naming what the checkpoint does <i>not</i>
+    contain.</div>
+
+  <h2>Lab 3 &middot; AI skills</h2>
+  <p class="where">Class 8 &middot; not written yet</p>
+
+  <p>The lab where a model writes part of the system, and the only thing
+     between it and the system is a typed slot and a checker. Students extend
+     a contract that already has one, then author a contract of their own for
+     something they care about, then try to defeat their own checks. This is
+     also the first honest instance of self-improvement in the course: the
+     system gains a capability it did not have, authored by a model, admitted
+     only if it passes a mechanical check.</p>
+
+  <h3>What goes in</h3>
+  <ul>
+    <li><b>What a skill is.</b> Not a prompt: a specification, a worked
+        example, and a checker that runs before anything is wired in.</li>
+    <li><b>The proposal/code boundary.</b> A strategy is a row of parameters
+        plus a reviewed function &mdash; data an agent may write, code it may
+        not.</li>
+    <li><b>The six checks</b> in <code>_contract_checks.py</code>: no
+        lookahead, determinism, finiteness, declared range, warm-up, trend
+        sanity.</li>
+    <li><b>Honest evaluation.</b> Walk-forward and Monte Carlo: what "it got
+        better" is allowed to mean, and how many looks at the holdout window
+        you get.</li>
+    <li><b>Authoring a contract.</b> Deciding what varies, what stays fixed,
+        and what a machine can check.</li>
+    <li><b>Packaging.</b> A <code>.skill</code> bundle, its version string,
+        and why a bundle that has drifted from its source is worse than no
+        bundle.</li>
+    <li><b>Cost as a capability.</b> What each agent's model choice consumes
+        per run.</li>
+  </ul>
+
+  <h3>Demos, in order</h3>
+  <ol class="demo">
+    <li><span class="cmd">dsl skills</span>
+        What is installed, and what a skill looks like on disk. Install
+        <code>backtest-strategy-builder.skill</code>.</li>
+    <li><span class="cmd">dsl init mac_speed_suite my_backtest &nbsp;&middot;&nbsp; dsl fetch-prices</span>
+        Their own copy of the office, and their own price data &mdash; the
+        repository ships none.</li>
+    <li><span class="cmd">dsl run .</span>
+        The baseline: eleven strategies, ranked, with the run settings
+        printed. Read the report before changing anything.</li>
+    <li><span class="cmd">ask for a strategy in plain English</span>
+        "Try an RSI rule on these eight stocks." Watch the skill read the
+        contract, draft the parameters and the signal function, and run the
+        checker before it touches <code>office.md</code>.</li>
+    <li><span class="cmd">now ask for one that peeks</span>
+        A rule that uses tomorrow's close. <code>check_no_lookahead</code>
+        refuses it. Then a "deterministic" function seeded from the clock, and
+        <code>check_deterministic</code> refuses that.</li>
+    <li><span class="cmd">python3 explain_strategy.py</span>
+        The per-bar working as a spreadsheet with live formulas. Is the
+        implemented rule the one they meant? This is where they find out it
+        is not.</li>
+    <li><span class="cmd">read the validation gate</span>
+        Walk-forward folds and Monte Carlo samples on one strategy, then on
+        eleven. What happens to the winner's numbers when you search harder.</li>
+    <li><span class="cmd">read two contracts side by side</span>
+        <code>_signal_common.py</code> and <code>_subject_common.py</code>:
+        the same shape twice, for trading and for tutoring.</li>
+    <li><span class="cmd">author a contract</span>
+        Their own domain. The common module, three or four checks, one worked
+        example. The checks are the deliverable, not the example.</li>
+    <li><span class="cmd">build the bundle, swap with a partner</span>
+        Package it, install it, and have someone else's model extend your
+        contract while you watch what your checks catch.</li>
+    <li><span class="cmd">break the checker</span>
+        In pairs: pass every check and still be wrong. Then add the check that
+        catches what you did.</li>
+    <li><span class="cmd">the same run on three backends</span>
+        Local, open-weight and frontier, behind the same agents. What each run
+        costs, and which agents deserve the expensive one.</li>
+  </ol>
+
+  <div class="hands"><b>Hand in.</b> A <code>.skill</code> bundle with its
+    contract and its checks; one extension authored by a model and admitted;
+    and the attempt their checks caught, with the check that caught it.</div>
+
+  <div class="gap"><b>Not ready yet.</b> Two things this lab needs that do not
+    exist. There is no token or cost accounting in any backend, so demo 12 is
+    an estimate rather than a measurement until a per-agent counter is added.
+    And nothing in the gallery is about the bench, so a domain like drug
+    discovery needs one public data source and one worked example chosen in
+    advance.</div>
+
+  <h2>Lab 4 &middot; Agents that create agents, fenced in</h2>
+  <p class="where">Class 9 &middot; not written yet</p>
+
+  <p>The last lab, and the one the course has been walking towards: a
+     population of agents that can grow, inside a fence that holds however
+     large it grows. Students have already written a checker in Lab 3; here
+     they write the constraints that bound a population rather than an
+     individual, and then read the primary reports of the cases where nobody
+     had.</p>
+
+  <h3>What goes in</h3>
+  <ul>
+    <li><b>Least privilege at the boundary.</b> What an office can reach once
+        it talks to something outside itself, and what was granted rather than
+        assumed.</li>
+    <li><b>A dynamic population without creation.</b> Subscribers that come
+        and go, served out of what has already been computed.</li>
+    <li><b>Capabilities that can only be split.</b> A child gets a subset of
+        its parent's authority; the union over any population is the root's.</li>
+    <li><b>A budget that bounds the search.</b> The same number that makes the
+        run terminate also bounds how many hypotheses were tried, which is
+        what an honest claim about a winner needs.</li>
+    <li><b>Write-once facts and provenance.</b> Who read what before writing
+        what &mdash; the dataflow graph of Class 4, built live, answering "how
+        many <i>independent</i> attempts were there?"</li>
+    <li><b>The reports.</b> Primary write-ups of agents that escaped their
+        intended boundary: what is documented, what is inferred, and which
+        invariant would have held.</li>
+  </ul>
+
+  <h3>Demos, in order</h3>
+  <ol class="demo">
+    <li><span class="cmd">dsl run webhook_listener &nbsp;&middot;&nbsp; dsl run web_monitor</span>
+        An office with a door to the outside. List what it can now reach, and
+        which of those you meant to grant.</li>
+    <li><span class="cmd">dsl run situation_room_requests</span>
+        A changing set of subscribers served from a registry &mdash; a
+        population that varies without anyone creating an agent.</li>
+    <li><span class="cmd">read the seven verbs</span>
+        The whiteboard design: the complete list of things an agent may do,
+        and the five invariants. Each student says what a rogue searcher could
+        and could not do under it.</li>
+    <li><span class="cmd">split a budget on paper</span>
+        A searcher with budget B spawns children. Show that the live budgets
+        plus what has been spent never exceeds B, and that this is why the run
+        ends.</li>
+    <li><span class="cmd">count the holdout looks</span>
+        The out-of-sample window may be read N times however many agents
+        exist. Run the backtester's gate with a wide search and watch the
+        winner's numbers move.</li>
+    <li><span class="cmd">walk the provenance graph</span>
+        Which proposals were made by an agent that had read no prior result?
+        Those are the independent trials; the rest are children of them.</li>
+    <li><span class="cmd">turn one invariant off</span>
+        Remove the capability-splitting rule, or the budget, and say what the
+        population can now do that it could not before.</li>
+    <li><span class="cmd">read the reports</span>
+        The primary documents, not the coverage. For each: what mechanism
+        would produce this, which of our invariants would have stopped it, and
+        which would not have.</li>
+  </ol>
+
+  <div class="hands"><b>Hand in.</b> A fence for a system they would actually
+    want to run: the verbs, the capabilities, the budget, the invariants &mdash;
+    and the one attack their own fence does not stop, stated plainly.</div>
+
+  <div class="gap"><b>Not ready yet.</b> The whiteboard exists as a design
+    note: seven verbs, five invariants, a schema mapped onto the backtest
+    office. There is no kernel. Demos 3 to 7 are pencil-and-paper against the
+    design as written unless one is built first, which is either a term
+    project for one or two students or a piece of work before the class runs.</div>
+
+  <footer>
+    Planning document, not a lecture page. The course order is in
+    <a href="index.html">index.html</a>; the framework is in
+    <a href="https://github.com/kmchandy/DisSysLab">github.com/kmchandy/DisSysLab</a>.
+    &middot; K. Mani Chandy
+  </footer>
+</div>
+</body>
+</html>
