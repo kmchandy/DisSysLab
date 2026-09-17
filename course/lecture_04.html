@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Lecture 4 — Global snapshots</title>
+<title>Global Snapshots</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
@@ -23,6 +23,10 @@
   h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
      line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
   p{color:var(--body); margin:0 0 15px}
+  /* The proof's three steps are h4s: a label on a paragraph, not a section,
+     so they are smaller than h3 and do not start a slide in present mode. */
+  h4{font-family:var(--sans); font-weight:700; font-size:15.5px;
+     letter-spacing:.01em; color:var(--ink); margin:20px 0 6px}
   .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
           color:var(--orange); margin-bottom:14px}
   figure.fig{margin:30px 0 26px; padding:20px 20px 16px;
@@ -84,8 +88,8 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="kicker">DisSysLab &middot; Class 4</div>
-    <h1>Global snapshots</h1>
+    <div class="kicker">DisSysLab</div>
+    <h1>Global Snapshots</h1>
 
     <p><i>Prose to come.</i></p>
   </header>
@@ -218,17 +222,17 @@ snapshot.
     </div>
 
     <figcaption>
-      <b>Figure 3. A snapshot at an instant in time.</b>
+      <b>Figure 2. A snapshot at an instant in time.</b>
     </figcaption>
   </figure>
 
 
 
-    <h2>What agents tell the systems manager</h2>
+    <h2>Messages that agents send to the systems manager</h2>
     <p>
       Assume that agents could take their local snapshots (i.e., record their
       own states) at the same instant.
-    What do agents tell the systems manager?
+    What messages do agents send to the systems manager?
     </p>
 
     <p>
@@ -298,12 +302,28 @@ recent checkpoint (a global snapshot) and continue execution from there.
 </ol>
 
 <p>
+  Both facts follow from the theorem below. By the theorem there is a
+  computation from S_init to S_snap to S_fini, and P is stable in every
+  computation of the system. So if P holds at S_init it still holds at S_snap,
+  which is the first fact; and if P holds at S_snap it still holds at S_fini,
+  which is the second.
+</p>
+
+<p>
+  Stability is doing real work here. <i>The inbox of agent X is empty</i> is
+  not a stable property: it can be true at S_snap and false at S_fini, or false
+  at S_init and true at S_snap. Of a stable property, a snapshot tells you
+  something about the system now; of an unstable one, it tells you only that it
+  held in some state the system may never have been in.
+</p>
+
+<p>
   One way of detecting a stable property P is to take
   global snapshots repeatedly and check whether P holds
   in the snapshot.
 </p>
 
-<h2>When should agents take local snapshots?</h2>
+<h2>Agents take local snapshots at different moments</h2>
 <p>
 The diagram below shows a timeline with agents X, Y, and Z.
 Click the button <b>Take the snapshot.</b>
@@ -318,6 +338,10 @@ diagrammatically it is determined by the agent timelines and message
 lines that intersect the vertical line at that point.
 Likewise, S_fini is the global state at the point at which Z takes its snapshot.
 The dotted red lines connect the points at which agents take local snapshots.
+The dotted red lines connect the points at which agents take local snapshots.
+Whether a particular set of points will do &mdash; and how the agents can
+choose such points without a common clock &mdash; is what the rest of this
+lecture answers.
 </p>
 
 <figure class="fig wideout">
@@ -336,7 +360,7 @@ The dotted red lines connect the points at which agents take local snapshots.
   </div>
 
   <figcaption>
-    <b>Figure 4. Agents take local snapshots at different points.</b>
+    <b>Figure 3. Agents take local snapshots at different points.</b>
   </figcaption>
 </figure>
 
@@ -344,7 +368,7 @@ The dotted red lines connect the points at which agents take local snapshots.
 <h2>Past and Future</h2>
 
 <p>
-When there are perfect clocks, the past at time t is obvious.
+When there are perfect clocks, the past at time <b>t</b> is obvious.
 Because agents don't take local snapshots at the same instant, we define
 past and future with respect to the points at which
 local snapshots are taken.
@@ -393,7 +417,7 @@ local snapshots are taken.
     </div>
 
     <figcaption>
-      <b>Figure 5. An infeasible global snapshot: message from future to past</b>
+      <b>Figure 4. An infeasible global snapshot: message from future to past</b>
     </figcaption>
   </figure>
 
@@ -408,8 +432,8 @@ local snapshots are taken.
   <p>
     <b>We see that every message received in the past is sent in the past.</b>
     Equivalently, no message is sent from the future to the past.
-    The global snapshot, S_init, is the state shown when the times of the agent snapshots
-    are aligned. This is the state at the dotted green vertical line.
+      The global snapshot, S_snap, is the state shown when the times of the agent
+      snapshots are aligned. This is the state at the dotted green vertical line.
     The past is before this line and the future is after the line.
     The timeline shows a computation from S_init to S_snap to S_fini.
     The state of an agent in S_snap is its local snapshot, and the messages
@@ -433,41 +457,101 @@ local snapshots are taken.
     </div>
 
     <figcaption>
-      <b>Figure 6. A global snapshot: messages received in
+      <b>Figure 5. A global snapshot: messages received in
         the past are sent in the past.</b>
     </figcaption>
   </figure>
 
 <h2>The Global Snapshot Theorem</h2>
-<p>
-The points of local snapshots correspond to a global snapshot exactly
-when:
-<strong>every message received in the past is sent in the past.</strong>
+
+<p class="key">
+  <span class="lead-in">The global snapshot theorem</span>
+  The points of local snapshots correspond to a global snapshot exactly when
+  <br>
+  <strong>every message received in the past is sent in the past</strong>.
 </p>
 
 <h3>Proof</h3>
 <p>
-The proof follows immediately from the theorem of lecture 3:
+The proof uses the theorem of lecture 3:
 Given a set of agent computations recorded in a system computation,
 all interleavings of agent computations in which <strong>each message
 is received only after it is sent</strong> are system computations.
 </p>
+
 <p>
   Let agent computations be recorded during a system computation C.
-Construct an interleaving C' of agent computations as follows:
-In C', the relative ordering of past events is the
-same as in C, and the relative ordering of future events
-is also the same as in C, but past events appear before future ones.
-The interleaving C' satisfies the conditions of the theorem:
-each message is received only after it is sent.
+  Construct an interleaving C' of agent computations as follows:
+  in C' the relative ordering of past events is the same as in C, and the
+  relative ordering of future events is also the same as in C, but every
+  past event appears before every future one.
+</p>
+
+<h4>C' is a computation</h4>
+<p>
+  Consider any message m, and the two events that send and receive it. There
+  are four cases, and the hypothesis of the theorem rules out the only bad one.
+</p>
+<ol>
+  <li>
+    <b>m is sent in the past and received in the past.</b> Both events are past
+    events, and in C' the past events keep the order they had in C &mdash; in
+    which m was sent before it was received.
+  </li>
+  <li>
+    <b>m is sent in the past and received in the future.</b> The send is a past
+    event and the receive is a future event, and in C' every past event comes
+    before every future one.
+  </li>
+  <li>
+    <b>m is sent in the future and received in the future.</b> Both events are
+    future events, and in C' the future events keep the order they had in C.
+  </li>
+  <li>
+    <b>m is sent in the future and received in the past.</b> This is the only
+    case in which C' would put a receive before its send &mdash; and it is
+    exactly the case the hypothesis forbids, so it does not arise.
+  </li>
+</ol>
+<p>
+  So every message in C' is received only after it is sent, and by the theorem
+  of lecture 3, C' is a computation of the system.
+</p>
+
+<h4>C' passes through the recorded state</h4>
+<p>
+  C' is a reordering of the events recorded during the algorithm, so C' starts
+  at S_init and ends at S_fini. Consider the state of the system in C' after
+  every past event and before every future one. Each agent has performed
+  exactly its past events, so each agent's state is the state it recorded in
+  its local snapshot. And a message is in transit in that state exactly when it
+  was sent and not received among the past events &mdash; which is exactly what
+  the algorithm records as in transit. So that state is S_snap, and C' is a
+  computation from S_init to S_snap to S_fini.
+</p>
+
+<h4>The other direction</h4>
+<p>
+  Conversely, suppose some message m is received in the past and sent in the
+  future. Then S_snap is a state in which X has already received m and X' has
+  not yet sent it. A message is received only after it is sent, so no
+  computation of the system reaches such a state; in particular there is no
+  computation from S_init to S_snap. The points of local snapshots therefore do
+  not correspond to a global snapshot &mdash; which is the situation in
+  Example 1.
 </p>
 
 
 <h2>Example illustrating the proof idea</h2>
   <p>
-    Click on <b>Align the local snapshots</b>. The given computation C is
-    the sequence of events in the timeline. The reordered computation C' is
-    the sequence when local snapshots are aligned.
+      Click <b>Align the records</b>. The three records slide onto one line,
+      and the events slide with them: every past event moves to the left of
+      that line and every future event to the right, which is the interleaving
+      C'. The strip below shows the same thing as a sequence &mdash; the order
+      the events happened in, becoming the snapshot's order. Watch <b>y2</b>
+      move in front of <b>x2</b>, and <b>x3</b> move behind <b>z3</b> and
+      <b>y3</b>: no agent's own order changes, and no message ends up received
+      before it was sent.
   </p>
 
   <figure class="fig wideout">
@@ -476,7 +560,6 @@ each message is received only after it is sent.
 
     <div class="ctrls">
       <button id="rr_align" class="primary">Align the records</button>
-      <button id="rr_reorder">Reorder the events</button>
       <button id="rr_reset">Reset</button>
     </div>
 
@@ -487,7 +570,7 @@ each message is received only after it is sent.
     </div>
 
     <figcaption>
-      <b>Figure 9. Illustration of the proof</b>
+      <b>Figure 6. Illustration of the proof</b>
     </figcaption>
   </figure>
 
@@ -497,12 +580,16 @@ each message is received only after it is sent.
   <h2>A Global Snapshot Algorithm</h2>
 
   <h3>Local snapshots</h3>
-  An agent takes its local snapshot by recording (1) its own state; and (2) for each
-  outbox, the sequence of messages it placed on the outbox; and (3) for each inbox,
-  the sequence of messages it received from the inbox.
-  <br>
-  When an agent takes its local snapshot it sends this information to the OS
-  systems manager.
+  <p>
+    An agent takes its local snapshot by recording (1) its own state, (2) for
+    each outbox, the sequence of messages it has placed on that outbox, and
+    (3) for each inbox, the sequence of messages it has received from that
+    inbox.
+  </p>
+  <p>
+    When an agent takes its local snapshot it sends this information to the OS
+    systems-manager.
+  </p>
 
   <p>
     Global snapshot algorithms are based on this principle: <strong>select points
@@ -524,357 +611,55 @@ each message is received only after it is sent.
       and (from the previous rule) puts a marker on each of its
       outboxes.
     </li>
-  </ol> 
+  </ol>
+
+  <p>
+    A marker is an <b>OS message</b>. As in Figure 1, it is trapped by the OS
+    agent that receives it and is never passed on to the client inside, so no
+    client ever sees a marker and no client's computation is changed by the
+    algorithm. Markers travel along the same connections as the clients' own
+    messages &mdash; which is exactly why the queue argument below works.
+  </p>
 
 
-  <h3>Proof that messages received in the past are sent in the past.</h3>
-    We will show that all messages received in the past are sent in the
-    past.
-    Let m be a message received from inbox b by agent X in the past.
-    Let m be sent by agent X' on outbox b'.
-    We will show that m is sent in the past
+  <h3>Proof that messages received in the past are sent in the past</h3>
+  <p>
+    Let m be a message that agent X receives from inbox b in the past, and let
+    X' be the agent that placed m on outbox b', where b' is connected to b.
+    We show that m is sent in the past.
   </p>
 
   <p>
-    X receives m in the past, i.e., before X takes its local snapshot.
-    X takes its local snapshot when it receives a marker if X has not
-    already taken its snapshot.
-    So X receives m before it receives a marker.
+    X receives m in the past, that is, before X takes its local snapshot.
+    When an agent receives a marker it takes its local snapshot if it has not
+    already done so, so X takes its local snapshot no later than the arrival of
+    the marker on b. Therefore X receives m before the marker on b.
   </p>
 
   <p>
-    Outboxes, connections, and inboxes are queues - so messages are received
-    in an inbox in the order sent in the outbox to which it is connected.
-    Therefore X' put m' on outbox b' before X' put the marker on b'. 
-    When X' takes its snapshot it puts a marker on all its outboxes.
-    So, X' put m' on b' before in took its snapshot, i.e. in the past.
+    Outboxes, connections, and inboxes are queues &mdash; so messages are
+    received from an inbox in the order in which they were placed in the outbox
+    to which it is connected. Therefore X' placed m on outbox b' before X'
+    placed the marker on b'. And X' puts a marker on each of its outboxes when
+    it takes its local snapshot. So X' placed m on b' before it took its own
+    snapshot, that is, m is sent in the past.
   </p>
 
   
 <h3>Starting the algorithm</h3>
- The algorithm requires every agent to send its snapshot to the systems manager.
- The proof that messages received in the past are sent in the past requires that
- each agent takes its snapshot when or before it receives a marker.
- The following mechanism can be used to start the algorithm: each agent takes its
- snapshot when its local clock reaches <b>T</b> if the agent has not already taken
- its snapshot. 
- This only requires that clock times increase forever; it does not require that
- clocks be synchronized.
-
-
-<h1>END</h1>
-  
-  <p>
-    Assume that each message has a unique id. So when a message
-    <b>m</b> is received from an inbox we can uniquely identify
-    the event in which <b>m</b> is placed in the outbox to which
-    the inbox is connected. Assume that each agent keeps track of
-    the sequence of messages it places on each outbox and the
-    number of messages it receives from each inbox. When an
-    agent sends a message to the OS manager the message includes
-    this information. 
-    
-    So for each agent X and for each 
-    outbox b of X the OS manager gets the sequence of messages
-    sent on b before X takes its snapshot -- these are the messages
-    sent in the past through outbox b. 
-    Let this outbox be connected to inbox b' of agent X'.
-    So the OS manager has the number of messages that were received on b'
-    in the past.
-    The messages in transit from b to b' in the snapshot are therefore the messages
-    placed in b in the past, with the first k removed, where k is the number of
-    messages received from b' in the past.
-  </p>
-
-
-
-
-<h2>What is in the channels</h2>
-  <p>
-    <i>Prose to come.</i> A fragment of three timelines — no initial actions,
-    just a stretch of an execution already under way. Each agent records once:
-    X between its events <code>0</code> and <code>3</code>, Y between
-    <code>1</code> and <code>5</code>, Z between <code>2</code> and
-    <code>6</code>.
-  </p>
-
-  <figure class="fig wideout">
-    <svg id="ch_g" viewBox="0 0 1240 520" role="img"
-         aria-label="Three timeline fragments showing which messages are in the channels at a snapshot"></svg>
-
-    <div class="ctrls">
-      <button id="ch_go" class="primary">Line them up</button>
-      <button id="ch_back">Back</button>
-    </div>
-
-    <div class="facts">
-      <div><span class="k">Recorded at</span><span id="ch_when"></span></div>
-      <div><span class="k">Crossing X&ndash;Y</span><span id="ch_xy"></span></div>
-      <div><span class="k">In the channels</span><span id="ch_chan"></span></div>
-    </div>
-
-    <figcaption>
-      <b>Figure 7. The channels hold what crosses the cut.</b>
-      <i>Prose to come.</i> Look first at the stretch of the dashed red line
-      between X's record and Y's. Two messages cross it, and each crossing is
-      marked: <code>1&rarr;3</code> and <code>1&rarr;4</code>. Both were sent
-      by Y <b>before</b> Y recorded, and both were received by X <b>after</b>
-      X recorded — so at the moment the snapshot describes, they had left Y
-      and had not reached X. They were in the channel, and a snapshot that did
-      not mention them would describe a system missing two messages.
-      Now press the button. The red line steps back and the records slide
-      onto a single green line, vertical, at one moment. The messages do not
-      move — only the line does — and the two marks travel along their own
-      message lines and settle on it.
-      <b>The same two messages cross.</b> <code>1&rarr;3</code> and
-      <code>1&rarr;4</code> cross the green line between X and Y just as they
-      crossed the red one, and <code>0&rarr;2</code> crosses neither.
-      That is the thing to hold on to: what puts a message in a channel is not
-      where the line is drawn. It is that the sender had already sent it and
-      the receiver had not yet taken it. The crooked cut and the straight one
-      disagree about <i>when</i>, and agree exactly about <i>what was in the
-      channels</i>.
-    </figcaption>
-  </figure>
-
-<h2>The state the snapshot records</h2>
-  <p>
-    <i>Prose to come.</i> The algorithm begins when the first agent records
-    and finishes when the last one does. Call the global state at the start
-    <b>S_init</b>, the state at the finish <b>S_fini</b>,
-    and the state the algorithm writes down <b>S_snap</b>.
-    The system really did go from S_init to S_fini. It may
-    never have been in S_snap at all — and yet there is a
-    computation S_init &rarr; S_snap &rarr;
-    S_fini.
-  </p>
-
-  <figure class="fig wideout">
-    <svg id="st_g" viewBox="0 0 1240 470" role="img"
-         aria-label="Three timelines with the states at the start, the snapshot and the finish, and the messages in the channels at each"></svg>
-
-    <div class="ctrls">
-      <button id="st_align" class="primary">Align the records</button>
-      <button id="st_init">S_init</button>
-      <button id="st_snap">S_snap</button>
-      <button id="st_fini">S_fini</button>
-      <button id="st_clear">Clear</button>
-    </div>
-
-    <div class="facts">
-      <div><span class="k">State</span><span id="st_what"></span></div>
-      <div><span class="k">Actions completed</span><span id="st_done"></span></div>
-      <div><span class="k">In the channels</span><span id="st_chan"></span></div>
-    </div>
-
-    <figcaption>
-      <b>Figure 8. Three states, and the messages in flight at each.</b>
-      <i>Prose to come.</i> Press <i>Align the records</i> first: the three
-      records slide onto one line, as before. That line is where
-      S_snap sits.
-      Then take the three states in turn. At <b>S_init</b>, where
-      the algorithm starts, three messages are in the channels:
-      <code>m1</code>, <code>m2</code>, <code>m3</code>. At
-      <b>S_snap</b> the channels hold <code>m3</code>,
-      <code>m4</code>, <code>m5</code> — and these are exactly the messages
-      the algorithm records, each one sent before its sender's record and
-      not yet taken by its receiver when that receiver recorded. At <b>S_fini</b>, where the
-      algorithm finishes, they are <code>m4</code>, <code>m6</code>,
-      <code>m7</code>.
-      Three different sets, overlapping. <code>m1</code> and <code>m2</code>
-      are delivered before the snapshot; <code>m3</code> survives from the
-      start into it; <code>m4</code> survives from the snapshot to the finish;
-      <code>m6</code> and <code>m7</code> are sent too late to be recorded at
-      all. Look at <code>m6</code> in particular: Y sent it after Y had
-      recorded, so the snapshot knows nothing about it — but it is genuinely
-      in flight when the algorithm finishes.
-      Every crossing of the vertical line is one element of the state. Where
-      it meets an agent's line, marked with a ring, it gives that agent's
-      state. Where it meets a message still in flight, marked with a cross,
-      it gives a message in a channel. Those crossings together <i>are</i> the
-      global state — which is the same reading as the vertical line in the
-      previous lecture, now with three agents and a snapshot to compare it to.
-      The snapshot is not a photograph of the channels at the start, nor at
-      the finish. It is the channel state of a system that passed through
-      S_snap on its way from one to the other.
-    </figcaption>
-  </figure>
-
-
-
-
-
-  <figure class="fig wideout">
-    <svg id="thm_g" viewBox="0 0 1240 470" role="img"
-         aria-label="Two agents and five events; X's snapshot is fixed and Y's can be moved to see where it may lie"></svg>
-
-    <div class="ctrls">
-      <button id="thm_b0">Before 0</button>
-      <button id="thm_b1" class="primary">Between 0 and 2</button>
-      <button id="thm_b2">Between 2 and 4</button>
-      <button id="thm_b3">After 4</button>
-      <span class="hint">or drag Y's snapshot along its timeline</span>
-    </div>
-
-    <div class="facts">
-      <div><span class="k">X's outbox &rarr; Y's inbox</span><span id="thm_xy"></span></div>
-      <div><span class="k">Y's outbox &rarr; X's inbox</span><span id="thm_yx"></span></div>
-      <div><span class="k">A global snapshot?</span><span id="thm_ok"></span></div>
-    </div>
-
-    <figcaption>
-      <b>Figure 10. Where may Y's snapshot lie?</b>
-      <i>Prose to come.</i> Five events and four messages, zig-zagging between
-      the two agents: <code>0&rarr;1</code>, <code>1&rarr;2</code>,
-      <code>2&rarr;3</code>, <code>3&rarr;4</code>. X's snapshot is fixed,
-      between its two events. The question is where Y's may go.
-      <b>It cannot be to the right of event 4.</b> Then Y's record shows two
-      messages received from X, while X's record shows only one placed in its
-      outbox — two received, one sent, and the theorem's inequality fails.
-      <b>It cannot be to the left of event 0.</b> Then X's record shows one
-      message received from Y, while Y's record shows none sent at all.
-      So Y's snapshot must lie after event <code>0</code> and before event
-      <code>4</code> — the shaded stretch. Either gap inside it will do, and
-      the two give different snapshots: put Y's record in the first gap and
-      <code>1&rarr;2</code> is the message in the channel; put it in the
-      second and <code>2&rarr;3</code> is.
-      Drag it and watch the two counts. The snapshot is good exactly while
-      neither line reads more received than sent, which is the theorem.
-    </figcaption>
-  </figure>
-
-
-
-
-<h2>States of channels in global snapshots</h2>
 <p>
-The global snapshot theorem says that the points of local snapshots
-correspond to a global snapshot exactly when no message sent in the future
-is received in the past.
-(Equivalently, every message received in the past was sent in the past.
-Note that a message sent in the future is not received in the past, but it
-need not be received in the future either: it may never be received at all,
-which still leaves it in transit.)
+  The algorithm requires every agent to send its snapshot to the systems
+  manager. The proof that messages received in the past are sent in the past
+  requires that each agent takes its snapshot when or before it receives a
+  marker.
+</p>
+<p>
+  The following mechanism can be used to start the algorithm: each agent takes
+  its snapshot when its local clock reaches <b>T</b>, if the agent has not
+  already taken its snapshot. This only requires that clock times increase
+  forever; it does not require that clocks be synchronized.
 </p>
 
-<p>
-  A message in transit at a point in a computation is a message that has
-  been placed in an outbox and not yet removed from the inbox to which the
-  outbox is connected. A message in transit may be in an outbox, or in the
-  channel connecting the outbox to an inbox, or in an inbox. Define
-  messages in transit in a snapshot as messages sent, and not received, in
-  the past.
-</p>
-
-<p>
-  In the example (Figure 11), x1, y1, y2, z1, z2, z3 are past events and the
-  other events are future events.
-  The message sent at z1 and received at x2 is in transit in the snapshot
-  because it is sent in the past and not received in the past.
-  Likewise, the message sent at z2 and received at x3 is in transit.
-  By contrast, the message sent at y2 and received at z3 is not in transit
-  because it is sent and received in the past.
-  Likewise, the message from y3 to x4 is not in transit because it is not
-  sent in the past.
-</p>
-
-  <figure class="fig wideout">
-    <svg id="pf_g" viewBox="0 0 1240 470" role="img"
-         aria-label="The same computation with past events and future events coloured, and the messages between them"></svg>
-
-    <div class="ctrls">
-      <button id="pf_reveal" class="primary">Dim the future</button>
-      <span class="hint">the boundary is the line joining the local snapshots</span>
-    </div>
-
-    <div class="facts">
-      <div><span class="k">Past events</span><span id="pf_past"></span></div>
-      <div><span class="k">Future events</span><span id="pf_fut"></span></div>
-      <div><span class="k">In the snapshot</span><span id="pf_in"></span></div>
-      <div><span class="k">Not in it</span><span id="pf_out"></span></div>
-    </div>
-
-    <figcaption>
-      <b>Figure 11. Past and future.</b>
-      <i>Prose to come.</i> The line joining the three local snapshots divides
-      the picture in two. Everything to its left is the <b>past</b> — the
-      events each agent had already performed when it recorded — and
-      everything to its right is the <b>future</b>. The two regions are
-      shaded, and each event takes the colour of the region it is in.
-      A message belongs to the snapshot exactly when it is sent in the past
-      and not received in the past: put in an outbox before its sender
-      recorded, and not yet taken out of its inbox when its receiver recorded.
-      Being received later is not part of the test — a message nobody ever
-      takes out stays in transit for ever, and the snapshot must hold it too. Two messages do this,
-      <code>m3</code> and <code>m5</code>, and they are the ones drawn
-      crossing the boundary.
-      The rest do not. <code>m1</code>, <code>m2</code> and <code>m4</code>
-      are sent and received entirely in the past, so the snapshot has them
-      already delivered. <code>m6</code> and <code>m7</code> are sent and
-      received entirely in the future, so it has them not yet sent.
-      And there is no message running the other way — future to past — which
-      is what makes this a global snapshot at all. Such a message would be one
-      the receiver recorded taking and the sender recorded never sending.
-    </figcaption>
-  </figure>
-
-
-
-<p>
-  <i>Draft &mdash; please edit.</i>
-  The two rules above say <b>when</b> each agent takes its local snapshot.
-  They do not yet say how the messages in transit get recorded, and those are
-  half of the state. Two more rules do it.
-</p>
-<ol>
-  <li>
-    When an agent takes its local snapshot it records its own state, and from
-    that moment it also records, for each of its inboxes, every message it
-    removes from that inbox.
-  </li>
-  <li>
-    When an agent receives the marker on one of its inboxes it stops
-    recording for that inbox. What it recorded there is the state of that
-    connection: the messages that were in transit on it.
-  </li>
-</ol>
-<p>
-  <i>Draft &mdash; please edit.</i>
-  So an agent's part of the snapshot is its own recorded state together with
-  one recorded sequence per inbox, and it is finished when it has received a
-  marker on every inbox. The snapshot is finished when every agent is.
-  Note that this records exactly the messages the previous section described:
-  a message counted here was placed in its outbox before the sender recorded
-  (or the marker would have gone first) and was not yet out of its inbox when
-  the receiver recorded &mdash; sent in the past and not received in the past.
-</p>
-
-<h3>Correctness of the snapshot algorithm</h3>
-<p>
-  We show that messages sent in the future (i.e. after a marker is sent on a channel) are
-  not received in the past (i.e. before the marker is received on the channel).
-</p>
-
-<p>
-  Consider any connection from
-  an outbox b of an agent X to an inbox b' of an agent Y.
-  Let m be a message that X places in outbox b in the future &mdash; 
-  that is, after X has taken its local snapshot.
-  By the first rule X put a marker in outbox b when it records its own state;
-so the marker is placed in the outbox before m is.
-  Because the connection delivers messages in order, Y
-  receives the marker before it receives m. By the second rule Y takes its
-  local snapshot when the marker arrives. So Y records its state
-  before m arrives. Hence m is not received in the past &mdash; which is the
-  conclusion we need, whether or not Y ever takes m out of b' at all.
-</p>
-
-<p>
-  <i>Draft &mdash; please edit.</i>
-  Because no message sent in the future is received in the past,
-  the Global Snapshot Theorem tells us that the set of agent and channel
-  snapshots is a global snapshot.
-</p>
 
 </div>
 
@@ -1262,7 +1047,7 @@ so the marker is placed in the outbox before m is.
     return m.ts < CUT[m.from] && m.tr > CUT[m.to]; });
   const BAD=IMPOSSIBLE[0];                    // the one the ghosts expose
 
-  // q = 0 is figure 2, untouched. As q grows, a ghost of each record circle
+  // q = 0 is figure 3, untouched. As q grows, a ghost of each record circle
   // -- and of the two ends of the offending message -- slides by however far
   // that agent's record has to move to reach the common line.
   let q=0, anim=null;
@@ -1312,7 +1097,7 @@ so the marker is placed in the outbox before m is.
       tag(g,cut+130, ay('X')-22, 'future', C.orange, 15, 700, bo);
     }
 
-    // ── the diagram from figure 4, exactly as it was ─────────────────
+    // ── the diagram from figure 3, exactly as it was ─────────────────
     g.appendChild(el('rect',{x:xOf(FIRST), y:54, width:xOf(LAST)-xOf(FIRST),
       height:416, fill:C.orange, opacity:.05*(1-bo)}));
     [[FIRST,'global snapshot starts'],[LAST,'global snapshot ends']]
@@ -1652,435 +1437,7 @@ so the marker is placed in the outbox before m is.
 })();
 </script>
 
-<script>
-(function(){
-  const PFX='ch_', $=function(id){return document.getElementById(PFX+id);};
-  const svg=$('g');
-  const NS='http://www.w3.org/2000/svg';
-  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
-           orange:'#d13d0e', teal:'#00947d'};
-  const X0=210, X1=1190, R=7;
-  const AY={X:130, Y:270, Z:410};
-  const AGENTS=['X','Y','Z'];
-  const ay=function(a){return AY[a];};
-  const xOf=function(t){return X0+t/100*(X1-X0);};
 
-  // a fragment of an execution: seven events, five messages
-  const E={
-    0:{ag:'X', t:10}, 3:{ag:'X', t:56}, 4:{ag:'X', t:74},
-    1:{ag:'Y', t:16}, 5:{ag:'Y', t:66},
-    2:{ag:'Z', t:26}, 6:{ag:'Z', t:72}
-  };
-  const MSG=[[0,2],[1,3],[1,4],[2,5],[1,6]];
-  const CUT={X:32, Y:52, Z:44};
-  const V=40;                                  // where the ghosts meet
-
-  const ag=function(n){return E[n].ag;};
-  const tm=function(n){return E[n].t;};
-  const name=function(m){return m[0]+'→'+m[1];};
-
-  // in a channel: its sender had sent it, its receiver had not taken it
-  function inChannel(){
-    return MSG.filter(function(m){
-      return tm(m[0]) < CUT[ag(m[0])] && tm(m[1]) > CUT[ag(m[1])]; });
-  }
-  const CHAN=inChannel();
-  const isChan={}; CHAN.forEach(function(m){ isChan[name(m)]=1; });
-  // the two the caption points at: those crossing the X-to-Y segment
-  const XY=CHAN.filter(function(m){
-    const p=[ag(m[0]),ag(m[1])].sort().join('');
-    return p==='XY'; });
-
-  let q=0, anim=null;
-  const slide=function(a){return q*(V-CUT[a]);};
-  const gx=function(n){return tm(n)+slide(ag(n));};
-  const gcut=function(a){return CUT[a]+slide(a);};
-
-  // Where a message meets the X-to-Y stretch of the cut. Both segments span
-  // the band between the two agent lines, so parameterise by y and bisect.
-  function meet(m){
-    const cA={x:xOf(gcut('X')), y:ay('X')}, cB={x:xOf(gcut('Y')), y:ay('Y')};
-    const pA={x:xOf(tm(m[0])), y:ay(ag(m[0]))},
-          pB={x:xOf(tm(m[1])), y:ay(ag(m[1]))};
-    const cx=function(y){return cA.x+(cB.x-cA.x)*(y-cA.y)/(cB.y-cA.y);};
-    const mx=function(y){return pA.x+(pB.x-pA.x)*(y-pA.y)/(pB.y-pA.y);};
-    const f=function(y){return cx(y)-mx(y);};
-    let lo=Math.min(cA.y,cB.y), hi=Math.max(cA.y,cB.y);
-    if(f(lo)*f(hi)>0) return null;
-    for(let i=0;i<50;i++){
-      const mid=(lo+hi)/2;
-      if(f(lo)*f(mid)<=0) hi=mid; else lo=mid;
-    }
-    const y=(lo+hi)/2;
-    return {x:cx(y), y:y};
-  }
-  function cross(g,pt,col){
-    const r=8;
-    g.appendChild(el('line',{x1:pt.x-r, y1:pt.y-r, x2:pt.x+r, y2:pt.y+r,
-      stroke:'#fff', 'stroke-width':6}));
-    g.appendChild(el('line',{x1:pt.x+r, y1:pt.y-r, x2:pt.x-r, y2:pt.y+r,
-      stroke:'#fff', 'stroke-width':6}));
-    g.appendChild(el('line',{x1:pt.x-r, y1:pt.y-r, x2:pt.x+r, y2:pt.y+r,
-      stroke:col, 'stroke-width':3}));
-    g.appendChild(el('line',{x1:pt.x+r, y1:pt.y-r, x2:pt.x-r, y2:pt.y+r,
-      stroke:col, 'stroke-width':3}));
-  }
-
-  function el(n,a,txt){
-    const e=document.createElementNS(NS,n);
-    for(const k in a) e.setAttribute(k,a[k]);
-    if(txt!=null) e.textContent=txt;
-    return e;
-  }
-  function tag(g,x,y,s,fill,size,weight,op){
-    const t=el('text',{x:x, y:y,
-      'font-family':'ui-monospace,Menlo,Consolas,monospace',
-      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
-      'text-anchor':'middle', 'dominant-baseline':'middle',
-      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, s);
-    if(op!=null) t.setAttribute('opacity', op);
-    g.appendChild(t);
-  }
-  function arrow(g,x1,y1,x2,y2,col,w,dash,head){
-    const a={x1:x1, y1:y1, x2:x2, y2:y2, stroke:col, 'stroke-width':w,
-             'marker-end':'url(#'+PFX+head+')'};
-    if(dash) a['stroke-dasharray']=dash;
-    g.appendChild(el('line',a));
-  }
-
-  function draw(){
-    while(svg.firstChild) svg.removeChild(svg.firstChild);
-    const defs=el('defs',{});
-    [['ah',C.ink],['ahO',C.orange],['ahG',C.teal]].forEach(function(p){
-      const m=el('marker',{id:PFX+p[0], viewBox:'0 0 10 10', refX:9, refY:5,
-        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
-      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:p[1]}));
-      defs.appendChild(m);
-    });
-    svg.appendChild(defs);
-    const g=el('g',{});
-    svg.appendChild(g);
-
-    AGENTS.forEach(function(a){
-      const y=ay(a);
-      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y,
-        stroke:C.line, 'stroke-width':2}));
-      g.appendChild(el('text',{x:X0-18, y:y,
-        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
-        'font-weight':700, fill:C.ink, 'text-anchor':'end',
-        'dominant-baseline':'middle'}, a));
-      g.appendChild(el('text',{x:X0-18, y:y+19,
-        'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
-        'font-size':11.5, fill:C.muted, 'text-anchor':'end',
-        'dominant-baseline':'middle'}, 'agent'));
-    });
-
-    // messages as they happened; the ones in the channels stand out
-    MSG.forEach(function(m){
-      const ya=ay(ag(m[0])), yb=ay(ag(m[1])), d=(yb>ya?1:-1);
-      const hot=isChan[name(m)];
-      arrow(g, xOf(tm(m[0])), ya+d*R, xOf(tm(m[1])), yb-d*R,
-            hot?C.orange:C.ink, hot?3:2, null, hot?'ahO':'ah');
-      tag(g,(xOf(tm(m[0]))+xOf(tm(m[1])))/2+18,(ya+yb)/2, name(m),
-          hot?C.orange:C.muted, 12.5);
-    });
-
-    Object.keys(E).forEach(function(n){
-      const y=ay(ag(n)), x=xOf(tm(n));
-      g.appendChild(el('circle',{cx:x, cy:y, r:R, fill:C.ink,
-        stroke:'#fff', 'stroke-width':2}));
-      tag(g,x, y-22, n, C.ink, 13, 700);
-    });
-
-    // the records, and the line joining them
-    const pts=[[xOf(CUT.X), ay('X')-64]];
-    AGENTS.forEach(function(a){ pts.push([xOf(CUT[a]), ay(a)]); });
-    pts.push([xOf(CUT.Z), ay('Z')+64]);
-    g.appendChild(el('polyline',{
-      points:pts.map(function(p){return p[0]+','+p[1];}).join(' '),
-      fill:'none', stroke:C.orange, 'stroke-width':2.5,
-      'stroke-dasharray':'8 5', opacity:Math.max(0, 1-q*3)}));
-    AGENTS.forEach(function(a){
-      g.appendChild(el('circle',{cx:xOf(CUT[a]), cy:ay(a), r:11,
-        fill:'#fff', stroke:C.orange, 'stroke-width':4}));
-      tag(g,xOf(CUT[a]), ay(a)+28, a+' records', C.orange, 12.5, 700);
-    });
-
-    // ── the ghosts: the whole fragment travels with its agent ────────
-    if(q>0.001){
-      const gg=el('g',{opacity:Math.min(1, q*5)});
-      g.appendChild(gg);
-      const gp=[[xOf(gcut('X')), ay('X')-64]];
-      AGENTS.forEach(function(a){ gp.push([xOf(gcut(a)), ay(a)]); });
-      gp.push([xOf(gcut('Z')), ay('Z')+64]);
-      gg.appendChild(el('polyline',{
-        points:gp.map(function(p){return p[0]+','+p[1];}).join(' '),
-        fill:'none', stroke:C.teal, 'stroke-width':2.5,
-        'stroke-dasharray':'3 5'}));
-      AGENTS.forEach(function(a){
-        gg.appendChild(el('circle',{cx:xOf(gcut(a)), cy:ay(a), r:11,
-          fill:'none', stroke:C.teal, 'stroke-width':3.5,
-          'stroke-dasharray':'3 4'}));
-      });
-      if(q>0.7)
-        tag(gg,xOf(V), 494, 'the same messages cross', C.teal, 13, 700,
-            (q-0.7)/0.3);
-    }
-
-    // the two messages that cross between X and Y, marked where they cross
-    XY.forEach(function(m){
-      const pt=meet(m);
-      if(pt) cross(g, pt, C.ink);
-    });
-
-    readout();
-  }
-
-  function readout(){
-    $('when').innerHTML=AGENTS.map(function(a){
-      return a+' at <b>'+CUT[a]+'</b>';}).join(' &nbsp;·&nbsp; ');
-    $('xy').innerHTML='<span class="chan">'+XY.map(name).join(', ')+'</span>'+
-      ' <span class="none">— sent by Y before it recorded, taken by X after</span>';
-    // read off wherever the cut currently is: each end against its own
-    // agent's record, which is what "in a channel" means
-    const now=MSG.filter(function(m){
-      return tm(m[0]) < gcut(ag(m[0])) && tm(m[1]) > gcut(ag(m[1])); });
-    $('chan').innerHTML='<span class="chan">'+now.map(name).join(', ')+'</span>'+
-      ' <span class="none">'+(q>0.02?'— unchanged':'')+'</span>';
-  }
-
-  function glide(to){
-    if(anim) cancelAnimationFrame(anim);
-    const from=q, t0=performance.now(), dur=2400;
-    (function step(t){
-      const p=Math.min(1,(t-t0)/dur);
-      q=from+(to-from)*(p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2);
-      draw();
-      if(p<1) anim=requestAnimationFrame(step); else { q=to; draw(); }
-    })(t0);
-  }
-  $('go').onclick=function(){ glide(1); };
-  $('back').onclick=function(){ glide(0); };
-  draw();
-})();
-</script>
-
-<script>
-(function(){
-  const PFX='st_', $=function(id){return document.getElementById(PFX+id);};
-  const svg=$('g');
-  const NS='http://www.w3.org/2000/svg';
-  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
-           orange:'#d13d0e', teal:'#00947d'};
-  const X0=210, X1=1180, R=7;
-  const AY={X:130, Y:240, Z:350};
-  const AGENTS=['X','Y','Z'];
-  const ay=function(a){return AY[a];};
-  const xOf=function(t){return X0+t/100*(X1-X0);};
-
-  const E={x1:['X',10], x2:['X',68], x3:['X',86],
-           y1:['Y',16], y2:['Y',38], y3:['Y',62],
-           z1:['Z',22], z2:['Z',46], z3:['Z',80]};
-  const MSG=[['m1','x1','y2'],['m2','y1','z2'],['m3','z1','x2'],
-             ['m4','y2','z3'],['m5','z2','y3'],['m6','y3','x3'],
-             ['m7','x2','z3']];
-  const CUT={X:30, Y:42, Z:72};
-  const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
-  const FIRST=Math.min(CUT.X,CUT.Y,CUT.Z), LAST=Math.max(CUT.X,CUT.Y,CUT.Z);
-  // A vertical line here cuts every agent exactly where its own record does,
-  // so it stands for the recorded state. Such a line exists only because the
-  // three records happen to share a window between events.
-  const V=54;
-
-  const AT={init:{t:FIRST, label:'S_init'},
-            snap:{t:V,     label:'S_snap'},
-            fini:{t:LAST,  label:'S_fini'}};
-  const crossing=function(T){
-    return MSG.filter(function(m){ return tm(m[1])<T && tm(m[2])>T; }); };
-  const recorded=MSG.filter(function(m){
-    return tm(m[1])<CUT[ag(m[1])] && tm(m[2])>CUT[ag(m[2])]; });
-
-  let q=0, sel=null, anim=null;
-  const gcut=function(a){return CUT[a]+q*(V-CUT[a]);};
-
-  function el(n,a,txt){
-    const e=document.createElementNS(NS,n);
-    for(const k in a) e.setAttribute(k,a[k]);
-    if(txt!=null) e.textContent=txt;
-    return e;
-  }
-  function tag(g,x,y,s,fill,size,weight,op){
-    const t=el('text',{x:x, y:y,
-      'font-family':'ui-monospace,Menlo,Consolas,monospace',
-      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
-      'text-anchor':'middle', 'dominant-baseline':'middle',
-      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, s);
-    if(op!=null) t.setAttribute('opacity', op);
-    g.appendChild(t);
-  }
-
-  function mark(g,x,y){
-    const r=8;
-    [['#fff',6],[C.ink,3]].forEach(function(st){
-      g.appendChild(el('line',{x1:x-r, y1:y-r, x2:x+r, y2:y+r,
-        stroke:st[0], 'stroke-width':st[1]}));
-      g.appendChild(el('line',{x1:x+r, y1:y-r, x2:x-r, y2:y+r,
-        stroke:st[0], 'stroke-width':st[1]}));
-    });
-  }
-
-  function draw(){
-    while(svg.firstChild) svg.removeChild(svg.firstChild);
-    const defs=el('defs',{});
-    [['ah',C.ink],['ahO',C.orange]].forEach(function(p){
-      const m=el('marker',{id:PFX+p[0], viewBox:'0 0 10 10', refX:9, refY:5,
-        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
-      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:p[1]}));
-      defs.appendChild(m);
-    });
-    svg.appendChild(defs);
-    const g=el('g',{});
-    svg.appendChild(g);
-
-    const hot={};
-    if(sel) crossing(AT[sel].t).forEach(function(m){ hot[m[0]]=1; });
-
-    // the state being looked at
-    if(sel){
-      const x=xOf(AT[sel].t);
-      g.appendChild(el('line',{x1:x, y1:62, x2:x, y2:400,
-        stroke:C.ink, 'stroke-width':3}));
-      tag(g,x, 44, AT[sel].label, C.ink, 15, 700);
-    }
-
-    AGENTS.forEach(function(a){
-      const y=ay(a);
-      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y,
-        stroke:C.line, 'stroke-width':2}));
-      g.appendChild(el('text',{x:X0-16, y:y,
-        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':18,
-        'font-weight':700, fill:C.ink, 'text-anchor':'end',
-        'dominant-baseline':'middle'}, a));
-    });
-
-    MSG.forEach(function(m){
-      const ya=ay(ag(m[1])), yb=ay(ag(m[2])), d=(yb>ya?1:-1);
-      const on=hot[m[0]];
-      g.appendChild(el('line',{x1:xOf(tm(m[1])), y1:ya+d*R,
-        x2:xOf(tm(m[2])), y2:yb-d*R,
-        stroke:on?C.orange:C.ink, 'stroke-width':on?3.5:2,
-        'marker-end':'url(#'+PFX+(on?'ahO':'ah')+')'}));
-      tag(g,(xOf(tm(m[1]))+xOf(tm(m[2])))/2+16,(ya+yb)/2, m[0],
-          on?C.orange:C.muted, 12.5);
-    });
-
-    Object.keys(E).forEach(function(n){
-      const x=xOf(tm(n)), y=ay(ag(n));
-      g.appendChild(el('circle',{cx:x, cy:y, r:R, fill:C.ink,
-        stroke:'#fff', 'stroke-width':2}));
-      tag(g,x, y-21, n, C.ink, 12.5, 700);
-    });
-
-    // where each agent recorded, and the line joining them
-    const pts=[[xOf(CUT.X), ay('X')-56]];
-    AGENTS.forEach(function(a){ pts.push([xOf(CUT[a]), ay(a)]); });
-    pts.push([xOf(CUT.Z), ay('Z')+56]);
-    g.appendChild(el('polyline',{
-      points:pts.map(function(p){return p[0]+','+p[1];}).join(' '),
-      fill:'none', stroke:C.orange, 'stroke-width':2.5,
-      'stroke-dasharray':'8 5', opacity:Math.max(0, 1-q*3)}));
-    AGENTS.forEach(function(a){
-      g.appendChild(el('circle',{cx:xOf(CUT[a]), cy:ay(a), r:11,
-        fill:'none', stroke:C.orange, 'stroke-width':4,
-        opacity:Math.max(0, 1-q*3)}));
-      if(q<0.2) tag(g,xOf(CUT[a]), ay(a)+26, a+' records', C.orange, 12, 700);
-    });
-
-    // the records, brought onto one line
-    if(q>0.001){
-      const gg=el('g',{opacity:Math.min(1, q*5)});
-      g.appendChild(gg);
-      const gp=[[xOf(gcut('X')), ay('X')-56]];
-      AGENTS.forEach(function(a){ gp.push([xOf(gcut(a)), ay(a)]); });
-      gp.push([xOf(gcut('Z')), ay('Z')+56]);
-      gg.appendChild(el('polyline',{
-        points:gp.map(function(p){return p[0]+','+p[1];}).join(' '),
-        fill:'none', stroke:C.teal, 'stroke-width':2.5,
-        'stroke-dasharray':'3 5'}));
-      AGENTS.forEach(function(a){
-        gg.appendChild(el('circle',{cx:xOf(gcut(a)), cy:ay(a), r:11,
-          fill:'none', stroke:C.teal, 'stroke-width':3.5,
-          'stroke-dasharray':'3 4'}));
-      });
-    }
-
-    // Every crossing of the vertical line is one element of the state: an
-    // agent line gives that agent's state, a message line gives a message
-    // still in a channel.
-    if(sel){
-      const T=AT[sel].t, x=xOf(T);
-      AGENTS.forEach(function(a){
-        g.appendChild(el('circle',{cx:x, cy:ay(a), r:8, fill:'#fff',
-          stroke:C.ink, 'stroke-width':3.5}));
-      });
-      crossing(T).forEach(function(m){
-        const xs=xOf(tm(m[1])), xr=xOf(tm(m[2]));
-        const ys=ay(ag(m[1])), yr=ay(ag(m[2]));
-        mark(g, x, ys+(yr-ys)*(x-xs)/(xr-xs));
-      });
-    }
-
-    readout();
-  }
-
-  function readout(){
-    if(!sel){
-      $('what').innerHTML='<span class="none">pick a state</span>';
-      $('done').innerHTML=''; $('chan').innerHTML='';
-      return;
-    }
-    const T=AT[sel].t;
-    $('what').innerHTML='<b>'+AT[sel].label+'</b> <span class="none">— '+
-      (sel==='init' ? 'when the algorithm starts, at t = '+T
-       : sel==='snap' ? 'what the algorithm records; the line the three '+
-                        'records meet on, at t = '+T
-       : 'when the algorithm finishes, at t = '+T)+'</span>';
-    $('done').innerHTML=AGENTS.map(function(a){
-      const d=Object.keys(E).filter(function(n){
-        return ag(n)===a && tm(n)<T; });
-      return a+' <b>'+d.length+'</b>';}).join(' &nbsp;·&nbsp; ')+
-      ' <span class="none">('+Object.keys(E).filter(function(n){return tm(n)<T;})
-        .sort(function(a,b){return tm(a)-tm(b);}).join(', ')+')</span>';
-    const cr=crossing(T);
-    $('chan').innerHTML='<span class="chan">'+cr.map(function(m){
-        return m[0]+' ('+m[1]+'&rarr;'+m[2]+')';}).join(', ')+'</span>'+
-      (sel==='snap'
-        ? ' <span class="ok">— exactly the messages the algorithm records</span>'
-        : '');
-  }
-
-  function glide(to, then){
-    if(anim) cancelAnimationFrame(anim);
-    const from=q, t0=performance.now(), dur=1800;
-    (function step(t){
-      const p=Math.min(1,(t-t0)/dur);
-      q=from+(to-from)*(p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2);
-      draw();
-      if(p<1) anim=requestAnimationFrame(step);
-      else { q=to; draw(); if(then) then(); }
-    })(t0);
-  }
-  $('align').onclick=function(){ glide(q>0.5?0:1); };
-  $('init').onclick=function(){ sel='init'; draw(); };
-  $('fini').onclick=function(){ sel='fini'; draw(); };
-  $('snap').onclick=function(){
-    sel='snap';
-    if(q<0.99) glide(1); else draw();
-  };
-  $('clear').onclick=function(){ sel=null; draw(); };
-  draw();
-})();
-</script>
 
 <script>
 (function(){
@@ -2095,16 +1452,21 @@ so the marker is placed in the outbox before m is.
   const ay=function(a){return AY[a];};
   const xOf=function(t){return X0+t/100*(X1-X0);};
 
-  const E={x1:['X',10], x2:['X',38], x3:['X',62], x4:['X',90],
-           y1:['Y',16], y2:['Y',34], y3:['Y',70],
+  // Two pairs have to swap, and both are visible at a glance:
+  //   x2 happens before y2, but x2 is a future event of X and y2 a past
+  //     event of Y, so the reordering moves y2 in front of x2;
+  //   x3 happens before z3 and y3, and is a future event, so it moves
+  //     behind both of them.
+  const E={x1:['X',10], x2:['X',34], x3:['X',54], x4:['X',90],
+           y1:['Y',16], y2:['Y',38], y3:['Y',70],
            z1:['Z',22], z2:['Z',48], z3:['Z',58], z4:['Z',80]};
   const MSG=[['m1','x1','y2'],['m2','y1','z2'],['m3','z1','x2'],
              ['m4','y2','z3'],['m5','z2','x3'],['m6','x3','z4'],
              ['m7','y3','x4']];
-  const CUT={X:30, Y:42, Z:72};
+  const CUT={X:30, Y:75, Z:72};
   const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
   const FIRST=Math.min(CUT.X,CUT.Y,CUT.Z), LAST=Math.max(CUT.X,CUT.Y,CUT.Z);
-  const V=43;                               // where the records are brought
+  const V=50;                               // where the records are brought
 
   // what happens while the algorithm runs, split by which side of its own
   // agent's record it falls
@@ -2122,10 +1484,24 @@ so the marker is placed in the outbox before m is.
   const slot=function(i){return SX0+i*(SX1-SX0)/(SEG.length-1);};
   const SNAPX=(slot(P.length-1)+slot(P.length))/2;
 
-  let qa=0, qr=0, anim=null;                // align, reorder
+  // One control does everything: the records converge on V, the events
+  // slide so that the past ones are left of V and the future ones right of
+  // it, and the strip below reorders to match. That picture *is* C'.
+  let qa=0, anim=null;
   const lerp=function(a,b,k){return a+(b-a)*k;};
   const gcut=function(a){return CUT[a]+qa*(V-CUT[a]);};
-  const tokX=function(n){return lerp(slot(rIdx[n]), slot(sIdx[n]), qr);};
+  const tokX=function(n){return lerp(slot(rIdx[n]), slot(sIdx[n]), qa);};
+
+  // where each recorded event ends up: the past block just left of V, the
+  // future block just right of it, order preserved inside each block, and
+  // everything still between S_init and S_fini
+  const GP=4.5, GQ=6, TGT={};
+  P.forEach(function(n,i){ TGT[n]=V-4-(P.length-1-i)*GP; });
+  Q.forEach(function(n,i){ TGT[n]=V+4+i*GQ; });
+  const during=function(n){return tm(n)>FIRST && tm(n)<LAST;};
+  const tEv=function(n){
+    return during(n) ? lerp(tm(n), TGT[n], qa) : tm(n); };
+  const xEv=function(n){return xOf(tEv(n));};
 
   function el(n,a,txt){
     const e=document.createElementNS(NS,n);
@@ -2186,18 +1562,18 @@ so the marker is placed in the outbox before m is.
 
     MSG.forEach(function(m){
       const ya=ay(ag(m[1])), yb=ay(ag(m[2])), d=(yb>ya?1:-1);
-      g.appendChild(el('line',{x1:xOf(tm(m[1])), y1:ya+d*R,
-        x2:xOf(tm(m[2])), y2:yb-d*R, stroke:C.ink, 'stroke-width':2,
+      const xa=xEv(m[1]), xb=xEv(m[2]);
+      g.appendChild(el('line',{x1:xa, y1:ya+d*R, x2:xb, y2:yb-d*R,
+        stroke:C.ink, 'stroke-width':2,
         'marker-end':'url(#'+PFX+'ah)'}));
-      tag(g,(xOf(tm(m[1]))+xOf(tm(m[2])))/2+15,(ya+yb)/2, m[0], C.muted, 12);
+      tag(g,(xa+xb)/2+15,(ya+yb)/2, m[0], C.muted, 12);
     });
 
     Object.keys(E).forEach(function(n){
-      const x=xOf(tm(n)), y=ay(ag(n));
-      const during=(tm(n)>FIRST && tm(n)<LAST);
+      const x=xEv(n), y=ay(ag(n)), on=during(n);
       g.appendChild(el('circle',{cx:x, cy:y, r:R,
-        fill:during?(inP[n]?'#f7d9cd':'#fff'):C.ink,
-        stroke:during?C.orange:'#fff', 'stroke-width':during?2.5:2}));
+        fill:on?(inP[n]?'#f7d9cd':'#fff'):C.ink,
+        stroke:on?C.orange:'#fff', 'stroke-width':on?2.5:2}));
       tag(g,x, y-20, n, C.ink, 12, 700);
     });
 
@@ -2227,11 +1603,11 @@ so the marker is placed in the outbox before m is.
     g.appendChild(el('line',{x1:SX0-140, y1:SY, x2:SX1+140, y2:SY,
       stroke:C.line, 'stroke-width':2.5, 'marker-end':'url(#'+PFX+'ah)'}));
     tag(g,(SX0+SX1)/2, SY-74,
-        qr<0.5 ? 'the order it happened in' : "the snapshot's order",
+        qa<0.5 ? 'the order it happened in' : "the snapshot's order",
         C.muted, 13, 700);
     stateMark(g, SX0-140, 'S_init');
     stateMark(g, SX1+140, 'S_fini');
-    if(qr>0.6) stateMark(g, SNAPX, 'S_snap', (qr-0.6)/0.4);
+    if(qa>0.6) stateMark(g, SNAPX, 'S_snap', (qa-0.6)/0.4);
 
     SEG.forEach(function(n){
       const x=tokX(n), w=50, h=30;
@@ -2277,176 +1653,13 @@ so the marker is placed in the outbox before m is.
     })(t0);
   }
   $('align').onclick=function(){
-    glide(function(){return qa;}, function(v){qa=v;}, qa>0.5?0:1, 1800); };
-  $('reorder').onclick=function(){
-    glide(function(){return qr;}, function(v){qr=v;}, qr>0.5?0:1, 2200); };
+    glide(function(){return qa;}, function(v){qa=v;}, qa>0.5?0:1, 2400); };
   $('reset').onclick=function(){
-    if(anim) cancelAnimationFrame(anim); qa=0; qr=0; draw(); };
+    if(anim) cancelAnimationFrame(anim); qa=0; draw(); };
   draw();
 })();
 </script>
 
-<script>
-(function(){
-  const PFX='pf_', $=function(id){return document.getElementById(PFX+id);};
-  const svg=$('g');
-  const NS='http://www.w3.org/2000/svg';
-  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
-           orange:'#d13d0e', teal:'#00947d'};
-  const X0=210, X1=1180, R=8, TOP=54, BOT=402;
-  const AY={X:120, Y:215, Z:310};
-  const AGENTS=['X','Y','Z'];
-  const ay=function(a){return AY[a];};
-  const xOf=function(t){return X0+t/100*(X1-X0);};
-
-  // the computation of the previous figure
-  const E={x1:['X',10], x2:['X',38], x3:['X',62], x4:['X',90],
-           y1:['Y',16], y2:['Y',34], y3:['Y',70],
-           z1:['Z',22], z2:['Z',48], z3:['Z',58], z4:['Z',80]};
-  const MSG=[['m1','x1','y2'],['m2','y1','z2'],['m3','z1','x2'],
-             ['m4','y2','z3'],['m5','z2','x3'],['m6','x3','z4'],
-             ['m7','y3','x4']];
-  const CUT={X:30, Y:42, Z:72};
-  const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
-
-  // an event is past if its agent had already performed it when it recorded
-  const past=function(n){return tm(n) < CUT[ag(n)];};
-  const PAST=Object.keys(E).filter(past).sort(function(a,b){return tm(a)-tm(b);});
-  const FUT =Object.keys(E).filter(function(n){return !past(n);})
-                           .sort(function(a,b){return tm(a)-tm(b);});
-  // a message is in the snapshot when it runs from the past to the future
-  const IN =MSG.filter(function(m){ return  past(m[1]) && !past(m[2]); });
-  const OUT=MSG.filter(function(m){ return !(past(m[1]) && !past(m[2])); });
-  const BACK=MSG.filter(function(m){ return !past(m[1]) && past(m[2]); });
-  const isIn={}; IN.forEach(function(m){ isIn[m[0]]=1; });
-
-  let dim=0, anim=null;                      // 0 = both lit, 1 = future dimmed
-
-  function el(n,a,txt){
-    const e=document.createElementNS(NS,n);
-    for(const k in a) e.setAttribute(k,a[k]);
-    if(txt!=null) e.textContent=txt;
-    return e;
-  }
-  function tag(g,x,y,s,fill,size,weight,op){
-    const t=el('text',{x:x, y:y,
-      'font-family':'ui-monospace,Menlo,Consolas,monospace',
-      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
-      'text-anchor':'middle', 'dominant-baseline':'middle',
-      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, s);
-    if(op!=null) t.setAttribute('opacity', op);
-    g.appendChild(t);
-  }
-
-  function draw(){
-    while(svg.firstChild) svg.removeChild(svg.firstChild);
-    const defs=el('defs',{});
-    [['ahP',C.teal],['ahF',C.orange],['ahI',C.ink]].forEach(function(p){
-      const m=el('marker',{id:PFX+p[0], viewBox:'0 0 10 10', refX:9, refY:5,
-        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
-      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:p[1]}));
-      defs.appendChild(m);
-    });
-    svg.appendChild(defs);
-    const g=el('g',{});
-    svg.appendChild(g);
-    const fo=1-0.78*dim;                     // how lit the future is
-
-    // the boundary, and the two regions it divides
-    const spine=AGENTS.map(function(a){return [xOf(CUT[a]), ay(a)];});
-    const left=[[X0-30,TOP],[xOf(CUT.X),TOP]]
-      .concat(spine).concat([[xOf(CUT.Z),BOT],[X0-30,BOT]]);
-    const right=[[X1+30,TOP],[xOf(CUT.X),TOP]]
-      .concat(spine).concat([[xOf(CUT.Z),BOT],[X1+30,BOT]]);
-    g.appendChild(el('polygon',{
-      points:left.map(function(p){return p[0]+','+p[1];}).join(' '),
-      fill:C.teal, opacity:.09}));
-    g.appendChild(el('polygon',{
-      points:right.map(function(p){return p[0]+','+p[1];}).join(' '),
-      fill:C.orange, opacity:.09*fo}));
-    tag(g,(X0+xOf(CUT.X))/2-10, TOP+22, 'past', C.teal, 15, 700);
-    tag(g,(X1+xOf(CUT.Z))/2+10, BOT-22, 'future', C.orange, 15, 700, fo);
-
-    AGENTS.forEach(function(a){
-      const y=ay(a);
-      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y,
-        stroke:C.line, 'stroke-width':2}));
-      g.appendChild(el('text',{x:X0-16, y:y,
-        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':18,
-        'font-weight':700, fill:C.ink, 'text-anchor':'end',
-        'dominant-baseline':'middle'}, a));
-    });
-
-    MSG.forEach(function(m){
-      const ya=ay(ag(m[1])), yb=ay(ag(m[2])), d=(yb>ya?1:-1);
-      const crosses=isIn[m[1]+m[2]]||isIn[m[0]];
-      // a message takes the colour of where it lives, or ink when it crosses
-      const col=crosses ? C.ink : (past(m[1]) ? C.teal : C.orange);
-      const head=crosses ? 'ahI' : (past(m[1]) ? 'ahP' : 'ahF');
-      const op=crosses ? 1 : (past(m[1]) ? 1 : fo);
-      g.appendChild(el('line',{x1:xOf(tm(m[1])), y1:ya+d*R,
-        x2:xOf(tm(m[2])), y2:yb-d*R, stroke:col,
-        'stroke-width':crosses?3.5:2, opacity:op,
-        'marker-end':'url(#'+PFX+head+')'}));
-      tag(g,(xOf(tm(m[1]))+xOf(tm(m[2])))/2+15,(ya+yb)/2, m[0],
-          crosses?C.ink:col, crosses?13:12, 700, op);
-    });
-
-    Object.keys(E).forEach(function(n){
-      const x=xOf(tm(n)), y=ay(ag(n)), p=past(n);
-      g.appendChild(el('circle',{cx:x, cy:y, r:R,
-        fill:p?C.teal:C.orange, stroke:'#fff', 'stroke-width':2,
-        opacity:p?1:fo}));
-      tag(g,x, y-21, n, p?C.teal:C.orange, 12.5, 700, p?1:fo);
-    });
-
-    const pts=[[xOf(CUT.X), TOP]].concat(spine).concat([[xOf(CUT.Z), BOT]]);
-    g.appendChild(el('polyline',{
-      points:pts.map(function(p){return p[0]+','+p[1];}).join(' '),
-      fill:'none', stroke:C.ink, 'stroke-width':2.5,
-      'stroke-dasharray':'8 5'}));
-    AGENTS.forEach(function(a){
-      g.appendChild(el('circle',{cx:xOf(CUT[a]), cy:ay(a), r:11,
-        fill:'#fff', stroke:C.ink, 'stroke-width':3.5}));
-      tag(g,xOf(CUT[a]), ay(a)+27, a+' records', C.ink, 12, 700);
-    });
-
-    readout();
-  }
-
-  function readout(){
-    $('past').innerHTML='<span style="color:'+C.teal+'"><b>'+PAST.join(', ')+
-      '</b></span> <span class="none">— performed before that agent recorded</span>';
-    $('fut').innerHTML='<span style="color:'+C.orange+'"><b>'+FUT.join(', ')+
-      '</b></span> <span class="none">— performed after</span>';
-    $('in').innerHTML='<b>'+IN.map(function(m){
-        return m[0]+' ('+m[1]+'&rarr;'+m[2]+')';}).join(', ')+
-      '</b> <span class="none">— sent in the past, not received in the past</span>';
-    $('out').innerHTML='<span class="none">'+OUT.map(function(m){
-        return m[0]+' ('+(past(m[1])?'past':'future')+'&rarr;'+
-               (past(m[2])?'past':'future')+')';}).join(', ')+'</span>'+
-      (BACK.length ? ' <span class="bad">— and '+BACK.length+
-                     ' running future to past</span>'
-                   : ' <span class="ok">— none runs future to past</span>');
-  }
-
-  function glide(to){
-    if(anim) cancelAnimationFrame(anim);
-    const from=dim, t0=performance.now(), dur=900;
-    (function step(t){
-      const p=Math.min(1,(t-t0)/dur);
-      dim=from+(to-from)*p; draw();
-      if(p<1) anim=requestAnimationFrame(step); else { dim=to; draw(); }
-    })(t0);
-  }
-  $('reveal').onclick=function(){
-    const to=dim>0.5?0:1;
-    glide(to);
-    $('reveal').textContent = to>0.5 ? 'Bring the future back' : 'Dim the future';
-  };
-  draw();
-})();
-</script>
 
 <script>
 (function(){
@@ -2590,168 +1803,15 @@ so the marker is placed in the outbox before m is.
 })();
 </script>
 
-<script>
-(function(){
-  const PFX='thm_', $=function(id){return document.getElementById(PFX+id);};
-  const svg=$('g');
-  const NS='http://www.w3.org/2000/svg';
-  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
-           orange:'#d13d0e', teal:'#00947d'};
-  const X0=210, X1=1180, R=9;
-  const AY={X:140, Y:300};
-  const ay=function(a){return AY[a];};
-  const xOf=function(t){return X0+t/100*(X1-X0);};
-  const tOf=function(x){return (x-X0)/(X1-X0)*100;};
-
-  // 1 and 3 happen at X; 0, 2 and 4 at Y
-  const E={0:['Y',12], 1:['X',32], 2:['Y',52], 3:['X',72], 4:['Y',90]};
-  const MSG=[[0,1],[1,2],[2,3],[3,4]];
-  const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
-  const CUTX=48;                             // X's snapshot, fixed
-  let cutY=30, drag=false;                   // Y's snapshot, movable
-  const cut=function(a){return a==='X'?CUTX:cutY;};
-  const past=function(n){return tm(n) < cut(ag(n));};
-
-  // the theorem, one connection at a time
-  function tally(from,to){
-    const ms=MSG.filter(function(m){return ag(m[0])===from && ag(m[1])===to;});
-    const placed  =ms.filter(function(m){return past(m[0]);}).length;
-    const received=ms.filter(function(m){return past(m[1]);}).length;
-    return {ms:ms, placed:placed, received:received, ok:received<=placed,
-            inChannel:ms.filter(function(m){return past(m[0]) && !past(m[1]);}),
-            broken:ms.filter(function(m){return !past(m[0]) && past(m[1]);})};
-  }
-  const LO=tm(0), HI=tm(4);                  // the acceptable stretch
-
-  function el(n,a,txt){
-    const e=document.createElementNS(NS,n);
-    for(const k in a) e.setAttribute(k,a[k]);
-    if(txt!=null) e.textContent=txt;
-    return e;
-  }
-  function tag(g,x,y,s,fill,size,weight){
-    g.appendChild(el('text',{x:x, y:y,
-      'font-family':'ui-monospace,Menlo,Consolas,monospace',
-      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
-      'text-anchor':'middle', 'dominant-baseline':'middle',
-      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, s));
-  }
-
-  function draw(){
-    while(svg.firstChild) svg.removeChild(svg.firstChild);
-    const defs=el('defs',{});
-    [['ah',C.ink],['ahO',C.orange],['ahT',C.teal]].forEach(function(q){
-      const m=el('marker',{id:PFX+q[0], viewBox:'0 0 10 10', refX:9, refY:5,
-        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
-      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:q[1]}));
-      defs.appendChild(m);
-    });
-    svg.appendChild(defs);
-    const g=el('g',{});
-    svg.appendChild(g);
-    const XY=tally('X','Y'), YX=tally('Y','X');
-    const good=XY.ok && YX.ok;
-    const bad={}; XY.broken.concat(YX.broken).forEach(function(m){ bad[m]=1; });
-    const chan={}; XY.inChannel.concat(YX.inChannel).forEach(function(m){ chan[m]=1; });
-
-    // where Y's snapshot may be
-    g.appendChild(el('rect',{x:xOf(LO), y:ay('Y')-34, width:xOf(HI)-xOf(LO),
-      height:68, rx:8, fill:C.teal, opacity:.10}));
-    tag(g,(xOf(LO)+xOf(HI))/2, ay('Y')+58,
-        "Y's snapshot must lie in here", C.teal, 13, 700);
-
-    ['X','Y'].forEach(function(a){
-      const y=ay(a);
-      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y,
-        stroke:C.line, 'stroke-width':2}));
-      g.appendChild(el('text',{x:X0-16, y:y,
-        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
-        'font-weight':700, fill:C.ink, 'text-anchor':'end',
-        'dominant-baseline':'middle'}, a));
-    });
-
-    MSG.forEach(function(m){
-      const ya=ay(ag(m[0])), yb=ay(ag(m[1])), d=(yb>ya?1:-1);
-      const isBad=bad[m], isCh=chan[m];
-      const col=isBad?C.orange:(isCh?C.teal:C.ink);
-      g.appendChild(el('line',{x1:xOf(tm(m[0])), y1:ya+d*R,
-        x2:xOf(tm(m[1])), y2:yb-d*R, stroke:col,
-        'stroke-width':(isBad||isCh)?3.5:2,
-        'stroke-dasharray':isBad?'7 4':'none',
-        'marker-end':'url(#'+PFX+(isBad?'ahO':(isCh?'ahT':'ah'))+')'}));
-      const mx=(xOf(tm(m[0]))+xOf(tm(m[1])))/2, my=(ya+yb)/2;
-      tag(g,mx+20, my, m[0]+'→'+m[1], col, 12.5);
-      if(isBad) tag(g,mx-72, my, 'received in the past,', C.orange, 12, 700),
-                tag(g,mx-72, my+16, 'sent in the future', C.orange, 12, 700);
-    });
-
-    Object.keys(E).forEach(function(n){
-      const x=xOf(tm(n)), y=ay(ag(n));
-      g.appendChild(el('circle',{cx:x, cy:y, r:R,
-        fill:past(n)?C.ink:'#fff', stroke:C.ink, 'stroke-width':2.5}));
-      tag(g,x, y-24, n, C.ink, 13, 700);
-    });
-
-    // the two snapshots and the cut joining them
-    g.appendChild(el('line',{x1:xOf(CUTX), y1:ay('X'), x2:xOf(cutY), y2:ay('Y'),
-      stroke:good?C.teal:C.orange, 'stroke-width':2.5,
-      'stroke-dasharray':'8 5'}));
-    [['X',CUTX],['Y',cutY]].forEach(function(q){
-      g.appendChild(el('circle',{cx:xOf(q[1]), cy:ay(q[0]), r:13,
-        fill:'#fff', stroke:good?C.teal:C.orange, 'stroke-width':4,
-        cursor:q[0]==='Y'?'grab':'default'}));
-    });
-    tag(g,xOf(CUTX), ay('X')-40, "X's snapshot", C.muted, 12.5, 700);
-    tag(g,xOf(cutY), ay('Y')+34, "Y's snapshot  (drag me)", C.muted, 12.5, 700);
-
-    readout(XY,YX,good);
-  }
-
-  function line(t){
-    return 'placed in the outbox <b>'+t.placed+'</b>, received from the inbox <b>'+
-      t.received+'</b> &nbsp; '+
-      (t.ok ? '<span class="ok">'+t.received+' &le; '+t.placed+
-              (t.inChannel.length ? ' — '+t.inChannel.length+' in the channel' : '')+
-              '</span>'
-            : '<span class="bad">'+t.received+' &gt; '+t.placed+
-              ' — more received than sent</span>');
-  }
-  function readout(XY,YX,good){
-    $('xy').innerHTML=line(XY);
-    $('yx').innerHTML=line(YX);
-    $('ok').innerHTML = good
-      ? '<span class="ok">yes — neither connection has more received than '+
-        'placed</span>'
-      : '<span class="bad">no</span> <span class="none">— '+
-        (XY.ok?'':"X's outbox to Y fails")+(!XY.ok&&!YX.ok?'; ':'')+
-        (YX.ok?'':"Y's outbox to X fails")+'</span>';
-  }
-
-  [[ 'b0', 6],['b1',30],['b2',68],['b3',96]].forEach(function(q){
-    $(q[0]).onclick=function(){ cutY=q[1]; draw(); };
-  });
-  function put(e){
-    const r=svg.getBoundingClientRect();
-    cutY=Math.max(3, Math.min(98, tOf((e.clientX-r.left)/r.width*1240)));
-    draw();
-  }
-  svg.style.touchAction='none';
-  svg.addEventListener('pointerdown',function(e){
-    const r=svg.getBoundingClientRect();
-    const vy=(e.clientY-r.top)/r.height*470;
-    if(Math.abs(vy-ay('Y'))<34){ drag=true; put(e); }
-  });
-  svg.addEventListener('pointermove',function(e){ if(drag) put(e); });
-  svg.addEventListener('pointerup',function(){ drag=false; });
-  svg.addEventListener('pointercancel',function(){ drag=false; });
-  draw();
-})();
-</script>
 
 <script>
 (function(){
   const PFX='mg_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g');
+  // The systems-manager/jigsaw figure is not on the page at the moment. The
+  // code is kept so it can be dropped back in; without this line every load
+  // throws here, because there is no #mg_g to draw into.
+  if(!svg) return;
   const NS='http://www.w3.org/2000/svg';
   const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
            os:'#d13d0e', client:'#3a6ea8', piece:'#00947d'};
@@ -3040,6 +2100,7 @@ so the marker is placed in the outbox before m is.
   body.present .pslide.on h1{font-size:2.5em}
   body.present .pslide.on h2{font-size:1.9em; margin-top:0}
   body.present .pslide.on h3{font-size:1.35em}
+  body.present .pslide.on h4{font-size:1.05em; margin:.8em 0 .3em}
   body.present .pslide.on figure.fig{margin:1.4vh 0; padding:14px 16px 12px}
   /* A figure already breaks out of the text column; in present mode the
      column is the screen, so the trick has to be switched off or it
