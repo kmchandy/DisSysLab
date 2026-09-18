@@ -1,0 +1,2241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What Agents Know</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+
+
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  p{color:var(--body); margin:0 0 15px}
+  /* The proof's three steps are h4s: a label on a paragraph, not a section,
+     so they are smaller than h3 and do not start a slide in present mode. */
+  h4{font-family:var(--sans); font-weight:700; font-size:15.5px;
+     letter-spacing:.01em; color:var(--ink); margin:20px 0 6px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  figure.fig{margin:30px 0 26px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  input[type=range]{flex:1 1 200px; min-width:160px; accent-color:var(--orange)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
+          font-size:13.5px; color:var(--muted)}
+  .legend i{font-style:normal; color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em}
+  .hint{font-size:13px; color:var(--muted)}
+  table.state{width:100%; margin-top:14px; border-collapse:collapse;
+              font:13.5px/1.5 var(--mono)}
+  table.state th{text-align:left; font:600 11.5px var(--sans); letter-spacing:.12em;
+    text-transform:uppercase; color:var(--muted); padding:0 12px 6px 0; font-weight:700}
+  table.state td{padding:5px 12px 5px 0; border-top:1px solid var(--line);
+                 vertical-align:baseline}
+  table.state td.k{color:var(--muted); white-space:nowrap; width:104px}
+  table.state td b{color:var(--ink)}
+  .none{color:#b9b4a8}
+  .hot{color:var(--orange); font-weight:700}
+  .chan{color:var(--teal); font-weight:700}
+  .facts{margin-top:14px; font:14px/1.7 var(--mono)}
+  .facts div{display:flex; gap:10px; align-items:baseline; padding:5px 0;
+             border-top:1px solid var(--line)}
+  .facts .k{width:172px; flex:none; font:600 11.5px var(--sans);
+            letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+  .fixed{color:var(--teal); font-weight:700}
+  .moved{color:var(--ink); font-weight:700}
+  .ok{color:var(--teal); font-weight:700}
+  .bad{color:var(--orange); font-weight:700}
+  .dn{color:var(--orange); font-weight:700}
+  .up{color:var(--teal); font-weight:700}
+  .cc{color:#8d8878; font-weight:700}
+  /* A definition the rest of the lecture leans on. Its own block, so it
+     is one beat in present mode and one thing to look at on the page. */
+  p.key{margin:20px 0 18px; padding:15px 18px 15px 20px; color:var(--ink);
+    background:#fff6ef; border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0; font-size:18px; line-height:1.5; font-weight:600}
+  p.key b, p.key strong{color:var(--ink); font-weight:800}
+  p.key .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
+    margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab</div>
+    <h1>What Agents Know</h1>
+
+    <p>An agent acts on what it knows. In a distributed system it knows almost
+       nothing: its own state, and whatever arrived in a message. This class
+       makes &ldquo;agent X knows P&rdquo; precise, for a predicate P about the
+       <i>rest</i> of the system, and then proves four things about it. Every
+       proof is the same proof &mdash; a consistent cut, from the previous
+       class, and the dataflow graph from the one before that.</p>
+  </header>
+
+<h2>What is P about?</h2>
+
+<p>
+  Fix an agent X. We ask what X knows about the network of <i>other</i> agents
+  and the channels between them. P is a predicate on that network, and on
+  nothing else: not on X, and not on the channels incident on X.
+</p>
+
+<p>
+  P can be &ldquo;agents U, V and Z are deadlocked&rdquo;, or &ldquo;every
+  agent is waiting for a message and every channel is empty&rdquo;, or
+  &ldquo;W solved its problem&rdquo;. Each is a
+  statement about the region inside the oval in the figure below, and each is
+  something X may or may not be in a position to assert.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="sc_g" viewBox="0 0 1240 470" role="img"
+         aria-label="Agent X outside an oval containing the other agents and the channels between them, which is what a predicate P is about"></svg>
+
+    <div class="ctrls">
+      <button id="sc_p1" class="primary">deadlocked</button>
+      <button id="sc_p2">all waiting, channels empty</button>
+      <button id="sc_p3">W solved its problem</button>
+      <button id="sc_clear">Clear</button>
+      <span class="status" id="sc_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 1. P is a predicate on the rest of the system.</b>
+      Press a predicate and the parts of the system it mentions light up.
+      Press <b>deadlocked</b> and the three agents that P is about &mdash; U, V
+      and Z &mdash; go red along with the channels between them, and so does X:
+      that is the state of X in which X knows the three of them are deadlocked.
+      Press <b>all waiting, channels empty</b> and the whole network goes
+      green, X with it, because that P is about every agent and every channel
+      between them. Press <b>W solved its problem</b> and only W goes blue,
+      because that P is about one agent and therefore about no channel at all.
+      Whatever P says, it says it about the agents inside the oval and the
+      channels between them. X itself is outside, and so are the channels that
+      touch X &mdash; X does not need to know anything about itself, and the
+      messages in flight to and from X are exactly what its knowledge will
+      turn out to depend on.
+    </figcaption>
+  </figure>
+
+<h2>What information enables X to know that W solved its problem?</h2>
+
+<p>
+  Figure 1 said what P is <i>about</i>. It said nothing about how X could ever
+  be in a position to assert it. X is not next to W; the two are not even
+  joined by a channel. So if X knows that W solved its problem, something must
+  have carried the news, agent by agent, until it reached X.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="fl_g" viewBox="0 0 1240 470" role="img"
+         aria-label="The news that W solved its problem travelling from W to Y to Z and then to X"></svg>
+
+    <div class="ctrls">
+      <button id="fl_go" class="primary">Information flow</button>
+      <button id="fl_clear">Clear</button>
+      <span class="status" id="fl_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 2. What information enables X to know that W solved its
+      problem?</b>
+      The same network as Figure 1. Press <i>Information flow</i> and watch the
+      news travel: W turns blue, then the channel from W to Y, then the one
+      from Y to Z, then the one from Z to X, and only then does X turn blue.
+      Each arrow points the way the information went.
+      Two things to take from it. X's knowledge was not acquired by looking;
+      it arrived, along a chain of channels, one message at a time. And
+      everything on that chain is older than X's knowledge of it &mdash; by
+      the time X knows, the news has been in flight for as long as the chain
+      took. Whether that matters is what the rest of this class is about, and
+      the chain itself comes back as a theorem at the end.
+    </figcaption>
+  </figure>
+
+<h2>A controller and a furnace</h2>
+
+<p>
+  A controller C sends control messages to a furnace F, and F replies with the
+  action it took. The furnace is also called the plant. Four steps take the
+  system from one state in which C knows the furnace is on to the next; in
+  asynchronous VLSI this is the four-phase handshake.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="fn_g" viewBox="0 0 1240 430" role="img"
+         aria-label="A controller and a furnace exchanging messages, with what the controller knows shown at each step"></svg>
+
+    <div class="ctrls">
+      <button id="fn_step" class="primary">Next step</button>
+      <button id="fn_run">Run</button>
+      <button id="fn_reset">Reset</button>
+      <span class="status" id="fn_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">F is</span><span id="fn_plant"></span></div>
+      <div><span class="k">In the channels</span><span id="fn_chan"></span></div>
+      <div><span class="k">C knows</span><span id="fn_know"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 3. What the controller knows, step by step.</b>
+      C is the controller and F the furnace. The colours are the point: F is
+      <span style="color:#d13d0e"><b>red</b></span> while it is on and
+      <span style="color:#00947d"><b>green</b></span> while it is off, and C
+      takes the colour of what it knows &mdash; red while it knows F is on,
+      green while it knows F is off, and
+      <span style="color:#6f7583"><b>grey</b></span> while it knows neither.
+      A message carries the colour of the state it is about:
+      <code>turn off</code> and <code>turned off</code> are green,
+      <code>turn on</code> and <code>turned on</code> are red.
+      Four steps, one per message, each of them a flight and an arrival.
+      C sends <code>turn off</code> and goes grey at once, before anything has
+      happened to F. F goes green the instant that message lands &mdash; but C
+      stays grey, because nothing has told it. F sends <code>turned off</code>
+      and no colour changes at all while it travels, because a message in
+      transit tells nobody anything. C goes green the instant it arrives. Then
+      the same two steps
+      run again with <code>turn on</code> and <code>turned on</code>, and the
+      ninth step is the first one over again.
+      Two things are worth noticing. C loses its knowledge the instant it
+      <i>sends</i>, and regains it only when it <i>receives</i>. And the state
+      of F that C knows is always a state F <i>was</i> in, never necessarily
+      the one it is in now.
+    </figcaption>
+  </figure>
+
+<h2>The same handshake, drawn as a computation</h2>
+
+<p>
+  The figure above shows states one at a time. Draw the whole computation
+  instead, with a line for C and a line for F, and the intervals in which C
+  knows something become segments of C's line. This is the dataflow graph of
+  the previous classes: the nodes are steps, and an edge carries a state.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="hs_g" viewBox="0 0 1240 430" role="img"
+         aria-label="The controller and furnace handshake as two timelines, with the intervals in which the controller knows the furnace state marked"></svg>
+
+    <div class="ctrls">
+      <button id="hs_on" class="primary">When does C know it is on?</button>
+      <button id="hs_off">When does C know it is off?</button>
+      <button id="hs_un">When is C uncertain?</button>
+      <button id="hs_clear">Clear</button>
+      <span class="status" id="hs_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 4. Knowledge as intervals on an agent's line.</b>
+      Eight steps, four messages, and the colours of the previous figure laid
+      along the timelines. F's line is
+      <span style="color:#d13d0e"><b>red</b></span> while F is on and
+      <span style="color:#00947d"><b>green</b></span> while it is off, so it
+      changes at 3 and at 6 &mdash; the two arrivals. C's line is red while C
+      knows F is on, green while it knows F is off, and
+      <span style="color:#6f7583"><b>grey</b></span> in between: red from 1 to
+      2, grey from 2 to 4, green from 4 to 5, grey from 5 to 7, red from 7 to
+      8. Ask the three questions and the matching stretches of C's line are
+      picked out and named.
+      Read the picture once more and the shape of the rest of the class is
+      already in it: uncertainty begins at a send, knowledge arrives with a
+      receive, and between C knowing one thing and C knowing its opposite there
+      is always a stretch where C knows neither.
+    </figcaption>
+  </figure>
+
+<h2>Two agents and two tokens</h2>
+
+<p>
+  A smaller example, with nothing in it but counting. Two agents, X and Y, pass
+  two indivisible tokens back and forth. What does X know about Y?
+</p>
+
+  <figure class="fig wideout">
+    <svg id="tk_g" viewBox="0 0 1240 400" role="img"
+         aria-label="Two agents passing two tokens, and what X knows about how many tokens Y holds"></svg>
+
+    <div class="ctrls">
+      <button id="tk_send" class="primary">X sends a token</button>
+      <button id="tk_deliver">Deliver</button>
+      <button id="tk_back">Y sends a token</button>
+      <button id="tk_reset">Reset</button>
+      <span class="status" id="tk_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">X holds</span><span id="tk_x"></span></div>
+      <div><span class="k">In the channels</span><span id="tk_c"></span></div>
+      <div><span class="k">Y holds</span><span id="tk_y"></span></div>
+      <div><span class="k">X knows Y holds</span><span id="tk_k"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 5. Counting is enough to produce uncertainty.</b>
+      When X holds both tokens it knows Y holds none: there are two tokens,
+      X can see both of them, and nothing is in flight that X did not send.
+      Send one, and X knows only that Y holds <i>none or one</i> &mdash; the
+      token may still be in the channel, or it may have arrived. X cannot tell
+      those two apart, and the difference is invisible to it until something
+      comes back.
+      Notice that X's uncertainty is not ignorance about the past. X knows
+      exactly what it did. What it cannot know is how far its own message has
+      got.
+    </figcaption>
+  </figure>
+
+<h2>What &ldquo;X knows P&rdquo; means</h2>
+
+<p>
+  Now the definition. Consider a point on X's line: an edge of the dataflow
+  graph between two consecutive steps of X, labelled with X's state there.
+  Call that state s.
+</p>
+
+<p class="key">
+  <span class="lead-in">Knowledge at a point</span>
+  <b>X knows P when X's state is s</b> means: 
+  <strong>P holds</strong> in every global state in which X's state is s.
+</p>
+
+<p>
+  That definition is about global states, and the previous class gave us the
+  global states that matter: the consistent cuts. Many different cuts pass
+  through one point on X's line, and they describe different global states
+  &mdash; but X's own state is s in all of them, because they all cut the same
+  edge of X's line. So the definition has a consequence we can draw:
+</p>
+
+<p class="key">
+  <span class="lead-in">Knowledge and consistent cuts</span>
+  If X knows P at a point on X's line, then <strong>P holds in the global state
+  of every consistent cut through that point</strong>.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="cc_g" viewBox="0 0 1240 470" role="img"
+         aria-label="One point on an agent's line, and the several consistent cuts that pass through it, each giving a different global state"></svg>
+
+    <div class="ctrls">
+      <button id="cc_next" class="primary">Next cut</button>
+      <button id="cc_all">Show all</button>
+      <button id="cc_reset">Reset</button>
+      <span class="status" id="cc_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">This cut's past</span><span id="cc_past"></span></div>
+      <div><span class="k">x's state here</span><span id="cc_state"></span></div>
+      <div><span class="k">So P must hold</span><span id="cc_must"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 6. One state of x, several states of the system.</b>
+      The thick segment is the point in question: x's line between steps
+      <code>2</code> and <code>5</code>, carrying state <code>s</code>. Press
+      <i>Next cut</i> to step through the consistent cuts that pass through
+      that segment. Each one is a different global state &mdash; the sets of
+      completed steps differ, and so do the messages in the channels &mdash;
+      and in every one of them x's own state is the same <code>s</code>.
+      That is the whole content of the definition. x cannot distinguish these
+      global states from one another, so for x to know P at this point, P has
+      to hold in all of them. Knowledge is not a property of one state; it is a
+      property of a <i>set</i> of states that look alike from where the agent
+      is standing.
+    </figcaption>
+  </figure>
+
+<h2>Losing knowledge, and gaining it</h2>
+
+<p>
+  With the definition in hand the theorems are short, and they are all proved
+  the same way: take two consistent cuts that are identical everywhere except
+  at the agent in question, and notice that a predicate about the rest of the
+  system cannot tell them apart.
+</p>
+
+<p class="key">
+  <span class="lead-in">Theorem</span>
+  An agent does not lose knowledge when it takes a step in which it
+  <strong>sends no messages</strong> to other agents.
+</p>
+
+<p class="key">
+  <span class="lead-in">Theorem</span>
+  An agent does not gain knowledge when it takes a step in which it
+  <strong>receives no messages</strong> from other agents.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="th_g" viewBox="0 0 1240 500" role="img"
+         aria-label="Nine events on three agents; each cut below C can be joined either to a point before step 5 or to a point after it"></svg>
+
+    <div class="ctrls">
+      <button id="th_move" class="primary">Move the cut to &ldquo;before&rdquo;</button>
+      <button id="th_reset">Reset</button>
+      <span class="status" id="th_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">The cut passes C at</span><span id="th_where"></span></div>
+      <div><span class="k">Received in the past</span><span id="th_recv"></span></div>
+      <div><span class="k">All of them sent in the past?</span><span id="th_ok"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 7. Moving the cut, and what it costs.</b>
+      One consistent cut, drawn as a red line. It starts as a single vertical
+      through <b>after</b>: everything to its left is the <b>past</b> and
+      everything to its right the <b>future</b>, and every message received in
+      the past was sent in the past &mdash; which is what makes it a state the
+      system could have been in.
+      Press the button. The cut moves at C alone, from <b>after</b> step 5 to
+      <b>before</b> it, and nothing else about it changes: below C's line it is
+      the same cut, so U and V have done exactly what they had done, and the
+      channels between them hold exactly what they held.
+      What changes is one thing. Step 5 is no longer in the past, so the
+      message C took there is no longer received in the past &mdash; it is in
+      transit instead, and turns
+      <span style="color:#1a5fd0"><b>blue</b></span>. One fewer message
+      received, and no new message sent, so every message received in the past
+      is still sent in the past: the moved cut is a consistent cut too.
+      Step 5 does send something: an <b>alarm</b>, which C sends to itself and
+      takes at step <code>8</code>, drawn as an arc over C's own line. The
+      theorem allows it. Its hypothesis is that the step sends nothing to
+      <i>another</i> agent, and an alarm tells U and V nothing &mdash; it never
+      leaves C. Watch it as the cut moves: before the move the alarm is in
+      transit, after it the alarm has not been sent, and either way U, V and
+      the channels between them are untouched.
+      That is the theorem in one move. C sends nothing to another agent at
+      step 5, so the cut can always be walked back across it, and the part of
+      the picture P talks about does not move at all.
+    </figcaption>
+  </figure>
+
+<p>
+  And now the same picture with one thing changed: at step <code>5</code>, C
+  sends a message to U. The alarm it sends itself at <code>2</code> is still
+  there and still harmless. What matters is the message that leaves C.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="ls_g" viewBox="0 0 1240 500" role="img"
+         aria-label="The same kind of picture, but step 5 sends a message to another agent, so the cut cannot be moved back across it"></svg>
+
+    <div class="ctrls">
+      <button id="ls_move" class="primary">Move the cut to &ldquo;before&rdquo;</button>
+      <button id="ls_reset">Reset</button>
+      <span class="status" id="ls_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">The cut passes C at</span><span id="ls_where"></span></div>
+      <div><span class="k">Received in the past</span><span id="ls_recv"></span></div>
+      <div><span class="k">All of them sent in the past?</span><span id="ls_ok"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 8. The step that does send, and what goes wrong.</b>
+      Nine events. C sends an <b>alarm</b> to itself at <code>2</code>, taken
+      at <code>5</code> &mdash; harmless, as before. But at step <code>5</code>
+      C also sends a message <b>to U</b>, which U takes at <code>7</code>.
+      Events <code>8</code> and <code>9</code> lie to the right of
+      <b>after</b>, so they stay in the future throughout, and the two
+      messages aimed at them are in flight the whole time.
+      The cut starts as a single vertical through <b>after</b>, and it is a
+      consistent cut: every message received in the past was sent in the past.
+      Now press the button. The cut moves at C alone, back to <b>before</b>
+      step 5 &mdash; and the picture breaks. Step <code>5</code> is now in the
+      future and step <code>7</code> is still in the past, so
+      <code>5&rarr;7</code> runs <b>from the future to the past</b>. No state
+      of the system looks like that, so this is <b>not a consistent cut</b>.
+      The message turns <span style="color:#d13d0e"><b>red</b></span> and is
+      crossed.
+      That is why the theorem says <i>sends no messages to other agents</i>.
+      When the step sends nothing outward, the cut can always be walked back
+      across it and C keeps what it knew. When it sends, the walk is blocked,
+      and C can lose knowledge at exactly that step &mdash; which is what
+      Figure 3's controller does every time it says <code>turn off</code>.
+    </figcaption>
+  </figure>
+
+<p>
+  And the dual. Keep the same computation, but ask the opposite question: can
+  the cut be walked <i>forward</i> across step <code>5</code>? Step 5 receives
+  only the alarm C sent itself, and nothing from another agent &mdash; which is
+  the hypothesis of the second theorem.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="gn_g" viewBox="0 0 1240 500" role="img"
+         aria-label="The same computation, with the cut moved forward across step 5 instead of backward"></svg>
+
+    <div class="ctrls">
+      <button id="gn_move" class="primary">Move the cut to &ldquo;after&rdquo;</button>
+      <button id="gn_reset">Reset</button>
+      <span class="status" id="gn_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">The cut passes C at</span><span id="gn_where"></span></div>
+      <div><span class="k">Received in the past</span><span id="gn_recv"></span></div>
+      <div><span class="k">All of them sent in the past?</span><span id="gn_ok"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 9. The dual: walking the cut forward.</b>
+      The same nine events, and <b>after</b> now stands between <code>5</code>
+      and <code>6</code>. This time the cut starts as a single vertical through
+      <b>before</b>, and the move takes C's crossing <i>forward</i> past step
+      5 rather than back.
+      It works. Step 5 takes the alarm C sent itself at <code>2</code>, and
+      <code>2</code> is already in the past, so putting step 5 into the past
+      adds a received message whose send was there all along. Nothing is
+      received that was not sent, and the moved cut is a consistent cut too:
+      <b>every consistent cut through &ldquo;before&rdquo; is a consistent cut
+      through &ldquo;after&rdquo;</b>. Since P is a predicate on U, V and the
+      channels between them &mdash; and none of that moved &mdash; anything C
+      knows after step 5 it already knew before. That is the second theorem:
+      an agent gains no knowledge at a step in which it receives nothing from
+      another agent.
+      Watch the alarm as the cut passes it: in transit before the move,
+      delivered after. And compare with the figure above, where the same step
+      blocked the walk in the other direction. One step, two theorems, and the
+      difference is whether the message crosses the boundary of C.
+    </figcaption>
+  </figure>
+
+<h2>Knowledge travels along paths</h2>
+
+<p>
+  The next theorem is the one with teeth. If something becomes true somewhere
+  in the system, and later an agent knows it, then there is a chain of
+  messages from the one event to the other. Nothing is learned out of thin air.
+</p>
+
+<p class="key">
+  <span class="lead-in">Theorem</span>
+  If NOT Q holds before a step <b>e</b>, and C knows Q after a step
+  <b>e&prime;</b>, then <strong>there is a path in the dataflow graph from e to
+  e&prime;</strong>.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="pa_g" viewBox="0 0 1240 500" role="img"
+         aria-label="A computation with no chain of messages from event 4 to anything C does, and a straight consistent cut showing that C cannot know Q"></svg>
+
+    <div class="ctrls">
+      <button id="pa_cut" class="primary">Draw the cut</button>
+      <button id="pa_clear">Clear</button>
+      <span class="status" id="pa_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">In the past</span><span id="pa_past"></span></div>
+      <div><span class="k">In the future</span><span id="pa_fut"></span></div>
+      <div><span class="k">In this cut</span><span id="pa_so"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 10. No path, no knowledge.</b>
+      Q is a predicate on V, and it becomes true at event <code>4</code>. What
+      matters is not whether anything leaves <code>4</code> &mdash; a message
+      may well leave it &mdash; but whether any <i>sequence</i> of messages
+      leads from <code>4</code> to step <code>6</code>. Here none does: C acts
+      at <code>2</code> and <code>6</code>, and what reaches C comes from
+      <code>5</code>, which happened before <code>4</code> had anything to
+      say.
+      Suppose, then, that C <i>does</i> know Q after step <code>6</code>
+      &mdash; that is the claim written on C's line at the start.
+      Press <i>Draw the cut</i>. A single straight line passes through V's edge
+      from <code>1</code> to <code>4</code>, where <b>NOT Q</b> holds, and
+      through C's edge after <code>6</code>, where C is supposed to know Q. It
+      is a consistent cut: its past is <code>1, 2, 3, 5, 6</code>, its future
+      is <code>4, 7</code>, and every message received in its past was sent in
+      its past &mdash; so it is one state the system could have been in.
+      And in that one state, Q is false at V while C knows Q. Both at once,
+      which cannot be. The supposition is what has to go: with no message
+      sequence from <code>4</code> to <code>6</code>, C cannot know Q there.
+      This is the previous theorem read backwards &mdash; no path from where
+      the news was made to where it would be known, and the knowledge cannot
+      be there.
+    </figcaption>
+  </figure>
+
+<h2>Two more, and a warning about negation</h2>
+
+<p>
+  The same argument, run in the other direction, gives the mirror theorem: if C
+  knows Q before a step <b>e</b> and NOT Q holds after a step <b>e&prime;</b>,
+  then there is a path in the dataflow graph from e to e&prime;. Figure 3 is an
+  instance &mdash; C knows the furnace is on, and the furnace is off only after
+  the message C sent has arrived.
+</p>
+
+<p>
+  And one consequence worth stating on its own, because it is the shape of
+  Figure 4:
+</p>
+
+<p class="key">
+  <span class="lead-in">Theorem</span>
+  If C knows Q before a step, and NOT Q holds after some later step, then there
+  is a point in between at which <strong>C is uncertain about Q</strong>.
+</p>
+
+<p>
+  C cannot pass directly from knowing Q to knowing NOT Q. Something must
+  happen, a message must travel, and while it travels C knows neither.
+</p>
+
+<p>
+  Finally, a distinction that is easy to lose. <b>NOT (C knows Q)</b> is not
+  <b>C knows NOT Q</b>. The first is much weaker: it is satisfied either by C
+  knowing NOT Q, or by C having no idea. That second case is what we have been
+  calling uncertainty:
+</p>
+
+<p class="key">
+  <span class="lead-in">Uncertainty</span>
+  C is uncertain about Q means <strong>NOT (C knows Q)</strong> and
+  <strong>NOT (C knows NOT Q)</strong>.
+</p>
+
+<p>
+  Every &ldquo;C uncertain&rdquo; label in Figures 3 and 4 is that conjunction,
+  and every one of them is produced by the same thing: a message that C has
+  sent, or is waiting for, and cannot see.
+</p>
+
+</div>
+
+
+<script>
+(function(){
+  const PFX='sc_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d', blue:'#3a6ea8'};
+
+  // X stands outside; everything P can talk about is inside the oval
+  const XA={x:150, y:235, r:26};       // X is drawn like any other agent
+  const OV={cx:790, cy:235, rx:390, ry:190};
+  const A={U:[560,120], V:[900,105], W:[1040,255], Y:[840,370], Z:[590,330]};
+  const INSIDE=[['U','V'],['V','W'],['W','Y'],['Y','Z'],['Z','U'],['V','Z']];
+  const CROSS=[['U'],['Z']];                       // the channels that touch X
+  // A predicate may be about the whole network or about a named part of it.
+  // `set` names the agents P talks about; P then also talks about the
+  // channels between those agents, and about nothing else.
+  const P={
+    p1:{set:['U','V','Z'], col:'red', mark:1, quiet:1,
+        says:['When X is in red state X knows',
+              'U, V, and Z are deadlocked']},
+    p2:{agents:1, chans:1, col:'teal', mark:1,
+        says:['When X is in green state, X knows',
+              'that all other agents are waiting',
+              'and all channels are empty']},
+    p3:{set:['W'], col:'blue', mark:1,
+        says:['When X is in blue state X knows',
+              'that W solved its problem']}
+  };
+  const inSet=function(on,k){return !!(on&&on.set&&on.set.indexOf(k)>=0);};
+  // each predicate brings its own colour, and X takes it when the figure is
+  // showing a state of X in which X knows that predicate
+  const colOf=function(on){
+    return !on ? C.teal
+      : on.col==='red' ? C.orange
+      : on.col==='blue' ? C.blue : C.teal;
+  };
+  let pick=null;
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':size||15, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, str));
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    const on=pick?P[pick]:null;
+
+    // the region P is about
+    g.appendChild(el('ellipse',{cx:OV.cx, cy:OV.cy, rx:OV.rx, ry:OV.ry,
+      fill:on?C.teal:C.line, 'fill-opacity':on?0.07:0.05,
+      stroke:C.orange, 'stroke-width':2.5, 'stroke-dasharray':'9 7'}));
+    if(!(on&&on.quiet))
+      tag(g,OV.cx, OV.cy-OV.ry-22, 'the rest of the system', C.orange, 15);
+
+    // the channels that touch X are outside P, whatever P says
+    CROSS.forEach(function(q){
+      const t=A[q[0]];
+      g.appendChild(el('line',{x1:XA.x+XA.r, y1:XA.y, x2:t[0]-22, y2:t[1],
+        stroke:C.line, 'stroke-width':3}));
+    });
+    // channels inside: a channel is part of P when both its ends are
+    INSIDE.forEach(function(q){
+      const u=A[q[0]], v=A[q[1]];
+      const both=inSet(on,q[0])&&inSet(on,q[1]);
+      const hot=(on&&on.chans)||both;
+      g.appendChild(el('line',{x1:u[0], y1:u[1], x2:v[0], y2:v[1],
+        stroke:hot?colOf(on):C.line, 'stroke-width':hot?5:3}));
+    });
+
+    // agents inside, each with its name
+    Object.keys(A).forEach(function(k){
+      const t=A[k], mine=inSet(on,k), hot=(on&&on.agents)||mine;
+      g.appendChild(el('circle',{cx:t[0], cy:t[1], r:26,
+        fill:mine?colOf(on):'#fff', 'fill-opacity':mine?0.12:1,
+        stroke:hot?colOf(on):C.muted, 'stroke-width':hot?5:3}));
+      g.appendChild(el('text',{x:t[0], y:t[1],
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
+        'font-weight':700, fill:C.ink, 'text-anchor':'middle',
+        'dominant-baseline':'central'}, k));
+    });
+
+    // X itself
+    // X is marked when the figure is showing a state of X in which X knows
+    // this P, and it takes the same colour as the agents P is about
+    const mark=!!(on&&on.mark), mcol=colOf(on);
+    g.appendChild(el('circle',{cx:XA.x, cy:XA.y, r:XA.r,
+      fill:mark?mcol:'#fff', 'fill-opacity':mark?0.12:1,
+      stroke:mark?mcol:C.muted, 'stroke-width':mark?5:3}));
+    g.appendChild(el('text',{x:XA.x, y:XA.y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
+      'font-weight':700, fill:mark?mcol:C.ink, 'text-anchor':'middle',
+      'dominant-baseline':'central'}, 'X'));
+    // what that state of X amounts to, written above it and bottom-aligned
+    // so the last line always sits just clear of X's circle
+    if(on&&on.says) on.says.forEach(function(ln,i){
+      tag(g,205, 182-(on.says.length-1-i)*24, ln, mcol, 15.5);
+    });
+
+    if(on && on.n) tag(g,OV.cx, 50, 'P: ' + on.n, C.teal, 17);
+    if(on && on.why) tag(g,OV.cx, 76, on.why, C.muted, 13.5);
+    if(!on) tag(g,OV.cx, 62, 'press a predicate below', C.muted, 13.5);
+    $('status').innerHTML = (on && on.n)
+      ? 'X may or may not be able to assert this'
+      : '';
+  }
+  ['p1','p2','p3'].forEach(function(k){
+    $(k).onclick=function(){ pick=k; draw(); };
+  });
+  $('clear').onclick=function(){ pick=null; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='fn_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d', blue:'#3a6ea8'};
+  const CY=120, FY=330, BX=620, BW=300, BH=84;
+
+  // the four-phase handshake, twice round: two of the six states are quiet,
+  // and in the other four a message is on its way and C cannot see how far.
+  // F is red while it is on and green while it is off. C is red while it
+  // knows F is on, green while it knows F is off, and grey while it knows
+  // neither -- which is the whole time a message of its own is in flight.
+  //
+  // One step is one message: the sender's change, the flight, and the
+  // arrival. The quiet states between messages are not steps of their own,
+  // because each one is already the last frame of the step before it.
+  const INIT={plant:'on', know:'on'};
+  const ST=[
+    {msg:['down','turn off'],  before:{plant:'on',  know:null},
+                               after :{plant:'off', know:null},
+     saying:'C sends "turn off" and stops knowing. In transit.',
+     landed:'It reaches F, which turns off. C still knows nothing.'},
+    {msg:['up','turned off'],  before:{plant:'off', know:null},
+                               after :{plant:'off', know:'off'},
+     saying:'F sends "turned off". No colour changes while it travels.',
+     landed:'It reaches C: C knows F is off.'},
+    {msg:['down','turn on'],   before:{plant:'off', know:null},
+                               after :{plant:'on',  know:null},
+     saying:'C sends "turn on" and stops knowing. In transit.',
+     landed:'It reaches F, which turns on. C still knows nothing.'},
+    {msg:['up','turned on'],   before:{plant:'on',  know:null},
+                               after :{plant:'on',  know:'on'},
+     saying:'F sends "turned on". No colour changes while it travels.',
+     landed:'It reaches C: C knows F is on \u2014 back to the start.'}
+  ];
+  const fCol=function(s){return s.plant==='on' ? C.orange : C.teal;};
+  const cCol=function(s){return !s.know ? C.muted
+                         : (s.know==='on' ? C.orange : C.teal);};
+  // "turn on" and "turned on" are red; "turn off" and "turned off" are green
+  const mCol=function(m){return m[1].indexOf('off')>=0 ? C.teal : C.orange;};
+  let k=-1, p=1, anim=null, running=false;   // -1 is the resting picture
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const q in a) e.setAttribute(q,a[q]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':size||15, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, str));
+  }
+  function box(g,y,label,sub,col){
+    g.appendChild(el('rect',{x:BX-BW/2, y:y-BH/2, width:BW, height:BH, rx:14,
+      fill:col, 'fill-opacity':0.10, stroke:col, 'stroke-width':4}));
+    tag(g,BX, y-13, label, col, 22);
+    tag(g,BX, y+15, sub, C.ink, 15);
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    // A message that has reached its destination has been taken: the picture
+    // shows the state after the arrival in that same frame, rather than
+    // waiting for the next step. The colour changes as the message lands,
+    // because landing is the moment the receiver learns something.
+    const step=(k<0)?null:ST[k], landed=(k>=0 && p>=1);
+    const s = (k<0) ? {plant:INIT.plant, know:INIT.know, msg:null}
+            : landed ? {plant:step.after.plant,  know:step.after.know,  msg:null}
+                     : {plant:step.before.plant, know:step.before.know, msg:step.msg};
+
+    // the channel, and the two lanes on it
+    g.appendChild(el('line',{x1:BX-90, y1:CY+BH/2, x2:BX-90, y2:FY-BH/2,
+      stroke:C.line, 'stroke-width':3, 'stroke-dasharray':'4 7'}));
+    g.appendChild(el('line',{x1:BX+90, y1:FY-BH/2, x2:BX+90, y2:CY+BH/2,
+      stroke:C.line, 'stroke-width':3, 'stroke-dasharray':'4 7'}));
+    tag(g,BX-90, CY+BH/2+18, 'C → F', C.muted, 12.5);
+    tag(g,BX+90, CY+BH/2+18, 'F → C', C.muted, 12.5);
+
+    box(g,CY,'C','controller', cCol(s));
+    box(g,FY,'F','F is '+s.plant, fCol(s));
+
+    // what C knows, above C
+    const kt = s.know ? 'C knows F is '+s.know : 'C does not know';
+    const ks = s.know ? '' : 'whether F is on or off';
+    tag(g,BX, CY-BH/2-40, kt, cCol(s), 19);
+    if(ks) tag(g,BX, CY-BH/2-17, ks, C.muted, 14);
+
+    // the message in flight: the message itself, and what it says
+    if(s.msg){
+      const down=(s.msg[0]==='down'), x=down?BX-90:BX+90;
+      const y0=down?CY+BH/2:FY-BH/2, y1=down?FY-BH/2:CY+BH/2;
+      const y=y0+(y1-y0)*p, col=mCol(s.msg);
+      g.appendChild(el('circle',{cx:x, cy:y, r:11, fill:col,
+        stroke:'#fff', 'stroke-width':2.5}));
+      tag(g,x+(down?-78:78), y, s.msg[1], col, 14);
+    }
+
+    tag(g,BX, 405,
+        (k<0) ? 'C knows F is on' : (landed ? step.landed : step.saying),
+        C.muted, 14);
+    readout(s, k, landed);
+  }
+  function readout(s,k,landed){
+    $('plant').innerHTML='<b>'+s.plant+'</b>';
+    $('chan').innerHTML = s.msg
+      ? '<span class="chan">'+s.msg[1]+'</span> <span class="none">'+
+        (s.msg[0]==='down'?'on its way to the furnace':'on its way to C')+
+        '</span>'
+      : '<span class="none">empty</span>';
+    $('know').innerHTML = s.know
+      ? '<span class="ok">F is '+s.know+'</span>'
+      : '<span class="bad">nothing — F is off or on</span>';
+    $('status').innerHTML = (k<0) ? ''
+      : 'step <b>'+(k+1)+'</b> of 4 &middot; '+(landed?'arrived':'in transit');
+  }
+  function step(){
+    k=(k+1)%ST.length; p=0;
+    if(anim) cancelAnimationFrame(anim);
+    const t0=performance.now(), dur=1300;
+    (function go(t){
+      p=Math.min(1,(t-t0)/dur); draw();
+      if(p<1) anim=requestAnimationFrame(go);
+      else if(running) setTimeout(step, 700);   // hold on the arrival
+    })(t0);
+  }
+  $('step').onclick=function(){ running=false; step(); };
+  $('run').onclick=function(){ running=!running;
+    $('run').textContent=running?'Pause':'Run'; if(running) step(); };
+  $('reset').onclick=function(){
+    running=false; $('run').textContent='Run';
+    if(anim) cancelAnimationFrame(anim); k=-1; p=1; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='hs_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const X0=200, X1=1180, R=7, CY=150, FY=310;
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+
+  // the handshake of the previous figure, drawn as one computation
+  const EV={1:['C',6],2:['C',20],3:['F',32],4:['C',46],
+            5:['C',58],6:['F',70],7:['C',82],8:['C',92]};
+  const MSG=[[2,3,'turn off'],[3,4,'turned off'],
+             [5,6,'turn on'],[6,7,'turned on']];
+  // The timelines are coloured by the same rule as the previous figure:
+  // red where F is on, green where F is off, and on C's line red or green
+  // where C knows which, grey where it knows neither.
+  const FBAND=[[0,32,'on'],[32,70,'off'],[70,100,'on']];
+  const CBAND=[[6,20,'on'],[20,46,'un'],[46,58,'off'],[58,82,'un'],[82,92,'on']];
+  const COL={on:C.orange, off:C.teal, un:C.muted};
+  const FLAB=[[0,32,'F on'],[32,70,'F off'],[70,100,'F on']];
+  const LAB={on:'C knows F is on', off:'C knows F is off',
+             un:'C does not know which'};
+  let pick=null;
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, str));
+  }
+  const ay=function(a){return a==='C'?CY:FY;};
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    const m=el('marker',{id:PFX+'ah', viewBox:'0 0 10 10', refX:9, refY:5,
+      markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+    m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:C.ink}));
+    defs.appendChild(m); svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+
+    // a halo on the stretches the question asks about
+    if(pick) CBAND.filter(function(b){return b[2]===pick;}).forEach(function(b){
+      g.appendChild(el('line',{x1:xOf(b[0]), y1:CY, x2:xOf(b[1]), y2:CY,
+        stroke:COL[pick], 'stroke-width':22, opacity:.22,
+        'stroke-linecap':'round'}));
+      tag(g,(xOf(b[0])+xOf(b[1]))/2, CY-36, LAB[pick], COL[pick], 14);
+    });
+
+    // the two agent lines
+    [['C',CY],['F',FY]].forEach(function(q){
+      g.appendChild(el('line',{x1:X0, y1:q[1], x2:X1, y2:q[1],
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18, y:q[1],
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, q[0]));
+    });
+
+    // the lines themselves carry the state, in colour
+    FBAND.forEach(function(b){
+      g.appendChild(el('line',{x1:xOf(b[0]), y1:FY, x2:xOf(b[1]), y2:FY,
+        stroke:COL[b[2]], 'stroke-width':9, 'stroke-linecap':'butt'}));
+    });
+    CBAND.forEach(function(b){
+      g.appendChild(el('line',{x1:xOf(b[0]), y1:CY, x2:xOf(b[1]), y2:CY,
+        stroke:COL[b[2]], 'stroke-width':9, 'stroke-linecap':'butt'}));
+    });
+    FLAB.forEach(function(b){
+      tag(g,(xOf(b[0])+xOf(b[1]))/2, FY+30, b[2], COL[
+        b[2]==='F on'?'on':'off'], 13);
+    });
+
+    MSG.forEach(function(q){
+      const a=EV[q[0]], b=EV[q[1]];
+      const ya=ay(a[0]), yb=ay(b[0]), d=(yb>ya?1:-1);
+      g.appendChild(el('line',{x1:xOf(a[1]), y1:ya+d*R, x2:xOf(b[1]), y2:yb-d*R,
+        stroke:C.ink, 'stroke-width':2, 'marker-end':'url(#'+PFX+'ah)'}));
+      tag(g,(xOf(a[1])+xOf(b[1]))/2+16,(ya+yb)/2, q[2], C.muted, 12.5);
+    });
+
+    Object.keys(EV).forEach(function(n){
+      const e=EV[n];
+      g.appendChild(el('circle',{cx:xOf(e[1]), cy:ay(e[0]), r:R,
+        fill:C.ink, stroke:'#fff', 'stroke-width':2}));
+      tag(g,xOf(e[1]), ay(e[0])+(e[0]==='C'?-20:-20), n, C.ink, 12.5);
+    });
+
+    tag(g,(X0+X1)/2, 400,
+        'C loses what it knows at a send, and gets it back at a receive',
+        C.muted, 14);
+    const n=CBAND.filter(function(b){return b[2]===pick;}).length;
+    $('status').innerHTML = pick
+      ? '<b>'+n+'</b> stretch'+(n>1?'es':'')+' of C\u2019s line'
+      : '';
+  }
+  [['on','on'],['off','off'],['un','un']].forEach(function(q){
+    $(q[0]).onclick=function(){ pick=q[1]; draw(); };
+  });
+  $('clear').onclick=function(){ pick=null; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='tk_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d', blue:'#3a6ea8'};
+  const XC={x:300, y:210, r:78}, YC={x:940, y:210, r:78};
+  const LXY=140, LYX=280;                   // the two lanes
+
+  // two indivisible tokens. A token is at x, at y, or in one of the lanes.
+  let T=[{at:'x'},{at:'x'}], anim=null;
+  const count=function(w){return T.filter(function(t){return t.at===w;}).length;};
+  const inFlight=function(){return T.filter(function(t){
+    return t.at==='cxy'||t.at==='cyx';});};
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':size||15, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, str));
+  }
+  function token(g,x,y,ghost){
+    g.appendChild(el('circle',{cx:x, cy:y, r:17,
+      fill:ghost?'none':C.teal, 'fill-opacity':ghost?0:0.85,
+      stroke:C.teal, 'stroke-width':ghost?2.5:2.5,
+      'stroke-dasharray':ghost?'4 4':'none'}));
+  }
+  // what X is entitled to say about Y: the tokens it does not hold are
+  // somewhere out there, and X cannot tell how far they have got
+  function knows(){
+    const n=2-count('x');
+    return n===0 ? '0' : (n===1 ? '0 OR 1' : '0 OR 1 OR 2');
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    [['ab',C.blue],['ao',C.orange]].forEach(function(q){
+      const m=el('marker',{id:PFX+q[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:6, markerHeight:6, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:q[1]}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+
+    // the lanes
+    g.appendChild(el('line',{x1:XC.x+XC.r+6, y1:LXY, x2:YC.x-YC.r-14, y2:LXY,
+      stroke:C.line, 'stroke-width':3, 'stroke-dasharray':'5 8',
+      'marker-end':'url(#'+PFX+'ab)'}));
+    g.appendChild(el('line',{x1:YC.x-YC.r-6, y1:LYX, x2:XC.x+XC.r+14, y2:LYX,
+      stroke:C.line, 'stroke-width':3, 'stroke-dasharray':'5 8',
+      'marker-end':'url(#'+PFX+'ao)'}));
+
+    // the agents
+    [[XC,'X',C.blue],[YC,'Y',C.orange]].forEach(function(q){
+      g.appendChild(el('circle',{cx:q[0].x, cy:q[0].y, r:q[0].r, fill:'#fff',
+        stroke:q[2], 'stroke-width':4}));
+      tag(g,q[0].x, q[0].y-40, q[1], C.ink, 26);
+    });
+
+    // tokens the agents hold
+    ['x','y'].forEach(function(w){
+      const c=(w==='x')?XC:YC, held=count(w);
+      for(let i=0;i<held;i++)
+        token(g, c.x-20+40*i, c.y+22, false);
+    });
+
+    // tokens in the lanes. Two tokens in one lane come to rest at different
+    // points along it, so both stay visible; and each token on its way to Y
+    // casts a ghost at Y, because X cannot tell whether it has arrived.
+    let ghost=count('y');
+    T.forEach(function(t){
+      if(t.at==='cxy'){
+        const x=(XC.x+XC.r+6)+(t.p||0.5)*((YC.x-YC.r-14)-(XC.x+XC.r+6));
+        token(g,x,LXY,false);
+        token(g, YC.x-20+40*ghost, YC.y+22, true);
+        ghost++;
+      }
+      if(t.at==='cyx'){
+        const x=(YC.x-YC.r-6)-(t.p||0.5)*((YC.x-YC.r-6)-(XC.x+XC.r+14));
+        token(g,x,LYX,false);
+      }
+    });
+
+    tag(g,XC.x, 344, 'X knows Y holds '+knows(), C.teal, 17);
+    tag(g,YC.x, 344, 'Y holds '+count('y')+
+        (inFlight().length?' — and X cannot tell':''), C.orange, 15);
+    tag(g,(XC.x+YC.x)/2, 70,
+        inFlight().length
+          ? 'a token is on its way, and X does not know whether it has arrived'
+          : 'nothing is in flight', C.muted, 13.5);
+    readout();
+  }
+  function readout(){
+    $('x').innerHTML='<b>'+count('x')+'</b>';
+    $('y').innerHTML='<b>'+count('y')+'</b> <span class="none">'+
+      '(X is not told this)</span>';
+    const f=inFlight().length;
+    $('c').innerHTML = f ? '<span class="chan">'+f+'</span>'
+                         : '<span class="none">none</span>';
+    $('k').innerHTML = '<span class="ok">'+knows()+'</span>';
+    $('status').innerHTML = (count('x')===2)
+      ? 'X holds both, so it knows Y holds none' : '';
+  }
+  function glide(t, from, to, done){
+    if(anim) cancelAnimationFrame(anim);
+    const t0=performance.now(), dur=900;
+    (function go(now){
+      const q=Math.min(1,(now-t0)/dur);
+      t.p=from+(to-from)*q; draw();
+      if(q<1) anim=requestAnimationFrame(go); else { done&&done(); draw(); }
+    })(t0);
+  }
+  // where a token comes to rest in its lane: the first a little short of the
+  // middle, the second a little past it, so two are never drawn on top of
+  // one another
+  const restAt=function(lane){
+    return 0.40 + 0.20*T.filter(function(q){return q.at===lane;}).length;
+  };
+  $('send').onclick=function(){
+    const t=T.filter(function(q){return q.at==='x';})[0];
+    if(!t) return;
+    const to=restAt('cxy'); t.at='cxy'; t.p=0; glide(t, 0, to);
+  };
+  $('back').onclick=function(){
+    const t=T.filter(function(q){return q.at==='y';})[0];
+    if(!t) return;
+    const to=restAt('cyx'); t.at='cyx'; t.p=0; glide(t, 0, to);
+  };
+  $('deliver').onclick=function(){
+    const t=inFlight()[0];
+    if(!t) return;
+    const dest=(t.at==='cxy')?'y':'x';
+    glide(t, t.p==null?0.5:t.p, 1, function(){ t.at=dest; t.p=null; });
+  };
+  $('reset').onclick=function(){
+    if(anim) cancelAnimationFrame(anim); T=[{at:'x'},{at:'x'}]; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='cc_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const X0=200, X1=1170, R=8;
+  const AY={x:130, y:255, z:370};
+  const AG=['x','y','z'];
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+
+  const E={1:['y',14], 2:['x',30], 3:['z',36], 4:['y',48], 5:['x',70], 6:['y',86]};
+  const MSG=[[1,2,'m1'],[3,4,'m2'],[5,6,'m3']];
+  const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
+
+  // Every consistent cut that passes through x's edge (2,5). They differ in
+  // which steps are done and in what is in the channels; x's state does not.
+  const CUT=[
+    {x:40, y:40, z:30, past:'1, 2',       chan:'empty'},
+    {x:52, y:42, z:50, past:'1, 2, 3',    chan:'m2, on its way to y'},
+    {x:64, y:56, z:56, past:'1, 2, 3, 4', chan:'empty'}
+  ];
+  let k=0, all=false, q=1, anim=null;
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const j in a) e.setAttribute(j,a[j]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, str);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+  function cutLine(g,c,col,w,op){
+    const pts=[[xOf(c.x), AY.x-56],[xOf(c.x), AY.x],[xOf(c.y), AY.y],
+               [xOf(c.z), AY.z],[xOf(c.z), AY.z+56]];
+    g.appendChild(el('polyline',{
+      points:pts.map(function(p){return p[0]+','+p[1];}).join(' '),
+      fill:'none', stroke:col, 'stroke-width':w,
+      'stroke-dasharray':'7 6', opacity:op==null?1:op}));
+    AG.forEach(function(a){
+      g.appendChild(el('circle',{cx:xOf(c[a]), cy:AY[a], r:5.5, fill:col,
+        opacity:op==null?1:op}));
+    });
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    const m=el('marker',{id:PFX+'ah', viewBox:'0 0 10 10', refX:9, refY:5,
+      markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+    m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:C.ink}));
+    defs.appendChild(m); svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+
+    // the point in question: x's line between steps 2 and 5
+    g.appendChild(el('line',{x1:xOf(30), y1:AY.x, x2:xOf(70), y2:AY.x,
+      stroke:C.teal, 'stroke-width':13, opacity:.3, 'stroke-linecap':'round'}));
+    tag(g,xOf(50), AY.x-34, 'x is in state s on this edge', C.teal, 14);
+
+    AG.forEach(function(a){
+      g.appendChild(el('line',{x1:X0, y1:AY[a], x2:X1, y2:AY[a],
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18, y:AY[a],
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+    });
+
+    MSG.forEach(function(q2){
+      const a=E[q2[0]], b=E[q2[1]];
+      const ya=AY[a[0]], yb=AY[b[0]], d=(yb>ya?1:-1);
+      g.appendChild(el('line',{x1:xOf(a[1]), y1:ya+d*R, x2:xOf(b[1]), y2:yb-d*R,
+        stroke:C.ink, 'stroke-width':2, 'marker-end':'url(#'+PFX+'ah)'}));
+      tag(g,(xOf(a[1])+xOf(b[1]))/2+15,(ya+yb)/2, q2[2], C.muted, 12);
+    });
+
+    Object.keys(E).forEach(function(n){
+      g.appendChild(el('circle',{cx:xOf(tm(n)), cy:AY[ag(n)], r:R,
+        fill:C.ink, stroke:'#fff', 'stroke-width':2}));
+      tag(g,xOf(tm(n)), AY[ag(n)]-21, n, C.ink, 12.5);
+    });
+
+    if(all){
+      CUT.forEach(function(c,i){ cutLine(g,c,C.orange,2.5,.45); });
+      tag(g,(X0+X1)/2, 442, 'three different global states, one state of x',
+          C.orange, 14);
+    } else {
+      CUT.forEach(function(c,i){ if(i<k) cutLine(g,c,C.line,2.5,.9); });
+      const c=CUT[k];
+      cutLine(g,{x:c.x,y:c.y,z:c.z},C.orange,3);
+      tag(g,xOf(c.x), AY.x-72, 'cut '+(k+1)+' of 3', C.orange, 13.5);
+    }
+    readout();
+  }
+  function readout(){
+    const c=CUT[k];
+    $('past').innerHTML = all ? '<span class="none">all three</span>'
+      : '<b>'+c.past+'</b> <span class="none">done; the rest not</span>';
+    $('state').innerHTML = '<span class="ok">s</span> '+
+      '<span class="none">— the same in every one of them</span>';
+    $('must').innerHTML = all
+      ? '<span class="ok">in all three global states</span>'
+      : 'in this one'+(c.chan==='empty'
+          ? ' <span class="none">(channels empty)</span>'
+          : ' <span class="chan">('+c.chan+')</span>');
+    $('status').innerHTML = all ? '' : 'cut <b>'+(k+1)+'</b> of 3';
+  }
+  $('next').onclick=function(){ all=false; k=(k+1)%CUT.length; draw(); };
+  $('all').onclick=function(){ all=true; draw(); };
+  $('reset').onclick=function(){ all=false; k=0; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='th_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d', cut:'#1a5fd0'};
+  const X0=200, X1=1170, R=8;
+  const AY={C:140, U:265, V:385};
+  const AG=['C','U','V'];
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+  const JOG=AY.U-28, TOP=76, BOT=AY.V+58, LEFT=X0-30, RIGHT=X1+30;
+
+  const E={1:['U',10], 2:['C',22], 3:['V',30], 4:['U',40], 5:['C',50],
+           6:['V',62], 7:['U',80], 8:['C',84], 9:['V',94]};
+  // At step 5 C sends a message to itself -- an alarm, taken at step 8. The
+  // theorem's hypothesis is that C sends nothing to *another* agent there,
+  // and an alarm tells U and V nothing at all.
+  const MSG=[[1,2],[2,3],[3,4],[4,5],[4,6],[6,7],[5,8],[8,9]];
+  const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
+  const BEFORE=28, AFTER=54;               // the two points on C's line
+  const REST=AFTER;                        // where the cut crosses U and V
+
+  // u = 0: one straight vertical through "after". u = 1: the same cut below
+  // C's line, but crossing C before step 5 instead of after it.
+  let u=0, anim=null;
+  const cAt=function(){return AFTER+u*(BEFORE-AFTER);};
+  const inPast=function(n){
+    return ag(n)==='C' ? tm(n) < cAt() : tm(n) < REST;
+  };
+  const received=function(){
+    return MSG.filter(function(m){return inPast(m[1]);});
+  };
+  const inTransit=function(){
+    return MSG.filter(function(m){return inPast(m[0]) && !inPast(m[1]);});
+  };
+  const allSentInPast=function(){
+    return received().every(function(m){return inPast(m[0]);});
+  };
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const j in a) e.setAttribute(j,a[j]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, str);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+  function sans(g,x,y,str,fill,size,weight){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':size||15, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':5, 'paint-order':'stroke'}, str));
+  }
+  const pts=function(a){return a.map(function(p){return p[0]+','+p[1];}).join(' ');};
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    [['ah',C.ink],['ab',C.cut]].forEach(function(j){
+      const m=el('marker',{id:PFX+j[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:j[1]}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+    const xc=xOf(cAt()), xv=xOf(REST);
+
+    // what the figure says
+    sans(g,(X0+X1)/2, 30,
+      'Every consistent cut through “after” is a consistent cut '+
+      'through “before”', C.ink, 22, 800);
+    // true at both ends of the move, so it is said once and stays put
+    sans(g,(X0+X1)/2, 58,
+      'Every message received in the past is sent in the past',
+      C.teal, 16, 700);
+
+    // the past and the future, divided by the cut
+    g.appendChild(el('polygon',{points:pts([[LEFT,TOP],[xc,TOP],[xc,JOG],
+      [xv,JOG],[xv,BOT],[LEFT,BOT]]), fill:C.teal, 'fill-opacity':.08}));
+    g.appendChild(el('polygon',{points:pts([[RIGHT,TOP],[xc,TOP],[xc,JOG],
+      [xv,JOG],[xv,BOT],[RIGHT,BOT]]), fill:C.orange, 'fill-opacity':.08}));
+    tag(g,(LEFT+Math.min(xc,xv))/2, TOP+20, 'past', C.teal, 16);
+    tag(g,(Math.max(xc,xv)+RIGHT)/2, TOP+20, 'future', C.orange, 16);
+
+    AG.forEach(function(a){
+      g.appendChild(el('line',{x1:X0, y1:AY[a], x2:X1, y2:AY[a],
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18, y:AY[a],
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+    });
+
+    const hot={}; inTransit().forEach(function(m){ hot[m[0]+'-'+m[1]]=1; });
+    MSG.forEach(function(j){
+      const a=E[j[0]], b=E[j[1]];
+      const on=hot[j[0]+'-'+j[1]];
+      const col=on?C.cut:C.ink, wid=on?3.5:2;
+      if(a[0]===b[0]){
+        // a message an agent sends to itself: an arc over its own line
+        const y=AY[a[0]], x1=xOf(a[1]), x2=xOf(b[1]), h=48;
+        g.appendChild(el('path',{d:'M'+x1+','+(y-R)+' C'+x1+','+(y-h)+' '+
+          x2+','+(y-h)+' '+x2+','+(y-R-2), fill:'none', stroke:col,
+          'stroke-width':wid, 'marker-end':'url(#'+PFX+(on?'ab':'ah')+')'}));
+        tag(g,(x1+x2)/2, y-h+2, 'alarm, to itself', col, 12.5);
+      } else {
+        const ya=AY[a[0]], yb=AY[b[0]], d=(yb>ya?1:-1);
+        g.appendChild(el('line',{x1:xOf(a[1]), y1:ya+d*R, x2:xOf(b[1]), y2:yb-d*R,
+          stroke:col, 'stroke-width':wid,
+          'marker-end':'url(#'+PFX+(on?'ab':'ah')+')'}));
+      }
+    });
+
+    Object.keys(E).forEach(function(n){
+      const hot5=(n==='5');
+      g.appendChild(el('circle',{cx:xOf(tm(n)), cy:AY[ag(n)], r:hot5?R+2:R,
+        fill:hot5?'#fff':C.ink, stroke:hot5?C.orange:'#fff',
+        'stroke-width':hot5?4:2}));
+      tag(g,xOf(tm(n)), AY[ag(n)]-22, n, C.ink, 12.5);
+    });
+
+    // where the cut may cross C: before step 5, and after it
+    [[BEFORE,'before',C.ink],[AFTER,'after',C.orange]].forEach(function(j){
+      const x=xOf(j[0]);
+      g.appendChild(el('line',{x1:x, y1:AY.C-15, x2:x, y2:AY.C+15,
+        stroke:j[2], 'stroke-width':2.5}));
+      tag(g,x, AY.C-34, j[1], j[2], 13.5);
+    });
+
+    // the cut itself
+    g.appendChild(el('polyline',{points:pts([[xc,TOP],[xc,JOG],[xv,JOG],
+      [xv,BOT]]), fill:'none', stroke:C.orange, 'stroke-width':3.5,
+      'stroke-dasharray':'9 6'}));
+    g.appendChild(el('circle',{cx:xc, cy:AY.C, r:6, fill:C.orange}));
+
+    tag(g,xOf(50), AY.C+30, 'at 5 C sends only to itself', C.orange, 13);
+    readout();
+  }
+  function readout(){
+    const rc=received(), tr=inTransit();
+    $('where').innerHTML = (u<0.5 ? '<span class="bad">after</span>'
+                                  : '<span class="ok">before</span>')+
+      ' <span class="none">step 5</span>';
+    $('recv').innerHTML='<b>'+rc.length+'</b> — '+
+      rc.map(function(m){return m[0]+'→'+m[1];}).join(', ')+
+      (tr.length ? ' <span class="chan">('+tr.map(function(m){
+        return m[0]+'→'+m[1];}).join(', ')+' in transit)</span>' : '');
+    $('ok').innerHTML = allSentInPast()
+      ? '<span class="ok">yes — a consistent cut</span>'
+      : '<span class="bad">no</span>';
+    $('status').innerHTML = u<0.02 ? '' : (u>0.98 ? '<b>moved</b>' : 'moving &hellip;');
+  }
+  function glide(to){
+    if(anim) cancelAnimationFrame(anim);
+    const from=u, t0=performance.now(), dur=1500;
+    (function go(t){
+      const p=Math.min(1,(t-t0)/dur);
+      u=from+(to-from)*(p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2);
+      draw();
+      if(p<1) anim=requestAnimationFrame(go); else { u=to; draw(); }
+    })(t0);
+  }
+  $('move').onclick=function(){ glide(u>0.5?0:1); };
+  $('reset').onclick=function(){
+    if(anim) cancelAnimationFrame(anim); u=0; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='pa_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d', cut:'#1a5fd0'};
+  const X0=200, X1=1170, R=8;
+  const AY={C:140, U:265, V:385};
+  const AG=['C','U','V'];
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+  const TOP=76, BOT=443, LEFT=X0-30, RIGHT=X1+30;
+
+  // Seven events. Nothing leaves 4, so no chain of messages reaches C from
+  // the moment Q became true.
+  const E={1:['V', 8], 2:['C',14], 3:['U',22], 4:['V',34],
+           5:['U',36], 6:['C',72], 7:['U',88]};
+  const MSG=[[2,3],[5,6],[6,7]];
+  const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
+  // the cut: through V's edge (1,4), and through C's edge after 6
+  const AT={V:12, C:76};
+  // where a straight line through those two points crosses any height
+  const xAt=function(y){
+    return xOf(AT.V) + (y-AY.V)*(xOf(AT.C)-xOf(AT.V))/(AY.C-AY.V);
+  };
+  const tAt=function(y){ return (xAt(y)-X0)/(X1-X0)*100; };
+  const inPast=function(n){ return tm(n) < tAt(AY[ag(n)]); };
+
+  let q=0, anim=null;
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const j in a) e.setAttribute(j,a[j]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, str);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+  function sans(g,x,y,str,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':size||15, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':5, 'paint-order':'stroke'}, str);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+  const pts=function(a){return a.map(function(p){return p[0]+','+p[1];}).join(' ');};
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    const m=el('marker',{id:PFX+'ah', viewBox:'0 0 10 10', refX:9, refY:5,
+      markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+    m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:C.ink}));
+    defs.appendChild(m); svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+
+    sans(g,(X0+X1)/2, 30, q>=1
+      ? 'Error: consistent cut where (NOT Q) AND (C knows Q)'
+      : 'No message sequence from 4 to 6',
+      q>=1?C.orange:C.ink, 22, 800);
+
+    // past and future, once the cut is drawn
+    if(q>0.6){
+      const o=Math.min(1,(q-0.6)/0.4)*0.09;
+      g.appendChild(el('polygon',{points:pts([[LEFT,TOP],[xAt(TOP),TOP],
+        [xAt(BOT),BOT],[LEFT,BOT]]), fill:C.teal, 'fill-opacity':o}));
+      g.appendChild(el('polygon',{points:pts([[RIGHT,TOP],[xAt(TOP),TOP],
+        [xAt(BOT),BOT],[RIGHT,BOT]]), fill:C.orange, 'fill-opacity':o}));
+      tag(g,xAt(300)-78, 300, 'past', C.teal, 16, 700, o/0.09);
+      tag(g,xAt(300)+82, 300, 'future', C.orange, 16, 700, o/0.09);
+    }
+
+    AG.forEach(function(a){
+      g.appendChild(el('line',{x1:X0, y1:AY[a], x2:X1, y2:AY[a],
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18, y:AY[a],
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+    });
+
+    // what is true on V, and what C is in a position to say
+    g.appendChild(el('line',{x1:xOf(8), y1:AY.V+22, x2:xOf(34), y2:AY.V+22,
+      stroke:C.orange, 'stroke-width':4, opacity:.6}));
+    tag(g,xOf(21), AY.V+40, 'NOT Q', C.orange, 14);
+    g.appendChild(el('line',{x1:xOf(34), y1:AY.V+22, x2:xOf(96), y2:AY.V+22,
+      stroke:C.teal, 'stroke-width':4, opacity:.6}));
+    tag(g,xOf(65), AY.V+40, 'Q', C.teal, 14);
+    tag(g,X1-90, AY.V-26, 'Q is about V', C.muted, 13);
+
+    // what C is taken to know after step 6 -- the supposition the cut breaks
+    g.appendChild(el('line',{x1:xOf(72), y1:AY.C-22, x2:xOf(96), y2:AY.C-22,
+      stroke:C.teal, 'stroke-width':4, opacity:.6}));
+    tag(g,xOf(84), AY.C-42, 'C knows Q', C.teal, 14);
+
+    MSG.forEach(function(j){
+      const a=E[j[0]], b=E[j[1]];
+      const ya=AY[a[0]], yb=AY[b[0]], d=(yb>ya?1:-1);
+      g.appendChild(el('line',{x1:xOf(a[1]), y1:ya+d*R, x2:xOf(b[1]), y2:yb-d*R,
+        stroke:C.ink, 'stroke-width':2, 'marker-end':'url(#'+PFX+'ah)'}));
+    });
+
+    Object.keys(E).forEach(function(n){
+      const done=(q>0.6)&&inPast(n);
+      g.appendChild(el('circle',{cx:xOf(tm(n)), cy:AY[ag(n)], r:R,
+        fill:done?C.teal:C.ink, stroke:'#fff', 'stroke-width':2}));
+      tag(g,xOf(tm(n)), AY[ag(n)]-22, n, C.ink, 12.5);
+    });
+
+    // the cut, drawn from V up to C
+    if(q>0.001){
+      const k=Math.min(1,q/0.6);
+      const y0=BOT, y1=y0+(TOP-y0)*k;
+      g.appendChild(el('line',{x1:xAt(y0), y1:y0, x2:xAt(y1), y2:y1,
+        stroke:C.cut, 'stroke-width':3.5, 'stroke-dasharray':'9 6'}));
+      AG.forEach(function(a){
+        if(AY[a]>=y1) g.appendChild(el('circle',{cx:xAt(AY[a]), cy:AY[a], r:6,
+          fill:C.cut}));
+      });
+    }
+    if(q>=1){
+      sans(g,(X0+X1)/2, 470,
+        'one state of the system, in which Q is false and C knows Q',
+        C.orange, 15, 700);
+    }
+    readout();
+  }
+  function readout(){
+    if(q<0.6){
+      $('past').innerHTML='<span class="none">press Draw the cut</span>';
+      $('fut').innerHTML='<span class="none">—</span>';
+      $('so').innerHTML='<span class="none">—</span>';
+      $('status').innerHTML=''; return;
+    }
+    const P=Object.keys(E).filter(inPast).sort(function(a,b){return tm(a)-tm(b);});
+    const F=Object.keys(E).filter(function(n){return !inPast(n);})
+                          .sort(function(a,b){return tm(a)-tm(b);});
+    const bad=MSG.filter(function(m){return inPast(m[1]) && !inPast(m[0]);});
+    $('past').innerHTML='<b>'+P.join(', ')+'</b>'+
+      (bad.length?'':' <span class="ok">(a consistent cut)</span>');
+    $('fut').innerHTML='<b>'+F.join(', ')+'</b> <span class="none">'+
+      '— including 4, where Q became true</span>';
+    $('so').innerHTML = q>=1
+      ? '<span class="bad">NOT Q</span> at V <b>and</b> '+
+        '<span class="ok">C knows Q</span> at C '+
+        '<span class="none">— both at once, which cannot be</span>'
+      : '<span class="none">…</span>';
+    $('status').innerHTML = q>=1 ? '<b>drawn</b>' : 'drawing &hellip;';
+  }
+  function play(){
+    if(anim) cancelAnimationFrame(anim);
+    q=0;
+    const t0=performance.now(), dur=1800;
+    (function go(t){
+      q=Math.min(1,(t-t0)/dur); draw();
+      if(q<1) anim=requestAnimationFrame(go);
+    })(t0);
+  }
+  $('cut').onclick=play;
+  $('clear').onclick=function(){
+    if(anim) cancelAnimationFrame(anim); q=0; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='fl_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d', blue:'#3a6ea8'};
+
+  // the network of the previous figure, unchanged
+  const XA={x:150, y:235, r:26};
+  const OV={cx:790, cy:235, rx:390, ry:190};
+  const A={U:[560,120], V:[900,105], W:[1040,255], Y:[840,370], Z:[590,330]};
+  const INSIDE=[['U','V'],['V','W'],['W','Y'],['Y','Z'],['Z','U'],['V','Z']];
+  const CROSS=[['U'],['Z']];
+
+  // five steps: W learns it, then the news walks W -> Y -> Z -> X
+  const HOP=[['W','Y'],['Y','Z'],['Z','X']];
+  const SAYS=['When X is in blue state X knows','that W solved its problem'];
+  let t=0, anim=null;                      // 0 = clear, 5 = X knows
+  const clamp=function(v){return Math.max(0,Math.min(1,v));};
+  const pt=function(k){return k==='X'?[XA.x,XA.y]:A[k];};
+  const rOf=function(k){return k==='X'?XA.r:26;};
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const j in a) e.setAttribute(j,a[j]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,op){
+    const e=el('text',{x:x, y:y,
+      'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':size||15, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, str);
+    if(op!=null) e.setAttribute('opacity', op);
+    g.appendChild(e);
+  }
+  function name(g,x,y,str,col){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
+      'font-weight':700, fill:col, 'text-anchor':'middle',
+      'dominant-baseline':'central'}, str));
+  }
+  // how blue a vertex is: W from step 1, X from step 5
+  function lit(k){
+    if(k==='W') return clamp(t);
+    if(k==='X') return clamp(t-4);
+    return 0;
+  }
+  // how far the arrow along hop i has got
+  function hopAt(i){ return clamp(t-(1+i)); }
+  function hopOf(a,b){
+    for(let i=0;i<HOP.length;i++)
+      if((HOP[i][0]===a&&HOP[i][1]===b)||(HOP[i][0]===b&&HOP[i][1]===a)) return i;
+    return -1;
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    const m=el('marker',{id:PFX+'ab', viewBox:'0 0 10 10', refX:9, refY:5,
+      markerWidth:6, markerHeight:6, orient:'auto-start-reverse'});
+    m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:C.blue}));
+    defs.appendChild(m); svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+
+    g.appendChild(el('ellipse',{cx:OV.cx, cy:OV.cy, rx:OV.rx, ry:OV.ry,
+      fill:C.line, 'fill-opacity':0.05, stroke:C.orange, 'stroke-width':2.5,
+      'stroke-dasharray':'9 7'}));
+    tag(g,OV.cx, OV.cy-OV.ry-22, 'the rest of the system', C.orange, 15);
+
+    // the plain network first, so the blue is drawn over it
+    CROSS.forEach(function(q){
+      const to=A[q[0]];
+      g.appendChild(el('line',{x1:XA.x+XA.r, y1:XA.y, x2:to[0]-22, y2:to[1],
+        stroke:C.line, 'stroke-width':3}));
+    });
+    INSIDE.forEach(function(q){
+      const u=A[q[0]], v=A[q[1]];
+      g.appendChild(el('line',{x1:u[0], y1:u[1], x2:v[0], y2:v[1],
+        stroke:C.line, 'stroke-width':3}));
+    });
+
+    // the news, hop by hop
+    HOP.forEach(function(h,i){
+      const k=hopAt(i);
+      if(k<=0) return;
+      const a=pt(h[0]), b=pt(h[1]);
+      const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.sqrt(dx*dx+dy*dy);
+      const ux=dx/L, uy=dy/L;
+      const x0=a[0]+ux*(rOf(h[0])+4), y0=a[1]+uy*(rOf(h[0])+4);
+      const x1=b[0]-ux*(rOf(h[1])+10), y1=b[1]-uy*(rOf(h[1])+10);
+      g.appendChild(el('line',{x1:x0, y1:y0,
+        x2:x0+(x1-x0)*k, y2:y0+(y1-y0)*k,
+        stroke:C.blue, 'stroke-width':5, 'stroke-linecap':'round',
+        'marker-end':'url(#'+PFX+'ab)'}));
+    });
+
+    // the agents
+    Object.keys(A).forEach(function(k){
+      const q=A[k], b=lit(k);
+      g.appendChild(el('circle',{cx:q[0], cy:q[1], r:26,
+        fill:b?C.blue:'#fff', 'fill-opacity':b?0.12*b:1,
+        stroke:b?C.blue:C.muted, 'stroke-width':b?3+2*b:3}));
+      name(g,q[0], q[1], k, b>0.5?C.blue:C.ink);
+    });
+
+    // X
+    const xb=lit('X');
+    g.appendChild(el('circle',{cx:XA.x, cy:XA.y, r:XA.r,
+      fill:xb?C.blue:'#fff', 'fill-opacity':xb?0.12*xb:1,
+      stroke:xb?C.blue:C.muted, 'stroke-width':xb?3+2*xb:3}));
+    name(g,XA.x, XA.y, 'X', xb>0.5?C.blue:C.ink);
+    if(xb>0) SAYS.forEach(function(ln,i){
+      tag(g,205, 182-(SAYS.length-1-i)*24, ln, C.blue, 15.5, 700, xb);
+    });
+
+    if(t<=0) tag(g,OV.cx, 62, 'press Information flow', C.muted, 13.5);
+    readout();
+  }
+  function readout(){
+    const step=Math.min(5, Math.ceil(t));
+    $('status').innerHTML = t<=0 ? ''
+      : (t>=5 ? '<b>X knows</b>' : 'step <b>'+step+'</b> of 5');
+  }
+  function play(){
+    if(anim) cancelAnimationFrame(anim);
+    t=0;
+    const t0=performance.now(), per=750;          // one step
+    (function go(now){
+      t=Math.min(5,(now-t0)/per); draw();
+      if(t<5) anim=requestAnimationFrame(go);
+    })(t0);
+  }
+  $('go').onclick=play;
+  $('clear').onclick=function(){
+    if(anim) cancelAnimationFrame(anim); t=0; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='ls_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d', cut:'#1a5fd0'};
+  const X0=200, X1=1170, R=8;
+  const AY={C:140, U:265, V:385};
+  const AG=['C','U','V'];
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+  const JOG=AY.U-28, TOP=76, BOT=AY.V+58, LEFT=X0-30, RIGHT=X1+30;
+
+  // Nine events. The alarm 2 -> 5 is C's own business; 5 -> 7 is not.
+  // 8 and 9 lie to the right of "after", so they are in the future of the
+  // cut wherever it stands, and each is the far end of a message in flight.
+  const E={1:['U', 8], 2:['C',18], 3:['V',26], 4:['U',36], 5:['C',46],
+           6:['V',58], 7:['U',70], 8:['C',86], 9:['U',94]};
+  const MSG=[[1,2],[2,3],[3,4],[2,5],[4,6],[5,7],[7,8],[6,9]];
+  const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
+  const BEFORE=24, AFTER=78, REST=78;      // the cut starts vertical at 78
+
+  let u=0, anim=null;
+  const cAt=function(){return AFTER+u*(BEFORE-AFTER);};
+  const inPast=function(n){
+    return ag(n)==='C' ? tm(n) < cAt() : tm(n) < REST;
+  };
+  const received=function(){
+    return MSG.filter(function(m){return inPast(m[1]);});
+  };
+  const broken=function(){
+    return received().filter(function(m){return !inPast(m[0]);});
+  };
+  const inTransit=function(){
+    return MSG.filter(function(m){return inPast(m[0]) && !inPast(m[1]);});
+  };
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const j in a) e.setAttribute(j,a[j]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, str);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+  function sans(g,x,y,str,fill,size,weight){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':size||15, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':5, 'paint-order':'stroke'}, str));
+  }
+  const pts=function(a){return a.map(function(p){return p[0]+','+p[1];}).join(' ');};
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    [['ah',C.ink],['ab',C.cut],['ax',C.orange]].forEach(function(j){
+      const m=el('marker',{id:PFX+j[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:j[1]}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+    const xc=xOf(cAt()), xv=xOf(REST);
+    const bad=broken(), isBad={};
+    bad.forEach(function(m){ isBad[m[0]+'-'+m[1]]=1; });
+
+    sans(g,(X0+X1)/2, 30, bad.length
+      ? 'Not a consistent cut: a message is sent from the future (5) to the '+
+        'past (7)'
+      : 'Every message received in the past is sent in the past',
+      bad.length?C.orange:C.teal, 20, 800);
+    sans(g,(X0+X1)/2, 58, 'at 5 C sends to U as well as to itself',
+      C.muted, 15, 700);
+
+    g.appendChild(el('polygon',{points:pts([[LEFT,TOP],[xc,TOP],[xc,JOG],
+      [xv,JOG],[xv,BOT],[LEFT,BOT]]), fill:C.teal, 'fill-opacity':.08}));
+    g.appendChild(el('polygon',{points:pts([[RIGHT,TOP],[xc,TOP],[xc,JOG],
+      [xv,JOG],[xv,BOT],[RIGHT,BOT]]), fill:C.orange, 'fill-opacity':.08}));
+    tag(g,(LEFT+Math.min(xc,xv))/2, TOP+20, 'past', C.teal, 16);
+    tag(g,(Math.max(xc,xv)+RIGHT)/2, TOP+20, 'future', C.orange, 16);
+
+    AG.forEach(function(a){
+      g.appendChild(el('line',{x1:X0, y1:AY[a], x2:X1, y2:AY[a],
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18, y:AY[a],
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+    });
+
+    const hot={}; inTransit().forEach(function(m){ hot[m[0]+'-'+m[1]]=1; });
+    MSG.forEach(function(j){
+      const a=E[j[0]], b=E[j[1]], key=j[0]+'-'+j[1];
+      const wrong=isBad[key], on=hot[key];
+      const col=wrong?C.orange:(on?C.cut:C.ink), wid=wrong?4:(on?3.5:2);
+      const head=wrong?'ax':(on?'ab':'ah');
+      if(a[0]===b[0]){
+        const y=AY[a[0]], x1=xOf(a[1]), x2=xOf(b[1]), h=48;
+        g.appendChild(el('path',{d:'M'+x1+','+(y-R)+' C'+x1+','+(y-h)+' '+
+          x2+','+(y-h)+' '+x2+','+(y-R-2), fill:'none', stroke:col,
+          'stroke-width':wid, 'marker-end':'url(#'+PFX+head+')'}));
+        tag(g,(x1+x2)/2, y-h+2, 'alarm, to itself', col, 12.5);
+      } else {
+        const ya=AY[a[0]], yb=AY[b[0]], d=(yb>ya?1:-1);
+        const x1=xOf(a[1]), y1=ya+d*R, x2=xOf(b[1]), y2=yb-d*R;
+        g.appendChild(el('line',{x1:x1, y1:y1, x2:x2, y2:y2,
+          stroke:col, 'stroke-width':wid, 'marker-end':'url(#'+PFX+head+')'}));
+        if(wrong){
+          const mx=(x1+x2)/2, my=(y1+y2)/2, r=13;
+          g.appendChild(el('line',{x1:mx-r, y1:my-r, x2:mx+r, y2:my+r,
+            stroke:C.orange, 'stroke-width':4}));
+          g.appendChild(el('line',{x1:mx+r, y1:my-r, x2:mx-r, y2:my+r,
+            stroke:C.orange, 'stroke-width':4}));
+          tag(g,mx+2, my+34, 'from the future to the past', C.orange, 13);
+        }
+      }
+    });
+
+    Object.keys(E).forEach(function(n){
+      const hot5=(n==='5');
+      g.appendChild(el('circle',{cx:xOf(tm(n)), cy:AY[ag(n)], r:hot5?R+2:R,
+        fill:hot5?'#fff':C.ink, stroke:hot5?C.orange:'#fff',
+        'stroke-width':hot5?4:2}));
+      tag(g,xOf(tm(n)), AY[ag(n)]-22, n, C.ink, 12.5);
+    });
+
+    [[BEFORE,'before',C.ink],[AFTER,'after',C.orange]].forEach(function(j){
+      const x=xOf(j[0]);
+      g.appendChild(el('line',{x1:x, y1:AY.C-15, x2:x, y2:AY.C+15,
+        stroke:j[2], 'stroke-width':2.5}));
+      tag(g,x, AY.C-34, j[1], j[2], 13.5);
+    });
+
+    g.appendChild(el('polyline',{points:pts([[xc,TOP],[xc,JOG],[xv,JOG],
+      [xv,BOT]]), fill:'none', stroke:bad.length?C.orange:C.cut,
+      'stroke-width':3.5, 'stroke-dasharray':'9 6'}));
+    g.appendChild(el('circle',{cx:xc, cy:AY.C, r:6,
+      fill:bad.length?C.orange:C.cut}));
+    readout();
+  }
+  function readout(){
+    const rc=received(), tr=inTransit(), bad=broken();
+    $('where').innerHTML = (u<0.5 ? '<span class="bad">after</span>'
+                                  : '<span class="ok">before</span>')+
+      ' <span class="none">step 5</span>';
+    $('recv').innerHTML='<b>'+rc.length+'</b> — '+
+      rc.map(function(m){return m[0]+'→'+m[1];}).join(', ')+
+      (tr.length ? ' <span class="chan">('+tr.map(function(m){
+        return m[0]+'→'+m[1];}).join(', ')+' in transit)</span>' : '');
+    $('ok').innerHTML = bad.length
+      ? '<span class="bad">no — '+bad.map(function(m){
+          return m[0]+'→'+m[1];}).join(', ')+
+        ' is sent in the future and received in the past</span>'
+      : '<span class="ok">yes — a consistent cut</span>';
+    $('status').innerHTML = u<0.02 ? ''
+      : (u>0.98 ? (bad.length?'<b>broken</b>':'<b>moved</b>') : 'moving &hellip;');
+  }
+  function glide(to){
+    if(anim) cancelAnimationFrame(anim);
+    const from=u, t0=performance.now(), dur=1500;
+    (function go(t){
+      const p=Math.min(1,(t-t0)/dur);
+      u=from+(to-from)*(p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2);
+      draw();
+      if(p<1) anim=requestAnimationFrame(go); else { u=to; draw(); }
+    })(t0);
+  }
+  $('move').onclick=function(){ glide(u>0.5?0:1); };
+  $('reset').onclick=function(){
+    if(anim) cancelAnimationFrame(anim); u=0; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='gn_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d', cut:'#1a5fd0'};
+  const X0=200, X1=1170, R=8;
+  const AY={C:140, U:265, V:385};
+  const AG=['C','U','V'];
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+  const JOG=AY.U-28, TOP=76, BOT=AY.V+58, LEFT=X0-30, RIGHT=X1+30;
+
+  // the computation of the previous figure, unchanged
+  const E={1:['U', 8], 2:['C',18], 3:['V',26], 4:['U',36], 5:['C',46],
+           6:['V',58], 7:['U',70], 8:['C',86], 9:['U',94]};
+  const MSG=[[1,2],[2,3],[3,4],[2,5],[4,6],[5,7],[7,8],[6,9]];
+  const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
+  // "after" now sits between 5 and 6, and the cut starts vertical at "before"
+  const BEFORE=24, AFTER=52, REST=24;
+
+  let u=0, anim=null;                      // 0 at "before", 1 at "after"
+  const cAt=function(){return BEFORE+u*(AFTER-BEFORE);};
+  const inPast=function(n){
+    return ag(n)==='C' ? tm(n) < cAt() : tm(n) < REST;
+  };
+  const received=function(){
+    return MSG.filter(function(m){return inPast(m[1]);});
+  };
+  const broken=function(){
+    return received().filter(function(m){return !inPast(m[0]);});
+  };
+  const inTransit=function(){
+    return MSG.filter(function(m){return inPast(m[0]) && !inPast(m[1]);});
+  };
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const j in a) e.setAttribute(j,a[j]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, str);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+  function sans(g,x,y,str,fill,size,weight){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':size||15, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':5, 'paint-order':'stroke'}, str));
+  }
+  const pts=function(a){return a.map(function(p){return p[0]+','+p[1];}).join(' ');};
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    [['ah',C.ink],['ab',C.cut]].forEach(function(j){
+      const m=el('marker',{id:PFX+j[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:j[1]}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+    const xc=xOf(cAt()), xv=xOf(REST);
+
+    sans(g,(X0+X1)/2, 30,
+      'Every consistent cut through “before” is a consistent cut '+
+      'through “after”', C.ink, 22, 800);
+    sans(g,(X0+X1)/2, 58,
+      'Every message received in the past is sent in the past',
+      C.teal, 16, 700);
+
+    g.appendChild(el('polygon',{points:pts([[LEFT,TOP],[xc,TOP],[xc,JOG],
+      [xv,JOG],[xv,BOT],[LEFT,BOT]]), fill:C.teal, 'fill-opacity':.08}));
+    g.appendChild(el('polygon',{points:pts([[RIGHT,TOP],[xc,TOP],[xc,JOG],
+      [xv,JOG],[xv,BOT],[RIGHT,BOT]]), fill:C.orange, 'fill-opacity':.08}));
+    tag(g,(LEFT+Math.min(xc,xv))/2, TOP+20, 'past', C.teal, 16);
+    tag(g,(Math.max(xc,xv)+RIGHT)/2, TOP+20, 'future', C.orange, 16);
+
+    AG.forEach(function(a){
+      g.appendChild(el('line',{x1:X0, y1:AY[a], x2:X1, y2:AY[a],
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-18, y:AY[a],
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':19,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+    });
+
+    const hot={}; inTransit().forEach(function(m){ hot[m[0]+'-'+m[1]]=1; });
+    MSG.forEach(function(j){
+      const a=E[j[0]], b=E[j[1]], on=hot[j[0]+'-'+j[1]];
+      const col=on?C.cut:C.ink, wid=on?3.5:2, head=on?'ab':'ah';
+      if(a[0]===b[0]){
+        const y=AY[a[0]], x1=xOf(a[1]), x2=xOf(b[1]), h=48;
+        g.appendChild(el('path',{d:'M'+x1+','+(y-R)+' C'+x1+','+(y-h)+' '+
+          x2+','+(y-h)+' '+x2+','+(y-R-2), fill:'none', stroke:col,
+          'stroke-width':wid, 'marker-end':'url(#'+PFX+head+')'}));
+        tag(g,(x1+x2)/2, y-h+2, 'alarm, to itself', col, 12.5);
+      } else {
+        const ya=AY[a[0]], yb=AY[b[0]], d=(yb>ya?1:-1);
+        g.appendChild(el('line',{x1:xOf(a[1]), y1:ya+d*R, x2:xOf(b[1]), y2:yb-d*R,
+          stroke:col, 'stroke-width':wid, 'marker-end':'url(#'+PFX+head+')'}));
+      }
+    });
+
+    Object.keys(E).forEach(function(n){
+      const hot5=(n==='5');
+      g.appendChild(el('circle',{cx:xOf(tm(n)), cy:AY[ag(n)], r:hot5?R+2:R,
+        fill:hot5?'#fff':C.ink, stroke:hot5?C.orange:'#fff',
+        'stroke-width':hot5?4:2}));
+      tag(g,xOf(tm(n)), AY[ag(n)]-22, n, C.ink, 12.5);
+    });
+
+    [[BEFORE,'before',C.ink],[AFTER,'after',C.orange]].forEach(function(j){
+      const x=xOf(j[0]);
+      g.appendChild(el('line',{x1:x, y1:AY.C-15, x2:x, y2:AY.C+15,
+        stroke:j[2], 'stroke-width':2.5}));
+      tag(g,x, AY.C-34, j[1], j[2], 13.5);
+    });
+
+    g.appendChild(el('polyline',{points:pts([[xc,TOP],[xc,JOG],[xv,JOG],
+      [xv,BOT]]), fill:'none', stroke:C.cut, 'stroke-width':3.5,
+      'stroke-dasharray':'9 6'}));
+    g.appendChild(el('circle',{cx:xc, cy:AY.C, r:6, fill:C.cut}));
+
+    tag(g,xOf(46), AY.C+30, 'at 5 C receives only its own alarm', C.orange, 13);
+    readout();
+  }
+  function readout(){
+    const rc=received(), tr=inTransit(), bad=broken();
+    $('where').innerHTML = (u<0.5 ? '<span class="ok">before</span>'
+                                  : '<span class="bad">after</span>')+
+      ' <span class="none">step 5</span>';
+    $('recv').innerHTML='<b>'+rc.length+'</b> — '+
+      rc.map(function(m){return m[0]+'→'+m[1];}).join(', ')+
+      (tr.length ? ' <span class="chan">('+tr.map(function(m){
+        return m[0]+'→'+m[1];}).join(', ')+' in transit)</span>' : '');
+    $('ok').innerHTML = bad.length
+      ? '<span class="bad">no</span>'
+      : '<span class="ok">yes — a consistent cut</span>';
+    $('status').innerHTML = u<0.02 ? '' : (u>0.98 ? '<b>moved</b>' : 'moving &hellip;');
+  }
+  function glide(to){
+    if(anim) cancelAnimationFrame(anim);
+    const from=u, t0=performance.now(), dur=1500;
+    (function go(t){
+      const p=Math.min(1,(t-t0)/dur);
+      u=from+(to-from)*(p<0.5?2*p*p:1-Math.pow(-2*p+2,2)/2);
+      draw();
+      if(p<1) anim=requestAnimationFrame(go); else { u=to; draw(); }
+    })(t0);
+  }
+  $('move').onclick=function(){ glide(u>0.5?0:1); };
+  $('reset').onclick=function(){
+    if(anim) cancelAnimationFrame(anim); u=0; draw(); };
+  draw();
+})();
+</script>
+
+<style>
+  .pslide{display:contents}
+  .presentbar{position:fixed; right:16px; bottom:14px; z-index:60;
+    display:flex; gap:8px; align-items:center}
+  .presentbar button{font:600 13px var(--sans,sans-serif); color:var(--ink,#1a1a2e);
+    background:#fff; border:1px solid var(--line,#ddd8cd); border-radius:8px;
+    padding:6px 12px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .presentbar button:hover{border-color:var(--muted,#6f7583)}
+  .presentbar .pnum{font:600 12px var(--mono,monospace); color:var(--muted,#6f7583)}
+
+  body.present{overflow:hidden}
+  body.present .wrap{max-width:none; padding:0; margin:0}
+  body.present .pslide{display:none}
+  body.present .pslide.on{
+    display:block; position:fixed; inset:0; overflow:auto;
+    padding:5vh 6vw 9vh; font-size:clamp(17px,1.55vw,25px);
+  }
+  /* Everything inside a shown chunk grows with it. */
+  body.present .pslide.on p,
+  body.present .pslide.on li{font-size:1em; line-height:1.5; max-width:34em}
+  body.present .pslide.on h1{font-size:2.5em}
+  body.present .pslide.on h2{font-size:1.9em; margin-top:0}
+  body.present .pslide.on h3{font-size:1.35em}
+  body.present .pslide.on h4{font-size:1.05em; margin:.8em 0 .3em}
+  body.present .pslide.on figure.fig{margin:1.4vh 0; padding:14px 16px 12px}
+  /* A figure already breaks out of the text column; in present mode the
+     column is the screen, so the trick has to be switched off or it
+     shifts the figure sideways. */
+  body.present .pslide.on figure.fig.wideout{
+    width:auto; max-width:none; position:static; left:auto; transform:none}
+  body.present .pslide.on figcaption{font-size:.62em; line-height:1.5}
+  body.present .pslide.on .task{font-size:.9em}
+  body.present .presentbar{background:rgba(250,248,243,.9); border-radius:10px;
+    padding:4px 6px}
+</style>
+<script>
+(function(){
+  const wrap=document.querySelector('.wrap');
+  if(!wrap) return;
+
+  // ── group the page's own children into chunks ──────────────────────
+  // A heading, a figure or a task starts a chunk; a run of prose longer
+  // than five blocks starts one too, so no chunk overflows the screen.
+  const STARTS=el=>{
+    const t=el.tagName;
+    return t==='HEADER'||t==='H1'||t==='H2'||t==='H3'||t==='FIGURE'||
+           el.classList.contains('task');
+  };
+  const ALONE=el=>el.tagName==='FIGURE'||el.classList.contains('task');
+
+  const kids=[...wrap.children];
+  const groups=[]; let cur=null;
+  for(const el of kids){
+    if(!cur || STARTS(el) || cur.length>=5 || (cur.length&&ALONE(cur[cur.length-1])))
+      groups.push(cur=[]);
+    cur.push(el);
+  }
+  const slides=groups.filter(g=>g.length).map(g=>{
+    const d=document.createElement('div');
+    d.className='pslide';
+    wrap.insertBefore(d,g[0]);
+    g.forEach(el=>d.appendChild(el));
+    return d;
+  });
+
+  // ── the bar ────────────────────────────────────────────────────────
+  const bar=document.createElement('div');
+  bar.className='presentbar';
+  bar.innerHTML='<span class="pnum" hidden></span>'+
+                '<button type="button">Present</button>';
+  document.body.appendChild(bar);
+  const num=bar.querySelector('.pnum'), btn=bar.querySelector('button');
+
+  let on=false, i=0;
+  function show(){
+    slides.forEach((s,n)=>s.classList.toggle('on', on && n===i));
+    num.hidden=!on;
+    num.textContent=(i+1)+' / '+slides.length;
+    btn.textContent=on?'Exit':'Present';
+    // A canvas that was hidden may need a nudge to repaint.
+    if(on) window.dispatchEvent(new Event('resize'));
+  }
+  function enter(){ on=true;  document.body.classList.add('present');    show(); }
+  function leave(){ on=false; document.body.classList.remove('present');
+                    show(); slides[i].scrollIntoView({block:'start'}); }
+  btn.onclick=()=>on?leave():enter();
+
+  addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if(!on){ if(e.key==='p'||e.key==='P'){ e.preventDefault(); enter(); } return; }
+    if(e.key==='Escape'){ e.preventDefault(); leave(); }
+    else if(['ArrowRight',' ','PageDown','n'].includes(e.key)){
+      e.preventDefault(); i=Math.min(slides.length-1,i+1); show(); }
+    else if(['ArrowLeft','PageUp','b'].includes(e.key)){
+      e.preventDefault(); i=Math.max(0,i-1); show(); }
+    else if(e.key==='Home'){ e.preventDefault(); i=0; show(); }
+    else if(e.key==='End'){ e.preventDefault(); i=slides.length-1; show(); }
+  });
+
+  show();
+})();
+</script>
+</body>
+</html>
