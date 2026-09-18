@@ -622,6 +622,54 @@ is received only after it is sent</strong> are system computations.
   </p>
 
 
+  <figure class="fig wideout">
+    <svg id="mk_g" viewBox="0 0 1240 430" role="img"
+         aria-label="The same computation as figure 6, with markers leaving X when X takes its local snapshot"></svg>
+
+    <div class="ctrls">
+      <button id="mk_step" class="primary">Next step</button>
+      <button id="mk_reset">Reset</button>
+      <span class="status" id="mk_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Snapshots taken</span><span id="mk_taken"></span></div>
+      <div><span class="k">Markers in transit</span><span id="mk_mk"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 7. The markers.</b>
+      The computation of Figure 6 again, and this time the algorithm is shown
+      running on it. Nothing is marked to begin with: no snapshots, no
+      S_init, no S_fini.
+      Press <i>Next step</i>. X takes its local snapshot &mdash; the red ring
+      &mdash; and that moment is <b>S_init</b>, because X is the first to
+      record. By the first rule X puts a <b>marker</b> on each of its
+      outboxes, and both are now on their way: one along the connection to Z,
+      one along the connection to Y. Neither has arrived.
+      Watch where each is headed. The marker to Z lands exactly where Z takes
+      its own snapshot, because that is what the arrival will make Z do. The
+      marker to Y lands to the right of where Y records.
+      <b>Step 2.</b> The marker reaches Z, and Z records &mdash; that is rule
+      2: an agent that has not yet recorded does so when a marker arrives. By
+      rule 1 Z then puts a marker on each of its own outboxes, one heading for
+      Y and one for X. X has recorded already, so that one will change nothing
+      when it lands.
+      <b>Step 3.</b> Z's marker reaches Y, Y records, and that moment is
+      <b>S_fini</b> &mdash; the last agent to record is where the algorithm
+      finishes. Y sends markers of its own in turn, and both of them will
+      arrive at agents that have already recorded.
+      The four markers that land to the right of <b>S_fini</b> are drawn all
+      the way to the timeline they land on, at no particular point &mdash;
+      when they arrive changes nothing, because the agent has recorded
+      already, so the picture does not pretend to know when that was.
+      By the end, every agent has recorded and every connection has carried a
+      marker. Notice what the markers did <i>not</i> do: no client computation
+      changed, and no message of the computation moved. The snapshot was taken
+      around it.
+    </figcaption>
+  </figure>
+
   <h3>Proof that messages received in the past are sent in the past</h3>
   <p>
     Let m be a message that agent X receives from inbox b in the past, and let
@@ -660,6 +708,295 @@ is received only after it is sent</strong> are system computations.
   forever; it does not require that clocks be synchronized.
 </p>
 
+
+<h2>Logical clocks</h2>
+
+<p>
+  The snapshot algorithm never needed a clock. But the pictures in this class
+  keep asking a question a clock would answer: given a computation, can we put
+  a number on every event so that the numbers only ever increase along the
+  arrows? Not real time &mdash; there is none to be had &mdash; but a
+  <b>logical</b> time.
+</p>
+
+<p class="key">
+  <span class="lead-in">Logical timestamps</span>
+  Assign a number t(e) to every event e so that for every edge
+  (e, e&prime;) of the dataflow graph &mdash; every agent step and every
+  message &mdash; <strong>t(e) &lt; t(e&prime;)</strong>.
+</p>
+
+<p>
+  One consequence is the property this class has been circling: for any number
+  t, every message received before t was sent before t. A cut taken at a
+  logical time is a consistent cut, by construction.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="lc_g" viewBox="0 0 1240 430" role="img"
+         aria-label="The same computation with a logical timestamp assigned to each event, revealed one value at a time"></svg>
+
+    <div class="ctrls">
+      <button id="lc_step" class="primary">Next step</button>
+      <button id="lc_reset">Reset</button>
+      <span class="status" id="lc_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Assigned so far</span><span id="lc_done"></span></div>
+      <div><span class="k">Still unlabelled</span><span id="lc_todo"></span></div>
+      <div><span class="k">t(e) &lt; t(e&prime;) on every edge?</span><span id="lc_ok"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 8. Logical time on the same computation.</b>
+      The computation of the previous two figures, with no snapshot and no
+      markers &mdash; just the events and the messages. The three initial
+      events start at <b>0</b>. Press <i>Next timestamp</i> and the events with
+      logical time 1 are labelled, then 2, and so on.
+      An event's timestamp is one more than the largest of its inputs, and it
+      has two kinds of input: the previous step of its own agent, and the
+      message it took. So <code>x2</code> is 1 because it follows
+      <code>x1</code> and takes <code>m3</code> from <code>z1</code>, both at 0.
+      The values do not come out in tidy rows. <code>x3</code> and
+      <code>z3</code> are 2, but <code>y3</code> is <b>3</b> &mdash; it takes
+      <code>m8</code> from <code>z3</code>, so it cannot share a number with
+      it &mdash; and <code>x4</code> is 4, because it takes
+      <code>m7</code> from <code>y3</code>. A logical timestamp measures the
+      longest chain of causes behind an event, not its position in a queue.
+      Two steps follow. First, a <span style="color:#d13d0e"><b>dotted
+      red</b></span> timestamp of <b>3</b> on X's line, between
+      <code>x3</code> and <code>x4</code>: no event of X carries time 3, but
+      the time is there all the same, and it is a point on X's line like any
+      other. Every logical time is such a point on every agent's line, and
+      the three of them together are a <b>cut</b>.
+      Then the cut at <b>t = 2.5</b>, drawn through the three gaps between
+      the events with t &le; 2 and those with t &ge; 3. It is a consistent
+      cut, and not by luck: any message it crosses was sent at a time below
+      2.5 and received at a time above, because t increases along every
+      arrow. <code>m6</code> and <code>m8</code> are the two it crosses.
+      So every logical time gives a consistent cut, for nothing. That is the
+      next class.
+    </figcaption>
+  </figure>
+
+<h3>Clocks that drift</h3>
+
+<p>
+  Where do the numbers come from? Each agent has a clock, and no two clocks
+  agree. Here X and Y have accurate ones, so for them a timestamp is simply
+  the physical distance from the start. Z's clock is slow &mdash; it runs at
+  half speed &mdash; and a slow clock would break the rule that time
+  increases along every message: Z would stamp an event with a time earlier
+  than the message that caused it.
+</p>
+
+<p>
+  So an agent does not merely read its clock. It <b>sets it forward</b>. If a
+  message arrives carrying time 3.0 while Z's clock reads 2.3, Z moves its own
+  clock to <b>3.1</b> and ticks on from there, slowly, until the next message
+  pushes it again. The timestamp of an event is then always just what the
+  agent's own clock reads; the clock is simply nudged whenever a message finds
+  it behind. And the nudge is <b>continuous</b> &mdash; the clock sweeps up
+  through 2.4, 2.5, 2.6 &mdash; which matters in a moment: it means that for
+  every time t there is a point on every agent's line where that agent's clock
+  reads t.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="ph_g" viewBox="0 0 1240 470" role="img"
+         aria-label="The same computation laid out on a physical time axis, with the three first events aligned, and Z's slow clock forced forward by the messages it receives"></svg>
+
+    <div class="ctrls">
+      <button id="ph_step" class="primary">Next event</button>
+      <button id="ph_reset">Reset</button>
+      <span class="status" id="ph_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Latest event</span><span id="ph_ev"></span></div>
+      <div><span class="k">Its logical time</span><span id="ph_t"></span></div>
+      <div><span class="k">Z&rsquo;s clock</span><span id="ph_drift"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 9. Physical time, and a clock that drifts.</b>
+      The same computation, now laid along an axis of <b>physical time</b>, and
+      the three first events aligned on one vertical: they happen together, at
+      0. Press <i>Next event</i> and the events appear from left to right, each
+      with its logical timestamp.
+      X and Y keep accurate clocks, so for their events the timestamp is the
+      distance from 0 &mdash; <code>x3</code> at 5.0, <code>y3</code> at 5.5.
+      Z's clock runs at half speed, and twice a message catches it out. At
+      <code>z3</code>, physical time 4.6, Z's clock reads <b>2.3</b>; the
+      message <code>m4</code> it takes there carries 3.0, so Z <b>sets its
+      clock forward to 3.1</b> and stamps the event 3.1. It then ticks on at
+      half speed, reaching <b>4.3</b> by physical time 7 (3.1 plus 1.2), where
+      <code>z4</code> takes <code>m6</code> from <code>x3</code>; that message
+      carries 5.0, so the clock is set forward again, to <b>5.1</b>. The
+      <span style="color:#d13d0e"><b>orange</b></span> line under those two
+      boxes is the jump: what Z's clock read an instant before, and what Z set
+      it to.
+      That is the whole mechanism: a clock ticks along on its own, and a
+      message drags it forward. Nobody knows the physical time, and nothing
+      needs to.
+    </figcaption>
+  </figure>
+
+<h3>A snapshot at a logical time</h3>
+
+<p>
+  Now put the two ideas together. Name a time, and every agent records its
+  state at the moment its own clock passes that time. There is always such a
+  moment, because a clock moves continuously, even while it is being set
+  forward. No coordination, no markers &mdash; and what comes out is a
+  consistent cut, because time only ever increases along a message.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="sn_g" viewBox="0 0 1240 470" role="img"
+         aria-label="Snapshots taken at logical times 1.5 and 2.5, each a cut that runs vertically through X and Y and sideways to Z"></svg>
+
+    <div class="ctrls">
+      <button id="sn_a" class="primary">Take snapshot at logical time 1.5</button>
+      <button id="sn_b">Take snapshot at logical time 2.5</button>
+      <button id="sn_clear">Clear</button>
+      <span class="status" id="sn_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">In the past</span><span id="sn_past"></span></div>
+      <div><span class="k">In the channels</span><span id="sn_chan"></span></div>
+      <div><span class="k">A consistent cut?</span><span id="sn_ok"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 10. Snapshots at a logical time.</b>
+      The computation of the previous figure, every timestamp in place. Press
+      either button and the cut for that logical time is drawn: down through X
+      and Y, where the clocks are accurate and the cut is <b>vertical</b>, then
+      <b>sideways</b> to meet Z later in physical time, because Z's clock is
+      slow and reaches that reading afterwards.
+      At <b>1.5</b> the past is <code>x1, y1, z1, z2</code> and three messages
+      are in the channels. At <b>2.5</b> <code>x2</code> joins the past and
+      <code>m3</code> has been delivered. Both are consistent cuts, and not by
+      accident: a message leaves at one time and arrives at a greater one, so
+      no cut at a fixed time can have a message arriving in its past that was
+      sent in its future.
+      The second one is worth a second look. Z's clock ticks up to 2.3 and is
+      then set forward to 3.1, so it reads 2.5 <i>during that adjustment</i>,
+      at the instant <code>m4</code> arrives &mdash; and that is exactly where
+      Z records, a hair before <code>z3</code>. Nothing is missing and nothing
+      is special-cased: because a clock sweeps through the readings it skips,
+      every time has its point on every line, and each agent finds its own by
+      watching one number of its own.
+    </figcaption>
+  </figure>
+
+<h3>Deadlock, which is termination of a part</h3>
+
+<p>
+  A deadlocked system is usually not a system that has stopped. It is one
+  where most of the machinery is humming along and some subset of it has
+  quietly died: a set of agents each waiting for a message that only another
+  member of the set could send. Nothing in any one agent's own state says so.
+  Each of them sees only that it is waiting, which is the most ordinary thing
+  in the world.
+</p>
+
+<p>
+  Here is the smallest example worth drawing. Three agents in a ring, each
+  with two inboxes and two outboxes, each running this program:
+</p>
+
+<pre style="margin:0 0 18px; padding:14px 16px; background:rgba(26,26,46,.035);
+  border:1px solid var(--line); border-radius:10px;
+  font:13px/1.75 var(--mono); color:var(--ink); overflow-x:auto">loop:
+    t = receive(in1)     # a token, from the agent behind me in the ring
+    m = receive(in2)     # a data item, from the pipeline
+    send(out1, t)        # pass the token on, round the ring
+    send(out2, m)        # pass the data on, down the pipeline</pre>
+
+<p>
+  Each <code>in1</code> is fed by the previous agent's <code>out1</code>, so
+  channel 1 closes into a ring: u &rarr; v &rarr; w &rarr; u. Each
+  <code>in2</code> is fed by the previous agent's <code>out2</code>, so
+  channel 2 is a straight pipeline: src1 &rarr; u &rarr; v &rarr; w &rarr;
+  snk1. A second strand, src2 &rarr; x &rarr; snk2, runs alongside and shares
+  nothing with the first, so that there is always something on the screen that
+  the trouble does not touch.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="dl_g" viewBox="0 0 1240 470" role="img"
+         aria-label="Three agents in a ring fed by a pipeline, shown deadlocked, then alive but accumulating tokens, then fully terminated"></svg>
+
+    <div class="ctrls">
+      <button id="dl_c1" class="primary">Case 1: deadlock</button>
+      <button id="dl_c2">Case 2: nothing leaves the ring</button>
+      <button id="dl_c3">Case 3: termination</button>
+      <button id="dl_pause">Pause</button>
+      <span class="status" id="dl_status"></span>
+    </div>
+
+    <div class="legend">
+      <span><i>&#9679;</i> a token, on channel 1</span>
+      <span><i>&#9632;</i> a data item, on channel 2</span>
+      <span><i style="color:#00947d">green</i> can still take a step</span>
+      <span><i style="color:#d13d0e">red</i> will never take another step</span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Waiting</span><span id="dl_wait"></span></div>
+      <div><span class="k">In the channels</span><span id="dl_chan"></span></div>
+      <div><span class="k">Verdict</span><span id="dl_ok"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 11. Deadlock, and two things it is not.</b>
+      The graph is the same in all three cases. Only the global state differs.
+      <b>Case 1.</b> No token exists anywhere, so all three agents block at
+      <code>receive(in1)</code> and the three ring channels stay empty for
+      ever. src1 keeps sending, and its messages pile up in
+      <code>u:in2</code>: u has work in hand and cannot look at it, because it
+      is waiting on the wrong inbox. u, v, w and snk1 turn
+      <span style="color:#d13d0e"><b>red</b></span> &mdash; nothing can ever
+      reach them again &mdash; while src2, x and snk2 run on, untouched. That
+      is the sentence worth keeping: a deadlock is not a system stopping, it is
+      a <i>part</i> of a system terminating while the rest works normally. And
+      the part is exactly what a predicate over a subset names: these agents,
+      all waiting, with every channel between them empty.
+      <b>Case 2.</b> Add one edge, <code>src1 &rarr; u:in1</code>, and the
+      deadlock is gone: tokens arrive, everything moves, data reaches snk1.
+      But a token only ever leaves an agent on <code>out1</code>, back into
+      the ring, so every token src1 injects stays in the ring for ever and
+      their number grows without bound. Nothing is stuck, nothing has
+      terminated, and the system is still wrong. The repair is to break the
+      cycle: let w send every N&nbsp;th token on <code>out2</code> instead, and
+      the population stops growing. Notice that no single snapshot can show
+      this, because no single state is bad. It takes two, and the observation
+      that the count went up in between.
+      <b>Case 3.</b> Both sources have finished. The figure winds down: the
+      last data items flow through to snk1 and snk2, each agent ends up
+      holding a token and blocking at <code>receive(in2)</code>, and every
+      channel empties. Now everything is red. That is true termination &mdash;
+      every agent waiting, every channel empty &mdash; and unlike case 2 it is
+      <b>stable</b>: once true it stays true, which is exactly why one
+      snapshot can settle it.
+      The colours are not asserted here. The figure computes them, turning a
+      component red only when it can prove that no message will ever reach it
+      again. Look at what that proof needs: the contents of every channel and
+      the state of every agent, at one instant. No agent has that, and that is
+      the whole argument for taking a snapshot.
+    </figcaption>
+  </figure>
+
+<p>
+  Each of the three verdicts &mdash; a dead subset, an unbounded population,
+  a terminated system &mdash; is a property of a <b>global state</b>, and none
+  of the eight components can evaluate any of them alone. That is what the
+  next figures are for.
+</p>
 
 </div>
 
@@ -1462,7 +1799,7 @@ is received only after it is sent</strong> are system computations.
            z1:['Z',22], z2:['Z',48], z3:['Z',58], z4:['Z',80]};
   const MSG=[['m1','x1','y2'],['m2','y1','z2'],['m3','z1','x2'],
              ['m4','y2','z3'],['m5','z2','x3'],['m6','x3','z4'],
-             ['m7','y3','x4']];
+             ['m7','y3','x4'],['m8','z3','y3']];
   const CUT={X:30, Y:75, Z:72};
   const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
   const FIRST=Math.min(CUT.X,CUT.Y,CUT.Z), LAST=Math.max(CUT.X,CUT.Y,CUT.Z);
@@ -2074,6 +2411,1161 @@ is received only after it is sent</strong> are system computations.
     if(anim) cancelAnimationFrame(anim);
     t=(+$('scrub').value)/1000; draw(); };
   draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='mk_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const X0=210, X1=1180, R=7;
+  const AY={X:120, Y:215, Z:310};
+  const AGENTS=['X','Y','Z'];
+  const ay=function(a){return AY[a];};
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+
+  // the computation of figure 6, unchanged
+  const E={x1:['X',10], x2:['X',34], x3:['X',54], x4:['X',90],
+           y1:['Y',16], y2:['Y',38], y3:['Y',70],
+           z1:['Z',22], z2:['Z',48], z3:['Z',58], z4:['Z',80]};
+  const MSG=[['m1','x1','y2'],['m2','y1','z2'],['m3','z1','x2'],
+             ['m4','y2','z3'],['m5','z2','x3'],['m6','x3','z4'],
+             ['m7','y3','x4'],['m8','z3','y3']];
+  const CUT={X:30, Y:75, Z:72};
+  const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
+
+  // Who records, and at which step of the animation. X records on its own;
+  // Z records because X's marker arrives; Y records because Z's does.
+  const SNAP=[{a:'X', t:CUT.X, step:1},
+              {a:'Z', t:CUT.Z, step:2},
+              {a:'Y', t:CUT.Y, step:3}];
+  // Every marker: where it starts, where it lands, the step at which it is
+  // sent, and the step at which it arrives (null: still on its way when the
+  // animation ends).
+  const MK=[
+    {f:['X',CUT.X], t:['Z',CUT.Z], born:1, done:2, why:'Z records when this arrives'},
+    {f:['X',CUT.X], t:['Y',88],    born:1, done:null, why:'Y has already recorded'},
+    {f:['Z',CUT.Z], t:['Y',CUT.Y], born:2, done:3, why:'Y records when this arrives'},
+    {f:['Z',CUT.Z], t:['X',84],    born:2, done:null, why:'X has already recorded'},
+    {f:['Y',CUT.Y], t:['X',92],    born:3, done:null, why:''},
+    {f:['Y',CUT.Y], t:['Z',90],    born:3, done:null, why:''}
+  ];
+  const FLY=0.55;                          // how far along a marker in flight is
+  const LAST_STEP=3;
+  const NOTE=['press Next step',
+              'X has recorded; its markers are in flight',
+              'the marker reached Z, so Z records and sends markers of its own',
+              'the marker reached Y, so Y records — that moment is S_fini '+
+              '— and Y sends markers too'];
+
+  let step=0, q=1, anim=null;
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, str);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+  // Within a step the arrival comes first, then the recording and the new
+  // markers -- which is the order the algorithm does them in.
+  const land=function(){return Math.min(1, q/0.6);};
+  const after=function(){return Math.max(0,(q-0.6)/0.4);};
+  const bornOp=function(n){
+    return step>n ? 1 : (step===n ? (n===1?Math.min(1,q*2):after()) : 0);
+  };
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    [['ah',C.ink],['ao',C.orange]].forEach(function(j){
+      const m=el('marker',{id:PFX+j[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:j[1]}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+
+    // S_init when X records, S_fini when Y does
+    [[1,CUT.X,'S_init'],[3,CUT.Y,'S_fini']].forEach(function(j){
+      const o=bornOp(j[0]);
+      if(o<=0) return;
+      g.appendChild(el('line',{x1:xOf(j[1]), y1:56, x2:xOf(j[1]), y2:356,
+        stroke:C.muted, 'stroke-width':2, opacity:o}));
+      tag(g,xOf(j[1]), 40, j[2], C.ink, 14, 700, o);
+    });
+
+    AGENTS.forEach(function(a){
+      const y=ay(a);
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y,
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-16, y:y,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':18,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+    });
+
+    MSG.forEach(function(m){
+      const a=E[m[1]], b=E[m[2]];
+      const ya=ay(a[0]), yb=ay(b[0]), d=(yb>ya?1:-1);
+      g.appendChild(el('line',{x1:xOf(a[1]), y1:ya+d*R, x2:xOf(b[1]), y2:yb-d*R,
+        stroke:C.ink, 'stroke-width':2, 'marker-end':'url(#'+PFX+'ah)'}));
+      tag(g,(xOf(a[1])+xOf(b[1]))/2+15,(ay(a[0])+ay(b[0]))/2, m[0], C.muted, 12);
+    });
+
+    Object.keys(E).forEach(function(n){
+      g.appendChild(el('circle',{cx:xOf(tm(n)), cy:ay(ag(n)), r:R,
+        fill:C.ink, stroke:'#fff', 'stroke-width':2}));
+      tag(g,xOf(tm(n)), ay(ag(n))-20, n, C.ink, 12, 700);
+    });
+
+    // The markers. One that causes a snapshot is shown in flight until it
+    // lands -- the dot is the message and the dashed part is the road ahead.
+    // One that lands past S_fini changes nothing when it arrives, so it is
+    // simply drawn all the way to its own arbitrary point on that timeline.
+    MK.forEach(function(k){
+      const o=bornOp(k.born);
+      if(o<=0) return;
+      const sy=ay(k.f[0]), ey=ay(k.t[0]), d=(ey>sy?1:-1);
+      const x0=xOf(k.f[1]), y0=sy+d*11, x1=xOf(k.t[1]), y1=ey-d*R;
+      const causal=(k.done!=null);
+      const f = causal
+        ? (step>k.done ? 1 : (step===k.done ? FLY+(1-FLY)*land() : FLY))
+        : o;                                 // a full line, drawn as it is sent
+      if(causal && f<1)
+        g.appendChild(el('line',{x1:x0, y1:y0, x2:x1, y2:y1,
+          stroke:C.orange, 'stroke-width':2, 'stroke-dasharray':'4 6',
+          opacity:.45*o}));
+      g.appendChild(el('line',{x1:x0, y1:y0, x2:x0+(x1-x0)*f, y2:y0+(y1-y0)*f,
+        stroke:C.orange, 'stroke-width':causal?3.5:3,
+        'marker-end':'url(#'+PFX+'ao)', opacity:o}));
+      if(causal){
+        g.appendChild(el('circle',{cx:x0+(x1-x0)*f, cy:y0+(y1-y0)*f, r:8,
+          fill:C.orange, stroke:'#fff', 'stroke-width':2, opacity:o}));
+        if(step===k.born)
+          tag(g,x0+(x1-x0)*f, y0+(y1-y0)*f-20, 'marker', C.orange, 12, 700, o);
+      }
+      if(k.why && (k.done==null || step<k.done))
+        tag(g,x1, y1+(d>0?24:-22), k.why, C.muted, 12.5, 700, o);
+    });
+
+    // the snapshots
+    SNAP.forEach(function(sn){
+      const o=bornOp(sn.step);
+      if(o<=0) return;
+      g.appendChild(el('circle',{cx:xOf(sn.t), cy:ay(sn.a), r:11, fill:'none',
+        stroke:C.orange, 'stroke-width':4, opacity:o}));
+      tag(g,xOf(sn.t), ay(sn.a)-32, sn.a+' records', C.orange, 12.5, 700, o);
+    });
+
+    tag(g,(X0+X1)/2, 404, NOTE[step], C.muted, 14);
+    readout();
+  }
+  function readout(){
+    const taken=SNAP.filter(function(sn){return step>=sn.step;});
+    const flying=MK.filter(function(k){
+      return step>=k.born && (k.done==null || step<k.done);});
+    $('taken').innerHTML = taken.length
+      ? '<span class="ok">'+taken.map(function(sn){
+          return sn.a+' at '+sn.t;}).join(', ')+'</span>'
+      : '<span class="none">none yet</span>';
+    $('mk').innerHTML = flying.length
+      ? '<span class="chan">'+flying.map(function(k){
+          return k.f[0]+'→'+k.t[0];}).join(', ')+'</span>'
+      : '<span class="none">none</span>';
+    $('status').innerHTML = step
+      ? '<b>step '+step+'</b> of '+LAST_STEP : '';
+  }
+  function play(n){
+    step=n;
+    if(anim) cancelAnimationFrame(anim);
+    q=0;
+    const t0=performance.now(), dur=1600;
+    (function go(t){
+      q=Math.min(1,(t-t0)/dur); draw();
+      if(q<1) anim=requestAnimationFrame(go);
+    })(t0);
+  }
+  $('step').onclick=function(){ if(step<LAST_STEP) play(step+1); };
+  $('reset').onclick=function(){
+    if(anim) cancelAnimationFrame(anim); step=0; q=1; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='lc_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const X0=210, X1=1180, R=7;
+  const AY={X:120, Y:215, Z:310};
+  const AGENTS=['X','Y','Z'];
+  const ay=function(a){return AY[a];};
+  const xOf=function(t){return X0+t/100*(X1-X0);};
+
+  // the computation of the previous two figures, message m8 included
+  const E={x1:['X',10], x2:['X',34], x3:['X',54], x4:['X',90],
+           y1:['Y',16], y2:['Y',38], y3:['Y',70],
+           z1:['Z',22], z2:['Z',48], z3:['Z',58], z4:['Z',80]};
+  const MSG=[['m1','x1','y2'],['m2','y1','z2'],['m3','z1','x2'],
+             ['m4','y2','z3'],['m5','z2','x3'],['m6','x3','z4'],
+             ['m7','y3','x4'],['m8','z3','y3']];
+  const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
+
+  // every edge of the dataflow graph: each message, and each agent step
+  const EDGE=MSG.map(function(m){return [m[1],m[2]];});
+  AGENTS.forEach(function(a){
+    const mine=Object.keys(E).filter(function(n){return ag(n)===a;})
+                             .sort(function(p,q){return tm(p)-tm(q);});
+    for(let i=0;i<mine.length-1;i++) EDGE.push([mine[i],mine[i+1]]);
+  });
+  // t(e) = one more than the largest of e's inputs
+  const T={};
+  Object.keys(E).sort(function(p,q){return tm(p)-tm(q);}).forEach(function(n){
+    const pre=EDGE.filter(function(e){return e[1]===n;})
+                  .map(function(e){return T[e[0]];});
+    T[n]=pre.length ? Math.max.apply(null,pre)+1 : 0;
+  });
+  const MAXT=Math.max.apply(null, Object.keys(T).map(function(n){return T[n];}));
+  const at=function(v){
+    return Object.keys(T).filter(function(n){return T[n]===v;})
+                         .sort(function(p,q){return tm(p)-tm(q);});
+  };
+
+  // Two steps follow the timestamps: a logical time that falls between two
+  // events of one agent, and then the cut at a time between two integers.
+  const MARK={a:'X', at:78, t:3};          // logical time 3, on X's line
+  const CUT={X:68, Y:54, Z:69}, CUTT=2.5;  // the cut at logical time 2.5
+  let show=0, q=1, anim=null;              // timestamps 0..show are visible
+  const LASTSTEP=function(){return MAXT+2;};
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, str);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    const m=el('marker',{id:PFX+'ah', viewBox:'0 0 10 10', refX:9, refY:5,
+      markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+    m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:C.ink}));
+    defs.appendChild(m); svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+
+    AGENTS.forEach(function(a){
+      const y=ay(a);
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y,
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:X0-16, y:y,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':18,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+    });
+
+    MSG.forEach(function(k){
+      const a=E[k[1]], b=E[k[2]];
+      const ya=ay(a[0]), yb=ay(b[0]), d=(yb>ya?1:-1);
+      g.appendChild(el('line',{x1:xOf(a[1]), y1:ya+d*R, x2:xOf(b[1]), y2:yb-d*R,
+        stroke:C.ink, 'stroke-width':2, 'marker-end':'url(#'+PFX+'ah)'}));
+      tag(g,(xOf(a[1])+xOf(b[1]))/2+15,(ay(a[0])+ay(b[0]))/2, k[0], C.muted, 12);
+    });
+
+    Object.keys(E).forEach(function(n){
+      g.appendChild(el('circle',{cx:xOf(tm(n)), cy:ay(ag(n)), r:R,
+        fill:C.ink, stroke:'#fff', 'stroke-width':2}));
+      tag(g,xOf(tm(n)), ay(ag(n))-20, n, C.ink, 12, 700);
+    });
+
+    // the timestamps, in a small box under each event
+    Object.keys(E).forEach(function(n){
+      const v=T[n];
+      if(v>show) return;
+      const o=(v===show)?Math.min(1,q*2):1;
+      const x=xOf(tm(n)), y=ay(ag(n))+26;
+      g.appendChild(el('rect',{x:x-13, y:y-12, width:26, height:24, rx:7,
+        fill:C.teal, 'fill-opacity':.14*o, stroke:C.teal, 'stroke-width':2,
+        opacity:o}));
+      tag(g,x, y, String(v), C.teal, 14, 700, o);
+    });
+
+    // a logical time that no event of X carries: it falls between x3 and x4
+    if(show>=MAXT+1){
+      const o=(show===MAXT+1)?Math.min(1,q*2):1;
+      const x=xOf(MARK.at), y=ay(MARK.a);
+      g.appendChild(el('line',{x1:x, y1:y-16, x2:x, y2:y+16,
+        stroke:C.orange, 'stroke-width':2.5, 'stroke-dasharray':'4 4',
+        opacity:o}));
+      g.appendChild(el('rect',{x:x-13, y:y+14, width:26, height:24, rx:7,
+        fill:'#fff', stroke:C.orange, 'stroke-width':2,
+        'stroke-dasharray':'4 3', opacity:o}));
+      tag(g,x, y+26, String(MARK.t), C.orange, 14, 700, o);
+      tag(g,x, y-34, 'time '+MARK.t+' on X', C.orange, 12.5, 700, o);
+    }
+
+    // the cut at a logical time between two integers
+    if(show>=MAXT+2){
+      const o=Math.min(1,q*2);
+      const p=[[xOf(CUT.X), ay('X')-52]];
+      AGENTS.forEach(function(a){ p.push([xOf(CUT[a]), ay(a)]); });
+      p.push([xOf(CUT.Z), ay('Z')+52]);
+      g.appendChild(el('polyline',{
+        points:p.map(function(c){return c[0]+','+c[1];}).join(' '),
+        fill:'none', stroke:C.orange, 'stroke-width':3,
+        'stroke-dasharray':'8 5', opacity:o}));
+      AGENTS.forEach(function(a){
+        g.appendChild(el('circle',{cx:xOf(CUT[a]), cy:ay(a), r:5.5,
+          fill:C.orange, opacity:o}));
+      });
+      tag(g,xOf(CUT.X), ay('X')-68, 'cut at t = '+CUTT, C.orange, 14, 700, o);
+    }
+
+    tag(g,(X0+X1)/2, 404,
+      show<MAXT   ? 'timestamps up to '+show+' — press Next step'
+      : show===MAXT ? 'every event labelled, and t increases along every arrow'
+      : show===MAXT+1
+        ? 'no event of X has time 3: it falls between x3 and x4'
+        : 'every logical time is a cut, and every such cut is consistent',
+      C.muted, 14);
+    readout();
+  }
+  function readout(){
+    if(show>=MAXT+2){
+      const past=Object.keys(T).filter(function(n){return T[n]<CUTT;});
+      const transit=MSG.filter(function(k){
+        return T[k[1]]<CUTT && T[k[2]]>CUTT;});
+      $('done').innerHTML='<b>the cut at t = '+CUTT+'</b> '+
+        '<span class="none">— past: '+past.sort(function(p,q){
+          return T[p]-T[q];}).join(', ')+'</span>';
+      $('todo').innerHTML='<span class="chan">'+transit.map(function(k){
+        return k[0];}).join(', ')+'</span> <span class="none">— sent '+
+        'before t, received after</span>';
+      $('ok').innerHTML='<span class="ok">yes, and so it is a consistent '+
+        'cut</span>';
+      $('status').innerHTML='<b>cut</b>'; return;
+    }
+    const done=Object.keys(T).filter(function(n){return T[n]<=show;});
+    const todo=Object.keys(T).filter(function(n){return T[n]>show;})
+                             .sort(function(p,q){return T[p]-T[q];});
+    $('done').innerHTML='<b>'+done.length+'</b> of '+Object.keys(E).length+
+      ' <span class="none">— t = 0 to '+show+
+      (show?'':'')+': '+
+      Array.apply(null,{length:show+1}).map(function(_,v){
+        return at(v).join(' ');}).join(' | ')+'</span>';
+    $('todo').innerHTML = todo.length
+      ? '<span class="chan">'+todo.join(', ')+'</span>'
+      : '<span class="ok">none</span>';
+    const bad=EDGE.filter(function(e){
+      return T[e[0]]<=show && T[e[1]]<=show && !(T[e[0]]<T[e[1]]);});
+    $('ok').innerHTML = bad.length
+      ? '<span class="bad">no</span>'
+      : '<span class="ok">yes</span> <span class="none">— '+
+        EDGE.filter(function(e){return T[e[0]]<=show && T[e[1]]<=show;}).length+
+        ' of '+EDGE.length+' edges so far</span>';
+    $('status').innerHTML = show>=MAXT ? '<b>done</b>' : 't up to <b>'+show+'</b>';
+  }
+  function play(n){
+    show=n;
+    if(anim) cancelAnimationFrame(anim);
+    q=0;
+    const t0=performance.now(), dur=900;
+    (function go(t){
+      q=Math.min(1,(t-t0)/dur); draw();
+      if(q<1) anim=requestAnimationFrame(go);
+    })(t0);
+  }
+  $('step').onclick=function(){ if(show<LASTSTEP()) play(show+1); };
+  $('reset').onclick=function(){
+    if(anim) cancelAnimationFrame(anim); show=0; q=1; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='ph_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d'};
+  const AY={X:120, Y:215, Z:310}, R=7, AXIS=396;
+  const AGENTS=['X','Y','Z'];
+  const ay=function(a){return AY[a];};
+  const px=function(p){return 260+p*104;};      // physical time -> x
+
+  // the same computation, now placed by physical time, with the three first
+  // events at 0. Z's clock runs at half speed.
+  const P={x1:['X',0], x2:['X',2], x3:['X',5], x4:['X',8],
+           y1:['Y',0], y2:['Y',3], y3:['Y',5.5],
+           z1:['Z',0], z2:['Z',2.4], z3:['Z',4.6], z4:['Z',7]};
+  const MSG=[['m1','x1','y2'],['m2','y1','z2'],['m3','z1','x2'],
+             ['m4','y2','z3'],['m5','z2','x3'],['m6','x3','z4'],
+             ['m7','y3','x4'],['m8','z3','y3']];
+  const RATE={X:1, Y:1, Z:0.5};
+  const ag=function(n){return P[n][0];}, ph=function(n){return P[n][1];};
+  const round1=function(v){return Math.round(v*10)/10;};
+
+  // A clock ticks at its own rate. When a message arrives carrying a time
+  // later than the clock reads, the agent SETS ITS CLOCK FORWARD to a tenth
+  // past that time, and ticks on from there. So a timestamp is always what
+  // the agent's own clock reads -- the clock is simply pushed when it is
+  // behind. PRE[n] is what the clock read an instant before the event.
+  const EDGE=MSG.map(function(m){return [m[1],m[2]];});
+  AGENTS.forEach(function(a){
+    const mine=Object.keys(P).filter(function(n){return ag(n)===a;})
+                             .sort(function(u,v){return ph(u)-ph(v);});
+    for(let i=0;i<mine.length-1;i++) EDGE.push([mine[i],mine[i+1]]);
+  });
+  const ORDER=Object.keys(P).sort(function(u,v){return ph(u)-ph(v);});
+  const T={}, PRE={}, SET={}, base={X:[0,0], Y:[0,0], Z:[0,0]};
+  ORDER.forEach(function(n){
+    const a=ag(n), b=base[a];
+    const pre=round1(b[1]+RATE[a]*(ph(n)-b[0]));
+    const ins=EDGE.filter(function(e){return e[1]===n;})
+                  .map(function(e){return T[e[0]]+0.1;});
+    PRE[n]=pre;
+    T[n]=round1(Math.max.apply(null,[pre].concat(ins)));
+    if(T[n]>pre+1e-9){ SET[n]=1; base[a]=[ph(n), T[n]]; }
+  });
+  // m5 runs from z2 up to x3 and clips the corner of y2's box on the way;
+  // shift that one box clear of it. Nothing but the drawing depends on this.
+  const NUDGE={y2:-22};
+  const one=function(v){return v.toFixed(1);};
+  const START=3;                                // x1, y1, z1 are there at once
+
+  let show=START, q=1, anim=null;
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, str);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+  const seen=function(n){return ORDER.indexOf(n) < show;};
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    const m=el('marker',{id:PFX+'ah', viewBox:'0 0 10 10', refX:9, refY:5,
+      markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+    m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:C.ink}));
+    defs.appendChild(m); svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+
+    // the three first events share one vertical: physical time 0
+    g.appendChild(el('line',{x1:px(0), y1:AY.X-40, x2:px(0), y2:AY.Z+40,
+      stroke:C.line, 'stroke-width':2}));
+    tag(g,px(0), AY.X-54, 'they start together', C.muted, 12.5);
+
+    AGENTS.forEach(function(a){
+      const y=ay(a);
+      g.appendChild(el('line',{x1:px(0)-50, y1:y, x2:px(8.6), y2:y,
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:px(0)-64, y:y,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':18,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+      const r=RATE[a];
+      g.appendChild(el('text',{x:px(0)-64, y:y+19,
+        'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+        'font-size':11.5, fill:r<1?C.orange:C.muted, 'text-anchor':'end',
+        'dominant-baseline':'middle'},
+        r<1?'slow clock':'accurate clock'));
+    });
+
+    // the axis of physical time
+    g.appendChild(el('line',{x1:px(0)-50, y1:AXIS, x2:px(8.6), y2:AXIS,
+      stroke:C.muted, 'stroke-width':2,
+      'marker-end':'url(#'+PFX+'ah)'}));
+    for(let v=0;v<=8;v++){
+      g.appendChild(el('line',{x1:px(v), y1:AXIS-6, x2:px(v), y2:AXIS+6,
+        stroke:C.muted, 'stroke-width':2}));
+      tag(g,px(v), AXIS+20, String(v), C.muted, 12.5, 700);
+    }
+    tag(g,px(8.6)+8, AXIS-20, 'physical time', C.muted, 13);
+
+    MSG.forEach(function(k){
+      if(!(seen(k[1]) && seen(k[2]))) return;
+      const ya=ay(ag(k[1])), yb=ay(ag(k[2])), d=(yb>ya?1:-1);
+      g.appendChild(el('line',{x1:px(ph(k[1])), y1:ya+d*R,
+        x2:px(ph(k[2])), y2:yb-d*R, stroke:C.ink, 'stroke-width':2,
+        'marker-end':'url(#'+PFX+'ah)'}));
+      tag(g,(px(ph(k[1]))+px(ph(k[2])))/2+15,(ya+yb)/2, k[0], C.muted, 12);
+    });
+
+    ORDER.forEach(function(n,i){
+      if(i>=show) return;
+      const o=(i===show-1 && show>START)?Math.min(1,q*2):1;
+      const x=px(ph(n)), y=ay(ag(n));
+      g.appendChild(el('circle',{cx:x, cy:y, r:R, fill:C.ink,
+        stroke:'#fff', 'stroke-width':2, opacity:o}));
+      tag(g,x, y-20, n, C.ink, 12, 700, o);
+      const forced=!!SET[n], bx=x+(NUDGE[n]||0);
+      g.appendChild(el('rect',{x:bx-19, y:y+14, width:38, height:24, rx:7,
+        fill:forced?C.orange:C.teal, 'fill-opacity':.14*o,
+        stroke:forced?C.orange:C.teal, 'stroke-width':2, opacity:o}));
+      tag(g,bx, y+26, one(T[n]), forced?C.orange:C.teal, 13.5, 700, o);
+      if(ag(n)==='Z' && forced)
+        tag(g,x, y+46, 'clock '+one(PRE[n])+' \u2192 '+one(T[n]),
+            C.orange, 11.5, 700, o);
+    });
+
+    tag(g,(px(0)+px(8))/2, 446, show<ORDER.length
+      ? 'press Next event'
+      : 'each message Z took set Z’s own clock forward: '+
+        '2.3 \u2192 3.1, then 4.3 \u2192 5.1', C.muted, 14);
+    readout();
+  }
+  function readout(){
+    const n=ORDER[show-1];
+    $('ev').innerHTML = show<=START
+      ? '<b>x1, y1, z1</b> <span class="none">together, at physical 0</span>'
+      : '<b>'+n+'</b> <span class="none">on '+ag(n)+', at physical '+
+        one(ph(n))+'</span>';
+    $('t').innerHTML = '<span class="'+(SET[n]?'bad':'ok')+'">'+
+      one(T[n])+'</span>'+
+      (SET[n]
+        ? ' <span class="none">— the clock read '+one(PRE[n])+
+          ' and was set forward to it</span>'
+        : ' <span class="none">— its own clock, undisturbed</span>');
+    const zs=Object.keys(P).filter(function(k){
+      return ag(k)==='Z' && seen(k);});
+    const late=zs.filter(function(k){return SET[k];});
+    $('drift').innerHTML = late.length
+      ? '<span class="chan">'+late.map(function(k){
+          return k+': set forward from '+one(PRE[k])+' to '+one(T[k]);
+        }).join(' · ')+'</span>'
+      : '<span class="none">running slow, but never yet set forward</span>';
+    $('status').innerHTML = show<ORDER.length
+      ? '<b>'+show+'</b> of '+ORDER.length : '<b>done</b>';
+  }
+  function play(n){
+    show=n;
+    if(anim) cancelAnimationFrame(anim);
+    q=0;
+    const t0=performance.now(), dur=700;
+    (function go(t){
+      q=Math.min(1,(t-t0)/dur); draw();
+      if(q<1) anim=requestAnimationFrame(go);
+    })(t0);
+  }
+  $('step').onclick=function(){ if(show<ORDER.length) play(show+1); };
+  $('reset').onclick=function(){
+    if(anim) cancelAnimationFrame(anim); show=START; q=1; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='sn_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           orange:'#d13d0e', teal:'#00947d', cut:'#1a5fd0'};
+  const AY={X:120, Y:215, Z:310}, R=7, AXIS=396;
+  const AGENTS=['X','Y','Z'];
+  const ay=function(a){return AY[a];};
+  const px=function(p){return 260+p*104;};
+  const JOG=(AY.Y+AY.Z)/2;                 // where the cut turns towards Z
+
+  const P={x1:['X',0], x2:['X',2], x3:['X',5], x4:['X',8],
+           y1:['Y',0], y2:['Y',3], y3:['Y',5.5],
+           z1:['Z',0], z2:['Z',2.4], z3:['Z',4.6], z4:['Z',7]};
+  const MSG=[['m1','x1','y2'],['m2','y1','z2'],['m3','z1','x2'],
+             ['m4','y2','z3'],['m5','z2','x3'],['m6','x3','z4'],
+             ['m7','y3','x4'],['m8','z3','y3']];
+  const T={x1:0.0, x2:2.0, x3:5.0, x4:8.0, y1:0.0, y2:3.0, y3:5.5,
+           z1:0.0, z2:1.2, z3:3.1, z4:5.1};
+  const RATE={X:1, Y:1, Z:0.5};
+  const ag=function(n){return P[n][0];}, ph=function(n){return P[n][1];};
+  // m5 runs from z2 up to x3 and clips the corner of y2's box on the way;
+  // shift that one box clear of it. Nothing but the drawing depends on this.
+  const NUDGE={y2:-22};
+  const one=function(v){return v.toFixed(1);};
+
+  // A clock runs at its own rate, and is SET FORWARD when a message arrives
+  // carrying a later time -- continuously, sweeping through the readings it
+  // skips. So the reading of an agent's clock over physical time is a run of
+  // segments joined by sweeps, and it passes through every value exactly
+  // once: for every logical time t there is one point on every agent's line
+  // where that agent's clock reads t. That point is where it records.
+  function segs(a){
+    const mine=Object.keys(P).filter(function(n){return ag(n)===a;})
+                             .sort(function(u,v){return ph(u)-ph(v);});
+    const out=[]; let p0=0, c0=0;
+    mine.forEach(function(n){
+      const pre=c0+RATE[a]*(ph(n)-p0);
+      out.push({run:1, p0:p0, c0:c0, p1:ph(n), c1:pre});
+      if(T[n]>pre+1e-9){
+        out.push({run:0, p:ph(n), lo:pre, hi:T[n], at:n});
+        p0=ph(n); c0=T[n];
+      }
+    });
+    out.push({run:1, p0:p0, c0:c0, p1:8.6, c1:c0+RATE[a]*(8.6-p0)});
+    return out;
+  }
+  function cross(a,t){
+    const ss=segs(a);
+    for(let i=0;i<ss.length;i++){
+      const s=ss[i];
+      if(s.run){
+        if(t>=s.c0-1e-9 && t<=s.c1+1e-9)
+          return {at:s.p0+(t-s.c0)/RATE[a], set:null};
+      } else if(t>=s.lo-1e-9 && t<=s.hi+1e-9){
+        // the clock sweeps past t as it is set forward at this event, so the
+        // agent records an instant before the event itself
+        return {at:s.p-0.25, set:s.at};
+      }
+    }
+    return {at:8.6, set:null};
+  }
+  const past=function(t){
+    return Object.keys(P).filter(function(n){return T[n]<t;})
+                         .sort(function(u,v){return T[u]-T[v];});
+  };
+  const transit=function(t){
+    return MSG.filter(function(k){return T[k[1]]<t && T[k[2]]>t;});
+  };
+  const broken=function(t){
+    return MSG.filter(function(k){return T[k[2]]<t && T[k[1]]>t;});
+  };
+
+  let pick=null, q=1, anim=null;
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,op){
+    const t=el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':4, 'paint-order':'stroke'}, str);
+    if(op!=null) t.setAttribute('opacity', op);
+    g.appendChild(t);
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    const m=el('marker',{id:PFX+'ah', viewBox:'0 0 10 10', refX:9, refY:5,
+      markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+    m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:C.ink}));
+    defs.appendChild(m); svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+    const t=pick, o=Math.min(1,q*2);
+    const cx=t!=null?px(cross('X',t).at):0, cz=t!=null?cross('Z',t):null;
+
+    // the past, left of the cut
+    if(t!=null){
+      g.appendChild(el('polygon',{points:[[px(-0.5),76],[cx,76],[cx,JOG],
+        [px(cz.at),JOG],[px(cz.at),AXIS-14],[px(-0.5),AXIS-14]]
+        .map(function(c){return c[0]+','+c[1];}).join(' '),
+        fill:C.teal, 'fill-opacity':.08*o}));
+    }
+
+    AGENTS.forEach(function(a){
+      const y=ay(a);
+      g.appendChild(el('line',{x1:px(-0.5), y1:y, x2:px(8.6), y2:y,
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:px(-0.5)-14, y:y,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':18,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+      g.appendChild(el('text',{x:px(-0.5)-14, y:y+19,
+        'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+        'font-size':11.5, fill:RATE[a]<1?C.orange:C.muted, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, RATE[a]<1?'slow clock':'accurate clock'));
+    });
+
+    g.appendChild(el('line',{x1:px(-0.5), y1:AXIS, x2:px(8.6), y2:AXIS,
+      stroke:C.muted, 'stroke-width':2, 'marker-end':'url(#'+PFX+'ah)'}));
+    for(let v=0;v<=8;v++){
+      g.appendChild(el('line',{x1:px(v), y1:AXIS-6, x2:px(v), y2:AXIS+6,
+        stroke:C.muted, 'stroke-width':2}));
+      tag(g,px(v), AXIS+20, String(v), C.muted, 12.5, 700);
+    }
+    tag(g,px(8.6)+6, AXIS-20, 'physical time', C.muted, 13);
+
+    const hot={}; if(t!=null) transit(t).forEach(function(k){hot[k[0]]=1;});
+    MSG.forEach(function(k){
+      const ya=ay(ag(k[1])), yb=ay(ag(k[2])), d=(yb>ya?1:-1), on=hot[k[0]];
+      g.appendChild(el('line',{x1:px(ph(k[1])), y1:ya+d*R,
+        x2:px(ph(k[2])), y2:yb-d*R, stroke:on?C.cut:C.ink,
+        'stroke-width':on?3.5:2, 'marker-end':'url(#'+PFX+'ah)'}));
+      tag(g,(px(ph(k[1]))+px(ph(k[2])))/2+15,(ya+yb)/2, k[0],
+          on?C.cut:C.muted, 12);
+    });
+
+    Object.keys(P).forEach(function(n){
+      const x=px(ph(n)), y=ay(ag(n));
+      const inp=(t!=null && T[n]<t);
+      g.appendChild(el('circle',{cx:x, cy:y, r:R, fill:inp?C.teal:C.ink,
+        stroke:'#fff', 'stroke-width':2}));
+      tag(g,x, y-20, n, C.ink, 12, 700);
+      const forced=(ag(n)==='Z' && (n==='z3' || n==='z4'));
+      const bx=x+(NUDGE[n]||0);
+      g.appendChild(el('rect',{x:bx-19, y:y+14, width:38, height:24, rx:7,
+        fill:forced?C.orange:C.teal, 'fill-opacity':.14,
+        stroke:forced?C.orange:C.teal, 'stroke-width':2}));
+      tag(g,bx, y+26, one(T[n]), forced?C.orange:C.teal, 13.5, 700);
+    });
+
+    // the cut: vertical through X and Y, then sideways to Z
+    if(t!=null){
+      const pts=[[cx,76],[cx,JOG],[px(cz.at),JOG],[px(cz.at),AXIS-14]];
+      const line=pts.map(function(c){return c[0]+','+c[1];}).join(' ');
+      g.appendChild(el('polyline',{points:line, fill:'none', stroke:'#fff',
+        'stroke-width':7, opacity:o}));
+      g.appendChild(el('polyline',{points:line,
+        fill:'none', stroke:C.orange, 'stroke-width':3.5,
+        'stroke-dasharray':'9 6', opacity:o}));
+      ['X','Y'].forEach(function(a){
+        g.appendChild(el('circle',{cx:cx, cy:ay(a), r:6, fill:C.orange,
+          opacity:o}));
+      });
+      g.appendChild(el('circle',{cx:px(cz.at), cy:ay('Z'), r:6,
+        fill:C.orange, opacity:o}));
+      tag(g,cx, 62, 'logical time '+one(t), C.orange, 14, 700, o);
+      tag(g,px(cz.at), ay('Z')+58,
+          'Z’s clock reads '+one(t)+' here', C.orange, 12.5, 700, o);
+      if(cz.set)
+        tag(g,px(cz.at), ay('Z')+76,
+            'as it is set forward at '+cz.set, C.muted, 12, 700, o);
+    }
+
+    tag(g,(px(0)+px(8))/2, 446, t==null
+      ? 'press a button'
+      : 'a snapshot at one logical time, and a consistent cut', C.muted, 14);
+    readout();
+  }
+  function readout(){
+    if(pick==null){
+      $('past').innerHTML='<span class="none">no snapshot yet</span>';
+      $('chan').innerHTML='<span class="none">—</span>';
+      $('ok').innerHTML='<span class="none">—</span>';
+      $('status').innerHTML=''; return;
+    }
+    const t=pick;
+    $('past').innerHTML='<b>'+past(t).join(', ')+'</b> '+
+      '<span class="none">— every event with t &lt; '+one(t)+'</span>';
+    $('chan').innerHTML='<span class="chan">'+transit(t).map(function(k){
+      return k[0];}).join(', ')+'</span>';
+    $('ok').innerHTML = broken(t).length
+      ? '<span class="bad">no</span>'
+      : '<span class="ok">yes — logical time only increases along a '+
+        'message</span>';
+    $('status').innerHTML='<b>t = '+one(t)+'</b>';
+  }
+  function play(t){
+    pick=t;
+    if(anim) cancelAnimationFrame(anim);
+    q=0;
+    const t0=performance.now(), dur=900;
+    (function go(now){
+      q=Math.min(1,(now-t0)/dur); draw();
+      if(q<1) anim=requestAnimationFrame(go);
+    })(t0);
+  }
+  $('a').onclick=function(){ play(1.5); };
+  $('b').onclick=function(){ play(2.5); };
+  $('clear').onclick=function(){
+    if(anim) cancelAnimationFrame(anim); pick=null; q=1; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='dl_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           red:'#d13d0e', green:'#00947d', blue:'#1a5fd0', amber:'#9a6a00'};
+
+  // ---------------------------------------------------------------- geometry
+  const RY=168, DY=210, XY=360;            // channel 1, channel 2, x's strand
+  const TOP=130, BOT=242;
+  const BX={u:[320,496], v:[560,736], w:[800,976]};
+  const SRC1=[54,138,132,96], SRC2=[54,332,132,56];
+  const XB=[580,320,176,80], SNK1=[1040,186,140,48], SNK2=[1040,336,140,48];
+  const AS=['u','v','w'];
+
+  // every channel, drawn as the path a message travels along it
+  const CH={
+    s1u_t: [[186,RY],[286,RY],[320,RY]],
+    r_uv:  [[496,RY],[560,RY]],
+    r_vw:  [[736,RY],[800,RY]],
+    r_wu:  [[976,RY],[1018,RY],[1018,74],[286,74],[286,RY],[320,RY]],
+    s1u_d: [[186,DY],[320,DY]],
+    d_uv:  [[496,DY],[560,DY]],
+    d_vw:  [[736,DY],[800,DY]],
+    d_ws:  [[976,DY],[1040,DY]],
+    x_in:  [[186,XY],[580,XY]],
+    x_out: [[756,XY],[1040,XY]]
+  };
+  const DEST={s1u_t:'u:in1', r_wu:'u:in1', r_uv:'v:in1', r_vw:'w:in1',
+              s1u_d:'u:in2', d_uv:'v:in2', d_vw:'w:in2',
+              d_ws:'snk1',   x_in:'x:in',  x_out:'snk2'};
+  const AG={u:{q1:'u:in1', q2:'u:in2', o1:'r_uv', o2:'d_uv', ring:'w', pipe:null},
+            v:{q1:'v:in1', q2:'v:in2', o1:'r_vw', o2:'d_vw', ring:'u', pipe:'u'},
+            w:{q1:'w:in1', q2:'w:in2', o1:'r_wu', o2:'d_ws', ring:'v', pipe:'v'}};
+  const INTO={};                            // queue name -> channels into it
+  for(const k in DEST){ (INTO[DEST[k]]=INTO[DEST[k]]||[]).push(k); }
+
+  function plen(p){ let L=0;
+    for(let i=0;i<p.length-1;i++)
+      L+=Math.hypot(p[i+1][0]-p[i][0], p[i+1][1]-p[i][1]);
+    return L; }
+  const LEN={}; for(const k in CH) LEN[k]=plen(CH[k]);
+  function at(k,f){
+    const p=CH[k]; let d=Math.max(0,Math.min(1,f))*LEN[k];
+    for(let i=0;i<p.length-1;i++){
+      const s=Math.hypot(p[i+1][0]-p[i][0], p[i+1][1]-p[i][1]);
+      if(d<=s || i===p.length-2){
+        const t=s?Math.min(1,d/s):0;
+        return [p[i][0]+(p[i+1][0]-p[i][0])*t, p[i][1]+(p[i+1][1]-p[i][1])*t];
+      }
+      d-=s;
+    }
+    return p[p.length-1];
+  }
+
+  // ------------------------------------------------------------ the machine
+  const SPEED=300;          // pixels a message crosses in one tick
+  const SERVICE=0.45;       // ticks an agent takes to pass a pair on
+  const P1D=1.5, P1T=2.2, P2=1.7;     // how often each source emits
+  const STOP=40;            // ticks, after which the figure parks itself
+  const DRAWN=5;            // queue glyphs drawn before falling back to '+n'
+
+  let cas=1, vt=0, run=false, last=0, raf=null;
+  let fly=[], Q={}, hold={}, ph={}, busy={}, got={}, sent={}, fin={}, nx={};
+
+  const inFly=function(ch){
+    return fly.some(function(m){return m.ch===ch;}); };
+  const emit=function(ch,kind){
+    fly.push({ch:ch, kind:kind, t0:vt, t1:vt+LEN[ch]/SPEED}); };
+
+  function setup(n){
+    cas=n; vt=0; fly=[]; Q={}; hold={}; ph={}; busy={};
+    got={snk1:0, snk2:0}; sent={src1d:0, src1t:0, src2:0};
+    AS.forEach(function(a){ Q[a+':in1']=[]; Q[a+':in2']=[];
+      hold[a]=false; ph[a]='in1'; busy[a]=0; });
+    Q['x:in']=[]; ph.x='in'; busy.x=0;
+    fin={src1:(n===3), src2:(n===3)};
+    nx={src1d:P1D, src1t:P1T, src2:P2};
+    if(n===3){
+      // the last of the work, and one token in each agent: everything after
+      // this is a wind-down, and the figure has to reach the quiet state on
+      // its own rather than be told about it
+      AS.forEach(function(a){ hold[a]=true; ph[a]='in2'; });
+      Q['u:in2']=['d','d'];
+      fly.push({ch:'s1u_d', kind:'d', t0:0, t1:LEN.s1u_d/SPEED});
+      fly.push({ch:'x_in',  kind:'d', t0:0, t1:LEN.x_in/SPEED});
+      sent={src1d:9, src1t:0, src2:6};
+    }
+  }
+
+  function step(){
+    // 1. arrivals
+    fly=fly.filter(function(m){
+      if(vt<m.t1) return true;
+      const d=DEST[m.ch];
+      if(d==='snk1'||d==='snk2') got[d]++; else Q[d].push(m.kind);
+      return false;
+    });
+    // 2. the agents, running the program in the listing above
+    AS.forEach(function(a){
+      const A=AG[a];
+      if(busy[a]){
+        if(vt>=busy[a]){ busy[a]=0; emit(A.o1,'t'); emit(A.o2,'d');
+                         hold[a]=false; ph[a]='in1'; }
+        return;
+      }
+      if(ph[a]==='in1'){
+        if(Q[A.q1].length){ Q[A.q1].shift(); hold[a]=true; ph[a]='in2'; }
+      } else if(Q[A.q2].length){
+        Q[A.q2].shift(); busy[a]=vt+SERVICE;
+      }
+    });
+    // x: one inbox, one outbox
+    if(busy.x){ if(vt>=busy.x){ busy.x=0; emit('x_out','d'); } }
+    else if(Q['x:in'].length){ Q['x:in'].shift(); busy.x=vt+SERVICE; }
+    // 3. the sources
+    if(!fin.src1){
+      while(vt>=nx.src1d){ emit('s1u_d','d'); sent.src1d++; nx.src1d+=P1D; }
+      if(cas===2)
+        while(vt>=nx.src1t){ emit('s1u_t','t'); sent.src1t++; nx.src1t+=P1T; }
+    }
+    if(!fin.src2)
+      while(vt>=nx.src2){ emit('x_in','d'); sent.src2++; nx.src2+=P2; }
+  }
+
+  // Who can still take a step? Built up from nothing: an agent is added only
+  // when there is a concrete reason -- a message it holds, one queued, one in
+  // flight, or a neighbour that can still send it one. Whatever is left out
+  // at the end is waiting for a message that will never come. Starting from
+  // the empty set is the whole point: a ring of agents each waiting for the
+  // next would justify itself for ever if we started from 'everybody'.
+  function live(){
+    const L={u:false, v:false, w:false, x:false};
+    L.x = !!busy.x || Q['x:in'].length>0 || inFly('x_in') || !fin.src2;
+    for(let round=0; round<4; round++){
+      AS.forEach(function(a){
+        const A=AG[a];
+        const tok = hold[a] || Q[A.q1].length>0 ||
+                    INTO[A.q1].some(inFly) || L[A.ring] ||
+                    (cas===2 && !fin.src1 && a==='u');
+        const dat = Q[A.q2].length>0 || INTO[A.q2].some(inFly) ||
+                    (A.pipe ? L[A.pipe] : !fin.src1);
+        if(!!busy[a] || (tok && dat)) L[a]=true;
+      });
+    }
+    L.src1 = !fin.src1;  L.src2 = !fin.src2;
+    L.snk1 = L.w || inFly('d_ws');
+    L.snk2 = L.x || inFly('x_out');
+    return L;
+  }
+  const tokens=function(){
+    return AS.reduce(function(s,a){
+        return s + (hold[a]?1:0) + Q[a+':in1'].length; }, 0) +
+      fly.filter(function(m){return m.kind==='t';}).length;
+  };
+  const queued=function(q){ return Q[q].length; };
+
+  // ------------------------------------------------------------- the drawing
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function glyph(g,x,y,kind,op){
+    if(kind==='t')
+      g.appendChild(el('circle',{cx:x, cy:y, r:6, fill:C.green,
+        stroke:'#fff', 'stroke-width':1.5, opacity:op==null?1:op}));
+    else
+      g.appendChild(el('rect',{x:x-6, y:y-6, width:12, height:12, rx:2.5,
+        fill:C.blue, stroke:'#fff', 'stroke-width':1.5,
+        opacity:op==null?1:op}));
+  }
+  function slot(g,x,y,col){
+    g.appendChild(el('rect',{x:x-8, y:y-11, width:16, height:22, rx:4,
+      fill:'#fff', stroke:col, 'stroke-width':2}));
+  }
+  function frameBox(g,x,y,w,h,col,r){
+    g.appendChild(el('rect',{x:x, y:y, width:w, height:h, rx:r==null?12:r,
+      fill:col, 'fill-opacity':.07, stroke:col, 'stroke-width':2.5}));
+  }
+  function queue(g,x,y,q,col){
+    const n=q.length;
+    for(let i=0;i<Math.min(n,DRAWN);i++) glyph(g,x+i*19,y,q[i]);
+    if(n>DRAWN) tag(g,x+DRAWN*19+14, y, '+'+(n-DRAWN), C.amber, 12, 700);
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    [['ah',C.ink],['ad',C.line]].forEach(function(p){
+      const m=el('marker',{id:PFX+p[0], viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:p[1]}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+    const L=live();
+    const col=function(k){ return L[k]?C.green:C.red; };
+
+    // ---- the channels
+    for(const k in CH){
+      const off=(k==='s1u_t' && cas!==2);
+      const p=CH[k].map(function(c){return c[0]+','+c[1];}).join(' ');
+      g.appendChild(el('polyline',{points:p, fill:'none',
+        stroke:off?C.line:C.ink, 'stroke-width':off?2:2,
+        'stroke-dasharray':off?'7 5':'none',
+        'marker-end':'url(#'+PFX+(off?'ad':'ah')+')'}));
+    }
+    tag(g, 640, 60, 'channel 1 closes into a ring: out1 of each agent is in1 '+
+        'of the next', C.muted, 12.5, 700);
+    tag(g, 236, RY-17, cas===2?'added in case 2':'case 2 only',
+        cas===2?C.ink:C.muted, 11.5, 700);
+
+    // ---- the sources and sinks
+    frameBox(g, SRC1[0], SRC1[1], SRC1[2], SRC1[3], col('src1'), 14);
+    tag(g, SRC1[0]+SRC1[2]/2, SRC1[1]+26, 'src1', col('src1'), 17, 700);
+    tag(g, SRC1[0]+SRC1[2]/2, SRC1[1]+50,
+        fin.src1?'finished':'sent '+(sent.src1d+sent.src1t), C.muted, 11.5, 700);
+    tag(g, SRC1[0]+SRC1[2]/2, SRC1[1]+72,
+        cas===2?'tokens and data':'data only', C.muted, 10.5, 700);
+    frameBox(g, SRC2[0], SRC2[1], SRC2[2], SRC2[3], col('src2'), 14);
+    tag(g, SRC2[0]+SRC2[2]/2, SRC2[1]+21, 'src2', col('src2'), 17, 700);
+    tag(g, SRC2[0]+SRC2[2]/2, SRC2[1]+40,
+        fin.src2?'finished':'sent '+sent.src2, C.muted, 11.5, 700);
+    [[SNK1,'snk1','snk1'],[SNK2,'snk2','snk2']].forEach(function(s){
+      frameBox(g, s[0][0], s[0][1], s[0][2], s[0][3], col(s[2]), 14);
+      tag(g, s[0][0]+s[0][2]/2, s[0][1]+18, s[1], col(s[2]), 17, 700);
+      tag(g, s[0][0]+s[0][2]/2, s[0][1]+36, 'received '+got[s[2]],
+          C.muted, 11.5, 700);
+    });
+
+    // ---- u, v, w
+    AS.forEach(function(a){
+      const b=BX[a], c=col(a), A=AG[a];
+      frameBox(g, b[0], TOP, b[1]-b[0], BOT-TOP, c);
+      tag(g, b[0]+17, TOP+18, a, c, 18, 700, 'start');
+      if(hold[a]){ glyph(g, b[0]+22, (RY+DY)/2, 't');
+                   tag(g, b[0]+36, (RY+DY)/2, 'held', C.muted, 10.5, 700,
+                       'start'); }
+      [[RY,'in1',A.q1],[DY,'in2',A.q2]].forEach(function(r){
+        slot(g, b[0], r[0], c);
+        tag(g, b[0]+12, r[0], r[1], C.muted, 10.5, 700, 'start');
+        queue(g, b[0]+46, r[0], Q[r[2]], c);
+      });
+      [[RY,'out1'],[DY,'out2']].forEach(function(r){
+        slot(g, b[1], r[0], c);
+        tag(g, b[1]+10, r[0]-19, r[1], C.muted, 10.5, 700, 'start');
+      });
+      const st = busy[a] ? 'passing them on'
+               : (ph[a]==='in1' ? 'waiting on in1' : 'waiting on in2');
+      tag(g, (b[0]+b[1])/2, BOT-12, st, L[a]?C.muted:C.red, 11.5, 700);
+    });
+
+    // ---- x
+    const cx=col('x');
+    frameBox(g, XB[0], XB[1], XB[2], XB[3], cx);
+    tag(g, XB[0]+17, XB[1]+18, 'x', cx, 18, 700, 'start');
+    slot(g, XB[0], XY, cx); slot(g, XB[0]+XB[2], XY, cx);
+    tag(g, XB[0]+12, XY, 'in', C.muted, 10.5, 700, 'start');
+    tag(g, XB[0]+XB[2]+10, XY-19, 'out', C.muted, 10.5, 700, 'start');
+    queue(g, XB[0]+46, XY, Q['x:in'], cx);
+    tag(g, XB[0]+XB[2]/2, XB[1]+XB[3]-12,
+        busy.x?'passing it on':'waiting on in', L.x?C.muted:C.red, 11.5, 700);
+
+    // ---- the messages in flight
+    fly.forEach(function(m){
+      const f=(vt-m.t0)/(m.t1-m.t0), p=at(m.ch,f);
+      glyph(g, p[0], p[1], m.kind);
+    });
+
+    const dead=AS.every(function(a){return !L[a];});
+    const all=dead && !L.x && !L.src1 && !L.src2 && !L.snk1 && !L.snk2;
+    tag(g, 620, 452,
+      all ? 'every agent waiting, every channel empty: the computation has terminated'
+      : dead ? 'u, v, w and snk1 will take no further step, and the rest of the system has not noticed'
+      : cas===2 ? 'everything moves, and the ring keeps '+tokens()+' tokens it will never give back'
+      : 'running', C.muted, 14);
+    readout(L);
+  }
+
+  function readout(L){
+    const wait=AS.filter(function(a){return !busy[a];})
+                 .map(function(a){return a+' on '+ph[a];});
+    $('wait').innerHTML = (wait.length
+        ? '<b>'+wait.join(', ')+'</b>'
+        : '<span class="none">nobody: all three are mid-step</span>') +
+      (L.x ? ' <span class="none">· x is running</span>'
+           : ' <span class="none">· x on in</span>');
+    const ring=tokens(), qd=queued('u:in2'), inf=fly.length;
+    $('chan').innerHTML =
+      '<span class="'+(ring?'chan':'none')+'">'+ring+' token'+
+      (ring===1?'':'s')+' in the ring</span> <span class="none">·</span> '+
+      '<span class="'+(qd?'hot':'none')+'">'+qd+' queued in u:in2</span> '+
+      '<span class="none">· '+inf+' in flight</span>';
+    const dead=AS.every(function(a){return !L[a];});
+    const all=dead && !L.x && !L.src1 && !L.src2 && !L.snk1 && !L.snk2;
+    $('ok').innerHTML = all
+      ? '<span class="ok">terminated</span> <span class="none">— all '+
+        'waiting, all channels empty, and it cannot change</span>'
+      : dead
+      ? '<span class="bad">deadlocked</span> <span class="none">— u, v, w '+
+        'wait on in1 and every channel between them is empty</span>'
+      : cas===2
+      ? '<span class="chan">alive</span> <span class="none">— and the '+
+        'tokens in the ring only ever increase</span>'
+      : '<span class="none">still settling</span>';
+    $('status').innerHTML='<b>case '+cas+'</b> · t = '+vt.toFixed(1)+
+      (run?'':' · paused');
+  }
+
+  function frame(now){
+    raf=null;
+    if(!run){ draw(); return; }
+    if(!last) last=now;
+    let dt=(now-last)/1000; last=now;
+    if(dt>0.25) dt=0.25;
+    const end=vt+dt*1.45;
+    while(vt<end-1e-9){ vt=Math.min(end, vt+0.02); step(); }
+    const L=live();
+    const quiet = fly.length===0 && AS.every(function(a){return !L[a];}) &&
+                  !L.x && fin.src1 && fin.src2;
+    if(vt>=STOP || quiet) run=false;
+    draw();
+    if(run) raf=requestAnimationFrame(frame);
+  }
+  function play(n){
+    if(raf) cancelAnimationFrame(raf);
+    if(n) setup(n);
+    run=true; last=0; $('pause').textContent='Pause';
+    [1,2,3].forEach(function(k){
+      $('c'+k).className = (k===cas) ? 'primary' : ''; });
+    raf=requestAnimationFrame(frame);
+  }
+  $('c1').onclick=function(){ play(1); };
+  $('c2').onclick=function(){ play(2); };
+  $('c3').onclick=function(){ play(3); };
+  $('pause').onclick=function(){
+    if(run){ run=false; if(raf) cancelAnimationFrame(raf); raf=null;
+             $('pause').textContent='Play'; draw(); }
+    else play(0);
+  };
+  setup(1); draw();
 })();
 </script>
 

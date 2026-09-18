@@ -1484,7 +1484,7 @@
   // Seven events. Nothing leaves 4, so no chain of messages reaches C from
   // the moment Q became true.
   const E={1:['V', 8], 2:['C',14], 3:['U',22], 4:['V',34],
-           5:['U',36], 6:['C',72], 7:['U',88]};
+           5:['U',36], 6:['C',66], 7:['U',88]};
   const MSG=[[2,3],[5,6],[6,7]];
   const ag=function(n){return E[n][0];}, tm=function(n){return E[n][1];};
   // the cut: through V's edge (1,4), and through C's edge after 6
@@ -1568,9 +1568,9 @@
     tag(g,X1-90, AY.V-26, 'Q is about V', C.muted, 13);
 
     // what C is taken to know after step 6 -- the supposition the cut breaks
-    g.appendChild(el('line',{x1:xOf(72), y1:AY.C-22, x2:xOf(96), y2:AY.C-22,
+    g.appendChild(el('line',{x1:xOf(66), y1:AY.C-22, x2:xOf(96), y2:AY.C-22,
       stroke:C.teal, 'stroke-width':4, opacity:.6}));
-    tag(g,xOf(84), AY.C-42, 'C knows Q', C.teal, 14);
+    tag(g,xOf(81), AY.C-42, 'C knows Q', C.teal, 14);
 
     MSG.forEach(function(j){
       const a=E[j[0]], b=E[j[1]];
