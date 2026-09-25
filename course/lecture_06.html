@@ -138,16 +138,89 @@
     </p>
 
 <h2>The No-Fault Model</h2>
-
 <p>
   <b>A fully connected network:</b>
-  Let the number of agents in the network be N.
-  Every agent has a single inbox and N outboxes, with
-  each of its outboxes connected to a different one of the other agents.
-  In a step, an agent receives one message and sends messages
-  to some set of agents.
+  The network has N agents.
+  Each agent has a N inboxes and N outboxes.
+  Each outbox is connected to exactly one inbox.
+  So, for any pair of agents X, and Y: 
+  X has exactly one outbox connected to exactly one of Y's inboxes,
+  and that inbox of Y is not connected to any other outbox of any agent.
 </p>
 
+<figure class="fig wideout">
+    <svg id="net_g" viewBox="0 0 1240 560" role="img"
+         aria-label="Four agents, each with an outbox wired to exactly one inbox of every agent, itself included"></svg>
+
+    <figcaption>
+      <b>Figure 1. The network.</b>
+      Four of the N agents. Each agent has N outboxes (filled) and N inboxes
+      (open), and each outbox is wired to exactly one inbox, which no other
+      outbox feeds. So between any two agents there is one channel each way,
+      and each agent has one to itself &mdash; the channel the null message
+      sits in.
+    </figcaption>
+  </figure>
+
+
+<p>
+  The agents are more powerful than in the models that we used earlier
+  in the course in the sense that an agent can process messages from any
+  of its inboxes.  For simplicity, assume that an agent
+  reads a null message from an empty inbox. So, in every state, every
+  agent can read from any of its nonempty inboxes.
+</p>
+
+<p>
+  The agents are more powerful in another way: an agent can change its state
+  without receiving any message. This state change is represented by the agent
+  receiving a null message. We can think of a null message as a message that 
+  is always in the agent's connection to itself.
+</p>
+
+<p>
+  <strong>
+    The fairness requirement:
+  </strong>
+  If message m is in inbox w of agent p in state S, 
+  then in all infinite computations starting in S, p eventually gets m from w.
+</p>
+
+<p>
+  <b>Event</b>
+  An event e is an agent p getting a message m from the front of one of its 
+  (nonempty) inboxes, w.
+  It can be specified by the trip let (p, w, m).
+  The state after event e is executed in a state S is denoted by e(S).
+  A computation is a sequence of events, and the state after executing 
+  a computation c in a state S is denoted by c(S).
+  A computation consisting of c followed by an event e is denoted by c;e, 
+  and the state after executing c;e in a state S is denoted by (c;e)(S).
+  The fairness requirement is that if an event e is enabled in a state S, 
+  then e occurs in all infinite computations starting in S.
+</p>
+
+<figure class="fig wideout">
+    <svg id="act_g" viewBox="0 0 1240 430" role="img"
+         aria-label="An agent choosing which nonempty inbox to read from, with the null message always available and the empty inbox unreadable"></svg>
+
+    <figcaption>
+      <b>Figure 2. What an agent may do next.</b>
+      X may read from any inbox that is not empty, and it chooses which one:
+      here the inbox from Y, the one from W, or the null message, which is
+      always there. The inbox from Z is empty, so there is nothing to read in
+      it. Reading the null message is how X changes state without receiving
+      a message.
+    </figcaption>
+  </figure>
+
+
+<p>
+  The proof of the FLP theorem is more difficult with the more powerful agents. 
+  The theorem for the more general model applies to our model as well.
+</p>
+
+<h2>The Specification</h2>
 <p>
   Associated with each agent Y is a boolean variable, Y.finished, which
   signals whether Y has finished computing the consensus value.
@@ -261,7 +334,7 @@
     </div>
 
     <figcaption>
-      <b>Figure 1. The no-fault algorithm, and what one halt does to it.</b>
+      <b>Figure 3. The no-fault algorithm, and what one halt does to it.</b>
       Five agents; two propose red and three propose blue; the function is
       majority wins. Press <i>No fault</i>: every agent sends its proposal to
       every other, each counter climbs to five, and all five agents apply the
@@ -342,7 +415,7 @@ There are no requirements of the agent that halts.
     </div>
 
     <figcaption>
-      <b>Figure 2. Deciding on N&minus;2, and disagreeing.</b>
+      <b>Figure 4. Deciding on N&minus;2, and disagreeing.</b>
       Five agents. Agents 1 to 4 propose red; Z, which has the highest id,
       proposes blue. Each agent decides when it gets proposals from
       N&minus;2 = 3 other agents. Click <i>Run it</i> for an example of
@@ -390,7 +463,7 @@ There are no requirements of the agent that halts.
     </div>
 
     <figcaption>
-      <b>Figure 3. One proposal in a thousand and one.</b>
+      <b>Figure 5. One proposal in a thousand and one.</b>
       Click button to see a run that violates the agreement requirement.
     </figcaption>
   </figure>
@@ -418,7 +491,7 @@ There are no requirements of the agent that halts.
          aria-label="A ragged tree below a 0-valent state: every state in it is 0-valent and every decided leaf decides 0"></svg>
 
     <figcaption>
-      <b>Figure 4.</b>
+      <b>Figure 6.</b>
       In all computations from a 0-valent state, all non-halting agents
       decide a consensus of 0 in a finite number of steps.
     </figcaption>
@@ -429,7 +502,7 @@ There are no requirements of the agent that halts.
          aria-label="A ragged tree whose frontier holds a 0-valent state, a 1-valent state and a bivalent state, making the root bivalent"></svg>
 
     <figcaption>
-      <b>Figure 5.</b>
+      <b>Figure 7.</b>
       In a bivalent state, some computations reach a consensus of 0 and
       others reach a consensus of 1.
     </figcaption>
@@ -443,8 +516,8 @@ There are no requirements of the agent that halts.
   initial state is either 0-valent or 1-valent. There is no need for consensus
   if all initial states are 0-valent because then validity guarantees that the
   only consensus is 0. Similarly, we don't consider the case where all initial
-  states are 1-valent. Now, we deal with the case with at least one 0-valent and
-  at least one 1-valent initial state.
+  states are 1-valent. Now, we deal with the case where there
+  exists at least one 0-valent and at least one 1-valent initial state.
 </p>
 
 <p>
@@ -470,7 +543,7 @@ There are no requirements of the agent that halts.
          aria-label="Six initial states of five agents proposing 0 or 1, with the majority valence of each, and the one agent whose proposal differs between the two where the valence flips"></svg>
 
     <figcaption>
-      <b>Figure 6. Majority voting.</b>
+      <b>Figure 8. Majority voting.</b>
       Each column is an initial state: the five agents propose 0 or 1, and the
       consensus is the majority. The valence flips between C2 and C3, which
       differ only in the proposal of the circled agent.
@@ -479,7 +552,10 @@ There are no requirements of the agent that halts.
 
 
 <p>
-  Back to the main lemma. Let X and Y differ only by the input of agent b.
+  Back to the lemma which states: 
+  There exists an initial bivalent state. 
+  Let X and Y be a 0-valent and 1-valent initial states,
+  where X and Y  differ only by the input of agent b.
 </p>
 
 <p>
@@ -494,6 +570,7 @@ There are no requirements of the agent that halts.
   consensus value of 0. 
   This contradicts the assumption that all computations from Y terminate
   with consensus value 1. Therefore X and Y are bivalent states.
+  This completes the proof of the lemma that there exists an initial bivalent state.
 </p>
 
 <figure class="fig wideout">
@@ -513,7 +590,7 @@ There are no requirements of the agent that halts.
     </div>
 
     <figcaption>
-      <b>Figure 7. Agent u halts. Computations for agents v, w are identical.</b>
+      <b>Figure 9. Agent u halts. Computations for agents v, w are identical.</b>
       u's proposal is 0 in the top diagram and 1 in the lower diagram. When u
       halts, then for every computation starting with proposal 0 (the top diagram)
       there is an identical computation starting with proposal 1 (lower diagram)
@@ -523,25 +600,24 @@ There are no requirements of the agent that halts.
 
 <h3>The Critical Event Lemma</h3>
 <p>
-  Let S be a state of the system in which m is the message at the
-  front of p's inbox in state S.
-  Fairness in the computation model requires that agent p must
-  receive m eventually.
 </p>
 
 <p>
-  <b>The lemma.</b> If S is bivalent then there is a computation, c, in 
-  which p executes no action, such that c followed by the event "p reads m"
-  ends in a bivalent state.
+  <b>The lemma.</b> For every bivalent state, S, and every event e,
+   there is a computation, c, in which p executes no action, such that 
+   e(c(S)) is bivalent.
 </p>
 
 <p>
   Let R be the set of states that are reachable from S by executing
-  a computation c in which agent p takes no action. 
+  a computation c in which agent p takes no action.
+  Let e be the event: <i>p gets a message from inbox w.</i>
+  Let m be the message at the front of inbox w in state S.
   Because p takes no action in c, it follows that message m is in
-  the inbox of p in all states in R.
+  the front of inbox w of p in all states in R.
+  Therefore, p can read m from w in all states in R.
   The lemma says that there exists a state S* in R such that if
-  p reads m in S* the next state S' is bivalent.
+  p gets a message (m) from inbox w in S* the next state S' is bivalent.
 </p>
 
 <figure class="fig wideout">
@@ -549,12 +625,14 @@ There are no requirements of the agent that halts.
          aria-label="The set R of states reachable from S without p taking a step, with the event p reads m leading out of R to 0-valent, 1-valent and one bivalent state"></svg>
 
     <figcaption>
-      <b>Figure 8. The set R.</b>
-      R holds every state reachable from S by a computation in which p takes
-      no action; the squiggly arrows are those computations. Message m is
-      still at the front of p&rsquo;s inbox in every state of R, so p can read
-      m: the red arrows. The lemma says that one of them &mdash; the
-      highlighted arrow, from S* to S&prime; &mdash; ends in a bivalent state.
+      <b>Figure 10. The set R.</b>
+      R holds in every state reachable from S by a computation in which p 
+      does not read inbox w. The squiggly arrows show those computations. 
+      So, message m is still at the front of p&rsquo;s inbox w in every state of R. 
+      Therefore event e &mdash; p reads m from inbox w &mdash; is enabled 
+      in every state of R. This is shown by the red arrows. 
+      The lemma says that there exists such an arrow &mdash; the highlighted arrow, 
+      from S* to S&prime; &mdash; ending in a bivalent state.
     </figcaption>
   </figure>
 
@@ -568,22 +646,19 @@ There are no requirements of the agent that halts.
   <b>Assumption that leads to a contradiction:</b>
 </p>
 <p>
-  For all S* in R, if p reads m in S*, the next state S' is either 
-  a 0-valent state or a 1-valent state.
+  For all S* in R, e(S*) is not bivalent.
 </p>
 
 <p>
-  State S is in R, and from the assumption if p takes an action in state S
-  the next state S' is 0-valent or 1-valent.
-  Assume without loss of generality that S' is 0-valent. So, there exists a state
-  in R such that when p reads m in the state, the next state
-  is 0-valent.
+  The assumption is equivalent to: for all S* in R, e(S*) is 0-valent or 1-valent.
+  State S is in R, and from the assumption  e(S) is 0-valent or 1-valent.
+  Assume without loss of generality that e(S) is 0-valent. We will prove 
+  (next lemma) that there exists a state S* in R such that e(S*) is 1-valent.
 </p>
 
 <p>
-  <b>Sublemma</b>
-  There exists a state S* in R such that when 
-  p reads m in state S* the next state is 1-valent.
+  <b>Sublemma 1</b>
+  There exists a state S* in R such that e(S*) is 1-valent.
 </p>
 
 <figure class="fig wideout">
@@ -591,48 +666,52 @@ There are no requirements of the agent that halts.
          aria-label="Reading m in S gives a 0-valent state; the sublemma claims a state S* in R where reading m gives a 1-valent state"></svg>
 
     <figcaption>
-      <b>Figure 9. What the sublemma claims.</b>
-      Reading m in S leads to a 0-valent state. The sublemma says that R also
-      holds a state S* &mdash; reached from S by a computation in which p takes
-      no action &mdash; in which reading m leads to a 1-valent state. That is
-      the highlighted arrow, and nothing so far says it exists.
+      <b>Figure 11. Sublemma 1.</b>
+      e(S) leads to a 0-valent state. There exists S* 
+      reached from S by a computation in which p takes
+      no action such that e(S*) is 1-valent.
     </figcaption>
   </figure>
 
   
 <p>
-  <b>Proof of sublemma</b>
+  <b>Proof of sublemma 1</b>
 </p>
 
 <p>
-  Because S is bivalent, there exists a computation, c, from S that
-  reaches a 1-valent state T.
-  Consider two cases: (1) p executes no action in c and (2)
-  p executes an action in c.
+  Because S is bivalent, there exists a computation, c*, 
+  such that c*(S) is 1-valent.
+  Consider two cases: (1) p executes no action in c* and (2)
+  p executes an action in c* - these actions are reading inboxes
+  other than w because c* is a computation in which p does not
+  read inbox w.
 </p>
 
 <p>
   Case 1:
-  If p executes no action in c then state T
-  is in R. So message m is in p's inbox in state T. Because T is 1-valent,
-  if p reads m in state T the next state is also 1-valent.
-  Therefore the sublemma holds with S* set to T. 
+  If p executes no action in c* then c*(S) is in R. 
+  Because c*(s) is 1-valent, e(c*(S)) is 1-valent.
+  Therefore the sublemma holds with S* set to c*(S). 
 </p>
 
 <p>
   Case 2:
-  Consider the first action of agent p in computation c.
-  Let c be the sequence of steps [c_pre; p reads m; c_post],
-  i.e., partition c into the steps c_pre and c_post before and 
-  after p reads m.
-  Let S# be the state after c_pre.
-  Let S^ be the state after p reads m in S#.
-  There exists a computation -- c_post -- from
-  S^ to T.  
-  Because T is 1-valent, S^ cannot be 0-valent.
-  By the assumption S^ is not bivalent.
-  Therefore S^ is 1-valent.
-  So the lemma holds with S* set to S#.
+  Every infinite computation starting in state S
+  has e eventually. 
+  Let c* be a computation [c_pre; e; c_post],
+  where event e does not appear in  c_pre.
+  It is possible that agent p executes actions in c_pre
+  however it does not read inbox w in c_pre.
+  c_post is arbitrary.
+  <br>
+  c*(S) = c_post(e(c_pre(S)))
+  <br>
+  Because c*(S) is 1-valent, e(c_pre(S)) is not 0-valent.
+  <br>
+  From the assumption, e(c_pre(S)) is not bivalent. 
+  Therefore e(c_pre(S)) is 1-valent.
+  <br>
+  So the lemma holds with S* set to c_pre(S).
   This completes proof of the sublemma.
 </p>
 
@@ -641,24 +720,31 @@ There are no requirements of the agent that halts.
          aria-label="Case 2: c splits into c_pre from S to S-sharp inside R, p reads m to S-hat, and c_post from S-hat to the 1-valent state T"></svg>
 
     <figcaption>
-      <b>Figure 10. Case 2: p reads m somewhere inside c.</b>
-      Split c at p&rsquo;s first action. c_pre carries S to S#, and S# is in R
-      because p has taken no action yet. Then p reads m, reaching S^, and
-      c_post carries S^ to the 1-valent state T. So S^ cannot be 0-valent, and
-      by the assumption it is not bivalent. It is 1-valent.
+      <b>Figure 12. Case 2: No event e in c_pre, arbitrary events in c_post.</b>
+      Split c at p&rsquo;s first occurrence of e. c_pre carries S to S#, and S# is in R
+      because e is not in c. Then event e takes the state
+      from S# to S^. Finally c_post takes the state from S^ to the 1-valent state T.
+      So S^ cannot be 0-valent. By the assumption it is not bivalent. So S^ is 1-valent.
     </figcaption>
   </figure>
 
 
 <p>
-  Back to the main lemma. Every state of R is reached from S by a
-  sequence of events, none of them e. Take such a sequence for a state that
-  yields 1-valent, and walk along it from S. At the start, executing e yields
-  0-valent; at the end, it yields 1-valent; and every state along the way is
-  in R, so executing e in it yields one or the other. So somewhere along the
-  walk there are two consecutive states E and E&prime;, where E&prime; is
-  reached from E by a single event e&prime;, such that executing e in E yields
-  a 0-valent state and executing e in E&prime; yields a 1-valent state.
+  <b>Sublemma 2</b>
+  There exists a state E and event e' such that E is reachable from S, and
+   e(E) is 0-valent and e(e'(E)) is 1-valent.
+  </p>
+  
+  <p> From the previous sublemma, there exists an S* such that e(S*) 
+  is 1-valent.
+  We assumed e(S) is 0-valent.
+  State S* is reached from S by a computation c that does not include event e.
+  Because e(S) is 0-valent and e(c(S)) is 1-valent, there is some k such that
+  for the first k states X along computation c, e(X) is 0-valent, and 
+  for the remaining states Y in c, e(Y) is 1-valent. Let e' be the event that 
+  takes the last state X to the first state Y.
+  Then e(E) is 0-valent and e(e'(E)) is 1-valent.
+  This proves sublemma 2.
 </p>
 
 <figure class="fig wideout">
@@ -666,7 +752,7 @@ There are no requirements of the agent that halts.
          aria-label="The walk from S to S-sharp: reading m gives 0-valent at first and 1-valent at the end, so somewhere it flips, between two consecutive states E and E-prime"></svg>
 
     <figcaption>
-      <b>Figure 11. Where the answer flips.</b>
+      <b>Figure 13. Sublemma 2</b>
       Every state along the walk from S to S# is in R, so by the assumption
       reading m in it gives a 0-valent state or a 1-valent one. At S it gives
       0-valent; at S# it gives 1-valent. So somewhere the answer flips: two
@@ -677,13 +763,25 @@ There are no requirements of the agent that halts.
   </figure>
 
 
+<p> Now we prove the critical event lemma. Here is the theorem again:
+  For every bivalent state, S, and every event e,
+  there is a computation, c, in which p executes no action, such that 
+  e(c(S)) is bivalent.
+</p>
+
+<p>
+  From sublemma 2, there exists a state E and event e&prime; such 
+  that E is reachable from S, and e(E) is 0-valent and e(e&prime;(E)) is 1-valent.
+  Consider two cases: (1) e&prime; is an event at an agent other than p, and 
+  (2) e&prime; is an event at p.
+</p>
+
 <p>
   <b>Case 1: e&prime; is an event at an agent other than p.</b>
-  Events at different agents do not interfere, so executing e and then
-  e&prime; from E reaches exactly the same state as executing e&prime; and
-  then e. The first route reaches a state from a 0-valent state, so that state
-  is 0-valent. The second route reaches the state obtained by executing e in
-  E&prime;, which is 1-valent. One state cannot be both.
+  Events at different agents can be executed in arbitrary order.
+  So e&prime;(e(E)) = e(e&prime;(E)).
+  We have a contradiction:
+  e(e&prime;(E)) is 1-valent and e&prime; is 0-valent.
 </p>
 
 <figure class="fig wideout">
@@ -691,30 +789,49 @@ There are no requirements of the agent that halts.
          aria-label="Case 1: e-prime commutes with e, so the state reached by e-prime from the 0-valent state below E is the 1-valent state below E-prime"></svg>
 
     <figcaption>
-      <b>Figure 12. Case 1: e&prime; is an event at an agent other than p.</b>
+      <b>Figure 14. Case 1: e&prime; is an event at an agent other than p.</b>
       Then e and e&prime; do not interfere, and the heavy arrow at the bottom
       is the same event e&prime;: executing it in the state reached by reading
       m in E lands in exactly the state reached by reading m in E&prime;. That
       state is reachable from a 0-valent state, so it is 0-valent; and it is
-      1-valent. One state cannot be both.
+      1-valent. The same state cannot be both 0-valent and 1-valent. The
+      ellipse rings the step that cannot exist: a 0-valent state with a
+      1-valent successor.
     </figcaption>
   </figure>
 
 
 <p>
   <b>Case 2: e&prime; is an action by p.</b>
-  p has taken no action on the way to E, so m is still at the front of
-  p&rsquo;s inbox, and the only action p can take in E is to read m. So
-  e&prime; is that action, and E&prime; is the state it reaches &mdash; which
-  figure 11 marks 0-valent. Every state reachable from a 0-valent state is
-  0-valent, so the vertical edge from E&prime; to a 1-valent state is
-  impossible.
+  Consider a computation c* from S to E after which agent p halts.
+  All agents other than p decide on a consensus value in a finite number of steps.
+  Let the consensus value be v.
 </p>
-
 
 <p>
-  Both cases are impossible, so the supposition is false and the lemma holds.
+  Because c* has no actions by p, the events in c* are independent of actions
+  by p. Therefore, there exist computations [e, c*] and [e&prime; ; e ; c*] from E.
+  e(E) is 0-valent and so c*(e(E)) is also 0-valent, and therefore the consensus value
+  v is 0. However e&prime;(E) is 1-valent, and therefore c*(e(e&prime;(E))) is
+  also 1-valent, and therefore the consensus value is 1, a contradiction.
+  Therefore, the lemma holds.
 </p>
+
+<figure class="fig wideout">
+    <svg id="k3_g" viewBox="0 0 1240 620" role="img"
+         aria-label="Case 2: the computation c star, run from E-prime, after e, and after e-prime then e, giving consensus v, 0 and 1"></svg>
+
+    <figcaption>
+      <b>Figure 15. Case 2: e&prime; is an action by p.</b>
+      After E&prime;, let p halt and let the others run on to a decision: that
+      is the green computation c*, which carries E&prime; to S#, where the
+      consensus is v. c* contains no action of p, so it can be run just as well
+      after e, and after e&prime; and then e &mdash; the two other green
+      copies. The first starts in a 0-valent state, so v is 0. The second
+      starts in a 1-valent state, so v is 1.
+    </figcaption>
+  </figure>
+
 
 
 <h3>Putting the lemmas together</h3>
@@ -760,6 +877,170 @@ There are no requirements of the agent that halts.
 
 
 
+
+<script>
+(function(){
+  const PFX='net_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#ddd8cd', blue:'#1a5fd0'};
+  const BW=170, BH=86, PORT=13;
+  const A={W:{x:300,y:155}, X:{x:940,y:155},
+           Y:{x:300,y:405}, Z:{x:940,y:405}};
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function head(g,x,y,ux,uy,col,sz){
+    const s=sz||7, px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:
+      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
+      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
+  }
+  function onEdge(c,ux,uy){
+    const tx=(ux===0)?Infinity:(BW/2)/Math.abs(ux);
+    const ty=(uy===0)?Infinity:(BH/2)/Math.abs(uy);
+    const t=Math.min(tx,ty);
+    return [c.x+ux*t, c.y+uy*t];
+  }
+  // keep a port on the box boundary after it has been nudged sideways
+  function snap(c,x,y){
+    const dx=x-c.x, dy=y-c.y, hx=BW/2, hy=BH/2;
+    if(Math.abs(dx)/hx >= Math.abs(dy)/hy)
+      return [c.x+(dx<0?-hx:hx), c.y+Math.max(-hy,Math.min(hy,dy))];
+    return [c.x+Math.max(-hx,Math.min(hx,dx)), c.y+(dy<0?-hy:hy)];
+  }
+  function port(g,x,y,out){
+    g.appendChild(el('rect',{x:x-PORT/2, y:y-PORT/2, width:PORT, height:PORT,
+      rx:2.5, fill:out?C.ink:'#fff', stroke:C.ink, 'stroke-width':2}));
+  }
+  // one channel: an outbox of a, an inbox of b, and the wire between them
+  function wire(g,a,b,off){
+    const dx=b.x-a.x, dy=b.y-a.y, L=Math.hypot(dx,dy);
+    const ux=dx/L, uy=dy/L, px=-uy*off, py=ux*off;
+    const p=snap(a, onEdge(a,ux,uy)[0]+px, onEdge(a,ux,uy)[1]+py);
+    const q=snap(b, onEdge(b,-ux,-uy)[0]+px, onEdge(b,-ux,-uy)[1]+py);
+    const x1=p[0], y1=p[1], x2=q[0], y2=q[1];
+    g.appendChild(el('line',{x1:x1+ux*9, y1:y1+uy*9, x2:x2-ux*13, y2:y2-uy*13,
+      stroke:C.muted, 'stroke-width':2}));
+    head(g, x2-ux*9, y2-uy*9, ux, uy, C.muted);
+    port(g,x1,y1,true); port(g,x2,y2,false);
+  }
+  // an agent's channel to itself, looped outside the box
+  function self(g,c,dir){
+    const y0=c.y+dir*BH/2, y1=y0+dir*78;
+    const xa=c.x-42, xb=c.x+42;
+    g.appendChild(el('path',{d:'M'+xa+','+(y0+dir*9)+' C'+xa+','+y1+' '+
+      xb+','+y1+' '+xb+','+(y0+dir*13), fill:'none', stroke:C.muted,
+      'stroke-width':2}));
+    head(g, xb, y0+dir*9, 0, -dir, C.muted);
+    port(g,xa,y0,true); port(g,xb,y0,false);
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    const NAME=['W','X','Y','Z'];
+    NAME.forEach(function(a){ NAME.forEach(function(b){
+      if(a!==b) wire(g, A[a], A[b], 13); }); });
+    self(g, A.W, -1); self(g, A.X, -1);
+    self(g, A.Y, 1);  self(g, A.Z, 1);
+    for(const n in A){
+      const c=A[n];
+      g.appendChild(el('rect',{x:c.x-BW/2, y:c.y-BH/2, width:BW, height:BH,
+        rx:14, fill:'#fff', stroke:C.ink, 'stroke-width':2.6}));
+      tag(g, c.x, c.y, n, C.ink, 22);
+    }
+  }
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='act_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#ddd8cd', blue:'#1a5fd0',
+           red:'#d13d0e', grey:'#8d8878'};
+  const TX=170, TW=380, TH=54, BX=880, BY=215;
+  const ROW=[{y:70,  from:'from Y', msgs:['m1','m2']},
+             {y:160, from:'from Z', msgs:[]},
+             {y:250, from:'from W', msgs:['m3']},
+             {y:345, from:'from X', msgs:['null'], self:true}];
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function head(g,x,y,ux,uy,col,sz){
+    const s=sz||8, px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:
+      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
+      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    ROW.forEach(function(r,i){
+      const empty=r.msgs.length===0, col=empty?C.grey:C.ink;
+      g.appendChild(el('rect',{x:TX, y:r.y-TH/2, width:TW, height:TH, rx:10,
+        fill:empty?C.grey:C.blue, 'fill-opacity':empty?.07:.08,
+        stroke:col, 'stroke-width':empty?2:2.4,
+        'stroke-dasharray':empty?'6 5':'none'}));
+      tag(g, TX-16, r.y, r.from, col, 13.5, 'end');
+      if(empty) tag(g, TX+TW/2, r.y, 'empty', C.grey, 13);
+      r.msgs.forEach(function(m,i){
+        const x=TX+24+i*96;
+        g.appendChild(el('rect',{x:x, y:r.y-16, width:78, height:32, rx:7,
+          fill:'#fff', stroke:r.self?C.blue:C.ink, 'stroke-width':2.2}));
+        tag(g, x+39, r.y, m, r.self?C.blue:C.ink, 13);
+      });
+      if(r.self) tag(g, TX+TW-96, r.y, 'always there', C.blue, 12);
+      const x1=TX+TW+14, y1=r.y, x2=BX-92, y2=BY-45+i*30;
+      const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
+      const mx=(x1+x2)/2, my=(y1+y2)/2;
+      g.appendChild(el('line',{x1:x1, y1:y1,
+        x2:empty?mx-16:x2-ux*10, y2:empty?my-16*uy/ux:y2-uy*10,
+        stroke:empty?C.grey:C.ink, 'stroke-width':empty?2:2.4,
+        'stroke-dasharray':empty?'6 5':'none'}));
+      if(!empty) head(g, x2, y2, ux, uy, C.ink);
+      if(empty){
+        const s=11;
+        ['1,1','1,-1'].forEach(function(d){
+          const v=d.split(',').map(Number);
+          g.appendChild(el('line',{x1:mx-v[0]*s, y1:my-v[1]*s,
+            x2:mx+v[0]*s, y2:my+v[1]*s, stroke:C.red, 'stroke-width':3}));
+        });
+        tag(g, mx, my+30, 'nothing to read', C.red, 12);
+      }
+    });
+    g.appendChild(el('rect',{x:BX-92, y:BY-62, width:184, height:124, rx:16,
+      fill:'#fff', stroke:C.ink, 'stroke-width':2.8}));
+    tag(g, BX, BY-16, 'X', C.ink, 24);
+    tag(g, BX, BY+22, 'reads one message', C.muted, 12);
+    tag(g, BX, BY+42, 'and changes state', C.muted, 12);
+    tag(g, 660, 404, 'X chooses which of these to read', C.ink, 13.5);
+  }
+  draw();
+})();
+</script>
 
 <script>
 (function(){
@@ -1522,6 +1803,103 @@ There are no requirements of the agent that halts.
 
 <script>
 (function(){
+  const PFX='k3_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', blue:'#1a5fd0', red:'#d13d0e',
+           green:'#00947d'};
+  // Figure 13 again, with the computation that halts p drawn three times:
+  // from E', after e, and after e' and then e.
+  const TOPY=120, BOTY=330, BOXX=1075, BOXL=985;
+  const W=[{x:130,  name:'S',  v:0, root:true},
+           {x:385,  name:'',   v:0},
+           {x:640,  name:'E',  v:0},
+           {x:800,  name:'E′', v:1},
+           {x:1075, name:'S#', v:1}];
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function head(g,x,y,ux,uy,col,sz){
+    const s=sz||8, px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:
+      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
+      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
+  }
+  function squiggle(g,x1,y1,x2,y2,a0,b0,col,w){
+    const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1;
+    const ux=dx/L, uy=dy/L, px=-uy, py=ux;
+    const a=a0, b=L-b0, amp=6.5, wl=26, pts=[];
+    for(let t=a; t<=b; t+=3){
+      const o=amp*Math.sin(2*Math.PI*(t-a)/wl)*Math.min(1,(b-t)/22);
+      pts.push((x1+ux*t+px*o).toFixed(1)+','+(y1+uy*t+py*o).toFixed(1));
+    }
+    g.appendChild(el('polyline',{points:pts.join(' '), fill:'none',
+      stroke:col||C.muted, 'stroke-width':w||2, 'stroke-linecap':'round'}));
+    head(g, x1+ux*b, y1+uy*b, ux, uy, col||C.muted, w?8:6);
+  }
+  function box(g,y,v,label){
+    const col=v?C.red:C.blue;
+    g.appendChild(el('rect',{x:BOXX-90, y:y-24, width:180, height:48, rx:12,
+      fill:col, 'fill-opacity':.14, stroke:col, 'stroke-width':2.6}));
+    tag(g, BOXX, y+1, label, col, 13);
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    squiggle(g, W[0].x, TOPY, W[1].x, TOPY, 34, 16);
+    squiggle(g, W[1].x, TOPY, W[2].x, TOPY, 16, 16);
+    g.appendChild(el('line',{x1:W[2].x+16, y1:TOPY, x2:W[3].x-22, y2:TOPY,
+      stroke:C.ink, 'stroke-width':5}));
+    head(g, W[3].x-16, TOPY, 1, 0, C.ink, 11);
+    tag(g, (W[2].x+W[3].x)/2, TOPY-26, 'e′', C.ink, 15);
+    W.forEach(function(n){
+      const col=n.v?C.red:C.blue, y1=TOPY+(n.root?32:16);
+      g.appendChild(el('line',{x1:n.x, y1:y1, x2:n.x, y2:BOTY-38,
+        stroke:col, 'stroke-width':2.2}));
+      head(g, n.x, BOTY-32, 0, 1, col, 8);
+      tag(g, n.x+11, (y1+BOTY-32)/2, 'e', col, 15, 'start');
+      g.appendChild(el('circle',{cx:n.x, cy:BOTY, r:32, fill:col,
+        'fill-opacity':.2, stroke:col, 'stroke-width':2.8}));
+      tag(g, n.x, BOTY+1, n.v+'-valent', col, 9.5);
+    });
+    // c*, three times: from E', after e, and after e' and then e
+    squiggle(g, W[3].x, TOPY, W[4].x, TOPY, 16, 16, C.green, 3.6);
+    tag(g, (W[3].x+W[4].x)/2, TOPY-24, 'c*', C.green, 14);
+    squiggle(g, W[3].x, BOTY, BOXL, 455, 34, 6, C.green, 3.6);
+    tag(g, (W[3].x+BOXL)/2+26, (BOTY+455)/2-18, 'c*', C.green, 14);
+    squiggle(g, W[2].x, BOTY, BOXL, 560, 34, 6, C.green, 3.6);
+    tag(g, (W[2].x+BOXL)/2+26, (BOTY+560)/2-16, 'c*', C.green, 14);
+    box(g, 455, 1, 'consensus is 1');
+    box(g, 560, 0, 'consensus is 0');
+    W.forEach(function(n){
+      if(n.root){
+        g.appendChild(el('circle',{cx:n.x, cy:TOPY, r:30, fill:'#fff',
+          stroke:C.ink, 'stroke-width':2.6}));
+        tag(g, n.x, TOPY-6, 'S', C.ink, 16);
+        tag(g, n.x, TOPY+12, 'bivalent', C.muted, 8.5);
+      } else {
+        g.appendChild(el('circle',{cx:n.x, cy:TOPY, r:8, fill:C.ink}));
+        if(n.name) tag(g, n.x, TOPY-28, n.name, C.ink, 15);
+      }
+    });
+    tag(g, W[4].x, TOPY-54, 'consensus is v', C.green, 13);
+  }
+  draw();
+})();
+</script>
+
+<script>
+(function(){
   const PFX='wk_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
   const NS='http://www.w3.org/2000/svg';
@@ -1582,7 +1960,7 @@ There are no requirements of the agent that halts.
       g.appendChild(el('line',{x1:n.x, y1:y1, x2:n.x, y2:BOTY-38,
         stroke:col, 'stroke-width':2.2}));
       head(g, n.x, BOTY-32, 0, 1, col, 8);
-      tag(g, n.x+11, (y1+BOTY-32)/2, 'p reads m', col, 10.5, 'start');
+      tag(g, n.x+11, (y1+BOTY-32)/2, 'e', col, 15, 'start');
       g.appendChild(el('circle',{cx:n.x, cy:BOTY, r:32, fill:col,
         'fill-opacity':.2, stroke:col, 'stroke-width':2.8}));
       tag(g, n.x, BOTY+1, n.v+'-valent', col, 9.5);
@@ -1665,7 +2043,7 @@ There are no requirements of the agent that halts.
       g.appendChild(el('line',{x1:n.x, y1:y1, x2:n.x, y2:BOTY-38,
         stroke:col, 'stroke-width':2.2}));
       head(g, n.x, BOTY-32, 0, 1, col, 8);
-      tag(g, n.x+11, (y1+BOTY-32)/2, 'p reads m', col, 10.5, 'start');
+      tag(g, n.x+11, (y1+BOTY-32)/2, 'e', col, 15, 'start');
       g.appendChild(el('circle',{cx:n.x, cy:BOTY, r:32, fill:col,
         'fill-opacity':.2, stroke:col, 'stroke-width':2.8}));
       tag(g, n.x, BOTY+1, n.v+'-valent', col, 9.5);
@@ -1676,7 +2054,10 @@ There are no requirements of the agent that halts.
       g.appendChild(el('line',{x1:a, y1:BOTY, x2:b, y2:BOTY,
         stroke:C.ink, 'stroke-width':5}));
       head(g, b+10, BOTY, 1, 0, C.ink, 11);
-      tag(g, (W[2].x+W[3].x)/2, BOTY+46, 'e\u2032', C.ink, 15);
+      g.appendChild(el('ellipse',{cx:(W[2].x+W[3].x)/2, cy:BOTY,
+        rx:(W[3].x-W[2].x)/2+46, ry:54, fill:'none', stroke:C.red,
+        'stroke-width':2.6}));
+      tag(g, (W[2].x+W[3].x)/2, BOTY+78, 'e\u2032', C.ink, 15);
     })();
     // the states of the walk
     W.forEach(function(n){
@@ -1764,10 +2145,10 @@ There are no requirements of the agent that halts.
       g.appendChild(el('circle',{cx:d[0], cy:d[1], r:6, fill:C.muted})); });
     squiggle(g, CX, CY, STAR.x, STAR.y, 36, 16);
     let m=arrow(g, CX, CY, T0.x, T0.y, 34, 30, false);
-    tag(g, m[0], m[1]-22, 'p reads m', C.red, 11);
+    tag(g, m[0], m[1]-22, 'e', C.red, 15);
     state(g, T0.x, T0.y, C.blue, '0-valent');
     m=arrow(g, STAR.x, STAR.y, T1.x, T1.y, 14, 30, true);
-    tag(g, m[0], m[1]-24, 'p reads m', C.red, 12);
+    tag(g, m[0], m[1]-24, 'e', C.red, 15);
     state(g, T1.x, T1.y, C.red, '1-valent');
     g.appendChild(el('circle',{cx:STAR.x, cy:STAR.y, r:8, fill:C.ink}));
     tag(g, STAR.x, STAR.y+26, 'S*', C.ink, 14);
@@ -1843,7 +2224,7 @@ There are no requirements of the agent that halts.
       g.appendChild(el('line',{x1:ax, y1:ay, x2:bx, y2:by, stroke:C.red,
         'stroke-width':2.4}));
       head(g, bx, by, ux, uy, C.red, 8);
-      tag(g, (ax+bx)/2, (ay+by)/2-22, 'p reads m', C.red, 12);
+      tag(g, (ax+bx)/2, (ay+by)/2-22, 'e', C.red, 15);
     })();
     g.appendChild(el('circle',{cx:SH.x, cy:SH.y, r:8, fill:C.ink}));
     tag(g, SH.x+6, SH.y-24, 'S#', C.ink, 14);
@@ -1944,8 +2325,8 @@ There are no requirements of the agent that halts.
     DOT.forEach(function(d){
       g.appendChild(el('circle',{cx:d.x, cy:d.y, r:d.star?8:7,
         fill:d.star?C.ink:C.muted})); });
-    tag(g, 552, 78, 'p reads m', C.red, 11);
-    tag(g, 640, 356, 'p reads m', C.red, 12);
+    tag(g, 552, 78, 'e', C.red, 15);
+    tag(g, 640, 356, 'e', C.red, 15);
     tag(g, 450, 420, 'S*', C.ink, 14);
     tag(g, TX+36, 350, 'S′', C.ink, 14, 'start');
     g.appendChild(el('circle',{cx:CX, cy:CY, r:34, fill:'#fff',
