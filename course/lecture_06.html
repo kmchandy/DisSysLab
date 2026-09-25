@@ -1,0 +1,2067 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Consensus: Impossible with a Single Faulty Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+
+
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  p{color:var(--body); margin:0 0 15px}
+  /* The proof's three steps are h4s: a label on a paragraph, not a section,
+     so they are smaller than h3 and do not start a slide in present mode. */
+  h4{font-family:var(--sans); font-weight:700; font-size:15.5px;
+     letter-spacing:.01em; color:var(--ink); margin:20px 0 6px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  figure.fig{margin:30px 0 26px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  input[type=range]{flex:1 1 200px; min-width:160px; accent-color:var(--orange)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
+          font-size:13.5px; color:var(--muted)}
+  .legend i{font-style:normal; color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em}
+  .hint{font-size:13px; color:var(--muted)}
+  table.state{width:100%; margin-top:14px; border-collapse:collapse;
+              font:13.5px/1.5 var(--mono)}
+  table.state th{text-align:left; font:600 11.5px var(--sans); letter-spacing:.12em;
+    text-transform:uppercase; color:var(--muted); padding:0 12px 6px 0; font-weight:700}
+  table.state td{padding:5px 12px 5px 0; border-top:1px solid var(--line);
+                 vertical-align:baseline}
+  table.state td.k{color:var(--muted); white-space:nowrap; width:104px}
+  table.state td b{color:var(--ink)}
+  .none{color:#b9b4a8}
+  .hot{color:var(--orange); font-weight:700}
+  .chan{color:var(--teal); font-weight:700}
+  .facts{margin-top:14px; font:14px/1.7 var(--mono)}
+  .facts div{display:flex; gap:10px; align-items:baseline; padding:5px 0;
+             border-top:1px solid var(--line)}
+  .facts .k{width:172px; flex:none; font:600 11.5px var(--sans);
+            letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+  .fixed{color:var(--teal); font-weight:700}
+  .moved{color:var(--ink); font-weight:700}
+  .ok{color:var(--teal); font-weight:700}
+  .bad{color:var(--orange); font-weight:700}
+  .dn{color:var(--orange); font-weight:700}
+  .up{color:var(--teal); font-weight:700}
+  .cc{color:#8d8878; font-weight:700}
+  /* A definition the rest of the lecture leans on. Its own block, so it
+     is one beat in present mode and one thing to look at on the page. */
+  p.key{margin:20px 0 18px; padding:15px 18px 15px 20px; color:var(--ink);
+    background:#fff6ef; border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0; font-size:18px; line-height:1.5; font-weight:600}
+  p.key b, p.key strong{color:var(--ink); font-weight:800}
+  p.key .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
+    margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab</div>
+    <h1>Distributed Consensus</h1>
+
+    <p>
+      <b>The distributed consensus problem</b>: 
+        Each agent in a system proposes a value; the problem is to develop
+        an algorithm by which all agents agree on a single value chosen
+        among the proposed values. The algorithm has the following 
+        requirements:
+    </p>
+    
+    <ol>
+      <li>
+        <strong>Validity:</strong> The value that the agents agree on must be a value proposed by at least
+        one of the agents.
+      </li>
+      <li>
+        <strong>Agreement:</strong> All agents must agree on the same value.
+      </li>
+      <li>
+        <strong>Termination:</strong> Every agent must eventually decide: it
+        computes a consensus value, and never changes it afterwards.
+      </li>
+    </ol>
+    <p>
+      Achieving consensus is the key to many distributed algorithms including
+      those that manage cryptocurrency. Without consensus, an agent may
+      buy multiple items with the same coin. 
+      Consensus requires that all agents agree on who owns a coin in each state;
+      all agents agree that an agent X has the coin in a state, and after X uses
+      that coin to buy an item from agent Y, then all agents agree that Y has the
+      coin.
+    </p>
+
+    <p>
+      <strong>The FLP theorem:</strong>
+      Fischer, Lynch and Paterson (FLP) proved that there is no 
+      deterministic algorithm that solves distributed consensus in
+      every execution, if even one agent may halt.
+    </p>
+
+    <p>
+      In later classes we will study two consensus algorithms:
+      the Paxos algorithm and blockchain algorithms.
+      Paxos guarantees agreement and validity, but not termination. 
+      Blockchain algorithms do not guarantee agreement.
+      These algorithms work for most practical situations.
+    </p>
+
+<h2>The No-Fault Model</h2>
+
+<p>
+  <b>A fully connected network:</b>
+  Let the number of agents in the network be N.
+  Every agent has a single inbox and N outboxes, with
+  each of its outboxes connected to a different one of the other agents.
+  In a step, an agent receives one message and sends messages
+  to some set of agents.
+</p>
+
+<p>
+  Associated with each agent Y is a boolean variable, Y.finished, which
+  signals whether Y has finished computing the consensus value.
+  Initially Y.finished is false, and after Y computes the consensus value
+  Y.finished becomes true and remains true thereafter.
+</p>
+
+
+<p>
+  Associated with each agent Y is a constant, Y.proposal, which
+  is the value that Y proposes to the other agents as a consensus
+  value. The simplest case is where Y.proposal can take on only
+  two values, say 0 and 1, or "red" and "blue".
+  Each agent Y has a variable, Y.consensus, which is the consensus 
+  value that Y computes. The three parts of the specification are:
+</p>
+
+<ol>
+    <li>
+      <b>Termination: </b> 
+      <ol>
+        <li>
+          For all agents Y: Y.finished becomes true eventually.
+        </li>
+        <li>
+          Y.consensus remains unchanged after Y.finished becomes true.
+        </li>
+      </ol>
+    </li>
+    <li>
+      <b>Validity:</b>
+      The consensus value computed by an agent must be a value proposed
+      by some agent.
+      <br>
+      For all Y: Y.finished implies: 
+      <br>
+      exists agent X such that Y.consensus = X.proposal
+    </li>
+    <li>
+      <b>Agreement:</b>
+      All agents must agree on the consensus value.
+      <br>
+      For all agents X,Y: (X.finished AND Y.finished) implies:
+      <br>
+      X.consensus = Y.consensus
+    </li>
+</ol>
+
+<h3>Examples of Algorithms</h3>
+
+<p>
+  A simple algorithm is as follows.
+  Let N be the number of agents.
+  Each agent sends a message containing its id
+  and its proposal to all agents.
+  After receiving proposals from all other agents, an agent Y
+  sets Y.finished to true, and sets Y.consensus to one
+  of the proposals chosen by a function of the proposals.
+  Examples of functions are:
+</p>
+
+<ol>
+  <li>
+    <b>Highest id wins:</b>
+    Each agent Y sets Y.consensus to Z.proposal where Z
+    has the highest id among all the agents. (Assume ids
+    are unique and totally ordered.)
+  </li>
+  <li>
+    <b>Majority vote wins:</b>
+    Each agent Y sets Y.consensus to the majority value
+    of the proposals. In the case of ties, the majority
+    value is determined by some function, e.g., choose
+    0 if the alternatives are 0 and 1.
+  </li>
+</ol>
+
+<p>
+  The proof that the algorithm is correct is straightforward.
+  <ol>
+    <li>
+    <b>Termination:</b> Each agent Y sets Y.finished to true 
+    eventually because it receives proposals from all agents 
+    eventually. Y.consensus does not change after Y.finished 
+    becomes true. 
+    </li>
+    <li>
+    <b>Agreement:</b> Because all agents use the same function 
+    they agree on the consensus.
+    </li>
+    <li>
+    <b>Validity:</b> The function selects one of the proposals.
+    </li>
+  </ol> 
+</p>
+<figure class="fig wideout">
+    <svg id="nf_g" viewBox="0 0 1240 350" role="img"
+         aria-label="Five agents exchanging proposals and all computing the same majority, and the same algorithm when one agent halts before sending"></svg>
+
+    <div class="ctrls">
+      <button id="nf_up" class="primary">No fault</button>
+      <button id="nf_halt">Z halts before sending</button>
+      <button id="nf_reset">Reset</button>
+      <span class="status" id="nf_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Proposals in hand</span><span id="nf_count"></span></div>
+      <div><span class="k">Decisions</span><span id="nf_dec"></span></div>
+      <div><span class="k">The requirements</span><span id="nf_ok"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 1. The no-fault algorithm, and what one halt does to it.</b>
+      Five agents; two propose red and three propose blue; the function is
+      majority wins. Press <i>No fault</i>: every agent sends its proposal to
+      every other, each counter climbs to five, and all five agents apply the
+      same function to the same five proposals and decide blue. 
+      Now press <i>Z halts before sending</i>. Four agents get four
+      proposals, half red and half blue; they cannot decide.
+      They wait for the fifth proposal forever.
+    </figcaption>
+  </figure>
+
+
+<h2>The Fault Model</h2>
+<p>
+In the UNITY model of distributed systems, each component
+of the system (agents, outboxes, connections) executes its
+actions infinitely often.
+We modify the UNITY model slightly to produce a <b>fault
+model</b> that allows agents to halt.
+An agent halts at a point in a computation by executing no 
+further actions.
+So, an agent that halts executes its action a finite number of times,
+whereas agents that don't halt execute their actions infinitely often.
+The specification is that the agents that do not
+halt satisfy the requirements of termination, validity and agreement.
+There are no requirements of the agent that halts.
+</p>
+
+
+<p>
+  Let's look at the two algorithms for consensus for the no-fault case
+  and determine if they will work for the case where an agent may halt.
+</p>
+
+
+<h3>Example of a fault-model algorithm: highest id wins</h3>
+<p>
+  Consider a computation in which the agent with the highest id halts
+  without sending messages. Let's look at a system with N agents
+  where Z is the agent with the highest id.
+</p>
+
+<p>
+  An algorithm in which an agent waits to receive messages from all 
+  other N-1 agents will not terminate because the message
+  from Z never arrives. So, this algorithm violates
+  the requirement of termination. 
+</p>
+
+<p>
+  An algorithm that does terminate is as
+  follows. Each agent determines its consensus after receiving proposals
+  from N&minus;2 <i>other</i> agents, so each agent can determine its
+  consensus without ever hearing from Z. This algorithm terminates.
+  Does it satisfy the agreement requirement?
+</p>
+
+<p>
+  Consider a computation in which all agents
+  other than Z propose red while Z proposes blue. An agent that receives
+  proposals from all the agents other than Z determines that the consensus
+  is red, while an agent that receives Z's proposal, and then receives 
+  other proposals, determines that the consensus is blue.
+</p>
+<figure class="fig wideout">
+    <svg id="sub_g" viewBox="0 0 1240 380" role="img"
+         aria-label="Two agents each deciding after hearing from three others, but from different threes, so they choose different consensus values"></svg>
+
+    <div class="ctrls">
+      <button id="sub_run" class="primary">Run it</button>
+      <button id="sub_reset">Reset</button>
+      <span class="status" id="sub_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Agent 1 heard from</span><span id="sub_x"></span></div>
+      <div><span class="k">Agent 4 heard from</span><span id="sub_y"></span></div>
+      <div><span class="k">Agreement</span><span id="sub_ok"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 2. Deciding on N&minus;2, and disagreeing.</b>
+      Five agents. Agents 1 to 4 propose red; Z, which has the highest id,
+      proposes blue. Each agent decides when it gets proposals from
+      N&minus;2 = 3 other agents. Click <i>Run it</i> for an example of
+      a computation that violates the agreement requirement.
+    </figcaption>
+  </figure>
+
+
+<h3>Example of a fault-model algorithm: majority wins</h3>
+<p>
+  Look at an example of 1001 agents, and let us call one of the agents Z.
+  500 of the agents other than Z propose red while the other 500 propose
+  blue. So Z's single proposal decides the majority: with it the vote is
+  501 to 500 one way or the other, and without it the vote is tied.
+  If the agents wait for Z for ever then the algorithm does not terminate.
+</p>
+
+<p>
+  An algorithm that terminates is one in which agents determine consensus after
+  receiving proposals from 1000 agents.
+  Assume that agents that receive an equal number of red and blue proposals
+  determine that the consensus is red.
+  Consider a computation in which an agent X has received no message from Z and
+  has received 500 red and 500 blue proposals. So X determines the consensus
+  to be red. In the same computation,
+  an agent Y receives a proposal from Z, and if that proposal is blue
+  then Y makes its decision based on 499 red and 501 blue proposals.
+  So Y determines that the consensus is blue.
+  This algorithm violates the agreement requirement.
+</p>
+<figure class="fig wideout">
+    <svg id="maj_g" viewBox="0 0 1240 400" role="img"
+         aria-label="Two agents tallying 1000 proposals each, one of them including Z's proposal, and reaching different majorities"></svg>
+
+    <div class="ctrls">
+      <button id="maj_z" class="primary">Let Z&rsquo;s proposal reach Y</button>
+      <button id="maj_reset">Reset</button>
+      <span class="status" id="maj_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Agent X&rsquo;s tally</span><span id="maj_v0"></span></div>
+      <div><span class="k">Agent Y&rsquo;s tally</span><span id="maj_v1"></span></div>
+      <div><span class="k">Agreement</span><span id="maj_ok"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 3. One proposal in a thousand and one.</b>
+      Click button to see a run that violates the agreement requirement.
+    </figcaption>
+  </figure>
+
+
+<h2>Proof outline of the FLP theorem</h2>
+<p>
+  Assume that proposals are either 0 or 1.
+  Assume that initially each agent has one message in its inbox
+  which is that agent's proposal.
+</p>
+<p>
+  <b>Valence</b>
+  Associated with each state of the system is a <strong>valence</strong> which
+  can be 0, 1, or <b>bi</b>.
+  The valence of a state is 0 exactly when all computations that start in that 
+  state terminate with all non-halted agents reaching a consensus value of 0.
+  Likewise, the valence of a state is 1 exactly when all computations that start in that 
+  state terminate with all non-halted agents reaching a consensus value of 1.
+  So, the valence of a state, S, is <b>bi</b> exactly when some computation from 
+  S reaches a consensus of 0, and some computation from S reaches a consensus of 1.
+</p>
+<figure class="fig wideout">
+    <svg id="zv_g" viewBox="0 0 1240 480" role="img"
+         aria-label="A ragged tree below a 0-valent state: every state in it is 0-valent and every decided leaf decides 0"></svg>
+
+    <figcaption>
+      <b>Figure 4.</b>
+      In all computations from a 0-valent state, all non-halting agents
+      decide a consensus of 0 in a finite number of steps.
+    </figcaption>
+  </figure>
+
+<figure class="fig wideout">
+    <svg id="mx_g" viewBox="0 0 1240 480" role="img"
+         aria-label="A ragged tree whose frontier holds a 0-valent state, a 1-valent state and a bivalent state, making the root bivalent"></svg>
+
+    <figcaption>
+      <b>Figure 5.</b>
+      In a bivalent state, some computations reach a consensus of 0 and
+      others reach a consensus of 1.
+    </figcaption>
+  </figure>
+
+
+
+<h3>Lemma: There exists an initial bivalent state</h3>
+<p>
+  Proof by contradiction. Suppose no initial state is bivalent. Then every
+  initial state is either 0-valent or 1-valent. There is no need for consensus
+  if all initial states are 0-valent because then validity guarantees that the
+  only consensus is 0. Similarly, we don't consider the case where all initial
+  states are 1-valent. Now, we deal with the case with at least one 0-valent and
+  at least one 1-valent initial state.
+</p>
+
+<p>
+  <b>Sublemma</b>
+  There exist initial states X and Y,
+  where X is 0-valent and Y is 1-valent, and where X and Y
+  differ from each other by the input of exactly one agent.
+</p>
+
+<p>
+  <b>Proof of sublemma</b>
+  Let U be any 0-valent initial state and V be any 1-valent initial state.
+  Construct a sequence of distinct initial states S[0], S[1], S[2],..., S[n]
+  as follows. S[0] is U and the difference between S[i] and V decreases for
+  increasing i. For all i: if S[i] is not V then obtain S[i+1] 
+  as follows. Change the input of any one agent b of S[i] where the input of 
+  b is different in S[i] and V. If S[i] is 0-valent and S[i+1] is 1-valent then
+  the result holds with X = S[i] and Y=S[i+1]. There exists such an i because
+  V is 1-valent. This proves the sublemma.
+</p>
+<figure class="fig wideout">
+    <svg id="ch_g" viewBox="0 0 1240 320" role="img"
+         aria-label="Six initial states of five agents proposing 0 or 1, with the majority valence of each, and the one agent whose proposal differs between the two where the valence flips"></svg>
+
+    <figcaption>
+      <b>Figure 6. Majority voting.</b>
+      Each column is an initial state: the five agents propose 0 or 1, and the
+      consensus is the majority. The valence flips between C2 and C3, which
+      differ only in the proposal of the circled agent.
+    </figcaption>
+  </figure>
+
+
+<p>
+  Back to the main lemma. Let X and Y differ only by the input of agent b.
+</p>
+
+<p>
+  Consider any computation C_0 starting in state X where agent u executes no steps
+  (see top diagram in figure below where agent u has proposal 0 in state X --
+  the initial state of the computation).
+  We can construct an identical computation C_1 starting in state Y 
+  where agent u executes no steps
+  (see lower diagram in figure below where agent u has proposal 1 in state Y).
+  If computation C_0 terminates with all agents agreeing on a consensus value 0
+  then the identical computation C_1 also terminates with all agents agreeing on a 
+  consensus value of 0. 
+  This contradicts the assumption that all computations from Y terminate
+  with consensus value 1. Therefore X and Y are bivalent states.
+</p>
+
+<figure class="fig wideout">
+    <svg id="cl_g" viewBox="0 0 1240 430" role="img"
+         aria-label="Two runs that differ only in the vote of an agent that crashes before speaking; the surviving agents see identical histories"></svg>
+
+    <div class="ctrls">
+      <button id="cl_play" class="primary">Play</button>
+      <button id="cl_reset">Reset</button>
+      <span class="status" id="cl_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">u&rsquo;s vote</span><span id="cl_vote"></span></div>
+      <div><span class="k">What v receives</span><span id="cl_v"></span></div>
+      <div><span class="k">What w receives</span><span id="cl_w"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 7. Agent u halts. Computations for agents v, w are identical.</b>
+      u's proposal is 0 in the top diagram and 1 in the lower diagram. When u
+      halts, then for every computation starting with proposal 0 (the top diagram)
+      there is an identical computation starting with proposal 1 (lower diagram)
+    </figcaption>
+  </figure>
+
+
+<h3>The Critical Event Lemma</h3>
+<p>
+  Let S be a state of the system in which m is the message at the
+  front of p's inbox in state S.
+  Fairness in the computation model requires that agent p must
+  receive m eventually.
+</p>
+
+<p>
+  <b>The lemma.</b> If S is bivalent then there is a computation, c, in 
+  which p executes no action, such that c followed by the event "p reads m"
+  ends in a bivalent state.
+</p>
+
+<p>
+  Let R be the set of states that are reachable from S by executing
+  a computation c in which agent p takes no action. 
+  Because p takes no action in c, it follows that message m is in
+  the inbox of p in all states in R.
+  The lemma says that there exists a state S* in R such that if
+  p reads m in S* the next state S' is bivalent.
+</p>
+
+<figure class="fig wideout">
+    <svg id="rr_g" viewBox="0 0 1240 560" role="img"
+         aria-label="The set R of states reachable from S without p taking a step, with the event p reads m leading out of R to 0-valent, 1-valent and one bivalent state"></svg>
+
+    <figcaption>
+      <b>Figure 8. The set R.</b>
+      R holds every state reachable from S by a computation in which p takes
+      no action; the squiggly arrows are those computations. Message m is
+      still at the front of p&rsquo;s inbox in every state of R, so p can read
+      m: the red arrows. The lemma says that one of them &mdash; the
+      highlighted arrow, from S* to S&prime; &mdash; ends in a bivalent state.
+    </figcaption>
+  </figure>
+
+
+<p>
+  We will prove that the following assumption leads to 
+  a contradiction.
+</p>
+
+<p>
+  <b>Assumption that leads to a contradiction:</b>
+</p>
+<p>
+  For all S* in R, if p reads m in S*, the next state S' is either 
+  a 0-valent state or a 1-valent state.
+</p>
+
+<p>
+  State S is in R, and from the assumption if p takes an action in state S
+  the next state S' is 0-valent or 1-valent.
+  Assume without loss of generality that S' is 0-valent. So, there exists a state
+  in R such that when p reads m in the state, the next state
+  is 0-valent.
+</p>
+
+<p>
+  <b>Sublemma</b>
+  There exists a state S* in R such that when 
+  p reads m in state S* the next state is 1-valent.
+</p>
+
+<figure class="fig wideout">
+    <svg id="sl_g" viewBox="0 0 1240 430" role="img"
+         aria-label="Reading m in S gives a 0-valent state; the sublemma claims a state S* in R where reading m gives a 1-valent state"></svg>
+
+    <figcaption>
+      <b>Figure 9. What the sublemma claims.</b>
+      Reading m in S leads to a 0-valent state. The sublemma says that R also
+      holds a state S* &mdash; reached from S by a computation in which p takes
+      no action &mdash; in which reading m leads to a 1-valent state. That is
+      the highlighted arrow, and nothing so far says it exists.
+    </figcaption>
+  </figure>
+
+  
+<p>
+  <b>Proof of sublemma</b>
+</p>
+
+<p>
+  Because S is bivalent, there exists a computation, c, from S that
+  reaches a 1-valent state T.
+  Consider two cases: (1) p executes no action in c and (2)
+  p executes an action in c.
+</p>
+
+<p>
+  Case 1:
+  If p executes no action in c then state T
+  is in R. So message m is in p's inbox in state T. Because T is 1-valent,
+  if p reads m in state T the next state is also 1-valent.
+  Therefore the sublemma holds with S* set to T. 
+</p>
+
+<p>
+  Case 2:
+  Consider the first action of agent p in computation c.
+  Let c be the sequence of steps [c_pre; p reads m; c_post],
+  i.e., partition c into the steps c_pre and c_post before and 
+  after p reads m.
+  Let S# be the state after c_pre.
+  Let S^ be the state after p reads m in S#.
+  There exists a computation -- c_post -- from
+  S^ to T.  
+  Because T is 1-valent, S^ cannot be 0-valent.
+  By the assumption S^ is not bivalent.
+  Therefore S^ is 1-valent.
+  So the lemma holds with S* set to S#.
+  This completes proof of the sublemma.
+</p>
+
+<figure class="fig wideout">
+    <svg id="c2_g" viewBox="0 0 1240 470" role="img"
+         aria-label="Case 2: c splits into c_pre from S to S-sharp inside R, p reads m to S-hat, and c_post from S-hat to the 1-valent state T"></svg>
+
+    <figcaption>
+      <b>Figure 10. Case 2: p reads m somewhere inside c.</b>
+      Split c at p&rsquo;s first action. c_pre carries S to S#, and S# is in R
+      because p has taken no action yet. Then p reads m, reaching S^, and
+      c_post carries S^ to the 1-valent state T. So S^ cannot be 0-valent, and
+      by the assumption it is not bivalent. It is 1-valent.
+    </figcaption>
+  </figure>
+
+
+<p>
+  Back to the main lemma. Every state of R is reached from S by a
+  sequence of events, none of them e. Take such a sequence for a state that
+  yields 1-valent, and walk along it from S. At the start, executing e yields
+  0-valent; at the end, it yields 1-valent; and every state along the way is
+  in R, so executing e in it yields one or the other. So somewhere along the
+  walk there are two consecutive states E and E&prime;, where E&prime; is
+  reached from E by a single event e&prime;, such that executing e in E yields
+  a 0-valent state and executing e in E&prime; yields a 1-valent state.
+</p>
+
+<figure class="fig wideout">
+    <svg id="wk_g" viewBox="0 0 1240 430" role="img"
+         aria-label="The walk from S to S-sharp: reading m gives 0-valent at first and 1-valent at the end, so somewhere it flips, between two consecutive states E and E-prime"></svg>
+
+    <figcaption>
+      <b>Figure 11. Where the answer flips.</b>
+      Every state along the walk from S to S# is in R, so by the assumption
+      reading m in it gives a 0-valent state or a 1-valent one. At S it gives
+      0-valent; at S# it gives 1-valent. So somewhere the answer flips: two
+      consecutive states E and E&prime;, a single event e&prime; apart.
+      Cases 1 and 2 show that e&prime; can be neither an event at another agent
+      nor an event at p.
+    </figcaption>
+  </figure>
+
+
+<p>
+  <b>Case 1: e&prime; is an event at an agent other than p.</b>
+  Events at different agents do not interfere, so executing e and then
+  e&prime; from E reaches exactly the same state as executing e&prime; and
+  then e. The first route reaches a state from a 0-valent state, so that state
+  is 0-valent. The second route reaches the state obtained by executing e in
+  E&prime;, which is 1-valent. One state cannot be both.
+</p>
+
+<figure class="fig wideout">
+    <svg id="c1_g" viewBox="0 0 1240 430" role="img"
+         aria-label="Case 1: e-prime commutes with e, so the state reached by e-prime from the 0-valent state below E is the 1-valent state below E-prime"></svg>
+
+    <figcaption>
+      <b>Figure 12. Case 1: e&prime; is an event at an agent other than p.</b>
+      Then e and e&prime; do not interfere, and the heavy arrow at the bottom
+      is the same event e&prime;: executing it in the state reached by reading
+      m in E lands in exactly the state reached by reading m in E&prime;. That
+      state is reachable from a 0-valent state, so it is 0-valent; and it is
+      1-valent. One state cannot be both.
+    </figcaption>
+  </figure>
+
+
+<p>
+  <b>Case 2: e&prime; is an action by p.</b>
+  p has taken no action on the way to E, so m is still at the front of
+  p&rsquo;s inbox, and the only action p can take in E is to read m. So
+  e&prime; is that action, and E&prime; is the state it reaches &mdash; which
+  figure 11 marks 0-valent. Every state reachable from a 0-valent state is
+  0-valent, so the vertical edge from E&prime; to a 1-valent state is
+  impossible.
+</p>
+
+
+<p>
+  Both cases are impossible, so the supposition is false and the lemma holds.
+</p>
+
+
+<h3>Putting the lemmas together</h3>
+<p>
+  The first lemma gives a bivalent initial state. The second says that any
+  message waiting to be received can be received without the system ceasing to
+  be bivalent. Together they build a computation that never decides.
+</p>
+
+<p>
+  Construct it in stages. Begin in a bivalent initial state. At each stage,
+  take the message that has been waiting in an inbox longest, and apply the
+  critical event lemma to it: there is a computation, ending with the receipt
+  of that message, that ends in a bivalent state. Append that computation and
+  begin the next stage.
+</p>
+
+<p>
+  The result is an infinite computation in which every agent that has not
+  halted executes its actions infinitely often, and every message sent is
+  eventually received &mdash; because a message that is waiting becomes, after
+  finitely many stages, the message that has been waiting longest. So it is a
+  legal computation of the system. And no agent ever decides in it, because
+  the state after every stage is bivalent, and a state in which an agent has
+  decided is not.
+</p>
+
+<p>
+  So the algorithm we assumed to exist has a legal computation in which no
+  agent decides, which violates termination. There is no such algorithm.
+</p>
+
+
+
+
+
+
+
+
+
+
+</div>
+
+
+
+
+<script>
+(function(){
+  const PFX='cl_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           red:'#d13d0e', green:'#00947d', blue:'#1a5fd0'};
+  const px=function(t){return 150+t*82;};        // 0..12 -> 150..1134
+  const P=[{u:96, v:140, w:184, vote:'blue', tag:'Run 1'},
+           {u:262, v:306, w:350, vote:'red',  tag:'Run 2'}];
+  const AXIS=398, CRASH=1, LAST=12;
+
+  // v and w: the same events, in the same order, in both runs
+  const EV=[['v',2],['w',3.5],['v',5],['w',6.5],['v',8],['w',9.5],['v',11]];
+  const MSG=[['v',2,'w',3.5,'m1'],['w',3.5,'v',5,'m2'],['v',5,'w',6.5,'m3'],
+             ['w',6.5,'v',8,'m4'],['v',8,'w',9.5,'m5'],['w',9.5,'v',11,'m6']];
+
+  let now=0, run=false, raf=null, last=0;
+
+  function el(n,a,txt){
+    const e=document.createElementNS(NS,n);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  const done=function(){return now>=LAST;};
+
+  function panel(g,p){
+    const col=(p.vote==='blue')?C.blue:C.red;
+    // the three timelines
+    [['u',p.u],['v',p.v],['w',p.w]].forEach(function(r){
+      const dead=(r[0]==='u');
+      g.appendChild(el('line',{x1:px(-0.4), y1:r[1], x2:px(12.4), y2:r[1],
+        stroke:C.line, 'stroke-width':2,
+        'stroke-dasharray':dead?'5 5':'none'}));
+      g.appendChild(el('text',{x:px(-0.4)-14, y:r[1],
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':16,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, r[0]));
+    });
+    tag(g,px(-0.4)-52, p.u, p.tag, C.muted, 11.5, 700, 'end');
+    // u's vote, and u's crash
+    g.appendChild(el('rect',{x:px(-0.4)-2, y:p.u-13, width:46, height:26,
+      rx:7, fill:col, 'fill-opacity':.14, stroke:col, 'stroke-width':2}));
+    tag(g,px(-0.4)+21, p.u, p.vote==='blue'?'0':'1', col, 13);
+    if(now>=CRASH){
+      const x=px(CRASH);
+      g.appendChild(el('line',{x1:x-8, y1:p.u-8, x2:x+8, y2:p.u+8,
+        stroke:C.red, 'stroke-width':3}));
+      g.appendChild(el('line',{x1:x-8, y1:p.u+8, x2:x+8, y2:p.u-8,
+        stroke:C.red, 'stroke-width':3}));
+      tag(g,x+92, p.u-17, 'crashes, having sent nothing', C.red, 11.5);
+    }
+    // v and w
+    MSG.forEach(function(m){
+      if(now<m[1]) return;
+      const y0=p[m[0]], y1=p[m[2]], d=(y1>y0?1:-1);
+      const f=Math.min(1,(now-m[1])/(m[3]-m[1]));
+      g.appendChild(el('line',{x1:px(m[1]), y1:y0+d*6,
+        x2:px(m[1]+(m[3]-m[1])*f), y2:y0+d*6+(y1-y0-d*12)*f,
+        stroke:C.ink, 'stroke-width':1.8}));
+      if(f>=1) tag(g,(px(m[1])+px(m[3]))/2+13, (y0+y1)/2, m[4], C.muted, 10.5);
+    });
+    EV.forEach(function(e){
+      if(now<e[1]) return;
+      g.appendChild(el('circle',{cx:px(e[1]), cy:p[e[0]], r:6, fill:C.ink,
+        stroke:'#fff', 'stroke-width':2}));
+    });
+    if(done()){
+      [['v',11],['w',9.5]].forEach(function(r){
+        const x=px(11)+52, y=p[r[0]];
+        g.appendChild(el('rect',{x:x-40, y:y-12, width:80, height:24, rx:7,
+          fill:C.green, 'fill-opacity':.12, stroke:C.green, 'stroke-width':2}));
+        tag(g,x, y, 'decides '+(r[0]==='v'?'x':'y'), C.green, 12);
+      });
+    }
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    P.forEach(function(p){ panel(g,p); });
+
+    // the axis
+    g.appendChild(el('line',{x1:px(-0.4), y1:AXIS, x2:px(12.4), y2:AXIS,
+      stroke:C.muted, 'stroke-width':2}));
+    for(let v=0;v<=12;v+=2){
+      g.appendChild(el('line',{x1:px(v), y1:AXIS-5, x2:px(v), y2:AXIS+5,
+        stroke:C.muted, 'stroke-width':2}));
+      tag(g,px(v), AXIS+18, String(v), C.muted, 11.5);
+    }
+    tag(g,px(12.4)+22, AXIS, 'time', C.muted, 12);
+
+    // the comparison: every event of v and of w, in both runs at once
+    if(done()){
+      EV.forEach(function(e){
+        const x=px(e[1]), y0=P[0][e[0]], y1=P[1][e[0]];
+        g.appendChild(el('line',{x1:x, y1:y0+9, x2:x, y2:212,
+          stroke:C.green, 'stroke-width':1.6, 'stroke-dasharray':'5 4'}));
+        g.appendChild(el('line',{x1:x, y1:236, x2:x, y2:y1-9,
+          stroke:C.green, 'stroke-width':1.6, 'stroke-dasharray':'5 4'}));
+        g.appendChild(el('circle',{cx:x, cy:224, r:9, fill:'#fff',
+          stroke:C.green, 'stroke-width':1.8}));
+        tag(g,x, 224, '=', C.green, 12);
+      });
+      tag(g,px(6), 44, 'every event of v and of w: same time, same order, '+
+          'same contents', C.green, 13.5);
+    }
+    tag(g,px(6), 424, done()
+      ? 'the two computations are indistinguishable to v and to w'
+      : 'the only difference between them is u’s proposal',
+      C.muted, 13.5);
+    readout();
+  }
+
+  function readout(){
+    $('vote').innerHTML='<span class="chan" style="color:#1a5fd0">0</span>'+
+      ' <span class="none">in the first computation,</span> '+
+      '<span class="bad">1</span> <span class="none">in the second — and u '+
+      'halts at 1, before it can tell anyone</span>';
+    const into=function(a){
+      return MSG.filter(function(m){return m[2]===a && now>=m[3];})
+                .map(function(m){return m[4]+' at '+m[3];}); };
+    ['v','w'].forEach(function(a){
+      const got=into(a);
+      $(a).innerHTML = got.length
+        ? '<b>'+got.join(', ')+'</b> <span class="none">— the same in '+
+          'both runs</span>'
+        : '<span class="none">nothing yet</span>';
+    });
+    $('status').innerHTML='<b>t = '+Math.min(now,LAST).toFixed(1)+'</b>'+
+      (done()?' · the survivors match, step for step':'');
+  }
+
+  function frame(t){
+    raf=null;
+    if(!last) last=t;
+    let dt=(t-last)/1000; last=t;
+    if(dt>0.2) dt=0.2;
+    now=Math.min(LAST, now+dt*4.2);
+    if(now>=LAST) run=false;
+    draw();
+    if(run) raf=requestAnimationFrame(frame);
+  }
+  $('play').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    now=0; run=true; last=0; raf=requestAnimationFrame(frame);
+  };
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    now=0; run=false; draw();
+  };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='ch_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           red:'#d13d0e', blue:'#1a5fd0'};
+  const AX=[150,330,510,690,870,1050], Y0=96, DY=34, CHIP=282;
+  const N=5;                                 // agents per initial state
+  const K=2;                                 // the valence flips between C2 and C3
+  // C_k is the initial state in which the first k agents propose 1. The
+  // algorithm is majority voting, so the valence of C_k is the majority.
+  const propOf=function(k,i){ return i<k ? 1 : 0; };
+  function majority(k){
+    let ones=0;
+    for(let i=0;i<N;i++) ones+=propOf(k,i);
+    return ones*2>N ? 1 : 0;
+  }
+  const col=function(v){ return v===1?C.red:C.blue; };
+
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    // the one agent whose proposal differs between C2 and C3
+    const my=Y0+K*DY;
+    g.appendChild(el('ellipse',{cx:(AX[K]+AX[K+1])/2, cy:my,
+      rx:(AX[K+1]-AX[K])/2+28, ry:21, fill:'none', stroke:C.ink,
+      'stroke-width':2.5}));
+    AX.forEach(function(x,k){
+      tag(g,x,64,'C'+k,C.ink,15);
+      for(let i=0;i<N;i++){
+        const v=propOf(k,i), c=col(v);
+        g.appendChild(el('circle',{cx:x, cy:Y0+i*DY, r:11, fill:c,
+          'fill-opacity':.2, stroke:c, 'stroke-width':2}));
+        tag(g,x, Y0+i*DY+1, String(v), c, 11);
+      }
+      const m=majority(k), mc=col(m);
+      g.appendChild(el('rect',{x:x-62, y:CHIP-15, width:124, height:30, rx:9,
+        fill:mc, 'fill-opacity':.13, stroke:mc, 'stroke-width':2}));
+      tag(g,x,CHIP,m+'-valent',mc,12.5);
+    });
+  }
+  draw();
+})();
+</script>
+
+
+
+
+
+
+
+
+
+
+<script>
+(function(){
+  const PFX='nf_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           red:'#d13d0e', green:'#00947d', blue:'#1a5fd0'};
+  const N=5, PROP=['red','red','blue','blue','blue'];
+  const BX=[80,310,540,770,1000], BW=160, BY=110, BH=132;
+  const col=function(v){ return v==='red'?C.red:C.blue; };
+  // majority wins, ties to red
+  const decide=function(seen){
+    let r=0,b=0;
+    seen.forEach(function(i){ if(PROP[i]==='red') r++; else b++; });
+    return r>=b?'red':'blue';
+  };
+  let mode='up', now=0, run=false, raf=null, last=0;
+  // every agent broadcasts to every other; agent 4 is Z
+  function msgs(){
+    const out=[];
+    for(let i=0;i<N;i++){
+      if(mode==='halt' && i===4) continue;      // Z halts before sending
+      for(let j=0;j<N;j++) if(i!==j)
+        out.push({from:i, to:j, t0:0.4+i*0.18, t1:1.4+i*0.18+j*0.34});
+    }
+    return out;
+  }
+  let MSG=msgs();
+  const heard=function(j){
+    const s=MSG.filter(function(m){return m.to===j && m.t1<=now;})
+               .map(function(m){return m.from;});
+    s.push(j);                                  // it knows its own proposal
+    return s;
+  };
+  const done=function(j){ return heard(j).length>=N; };
+
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    // messages in flight, drawn as dots on straight lines between boxes
+    MSG.forEach(function(m){
+      if(now<m.t0 || now>m.t1) return;
+      const f=(now-m.t0)/(m.t1-m.t0);
+      const x0=BX[m.from]+BW/2, x1=BX[m.to]+BW/2;
+      const y0=BY+BH, y1=BY+BH+70;
+      const x=x0+(x1-x0)*f, y=y0+(y1-y0)*Math.sin(Math.PI*f);
+      g.appendChild(el('circle',{cx:x, cy:y, r:6, fill:col(PROP[m.from]),
+        stroke:'#fff', 'stroke-width':1.5}));
+    });
+    for(let i=0;i<N;i++){
+      const dead=(mode==='halt' && i===4);
+      const d=done(i) && !dead, v=decide(heard(i));
+      g.appendChild(el('rect',{x:BX[i], y:BY, width:BW, height:BH, rx:14,
+        fill:dead?C.red:(d?col(v):C.ink), 'fill-opacity':dead?.05:(d?.13:.05),
+        stroke:dead?C.red:(d?col(v):C.ink), 'stroke-width':2.5,
+        'stroke-dasharray':dead?'7 5':'none'}));
+      tag(g,BX[i]+BW/2, BY+26, (i===4?'Z':'agent '+(i+1)), dead?C.red:C.ink, 15);
+      tag(g,BX[i]+BW/2, BY+50, 'proposes '+PROP[i], col(PROP[i]), 11.5);
+      tag(g,BX[i]+BW/2, BY+78, dead?'halted':(heard(i).length+' of '+N+
+          ' proposals'), dead?C.red:C.muted, 12.5);
+      if(d){
+        g.appendChild(el('rect',{x:BX[i]+22, y:BY+96, width:BW-44, height:26,
+          rx:8, fill:col(v), 'fill-opacity':.18, stroke:col(v),
+          'stroke-width':2}));
+        tag(g,BX[i]+BW/2, BY+109, 'decides '+v, col(v), 12);
+      } else if(!dead && now>2.6){
+        tag(g,BX[i]+BW/2, BY+109, 'waiting', C.red, 12);
+      }
+    }
+    tag(g,620,44, mode==='up'
+      ? 'every agent sends its proposal to every other, and waits for all N'
+      : 'Z halts before sending anything', C.muted, 13.5);
+    tag(g,620,322, mode==='up'
+      ? 'all five have all five proposals, so all five compute the same '+
+        'majority'
+      : 'four agents hold four proposals and wait for the fifth, for ever',
+      mode==='up'?C.ink:C.red, 13.5);
+    readout();
+  }
+  function readout(){
+    const dec=[];
+    for(let i=0;i<N;i++)
+      if(done(i) && !(mode==='halt'&&i===4)) dec.push(decide(heard(i)));
+    $('count').innerHTML=[0,1,2,3,4].map(function(i){
+      return (mode==='halt'&&i===4) ? '<span class="bad">Z: halted</span>'
+        : '<b>'+(i===4?'Z':(i+1))+': '+heard(i).length+'/'+N+'</b>'; }).join('  ');
+    const vals={}; dec.forEach(function(v){vals[v]=1;});
+    $('dec').innerHTML = dec.length
+      ? '<b>'+dec.length+' of '+(mode==='halt'?N-1:N)+' decided '+
+        Object.keys(vals).join(' and ')+'</b>'
+      : '<span class="none">nobody has decided</span>';
+    $('ok').innerHTML = (mode==='up')
+      ? (dec.length===N
+         ? '<span class="ok">termination, agreement and validity all hold'+
+           '</span> <span class="none">— same proposals, same function, '+
+           'same answer</span>'
+         : '<span class="none">still exchanging proposals</span>')
+      : (now>3
+         ? '<span class="bad">termination fails</span> <span class="none">'+
+           '— and the four cannot decide without Z: they may not guess, '+
+           'since Z may have decided already</span>'
+         : '<span class="none">waiting</span>');
+    $('status').innerHTML='<b>'+(mode==='up'?'no fault':'Z halts')+'</b>';
+  }
+  function frame(t){
+    raf=null;
+    if(!last) last=t;
+    let dt=(t-last)/1000; last=t;
+    if(dt>0.2) dt=0.2;
+    now=Math.min(5, now+dt*1.5);
+    if(now>=5) run=false;
+    draw();
+    if(run) raf=requestAnimationFrame(frame);
+  }
+  const play=function(m){
+    if(raf) cancelAnimationFrame(raf);
+    mode=m; MSG=msgs(); now=0; run=true; last=0;
+    $('up').className=(m==='up')?'primary':'';
+    $('halt').className=(m==='halt')?'primary':'';
+    raf=requestAnimationFrame(frame);
+  };
+  $('up').onclick=function(){ play('up'); };
+  $('halt').onclick=function(){ play('halt'); };
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf); run=false; now=0; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='sub_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           red:'#d13d0e', green:'#00947d', blue:'#1a5fd0'};
+  // five agents: 1..4 propose red, Z (id 5) proposes blue. Highest id wins,
+  // among the proposals an agent has actually received.
+  const ID=['1','2','3','4','Z'], PROP=['red','red','red','red','blue'];
+  const AY=[96,150,204,258,312], px=function(t){return 190+t*112;};
+  const col=function(v){ return v==='red'?C.red:C.blue; };
+  // X is agent 1; it hears 2, 3, 4.  Y is agent 4; it hears 2, 3, Z.
+  const X=0, Y=3;
+  const MSG=[{from:1,to:X,t:1.2},{from:2,to:X,t:2.0},{from:3,to:X,t:2.8},
+             {from:1,to:Y,t:1.6},{from:2,to:Y,t:2.4},{from:4,to:Y,t:3.2}];
+  const LATE={from:4, to:X, t:6.4};        // Z's proposal reaches X too late
+  const DEC={}; DEC[X]=3.2; DEC[Y]=3.6;
+  const heardBy=function(a,now){
+    const h=MSG.filter(function(m){return m.to===a && m.t<=now;})
+               .map(function(m){return m.from;});
+    h.push(a);
+    return h.sort();
+  };
+  const win=function(h){
+    return PROP[Math.max.apply(null,h)]; };   // highest id among those heard
+  let now=0, run=false, raf=null, last=0;
+
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    ['red','blue'].forEach(function(v){
+      const m=el('marker',{id:PFX+'a'+v, viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:col(v)}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+    ID.forEach(function(id,i){
+      g.appendChild(el('line',{x1:px(-0.4), y1:AY[i], x2:px(7), y2:AY[i],
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:px(-0.4)-14, y:AY[i],
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':16,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, 'agent '+id));
+      tag(g,px(-0.4)-14, AY[i]+17, 'proposes '+PROP[i], col(PROP[i]), 11,
+          700, 'end');
+    });
+    MSG.concat([LATE]).forEach(function(m){
+      const late=(m===LATE);
+      if(now<m.t-1.0) return;
+      const f=Math.min(1,(now-(m.t-1.0))/1.0);
+      const y0=AY[m.from], y1=AY[m.to], d=(y1>y0?1:-1);
+      g.appendChild(el('line',{x1:px(m.t-1.0), y1:y0+d*8,
+        x2:px(m.t-1.0+f), y2:y0+d*8+(y1-y0-d*16)*f,
+        stroke:col(PROP[m.from]), 'stroke-width':2,
+        'stroke-dasharray':late?'6 4':'none', opacity:late?.7:1,
+        'marker-end':f>=1?('url(#'+PFX+'a'+PROP[m.from]+')'):'none'}));
+      if(late && f>=1)
+        tag(g,px(m.t)+56, AY[m.to]-20, 'too late: agent 1 has decided',
+            C.muted, 11.5);
+    });
+    [X,Y].forEach(function(a){
+      if(now<DEC[a]) return;
+      const h=heardBy(a,now), v=win(h);
+      g.appendChild(el('rect',{x:px(DEC[a])+14, y:AY[a]-15, width:150,
+        height:30, rx:8, fill:col(v), 'fill-opacity':.15, stroke:col(v),
+        'stroke-width':2}));
+      tag(g,px(DEC[a])+89, AY[a], 'decides '+v, col(v), 12);
+      g.appendChild(el('circle',{cx:px(DEC[a]), cy:AY[a], r:7, fill:col(v),
+        stroke:'#fff', 'stroke-width':2}));
+    });
+    tag(g,px(3.2), 44, 'each agent decides as soon as it has heard from '+
+        'N−2 = 3 other agents', C.muted, 13.5);
+    tag(g,px(3.2), 348, now>=3.6
+      ? 'both heard three others — different threes'
+      : '', C.ink, 13.5);
+    readout();
+  }
+  function readout(){
+    [[X,'x'],[Y,'y']].forEach(function(e){
+      const a=e[0], h=heardBy(a,now);
+      $(e[1]).innerHTML='<b>'+h.map(function(i){return ID[i];}).join(', ')+
+        '</b> <span class="none">('+h.length+' proposals, its own included)'+
+        '</span>'+(now>=DEC[a]
+          ? ' <span class="'+(win(h)==='red'?'bad':'chan')+'">decides '+
+            win(h)+'</span>' : '');
+    });
+    const both=(now>=DEC[Y]);
+    $('ok').innerHTML = both
+      ? '<span class="bad">agreement fails</span> <span class="none">— '+
+        'agent 1 never heard from Z, so the highest id it heard was 4; agent '+
+        '4 heard from Z, so the highest id it heard was Z</span>'
+      : '<span class="none">wait for both to decide</span>';
+    $('status').innerHTML='<b>t = '+now.toFixed(1)+'</b>';
+  }
+  function frame(t){
+    raf=null;
+    if(!last) last=t;
+    let dt=(t-last)/1000; last=t;
+    if(dt>0.2) dt=0.2;
+    now=Math.min(7, now+dt*1.6);
+    if(now>=7) run=false;
+    draw();
+    if(run) raf=requestAnimationFrame(frame);
+  }
+  $('run').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    now=0; run=true; last=0; raf=requestAnimationFrame(frame);
+  };
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf); run=false; now=0; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='maj_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           red:'#d13d0e', green:'#00947d', blue:'#1a5fd0'};
+  // 1001 agents. 500 of the others propose red, 500 propose blue, and Z
+  // proposes blue. An agent decides once it holds 1000 proposals.
+  const NEED=1000;
+  const VIEW=[{who:'agent X', red:500, blue:500, z:false},
+              {who:'agent Y', red:499, blue:500, z:true}];
+  const col=function(v){ return v==='red'?C.red:C.blue; };
+  const BASE=[300,760], BW=340, BOT=286, TOP=86, SCALE=(BOT-TOP)/560;
+  let zin=false;                       // has Z's proposal been counted yet
+  const tally=function(k){
+    const v=VIEW[k];
+    const r=v.red, b=v.blue+((v.z && zin)?1:0);
+    return {r:r, b:b, n:r+b};
+  };
+  const verdict=function(k){
+    const t=tally(k);
+    if(t.n<NEED) return null;
+    return t.r>=t.b ? 'red' : 'blue';   // ties go to red
+  };
+
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    g.appendChild(el('line',{x1:200, y1:BOT, x2:1100, y2:BOT,
+      stroke:C.line, 'stroke-width':2}));
+    VIEW.forEach(function(v,k){
+      const t=tally(k), x0=BASE[k], dec=verdict(k);
+      [['red',t.r,0],['blue',t.b,1]].forEach(function(b,i){
+        const h=b[1]*SCALE, x=x0+i*(BW/2+16)-BW/2+40;
+        g.appendChild(el('rect',{x:x, y:BOT-h, width:110, height:h, rx:6,
+          fill:col(b[0]), 'fill-opacity':.22, stroke:col(b[0]),
+          'stroke-width':2.5}));
+        tag(g,x+55, BOT-h-16, String(b[1]), col(b[0]), 15);
+        tag(g,x+55, BOT+20, b[0], col(b[0]), 12);
+      });
+      tag(g,x0, 50, v.who, C.ink, 16);
+      tag(g,x0, 72, t.n+' proposals in hand'+(t.n>=NEED?'':' — waiting'),
+          t.n>=NEED?C.muted:C.red, 12);
+      if(dec){
+        g.appendChild(el('rect',{x:x0-92, y:BOT+38, width:184, height:32,
+          rx:9, fill:col(dec), 'fill-opacity':.16, stroke:col(dec),
+          'stroke-width':2.5}));
+        tag(g,x0, BOT+54, 'decides '+dec, col(dec), 13.5);
+      }
+      if(v.z)
+        tag(g,x0, BOT+92, zin ? 'counted Z’s blue proposal'
+                              : 'has not counted Z yet', zin?C.ink:C.muted, 12);
+      else
+        tag(g,x0, BOT+92, 'never hears from Z', C.muted, 12);
+    });
+    const d0=verdict(0), d1=verdict(1);
+    tag(g,660, 350, (d0&&d1&&d0!==d1)
+      ? 'one proposal, out of a thousand and one, and the two agents disagree'
+      : 'press the button and watch Z’s single proposal arrive at Y',
+      (d0&&d1&&d0!==d1)?C.red:C.muted, 13.5);
+    readout();
+  }
+  function readout(){
+    [0,1].forEach(function(k){
+      const t=tally(k), d=verdict(k);
+      $('v'+k).innerHTML='<b>'+t.r+' red, '+t.b+' blue</b> '+
+        '<span class="none">('+t.n+' proposals)</span>'+
+        (d?' <span class="'+(d==='red'?'bad':'chan')+'">decides '+d+
+            '</span>':' <span class="none">still waiting</span>');
+    });
+    const d0=verdict(0), d1=verdict(1);
+    $('ok').innerHTML = (d0&&d1)
+      ? (d0===d1
+         ? '<span class="ok">they agree</span> <span class="none">— for '+
+           'now: Z’s proposal has not been counted anywhere</span>'
+         : '<span class="bad">agreement fails</span> <span class="none">'+
+           '— a tie goes to red, and Z’s single blue proposal '+
+           'breaks the tie for whoever hears it</span>')
+      : '<span class="none">not both decided yet</span>';
+    $('status').innerHTML = zin ? '<b>Z counted at Y</b>' : '<b>Z not counted</b>';
+  }
+  $('z').onclick=function(){
+    zin=!zin;
+    $('z').textContent = zin ? 'Take Z’s proposal back out'
+                             : 'Let Z’s proposal reach Y';
+    draw();
+  };
+  $('reset').onclick=function(){
+    zin=false; $('z').textContent='Let Z’s proposal reach Y'; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='zv_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583', blue:'#1a5fd0'};
+  // Everything below a 0-valent state. The tree is ragged: some paths end
+  // after one event, some after two, some after three.
+  const N={
+    R  :{x:620, y:70,  kind:'s'},
+    X1 :{x:260, y:182, kind:'d'}, X2:{x:620, y:182, kind:'s'},
+    X3 :{x:960, y:182, kind:'s'},
+    X21:{x:470, y:296, kind:'d'}, X22:{x:700, y:296, kind:'s'},
+    X31:{x:880, y:296, kind:'d'}, X32:{x:1070,y:296, kind:'d'},
+    X221:{x:700, y:410, kind:'d'}};
+  const E=[['R','X1'],['R','X2'],['R','X3'],
+           ['X2','X21'],['X2','X22'],['X3','X31'],['X3','X32'],
+           ['X22','X221']];
+  const KIDS=function(n){
+    return E.filter(function(e){return e[0]===n;})
+            .map(function(e){return e[1];}); };
+  // a decided leaf decides 0; everything above it can reach only 0
+  function vals(n){
+    if(N[n].kind==='d') return [0];
+    let out=[];
+    KIDS(n).forEach(function(k){ vals(k).forEach(function(v){
+      if(out.indexOf(v)<0) out.push(v); }); });
+    return out.sort();
+  }
+  const depth=function(n){
+    let d=0, cur=n;
+    while(true){
+      const up=E.filter(function(e){return e[1]===cur;})[0];
+      if(!up) return d;
+      cur=up[0]; d++;
+    }
+  };
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    E.forEach(function(e){
+      const a=N[e[0]], b=N[e[1]];
+      const dx=b.x-a.x, dy=b.y-a.y, L=Math.hypot(dx,dy)||1;
+      const rb=(b.kind==='d')?26:28;
+      g.appendChild(el('line',{x1:a.x+dx/L*28, y1:a.y+dy/L*28,
+        x2:b.x-dx/L*rb, y2:b.y-dy/L*rb, stroke:C.blue, 'stroke-width':2,
+        opacity:.45}));
+    });
+    for(const n in N){
+      const d=N[n];
+      if(d.kind==='d'){
+        g.appendChild(el('rect',{x:d.x-52, y:d.y-22, width:104, height:44,
+          rx:9, fill:C.blue, 'fill-opacity':.16, stroke:C.blue,
+          'stroke-width':2.2}));
+        tag(g,d.x, d.y, 'decides 0', C.blue, 13);
+      } else {
+        g.appendChild(el('circle',{cx:d.x, cy:d.y, r:28, fill:C.blue,
+          'fill-opacity':.14, stroke:C.blue, 'stroke-width':2.5}));
+        tag(g,d.x, d.y+1, '0-valent', C.blue, 9.5);
+      }
+    }
+  }
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='mx_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           red:'#d13d0e', blue:'#1a5fd0', grey:'#8d8878'};
+  // The same shape of tree, but the states on its frontier have not decided:
+  // each carries a valence of its own, and they are not all the same.
+  const N={
+    R  :{x:620, y:70,  kind:'s'},
+    Y1 :{x:260, y:182, kind:'f', v:[0]},      // a 0-valent leaf
+    Y2 :{x:620, y:182, kind:'s'},
+    Y3 :{x:960, y:182, kind:'s'},
+    Y21:{x:470, y:296, kind:'f', v:[1]},      // a 1-valent leaf
+    Y22:{x:700, y:296, kind:'f', v:[0]},
+    Y31:{x:960, y:296, kind:'s'},
+    Y311:{x:960,y:410, kind:'f', v:[0,1]}};   // a bivalent leaf
+  const E=[['R','Y1'],['R','Y2'],['R','Y3'],
+           ['Y2','Y21'],['Y2','Y22'],['Y3','Y31'],['Y31','Y311']];
+  const KIDS=function(n){
+    return E.filter(function(e){return e[0]===n;})
+            .map(function(e){return e[1];}); };
+  function vals(n){
+    if(N[n].kind==='f') return N[n].v;
+    let out=[];
+    KIDS(n).forEach(function(k){ vals(k).forEach(function(v){
+      if(out.indexOf(v)<0) out.push(v); }); });
+    return out.sort();
+  }
+  const word=function(n){
+    const v=vals(n);
+    return v.length>1 ? 'bivalent' : v[0]+'-valent'; };
+  const colOf=function(n){
+    const v=vals(n);
+    return v.length>1 ? C.grey : (v[0]===0 ? C.blue : C.red); };
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    E.forEach(function(e){
+      const a=N[e[0]], b=N[e[1]];
+      const dx=b.x-a.x, dy=b.y-a.y, L=Math.hypot(dx,dy)||1;
+      g.appendChild(el('line',{x1:a.x+dx/L*28, y1:a.y+dy/L*28,
+        x2:b.x-dx/L*28, y2:b.y-dy/L*28, stroke:C.line, 'stroke-width':2}));
+    });
+    for(const n in N){
+      const d=N[n], c=colOf(n), leaf=(d.kind==='f');
+      g.appendChild(el('circle',{cx:d.x, cy:d.y, r:28, fill:c,
+        'fill-opacity':leaf?.2:.12, stroke:c, 'stroke-width':leaf?3:2.5,
+        'stroke-dasharray':leaf?'none':'none'}));
+      tag(g,d.x, d.y+1, word(n), c, word(n)==='bivalent'?10:9.5);
+    }
+  }
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='wk_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', blue:'#1a5fd0', red:'#d13d0e'};
+  // The walk along R. Every downward arrow is the same event, p reads m;
+  // it answers 0 at the start and 1 at the end, so somewhere it flips.
+  const TOPY=120, BOTY=330;
+  const W=[{x:130,  name:'S',  v:0, root:true},
+           {x:385,  name:'',   v:0},
+           {x:640,  name:'E',  v:0},
+           {x:800,  name:'E′', v:1},
+           {x:1075, name:'S#', v:1}];
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function head(g,x,y,ux,uy,col,sz){
+    const s=sz||8, px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:
+      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
+      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
+  }
+  function squiggle(g,x1,y1,x2,y2,a0,b0){
+    const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1;
+    const ux=dx/L, uy=dy/L, px=-uy, py=ux;
+    const a=a0, b=L-b0, amp=6.5, wl=26, pts=[];
+    for(let t=a; t<=b; t+=3){
+      const o=amp*Math.sin(2*Math.PI*(t-a)/wl)*Math.min(1,(b-t)/22);
+      pts.push((x1+ux*t+px*o).toFixed(1)+','+(y1+uy*t+py*o).toFixed(1));
+    }
+    g.appendChild(el('polyline',{points:pts.join(' '), fill:'none',
+      stroke:C.muted, 'stroke-width':2, 'stroke-linecap':'round'}));
+    head(g, x1+ux*b, y1+uy*b, ux, uy, C.muted, 6);
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    // the walk: squiggles everywhere except the single event e'
+    squiggle(g, W[0].x, TOPY, W[1].x, TOPY, 34, 16);
+    squiggle(g, W[1].x, TOPY, W[2].x, TOPY, 16, 16);
+    squiggle(g, W[3].x, TOPY, W[4].x, TOPY, 16, 16);
+    g.appendChild(el('line',{x1:W[2].x+16, y1:TOPY, x2:W[3].x-22, y2:TOPY,
+      stroke:C.ink, 'stroke-width':5}));
+    head(g, W[3].x-16, TOPY, 1, 0, C.ink, 11);
+    tag(g, (W[2].x+W[3].x)/2, TOPY-26, 'e′', C.ink, 15);
+    // p reads m, out of every state of the walk
+    W.forEach(function(n){
+      const col=n.v?C.red:C.blue, y1=TOPY+(n.root?32:16);
+      g.appendChild(el('line',{x1:n.x, y1:y1, x2:n.x, y2:BOTY-38,
+        stroke:col, 'stroke-width':2.2}));
+      head(g, n.x, BOTY-32, 0, 1, col, 8);
+      tag(g, n.x+11, (y1+BOTY-32)/2, 'p reads m', col, 10.5, 'start');
+      g.appendChild(el('circle',{cx:n.x, cy:BOTY, r:32, fill:col,
+        'fill-opacity':.2, stroke:col, 'stroke-width':2.8}));
+      tag(g, n.x, BOTY+1, n.v+'-valent', col, 9.5);
+    });
+    // the states of the walk
+    W.forEach(function(n){
+      if(n.root){
+        g.appendChild(el('circle',{cx:n.x, cy:TOPY, r:30, fill:'#fff',
+          stroke:C.ink, 'stroke-width':2.6}));
+        tag(g, n.x, TOPY-6, 'S', C.ink, 16);
+        tag(g, n.x, TOPY+12, 'bivalent', C.muted, 8.5);
+      } else {
+        g.appendChild(el('circle',{cx:n.x, cy:TOPY, r:8, fill:C.ink}));
+        if(n.name) tag(g, n.x, TOPY-28, n.name, C.ink, 15);
+      }
+    });
+  }
+  draw();
+})();
+</script>
+<script>
+(function(){
+  const PFX='c1_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', blue:'#1a5fd0', red:'#d13d0e'};
+  // The walk again, with the commuting step of case 1 along the bottom:
+  // e' carries the state below E to the state below E', which cannot be both.
+  const TOPY=120, BOTY=330;
+  const W=[{x:130,  name:'S',  v:0, root:true},
+           {x:385,  name:'',   v:0},
+           {x:640,  name:'E',  v:0},
+           {x:800,  name:'E′', v:1},
+           {x:1075, name:'S#', v:1}];
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function head(g,x,y,ux,uy,col,sz){
+    const s=sz||8, px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:
+      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
+      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
+  }
+  function squiggle(g,x1,y1,x2,y2,a0,b0){
+    const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1;
+    const ux=dx/L, uy=dy/L, px=-uy, py=ux;
+    const a=a0, b=L-b0, amp=6.5, wl=26, pts=[];
+    for(let t=a; t<=b; t+=3){
+      const o=amp*Math.sin(2*Math.PI*(t-a)/wl)*Math.min(1,(b-t)/22);
+      pts.push((x1+ux*t+px*o).toFixed(1)+','+(y1+uy*t+py*o).toFixed(1));
+    }
+    g.appendChild(el('polyline',{points:pts.join(' '), fill:'none',
+      stroke:C.muted, 'stroke-width':2, 'stroke-linecap':'round'}));
+    head(g, x1+ux*b, y1+uy*b, ux, uy, C.muted, 6);
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    // the walk: squiggles everywhere except the single event e'
+    squiggle(g, W[0].x, TOPY, W[1].x, TOPY, 34, 16);
+    squiggle(g, W[1].x, TOPY, W[2].x, TOPY, 16, 16);
+    squiggle(g, W[3].x, TOPY, W[4].x, TOPY, 16, 16);
+    g.appendChild(el('line',{x1:W[2].x+16, y1:TOPY, x2:W[3].x-22, y2:TOPY,
+      stroke:C.ink, 'stroke-width':5}));
+    head(g, W[3].x-16, TOPY, 1, 0, C.ink, 11);
+    tag(g, (W[2].x+W[3].x)/2, TOPY-26, 'e′', C.ink, 15);
+    // p reads m, out of every state of the walk
+    W.forEach(function(n){
+      const col=n.v?C.red:C.blue, y1=TOPY+(n.root?32:16);
+      g.appendChild(el('line',{x1:n.x, y1:y1, x2:n.x, y2:BOTY-38,
+        stroke:col, 'stroke-width':2.2}));
+      head(g, n.x, BOTY-32, 0, 1, col, 8);
+      tag(g, n.x+11, (y1+BOTY-32)/2, 'p reads m', col, 10.5, 'start');
+      g.appendChild(el('circle',{cx:n.x, cy:BOTY, r:32, fill:col,
+        'fill-opacity':.2, stroke:col, 'stroke-width':2.8}));
+      tag(g, n.x, BOTY+1, n.v+'-valent', col, 9.5);
+    });
+    // case 1: e' commutes with e, so the two bottom states are one state
+    (function(){
+      const a=W[2].x+32, b=W[3].x-42;
+      g.appendChild(el('line',{x1:a, y1:BOTY, x2:b, y2:BOTY,
+        stroke:C.ink, 'stroke-width':5}));
+      head(g, b+10, BOTY, 1, 0, C.ink, 11);
+      tag(g, (W[2].x+W[3].x)/2, BOTY+46, 'e\u2032', C.ink, 15);
+    })();
+    // the states of the walk
+    W.forEach(function(n){
+      if(n.root){
+        g.appendChild(el('circle',{cx:n.x, cy:TOPY, r:30, fill:'#fff',
+          stroke:C.ink, 'stroke-width':2.6}));
+        tag(g, n.x, TOPY-6, 'S', C.ink, 16);
+        tag(g, n.x, TOPY+12, 'bivalent', C.muted, 8.5);
+      } else {
+        g.appendChild(el('circle',{cx:n.x, cy:TOPY, r:8, fill:C.ink}));
+        if(n.name) tag(g, n.x, TOPY-28, n.name, C.ink, 15);
+      }
+    });
+  }
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='sl_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', blue:'#1a5fd0', red:'#d13d0e',
+           grey:'#8d8878', glow:'#ffd23f'};
+  // What is known, and what the sublemma asks for, in one picture.
+  const CX=330, CY=210, RR=170;
+  const STAR={x:445, y:295};
+  const T0={x:1010, y:85}, T1={x:1010, y:340};
+  const PLAIN=[[250,140],[228,268],[392,118],[300,345],[200,200]];
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function head(g,x,y,ux,uy,col,sz){
+    const s=sz||8, px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:
+      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
+      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
+  }
+  function squiggle(g,x1,y1,x2,y2,a0,b0,col){
+    const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1;
+    const ux=dx/L, uy=dy/L, px=-uy, py=ux;
+    const a=a0, b=L-b0, amp=6.5, wl=26, pts=[];
+    for(let t=a; t<=b; t+=3){
+      const o=amp*Math.sin(2*Math.PI*(t-a)/wl)*Math.min(1,(b-t)/22);
+      pts.push((x1+ux*t+px*o).toFixed(1)+','+(y1+uy*t+py*o).toFixed(1));
+    }
+    g.appendChild(el('polyline',{points:pts.join(' '), fill:'none',
+      stroke:col||C.muted, 'stroke-width':2, 'stroke-linecap':'round'}));
+    head(g, x1+ux*b, y1+uy*b, ux, uy, col||C.muted, 6);
+  }
+  function arrow(g,x1,y1,x2,y2,r1,r2,hot){
+    const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1;
+    const ux=dx/L, uy=dy/L;
+    const ax=x1+ux*r1, ay=y1+uy*r1, bx=x2-ux*r2, by=y2-uy*r2;
+    if(hot) g.appendChild(el('line',{x1:ax, y1:ay, x2:bx, y2:by,
+      stroke:C.glow, 'stroke-width':13, 'stroke-linecap':'round', opacity:.6}));
+    g.appendChild(el('line',{x1:ax, y1:ay, x2:bx, y2:by, stroke:C.red,
+      'stroke-width':hot?3.2:2}));
+    head(g, bx, by, ux, uy, C.red, hot?9:7.5);
+    return [(ax+bx)/2, (ay+by)/2];
+  }
+  function state(g,x,y,col,word){
+    g.appendChild(el('circle',{cx:x, cy:y, r:30, fill:col, 'fill-opacity':.2,
+      stroke:col, 'stroke-width':2.8}));
+    tag(g, x, y+1, word, col, 9.5);
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    g.appendChild(el('circle',{cx:CX, cy:CY, r:RR, fill:C.grey,
+      'fill-opacity':.07, stroke:C.grey, 'stroke-width':2.5}));
+    tag(g, 172, 78, 'R', C.grey, 24);
+    PLAIN.forEach(function(d){
+      g.appendChild(el('circle',{cx:d[0], cy:d[1], r:6, fill:C.muted})); });
+    squiggle(g, CX, CY, STAR.x, STAR.y, 36, 16);
+    let m=arrow(g, CX, CY, T0.x, T0.y, 34, 30, false);
+    tag(g, m[0], m[1]-22, 'p reads m', C.red, 11);
+    state(g, T0.x, T0.y, C.blue, '0-valent');
+    m=arrow(g, STAR.x, STAR.y, T1.x, T1.y, 14, 30, true);
+    tag(g, m[0], m[1]-24, 'p reads m', C.red, 12);
+    state(g, T1.x, T1.y, C.red, '1-valent');
+    g.appendChild(el('circle',{cx:STAR.x, cy:STAR.y, r:8, fill:C.ink}));
+    tag(g, STAR.x, STAR.y+26, 'S*', C.ink, 14);
+    g.appendChild(el('circle',{cx:CX, cy:CY, r:34, fill:'#fff',
+      stroke:C.ink, 'stroke-width':2.6}));
+    tag(g, CX, CY-6, 'S', C.ink, 16);
+    tag(g, CX, CY+12, 'bivalent', C.muted, 8.5);
+    tag(g, 700, 402, 'the sublemma claims this arrow exists', C.muted, 12);
+  }
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='c2_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', red:'#d13d0e', grey:'#8d8878'};
+  // c cut into three: c_pre, the read, c_post.
+  const CX=300, CY=235, RR=175;
+  const SH={x:412, y:302};                    // S#, the state after c_pre
+  const HAT={x:745, y:330}, T={x:1075, y:190};
+  const PLAIN=[[230,170],[200,292],[350,150],[255,357],[390,212]];
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function head(g,x,y,ux,uy,col,sz){
+    const s=sz||8, px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:
+      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
+      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
+  }
+  function squiggle(g,x1,y1,x2,y2,a0,b0){
+    const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1;
+    const ux=dx/L, uy=dy/L, px=-uy, py=ux;
+    const a=a0, b=L-b0, amp=6.5, wl=26, pts=[];
+    for(let t=a; t<=b; t+=3){
+      const o=amp*Math.sin(2*Math.PI*(t-a)/wl)*Math.min(1,(b-t)/22);
+      pts.push((x1+ux*t+px*o).toFixed(1)+','+(y1+uy*t+py*o).toFixed(1));
+    }
+    g.appendChild(el('polyline',{points:pts.join(' '), fill:'none',
+      stroke:C.muted, 'stroke-width':2, 'stroke-linecap':'round'}));
+    head(g, x1+ux*b, y1+uy*b, ux, uy, C.muted, 6);
+    return [x1+ux*(a+b)/2 + px*10, y1+uy*(a+b)/2 + py*10];
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    g.appendChild(el('circle',{cx:CX, cy:CY, r:RR, fill:C.grey,
+      'fill-opacity':.07, stroke:C.grey, 'stroke-width':2.5}));
+    tag(g, 150, 88, 'R', C.grey, 24);
+    PLAIN.forEach(function(d){
+      g.appendChild(el('circle',{cx:d[0], cy:d[1], r:6, fill:C.muted})); });
+    // c_pre: S to S#, p takes no action, so S# is in R
+    squiggle(g, CX, CY, SH.x, SH.y, 36, 16);
+    tag(g, 320, 300, 'c_pre', C.muted, 13);
+    // p reads m: out of R
+    (function(){
+      const dx=HAT.x-SH.x, dy=HAT.y-SH.y, L=Math.hypot(dx,dy);
+      const ux=dx/L, uy=dy/L;
+      const ax=SH.x+ux*14, ay=SH.y+uy*14, bx=HAT.x-ux*32, by=HAT.y-uy*32;
+      g.appendChild(el('line',{x1:ax, y1:ay, x2:bx, y2:by, stroke:C.red,
+        'stroke-width':2.4}));
+      head(g, bx, by, ux, uy, C.red, 8);
+      tag(g, (ax+bx)/2, (ay+by)/2-22, 'p reads m', C.red, 12);
+    })();
+    g.appendChild(el('circle',{cx:SH.x, cy:SH.y, r:8, fill:C.ink}));
+    tag(g, SH.x+6, SH.y-24, 'S#', C.ink, 14);
+    // c_post: S^ to T, both outside R
+    const mid=squiggle(g, HAT.x, HAT.y, T.x, T.y, 34, 34);
+    tag(g, mid[0]-12, mid[1]-24, 'c_post', C.muted, 13);
+    [[HAT,'S^'],[T,'T']].forEach(function(q){
+      g.appendChild(el('circle',{cx:q[0].x, cy:q[0].y, r:32, fill:C.red,
+        'fill-opacity':.2, stroke:C.red, 'stroke-width':2.8}));
+      tag(g, q[0].x, q[0].y+1, '1-valent', C.red, 9.5);
+      tag(g, q[0].x, q[0].y-46, q[1], C.ink, 14);
+    });
+    g.appendChild(el('circle',{cx:CX, cy:CY, r:34, fill:'#fff',
+      stroke:C.ink, 'stroke-width':2.6}));
+    tag(g, CX, CY-6, 'S', C.ink, 16);
+    tag(g, CX, CY+12, 'bivalent', C.muted, 8.5);
+  }
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='rr_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', blue:'#1a5fd0', red:'#d13d0e',
+           grey:'#8d8878', glow:'#ffd23f'};
+  // R, drawn as a disc. S sits at its centre; the squiggles are the
+  // computations in which p takes no action; the red arrows are p reading m.
+  const CX=350, CY=280, RR=225, TX=990;
+  const DOT=[{x:285,y:125, t:70,  v:0},
+             {x:455,y:205, t:170, v:1},
+             {x:495,y:300, t:270, v:0},
+             {x:450,y:390, t:370, v:2, star:true},
+             {x:300,y:450, t:470, v:1}];
+  const PLAIN=[[215,265],[250,185],[400,160],[215,370],[385,485],[160,300]];
+  const WORD=['0-valent','1-valent','bivalent'];
+  const COL=[C.blue, C.red, C.grey];
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function head(g,x,y,ux,uy,col,sz){
+    const s=sz||8, px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:
+      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
+      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
+  }
+  // a hand-drawn-looking line from S out to a state of R
+  function squiggle(g,x1,y1,x2,y2){
+    const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1;
+    const ux=dx/L, uy=dy/L, px=-uy, py=ux;
+    const a=14, b=L-16, amp=6.5, wl=26, pts=[];
+    for(let t=a; t<=b; t+=3){
+      const o=amp*Math.sin(2*Math.PI*(t-a)/wl)*Math.min(1,(b-t)/22);
+      pts.push((x1+ux*t+px*o).toFixed(1)+','+(y1+uy*t+py*o).toFixed(1));
+    }
+    g.appendChild(el('polyline',{points:pts.join(' '), fill:'none',
+      stroke:C.muted, 'stroke-width':2, 'stroke-linecap':'round'}));
+    head(g, x1+ux*b, y1+uy*b, ux, uy, C.muted, 6);
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    g.appendChild(el('circle',{cx:CX, cy:CY, r:RR, fill:C.grey,
+      'fill-opacity':.07, stroke:C.grey, 'stroke-width':2.5}));
+    tag(g, 170, 100, 'R', C.grey, 24);
+    PLAIN.forEach(function(d){
+      g.appendChild(el('circle',{cx:d[0], cy:d[1], r:6, fill:C.muted})); });
+    DOT.forEach(function(d){ squiggle(g, CX, CY, d.x, d.y); });
+    // p reads m: out of every state of R, and out of R
+    DOT.forEach(function(d){
+      const col=COL[d.v], x2=TX, y2=d.t;
+      const dx=x2-d.x, dy=y2-d.y, L=Math.hypot(dx,dy)||1;
+      const ux=dx/L, uy=dy/L;
+      const ax=d.x+ux*14, ay=d.y+uy*14, bx=x2-ux*30, by=y2-uy*30;
+      if(d.star)
+        g.appendChild(el('line',{x1:ax, y1:ay, x2:bx, y2:by, stroke:C.glow,
+          'stroke-width':13, 'stroke-linecap':'round', opacity:.6}));
+      g.appendChild(el('line',{x1:ax, y1:ay, x2:bx, y2:by, stroke:C.red,
+        'stroke-width':d.star?3.2:2}));
+      head(g, bx, by, ux, uy, C.red, d.star?9:7.5);
+      g.appendChild(el('circle',{cx:x2, cy:y2, r:30, fill:col,
+        'fill-opacity':.2, stroke:col, 'stroke-width':d.star?4:2.6}));
+      tag(g, x2, y2+1, WORD[d.v], col, d.v===2?10:9.5);
+    });
+    // the dots themselves, drawn over the tails of the arrows
+    DOT.forEach(function(d){
+      g.appendChild(el('circle',{cx:d.x, cy:d.y, r:d.star?8:7,
+        fill:d.star?C.ink:C.muted})); });
+    tag(g, 552, 78, 'p reads m', C.red, 11);
+    tag(g, 640, 356, 'p reads m', C.red, 12);
+    tag(g, 450, 420, 'S*', C.ink, 14);
+    tag(g, TX+36, 350, 'S′', C.ink, 14, 'start');
+    g.appendChild(el('circle',{cx:CX, cy:CY, r:34, fill:'#fff',
+      stroke:C.ink, 'stroke-width':2.6}));
+    tag(g, CX, CY-6, 'S', C.ink, 16);
+    tag(g, CX, CY+12, 'bivalent', C.muted, 8.5);
+  }
+  draw();
+})();
+</script>
+
+
+<style>
+  .pslide{display:contents}
+  .presentbar{position:fixed; right:16px; bottom:14px; z-index:60;
+    display:flex; gap:8px; align-items:center}
+  .presentbar button{font:600 13px var(--sans,sans-serif); color:var(--ink,#1a1a2e);
+    background:#fff; border:1px solid var(--line,#ddd8cd); border-radius:8px;
+    padding:6px 12px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .presentbar button:hover{border-color:var(--muted,#6f7583)}
+  .presentbar .pnum{font:600 12px var(--mono,monospace); color:var(--muted,#6f7583)}
+
+  body.present{overflow:hidden}
+  body.present .wrap{max-width:none; padding:0; margin:0}
+  body.present .pslide{display:none}
+  body.present .pslide.on{
+    display:block; position:fixed; inset:0; overflow:auto;
+    padding:5vh 6vw 9vh; font-size:clamp(17px,1.55vw,25px);
+  }
+  /* Everything inside a shown chunk grows with it. */
+  body.present .pslide.on p,
+  body.present .pslide.on li{font-size:1em; line-height:1.5; max-width:34em}
+  body.present .pslide.on h1{font-size:2.5em}
+  body.present .pslide.on h2{font-size:1.9em; margin-top:0}
+  body.present .pslide.on h3{font-size:1.35em}
+  body.present .pslide.on h4{font-size:1.05em; margin:.8em 0 .3em}
+  body.present .pslide.on figure.fig{margin:1.4vh 0; padding:14px 16px 12px}
+  /* A figure already breaks out of the text column; in present mode the
+     column is the screen, so the trick has to be switched off or it
+     shifts the figure sideways. */
+  body.present .pslide.on figure.fig.wideout{
+    width:auto; max-width:none; position:static; left:auto; transform:none}
+  body.present .pslide.on figcaption{font-size:.62em; line-height:1.5}
+  body.present .pslide.on .task{font-size:.9em}
+  body.present .presentbar{background:rgba(250,248,243,.9); border-radius:10px;
+    padding:4px 6px}
+</style>
+<script>
+(function(){
+  const wrap=document.querySelector('.wrap');
+  if(!wrap) return;
+
+  // ── group the page's own children into chunks ──────────────────────
+  // A heading, a figure or a task starts a chunk; a run of prose longer
+  // than five blocks starts one too, so no chunk overflows the screen.
+  const STARTS=el=>{
+    const t=el.tagName;
+    return t==='HEADER'||t==='H1'||t==='H2'||t==='H3'||t==='FIGURE'||
+           el.classList.contains('task');
+  };
+  const ALONE=el=>el.tagName==='FIGURE'||el.classList.contains('task');
+
+  const kids=[...wrap.children];
+  const groups=[]; let cur=null;
+  for(const el of kids){
+    if(!cur || STARTS(el) || cur.length>=5 || (cur.length&&ALONE(cur[cur.length-1])))
+      groups.push(cur=[]);
+    cur.push(el);
+  }
+  const slides=groups.filter(g=>g.length).map(g=>{
+    const d=document.createElement('div');
+    d.className='pslide';
+    wrap.insertBefore(d,g[0]);
+    g.forEach(el=>d.appendChild(el));
+    return d;
+  });
+
+  // ── the bar ────────────────────────────────────────────────────────
+  const bar=document.createElement('div');
+  bar.className='presentbar';
+  bar.innerHTML='<span class="pnum" hidden></span>'+
+                '<button type="button">Present</button>';
+  document.body.appendChild(bar);
+  const num=bar.querySelector('.pnum'), btn=bar.querySelector('button');
+
+  let on=false, i=0;
+  function show(){
+    slides.forEach((s,n)=>s.classList.toggle('on', on && n===i));
+    num.hidden=!on;
+    num.textContent=(i+1)+' / '+slides.length;
+    btn.textContent=on?'Exit':'Present';
+    // A canvas that was hidden may need a nudge to repaint.
+    if(on) window.dispatchEvent(new Event('resize'));
+  }
+  function enter(){ on=true;  document.body.classList.add('present');    show(); }
+  function leave(){ on=false; document.body.classList.remove('present');
+                    show(); slides[i].scrollIntoView({block:'start'}); }
+  btn.onclick=()=>on?leave():enter();
+
+  addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if(!on){ if(e.key==='p'||e.key==='P'){ e.preventDefault(); enter(); } return; }
+    if(e.key==='Escape'){ e.preventDefault(); leave(); }
+    else if(['ArrowRight',' ','PageDown','n'].includes(e.key)){
+      e.preventDefault(); i=Math.min(slides.length-1,i+1); show(); }
+    else if(['ArrowLeft','PageUp','b'].includes(e.key)){
+      e.preventDefault(); i=Math.max(0,i-1); show(); }
+    else if(e.key==='Home'){ e.preventDefault(); i=0; show(); }
+    else if(e.key==='End'){ e.preventDefault(); i=slides.length-1; show(); }
+  });
+
+  show();
+})();
+</script>
+
+
+
+</body>
+</html>

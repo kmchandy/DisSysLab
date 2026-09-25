@@ -1,0 +1,1586 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Serializability of Transactions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+
+
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  p{color:var(--body); margin:0 0 15px}
+  /* The proof's three steps are h4s: a label on a paragraph, not a section,
+     so they are smaller than h3 and do not start a slide in present mode. */
+  h4{font-family:var(--sans); font-weight:700; font-size:15.5px;
+     letter-spacing:.01em; color:var(--ink); margin:20px 0 6px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  figure.fig{margin:30px 0 26px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  input[type=range]{flex:1 1 200px; min-width:160px; accent-color:var(--orange)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
+          font-size:13.5px; color:var(--muted)}
+  .legend i{font-style:normal; color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em}
+  .hint{font-size:13px; color:var(--muted)}
+  table.state{width:100%; margin-top:14px; border-collapse:collapse;
+              font:13.5px/1.5 var(--mono)}
+  table.state th{text-align:left; font:600 11.5px var(--sans); letter-spacing:.12em;
+    text-transform:uppercase; color:var(--muted); padding:0 12px 6px 0; font-weight:700}
+  table.state td{padding:5px 12px 5px 0; border-top:1px solid var(--line);
+                 vertical-align:baseline}
+  table.state td.k{color:var(--muted); white-space:nowrap; width:104px}
+  table.state td b{color:var(--ink)}
+  .none{color:#b9b4a8}
+  .hot{color:var(--orange); font-weight:700}
+  .chan{color:var(--teal); font-weight:700}
+  .facts{margin-top:14px; font:14px/1.7 var(--mono)}
+  .facts div{display:flex; gap:10px; align-items:baseline; padding:5px 0;
+             border-top:1px solid var(--line)}
+  .facts .k{width:172px; flex:none; font:600 11.5px var(--sans);
+            letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+  .fixed{color:var(--teal); font-weight:700}
+  .moved{color:var(--ink); font-weight:700}
+  .ok{color:var(--teal); font-weight:700}
+  .bad{color:var(--orange); font-weight:700}
+  .dn{color:var(--orange); font-weight:700}
+  .up{color:var(--teal); font-weight:700}
+  .cc{color:#8d8878; font-weight:700}
+  /* A definition the rest of the lecture leans on. Its own block, so it
+     is one beat in present mode and one thing to look at on the page. */
+  p.key{margin:20px 0 18px; padding:15px 18px 15px 20px; color:var(--ink);
+    background:#fff6ef; border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0; font-size:18px; line-height:1.5; font-weight:600}
+  p.key b, p.key strong{color:var(--ink); font-weight:800}
+  p.key .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
+    margin-bottom:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab</div>
+    <h1>Serializability of Transactions</h1>
+
+    <p>The last class ended badly: in an asynchronous system where one agent
+       may halt, no algorithm can promise to reach consensus. This class and
+       the next build one that gets as close as the theorem allows, and this
+       class is the half that has nothing to do with consensus at all.</p>
+
+    <p>The reason for spending a class on it is the proof. An algorithm that
+       runs over a network where messages are lost, duplicated and delivered
+       out of order, and where agents halt and come back, is a nightmare to
+       reason about directly. Serializability converts that nightmare into a
+       proof about a <b>nondeterministic sequential program</b> &mdash; a
+       <code>for</code> loop &mdash; and the conversion is what the next class
+       stands on.</p>
+  </header>
+
+<h2>The system we are heading for</h2>
+
+<p>
+  Two layers of agents, and only two. Proposers are called <b>clients</b> and
+  acceptors are called <b>servers</b>. Each client sends messages to, and
+  receives messages from, servers. Servers do not communicate with each other,
+  and clients do not communicate with each other. We know an upper bound N on
+  the number of servers, and some of the servers may have halted permanently.
+  Assume at least one server has not.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="top_g" viewBox="0 0 1240 380" role="img"
+         aria-label="Two clients and two servers, with messages only between the layers, never within one"></svg>
+
+    <div class="ctrls">
+      <button id="top_run" class="primary">One transaction</button>
+      <button id="top_reset">Reset</button>
+      <span class="status" id="top_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">The client did</span><span id="top_did"></span></div>
+      <div><span class="k">Replies it heard</span><span id="top_got"></span></div>
+      <div><span class="k">Never happens</span><span id="top_no"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 1. Clients and servers, and nothing else.</b>
+      A client reads from the servers, waits to hear back from enough of them,
+      and then writes to the servers. That round trip is one
+      <b>transaction</b>, and it is the only shape of computation in the next
+      class. Press the button and watch one go by.
+      The dashed lines are the edges that do not exist: no server ever sends to
+      a server, no client to a client. That is worth noticing now, because it
+      means every message crosses between the layers, and a transaction is
+      the only thing that ties two agents together.
+      One server here has halted, and the client cannot tell &mdash; it hears
+      two replies where it sent three requests, and, from lecture 6, a reply
+      that has not come and a reply that will never come look the same.
+    </figcaption>
+  </figure>
+
+<h2>What serializable means</h2>
+
+<p>
+  Colour the steps and messages of a computation by which transaction they
+  belong to. Here two transactions, <span style="color:#1a5fd0"><b>blue</b></span>
+  and <span style="color:#d13d0e"><b>red</b></span>, run across four agents,
+  and their steps are interspersed: some red steps occur before some blue
+  steps and some blue steps occur before some red ones. A dotted line is a
+  message that was sent and lost.
+</p>
+
+<p>
+  Press <i>Permute</i>. The steps slide into a new order in which all the blue
+  steps come before all the red ones &mdash; and nothing about the computation
+  has changed. Check it: the log of each agent is the same in both, step for
+  step, and every message is still received after it was sent. What the
+  permuted picture shows is a computation in which <b>while the blue
+  transaction is executing no other transaction is executing</b>, and likewise
+  for red. That is what <b>serial</b> means, and a computation that can be
+  permuted into a serial one is <b>serializable</b>.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="ser_g" viewBox="0 0 1240 420" role="img"
+         aria-label="A computation of two interleaved transactions, permuted so that all steps of one come before all steps of the other"></svg>
+
+    <div class="ctrls">
+      <button id="ser_go" class="primary">Permute</button>
+      <button id="ser_cut">Show the cut</button>
+      <button id="ser_reset">Back to the original</button>
+      <span class="status" id="ser_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Each agent&rsquo;s log</span><span id="ser_log"></span></div>
+      <div><span class="k">Messages</span><span id="ser_msg"></span></div>
+      <div><span class="k">Serial?</span><span id="ser_ser"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 2. The same computation, straightened out.</b>
+      Four agents, two transactions, seven messages and one that was lost.
+      Press <i>Permute</i> and watch the steps move; press it again to go back.
+      The readout checks the two things that make the permuted picture the
+      <i>same computation</i>: every agent's log is unchanged, and every
+      message is still received after it is sent. Neither claim is asserted
+      here &mdash; the figure compares the two layouts and reports what it
+      finds.
+      Then press <i>Show the cut</i>. In the permuted picture the boundary
+      between the transactions is a vertical line: the moment blue ends and
+      red begins. In the original it is a <b>jagged</b> line, crossing each
+      agent at a different moment &mdash; and it is a consistent cut, in
+      exactly the sense of lecture 4, whose past is the blue steps and whose
+      future is the red ones. Watch it straighten as the permutation runs.
+      That is the whole idea: <b>serializable</b> means there is a chain of
+      consistent cuts, each adding the steps of exactly one transaction.
+    </figcaption>
+  </figure>
+<h2>When it cannot be done</h2>
+
+<p>
+  Not every computation can be permuted into a serial one, and the two ways it
+  fails are worth seeing, because the conditions that follow are exactly the
+  conditions that rule them out. Remember what a cut may and may not be: to put
+  a step in the past you must put everything before it <i>on that agent</i> in
+  the past as well.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="bad_g" viewBox="0 0 1240 360" role="img"
+         aria-label="Two computations that cannot be serialized: one where an agent's log alternates colours, and one where two messages cross between the transactions"></svg>
+
+    <div class="ctrls">
+      <button id="bad_c1" class="primary">One agent&rsquo;s log</button>
+      <button id="bad_c2">Crossing messages</button>
+      <button id="bad_b">Try blue first</button>
+      <button id="bad_r">Try red first</button>
+      <span class="status" id="bad_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">The attempt</span><span id="bad_try"></span></div>
+      <div><span class="k">Forced into the past</span><span id="bad_forced"></span></div>
+      <div><span class="k">Verdict</span><span id="bad_ok"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 3. Two computations that will not come apart.</b>
+      Press a case, then try to separate the colours. <i>Try blue first</i>
+      builds the smallest past containing every blue step; <i>try red first</i>
+      does the same for red. In both cases the figure computes the answer
+      rather than asserting it: it takes each agent's prefix up to its last
+      step of that colour, and then reports what else came along.
+      <b>One agent's log.</b> The bottom agent's steps go blue, red, blue. Any
+      past that contains its last blue step also contains the red step before
+      it, so no cut separates the colours. This is the failure of the first
+      condition, and it is entirely local &mdash; one agent's log is enough to
+      wreck it, with no messages involved at all.
+      <b>Crossing messages.</b> Here each agent's log is fine on its own. The
+      trouble is a blue message sent by U and received by V <i>after</i> V has
+      done a red step, and a red message going the other way. Any past with all
+      the blue in it must reach past V's red step; any past with all the red in
+      it must reach past U's blue one. This is the failure that conditions two
+      and three rule out.
+    </figcaption>
+  </figure>
+
+<h2>Three conditions</h2>
+
+<p>
+  <b>Condition 1. Serializable agent computations.</b> For each agent, all
+  steps of each transaction occur consecutively: blue, blue, blue&hellip; then
+  red, red&hellip; An agent's computation is its log of steps, and that log can
+  be cut into blocks, each block holding all the steps of exactly one
+  transaction.
+</p>
+
+<p>
+  <b>Condition 2.</b> The order of the transactions is the same for all agent
+  computations. If blue comes before red in the computation of one agent, then
+  blue comes before red in the computation of every agent.
+</p>
+
+<p>
+  <b>Condition 3.</b> All messages in a transaction are sent and received by
+  steps in that transaction: all blue messages are between blue steps, all red
+  messages between red steps.
+</p>
+
+<p class="key"><span class="lead-in">Observation</span>
+  If conditions 1, 2 and 3 hold in a dataflow graph, then the graph can be
+  partitioned by consistent cuts (past<sub>0</sub>, future<sub>0</sub>),
+  (past<sub>1</sub>, future<sub>1</sub>), &hellip; where past<sub>i+1</sub>
+  is past<sub>i</sub> together with all the steps of exactly one transaction.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="cnd_g" viewBox="0 0 1240 380" role="img"
+         aria-label="Five agents running two transactions, with each of the three conditions checked on the picture"></svg>
+
+    <div class="ctrls">
+      <button id="cnd_1" class="primary">Condition 1</button>
+      <button id="cnd_2">Condition 2</button>
+      <button id="cnd_3">Condition 3</button>
+      <button id="cnd_break">Break it</button>
+      <span class="status" id="cnd_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Condition 1</span><span id="cnd_v1"></span></div>
+      <div><span class="k">Condition 2</span><span id="cnd_v2"></span></div>
+      <div><span class="k">Condition 3</span><span id="cnd_v3"></span></div>
+      <div><span class="k">So</span><span id="cnd_so"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 4. The three conditions, on one picture.</b>
+      Five agents and two transactions. Each button shows what one condition
+      is looking at: the blocks in each agent's log, the order of those blocks
+      across agents, and the colour of each message's two ends. All three
+      verdicts are computed from the picture, every time, and all three hold
+      here.
+      Then press <i>Break it</i>, which turns agent C around so that it runs
+      red before blue. Watch two verdicts fail at once: C's order now disagrees
+      with everyone else's, and two messages that used to run between steps of
+      one transaction now run between transactions. The cut that separated the
+      colours is gone with them, and the readout says which condition took it
+      away.
+    </figcaption>
+  </figure>
+<h2>A sufficient condition</h2>
+
+<p class="key"><span class="lead-in">Theorem</span>
+  Transactions are serializable if: <b>1.</b> associated with each transaction
+  is a unique id, and transaction ids are totally ordered; <b>2.</b> for each
+  agent, all steps of a transaction with id T occur after all steps of a
+  transaction with id T&prime; whenever T&prime; &lt; T; and <b>3.</b> all
+  messages sent in a step of a transaction with id T are received in a step of
+  the same transaction.
+</p>
+
+<p>
+  Conditions 1, 2 and 3 of the previous section are satisfied by these
+  requirements, so the observation applies and the computation comes apart
+  into transactions. Here are two agents that meet them, with three
+  transactions whose ids are the colours <span style="color:#00947d"><b>green</b></span>
+  &lt; <span style="color:#1a5fd0"><b>blue</b></span> &lt;
+  <span style="color:#d13d0e"><b>red</b></span>.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="uv_g" viewBox="0 0 1240 360" role="img"
+         aria-label="Agents U and V running three transactions in id order, and the chain of consistent cuts that separates them"></svg>
+
+    <div class="ctrls">
+      <button id="uv_step" class="primary">Next step</button>
+      <button id="uv_reset">Reset</button>
+      <span class="status" id="uv_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Each agent&rsquo;s order</span><span id="uv_ord"></span></div>
+      <div><span class="k">Messages</span><span id="uv_msg"></span></div>
+      <div><span class="k">The cut</span><span id="uv_cut"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 5. Two agents, three transactions, four cuts.</b>
+      Steps of each agent's computation occur in order of increasing
+      transaction id: for agent U all steps of the green transaction occur
+      before all steps of the blue, which occur before all steps of the red,
+      and the same for V. That is conditions 1 and 2 at once. Then the
+      messages appear, and each one runs from a step of a transaction to a
+      step of the <i>same</i> transaction, green to green and blue to blue:
+      condition 3.
+      Now step through the cuts. The dataflow graph is partitioned into
+      subgraphs by consistent cuts, where each cut adds the steps of exactly
+      one transaction:
+      <code>Cut&nbsp;0 = ({}, {green, blue, red})</code>,
+      <code>Cut&nbsp;1 = ({green}, {blue, red})</code>,
+      <code>Cut&nbsp;2 = ({green, blue}, {red})</code>,
+      <code>Cut&nbsp;3 = ({green, blue, red}, {})</code>.
+      Read the last line of the readout as each one appears: no message ever
+      crosses a cut backwards, because no message ever leaves its own
+      transaction.
+    </figcaption>
+  </figure>
+
+<h2>How to make it happen</h2>
+
+<p>
+  The theorem tells us what we need. It does not tell us how an agent, which
+  can see only its own state and its incoming messages, is supposed to arrange
+  it. Two questions, and their answers are the whole mechanism.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="rul_g" viewBox="0 0 1240 340" role="img"
+         aria-label="A message arriving from an earlier transaction is discarded; a message arriving from a later transaction makes the agent move forward to it"></svg>
+
+    <div class="ctrls">
+      <button id="rul_a" class="primary">A message from an earlier transaction</button>
+      <button id="rul_b">A message from a later transaction</button>
+      <button id="rul_next">What happens</button>
+      <span class="status" id="rul_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">The situation</span><span id="rul_sit"></span></div>
+      <div><span class="k">The rule</span><span id="rul_rule"></span></div>
+      <div><span class="k">Why</span><span id="rul_why"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 6. The two rules.</b>
+      Transaction ordering green &rarr; blue &rarr; red.
+      <b>What should happen when a message arrives from an earlier
+      transaction?</b> A message from the green transaction arrives when agent
+      U has already moved forward to the blue one. We require that all messages
+      sent in green steps are received in green steps, so U cannot process it.
+      <i>Ignore it &mdash; treat it as lost.</i> Nothing in the model objects:
+      a discarded message and a lost message are the same thing, as figure 1 of
+      lecture 6 spent a whole animation establishing. So no message from an
+      earlier transaction is ever received in a later one.
+      <b>And when a message arrives from a later transaction?</b> A message
+      from the red transaction arrives while U is still in blue. Again we
+      require red messages to be received in red steps &mdash; so U
+      <i>starts executing the later transaction</i>. It abandons blue and moves
+      to red, and receives the message there.
+      Those two rules together guarantee what condition 3 asks for: a message
+      sent in a step of a transaction with id t is received in a step of a
+      transaction with id t, or it is lost.
+    </figcaption>
+  </figure>
+
+<h2>Where the ids come from</h2>
+
+<p>
+  One thing is still missing: the ids themselves. Each transaction needs an id,
+  the ids must be totally ordered, and no two transactions may share one. Call
+  them <b>epochs</b>. An epoch is a pair &mdash; a number and an agent id
+  &mdash; and agent ids break ties, so (10,&nbsp;A) &lt; (10,&nbsp;B). Two
+  agents may pick the same number and still get different epochs.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="epo_g" viewBox="0 0 1240 340" role="img"
+         aria-label="One agent's computation divided into four transactions, each labelled with its epoch, compared with logical time"></svg>
+
+    <div class="ctrls">
+      <button id="epo_step" class="primary">Next transaction</button>
+      <button id="epo_lt">Compare with logical time</button>
+      <button id="epo_reset">Reset</button>
+      <span class="status" id="epo_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">This agent&rsquo;s epochs</span><span id="epo_ep"></span></div>
+      <div><span class="k">Ties</span><span id="epo_tie"></span></div>
+      <div><span class="k">Not logical time</span><span id="epo_lt2"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 7. Epochs, which are not logical times.</b>
+      The computation of a single agent. Associated with each step and each
+      edge is a transaction id, or epoch, and this agent runs four of them:
+      (10,&nbsp;A), (10,&nbsp;B), (15,&nbsp;A) and (20,&nbsp;C) &mdash; in
+      increasing order, as condition 2 requires.
+      Epochs are similar to logical times, and it is worth being precise about
+      how they differ. Press <i>Compare with logical time</i>: the logical time
+      of a later step at an agent is always larger, whereas
+      <b>consecutive steps at an agent can carry the same epoch</b>. That is
+      the point of an epoch &mdash; it names a transaction, not a moment, and a
+      transaction is several steps long.
+      Uniqueness comes from the pair. Agent A and agent B may both choose the
+      number 10; the ids (10,&nbsp;A) and (10,&nbsp;B) are still different, and
+      still ordered, because agent ids are ordered. That is all the total order
+      the theorem asks for.
+    </figcaption>
+  </figure>
+
+<p>
+  That is serializability: three conditions, a theorem that implies them, two
+  rules an agent can actually follow, and epochs to number the transactions
+  with. Nothing in it mentions consensus. What it buys is the right to stop
+  thinking about a network that loses and duplicates and reorders messages,
+  and to think instead about transactions that happen one after another
+  &mdash; which is where the next class begins.
+</p>
+
+</div>
+
+<script>
+(function(){
+  const PFX='top_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           red:'#d13d0e', green:'#00947d', blue:'#1a5fd0'};
+  const SRV=[[360,96],[620,96],[880,96]], CLI=[[440,300],[800,300]];
+  const DEAD=2;                       // this server has halted permanently
+  const R=46;
+  // the round trip: read requests out, replies back, write requests out
+  const PH=[{k:'read', from:'c', txt:'read requests to every server'},
+            {k:'reply',from:'s', txt:'replies from the servers that are up'},
+            {k:'write',from:'c', txt:'write requests to every server'}];
+  let ph=-1, q=1, raf=null, last=0, run=false;
+
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  const lerp=function(a,b,t){return [a[0]+(b[0]-a[0])*t, a[1]+(b[1]-a[1])*t];};
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    // the edges that do not exist
+    [[SRV[0],SRV[1]],[SRV[1],SRV[2]],[CLI[0],CLI[1]]].forEach(function(e){
+      g.appendChild(el('line',{x1:e[0][0]+R, y1:e[0][1], x2:e[1][0]-R,
+        y2:e[1][1], stroke:C.line, 'stroke-width':2.5,
+        'stroke-dasharray':'8 7'}));
+    });
+    tag(g,490,70,'no messages',C.muted,11.5);
+    tag(g,750,70,'no messages',C.muted,11.5);
+    tag(g,620,326,'no messages',C.muted,11.5);
+    // every client talks to every server
+    CLI.forEach(function(c){
+      SRV.forEach(function(s){
+        g.appendChild(el('line',{x1:c[0], y1:c[1]-R, x2:s[0], y2:s[1]+R,
+          stroke:C.line, 'stroke-width':2}));
+      });
+    });
+    // messages in flight
+    if(ph>=0){
+      const p=PH[ph];
+      CLI.slice(0,1).forEach(function(c){
+        SRV.forEach(function(s,i){
+          if(p.k==='reply' && i===DEAD) return;
+          const a=(p.from==='c')?[c[0],c[1]-R]:[s[0],s[1]+R];
+          const b=(p.from==='c')?[s[0],s[1]+R]:[c[0],c[1]-R];
+          const pt=lerp(a,b,q);
+          g.appendChild(el('circle',{cx:pt[0], cy:pt[1], r:8,
+            fill:(p.k==='reply')?C.green:C.blue, stroke:'#fff',
+            'stroke-width':2}));
+        });
+      });
+    }
+    // the agents
+    SRV.forEach(function(s,i){
+      const dead=(i===DEAD);
+      g.appendChild(el('circle',{cx:s[0], cy:s[1], r:R, fill:C.ink,
+        'fill-opacity':dead?.04:.08, stroke:dead?C.red:C.ink,
+        'stroke-width':2.5, 'stroke-dasharray':dead?'6 4':'none'}));
+      tag(g,s[0],s[1]-8,'server',dead?C.red:C.ink,13);
+      tag(g,s[0],s[1]+12,dead?'halted':'q'+i,dead?C.red:C.muted,13);
+    });
+    CLI.forEach(function(c,i){
+      g.appendChild(el('circle',{cx:c[0], cy:c[1], r:R, fill:C.blue,
+        'fill-opacity':.10, stroke:C.blue, 'stroke-width':2.5}));
+      tag(g,c[0],c[1]-8,'client',C.blue,13);
+      tag(g,c[0],c[1]+12,'p'+i,C.muted,13);
+    });
+    tag(g,120,96,'acceptors',C.muted,12.5);
+    tag(g,120,300,'proposers',C.muted,12.5);
+    tag(g,620,364, ph<0 ? 'press One transaction'
+      : PH[ph].txt, C.muted, 13.5);
+    readout();
+  }
+  function readout(){
+    $('did').innerHTML = ph<0
+      ? '<span class="none">nothing yet</span>'
+      : '<b>'+['sent 3 read requests','waited','sent 3 write requests'][ph]+
+        '</b> <span class="none">· one transaction is a read round and '+
+        'a write round</span>';
+    $('got').innerHTML = ph<1
+      ? '<span class="none">—</span>'
+      : '<b>2</b> <span class="none">of 3 — and it cannot tell whether '+
+        'the third server is slow or gone</span>';
+    $('no').innerHTML='<span class="none">server to server, client to '+
+      'client: those edges are not in the system at all</span>';
+    $('status').innerHTML = ph<0 ? '' : '<b>'+(ph+1)+'</b> of 3';
+  }
+  function frame(t){
+    raf=null;
+    if(!last) last=t;
+    let dt=(t-last)/1000; last=t;
+    if(dt>0.2) dt=0.2;
+    q+=dt*1.5;
+    if(q>=1){ q=0; ph++; if(ph>=PH.length){ ph=PH.length-1; q=1; run=false; } }
+    draw();
+    if(run) raf=requestAnimationFrame(frame);
+  }
+  $('run').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    ph=0; q=0; run=true; last=0; raf=requestAnimationFrame(frame);
+  };
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    run=false; ph=-1; q=1; draw();
+  };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='ser_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           red:'#d13d0e', green:'#00947d', blue:'#1a5fd0'};
+  const AG=['A','B','C','D'], AY={A:96, B:166, C:236, D:306}, AXIS=362;
+  const px=function(t){return 108+t*78;};
+
+  // the computation. t0 is the order it happened in; t1 is the permuted
+  // order. Each agent's own sequence of steps is the same in both.
+  const EV=[
+    {a:'A', c:'b', t0:1,  t1:1},   // 0
+    {a:'C', c:'b', t0:2,  t1:2},   // 1
+    {a:'B', c:'b', t0:3,  t1:3},   // 2
+    {a:'D', c:'b', t0:5,  t1:4},   // 3
+    {a:'A', c:'b', t0:6,  t1:5},   // 4
+    {a:'C', c:'r', t0:4,  t1:6},   // 5
+    {a:'D', c:'r', t0:7,  t1:7},   // 6
+    {a:'B', c:'r', t0:8,  t1:8},   // 7
+    {a:'C', c:'r', t0:9,  t1:9},   // 8
+    {a:'A', c:'r', t0:11, t1:10},  // 9
+    {a:'B', c:'r', t0:13, t1:11},  // 10
+    {a:'D', c:'r', t0:12, t1:12}]; // 11
+  const MSG=[[0,1],[2,4],[1,3],[5,6],[6,7],[8,9],[9,10]];
+  const LOST=2;                    // a message sent here, and never delivered
+
+  let q=0, run=0, raf=null, last=0, cut=false;   // q: 0 = original, 1 = serial
+  const tOf=function(e){ return e.t0+(e.t1-e.t0)*q; };
+  const logOf=function(a,k){
+    return EV.map(function(e,i){return [e,i];})
+             .filter(function(p){return p[0].a===a;})
+             .sort(function(x,y){return (k?x[0].t1-y[0].t1:x[0].t0-y[0].t0);})
+             .map(function(p){return p[0].c;}).join(''); };
+  // where the boundary between the two transactions crosses each agent
+  function cutAt(a){
+    const mine=EV.filter(function(e){return e.a===a;});
+    const lastB=Math.max.apply(null,mine.filter(function(e){return e.c==='b';})
+                                        .map(function(e){return e.t0;}));
+    const firstR=Math.min.apply(null,mine.filter(function(e){return e.c==='r';})
+                                         .map(function(e){return e.t0;}));
+    return (lastB+firstR)/2 + (5.5-(lastB+firstR)/2)*q;
+  }
+
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  const col=function(c){ return c==='b'?C.blue:C.red; };
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    ['b','r'].forEach(function(c){
+      const m=el('marker',{id:PFX+'a'+c, viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:col(c)}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+
+    AG.forEach(function(a){
+      g.appendChild(el('line',{x1:px(0), y1:AY[a], x2:px(14), y2:AY[a],
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:px(0)-22, y:AY[a],
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':17,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+    });
+    // messages
+    MSG.forEach(function(m){
+      const s=EV[m[0]], r=EV[m[1]];
+      const y0=AY[s.a], y1=AY[r.a], d=(y1>y0?1:-1);
+      g.appendChild(el('line',{x1:px(tOf(s)), y1:y0+d*9, x2:px(tOf(r)),
+        y2:y1-d*9, stroke:col(s.c), 'stroke-width':2, opacity:.85,
+        'marker-end':'url(#'+PFX+'a'+s.c+')'}));
+    });
+    // the one that was lost
+    (function(){
+      const s=EV[LOST], y=AY[s.a];
+      g.appendChild(el('line',{x1:px(tOf(s)), y1:y+9, x2:px(tOf(s))+64,
+        y2:y+52, stroke:col(s.c), 'stroke-width':2, 'stroke-dasharray':'5 4',
+        opacity:.6}));
+      tag(g,px(tOf(s))+92, y+60, 'lost', C.muted, 11);
+    })();
+    // steps
+    EV.forEach(function(e){
+      g.appendChild(el('circle',{cx:px(tOf(e)), cy:AY[e.a], r:8,
+        fill:col(e.c), stroke:'#fff', 'stroke-width':2}));
+    });
+    // the boundary between the transactions
+    if(cut){
+      const pts=AG.map(function(a){return [px(cutAt(a)), AY[a]];});
+      const d=['M'+pts[0][0]+','+(AY.A-46)];
+      pts.forEach(function(p){ d.push('L'+p[0]+','+p[1]); });
+      d.push('L'+pts[3][0]+','+(AY.D+46));
+      g.appendChild(el('path',{d:d.join(' '), fill:'none', stroke:C.ink,
+        'stroke-width':3, 'stroke-dasharray':'9 6'}));
+      tag(g,px(cutAt('A')), AY.A-62, q>0.9?'blue ends, red begins'
+        :'a consistent cut: blue behind it, red ahead', C.ink, 13);
+    }
+    // the axis
+    g.appendChild(el('line',{x1:px(0), y1:AXIS, x2:px(14), y2:AXIS,
+      stroke:C.muted, 'stroke-width':2}));
+    for(let v=1;v<=13;v++){
+      g.appendChild(el('line',{x1:px(v), y1:AXIS-5, x2:px(v), y2:AXIS+5,
+        stroke:C.muted, 'stroke-width':2}));
+    }
+    tag(g,px(7), AXIS+22, q>0.5
+      ? 'permuted: every blue step before every red one'
+      : 'the order it happened in: the two transactions interleave',
+      C.muted, 13.5);
+    readout();
+  }
+
+  function readout(){
+    const same=AG.every(function(a){ return logOf(a,0)===logOf(a,1); });
+    $('log').innerHTML='<b>'+AG.map(function(a){
+        return a+': '+logOf(a,0).replace(/b/g,'●').replace(/r/g,'■');
+      }).join('   ')+'</b> <span class="'+(same?'ok':'bad')+'">'+
+      (same?'identical in both orders':'CHANGED')+'</span>';
+    const fwd=function(k){
+      return MSG.every(function(m){
+        return (k?EV[m[0]].t1<EV[m[1]].t1:EV[m[0]].t0<EV[m[1]].t0); }); };
+    $('msg').innerHTML='<b>'+MSG.length+'</b> <span class="none">delivered, '+
+      '1 lost · </span><span class="'+((fwd(0)&&fwd(1))?'ok':'bad')+'">'+
+      ((fwd(0)&&fwd(1))?'every one received after it was sent, in both orders'
+                       :'a message would arrive before it was sent')+'</span>';
+    const maxB=Math.max.apply(null,EV.filter(function(e){return e.c==='b';})
+                                     .map(function(e){return e.t1;}));
+    const minR=Math.min.apply(null,EV.filter(function(e){return e.c==='r';})
+                                     .map(function(e){return e.t1;}));
+    $('ser').innerHTML = q>0.5
+      ? '<span class="ok">serial</span> <span class="none">— every blue '+
+        'step at '+maxB+' or earlier, every red step at '+minR+' or later'+
+        '</span>'
+      : '<span class="none">interleaved — but it can be permuted, which '+
+        'is what serializable means</span>';
+    $('status').innerHTML = run
+      ? '<b>permuting</b>'
+      : (q>0.5?'<b>serial order</b>':'<b>the order it happened</b>');
+  }
+
+  function frame(t){
+    raf=null;
+    if(!last) last=t;
+    let dt=(t-last)/1000; last=t;
+    if(dt>0.2) dt=0.2;
+    q=Math.max(0,Math.min(1,q+run*dt*0.9));
+    // stop when the direction we are going in has run out -- not when q is
+    // merely at an end, which it always is on the first frame
+    if((run>0 && q>=1) || (run<0 && q<=0)) run=0;
+    draw();
+    if(run) raf=requestAnimationFrame(frame);
+  }
+  const go=function(dir){
+    if(raf) cancelAnimationFrame(raf);
+    run=dir; last=0; raf=requestAnimationFrame(frame);
+  };
+  $('go').onclick=function(){ go(q>0.5?-1:1); };
+  $('cut').onclick=function(){ cut=!cut; draw(); };
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf); run=0; q=0; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='bad_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           red:'#d13d0e', green:'#00947d', blue:'#1a5fd0'};
+  const px=function(t){return 150+t*108;};
+  const CASE={
+    c1:{title:'the bottom agent does blue, red, blue',
+        rows:['X','Y','Z'],
+        ev:[{a:'X',c:'b',t:1},{a:'X',c:'b',t:4},
+            {a:'Y',c:'b',t:2},{a:'Y',c:'r',t:6},
+            {a:'Z',c:'b',t:3},{a:'Z',c:'r',t:5},{a:'Z',c:'b',t:8}],
+        msg:[[0,4],[4,1],[5,3]]},
+    c2:{title:'two messages cross between the transactions',
+        rows:['U','V'],
+        ev:[{a:'U',c:'b',t:2},{a:'U',c:'r',t:6},
+            {a:'V',c:'r',t:3},{a:'V',c:'b',t:7}],
+        msg:[[0,3],[2,1]]}};
+  let sel='c1', want=null;
+
+  const rowY=function(k,n){ return 108+k*(n>2?74:96); };
+  // the smallest past that contains every step of colour c: on each agent,
+  // everything up to and including its last step of that colour
+  function past(cs,c){
+    const out={};
+    cs.rows.forEach(function(a){
+      const mine=cs.ev.filter(function(e){return e.a===a;});
+      const last=mine.filter(function(e){return e.c===c;})
+                     .reduce(function(m,e){return Math.max(m,e.t);},-1);
+      out[a]=last;
+    });
+    return out;
+  }
+  const dragged=function(cs,c){
+    const p=past(cs,c);
+    return cs.ev.filter(function(e){ return e.c!==c && e.t<=p[e.a]; });
+  };
+
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  const col=function(c){ return c==='b'?C.blue:C.red; };
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    ['b','r'].forEach(function(c){
+      const m=el('marker',{id:PFX+'a'+c, viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:col(c)}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+    const cs=CASE[sel], n=cs.rows.length;
+    const Y={}; cs.rows.forEach(function(a,k){ Y[a]=rowY(k,n); });
+
+    // the past of the attempt, shaded per agent
+    if(want){
+      const p=past(cs,want);
+      cs.rows.forEach(function(a){
+        if(p[a]<0) return;
+        g.appendChild(el('rect',{x:px(0), y:Y[a]-26, width:px(p[a]+0.45)-px(0),
+          height:52, rx:8, fill:col(want), 'fill-opacity':.10}));
+      });
+      // and the jagged boundary of that past
+      const pts=cs.rows.map(function(a){return [px(past(cs,want)[a]+0.45), Y[a]];});
+      const d=['M'+pts[0][0]+','+(pts[0][1]-40)];
+      pts.forEach(function(q){ d.push('L'+q[0]+','+q[1]); });
+      d.push('L'+pts[n-1][0]+','+(pts[n-1][1]+40));
+      g.appendChild(el('path',{d:d.join(' '), fill:'none', stroke:C.ink,
+        'stroke-width':2.5, 'stroke-dasharray':'9 6'}));
+    }
+    cs.rows.forEach(function(a){
+      g.appendChild(el('line',{x1:px(0), y1:Y[a], x2:px(9), y2:Y[a],
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:px(0)-20, y:Y[a],
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':17,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, a));
+    });
+    cs.msg.forEach(function(m){
+      const s=cs.ev[m[0]], r=cs.ev[m[1]];
+      const y0=Y[s.a], y1=Y[r.a], d=(y1>y0?1:-1);
+      g.appendChild(el('line',{x1:px(s.t), y1:y0+d*10, x2:px(r.t), y2:y1-d*10,
+        stroke:col(s.c), 'stroke-width':2,
+        'marker-end':'url(#'+PFX+'a'+s.c+')'}));
+    });
+    const bad=want?dragged(cs,want):[];
+    cs.ev.forEach(function(e){
+      const hot=bad.indexOf(e)>=0;
+      if(hot)
+        g.appendChild(el('circle',{cx:px(e.t), cy:Y[e.a], r:17, fill:'none',
+          stroke:C.ink, 'stroke-width':2.5, 'stroke-dasharray':'5 4'}));
+      g.appendChild(el('circle',{cx:px(e.t), cy:Y[e.a], r:9, fill:col(e.c),
+        stroke:'#fff', 'stroke-width':2}));
+      if(hot) tag(g,px(e.t), Y[e.a]-32, 'dragged in', C.ink, 11.5);
+    });
+    tag(g,px(4.5), 40, cs.title, C.muted, 13.5);
+    tag(g,px(4.5), 336, want
+      ? (bad.length ? 'the past had to swallow '+bad.length+' step'+
+         (bad.length>1?'s':'')+' of the other colour: no cut separates them'
+         : 'separated')
+      : 'press Try blue first, or Try red first', C.muted, 13.5);
+    readout();
+  }
+
+  function readout(){
+    const cs=CASE[sel];
+    $('try').innerHTML = want
+      ? '<b>every '+(want==='b'?'blue':'red')+' step in the past</b> '+
+        '<span class="none">— which means, on each agent, everything up '+
+        'to its last '+(want==='b'?'blue':'red')+' step</span>'
+      : '<span class="none">nothing tried yet</span>';
+    const bad=want?dragged(cs,want):[];
+    $('forced').innerHTML = want
+      ? (bad.length
+         ? '<span class="bad">'+bad.length+' '+
+           (want==='b'?'red':'blue')+' step'+(bad.length>1?'s':'')+'</span> '+
+           '<span class="none">— on '+
+           bad.map(function(e){return e.a;}).join(', ')+'</span>'
+         : '<span class="ok">nothing of the other colour</span>')
+      : '<span class="none">—</span>';
+    $('ok').innerHTML = !want
+      ? '<span class="none">try one of the two orders</span>'
+      : (bad.length
+         ? '<span class="bad">not serializable</span> <span class="none">'+
+           '— and the other order fails too; try it</span>'
+         : '<span class="ok">separated</span>');
+    $('status').innerHTML='<b>'+(sel==='c1'?'one agent’s log'
+      :'crossing messages')+'</b>';
+  }
+  const setCase=function(k){
+    sel=k; want=null;
+    $('c1').className=(k==='c1')?'primary':'';
+    $('c2').className=(k==='c2')?'primary':'';
+    draw();
+  };
+  $('c1').onclick=function(){ setCase('c1'); };
+  $('c2').onclick=function(){ setCase('c2'); };
+  $('b').onclick=function(){ want='b'; draw(); };
+  $('r').onclick=function(){ want='r'; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='cnd_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           red:'#d13d0e', green:'#00947d', blue:'#1a5fd0'};
+  const AG=['A','B','C','D','E'], AXIS=340;
+  const px=function(t){return 118+t*84;};
+  const ay=function(a){ return 76+AG.indexOf(a)*52; };
+  const EV=[{a:'A',c:'b',t:1},{a:'B',c:'b',t:2},{a:'C',c:'b',t:3},
+            {a:'D',c:'b',t:4},{a:'E',c:'b',t:5},{a:'A',c:'b',t:6},
+            {a:'B',c:'r',t:7},{a:'C',c:'r',t:8},{a:'A',c:'r',t:9},
+            {a:'D',c:'r',t:10},{a:'E',c:'r',t:11},{a:'C',c:'r',t:12}];
+  const MSG=[[0,1],[1,2],[2,3],[3,4],[4,5],[6,7],[7,8],[8,9],[9,10],[10,11]];
+  let view=1, broken=false;
+
+  // agent C runs backwards when the picture is broken
+  const colOf=function(e){
+    return (broken && e.a==='C') ? (e.c==='b'?'r':'b') : e.c; };
+  const logOf=function(a){
+    return EV.filter(function(e){return e.a===a;})
+             .sort(function(x,y){return x.t-y.t;})
+             .map(colOf); };
+  // condition 1: each colour appears in one block of the log
+  function c1(){
+    return AG.filter(function(a){
+      const L=logOf(a), seen={};
+      let prev=null, ok=true;
+      L.forEach(function(c){
+        if(c!==prev){ if(seen[c]) ok=false; seen[c]=1; prev=c; }
+      });
+      return !ok;
+    });
+  }
+  // condition 2: every agent runs the transactions in the same order
+  function c2(){
+    const ord=function(a){
+      const out=[]; logOf(a).forEach(function(c){
+        if(out[out.length-1]!==c) out.push(c); });
+      return out.join('');
+    };
+    const ref=ord('A');
+    return AG.filter(function(a){
+      const o=ord(a);
+      return !(ref.indexOf(o)>=0 || o.indexOf(ref)>=0);
+    });
+  }
+  // condition 3: both ends of every message are in the same transaction
+  function c3(){
+    return MSG.filter(function(m){ return colOf(EV[m[0]])!==colOf(EV[m[1]]); });
+  }
+
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  const col=function(c){ return c==='b'?C.blue:C.red; };
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    ['b','r'].forEach(function(c){
+      const m=el('marker',{id:PFX+'a'+c, viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:col(c)}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+    const bad1=c1(), bad2=c2(), bad3=c3();
+
+    // condition 1: the blocks of each agent's log
+    if(view===1){
+      AG.forEach(function(a){
+        const mine=EV.filter(function(e){return e.a===a;})
+                     .sort(function(x,y){return x.t-y.t;});
+        let i=0;
+        while(i<mine.length){
+          let j=i;
+          while(j+1<mine.length && colOf(mine[j+1])===colOf(mine[i])) j++;
+          g.appendChild(el('rect',{x:px(mine[i].t)-20, y:ay(a)-19,
+            width:px(mine[j].t)-px(mine[i].t)+40, height:38, rx:10,
+            fill:col(colOf(mine[i])), 'fill-opacity':.10,
+            stroke:col(colOf(mine[i])), 'stroke-width':1.8,
+            'stroke-dasharray':'5 4'}));
+          i=j+1;
+        }
+      });
+    }
+    // condition 2: the order of the blocks, agent by agent
+    if(view===2){
+      AG.forEach(function(a){
+        const L=logOf(a), out=[];
+        L.forEach(function(c){ if(out[out.length-1]!==c) out.push(c); });
+        const bad=bad2.indexOf(a)>=0;
+        tag(g,px(12.6), ay(a), out.map(function(c){
+          return c==='b'?'blue':'red'; }).join(' → '),
+          bad?C.red:C.muted, 12, 700, 'start');
+      });
+    }
+    AG.forEach(function(a){
+      g.appendChild(el('line',{x1:px(0), y1:ay(a), x2:px(12.4), y2:ay(a),
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:px(0)-18, y:ay(a),
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':16,
+        'font-weight':700, fill:(bad1.indexOf(a)>=0||bad2.indexOf(a)>=0)?C.red:C.ink,
+        'text-anchor':'end', 'dominant-baseline':'middle'}, a));
+    });
+    MSG.forEach(function(m){
+      const s=EV[m[0]], r=EV[m[1]], cross=(colOf(s)!==colOf(r));
+      const y0=ay(s.a), y1=ay(r.a), d=(y1>y0?1:-1);
+      g.appendChild(el('line',{x1:px(s.t), y1:y0+d*9, x2:px(r.t), y2:y1-d*9,
+        stroke:cross?C.red:col(colOf(s)), 'stroke-width':(view===3&&cross)?3.5:2,
+        'stroke-dasharray':cross?'6 4':'none',
+        'marker-end':'url(#'+PFX+'a'+colOf(s)+')'}));
+      if(view===3 && cross)
+        tag(g,(px(s.t)+px(r.t))/2, (y0+y1)/2-12, 'crosses', C.red, 11);
+    });
+    EV.forEach(function(e){
+      g.appendChild(el('circle',{cx:px(e.t), cy:ay(e.a), r:8,
+        fill:col(colOf(e)), stroke:'#fff', 'stroke-width':2}));
+    });
+    tag(g,px(6), 36, ['','condition 1: each agent’s steps, in blocks',
+      'condition 2: the order of the blocks, agent by agent',
+      'condition 3: both ends of every message in one transaction'][view],
+      C.muted, 13.5);
+    tag(g,px(6), AXIS+6, broken
+      ? 'agent C now runs red before blue'
+      : 'all three conditions hold, so the colours can be cut apart',
+      broken?C.red:C.muted, 13.5);
+    readout(bad1,bad2,bad3);
+  }
+
+  function readout(bad1,bad2,bad3){
+    const v=function(bad,txt,names){
+      return bad.length
+        ? '<span class="bad">fails</span> <span class="none">— '+txt+
+          ' ('+names+')</span>'
+        : '<span class="ok">holds</span>'; };
+    $('v1').innerHTML=v(bad1,'a colour appears in two separate blocks',
+      bad1.join(', '));
+    $('v2').innerHTML=v(bad2,'this agent runs the transactions in another order',
+      bad2.join(', '));
+    $('v3').innerHTML=v(bad3,'message'+(bad3.length>1?'s':'')+
+      ' between transactions', bad3.length+' of '+MSG.length);
+    const n=(bad1.length?1:0)+(bad2.length?1:0)+(bad3.length?1:0);
+    $('so').innerHTML = n
+      ? '<span class="bad">'+n+' condition'+(n>1?'s':'')+' broken</span> '+
+        '<span class="none">— the observation no longer applies, and '+
+        'there is no chain of cuts</span>'
+      : '<span class="ok">serializable</span> <span class="none">— the '+
+        'graph can be cut into transactions, one at a time</span>';
+    $('status').innerHTML='<b>condition '+view+'</b>'+
+      (broken?' · broken':'');
+  }
+  [1,2,3].forEach(function(k){
+    $(k).onclick=function(){
+      view=k; [1,2,3].forEach(function(j){ $(j).className=(j===k)?'primary':''; });
+      draw();
+    };
+  });
+  $('break').onclick=function(){
+    broken=!broken;
+    $('break').textContent = broken?'Put it back':'Break it';
+    draw();
+  };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='uv_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           red:'#d13d0e', green:'#00947d', blue:'#1a5fd0'};
+  const UY=112, VY=236, px=function(t){return 120+t*72;};
+  const EV=[{a:'U',c:'g',t:1},{a:'V',c:'g',t:2},{a:'U',c:'g',t:4},
+            {a:'V',c:'g',t:5},{a:'U',c:'b',t:7},{a:'V',c:'b',t:8},
+            {a:'U',c:'b',t:10},{a:'V',c:'b',t:11},{a:'U',c:'r',t:13},
+            {a:'V',c:'r',t:14}];
+  const MSG=[[0,1],[1,2],[4,5],[5,6],[8,9]];
+  const CUT=[0.2, 6, 12, 15];              // cut 0, 1, 2, 3
+  const NAME={g:'green', b:'blue', r:'red'};
+  const LAST=6;
+  let st=0;
+  const col=function(c){ return c==='g'?C.green:(c==='b'?C.blue:C.red); };
+  const ay=function(a){ return a==='U'?UY:VY; };
+
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  const cutNo=function(){ return st>=3 ? st-3 : -1; };
+  const pastOf=function(k){ return ['g','b','r'].slice(0,k); };
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    ['g','b','r'].forEach(function(c){
+      const m=el('marker',{id:PFX+'a'+c, viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:col(c)}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+    const k=cutNo();
+
+    if(k>=0){
+      const x=px(CUT[k]);
+      g.appendChild(el('rect',{x:px(-0.4), y:UY-54, width:x-px(-0.4),
+        height:VY-UY+108, rx:10, fill:C.ink, 'fill-opacity':.05}));
+      g.appendChild(el('line',{x1:x, y1:UY-54, x2:x, y2:VY+54,
+        stroke:C.ink, 'stroke-width':3, 'stroke-dasharray':'9 6'}));
+      tag(g,x, UY-70, 'cut '+k, C.ink, 14);
+      tag(g,px(-0.4)+56, VY+74, 'past', C.muted, 12.5);
+      tag(g,px(15.4)-56, VY+74, 'future', C.muted, 12.5);
+    }
+    ['U','V'].forEach(function(a){
+      g.appendChild(el('line',{x1:px(-0.4), y1:ay(a), x2:px(15.4), y2:ay(a),
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:px(-0.4)-16, y:ay(a),
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':18,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, 'Agent '+a));
+    });
+    if(st>=2) MSG.forEach(function(m){
+      const s=EV[m[0]], r=EV[m[1]];
+      const y0=ay(s.a), y1=ay(r.a), d=(y1>y0?1:-1);
+      g.appendChild(el('line',{x1:px(s.t), y1:y0+d*9, x2:px(r.t), y2:y1-d*9,
+        stroke:col(s.c), 'stroke-width':2,
+        'marker-end':'url(#'+PFX+'a'+s.c+')'}));
+    });
+    EV.forEach(function(e){
+      g.appendChild(el('circle',{cx:px(e.t), cy:ay(e.a), r:9, fill:col(e.c),
+        stroke:'#fff', 'stroke-width':2}));
+    });
+    if(st>=1) ['U','V'].forEach(function(a){
+      const mine=EV.filter(function(e){return e.a===a;});
+      ['g','b','r'].forEach(function(c){
+        const s=mine.filter(function(e){return e.c===c;});
+        if(!s.length) return;
+        const x0=px(s[0].t), x1=px(s[s.length-1].t);
+        g.appendChild(el('line',{x1:x0-14, y1:ay(a)+(a==='U'?-26:26),
+          x2:x1+14, y2:ay(a)+(a==='U'?-26:26), stroke:col(c),
+          'stroke-width':3, opacity:.5}));
+      });
+    });
+    tag(g,px(7.5), 40, ['ids in increasing order on each agent',
+      'condition 1 and 2: green, then blue, then red — on both agents',
+      'condition 3: every message inside one transaction',
+      'cut 0: nothing has happened yet',
+      'cut 1: the green transaction, and only it, is in the past',
+      'cut 2: green and blue are in the past',
+      'cut 3: everything is in the past'][st], C.muted, 13.5);
+    readout(k);
+  }
+
+  function readout(k){
+    $('ord').innerHTML='<b>U: green, blue, red</b> <span class="none">·'+
+      '</span> <b>V: green, blue, red</b>'+(st>=1
+      ? ' <span class="ok">the same order on both</span>' : '');
+    $('msg').innerHTML = st>=2
+      ? '<b>'+MSG.length+'</b> <span class="ok">every one inside a single '+
+        'transaction</span>'
+      : '<span class="none">not yet drawn</span>';
+    if(k<0){ $('cut').innerHTML='<span class="none">keep stepping</span>'; }
+    else {
+      const p=pastOf(k), f=['g','b','r'].slice(k);
+      $('cut').innerHTML='<b>cut '+k+'</b> <span class="none">= ({'+
+        p.map(function(c){return NAME[c];}).join(', ')+'}, {'+
+        f.map(function(c){return NAME[c];}).join(', ')+'})'+
+        '</span> <span class="ok">consistent</span>';
+    }
+    $('status').innerHTML = st>=LAST ? '<b>done</b>'
+      : '<b>step '+st+'</b> of '+LAST;
+  }
+  $('step').onclick=function(){ if(st<LAST){ st++; draw(); } };
+  $('reset').onclick=function(){ st=0; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='rul_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           red:'#d13d0e', green:'#00947d', blue:'#1a5fd0'};
+  const UY=110, VY=228, px=function(t){return 150+t*112;};
+  const col=function(c){ return c==='g'?C.green:(c==='b'?C.blue:C.red); };
+  // case a: a green message arrives when U has moved on to blue
+  // case b: a red message arrives while U is still in blue
+  const CASE={
+    a:{u:[{c:'g',t:1},{c:'b',t:4},{c:'b',t:7}],
+       v:[{c:'g',t:2},{c:'g',t:3}],
+       m:{from:3, to:6, c:'g'},
+       q:'a green message reaches U, which is already in the blue transaction',
+       ans:'ignore it — treat it as lost',
+       why:'we require every message sent in a green step to be received in a '+
+            'green step. Discarding it is allowed: a discarded message and a '+
+            'lost one are the same thing.'},
+    b:{u:[{c:'g',t:1},{c:'b',t:4}],
+       v:[{c:'b',t:2},{c:'r',t:5}],
+       m:{from:5, to:6.4, c:'r'},
+       q:'a red message reaches U, which is still in the blue transaction',
+       ans:'move forward: U starts executing the later transaction',
+       why:'we require every message sent in a red step to be received in a '+
+            'red step. U abandons blue, becomes red, and receives it there.'}};
+  let sel='a', shown=false;
+
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const defs=el('defs',{});
+    ['g','b','r'].forEach(function(c){
+      const m=el('marker',{id:PFX+'a'+c, viewBox:'0 0 10 10', refX:9, refY:5,
+        markerWidth:7, markerHeight:7, orient:'auto-start-reverse'});
+      m.appendChild(el('path',{d:'M0,0 L10,5 L0,10 z', fill:col(c)}));
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    const g=el('g',{}); svg.appendChild(g);
+    const cs=CASE[sel];
+    const kept=(sel==='b' && shown);      // U moves to the later transaction
+
+    [['U',UY],['V',VY]].forEach(function(r){
+      g.appendChild(el('line',{x1:px(-0.4), y1:r[1], x2:px(8), y2:r[1],
+        stroke:C.line, 'stroke-width':2}));
+      g.appendChild(el('text',{x:px(-0.4)-16, y:r[1],
+        'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':18,
+        'font-weight':700, fill:C.ink, 'text-anchor':'end',
+        'dominant-baseline':'middle'}, 'Agent '+r[0]));
+    });
+    tag(g,px(3.6), 40, 'transaction ordering: green → blue → red',
+        C.muted, 13);
+
+    // the message in question
+    const m=cs.m, dead=(sel==='a' && shown);
+    g.appendChild(el('line',{x1:px(m.from), y1:VY-10, x2:px(m.to), y2:UY+10,
+      stroke:dead?C.muted:col(m.c), 'stroke-width':dead?2:2.5,
+      'stroke-dasharray':dead?'6 5':'none', opacity:dead?.55:1,
+      'marker-end':dead?'none':('url(#'+PFX+'a'+m.c+')')}));
+    if(dead){
+      const mx=(px(m.from)+px(m.to))/2, my=(UY+VY)/2;
+      g.appendChild(el('line',{x1:mx-10, y1:my-10, x2:mx+10, y2:my+10,
+        stroke:C.red, 'stroke-width':3}));
+      g.appendChild(el('line',{x1:mx-10, y1:my+10, x2:mx+10, y2:my-10,
+        stroke:C.red, 'stroke-width':3}));
+      tag(g,mx+72, my, 'discarded', C.red, 12);
+    }
+    // the steps
+    cs.v.forEach(function(e){
+      g.appendChild(el('circle',{cx:px(e.t), cy:VY, r:9, fill:col(e.c),
+        stroke:'#fff', 'stroke-width':2}));
+    });
+    cs.u.forEach(function(e){
+      g.appendChild(el('circle',{cx:px(e.t), cy:UY, r:9, fill:col(e.c),
+        stroke:'#fff', 'stroke-width':2}));
+    });
+    if(kept){
+      // U carries on in red from the moment the message arrives
+      [{c:'r',t:m.to},{c:'r',t:m.to+1.4}].forEach(function(e){
+        g.appendChild(el('circle',{cx:px(e.t), cy:UY, r:9, fill:C.red,
+          stroke:'#fff', 'stroke-width':2}));
+      });
+      g.appendChild(el('line',{x1:px(m.to)-18, y1:UY-26, x2:px(m.to+1.4)+18,
+        y2:UY-26, stroke:C.red, 'stroke-width':3, opacity:.5}));
+      tag(g,px(m.to+0.7), UY-42, 'now in the red transaction', C.red, 12);
+    }
+    if(sel==='a' && !shown)
+      tag(g,px(m.to)+20, UY-30, 'U is in blue. What now?', C.ink, 13, 700,'start');
+    if(sel==='b' && !shown)
+      tag(g,px(m.to)+20, UY-30, 'U is in blue. What now?', C.ink, 13, 700,'start');
+    tag(g,px(3.6), 306, shown ? cs.ans : cs.q, shown?C.ink:C.muted, 14);
+    readout();
+  }
+  function readout(){
+    const cs=CASE[sel];
+    $('sit').innerHTML='<b>'+cs.q+'</b>';
+    $('rule').innerHTML = shown
+      ? '<span class="ok">'+cs.ans+'</span>'
+      : '<span class="none">press What happens</span>';
+    $('why').innerHTML = shown
+      ? '<span class="none">'+cs.why+'</span>'
+      : '<span class="none">—</span>';
+    $('status').innerHTML='<b>'+(sel==='a'?'earlier':'later')+'</b>'+
+      (shown?' · answered':'');
+  }
+  const setCase=function(k){
+    sel=k; shown=false;
+    $('a').className=(k==='a')?'primary':'';
+    $('b').className=(k==='b')?'primary':'';
+    draw();
+  };
+  $('a').onclick=function(){ setCase('a'); };
+  $('b').onclick=function(){ setCase('b'); };
+  $('next').onclick=function(){ shown=!shown; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='epo_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', line:'#ddd8cd', muted:'#6f7583',
+           red:'#d13d0e', green:'#00947d', blue:'#1a5fd0', plum:'#6b3fa0'};
+  const AY=150, px=function(t){return 130+t*112;};
+  // one agent, four transactions, in increasing order of epoch
+  const TX=[{id:'(10, A)', col:C.green, at:[1,2]},
+            {id:'(10, B)', col:C.blue,  at:[3,4]},
+            {id:'(15, A)', col:C.red,   at:[5,6,7]},
+            {id:'(20, C)', col:C.plum,  at:[8,9]}];
+  const LAST=TX.length;
+  let st=0, lt=false;
+
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,weight,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':weight||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    g.appendChild(el('line',{x1:px(0.4), y1:AY, x2:px(9.6), y2:AY,
+      stroke:C.line, 'stroke-width':2}));
+    g.appendChild(el('text',{x:px(0.4)-16, y:AY,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace', 'font-size':18,
+      'font-weight':700, fill:C.ink, 'text-anchor':'end',
+      'dominant-baseline':'middle'}, 'Agent'));
+
+    TX.forEach(function(t,k){
+      if(k>=st) return;
+      const x0=px(t.at[0]), x1=px(t.at[t.at.length-1]);
+      // the steps of this transaction, and the edges between them
+      g.appendChild(el('line',{x1:x0, y1:AY, x2:x1, y2:AY, stroke:t.col,
+        'stroke-width':4, opacity:.85}));
+      t.at.forEach(function(v){
+        g.appendChild(el('circle',{cx:px(v), cy:AY, r:9, fill:t.col,
+          stroke:'#fff', 'stroke-width':2}));
+      });
+      const up=(k%2===0);
+      const y=up?AY-34:AY+34;
+      g.appendChild(el('path',{d:'M'+(x0-16)+','+(y+(up?10:-10))+' L'+(x0-16)+
+        ','+y+' L'+(x1+16)+','+y+' L'+(x1+16)+','+(y+(up?10:-10)),
+        fill:'none', stroke:t.col, 'stroke-width':2}));
+      tag(g,(x0+x1)/2, up?y-18:y+18, 'T = '+t.id, t.col, 13.5);
+      if(k===2 && st>2)
+        tag(g,(x0+x1)/2, up?y-38:y+38, 'steps of one transaction',
+            C.muted, 11.5);
+    });
+    if(lt){
+      let n=0;
+      TX.forEach(function(t,k){
+        if(k>=st) return;
+        t.at.forEach(function(v){
+          n++;
+          tag(g,px(v), AY+86, String(n), C.muted, 12.5);
+        });
+      });
+      tag(g,px(0.4)-16, AY+86, 'logical time', C.muted, 11.5, 700, 'end');
+      tag(g,px(5), AY+114, 'logical time grows at every step; the epoch does '+
+          'not change until the transaction does', C.muted, 13);
+    }
+    tag(g,px(5), 44, st<LAST
+      ? 'press Next transaction'
+      : 'four transactions, in increasing order of epoch', C.muted, 13.5);
+    readout();
+  }
+
+  function readout(){
+    const shown=TX.slice(0,st);
+    $('ep').innerHTML = shown.length
+      ? '<b>'+shown.map(function(t){return t.id;}).join('  &lt;  ')+'</b>'+
+        (st===LAST?' <span class="ok">increasing, as condition 2 asks</span>':'')
+      : '<span class="none">nothing yet</span>';
+    $('tie').innerHTML = st>=2
+      ? '<b>(10, A) &lt; (10, B)</b> <span class="none">— the same '+
+        'number, two different agents, and agent ids are ordered, so the '+
+        'epochs are ordered too</span>'
+      : '<span class="none">—</span>';
+    $('lt2').innerHTML = lt
+      ? '<span class="ok">steps 1 and 2 share the epoch (10, A)</span> '+
+        '<span class="none">— but their logical times are 1 and 2. An '+
+        'epoch names a transaction, not a moment</span>'
+      : '<span class="none">press Compare with logical time</span>';
+    $('status').innerHTML = st>=LAST ? '<b>done</b>'
+      : '<b>'+st+'</b> of '+LAST;
+  }
+  $('step').onclick=function(){ if(st<LAST){ st++; draw(); } };
+  $('lt').onclick=function(){ if(st<LAST) st=LAST; lt=!lt; draw(); };
+  $('reset').onclick=function(){ st=0; lt=false; draw(); };
+  draw();
+})();
+</script>
+
+<style>
+  .pslide{display:contents}
+  .presentbar{position:fixed; right:16px; bottom:14px; z-index:60;
+    display:flex; gap:8px; align-items:center}
+  .presentbar button{font:600 13px var(--sans,sans-serif); color:var(--ink,#1a1a2e);
+    background:#fff; border:1px solid var(--line,#ddd8cd); border-radius:8px;
+    padding:6px 12px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .presentbar button:hover{border-color:var(--muted,#6f7583)}
+  .presentbar .pnum{font:600 12px var(--mono,monospace); color:var(--muted,#6f7583)}
+
+  body.present{overflow:hidden}
+  body.present .wrap{max-width:none; padding:0; margin:0}
+  body.present .pslide{display:none}
+  body.present .pslide.on{
+    display:block; position:fixed; inset:0; overflow:auto;
+    padding:5vh 6vw 9vh; font-size:clamp(17px,1.55vw,25px);
+  }
+  /* Everything inside a shown chunk grows with it. */
+  body.present .pslide.on p,
+  body.present .pslide.on li{font-size:1em; line-height:1.5; max-width:34em}
+  body.present .pslide.on h1{font-size:2.5em}
+  body.present .pslide.on h2{font-size:1.9em; margin-top:0}
+  body.present .pslide.on h3{font-size:1.35em}
+  body.present .pslide.on h4{font-size:1.05em; margin:.8em 0 .3em}
+  body.present .pslide.on figure.fig{margin:1.4vh 0; padding:14px 16px 12px}
+  /* A figure already breaks out of the text column; in present mode the
+     column is the screen, so the trick has to be switched off or it
+     shifts the figure sideways. */
+  body.present .pslide.on figure.fig.wideout{
+    width:auto; max-width:none; position:static; left:auto; transform:none}
+  body.present .pslide.on figcaption{font-size:.62em; line-height:1.5}
+  body.present .pslide.on .task{font-size:.9em}
+  body.present .presentbar{background:rgba(250,248,243,.9); border-radius:10px;
+    padding:4px 6px}
+</style>
+<script>
+(function(){
+  const wrap=document.querySelector('.wrap');
+  if(!wrap) return;
+
+  // ── group the page's own children into chunks ──────────────────────
+  // A heading, a figure or a task starts a chunk; a run of prose longer
+  // than five blocks starts one too, so no chunk overflows the screen.
+  const STARTS=el=>{
+    const t=el.tagName;
+    return t==='HEADER'||t==='H1'||t==='H2'||t==='H3'||t==='FIGURE'||
+           el.classList.contains('task');
+  };
+  const ALONE=el=>el.tagName==='FIGURE'||el.classList.contains('task');
+
+  const kids=[...wrap.children];
+  const groups=[]; let cur=null;
+  for(const el of kids){
+    if(!cur || STARTS(el) || cur.length>=5 || (cur.length&&ALONE(cur[cur.length-1])))
+      groups.push(cur=[]);
+    cur.push(el);
+  }
+  const slides=groups.filter(g=>g.length).map(g=>{
+    const d=document.createElement('div');
+    d.className='pslide';
+    wrap.insertBefore(d,g[0]);
+    g.forEach(el=>d.appendChild(el));
+    return d;
+  });
+
+  // ── the bar ────────────────────────────────────────────────────────
+  const bar=document.createElement('div');
+  bar.className='presentbar';
+  bar.innerHTML='<span class="pnum" hidden></span>'+
+                '<button type="button">Present</button>';
+  document.body.appendChild(bar);
+  const num=bar.querySelector('.pnum'), btn=bar.querySelector('button');
+
+  let on=false, i=0;
+  function show(){
+    slides.forEach((s,n)=>s.classList.toggle('on', on && n===i));
+    num.hidden=!on;
+    num.textContent=(i+1)+' / '+slides.length;
+    btn.textContent=on?'Exit':'Present';
+    // A canvas that was hidden may need a nudge to repaint.
+    if(on) window.dispatchEvent(new Event('resize'));
+  }
+  function enter(){ on=true;  document.body.classList.add('present');    show(); }
+  function leave(){ on=false; document.body.classList.remove('present');
+                    show(); slides[i].scrollIntoView({block:'start'}); }
+  btn.onclick=()=>on?leave():enter();
+
+  addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if(!on){ if(e.key==='p'||e.key==='P'){ e.preventDefault(); enter(); } return; }
+    if(e.key==='Escape'){ e.preventDefault(); leave(); }
+    else if(['ArrowRight',' ','PageDown','n'].includes(e.key)){
+      e.preventDefault(); i=Math.min(slides.length-1,i+1); show(); }
+    else if(['ArrowLeft','PageUp','b'].includes(e.key)){
+      e.preventDefault(); i=Math.max(0,i-1); show(); }
+    else if(e.key==='Home'){ e.preventDefault(); i=0; show(); }
+    else if(e.key==='End'){ e.preventDefault(); i=slides.length-1; show(); }
+  });
+
+  show();
+})();
+</script>
+</body>
+</html>
