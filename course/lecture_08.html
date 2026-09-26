@@ -1,0 +1,1022 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Paxos Algorithm</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+
+
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  h2{font-family:var(--display); font-weight:600; font-size:25px;
+     letter-spacing:-.01em; margin:38px 0 12px}
+  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:26px 0 8px}
+  p{color:var(--body); margin:0 0 15px}
+  h4{font-family:var(--sans); font-weight:700; font-size:15.5px;
+     letter-spacing:.01em; color:var(--ink); margin:20px 0 6px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  figure.fig{margin:30px 0 26px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
+          font-size:13.5px; color:var(--muted)}
+  .legend i{font-style:normal; color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em}
+  pre.code{margin:16px 0 18px; padding:14px 18px; overflow-x:auto;
+    background:#fff; border:1px solid var(--line); border-left:4px solid var(--ink);
+    border-radius:0 10px 10px 0; font:13.5px/1.6 var(--mono); color:var(--ink)}
+  pre.code b{font-weight:700}
+  pre.code .cm{color:var(--muted)}
+  pre.code .kw{color:var(--orange)}
+  .hint{font-size:13px; color:var(--muted)}
+  .facts{margin-top:14px; font:14px/1.7 var(--mono)}
+  .facts div{display:flex; gap:10px; align-items:baseline; padding:5px 0;
+             border-top:1px solid var(--line)}
+  .facts .k{width:150px; flex:none; font:600 11.5px var(--sans);
+            letter-spacing:.12em; text-transform:uppercase; color:var(--muted)}
+  .none{color:#b9b4a8}
+  .ok{color:var(--teal); font-weight:700}
+  .bad{color:var(--orange); font-weight:700}
+  p.key{margin:20px 0 18px; padding:15px 18px 15px 20px; color:var(--ink);
+    background:#fff6ef; border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0; font-size:18px; line-height:1.5; font-weight:600}
+  p.key b, p.key strong{color:var(--ink); font-weight:800}
+  p.key .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
+    margin-bottom:8px}
+  ul.spec{margin:0 0 16px; padding-left:22px; color:var(--body)}
+  ul.spec li{margin:0 0 8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab</div>
+    <h1>The Paxos Algorithm</h1>
+
+    <p>Last class was about serializability, and had nothing to do with
+       consensus. This class spends it. The rules on epochs from last class
+       turn a system in which messages are lost, duplicated and delivered out
+       of order, and in which agents halt, into a <b>nondeterministic
+       sequential program</b> &mdash; a <code>for</code> loop &mdash; and the
+       algorithm we are about to write is short enough to fit on one slide.
+       Its correctness is not obvious, which is the point of the proof at the
+       end.</p>
+
+    <p>The algorithm is Leslie Lamport&rsquo;s. The FLP theorem says no
+       algorithm can promise to reach consensus in a system like this, so
+       Paxos does not promise it. It promises that the agents never
+       <i>disagree</i>, and it reaches a consensus whenever the network gives
+       it enough of a quiet spell to do so.</p>
+  </header>
+
+<h2>Proposers, acceptors, learners</h2>
+
+<p>
+  In the Paxos algorithm there are three layers of agents.
+  <b>Proposers</b> propose values.
+  <b>Acceptors</b> receive proposals from proposers and change their local
+  variables.
+  <b>Learners</b> receive messages from acceptors, and it is the learners that
+  come to a consensus about the values the proposers proposed.
+</p>
+
+<p>
+  Each learner L has a local variable <code>L.value</code>, and each proposer
+  P has a local constant <code>P.VALUE</code>. The specification is about
+  proposers and learners only; acceptors exist to implement it.
+</p>
+
+<ul class="spec">
+  <li><b>Learners only learn values that were proposed.</b>
+      For all learners L: <code>L.value = null</code> or there is a proposer p
+      with <code>L.value = p.VALUE</code>.</li>
+  <li><b>All learners learn the same value.</b>
+      For all learners L, L&prime;: <code>L.value = null</code> or
+      <code>L&prime;.value = null</code> or
+      <code>L.value = L&prime;.value</code>.</li>
+  <li><b>A learner does not change what it learned.</b>
+      If it learns x at any point then it has learned x from that point on:
+      for all learners L and all non-null x, <code>stable(L.value = x)</code>.</li>
+</ul>
+
+<p>
+  Proposers send messages to, and receive messages from, acceptors. Proposers
+  do not talk to each other. Acceptors send messages to learners and never
+  receive messages from them.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="lay_g" viewBox="0 0 1240 470" role="img"
+         aria-label="Three layers: proposers send to acceptors, acceptors send to learners, and no layer talks to itself"></svg>
+
+    <figcaption>
+      <b>Figure 1. Lamport&rsquo;s three layers.</b>
+      Messages go up: proposers to acceptors, acceptors to learners. No agent
+      sends to an agent in its own layer, and nothing comes back down from the
+      learners. The rest of this class works with the bottom two layers only,
+      where a proposer is called a <b>client</b> and an acceptor is called a
+      <b>server</b>.
+    </figcaption>
+  </figure>
+
+<h2>Clients and servers</h2>
+
+<p>
+  Back to the problem of consensus with clients and servers. We know an upper
+  bound N on the number of servers, and some of the servers may have halted
+  permanently. Assume that at least one server has not halted permanently.
+</p>
+
+<p>
+  We restrict attention to transactions of one shape. A client sends read
+  requests to servers. It receives replies from a set R of servers. If it
+  receives replies from at least M servers it sends write requests to all
+  servers, and those requests reach a set W of servers.
+</p>
+
+<p class="key">
+  <span class="lead-in">The transaction</span>
+  <code>if len(R) &gt;= M: for q in W: q.v = f_p(r.v for r in R)</code>
+</p>
+
+<p>
+  The sets R and W are nondeterministic: the network decides them, not the
+  algorithm. If R has fewer than M elements then W is empty &mdash; the
+  transaction reads and writes nothing.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="txn_g" viewBox="0 0 1240 560" role="img"
+         aria-label="One transaction: read requests reach U, replies come back from R, and if R is large enough write requests reach W"></svg>
+
+    <figcaption>
+      <b>Figure 2. One transaction, and the three sets it does not choose.</b>
+      The client sends a read request to every server. The ones that arrive
+      define U; the replies that come back define R; and if R is at least M
+      the write requests that arrive define W. Every dotted arrow is a message
+      that was lost, and the client cannot tell a lost message from a halted
+      server or a slow one.
+    </figcaption>
+  </figure>
+
+<h2>The rules that make it serial</h2>
+
+<p>
+  Every request carries the epoch of the transaction that sent it, and every
+  server q keeps the epoch <code>q.t</code> of the transaction it is
+  processing. The three rules from last class are all that is needed.
+</p>
+
+<ol class="spec">
+  <li><b>r.t &lt; q.t.</b> A request from an older transaction is discarded
+      without being processed. A discarded request has the same effect as a
+      request that was lost.</li>
+  <li><b>r.t = q.t.</b> A request from the transaction the server is already
+      processing is answered.</li>
+  <li><b>r.t &gt; q.t.</b> A request from a newer transaction makes the server
+      stop processing the transaction with epoch <code>q.t</code>, raise
+      <code>q.t</code> to <code>r.t</code>, and answer the request.</li>
+</ol>
+
+  <figure class="fig wideout">
+    <svg id="rul_g" viewBox="0 0 1240 400" role="img"
+         aria-label="The three rules a server applies to a request: discard an older one, answer one from the current epoch, jump to a newer one"></svg>
+
+    <figcaption>
+      <b>Figure 3. What a server does with a request.</b>
+      Only the epoch on the request matters. An older request is dropped, a
+      current one is answered, and a newer one makes the server abandon what it
+      was doing and join the newer transaction. By last class, these rules make
+      the computation serializable, so from here on we may reason about a
+      sequential program.
+    </figcaption>
+  </figure>
+
+<h2>The server</h2>
+
+<p>
+  A server gets read requests and write requests from clients. Requests sent in
+  earlier epochs are ignored and treated as lost. A server q replies to a read
+  request by sending its value <code>q.v</code> and the epoch
+  <code>q.t</code>. When it gets a write request it assigns the requested value
+  to <code>q.v</code>.
+</p>
+
+<pre class="code"><span class="cm"># initialization</span>
+q.v, q.t = init, 0
+start()
+
+<span class="kw">def</span> receive(request, client):
+    <span class="kw">if</span> request.t &gt;= q.t:
+        q.t = request.t
+        <span class="kw">if</span> isinstance(request, ReadRequest):
+            send(Reply(q.v, q.t), client)
+        <span class="kw">else</span>:
+            <span class="cm"># a WriteRequest</span>
+            q.v = request.v</pre>
+
+<h2>The client</h2>
+
+<p>
+  A client receives two kinds of message: clock ticks and replies to read
+  requests. A clock tick can be thought of as a physical clock. When a tick
+  arrives the client starts a new transaction, identified by the epoch
+  <code>p.t</code> &mdash; a number together with the client id, which is not
+  written out here. Later transactions started by a client have larger epochs.
+  <code>p.copy</code> is the dict the replies are collected in.
+</p>
+
+<pre class="code"><span class="cm"># initialization</span>
+p.t = 0
+start()
+
+<span class="kw">def</span> receive(message, sender):
+    <span class="kw">if</span> isinstance(message, ClockTick):
+        p.t = p.t + pos()          <span class="cm"># start a new transaction</span>
+        p.copy = {}
+        <span class="kw">for</span> q <span class="kw">in</span> Q: send(ReadRequest(p.t), q)
+    <span class="kw">else</span>:                          <span class="cm"># a reply to a read request</span>
+        <span class="kw">if</span> message.t == p.t:       <span class="cm"># ignore replies from other transactions</span>
+            p.copy[sender] = message.v
+            <span class="kw">if</span> len(p.copy) &gt;= M:
+                v = f_p(list(p.copy.values()))
+                <span class="kw">for</span> q <span class="kw">in</span> Q: send(WriteRequest(v, p.t), q)</pre>
+
+<p>
+  The client ignores a reply that belongs to a different transaction. Once it
+  holds M replies it computes a value with <code>f_p</code> and asks every
+  server to write it, stamped with the epoch of the transaction.
+</p>
+
+<h3>What a server stores</h3>
+
+<p>
+  Now extend the algorithm so that a server records <i>when</i> it assigned a
+  value. A server variable <code>q.v</code> becomes a pair
+</p>
+
+<p class="key">
+  <span class="lead-in">Server value</span>
+  <code>q.v = (q.v.s, q.v.t)</code> &mdash; q.v.s is a candidate consensus
+  value, and q.v.t is the epoch in which q last assigned it.
+</p>
+
+<p>
+  Note the two clocks a server keeps. <code>q.t</code> is the epoch of the
+  transaction the server is currently processing; <code>q.v.t</code> is the
+  epoch in which it last wrote its value. A read request bumps the first and
+  leaves the second alone.
+</p>
+
+<h2>The sequential program</h2>
+
+<p>
+  Serializability earns us the right to write the whole system as one
+  nondeterministic sequential loop. Transaction i has epoch
+  <code>t[i]</code>, is executed by client <code>p[i]</code>, reads the set
+  <code>R[i]</code> and writes the set <code>W[i]</code>.
+</p>
+
+<pre class="code"><span class="kw">for</span> i <span class="kw">in</span> positive_integers:
+    <span class="kw">if</span> len(R[i]) &gt;= M:
+        <span class="kw">for</span> q <span class="kw">in</span> W[i]:
+            q.v.s, q.v.t = f_p[i](r.v <span class="kw">for</span> r <span class="kw">in</span> R[i]), t[i]</pre>
+
+<p>
+  Three questions are left, and nothing else is:
+</p>
+
+<ol class="spec">
+  <li>What should <b>M</b> be?</li>
+  <li>What should <b>f_p</b> be?</li>
+  <li>What is <b>the consensus value</b>?</li>
+</ol>
+
+<h3>M is a majority</h3>
+
+<p>
+  If M is less than a majority then two concurrent transactions could read the
+  values of two disjoint sets of servers, and neither would see what the other
+  had done. If M is nearly all the servers then transactions may never get to
+  the write stage at all. A majority is a reasonable place to start.
+</p>
+
+<h3>A consensus is a majority holding the same pair</h3>
+
+<p>
+  A consensus is reached when some number of servers hold identical values. How
+  many? If the number is large a consensus is less likely to be reached; if it
+  is too small there could be two consensus values at the same time, which
+  violates the definition of consensus. So, again, a majority.
+</p>
+
+<p class="key">
+  <span class="lead-in">Consensus</span>
+  If every server q in a majority has the same <code>q.v</code> &mdash; the
+  same <code>q.v.s</code> and the same <code>q.v.t</code> &mdash; then
+  <code>q.v.s</code> is the consensus value.
+</p>
+
+<h3>f_p takes the most recent candidate</h3>
+
+<p>
+  If the client hears from a majority and every candidate it hears is null,
+  nobody has written anything it could contradict, and the client proposes its
+  own value. Otherwise it must not invent a value: it takes the candidate that
+  was written most recently among the replies it holds.
+</p>
+
+<pre class="code"><span class="kw">def</span> f_p(self, list_of_rv):
+    <span class="kw">if</span> all(rv.s == null <span class="kw">for</span> rv <span class="kw">in</span> list_of_rv):
+        <span class="cm"># nobody has a candidate: propose this client's own value</span>
+        <span class="kw">return</span> p.VALUE
+    <span class="kw">else</span>:
+        <span class="cm"># t_max: the most recent epoch in which a server was updated</span>
+        t_max = max(rv.t <span class="kw">for</span> rv <span class="kw">in</span> list_of_rv)
+        r_s_list = [rv.s <span class="kw">for</span> rv <span class="kw">in</span> list_of_rv <span class="kw">if</span> rv.t == t_max]
+        <span class="kw">return</span> r_s_list[0]</pre>
+
+<p>
+  Every element of <code>r_s_list</code> is the same value, because they were
+  all written by the same transaction &mdash; the one with epoch
+  <code>t_max</code>. So returning the first of them is returning the only one.
+</p>
+
+<h2>A scenario</h2>
+
+<p>
+  Before the proof, one run of the algorithm, to be sure every step is clear.
+  The scenario is not part of the proof. Five servers q0 &hellip; q4 and three
+  clients c0, c1, c2 proposing <b>green</b>, <b>blue</b> and <b>red</b>.
+  Initially every server has <code>q.v = (null, 0)</code> and
+  <code>q.t = 0</code>. A majority is three.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="scn_g" viewBox="0 0 1240 560" role="img"
+         aria-label="Four transactions stepped one phase at a time over five servers, with the state of every server after each phase"></svg>
+
+    <div class="ctrls">
+      <button id="scn_step" class="primary">Next step</button>
+      <button id="scn_run">Run to the end</button>
+      <button id="scn_reset">Reset</button>
+      <span class="status" id="scn_status"></span>
+    </div>
+
+    <div class="facts">
+      <div><span class="k">Transaction</span><span id="scn_txn"></span></div>
+      <div><span class="k">This step</span><span id="scn_step_t"></span></div>
+      <div><span class="k">Consensus</span><span id="scn_cons"></span></div>
+    </div>
+
+    <figcaption>
+      <b>Figure 4. Four transactions, one phase at a time.</b>
+      Each transaction takes three steps: the read requests that arrive define
+      U, the replies that come back define R, and the write requests that
+      arrive define W. Watch the second row of each server: <code>q.t</code>
+      rises whenever a request from a newer epoch arrives, while
+      <code>(q.v.s, q.v.t)</code> changes only on a write. The first
+      transaction never reaches a majority and so writes nothing; the third
+      leaves three servers holding the same pair, which is a consensus; and
+      the fourth, which reads a majority that includes one of them, is forced
+      to carry that same value forward even though its own client proposes red.
+    </figcaption>
+  </figure>
+
+<h2>Why it works</h2>
+
+<p>
+  Suppose a majority of servers hold the same pair. The theorem says that from
+  that moment on no server can ever hold a different value at that epoch or
+  later &mdash; so the consensus cannot be undone.
+</p>
+
+<p class="key">
+  <span class="lead-in">Theorem</span>
+  If there is a majority W of servers with <code>q.v = (s*, t*)</code> for all
+  q in W, then for every server u afterwards:
+  <code>u.v.s = s*</code> or <code>u.v.t &lt; t*</code>.
+</p>
+
+<p>
+  Say the majority was written on iteration i*, so <code>W[i*]</code> is a
+  majority and <code>t* = t[i*]</code>. Because <code>q.v.t</code> never
+  decreases, every server in <code>W[i*]</code> keeps
+  <code>q.v.t &gt;= t*</code> for ever after.
+</p>
+
+<h4>Assertion 1</h4>
+
+<p>
+  For every iteration i &gt; i* there is a majority of servers with
+  <code>q.v.t &gt;= t*</code>.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="maj_g" viewBox="0 0 1240 430" role="img"
+         aria-label="Two majorities of five servers always share at least one server"></svg>
+
+    <figcaption>
+      <b>Figure 5. Two majorities always meet.</b>
+      The set that wrote the consensus and the set a later transaction reads
+      are both majorities of the same servers, so they cannot be disjoint. The
+      server in the overlap is the one that carries <code>t*</code> into the
+      later transaction&rsquo;s replies, and that is the whole reason a
+      majority was the right choice for M.
+    </figcaption>
+  </figure>
+
+<h4>The invariant</h4>
+
+<p>
+  <b>For all servers q: if <code>q.v.t &gt;= t*</code> then
+  <code>q.v.s = s*</code>.</b>
+</p>
+
+<p>
+  The invariant holds trivially at i*. Assume it holds at some iteration
+  i &gt;= i* and prove it for i+1. If <code>W[i+1]</code> is empty the
+  invariant continues to hold. If it is not empty then <code>R[i+1]</code> is a
+  majority, and any two majorities have an element in common, so by assertion 1
+  there is a server q in <code>R[i+1]</code> with <code>q.v.t &gt;= t*</code>.
+  Then <code>t_max = max(q.v.t for q in R[i+1]) &gt;= t*</code>, and by the
+  induction hypothesis the candidate written at <code>t_max</code> is s*. So
+  <code>f_p[i+1]</code> returns s*, and every server it writes is written with
+  s* at a larger epoch.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="inv_g" viewBox="0 0 1240 400" role="img"
+         aria-label="One server's computation split by the invariant: before t star anything, from t star onwards the value is s star"></svg>
+
+    <figcaption>
+      <b>Figure 6. The invariant, along one server&rsquo;s computation.</b>
+      Take any server u and follow its steps. Each step either leaves
+      <code>u.v.t</code> below t*, where the value may be anything, or takes it
+      to t* or beyond &mdash; and from then on the value it holds is s*. The
+      line is crossed once and never crossed back, because <code>u.v.t</code>
+      never decreases.
+    </figcaption>
+  </figure>
+
+<h2>Take away</h2>
+
+<p>
+  The algorithm is short, and that it is correct is not evident. Breaking the
+  proof into two steps &mdash; serializability, and then consensus &mdash;
+  is what makes it manageable. Serializability converts a proof about a complex
+  message-passing system, in which messages are lost, duplicated and delivered
+  out of order and agents halt, into a proof about a nondeterministic
+  sequential program: a <code>for</code> loop.
+</p>
+
+<p>
+  What is left: we have only proved that a consensus, once reached, is never
+  contradicted &mdash; the first step of the algorithm. The learners, and
+  sequences of values rather than a single one, come next.
+</p>
+
+</div>
+
+
+<script>
+(function(){
+  const PFX='maj_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', teal:'#00947d', blue:'#1a5fd0',
+           orange:'#d13d0e', grey:'#8d8878'};
+  const QX=[300,450,600,750,900], QY=200, R=40;
+  const A=[0,1,2], B=[2,3,4];
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    g.appendChild(el('ellipse',{cx:450, cy:QY, rx:208, ry:74, fill:C.teal,
+      'fill-opacity':.10, stroke:C.teal, 'stroke-width':2.6}));
+    g.appendChild(el('ellipse',{cx:750, cy:QY, rx:208, ry:74, fill:C.blue,
+      'fill-opacity':.10, stroke:C.blue, 'stroke-width':2.6}));
+    QX.forEach(function(x,i){
+      const both=(A.indexOf(i)>=0 && B.indexOf(i)>=0);
+      g.appendChild(el('circle',{cx:x, cy:QY, r:R, fill:'#fff',
+        stroke:both?C.orange:C.ink, 'stroke-width':both?4:2.4}));
+      tag(g, x, QY, 'q'+i, both?C.orange:C.ink, 16);
+    });
+    tag(g, 250, 96, 'W[i*] wrote (s*, t*) here', C.teal, 15, 'start');
+    tag(g, 950, 316, 'R[i+1] is read here', C.blue, 15, 'end');
+    tag(g, 600, 300, 'in both', C.orange, 13);
+    tag(g, 620, 372, '3 + 3 > 5: two majorities of five servers cannot be '+
+        'disjoint', C.muted, 14);
+    tag(g, 620, 400, 'so some reply in R[i+1] carries an epoch at least t*',
+        C.ink, 14);
+  }
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='inv_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', teal:'#00947d', grey:'#8d8878',
+           blue:'#1a5fd0'};
+  const Y=232, X0=150, X1=1120, CUT=620;
+  // one server's computation, with the pair it holds at each step
+  const STEP=[{x:230, s:'null', t:'0'}, {x:350, s:'null', t:'0'},
+              {x:470, s:'b',    t:'20'},
+              {x:700, s:'g',    t:'30'}, {x:830, s:'g', t:'30'},
+              {x:960, s:'g',    t:'50'}, {x:1070,s:'g', t:'50'}];
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    g.appendChild(el('rect',{x:X0-30, y:96, width:CUT-X0+30, height:196, rx:14,
+      fill:C.grey, 'fill-opacity':.09, stroke:C.grey, 'stroke-width':2}));
+    g.appendChild(el('rect',{x:CUT, y:96, width:X1-CUT+40, height:196, rx:14,
+      fill:C.teal, 'fill-opacity':.10, stroke:C.teal, 'stroke-width':2.4}));
+    g.appendChild(el('line',{x1:X0-30, y1:Y, x2:X1+30, y2:Y, stroke:C.ink,
+      'stroke-width':2}));
+    STEP.forEach(function(d){
+      const late=(d.x>CUT), col=late?C.teal:C.grey;
+      g.appendChild(el('circle',{cx:d.x, cy:Y, r:7, fill:C.ink}));
+      g.appendChild(el('rect',{x:d.x-46, y:Y-62, width:92, height:38, rx:9,
+        fill:col, 'fill-opacity':late?.2:.12, stroke:col,
+        'stroke-width':late?2.6:2}));
+      tag(g, d.x, Y-43, '('+d.s+', '+d.t+')', late?C.teal:C.ink, 13);
+    });
+    tag(g, X0-70, Y, 'u', C.ink, 18);
+    tag(g, 620, 330, 'steps of server u', C.muted, 13.5);
+    tag(g, 380, 130, 'u.v.t < t*', C.grey, 16);
+    tag(g, 380, 158, 'u.v.s may be anything', C.muted, 13);
+    tag(g, 880, 130, 'u.v.t >= t*', C.teal, 16);
+    tag(g, 880, 158, 'u.v.s = s*', C.teal, 13);
+    g.appendChild(el('line',{x1:CUT, y1:76, x2:CUT, y2:300, stroke:C.ink,
+      'stroke-width':2.4, 'stroke-dasharray':'7 5'}));
+    tag(g, CUT, 60, 'u.v.t reaches t*, and never falls back', C.ink, 13.5);
+  }
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='scn_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#ddd8cd', grey:'#8d8878',
+           teal:'#00947d', blue:'#1a5fd0', red:'#d13d0e'};
+  const COL={g:'#00947d', b:'#1a5fd0', r:'#d13d0e'};
+  const NAME={g:'green', b:'blue', r:'red'};
+  const N=5, M=3;
+  const SX=[300,480,660,840,1020], SY=250, CX=620, CY=100;
+  const ROW=[338,372,406];
+  const CV=['g','b','r'];
+  // the four transactions of the scenario, exactly as the slides give them
+  const TX=[{t:10, c:0, U:[1],       R:[],      W:[]},
+            {t:20, c:1, U:[2,3,4],   R:[2,3,4], W:[0]},
+            {t:30, c:0, U:[0,1,2,3], R:[1,2,3], W:[1,2,3]},
+            {t:50, c:2, U:[0,1,3,4], R:[0,3,4], W:[0,1]}];
+  const LAST=TX.length*3;
+  let st=0;
+  function fresh(){
+    const S=[]; for(let i=0;i<N;i++) S.push({s:null, vt:0, t:0}); return S;
+  }
+  function choose(S,x){                       // f_p over the replies of R
+    const rv=x.R.map(function(q){return S[q];});
+    if(rv.length<M) return null;
+    if(rv.every(function(v){return v.s===null;})) return CV[x.c];
+    let tmax=-1; rv.forEach(function(v){ if(v.vt>tmax) tmax=v.vt; });
+    return rv.filter(function(v){return v.vt===tmax;})[0].s;
+  }
+  // the state after k phases, and what the last phase did
+  function run(k){
+    const S=fresh(); let pick=null, cons=null;
+    for(let j=0;j<k;j++){
+      const x=TX[Math.floor(j/3)], ph=j%3;
+      if(ph===0) x.U.forEach(function(q){ if(x.t>=S[q].t) S[q].t=x.t; });
+      if(ph===1) pick=choose(S,x);
+      if(ph===2 && pick!==null)
+        x.W.forEach(function(q){
+          if(x.t>=S[q].t) S[q].t=x.t;
+          S[q].s=pick; S[q].vt=x.t; });
+      if(ph===2 && j!==k-1) pick=null;
+      if(cons===null) cons=consensus(S);   // a consensus, once reached, stays
+    }
+    return {S:S, pick:pick, cons:cons};
+  }
+  function consensus(S){
+    for(let i=0;i<N;i++){
+      if(S[i].s===null) continue;
+      const same=S.filter(function(v){return v.s===S[i].s && v.vt===S[i].vt;});
+      if(same.length>=M) return {s:S[i].s, t:S[i].vt};
+    }
+    return null;
+  }
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function head(g,x,y,ux,uy,col,sz){
+    const s=sz||7.5, px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:
+      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
+      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
+  }
+  function cross(g,x,y,r,col){
+    [[1,1],[1,-1]].forEach(function(d){
+      g.appendChild(el('line',{x1:x-d[0]*r, y1:y-d[1]*r, x2:x+d[0]*r,
+        y2:y+d[1]*r, stroke:col, 'stroke-width':3}));
+    });
+  }
+  function arrow(g,x1,y1,x2,y2,col,live){
+    const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L;
+    const mx=(x1+x2)/2, my=(y1+y2)/2;
+    g.appendChild(el('line',{x1:x1+ux*4, y1:y1+uy*4,
+      x2:live? x2-ux*10 : mx-ux*12, y2:live? y2-uy*10 : my-uy*12,
+      stroke:live?col:C.grey, 'stroke-width':live?2.2:1.8,
+      'stroke-dasharray':live?'none':'6 5'}));
+    if(live) head(g,x2,y2,ux,uy,col);
+    else cross(g,mx,my,8,C.red);
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    const r=run(st), S=r.S;
+    const live=(st>0), i=Math.floor((st-1)/3), ph=(st-1)%3;
+    const x=live? TX[i] : null;
+    // the client of this transaction
+    if(live){
+      const cc=COL[CV[x.c]];
+      g.appendChild(el('rect',{x:CX-150, y:CY-32, width:300, height:64, rx:13,
+        fill:cc, 'fill-opacity':.14, stroke:cc, 'stroke-width':2.6}));
+      tag(g, CX, CY-8, 'client c'+x.c+', proposing '+NAME[CV[x.c]], cc, 15);
+      tag(g, CX, CY+14, 'epoch t = '+x.t, C.ink, 13);
+    } else {
+      tag(g, CX, CY, 'before the first transaction', C.muted, 15);
+    }
+    // messages of this phase
+    if(live){
+      const hit=(ph===0)? x.U : (ph===1? x.R : x.W);
+      const from=(ph===1);
+      const all=(ph===1)? x.U : [0,1,2,3,4];
+      if(!(ph===2 && r.pick===null))
+        all.forEach(function(q){
+          const on=hit.indexOf(q)>=0;
+          const col=(ph===1)? C.teal : (ph===2? COL[r.pick] : C.ink);
+          const sx=SX[q], sy=SY-46, cy=CY+34;
+          const cx=CX+(sx-CX)*0.18;
+          if(from) arrow(g, sx, sy, cx, cy, col, on);
+          else     arrow(g, cx, cy, sx, sy, col, on);
+        });
+      else tag(g, CX, CY+62, 'no write: R is not a majority', C.red, 14);
+    }
+    // the servers and their state
+    tag(g, 236, ROW[0], 'q.v.s', C.muted, 12.5, 'end');
+    tag(g, 236, ROW[1], 'q.v.t', C.muted, 12.5, 'end');
+    tag(g, 236, ROW[2], 'q.t',   C.muted, 12.5, 'end');
+    const cons=r.cons;
+    for(let q=0;q<N;q++){
+      const v=S[q], col=v.s? COL[v.s] : C.grey;
+      const inCons=cons && v.s===cons.s;
+      g.appendChild(el('rect',{x:SX[q]-70, y:SY-40, width:140, height:80, rx:13,
+        fill:col, 'fill-opacity':v.s?.16:.06, stroke:col,
+        'stroke-width':inCons?4:2.4}));
+      tag(g, SX[q], SY-12, 'q'+q, C.ink, 17);
+      tag(g, SX[q], SY+16, v.s? NAME[v.s] : 'null', col, 13);
+      tag(g, SX[q], ROW[0], v.s? v.s : 'null', col, 14);
+      tag(g, SX[q], ROW[1], ''+v.vt, C.ink, 14);
+      tag(g, SX[q], ROW[2], ''+v.t,  C.muted, 14);
+    }
+    if(cons){
+      g.appendChild(el('rect',{x:266, y:452, width:708, height:52, rx:13,
+        fill:COL[cons.s], 'fill-opacity':.14, stroke:COL[cons.s],
+        'stroke-width':2.6}));
+      tag(g, 620, 478, 'a majority held ('+cons.s+', '+cons.t+
+        '): the consensus is '+NAME[cons.s]+', and nothing can undo it',
+        COL[cons.s], 14);
+    }
+    readout(r);
+  }
+  function readout(r){
+    const cons=r.cons;
+    const live=(st>0), i=Math.floor((st-1)/3), ph=(st-1)%3;
+    const x=live? TX[i] : null;
+    const set=function(a){ return '{' + a.map(function(q){return 'q'+q;})
+                                          .join(', ') + '}'; };
+    $('status').innerHTML = live? '<b>step '+st+' of '+LAST+'</b>'
+                                : '<span class="none">before the first step</span>';
+    $('txn').innerHTML = live
+      ? 'transaction '+i+' &mdash; epoch t = '+x.t+', client c'+x.c+
+        ', which proposes '+NAME[CV[x.c]]
+      : '<span class="none">every server holds (null, 0), and q.t = 0</span>';
+    let what='<span class="none">press Next step</span>';
+    if(live && ph===0)
+      what='read requests arrive: U = '+set(x.U)+
+           ' &mdash; each of those servers raises q.t to '+x.t;
+    if(live && ph===1)
+      what = (x.R.length<M)
+        ? 'replies arrive: R = '+set(x.R)+' <span class="bad">&mdash; fewer '+
+          'than a majority, so this transaction writes nothing</span>'
+        : 'replies arrive: R = '+set(x.R)+' &mdash; f_p returns <b>'+
+          NAME[r.pick]+'</b>';
+    if(live && ph===2)
+      what = (r.pick===null)
+        ? 'nothing to write'
+        : 'write requests arrive: W = '+set(x.W)+' &mdash; each of those '+
+          'servers takes ('+r.pick+', '+x.t+')';
+    $('step_t').innerHTML=what;
+    $('cons').innerHTML = cons
+      ? '<span class="ok">'+NAME[cons.s]+', written at epoch '+cons.t+
+        '</span>'
+      : '<span class="none">no majority holds the same pair yet</span>';
+  }
+  $('step').onclick=function(){ if(st<LAST) st++; draw(); };
+  $('run').onclick=function(){ st=LAST; draw(); };
+  $('reset').onclick=function(){ st=0; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='lay_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#ddd8cd', blue:'#1a5fd0',
+           teal:'#00947d', orange:'#d13d0e'};
+  const LY=86, AY=250, PY=414, BH=58;
+  const L=[{x:380,n:'L0'},{x:620,n:'L1'},{x:860,n:'L2'}];
+  const A=[{x:252,n:'q0'},{x:444,n:'q1'},{x:636,n:'q2'},{x:828,n:'q3'},
+           {x:1020,n:'q4'}];
+  const P=[{x:380,n:'p0'},{x:620,n:'p1'},{x:860,n:'p2'}];
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function head(g,x,y,ux,uy,col,sz){
+    const s=sz||7, px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:
+      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
+      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
+  }
+  function cross(g,x,y,r,col){
+    [[1,1],[1,-1]].forEach(function(d){
+      g.appendChild(el('line',{x1:x-d[0]*r, y1:y-d[1]*r, x2:x+d[0]*r,
+        y2:y+d[1]*r, stroke:col, 'stroke-width':3}));
+    });
+  }
+  function box(g,x,y,w,n,col){
+    g.appendChild(el('rect',{x:x-w/2, y:y-BH/2, width:w, height:BH, rx:12,
+      fill:col, 'fill-opacity':.12, stroke:col, 'stroke-width':2.4}));
+    tag(g, x, y, n, col, 17);
+  }
+  function wire(g,x1,y1,x2,y2,col){
+    const dx=x2-x1, dy=y2-y1, Ln=Math.hypot(dx,dy), ux=dx/Ln, uy=dy/Ln;
+    g.appendChild(el('line',{x1:x1, y1:y1, x2:x2-uy*0-ux*0, y2:y2,
+      stroke:col, 'stroke-width':1.3, opacity:.55}));
+    head(g, x2, y2, ux, uy, col, 6);
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    P.forEach(function(a){ A.forEach(function(b){
+      wire(g, a.x, PY-BH/2, b.x, AY+BH/2+8, C.muted); }); });
+    A.forEach(function(a){ L.forEach(function(b){
+      wire(g, a.x, AY-BH/2, b.x, LY+BH/2+8, C.muted); }); });
+    L.forEach(function(d){ box(g,d.x,LY,150,d.n,C.teal); });
+    A.forEach(function(d){ box(g,d.x,AY,132,d.n,C.ink); });
+    P.forEach(function(d){ box(g,d.x,PY,150,d.n,C.blue); });
+    tag(g, 62, LY, 'Learners', C.teal, 15, 'start');
+    tag(g, 62, AY, 'Acceptors', C.ink, 15, 'start');
+    tag(g, 62, PY, 'Proposers', C.blue, 15, 'start');
+    tag(g, 62, LY+24, 'L.value', C.muted, 12, 'start');
+    tag(g, 62, PY+24, 'p.VALUE', C.muted, 12, 'start');
+    // and nothing within a layer
+    (function(){
+      const x1=A[3].x+72, x2=A[4].x-72, y=AY;
+      g.appendChild(el('line',{x1:x1, y1:y, x2:x2, y2:y, stroke:C.orange,
+        'stroke-width':2, 'stroke-dasharray':'6 5'}));
+      cross(g,(x1+x2)/2, y, 11, C.orange);
+      tag(g, (x1+x2)/2, y+34, 'never', C.orange, 12);
+    })();
+  }
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='txn_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#ddd8cd', blue:'#1a5fd0',
+           teal:'#00947d', orange:'#d13d0e', grey:'#8d8878'};
+  // one transaction in three panels: the reads that arrive, the replies that
+  // come back, and the writes that arrive.
+  const SY=[92,190,288,386,484], SX=340, CX=86, CY=288;
+  const PAN=[{dx:0,   title:'read requests',  set:'U = {q0, q1, q2, q3}',
+              hit:[1,1,1,1,0], back:false, col:'#1a1a2e'},
+             {dx:414, title:'replies',        set:'R = {q0, q1, q3}',
+              hit:[1,1,0,1,0], only:[1,1,1,1,0], back:true,  col:'#00947d'},
+             {dx:828, title:'write requests', set:'W = {q1, q2}',
+              hit:[0,1,1,0,0], back:false, col:'#1a5fd0'}];
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function head(g,x,y,ux,uy,col,sz){
+    const s=sz||7, px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:
+      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
+      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
+  }
+  function cross(g,x,y,r,col){
+    [[1,1],[1,-1]].forEach(function(d){
+      g.appendChild(el('line',{x1:x-d[0]*r, y1:y-d[1]*r, x2:x+d[0]*r,
+        y2:y+d[1]*r, stroke:col, 'stroke-width':3}));
+    });
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    PAN.forEach(function(pn,k){
+      const cx=CX+pn.dx, sx=SX+pn.dx;
+      g.appendChild(el('rect',{x:cx-46, y:CY-40, width:92, height:80, rx:12,
+        fill:'#fff', stroke:C.ink, 'stroke-width':2.4}));
+      tag(g, cx, CY, 'client', C.ink, 13);
+      SY.forEach(function(y,i){
+        const on=pn.hit[i], mute=(pn.only && !pn.only[i]);
+        g.appendChild(el('rect',{x:sx-34, y:y-24, width:68, height:48, rx:10,
+          fill:on?pn.col:C.grey, 'fill-opacity':on?.16:.06,
+          stroke:on?pn.col:C.grey, 'stroke-width':on?2.4:1.8}));
+        tag(g, sx, y, 'q'+i, on?pn.col:C.grey, 14);
+        if(mute) return;          // it never got the read request
+        const x1=pn.back? sx-38 : cx+50, x2=pn.back? cx+50 : sx-38;
+        const y1=pn.back? y : CY, y2=pn.back? CY : y;
+        const dx=x2-x1, dy=y2-y1, Ln=Math.hypot(dx,dy), ux=dx/Ln, uy=dy/Ln;
+        const mx=(x1+x2)/2, my=(y1+y2)/2;
+        g.appendChild(el('line',{x1:x1, y1:y1,
+          x2:on? x2-ux*9 : mx-ux*13, y2:on? y2-uy*9 : my-uy*13,
+          stroke:on?pn.col:C.grey, 'stroke-width':on?2.2:1.8,
+          'stroke-dasharray':on?'none':'6 5', opacity:on?1:.8}));
+        if(on) head(g, x2, y2, ux, uy, pn.col, 7.5);
+        else cross(g, mx, my, 8, C.orange);
+      });
+      tag(g, (cx+sx)/2, 40, pn.title, pn.col, 15);
+      tag(g, (cx+sx)/2, 532, pn.set, pn.col, 14);
+    });
+    tag(g, 620, 560, '', C.muted, 12);
+  }
+  draw();
+})();
+</script>
+
+<script>
+(function(){
+  const PFX='rul_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', blue:'#1a5fd0', teal:'#00947d',
+           orange:'#d13d0e', grey:'#8d8878'};
+  const P=[{x:220, rt:10, qt:20, rule:'r.t < q.t', what:'discard it',
+            note:'the same as a lost message', col:'#d13d0e'},
+           {x:620, rt:20, qt:20, rule:'r.t = q.t', what:'answer it',
+            note:'the transaction it is already in', col:'#00947d'},
+           {x:1020,rt:30, qt:20, rule:'r.t > q.t', what:'q.t = 30, answer it',
+            note:'it abandons the older transaction', col:'#1a5fd0'}];
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function head(g,x,y,ux,uy,col,sz){
+    const s=sz||7, px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:
+      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
+      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
+  }
+  function cross(g,x,y,r,col){
+    [[1,1],[1,-1]].forEach(function(d){
+      g.appendChild(el('line',{x1:x-d[0]*r, y1:y-d[1]*r, x2:x+d[0]*r,
+        y2:y+d[1]*r, stroke:col, 'stroke-width':3}));
+    });
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    P.forEach(function(d){
+      tag(g, d.x, 52, d.rule, d.col, 17);
+      // the request coming in
+      g.appendChild(el('rect',{x:d.x-72, y:104, width:144, height:40, rx:9,
+        fill:d.col, 'fill-opacity':.14, stroke:d.col, 'stroke-width':2.2}));
+      tag(g, d.x, 124, 'request  r.t = '+d.rt, d.col, 13);
+      const dead=(d.rt<d.qt);
+      g.appendChild(el('line',{x1:d.x, y1:150, x2:d.x, y2:214,
+        stroke:dead?C.grey:d.col, 'stroke-width':2.2,
+        'stroke-dasharray':dead?'6 5':'none'}));
+      if(dead) cross(g, d.x, 182, 10, C.orange);
+      else head(g, d.x, 220, 0, 1, d.col, 8);
+      // the server
+      g.appendChild(el('rect',{x:d.x-90, y:228, width:180, height:78, rx:12,
+        fill:'#fff', stroke:C.ink, 'stroke-width':2.4}));
+      tag(g, d.x, 252, 'server q', C.ink, 15);
+      tag(g, d.x, 282, 'q.t = '+d.qt, C.muted, 13);
+      tag(g, d.x, 338, d.what, d.col, 14);
+      tag(g, d.x, 366, d.note, C.muted, 12.5);
+    });
+  }
+  draw();
+})();
+</script>
+
+</body>
+</html>
