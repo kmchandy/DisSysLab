@@ -64,13 +64,18 @@
   ul.cuts{margin:0 0 16px; padding-left:22px; color:var(--body);
           font-family:var(--mono); font-size:14.5px}
   ul.cuts li{margin:0 0 6px}
+  /* the line under the title of the lecture: a subtitle, not a section */
+  header.top h2{margin:-2px 0 20px; padding:0; border:0;
+    font-family:var(--display); font-weight:600; font-size:22px;
+    line-height:1.2; letter-spacing:-.01em; color:var(--muted)}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <div class="kicker">DisSysLab &middot; Class 7</div>
-    <h1>The Paxos Algorithm: Serializing Transactions</h1>
+    <h1>The Paxos Algorithm</h1>
+    <h2>Serializing Transactions</h2>
     <p>
     The FLP theorem says that distributed consensus is 
     impossible in a system where messages are arbitrarily 
@@ -99,7 +104,8 @@
           computes a consensus value, and never changes it afterwards.
         </li>
       </ol>
-      The last class proved that consensus is impossible in a system where
+
+      <p>The last class proved that consensus is impossible in a system where
        messages are arbitrarily slow and an agent may halt. 
        This class describes the Paxos algorithm which does not guarantee
        termination - i.e..</p>
