@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Consensus: Impossible with a Single Faulty Agent</title>
+<title>Distributed Consensus</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
@@ -83,6 +83,82 @@
   p.key .lead-in{display:block; font:700 11.5px/1 var(--sans);
     letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
     margin-bottom:8px}
+  /* ---- headings and lists ------------------------------------------- */
+  h2{font-family:var(--display); font-weight:600; font-size:26px;
+     letter-spacing:-.01em; margin:46px 0 14px; padding-bottom:9px;
+     border-bottom:1px solid var(--line)}
+  h3{font-family:var(--sans); font-weight:700; font-size:17.5px;
+     margin:32px 0 10px; color:var(--ink)}
+  ol,ul{color:var(--body); margin:0 0 16px; padding-left:24px}
+  li{margin:0 0 9px}
+  li > ol{margin:9px 0 0}
+  b,strong{color:var(--ink)}
+  /* ---- the things to remember ---------------------------------------- */
+  /* A theorem, lemma or sublemma: teal, so it is never mistaken for a
+     definition (orange) or for the assumption being contradicted. */
+  .thm{margin:24px 0 22px; padding:16px 20px 15px; color:var(--ink);
+    background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:17px; line-height:1.55}
+  .thm b, .thm strong{font-weight:700}
+  .thm .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--teal);
+    margin-bottom:9px}
+  /* The supposition each proof by contradiction carries around. */
+  .assume{margin:24px 0 22px; padding:15px 20px 14px; color:var(--ink);
+    background:#fffaf6; border:1px dashed #e4b79c;
+    border-left:5px solid var(--orange); border-radius:0 10px 10px 0;
+    font-size:17px; line-height:1.5; font-weight:600}
+  .assume .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
+    margin-bottom:9px}
+  /* ---- proofs --------------------------------------------------------- */
+  /* Everything inside one rule is one proof, so a student can see where an
+     argument begins and where it ends. */
+  .proof{margin:6px 0 24px; padding:2px 0 2px 22px;
+         border-left:2px solid var(--line)}
+  .proof > p:last-child{margin-bottom:0}
+  /* a wide figure inside the proof rule still centres on the page */
+  .proof figure.fig.wideout{left:calc(50% - 11px)}
+  .proof .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin:0 0 9px}
+  .case{margin:16px 0 14px; padding:13px 17px 2px; background:#fbf9f5;
+        border:1px solid var(--line); border-radius:10px}
+  .case > p:last-child{margin-bottom:11px}
+  .tag{display:inline-block; font:700 11px var(--sans); letter-spacing:.12em;
+    text-transform:uppercase; color:#fff; background:var(--ink);
+    border-radius:999px; padding:4px 11px; margin-right:11px;
+    vertical-align:1px}
+  /* A line of algebra deserves its own line. */
+  .calc{font-family:var(--mono); font-size:15px; color:var(--ink);
+    background:#fbf9f5; border:1px solid var(--line); border-radius:8px;
+    padding:11px 15px; margin:12px 0}
+  /* ---- the specification --------------------------------------------- */
+  /* The three requirements, in the same three colours wherever they appear,
+     so "violates the agreement requirement" has something to point back to. */
+  ol.spec{list-style:none; margin:22px 0 20px; padding:0;
+          counter-reset:req; color:var(--body)}
+  ol.spec > li{counter-increment:req; position:relative; margin:0 0 10px;
+    padding:14px 46px 13px 18px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--muted); border-radius:0 10px 10px 0}
+  ol.spec > li::after{content:counter(req); position:absolute; right:15px;
+    top:13px; font:700 12px var(--mono); color:#c9c4b8}
+  ol.spec .rtag{display:inline-block; font:700 11px var(--sans);
+    letter-spacing:.12em; text-transform:uppercase; color:#fff;
+    background:var(--muted); border-radius:999px; padding:4px 11px;
+    margin-right:11px; vertical-align:1px}
+  ol.spec ol{margin:11px 0 0; padding-left:24px; list-style:decimal}
+  ol.spec ol li{margin:0 0 6px}
+  li.req-v{border-left-color:var(--teal)}
+  li.req-v .rtag{background:var(--teal)}
+  li.req-a{border-left-color:#1a5fd0}
+  li.req-a .rtag{background:#1a5fd0}
+  li.req-t{border-left-color:var(--orange)}
+  li.req-t .rtag{background:var(--orange)}
+  .n-v{color:var(--teal); font-weight:700}
+  .n-a{color:#1a5fd0; font-weight:700}
+  .n-t{color:var(--orange); font-weight:700}
 </style>
 </head>
 <body>
@@ -90,6 +166,7 @@
   <header class="top">
     <div class="kicker">DisSysLab</div>
     <h1>Distributed Consensus</h1>
+    <h2>Impossible with an agent that may halt</h2>
 
     <p>
       <b>The distributed consensus problem</b>: 
@@ -99,16 +176,16 @@
         requirements:
     </p>
     
-    <ol>
-      <li>
-        <strong>Validity:</strong> The value that the agents agree on must be a value proposed by at least
+    <ol class="spec">
+      <li class="req-v">
+        <span class="rtag">Validity</span> The value that the agents agree on must be a value proposed by at least
         one of the agents.
       </li>
-      <li>
-        <strong>Agreement:</strong> All agents must agree on the same value.
+      <li class="req-a">
+        <span class="rtag">Agreement</span> All agents must agree on the same value.
       </li>
-      <li>
-        <strong>Termination:</strong> Every agent must eventually decide: it
+      <li class="req-t">
+        <span class="rtag">Termination</span> Every agent must eventually decide: it
         computes a consensus value, and never changes it afterwards.
       </li>
     </ol>
@@ -122,8 +199,8 @@
       coin.
     </p>
 
-    <p>
-      <strong>The FLP theorem:</strong>
+    <p class="thm">
+      <span class="lead-in">The FLP theorem</span>
       Fischer, Lynch and Paterson (FLP) proved that there is no 
       deterministic algorithm that solves distributed consensus in
       every execution, if even one agent may halt.
@@ -138,8 +215,8 @@
     </p>
 
 <h2>The No-Fault Model</h2>
-<p>
-  <b>A fully connected network:</b>
+<p class="key">
+  <span class="lead-in">A fully connected network</span>
   The network has N agents.
   Each agent has a N inboxes and N outboxes.
   Each outbox is connected to exactly one inbox.
@@ -178,16 +255,14 @@
   is always in the agent's connection to itself.
 </p>
 
-<p>
-  <strong>
-    The fairness requirement:
-  </strong>
+<p class="key">
+  <span class="lead-in">The fairness requirement</span>
   If message m is in inbox w of agent p in state S, 
   then in all infinite computations starting in S, p eventually gets m from w.
 </p>
 
-<p>
-  <b>Event</b>
+<p class="key">
+  <span class="lead-in">Event</span>
   An event e is an agent p getting a message m from the front of one of its 
   (nonempty) inboxes, w.
   It can be specified by the trip let (p, w, m).
@@ -238,9 +313,9 @@
   value that Y computes. The three parts of the specification are:
 </p>
 
-<ol>
-    <li>
-      <b>Termination: </b> 
+<ol class="spec">
+    <li class="req-t">
+      <span class="rtag">Termination</span>
       <ol>
         <li>
           For all agents Y: Y.finished becomes true eventually.
@@ -250,8 +325,8 @@
         </li>
       </ol>
     </li>
-    <li>
-      <b>Validity:</b>
+    <li class="req-v">
+      <span class="rtag">Validity</span>
       The consensus value computed by an agent must be a value proposed
       by some agent.
       <br>
@@ -259,8 +334,8 @@
       <br>
       exists agent X such that Y.consensus = X.proposal
     </li>
-    <li>
-      <b>Agreement:</b>
+    <li class="req-a">
+      <span class="rtag">Agreement</span>
       All agents must agree on the consensus value.
       <br>
       For all agents X,Y: (X.finished AND Y.finished) implies:
@@ -300,22 +375,22 @@
 
 <p>
   The proof that the algorithm is correct is straightforward.
+</p>
   <ol>
     <li>
-    <b>Termination:</b> Each agent Y sets Y.finished to true 
+    <b class="n-t">Termination:</b> Each agent Y sets Y.finished to true 
     eventually because it receives proposals from all agents 
     eventually. Y.consensus does not change after Y.finished 
     becomes true. 
     </li>
     <li>
-    <b>Agreement:</b> Because all agents use the same function 
+    <b class="n-a">Agreement:</b> Because all agents use the same function 
     they agree on the consensus.
     </li>
     <li>
-    <b>Validity:</b> The function selects one of the proposals.
+    <b class="n-v">Validity:</b> The function selects one of the proposals.
     </li>
-  </ol> 
-</p>
+  </ol>
 <figure class="fig wideout">
     <svg id="nf_g" viewBox="0 0 1240 350" role="img"
          aria-label="Five agents exchanging proposals and all computing the same majority, and the same algorithm when one agent halts before sending"></svg>
@@ -475,8 +550,8 @@ There are no requirements of the agent that halts.
   Assume that initially each agent has one message in its inbox
   which is that agent's proposal.
 </p>
-<p>
-  <b>Valence</b>
+<p class="key">
+  <span class="lead-in">Valence</span>
   Associated with each state of the system is a <strong>valence</strong> which
   can be 0, 1, or <b>bi</b>.
   The valence of a state is 0 exactly when all computations that start in that 
@@ -511,7 +586,9 @@ There are no requirements of the agent that halts.
 
 
 <h3>Lemma: There exists an initial bivalent state</h3>
+<div class="proof">
 <p>
+  <span class="lead-in">Proof</span>
   Proof by contradiction. Suppose no initial state is bivalent. Then every
   initial state is either 0-valent or 1-valent. There is no need for consensus
   if all initial states are 0-valent because then validity guarantees that the
@@ -520,15 +597,16 @@ There are no requirements of the agent that halts.
   exists at least one 0-valent and at least one 1-valent initial state.
 </p>
 
-<p>
-  <b>Sublemma</b>
+<p class="thm">
+  <span class="lead-in">Sublemma</span>
   There exist initial states X and Y,
   where X is 0-valent and Y is 1-valent, and where X and Y
   differ from each other by the input of exactly one agent.
 </p>
 
+<div class="proof">
 <p>
-  <b>Proof of sublemma</b>
+  <span class="lead-in">Proof of sublemma</span>
   Let U be any 0-valent initial state and V be any 1-valent initial state.
   Construct a sequence of distinct initial states S[0], S[1], S[2],..., S[n]
   as follows. S[0] is U and the difference between S[i] and V decreases for
@@ -538,6 +616,7 @@ There are no requirements of the agent that halts.
   the result holds with X = S[i] and Y=S[i+1]. There exists such an i because
   V is 1-valent. This proves the sublemma.
 </p>
+</div>
 <figure class="fig wideout">
     <svg id="ch_g" viewBox="0 0 1240 320" role="img"
          aria-label="Six initial states of five agents proposing 0 or 1, with the majority valence of each, and the one agent whose proposal differs between the two where the valence flips"></svg>
@@ -572,6 +651,7 @@ There are no requirements of the agent that halts.
   with consensus value 1. Therefore X and Y are bivalent states.
   This completes the proof of the lemma that there exists an initial bivalent state.
 </p>
+</div>
 
 <figure class="fig wideout">
     <svg id="cl_g" viewBox="0 0 1240 430" role="img"
@@ -602,8 +682,9 @@ There are no requirements of the agent that halts.
 <p>
 </p>
 
-<p>
-  <b>The lemma.</b> For every bivalent state, S, and every event e,
+<p class="thm">
+  <span class="lead-in">The lemma</span>
+  For every bivalent state, S, and every event e,
    there is a computation, c, in which p executes no action, such that 
    e(c(S)) is bivalent.
 </p>
@@ -642,10 +723,8 @@ There are no requirements of the agent that halts.
   a contradiction.
 </p>
 
-<p>
-  <b>Assumption that leads to a contradiction:</b>
-</p>
-<p>
+<p class="assume">
+  <span class="lead-in">Assumption that leads to a contradiction</span>
   For all S* in R, e(S*) is not bivalent.
 </p>
 
@@ -656,8 +735,8 @@ There are no requirements of the agent that halts.
   (next lemma) that there exists a state S* in R such that e(S*) is 1-valent.
 </p>
 
-<p>
-  <b>Sublemma 1</b>
+<p class="thm">
+  <span class="lead-in">Sublemma 1</span>
   There exists a state S* in R such that e(S*) is 1-valent.
 </p>
 
@@ -674,11 +753,9 @@ There are no requirements of the agent that halts.
   </figure>
 
   
+<div class="proof">
 <p>
-  <b>Proof of sublemma 1</b>
-</p>
-
-<p>
+  <span class="lead-in">Proof of sublemma 1</span>
   Because S is bivalent, there exists a computation, c*, 
   such that c*(S) is 1-valent.
   Consider two cases: (1) p executes no action in c* and (2)
@@ -687,15 +764,18 @@ There are no requirements of the agent that halts.
   read inbox w.
 </p>
 
+<div class="case">
 <p>
-  Case 1:
+  <span class="tag">Case 1</span>
   If p executes no action in c* then c*(S) is in R. 
   Because c*(s) is 1-valent, e(c*(S)) is 1-valent.
   Therefore the sublemma holds with S* set to c*(S). 
 </p>
+</div>
 
+<div class="case">
 <p>
-  Case 2:
+  <span class="tag">Case 2</span>
   Every infinite computation starting in state S
   has e eventually. 
   Let c* be a computation [c_pre; e; c_post],
@@ -703,17 +783,17 @@ There are no requirements of the agent that halts.
   It is possible that agent p executes actions in c_pre
   however it does not read inbox w in c_pre.
   c_post is arbitrary.
-  <br>
-  c*(S) = c_post(e(c_pre(S)))
-  <br>
+</p>
+<p class="calc">c*(S) = c_post(e(c_pre(S)))</p>
+<p>
   Because c*(S) is 1-valent, e(c_pre(S)) is not 0-valent.
-  <br>
   From the assumption, e(c_pre(S)) is not bivalent. 
   Therefore e(c_pre(S)) is 1-valent.
-  <br>
   So the lemma holds with S* set to c_pre(S).
   This completes proof of the sublemma.
 </p>
+</div>
+</div>
 
 <figure class="fig wideout">
     <svg id="c2_g" viewBox="0 0 1240 470" role="img"
@@ -729,13 +809,16 @@ There are no requirements of the agent that halts.
   </figure>
 
 
-<p>
-  <b>Sublemma 2</b>
+<p class="thm">
+  <span class="lead-in">Sublemma 2</span>
   There exists a state E and event e' such that E is reachable from S, and
    e(E) is 0-valent and e(e'(E)) is 1-valent.
-  </p>
-  
-  <p> From the previous sublemma, there exists an S* such that e(S*) 
+</p>
+
+<div class="proof">
+  <p>
+  <span class="lead-in">Proof of sublemma 2</span>
+  From the previous sublemma, there exists an S* such that e(S*) 
   is 1-valent.
   We assumed e(S) is 0-valent.
   State S* is reached from S by a computation c that does not include event e.
@@ -746,6 +829,7 @@ There are no requirements of the agent that halts.
   Then e(E) is 0-valent and e(e'(E)) is 1-valent.
   This proves sublemma 2.
 </p>
+</div>
 
 <figure class="fig wideout">
     <svg id="wk_g" viewBox="0 0 1240 430" role="img"
@@ -754,11 +838,12 @@ There are no requirements of the agent that halts.
     <figcaption>
       <b>Figure 13. Sublemma 2</b>
       Every state along the walk from S to S# is in R, so by the assumption
-      reading m in it gives a 0-valent state or a 1-valent one. At S it gives
-      0-valent; at S# it gives 1-valent. So somewhere the answer flips: two
-      consecutive states E and E&prime;, a single event e&prime; apart.
-      Cases 1 and 2 show that e&prime; can be neither an event at another agent
-      nor an event at p.
+      executing event e in any state on the walk has a next state which 
+      is either 0-valent or 1-valent. An e-step from S results in a
+      0-valent state. An e-step from S# results in a 1-valent state. 
+      So somewhere along the walk, the result of an e-step flips.
+      So there are two consecutive states E and E&prime;, 
+      a single event e&prime; apart.
     </figcaption>
   </figure>
 
@@ -776,13 +861,16 @@ There are no requirements of the agent that halts.
   (2) e&prime; is an event at p.
 </p>
 
+<div class="case">
 <p>
-  <b>Case 1: e&prime; is an event at an agent other than p.</b>
+  <span class="tag">Case 1</span>
+  <b>e&prime; is an event at an agent other than p.</b>
   Events at different agents can be executed in arbitrary order.
   So e&prime;(e(E)) = e(e&prime;(E)).
   We have a contradiction:
   e(e&prime;(E)) is 1-valent and e&prime; is 0-valent.
 </p>
+</div>
 
 <figure class="fig wideout">
     <svg id="c1_g" viewBox="0 0 1240 430" role="img"
@@ -790,19 +878,17 @@ There are no requirements of the agent that halts.
 
     <figcaption>
       <b>Figure 14. Case 1: e&prime; is an event at an agent other than p.</b>
-      Then e and e&prime; do not interfere, and the heavy arrow at the bottom
-      is the same event e&prime;: executing it in the state reached by reading
-      m in E lands in exactly the state reached by reading m in E&prime;. That
-      state is reachable from a 0-valent state, so it is 0-valent; and it is
-      1-valent. The same state cannot be both 0-valent and 1-valent. The
-      ellipse rings the step that cannot exist: a 0-valent state with a
-      1-valent successor.
+      So e and e&prime; can be executed in arbitrary order. The
+      ellipse illustrates the contradiction: a transition from a 0-valent state, 
+      e(E), to a 1-valent state, e&prime;(e(E)).
     </figcaption>
   </figure>
 
 
+<div class="case">
 <p>
-  <b>Case 2: e&prime; is an action by p.</b>
+  <span class="tag">Case 2</span>
+  <b>e&prime; is an action by p.</b>
   Consider a computation c* from S to E after which agent p halts.
   All agents other than p decide on a consensus value in a finite number of steps.
   Let the consensus value be v.
@@ -816,6 +902,7 @@ There are no requirements of the agent that halts.
   also 1-valent, and therefore the consensus value is 1, a contradiction.
   Therefore, the lemma holds.
 </p>
+</div>
 
 <figure class="fig wideout">
     <svg id="k3_g" viewBox="0 0 1240 620" role="img"
@@ -823,12 +910,14 @@ There are no requirements of the agent that halts.
 
     <figcaption>
       <b>Figure 15. Case 2: e&prime; is an action by p.</b>
-      After E&prime;, let p halt and let the others run on to a decision: that
-      is the green computation c*, which carries E&prime; to S#, where the
-      consensus is v. c* contains no action of p, so it can be run just as well
-      after e, and after e&prime; and then e &mdash; the two other green
-      copies. The first starts in a 0-valent state, so v is 0. The second
-      starts in a 1-valent state, so v is 1.
+      After E&prime;, let p halt and let the other agents run on to a decide on
+      a consensus v: that computation
+      is shown as the green line c*, which carries E&prime; to S#.
+      c* contains no action of p, so it can be executed after actions by p.
+      The computation where c* is executed after e is shown as the green line
+      from a 0-valent state to a 0-valent state.
+      The computation where c* is executed after e&prime; followed by e 
+      is shown as the green line from the 1-valent state to a 1-valent state.
     </figcaption>
   </figure>
 
