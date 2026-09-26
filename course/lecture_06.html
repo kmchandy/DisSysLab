@@ -159,6 +159,10 @@
   .n-v{color:var(--teal); font-weight:700}
   .n-a{color:#1a5fd0; font-weight:700}
   .n-t{color:var(--orange); font-weight:700}
+  /* the line under the title of the lecture: a subtitle, not a section */
+  header.top h2{margin:-2px 0 20px; padding:0; border:0;
+    font-family:var(--display); font-weight:600; font-size:22px;
+    line-height:1.2; letter-spacing:-.01em; color:var(--muted)}
 </style>
 </head>
 <body>
@@ -213,6 +217,7 @@
       Blockchain algorithms do not guarantee agreement.
       These algorithms work for most practical situations.
     </p>
+  </header>
 
 <h2>The No-Fault Model</h2>
 <p class="key">
