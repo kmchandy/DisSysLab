@@ -82,18 +82,20 @@
     <div class="kicker">DisSysLab</div>
     <h1>The Paxos Algorithm</h1>
 
-    <p>Last class was about serializability, and had nothing to do with
-       consensus. This class spends it. The rules on epochs from last class
-       turn a system in which messages are lost, duplicated and delivered out
-       of order, and in which agents halt, into a <b>nondeterministic
-       sequential program</b> &mdash; a <code>for</code> loop &mdash; and the
-       algorithm we are about to write is short enough to fit on one slide.
-       Its correctness is not obvious, which is the point of the proof at the
-       end.</p>
+    <p>
+      The previous class described a model of transactions in a computation
+      and gave sufficient conditions for transactions to be serializable.
+      Serializability allows us to represent a
+      system in which messages may be lost, duplicated and delivered out
+      of order, and in which agents may halt, into a <b>
+      sequential program</b> where variables are nondeterministic.
+      Sequential programs are easier to prove correct than concurrent programs. 
+    </p>
 
-    <p>The algorithm is Leslie Lamport&rsquo;s. The FLP theorem says no
-       algorithm can promise to reach consensus in a system like this, so
-       Paxos does not promise it. It promises that the agents never
+    <p>The algorithm was constructed by Leslie Lamport&rsquo;s. 
+      The FLP theorem says no
+       algorithm can guarantee to reach consensus in a system like this.
+       The Paxos algorithm does not guarantees that the agents never
        <i>disagree</i>, and it reaches a consensus whenever the network gives
        it enough of a quiet spell to do so.</p>
   </header>
