@@ -22,9 +22,11 @@
   .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
   h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
      line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
-  h2{font-family:var(--display); font-weight:600; font-size:25px;
-     letter-spacing:-.01em; margin:38px 0 12px}
-  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:26px 0 8px}
+  h2{font-family:var(--display); font-weight:600; font-size:26px;
+     letter-spacing:-.01em; margin:46px 0 14px; padding-bottom:9px;
+     border-bottom:1px solid var(--line)}
+  h3{font-family:var(--sans); font-weight:700; font-size:17.5px;
+     margin:32px 0 10px; color:var(--ink)}
   p{color:var(--body); margin:0 0 15px}
   .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
           color:var(--orange); margin-bottom:14px}
@@ -47,11 +49,11 @@
   code{font-family:var(--mono); font-size:.88em}
   .none{color:#b9b4a8}
   /* A line lifted straight off a slide. */
-  p.slide{margin:18px 0 16px; padding:14px 18px 14px 20px; color:var(--ink);
+  p.stmt{margin:18px 0 16px; padding:14px 18px 14px 20px; color:var(--ink);
     background:#fff; border:1px solid var(--line); border-left:5px solid var(--ink);
     border-radius:0 10px 10px 0; font-size:17px; line-height:1.5; font-weight:600}
-  p.slide b{font-weight:800}
-  p.slide .sub{display:block; font-weight:600; font-size:15.5px;
+  p.stmt b{font-weight:800}
+  p.stmt .sub, .sub{display:block; font-weight:600; font-size:15.5px;
     color:var(--body); margin-top:8px}
   p.key{margin:20px 0 18px; padding:15px 18px 15px 20px; color:var(--ink);
     background:#fff6ef; border:1px solid #f3d3c0; border-left:5px solid var(--orange);
@@ -59,8 +61,42 @@
   p.key .lead-in{display:block; font:700 11.5px/1 var(--sans);
     letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
     margin-bottom:8px}
-  ol.thm{margin:0 0 16px; padding-left:22px; color:var(--ink); font-weight:600}
-  ol.thm li{margin:0 0 10px}
+  /* a theorem or lemma: teal, as in the other lectures */
+  .thm{margin:24px 0 22px; padding:16px 20px 15px; color:var(--ink);
+    background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:17px; line-height:1.55}
+  .thm .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--teal);
+    margin-bottom:9px}
+  .thm ol{margin:12px 0 0; padding-left:24px; color:var(--ink);
+          font-size:16px}
+  .thm ol li{margin:0 0 9px}
+  /* a proof, inside its own rule */
+  .proof{margin:6px 0 24px; padding:2px 0 2px 22px;
+         border-left:2px solid var(--line)}
+  .proof > p:last-child{margin-bottom:0}
+  .proof .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin:0 0 9px}
+  /* the specification, in the three colours of lecture 6 */
+  ol.spec{list-style:none; margin:22px 0 20px; padding:0;
+          counter-reset:req; color:var(--body)}
+  ol.spec > li{counter-increment:req; position:relative; margin:0 0 10px;
+    padding:14px 46px 13px 18px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--muted); border-radius:0 10px 10px 0}
+  ol.spec > li::after{content:counter(req); position:absolute; right:15px;
+    top:13px; font:700 12px var(--mono); color:#c9c4b8}
+  ol.spec .rtag{display:inline-block; font:700 11px var(--sans);
+    letter-spacing:.12em; text-transform:uppercase; color:#fff;
+    background:var(--muted); border-radius:999px; padding:4px 11px;
+    margin-right:11px; vertical-align:1px}
+  li.req-v{border-left-color:var(--teal)}
+  li.req-v .rtag{background:var(--teal)}
+  li.req-a{border-left-color:#1a5fd0}
+  li.req-a .rtag{background:#1a5fd0}
+  li.req-t{border-left-color:var(--orange)}
+  li.req-t .rtag{background:var(--orange)}
   ul.cuts{margin:0 0 16px; padding-left:22px; color:var(--body);
           font-family:var(--mono); font-size:14.5px}
   ul.cuts li{margin:0 0 6px}
@@ -74,12 +110,9 @@
 <div class="wrap">
   <header class="top">
     <div class="kicker">DisSysLab &middot; Class 7</div>
-    <h1>The Paxos Algorithm</h1>
+    <h1>The Paxos Algorithm: Consensus</h1>
     <h2>Serializing Transactions</h2>
-    <p>
-    The FLP theorem says that distributed consensus is 
-    impossible in a system where messages are arbitrarily 
-    slow and an agent may halt. Let's look at the specification
+    <p>Let's look at the specification
     of the consensus problem again.
     </p>
 
@@ -91,405 +124,314 @@
           requirements:
       </p>
       
-      <ol>
-        <li>
-          <strong>Validity:</strong> The value that the agents agree on must be a value proposed by at least
+      <ol class="spec">
+        <li class="req-v">
+          <span class="rtag">Validity</span> The value that the agents agree on must be a value proposed by at least
           one of the agents.
         </li>
-        <li>
-          <strong>Agreement:</strong> All agents must agree on the same value.
+        <li class="req-a">
+          <span class="rtag">Agreement</span> All agents must agree on the same value.
         </li>
-        <li>
-          <strong>Termination:</strong> Every agent must eventually decide: it
+        <li class="req-t">
+          <span class="rtag">Termination</span> Every agent must eventually decide: it
           computes a consensus value, and never changes it afterwards.
         </li>
       </ol>
 
-      <p>The last class proved that consensus is impossible in a system where
-       messages are arbitrarily slow and an agent may halt. 
-       This class describes the Paxos algorithm which does not guarantee
-       termination - i.e..</p>
+    <p class="key">
+      <span class="lead-in">Specification of the Paxos Algorithm</span>
+      Paxos is a distributed consensus algorithm that guarantees validity 
+      and agreement, but not termination.
+    </p>
+
+    <p>
+      The Paxos algorithm was constructed by Leslie Lamport.
+    </p>
+
+    <p>
+      The FLP theorem says that distributed consensus is 
+      impossible in a system where messages are arbitrarily 
+      slow and an agent may halt.
+       This class describes the Paxos algorithm in which <b>agents may never 
+       decide on a consensus value.</b> 
+       The algorithm does guarantee validity and agreement. If agents decide on 
+       a value then (consensus) all agents decide on the same value and (validity)
+       that value is one of the proposed values.
+      </p>
   </header>
 
-<h2>Communication between Client and Server</h2>
-
-<p class="slide">
-  Client: Proposer
-  <span class="sub">Server: Acceptor</span>
-</p>
-
-  <figure class="fig wideout">
-    <svg id="cs_g" viewBox="0 0 1240 420" role="img"
-         aria-label="Two servers above and two clients below: every client talks to every server, and no client talks to a client"></svg>
-
-    <figcaption>
-      <b>Slide 4.</b>
-      Clients send messages to servers and receive messages from them. Nothing
-      else is drawn, because nothing else happens.
-    </figcaption>
-  </figure>
-
+<h2>The Fault Model</h2>
 <p>
-  Let&rsquo;s start with just two layers where proposers are called clients and
-  acceptors are called servers. Each server can send and receive messages from
-  servers. Servers don&rsquo;t communicate with each other, and clients
-  don&rsquo;t communicate with each other. We know an upper bound N on the
-  number of servers. Some of the servers may have halted permanently.
+The Paxos fault model allows more faults than the FLP theorem assumes.
+Messages may get lost, duplicated, delayed for arbitrary durations,
+and delivered out of order. An arbitrary number of agents may halt (not just
+one) as FLP assumes. Agents may halt and then restart, but 
+retain state while halted.
 </p>
 
 <p>
-  Assume that at least one server has not halted permanently.
+We begin by describing serializability of transactions in Paxos
+and then describe the Paxos algorithm.
 </p>
+
+<p class="key">
+  <span class="lead-in">Why serializability</span>
+  Serializability of transactions allow us to prove properties of
+  a distributed algorithm, Paxos, by proving properties of a sequential
+  for loop. Proving correctness is easier for sequential programs than
+  for concurrent programs.
+</p>
+
 
 <h2>Serializability of transactions</h2>
+
+<p>
+  Consider a system that executes transactions - at this point it doesn't
+  matter what a transaction is.
+  Each step in a computation is associated with a single transaction.
+  </p>
+
+<div class="key">
+The transactions in a computation are <b>serializable</b> exactly 
+when the events (vertices) of the dataflow graph of the computation can be partitioned into a
+sequence of sets: past_j, j= 0, 1, .., N &hellip; where N is the number
+of transactions, and past_0 is the empty set, and for all j &lt; N:
+<ol>
+  <li>
+    past_(j+1) consists of past_j and all the events 
+    of exactly one transaction.
+  </li>
+  <li>
+    past(j) is a consistent cut of the dataflow graph.
+  </li>
+</ol> 
+</div>
+
+<p>
+  The figure below shows a computation with two transactions <b>blue</b>
+  and <b>red</b>. The color of each event identifies the transaction to
+  which the event belongs. A dotted message line indicates a message that 
+  is sent but is lost. Lost messages play no part in a computation and are 
+  ignored when determining whether a computation is serializable.
+</p>
+<p>
+  The transactions in this computation are serializable 
+  because the events can be partitioned into sets past_0, past_1, past_2 where
+  past_1 consists of all blue steps and past_2 consists of all blue and red steps.
+</p>
 
   <figure class="fig wideout">
     <svg id="two_g" viewBox="0 0 1240 660" role="img"
          aria-label="The same dataflow graph twice: above with the steps of the two transactions interspersed, below permuted so all blue steps come before all red steps"></svg>
 
+    <div class="ctrls">
+      <button id="two_play" class="primary">Play</button>
+      <button id="two_reset">Reset</button>
+      <span class="status" id="two_status"></span>
+    </div>
+
     <figcaption>
-      <b>Slide 6.</b>
-      Two dataflow graphs. Above, the steps of the two transactions are
-      interspersed. Below, the same graph with the order of steps permuted so
-      that all blue steps occur before all red steps. The black bars are the
-      points at which one transaction ends and another begins.
+      <b>Figure 1. Serializable transactions.</b>
+      Both computations have the same dataflow graph.
+      Press <i>Play</i>: the red events slide to the right of the blue ones,
+      and the top computation becomes the lower one. Each agent keeps its own
+      steps in the same order; only the order of steps at different agents
+      changes.
     </figcaption>
   </figure>
 
 <p>
-  This diagram shows two data flow graphs. In the graphs, the steps and
-  messages of the graph are colored either red or blue. Assume that all the
-  blue steps and messages belong to a blue transaction (a program), and that
-  all the red steps and messages belong to a red transaction. A dotted line
-  indicates a message that is sent and is lost (more about lost messages
-  later).
+  The computation in the top diagram has steps of the two transactions 
+  interspersed &mdash; some red  steps occur before some blue steps and some 
+  blue steps occur before some red steps.
 </p>
 
 <p>
-  The top graph has steps of the two transactions interspersed &mdash; some red
-  steps occur before blue steps and some blue steps occur before some red
-  steps.
+  The lower diagram is obtained from the top diagram
+  by permuting steps so that all blue steps occur before all red steps. 
+  The order of steps between <b>different agents</b> is permuted, but the 
+  order of steps at each agent is the same in both graphs.
+  The curvilinear cuts of the top computation are vertical lines in the
+  lower computation.
 </p>
 
 <p>
-  The lower graph shows the same data flow graph but the order of steps is
-  permuted so that all blue steps occur before all red steps. Verify that the
-  lower data flow graph also represents a computation in which steps occur in
-  order from left to right. Check the logs of each agent are the same in both
-  graphs and check that messages are received only after they are sent.
+  The next two figures show transactions that are not serializable.
+  If past_1 consists of all blue steps and no red ones, then 
+  there is an edge from the future to the past. Similarly, the
+  for the case where past_1 consists of all red steps and no blue ones.
 </p>
 
-<p>
-  The transactions in the lower graph are serial. While the blue transaction is
-  executing no other transaction is executing. Similarly for the red
-  transaction.
-</p>
-
-<p>
-  The vertical black lines in the lower diagram show points in the computation
-  at which one transaction ends and another transaction begins. The vertical
-  black lines are consistent cuts &mdash; for example for the black line in the
-  middle, past consists of blue steps and future consists of red steps.
-</p>
-
-<p>
-  These vertical black lines of the lower diagram correspond to consistent cuts
-  in the upper diagram with the same definition of past (blue steps) and future
-  (red steps).
-</p>
-
-<p>
-  The computation &mdash; sequence of steps &mdash; in the top diagram is
-  serializable because there is a permutation of the sequence in which
-  transactions occur serially.
-</p>
-
-<p class="key">
-  <span class="lead-in">Equivalently</span>
-  A data flow diagram is serializable if there exists sequences of consistent
-  cuts (past_0, future_0), (past_1, future_1), (past_2, future_2), &hellip;
-  where past_(j+1) consists of past_j and steps of exactly one transaction.
-</p>
-
-<h2>Transactions are not Serializable</h2>
+<h3>Example 1: Transactions that are not serializable</h3>
 
   <figure class="fig wideout">
     <svg id="ns5_g" viewBox="0 0 1240 360" role="img"
          aria-label="A dataflow graph whose bottom agent takes a blue step, then a red step, then a blue step"></svg>
 
+    <div class="ctrls">
+      <button id="ns5_blue" class="primary">past = blue steps</button>
+      <button id="ns5_red">past = red steps</button>
+      <button id="ns5_reset">Reset</button>
+      <span class="status" id="ns5_status"></span>
+    </div>
+
     <figcaption>
-      <b>Slide 7.</b>
-      Why are the blue and red transactions not serializable?
+      <b>Figure 2. Example 1: not serializable.</b>
+      Agent E takes a blue step, then a red one, then a blue one again. Press
+      <i>past&nbsp;=&nbsp;blue steps</i>: the third step of E is in the past
+      while the second is in the future, so the stop sign appears on E between
+      them. Press <i>past&nbsp;=&nbsp;red steps</i> and the sign appears
+      between E&rsquo;s first two steps for the same reason. Whichever colour
+      goes first, an edge of E&rsquo;s own timeline runs from the future into
+      the past.
     </figcaption>
   </figure>
 
-<p>
-  Why is this computation not serializable? Equivalently, why is there no
-  consistent cut that separates red from blue steps?
-</p>
-
-<p>
-  That&rsquo;s because one of the agents (the bottom timeline) has a sequence of
-  steps
-</p>
-
-<p class="key">
-  [&hellip; blue, red, blue, &hellip;]
-</p>
-
-<p>
-  and so any cut that separates blue from red is inconsistent.
-</p>
+<h3>Example 2: Transactions that are not serializable</h3>
 
   <figure class="fig wideout">
     <svg id="ns2_g" viewBox="0 0 1240 300" role="img"
          aria-label="Two agents whose messages cross: a red message from the first to the second, and a blue message from the second to the first"></svg>
 
-    <figcaption>
-      <b>Slide 8.</b>
-      Why are the blue and red transactions not serializable?
-    </figcaption>
-  </figure>
-
-<p>
-  Why is this computation not serializable? Equivalently, why is there no
-  consistent cut that separates red from blue steps?
-</p>
-
-<p>
-  That&rsquo;s because any consistent cut in which past includes all blue steps
-  must also include a red step. And similarly any consistent cut in which past
-  includes all red steps must also include a blue step.
-</p>
-
-<h2>Condition 1. Serializable agent computations</h2>
-
-<p class="slide">
-  For each agent, all steps of each transaction occur consecutively.
-  <span class="sub">blue, blue, blue&hellip; | red, red, &hellip;</span>
-</p>
-
-  <figure class="fig wideout">
-    <svg id="c1_g" viewBox="0 0 1240 300" role="img"
-         aria-label="Five agent computations, each with all of its blue steps before all of its red steps"></svg>
-
-    <figcaption>
-      <b>Slide 9.</b>
-      Five agent computations, and for each one all steps of the blue
-      transaction occur before all steps of the red transaction.
-    </figcaption>
-  </figure>
-
-<p>
-  Condition 1 says that for each agent&rsquo;s computation (remember that an
-  agent&rsquo;s computation is its log of steps at the agent) can be
-  partitioned into sequences of steps where each partition consists of the
-  steps of exactly one transaction and all the steps of that transaction. This
-  diagram shows 5 agent computations, and for each computation all steps of one
-  transaction (blue) occur before all steps of a different transaction (red).
-</p>
-
-<h2>Condition 2. The order of transactions</h2>
-
-<p class="slide">
-  Condition 2: The order of transactions is the same for all agent
-  computations.
-  <span class="sub">If blue before red in the computation of one agent, then
-  blue before red in the computation of all agents.</span>
-</p>
-
-  <figure class="fig wideout">
-    <svg id="c2_g" viewBox="0 0 1240 300" role="img"
-         aria-label="The same two crossing messages: one agent runs blue before red and the other runs red before blue"></svg>
-
-    <figcaption>
-      <b>Slide 10.</b>
-      Why are the blue and red transactions not serializable? The top agent
-      runs red before blue and the bottom agent runs blue before red.
-    </figcaption>
-  </figure>
-
-<h2>Condition 3. Messages stay inside a transaction</h2>
-
-<p class="slide">
-  Condition 3: All messages in a transaction are sent and received by steps in
-  the transaction.
-  <span class="sub">All blue messages are between blue steps; all red messages
-  are between red steps.</span>
-</p>
-
-  <figure class="fig wideout">
-    <svg id="c3_g" viewBox="0 0 1240 330" role="img"
-         aria-label="The interspersed graph again, with every blue message between blue steps and every red message between red steps"></svg>
-
-    <figcaption>
-      <b>Slide 11, first half.</b>
-      The top graph of slide 6 on its own. Every blue arrow leaves a blue step
-      and arrives at a blue step, and every red arrow leaves a red step and
-      arrives at a red step.
-    </figcaption>
-  </figure>
-
-<p class="key">
-  <span class="lead-in">Observation</span>
-  If conditions 1, 2, 3 are satisfied in a data flow graph then the graph can
-  be partitioned by consistent cuts (past_0, future_0), (past_1, future_1),
-  (past_2, future_2), &hellip; where past_(i+1) consists of past_i and all the
-  steps of exactly one transaction.
-</p>
-
-  <figure class="fig wideout">
-    <svg id="prt_g" viewBox="0 0 1240 360" role="img"
-         aria-label="The serial graph with its three black bars labelled past_0, past_1 and past_2"></svg>
-
-    <figcaption>
-      <b>Slide 11, second half.</b>
-      The permuted graph, with the cuts named. past_0 is the empty set, past_1
-      is all of the blue steps, past_2 is past_1 together with all of the red
-      steps.
-    </figcaption>
-  </figure>
-
-<p>
-  The diagram shows only two transactions, but you get the idea. past_0 is the
-  empty set. past_1 consists only of blue steps and all the blue steps. past_2
-  consists of past_1 and only red steps and all the red steps,&hellip;
-</p>
-
-<h2>Theorem</h2>
-
-<p>
-  A sufficient condition for serializability of transactions is as follows.
-</p>
-
-<ol class="thm">
-  <li>Associated with each transaction is a unique id where transaction ids are
-      totally ordered.</li>
-  <li>For each agent: all steps of a transaction with id T occur after all
-      steps of a transaction with id T&rsquo; if T&rsquo; &lt; T</li>
-  <li>All messages sent in a step of a transaction with id T are received in a
-      step of the same transaction.</li>
-</ol>
-
-<p>
-  Conditions 1, 2, and 3 are satisfied by the requirements of the theorem.
-</p>
-
-<h2>Two agents, three transactions</h2>
-
-  <figure class="fig wideout">
-    <svg id="uv1_g" viewBox="0 0 1240 300" role="img"
-         aria-label="Agents U and V, each with green steps before blue steps before red steps"></svg>
-
-    <figcaption>
-      <b>Slide 13.</b>
-      transaction ids are green, blue, red &middot; ordering: green &lt; blue
-      &lt; red &middot; green steps appear before blue steps &middot; blue
-      steps appear before red steps
-    </figcaption>
-  </figure>
-
-<p>
-  This diagram shows computations of agents U and V. These computations satisfy
-  the first two parts of the theorem. Transaction ids are colors green, blue,
-  red. Transaction ids are a total order with green &lt; blue &lt; red.
-</p>
-
-<p>
-  Steps of each agent&rsquo;s computation occur in order of increasing
-  transaction id. For agent U: all steps of the green transaction occur before
-  all steps of the blue transaction which occur before all steps of the red
-  transaction. Similarly for agent V.
-</p>
-
-  <figure class="fig wideout">
-    <svg id="uv2_g" viewBox="0 0 1240 300" role="img"
-         aria-label="The same two agents with messages, each message going from a step of a transaction to a step of the same transaction"></svg>
-
-    <figcaption>
-      <b>Slide 14.</b>
-      messages from steps of a transaction to steps of the same transaction,
-      e.g. green to green
-    </figcaption>
-  </figure>
-
-<p>
-  This diagram shows that condition 3 is also satisfied in this data flow
-  graph.
-</p>
-
-  <figure class="fig wideout">
-    <svg id="uv3_g" viewBox="0 0 1240 340" role="img"
-         aria-label="The same graph with the cuts that separate one transaction at a time"></svg>
-
     <div class="ctrls">
-      <button id="uv3_step" class="primary">Next cut</button>
-      <button id="uv3_reset">Reset</button>
-      <span class="status" id="uv3_status"></span>
+      <button id="ns2_blue" class="primary">past = blue steps</button>
+      <button id="ns2_red">past = red steps</button>
+      <button id="ns2_reset">Reset</button>
+      <span class="status" id="ns2_status"></span>
     </div>
 
     <figcaption>
-      <b>Slide 15.</b>
-      The data flow graph can be partitioned into subgraphs by consistent cuts
-      where each cut separates steps of exactly one transaction.
+      <b>Figure 3. Example 2: not serializable.</b>
+      Agent A runs a red step before a blue one, and agent B runs a blue step
+      before a red one. Press <i>past&nbsp;=&nbsp;blue steps</i>: A&rsquo;s
+      blue step is in the past while its red step is in the future, so the
+      stop sign appears between them. Press
+      <i>past&nbsp;=&nbsp;red steps</i> and the sign moves to agent B, for the
+      same reason. Neither order gives a cut.
     </figcaption>
   </figure>
 
-<ul class="cuts">
-  <li>Cut 0: (past_0, future_-) = ({}, {green, blue, red})</li>
-  <li>Cut 1: (past_1, future_1) = ({green}, {blue, red})</li>
-  <li>Cut 2: (past_2, future_2) = ({green, blue}, {red})</li>
-  <li>Cut 3: (past_3, future_3) = ({green, blue, red},{})</li>
-</ul>
 
-<h2>How can we make transactions serializable?</h2>
+<h2>Theorem</h2>
 
-<p class="slide">
-  Transaction ordering, green -&gt; blue -&gt; red
-  <span class="sub">What should happen when a message arrives from an earlier
-  transaction?</span>
-</p>
-
-  <figure class="fig wideout">
-    <svg id="ear_g" viewBox="0 0 1240 300" role="img"
-         aria-label="A message sent in a green step of agent V arrives at agent U after U has moved on to the blue transaction"></svg>
-
-    <figcaption>
-      <b>Slides 17 and 18.</b>
-      Each agent&rsquo;s line is colored by the transaction it is executing. The
-      green message arrives at agent U while U is executing the blue
-      transaction.
-    </figcaption>
-  </figure>
+<div class="thm">
+  A sufficient condition for serializability of transactions is as follows.
+  <ol>
+    <li>Associated with each transaction is a unique id where transaction ids are
+        totally ordered.</li>
+    <li>
+      For each agent, the sequence of events at that agent are in 
+      nondecreasing order of transaction ids.
+    </li>
+  </ol>
+</div>
 
 <p>
-  Message from green transaction arrives when agent U has moved forward to the
-  blue transaction?
+  The proof that these conditions are sufficient for serializability is 
+  that the computation can be partitioned into a sequence of consistent cuts 
+  where each cut separates steps of transactions with smaller ids from steps 
+  of transactions with larger ids.
 </p>
 
 <p>
-  We require that all messages sent in green steps are received in green steps.
-  What to do?
+  In figure 1, the blue transaction has a smaller id than the red transaction,
+  and in the computation of each of the five agents: all blue events occur before 
+  all red events. 
+  In figure 2 and 3, there are some agents with computations in which red events
+  occur before blue, and there are other agents with computations in which blue 
+  events occur before red.
 </p>
+
+<h2>A protocol for serializable transactions</h2>
+
+<p>
+Each transaction is associated with a transaction id which is
+a pair: (n, X) where n is a number and X is agent the agent that
+starts the transaction. Assume that agents are totally ordered; 
+so transaction ids are totally ordered with (n, X) &lt; (m, Y) 
+if n &lt; m or if n = m and X &lt; Y.
+</p>
+
 
 <p class="key">
-  <span class="lead-in">Rule 1</span>
-  Ignore the transaction &mdash; treat it as lost.
+    <span class="lead-in">Rule 1</span>
+  An agent executes at most one transaction at a time.
+  When an agent starts a new transaction it sets the id
+  of the new transaction to be greater than the id of
+  transactions that it has executed.  
+</p>
+
+
+<figure class="fig wideout">
+  <svg id="epo_g" viewBox="0 0 1240 400" role="img"
+       aria-label="One agent's computation, with each stretch of steps carrying a transaction id: (10,A), (10,B), (15,A), (20,C)"></svg>
+
+  <figcaption>
+    <b>Figure 4. Transaction ids along one agent.</b>
+    A diagram showing a computation of a single agent. 
+    For agent ids: A < B < C.
+    The agent first takes steps of transactions with 
+    id (10, A), then (10, B), then (15, A), then (20, C).
+  </figcaption>
+</figure>
+
+<p class="key">
+  <span class="lead-in">Rule 2</span>
+When an agent executing a transaction with id T sends
+a message it appends T to the message.
+</p>
+
+
+<p class="key">
+  <span class="lead-in">Rule 3</span>
+  An agent executing a transaction with id T
+  ignores a message with transaction id T' if T' &lt; T;
+  the message is treated as lost.
 </p>
 
 <p>
-  So, no messages from earlier transactions are received in later transactions.
+  <b>Example</b>
+  Assume transaction ordering: green -&gt; blue -&gt; red
 </p>
+  <figure class="fig wideout">
+    <svg id="ear_g" viewBox="0 0 1240 300" role="img"
+         aria-label="A message sent in a green step of agent B arrives at agent A after A has moved on to the blue transaction"></svg>
 
-<p class="slide">
+    <div class="ctrls">
+      <button id="ear_break" class="primary">Accept the green message</button>
+      <button id="ear_reset">Apply rule 3</button>
+      <span class="status" id="ear_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 5. A message from an earlier transaction.</b>
+      Each agent&rsquo;s line is colored by the transaction it is executing. The
+      green message arrives at agent A while A is executing the blue
+      transaction. A ignores the message and continues executing the 
+      blue transaction; A treats the green message as lost.
+      Press <i>Accept the green message</i> to see what rule 3 is for: the
+      step that receives it would be a green step sitting between two blue
+      ones, so agent A&rsquo;s transaction ids would run blue, green, blue and
+      the computation would no longer be serializable.
+    </figcaption>
+  </figure>
+
+  <p class="key">
+    <span class="lead-in">Rule 4</span>
+    When an agent executing a transaction with id T receives a message
+    in a transaction with id T' where T' &gt; T, the agent stops executing
+    the transaction with id T and starts executing the transaction with id T'.
+  </p>
+
+
+
+<p>
+  <b>Example</b>
   Transaction ordering, green -&gt; blue -&gt; red
-  <span class="sub">What should happen when a message arrives from a later
-  transaction?</span>
 </p>
-
   <figure class="fig wideout">
     <svg id="lat_g" viewBox="0 0 1240 300" role="img"
-         aria-label="A message sent in a red step of agent V arrives at agent U while U is still executing the green transaction"></svg>
+         aria-label="A message sent in a red step of agent B arrives at agent A while A is still executing the green transaction"></svg>
 
     <div class="ctrls">
       <button id="lat_step" class="primary">Apply the rule</button>
@@ -498,312 +440,36 @@
     </div>
 
     <figcaption>
-      <b>Slides 19 and 20.</b>
-      The red message arrives at agent U while U is still executing the green
-      transaction. Press <i>Apply the rule</i>: U starts executing the red
+      <b>Figure 6. A message from a later transaction.</b>
+      The message from the red transaction arrives at agent A while A is still executing the green
+      transaction.
+      Press <i>Apply rule</i>: A starts executing the red
       transaction, and the step that receives the message is a red step.
     </figcaption>
   </figure>
 
+<div class="proof">
 <p>
-  Message from red transaction arrives when agent U is at earlier transaction?
+  <span class="lead-in">Observation</span>
+  The four rules guarantee that transactions are serializable.
 </p>
-
+</div>
 <p>
-  We require that all messages sent in red steps are received in red steps.
-  What to do?
+  Proof: Transaction ids for successive events at an agent
+  are nondecreasing, and messages sent in a transaction with id T 
+  are received in a transaction with id T. Define past as the set of
+  events with transaction id less than or equal to T. Then all edges to
+  past are from past.
 </p>
 
-<p class="key">
-  <span class="lead-in">Rule 2</span>
-  When an agent receives a step from a later transaction the agent starts
-  executing the later transaction.
-</p>
-
-<p>
-  These two rules guarantee that a message sent in a step of a transaction with
-  id t is received in a step of a transaction with id t (or is lost).
-</p>
-
-<h2>Transaction ids or Epochs</h2>
-
-<p class="slide">
-  Transaction ids or Epochs
-  <span class="sub">Similar to (but not same as) logical time &middot;
-  Transaction id: (number, agent id)</span>
-</p>
-
-  <figure class="fig wideout">
-    <svg id="epo_g" viewBox="0 0 1240 400" role="img"
-         aria-label="One agent's computation, with each stretch of steps carrying a transaction id: (10,A), (10,B), (15,A), (20,C)"></svg>
-
-    <figcaption>
-      <b>Slide 21.</b>
-      The computation of a single agent. Associated with each edge and each
-      step is a transaction id or epoch.
-    </figcaption>
-  </figure>
-
-<p>
-  This diagram shows the computation of a single agent. Associated with each
-  edge and each step is a transaction id or epoch.
-</p>
-
-<p>
-  Transaction ids or epochs are similar to but not identical to logical times.
-  Consecutive steps at an agent can have the same epoch whereas a later step at
-  an agent has a larger logical time.
-</p>
-
-<p>
-  Epochs are unique by making each epoch a pair: a number and an agent id.
-  Assume agent ids are a total order and use agent ids to break ties. For
-  example (10, A) &lt; (10, B).
-</p>
-
-<p>
-  This diagram shows 4 transactions with epochs (10,A), (10, B), (15, A), and
-  (20, C).
-</p>
-
-<h2>Finished Serializability of Transactions. Now Consensus</h2>
-
-<p>
-  We have finished discussing serializability of transactions. We use epochs
-  and the rules given earlier to obtain serializability.
-</p>
 
 <p>
   <a href="lecture_08.html">Next class: the Paxos algorithm</a>
 </p>
 
+
 </div>
 
-
-<script>
-(function(){
-  const PFX='uv1_', $=function(id){return document.getElementById(PFX+id);};
-  const svg=$('g'); if(!svg) return;
-  const NS='http://www.w3.org/2000/svg';
-  const C={ink:'#1a1a2e', muted:'#6f7583', rail:'#9ab4e0', green:'#1a9e46',
-           blue:'#1a5fd0', red:'#e0301a'};
-  // slide 13: green steps, then blue steps, then red steps, at each agent
-  const U=[[446,'green'],[552,'green'],[662,'blue'],[768,'blue'],
-           [874,'red'],[980,'red']];
-  const V=[[194,'green'],[258,'blue'],[320,'blue'],[454,'red'],[564,'red'],
-           [664,'red']];
-  const YU=100, YV=200;
-  function el(t,a,txt){
-    const e=document.createElementNS(NS,t);
-    for(const k in a) e.setAttribute(k,a[k]);
-    if(txt!=null) e.textContent=txt;
-    return e;
-  }
-  function tag(g,x,y,str,fill,size,anchor){
-    g.appendChild(el('text',{x:x, y:y,
-      'font-family':'ui-monospace,Menlo,Consolas,monospace',
-      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
-      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
-      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
-  }
-  function head(g,x,y,ux,uy,col,sz){
-    const s=sz||8, px=-uy, py=ux;
-    g.appendChild(el('polygon',{points:
-      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
-      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
-  }
-  function who(g,x,y,n){
-    g.appendChild(el('rect',{x:x, y:y-19, width:118, height:38, rx:9,
-      fill:C.ink}));
-    g.appendChild(el('text',{x:x+59, y:y, 'font-family':
-      'ui-monospace,Menlo,Consolas,monospace', 'font-size':15,
-      'font-weight':700, fill:'#fff', 'text-anchor':'middle',
-      'dominant-baseline':'middle'}, n));
-  }
-  function rail(g,y,x0,x1){
-    g.appendChild(el('line',{x1:x0, y1:y, x2:x1, y2:y, stroke:C.rail,
-      'stroke-width':2}));
-  }
-  function step(g,x,y,c){
-    g.appendChild(el('circle',{cx:x, cy:y, r:11, fill:C[c], stroke:'#fff',
-      'stroke-width':2}));
-  }
-  function msg(g,a,b,c){
-    const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
-    g.appendChild(el('line',{x1:a[0]+ux*13, y1:a[1]+uy*13,
-      x2:b[0]-ux*15, y2:b[1]-uy*15, stroke:C[c], 'stroke-width':3.4}));
-    head(g, b[0]-ux*11, b[1]-uy*11, ux, uy, C[c], 8.5);
-  }
-  function draw(){
-    while(svg.firstChild) svg.removeChild(svg.firstChild);
-    const g=el('g',{}); svg.appendChild(g);
-    rail(g,YU,120,1040); rail(g,YV,120,1040);
-    U.forEach(function(d){ step(g,d[0],YU,d[1]); });
-    V.forEach(function(d){ step(g,d[0],YV,d[1]); });
-    who(g,1060,YU,'Agent U'); who(g,1060,YV,'Agent V');
-  }
-  draw();
-})();
-</script>
-
-<script>
-(function(){
-  const PFX='uv2_', $=function(id){return document.getElementById(PFX+id);};
-  const svg=$('g'); if(!svg) return;
-  const NS='http://www.w3.org/2000/svg';
-  const C={ink:'#1a1a2e', muted:'#6f7583', rail:'#9ab4e0', green:'#1a9e46',
-           blue:'#1a5fd0', red:'#e0301a'};
-  const YU=100, YV=200;
-  const U={g1:[440,'green'], b1:[570,'blue'], b2:[695,'blue'],
-           r1:[828,'red'],   r2:[1010,'red']};
-  const V={g1:[184,'green'], b1:[251,'blue'], b2:[773,'blue'],
-           r1:[924,'red'],   r2:[985,'red']};
-  const MSG=[['V','g1','U','g1','green'], ['V','b1','U','b1','blue'],
-             ['U','b2','V','b2','blue'],  ['U','r1','V','r1','red'],
-             ['V','r2','U','r2','red']];
-  function el(t,a,txt){
-    const e=document.createElementNS(NS,t);
-    for(const k in a) e.setAttribute(k,a[k]);
-    if(txt!=null) e.textContent=txt;
-    return e;
-  }
-  function tag(g,x,y,str,fill,size,anchor){
-    g.appendChild(el('text',{x:x, y:y,
-      'font-family':'ui-monospace,Menlo,Consolas,monospace',
-      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
-      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
-      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
-  }
-  function head(g,x,y,ux,uy,col,sz){
-    const s=sz||8, px=-uy, py=ux;
-    g.appendChild(el('polygon',{points:
-      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
-      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
-  }
-  function who(g,x,y,n){
-    g.appendChild(el('rect',{x:x, y:y-19, width:118, height:38, rx:9,
-      fill:C.ink}));
-    g.appendChild(el('text',{x:x+59, y:y, 'font-family':
-      'ui-monospace,Menlo,Consolas,monospace', 'font-size':15,
-      'font-weight':700, fill:'#fff', 'text-anchor':'middle',
-      'dominant-baseline':'middle'}, n));
-  }
-  function rail(g,y,x0,x1){
-    g.appendChild(el('line',{x1:x0, y1:y, x2:x1, y2:y, stroke:C.rail,
-      'stroke-width':2}));
-  }
-  function step(g,x,y,c){
-    g.appendChild(el('circle',{cx:x, cy:y, r:11, fill:C[c], stroke:'#fff',
-      'stroke-width':2}));
-  }
-  function msg(g,a,b,c){
-    const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
-    g.appendChild(el('line',{x1:a[0]+ux*13, y1:a[1]+uy*13,
-      x2:b[0]-ux*15, y2:b[1]-uy*15, stroke:C[c], 'stroke-width':3.4}));
-    head(g, b[0]-ux*11, b[1]-uy*11, ux, uy, C[c], 8.5);
-  }
-  function draw(){
-    while(svg.firstChild) svg.removeChild(svg.firstChild);
-    const g=el('g',{}); svg.appendChild(g);
-    rail(g,YU,120,1040); rail(g,YV,120,1040);
-    MSG.forEach(function(m){
-      const a=(m[0]==='U')? [U[m[1]][0],YU] : [V[m[1]][0],YV];
-      const b=(m[2]==='U')? [U[m[3]][0],YU] : [V[m[3]][0],YV];
-      msg(g,a,b,m[4]);
-    });
-    for(const k in U) step(g,U[k][0],YU,U[k][1]);
-    for(const k in V) step(g,V[k][0],YV,V[k][1]);
-    who(g,1062,YU,'Agent U'); who(g,1062,YV,'Agent V');
-  }
-  draw();
-})();
-</script>
-
-<script>
-(function(){
-  const PFX='uv3_', $=function(id){return document.getElementById(PFX+id);};
-  const svg=$('g'); if(!svg) return;
-  const NS='http://www.w3.org/2000/svg';
-  const C={ink:'#1a1a2e', muted:'#6f7583', rail:'#9ab4e0', green:'#1a9e46',
-           blue:'#1a5fd0', red:'#e0301a'};
-  const YU=120, YV=220;
-  const U={g1:[440,'green'], b1:[570,'blue'], b2:[695,'blue'],
-           r1:[828,'red'],   r2:[1010,'red']};
-  const V={g1:[184,'green'], b1:[251,'blue'], b2:[773,'blue'],
-           r1:[924,'red'],   r2:[985,'red']};
-  const MSG=[['V','g1','U','g1','green'], ['V','b1','U','b1','blue'],
-             ['U','b2','V','b2','blue'],  ['U','r1','V','r1','red'],
-             ['V','r2','U','r2','red']];
-  // where each cut crosses each agent's line
-  const CUT=[[130,130], [505,218], [762,848], [1035,1035]];
-  const PAST=['{}', '{green}', '{green, blue}', '{green, blue, red}'];
-  let st=0;
-  function el(t,a,txt){
-    const e=document.createElementNS(NS,t);
-    for(const k in a) e.setAttribute(k,a[k]);
-    if(txt!=null) e.textContent=txt;
-    return e;
-  }
-  function tag(g,x,y,str,fill,size,anchor){
-    g.appendChild(el('text',{x:x, y:y,
-      'font-family':'ui-monospace,Menlo,Consolas,monospace',
-      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
-      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
-      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
-  }
-  function head(g,x,y,ux,uy,col,sz){
-    const s=sz||8, px=-uy, py=ux;
-    g.appendChild(el('polygon',{points:
-      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
-      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
-  }
-  function who(g,x,y,n){
-    g.appendChild(el('rect',{x:x, y:y-19, width:118, height:38, rx:9,
-      fill:C.ink}));
-    g.appendChild(el('text',{x:x+59, y:y, 'font-family':
-      'ui-monospace,Menlo,Consolas,monospace', 'font-size':15,
-      'font-weight':700, fill:'#fff', 'text-anchor':'middle',
-      'dominant-baseline':'middle'}, n));
-  }
-  function rail(g,y,x0,x1){
-    g.appendChild(el('line',{x1:x0, y1:y, x2:x1, y2:y, stroke:C.rail,
-      'stroke-width':2}));
-  }
-  function step(g,x,y,c){
-    g.appendChild(el('circle',{cx:x, cy:y, r:11, fill:C[c], stroke:'#fff',
-      'stroke-width':2}));
-  }
-  function msg(g,a,b,c){
-    const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
-    g.appendChild(el('line',{x1:a[0]+ux*13, y1:a[1]+uy*13,
-      x2:b[0]-ux*15, y2:b[1]-uy*15, stroke:C[c], 'stroke-width':3.4}));
-    head(g, b[0]-ux*11, b[1]-uy*11, ux, uy, C[c], 8.5);
-  }
-  function draw(){
-    while(svg.firstChild) svg.removeChild(svg.firstChild);
-    const g=el('g',{}); svg.appendChild(g);
-    rail(g,YU,120,1040); rail(g,YV,120,1040);
-    MSG.forEach(function(m){
-      const a=(m[0]==='U')? [U[m[1]][0],YU] : [V[m[1]][0],YV];
-      const b=(m[2]==='U')? [U[m[3]][0],YU] : [V[m[3]][0],YV];
-      msg(g,a,b,m[4]);
-    });
-    for(const k in U) step(g,U[k][0],YU,U[k][1]);
-    for(const k in V) step(g,V[k][0],YV,V[k][1]);
-    who(g,1062,YU,'Agent U'); who(g,1062,YV,'Agent V');
-    const c=CUT[st];
-    g.appendChild(el('polyline',{points:
-      c[0]+',60 '+c[0]+','+YU+' '+c[1]+','+YV+' '+c[1]+',280',
-      fill:'none', stroke:C.ink, 'stroke-width':9, 'stroke-linecap':'round',
-      'stroke-linejoin':'round'}));
-    tag(g, Math.min(c[0],c[1]), 306, 'Cut '+st, C.ink, 15);
-    $('status').innerHTML='<b>cut '+st+' of 3</b> &middot; past_'+st+' = '+PAST[st];
-  }
-  $('step').onclick=function(){ st=(st<3)? st+1 : 3; draw(); };
-  $('reset').onclick=function(){ st=0; draw(); };
-  draw();
-})();
-</script>
 
 <script>
 (function(){
@@ -811,11 +477,12 @@
   const svg=$('g'); if(!svg) return;
   const NS='http://www.w3.org/2000/svg';
   const C={ink:'#1a1a2e', muted:'#6f7583', rail:'#9ab4e0', green:'#1a9e46',
-           blue:'#1a5fd0', red:'#e0301a'};
-  const YU=110, YV=210;
+           blue:'#1a5fd0', red:'#e0301a', bad:'#d13d0e'};
+  const YU=110, YV=210, HIT=510;
   // each agent's line is colored by the transaction it is executing
   const LU=[[120,430,'green'],[430,660,'blue'],[660,1040,'red']];
   const LV=[[120,560,'green'],[560,700,'blue'],[700,1040,'red']];
+  let accept=false;
   function el(t,a,txt){
     const e=document.createElementNS(NS,t);
     for(const k in a) e.setAttribute(k,a[k]);
@@ -835,6 +502,12 @@
       (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
       (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
   }
+  function cross(g,x,y,r,col){
+    [[1,1],[1,-1]].forEach(function(d){
+      g.appendChild(el('line',{x1:x-d[0]*r, y1:y-d[1]*r, x2:x+d[0]*r,
+        y2:y+d[1]*r, stroke:col, 'stroke-width':3}));
+    });
+  }
   function who(g,x,y,n){
     g.appendChild(el('rect',{x:x, y:y-19, width:118, height:38, rx:9,
       fill:C.ink}));
@@ -843,19 +516,9 @@
       'font-weight':700, fill:'#fff', 'text-anchor':'middle',
       'dominant-baseline':'middle'}, n));
   }
-  function rail(g,y,x0,x1){
-    g.appendChild(el('line',{x1:x0, y1:y, x2:x1, y2:y, stroke:C.rail,
-      'stroke-width':2}));
-  }
   function step(g,x,y,c){
     g.appendChild(el('circle',{cx:x, cy:y, r:11, fill:C[c], stroke:'#fff',
       'stroke-width':2}));
-  }
-  function msg(g,a,b,c){
-    const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
-    g.appendChild(el('line',{x1:a[0]+ux*13, y1:a[1]+uy*13,
-      x2:b[0]-ux*15, y2:b[1]-uy*15, stroke:C[c], 'stroke-width':3.4}));
-    head(g, b[0]-ux*11, b[1]-uy*11, ux, uy, C[c], 8.5);
   }
   function band(g,seg,y){
     seg.forEach(function(d){
@@ -867,11 +530,42 @@
     while(svg.firstChild) svg.removeChild(svg.firstChild);
     const g=el('g',{}); svg.appendChild(g);
     band(g,LU,YU); band(g,LV,YV);
-    msg(g,[360,YV],[510,YU],'green');
-    step(g,510,YU,'blue'); step(g,660,YU,'red');
+    // if A accepts it, the receiving step is a green step inside blue
+    if(accept)
+      g.appendChild(el('line',{x1:HIT-26, y1:YU, x2:HIT+26, y2:YU,
+        stroke:C.green, 'stroke-width':7}));
+    const ax=360, ay=YV, bx=HIT, by=YU;
+    const dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
+    // when the message is ignored, it dies just short of the step it was
+    // heading for
+    const f=0.82, kx=ax+(bx-ax)*f, ky=ay+(by-ay)*f;
+    g.appendChild(el('line',{x1:ax+ux*13, y1:ay+uy*13,
+      x2:accept? bx-ux*15 : kx-ux*30, y2:accept? by-uy*15 : ky-uy*30,
+      stroke:C.green, 'stroke-width':3.4,
+      'stroke-dasharray':accept?'none':'8 6'}));
+    if(accept) head(g, bx-ux*11, by-uy*11, ux, uy, C.green, 8.5);
+    else {
+      head(g, kx-ux*15, ky-uy*15, ux, uy, C.green, 8);
+      cross(g,kx,ky,10,C.bad);
+      tag(g,kx+16, ky+26, 'message is lost', C.bad, 12.5, 'start');
+    }
+    step(g,HIT,YU, accept?'green':'blue'); step(g,660,YU,'red');
     step(g,360,YV,'green'); step(g,560,YV,'blue'); step(g,700,YV,'red');
-    who(g,1062,YU,'Agent U'); who(g,1062,YV,'Agent V');
+    if(accept){
+      g.appendChild(el('rect',{x:HIT-70, y:YU-30, width:140, height:60, rx:12,
+        fill:'none', stroke:C.bad, 'stroke-width':2.6,
+        'stroke-dasharray':'7 5'}));
+      tag(g, HIT, YU-48, 'blue, then green, then blue at agent A', C.bad, 13);
+      tag(g, HIT, 268, 'the ids at A no longer increase, so no cut separates '+
+          'the transactions', C.bad, 13);
+    }
+    who(g,1062,YU,'Agent A'); who(g,1062,YV,'Agent B');
+    $('status').innerHTML = accept
+      ? '<span class="bad">rule 3 broken</span>'
+      : '<span class="ok">rule 3: the message is treated as lost</span>';
   }
+  $('break').onclick=function(){ accept=true; draw(); };
+  $('reset').onclick=function(){ accept=false; draw(); };
   draw();
 })();
 </script>
@@ -946,9 +640,9 @@
     if(on) step(g,HIT,YU,'red');
     else g.appendChild(el('circle',{cx:HIT, cy:YU, r:11, fill:'#fff',
       stroke:C.ink, 'stroke-width':2.6}));
-    who(g,1062,YU,'Agent U'); who(g,1062,YV,'Agent V');
+    who(g,1062,YU,'Agent A'); who(g,1062,YV,'Agent B');
     $('status').innerHTML = on
-      ? '<b>agent U starts executing the red transaction</b>'
+      ? '<b>agent A starts executing the red transaction</b>'
       : '<span class="none">a red message arrives while U is green</span>';
   }
   $('step').onclick=function(){ on=true; draw(); };
@@ -1050,85 +744,13 @@
 
 <script>
 (function(){
-  const PFX='cs_', $=function(id){return document.getElementById(PFX+id);};
-  const svg=$('g'); if(!svg) return;
-  const NS='http://www.w3.org/2000/svg';
-  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#ddd8cd', rail:'#9ab4e0',
-           blue:'#1a5fd0'};
-  const SRV=[{x:420,y:110},{x:820,y:110}], CLI=[{x:300,y:320},{x:940,y:320}];
-  function el(t,a,txt){
-    const e=document.createElementNS(NS,t);
-    for(const k in a) e.setAttribute(k,a[k]);
-    if(txt!=null) e.textContent=txt;
-    return e;
-  }
-  function tag(g,x,y,str,fill,size,anchor){
-    g.appendChild(el('text',{x:x, y:y,
-      'font-family':'ui-monospace,Menlo,Consolas,monospace',
-      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
-      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
-      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
-  }
-  function head(g,x,y,ux,uy,col,sz){
-    const s=sz||8, px=-uy, py=ux;
-    g.appendChild(el('polygon',{points:
-      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
-      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
-  }
-  // one dataflow graph: agent lines, steps, and the messages between them
-  function graph(g, ROWS, ST, MSG, x0, x1){
-    ROWS.forEach(function(y){
-      g.appendChild(el('line',{x1:x0, y1:y, x2:x1, y2:y, stroke:C.rail,
-        'stroke-width':2}));
-    });
-    MSG.forEach(function(m){
-      const a=ST[m[0]], b=ST[m[1]], lost=(m[2]==='lost');
-      const ax=a.x, ay=ROWS[a.r], bx=b.x, by=lost? b.y : ROWS[b.r];
-      const dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L;
-      g.appendChild(el('line',{x1:ax+ux*13, y1:ay+uy*13,
-        x2:bx-ux*15, y2:by-uy*15, stroke:C[a.c], 'stroke-width':3.4,
-        'stroke-dasharray':lost?'9 7':'none'}));
-      head(g, bx-ux*11, by-uy*11, ux, uy, C[a.c], 8.5);
-    });
-    for(const k in ST){
-      const d=ST[k], y=(d.y!==undefined)? d.y : ROWS[d.r];
-      g.appendChild(el('circle',{cx:d.x, cy:y, r:11, fill:C[d.c],
-        stroke:'#fff', 'stroke-width':2}));
-    }
-  }
-  function box(g,d,label,sub){
-    g.appendChild(el('rect',{x:d.x-120, y:d.y-44, width:240, height:88, rx:14,
-      fill:'#fff', stroke:C.ink, 'stroke-width':2.6}));
-    tag(g, d.x, d.y-10, label, C.ink, 19);
-    tag(g, d.x, d.y+16, sub, C.muted, 13);
-  }
-  function draw(){
-    while(svg.firstChild) svg.removeChild(svg.firstChild);
-    const g=el('g',{}); svg.appendChild(g);
-    CLI.forEach(function(c){ SRV.forEach(function(s){
-      const dx=s.x-c.x, dy=(s.y+44)-(c.y-44), L=Math.hypot(dx,dy);
-      const ux=dx/L, uy=dy/L;
-      g.appendChild(el('line',{x1:c.x+ux*16, y1:c.y-44+uy*16,
-        x2:s.x-ux*16, y2:s.y+44-uy*16, stroke:C.muted, 'stroke-width':2.4}));
-      head(g, c.x+ux*10, c.y-44+uy*10, -ux, -uy, C.muted, 7);
-      head(g, s.x-ux*10, s.y+44-uy*10, ux, uy, C.muted, 7);
-    }); });
-    SRV.forEach(function(d){ box(g,d,'Server','Acceptor'); });
-    CLI.forEach(function(d){ box(g,d,'Client','Proposer'); });
-  }
-  draw();
-})();
-</script>
-
-<script>
-(function(){
   const PFX='two_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
   const NS='http://www.w3.org/2000/svg';
   const blue='blue', red='red';
   const C={ink:'#1a1a2e', muted:'#6f7583', rail:'#9ab4e0',
            blue:'#1a5fd0', red:'#e0301a', lost:'#1a1a2e'};
-  // slide 6: the same graph twice -- interspersed, then permuted
+  // the same computation twice: interspersed above, serial below
   const ROWS_T=[70,112,154,196,238], ROWS_B=[400,442,484,526,568];
   const TOP={b1:{x:120,r:4,c:blue}, b2:{x:237,r:2,c:blue}, r1:{x:289,r:4,c:red},
              r2:{x:385,r:0,c:red},  b3:{x:442,r:1,c:blue}, b4:{x:589,r:3,c:blue},
@@ -1141,8 +763,11 @@
              lost:{x:503,y:596,c:'lost'}};
   const MSG=[['b1','b2'],['b1','b3'],['r1','r2'],['r2','r3'],['b3','b4'],
              ['b4','b5'],['r3','r4'],['b2','lost','lost']];
-  function el(t,a,txt){
-    const e=document.createElementNS(NS,t);
+  const X0=60, X1=1180;
+  let t=0, raf=null;                  // t: 0 as drawn above, 1 serial
+  function xOf(k){ return TOP[k].x + (BOT[k].x - TOP[k].x)*t; }
+  function el(tg,a,txt){
+    const e=document.createElementNS(NS,tg);
     for(const k in a) e.setAttribute(k,a[k]);
     if(txt!=null) e.textContent=txt;
     return e;
@@ -1160,40 +785,62 @@
       (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
       (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
   }
-  // one dataflow graph: agent lines, steps, and the messages between them
-  function graph(g, ROWS, ST, MSG, x0, x1){
-    ROWS.forEach(function(y){
-      g.appendChild(el('line',{x1:x0, y1:y, x2:x1, y2:y, stroke:C.rail,
+  // one dataflow graph. xf gives the x of a step, so the top one can move.
+  function graph(g, ROWS, ST, xf){
+    ROWS.forEach(function(y,i){
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y, stroke:C.rail,
         'stroke-width':2}));
+      tag(g, 24, y, 'ABCDE'[i], C.muted, 15, 'end');
     });
     MSG.forEach(function(m){
       const a=ST[m[0]], b=ST[m[1]], lost=(m[2]==='lost');
-      const ax=a.x, ay=ROWS[a.r], bx=b.x, by=lost? b.y : ROWS[b.r];
+      const ax=xf(m[0]), ay=ROWS[a.r];
+      const bx=lost? ST[m[1]].x : xf(m[1]), by=lost? b.y : ROWS[b.r];
       const dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L;
-      g.appendChild(el('line',{x1:ax+ux*13, y1:ay+uy*13,
-        x2:bx-ux*15, y2:by-uy*15, stroke:C[a.c], 'stroke-width':3.4,
+      g.appendChild(el('line',{x1:ax+ux*13, y1:ay+uy*13, x2:bx-ux*15,
+        y2:by-uy*15, stroke:C[a.c], 'stroke-width':3.4,
         'stroke-dasharray':lost?'9 7':'none'}));
       head(g, bx-ux*11, by-uy*11, ux, uy, C[a.c], 8.5);
     });
     for(const k in ST){
       const d=ST[k], y=(d.y!==undefined)? d.y : ROWS[d.r];
-      g.appendChild(el('circle',{cx:d.x, cy:y, r:11, fill:C[d.c],
+      const x=(d.y!==undefined)? d.x : xf(k);
+      g.appendChild(el('circle',{cx:x, cy:y, r:11, fill:C[d.c],
         stroke:'#fff', 'stroke-width':2}));
     }
   }
   function draw(){
     while(svg.firstChild) svg.removeChild(svg.firstChild);
     const g=el('g',{}); svg.appendChild(g);
-    graph(g, ROWS_T, TOP, MSG, 60, 1180);
-    // the bars of the lower graph, and what they separate
+    graph(g, ROWS_T, TOP, xOf);
     [48, 804, 1131].forEach(function(x){
       g.appendChild(el('rect',{x:x-9, y:352, width:18, height:264, rx:3,
         fill:C.ink}));
     });
     tag(g, 426, 362, 'blue', C.blue, 17);
     tag(g, 967, 362, 'red',  C.red, 17);
-    graph(g, ROWS_B, BOT, MSG, 60, 1180);
+    graph(g, ROWS_B, BOT, function(k){return BOT[k].x;});
+    $('status').innerHTML = (t>0.99)
+      ? '<b>the red events are now to the right of the blue ones</b>'
+      : (t>0.001 ? '<b>sliding</b>'
+                 : '<span class="none">press Play</span>');
   }
+  function play(){
+    if(raf) cancelAnimationFrame(raf);
+    t=0; draw();
+    const t0=Date.now();
+    (function step(){
+      const q=Math.min(1,(Date.now()-t0)/1400);
+      t=(q<.5? 2*q*q : 1-Math.pow(-2*q+2,2)/2);
+      draw();
+      if(q<1) raf=requestAnimationFrame(step); else raf=null;
+    })();
+  }
+  $('play').onclick=play;
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    raf=null; t=0; draw();
+  };
   draw();
 })();
 </script>
@@ -1205,8 +852,7 @@
   const NS='http://www.w3.org/2000/svg';
   const blue='blue', red='red';
   const C={ink:'#1a1a2e', muted:'#6f7583', rail:'#9ab4e0',
-           blue:'#1a5fd0', red:'#e0301a', lost:'#1a1a2e'};
-  // slide 7: the bottom agent runs blue, red, blue
+           blue:'#1a5fd0', red:'#e0301a', lost:'#1a1a2e', bad:'#d13d0e'};
   const ROWS=[70,112,154,196,238];
   const ST={b1:{x:120,r:4,c:blue}, b2:{x:235,r:2,c:blue}, r1:{x:289,r:4,c:red},
             r2:{x:383,r:0,c:red},  b3:{x:441,r:1,c:blue}, b4:{x:590,r:4,c:blue},
@@ -1214,17 +860,26 @@
             lost:{x:505,y:266,c:'lost'}};
   const MSG=[['b1','b2'],['b1','b3'],['r1','r2'],['r2','r3'],['b3','b4'],
              ['b4','b5'],['b2','lost','lost']];
-  function el(t,a,txt){
+  const X0=60, X1=1180, EY=ROWS[4];
+  // agent E runs blue, red, blue. Put the blue steps in the past and the edge
+  // from its second step to its third runs from the future into the past; put
+  // the red ones in the past and it is the edge from the first to the second.
+  // the blue sign sits nearer E's red step, to keep clear of the dotted
+  // message that crosses E's line further along
+  const SIGN={blue:ST.r1.x+60, red:(ST.b1.x+ST.r1.x)/2};
+  let mode=null, a=0, raf=null;
+  function el(t,at,txt){
     const e=document.createElementNS(NS,t);
-    for(const k in a) e.setAttribute(k,a[k]);
+    for(const k in at) e.setAttribute(k,at[k]);
     if(txt!=null) e.textContent=txt;
     return e;
   }
-  function tag(g,x,y,str,fill,size,anchor){
+  function tag(g,x,y,str,fill,size,anchor,op){
     g.appendChild(el('text',{x:x, y:y,
       'font-family':'ui-monospace,Menlo,Consolas,monospace',
       'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
       'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      opacity:(op===undefined?1:op),
       stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
   }
   function head(g,x,y,ux,uy,col,sz){
@@ -1233,32 +888,72 @@
       (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
       (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
   }
-  // one dataflow graph: agent lines, steps, and the messages between them
-  function graph(g, ROWS, ST, MSG, x0, x1){
-    ROWS.forEach(function(y){
-      g.appendChild(el('line',{x1:x0, y1:y, x2:x1, y2:y, stroke:C.rail,
+  function stop(g,x,y,k){
+    // an octagon, drawn from the middle outwards as k goes 0 to 1
+    const r=23*k, pts=[];
+    for(let i=0;i<8;i++){
+      const th=Math.PI/8 + i*Math.PI/4;
+      pts.push((x+r*Math.cos(th)).toFixed(1)+','+(y+r*Math.sin(th)).toFixed(1));
+    }
+    g.appendChild(el('polygon',{points:pts.join(' '), fill:C.bad,
+      stroke:'#fff', 'stroke-width':3}));
+    if(k>0.6) tag(g, x, y+1, 'STOP', '#fff', 9.5*k, 'middle', (k-0.6)/0.4);
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    ROWS.forEach(function(y,i){
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y, stroke:C.rail,
         'stroke-width':2}));
+      tag(g, 36, y, 'ABCDE'[i], C.muted, 15, 'end');
     });
     MSG.forEach(function(m){
-      const a=ST[m[0]], b=ST[m[1]], lost=(m[2]==='lost');
-      const ax=a.x, ay=ROWS[a.r], bx=b.x, by=lost? b.y : ROWS[b.r];
+      const p=ST[m[0]], q=ST[m[1]], lost=(m[2]==='lost');
+      const ax=p.x, ay=ROWS[p.r], bx=q.x, by=lost? q.y : ROWS[q.r];
       const dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L;
-      g.appendChild(el('line',{x1:ax+ux*13, y1:ay+uy*13,
-        x2:bx-ux*15, y2:by-uy*15, stroke:C[a.c], 'stroke-width':3.4,
+      g.appendChild(el('line',{x1:ax+ux*13, y1:ay+uy*13, x2:bx-ux*15,
+        y2:by-uy*15, stroke:C[p.c], 'stroke-width':3.4,
         'stroke-dasharray':lost?'9 7':'none'}));
-      head(g, bx-ux*11, by-uy*11, ux, uy, C[a.c], 8.5);
+      head(g, bx-ux*11, by-uy*11, ux, uy, C[p.c], 8.5);
     });
     for(const k in ST){
       const d=ST[k], y=(d.y!==undefined)? d.y : ROWS[d.r];
       g.appendChild(el('circle',{cx:d.x, cy:y, r:11, fill:C[d.c],
         stroke:'#fff', 'stroke-width':2}));
     }
+    if(mode){
+      const x=SIGN[mode];
+      stop(g, x, EY, a);
+      if(a>0.5){
+        const op=(a-0.5)/0.5, bx=x+90;
+        g.appendChild(el('line',{x1:x, y1:EY+24, x2:bx, y2:288,
+          stroke:C.bad, 'stroke-width':1.6, opacity:op}));
+        g.appendChild(el('rect',{x:bx-125, y:288, width:250, height:32, rx:9,
+          fill:'#fff', stroke:C.bad, 'stroke-width':2.2, opacity:op}));
+        tag(g, bx, 304, 'edge from future to past', C.bad, 13.5, 'middle', op);
+      }
+    }
+    $('status').innerHTML = mode
+      ? '<span class="bad">past = '+mode+' steps is not a cut</span>'
+      : '<span class="none">press a button</span>';
   }
-  function draw(){
-    while(svg.firstChild) svg.removeChild(svg.firstChild);
-    const g=el('g',{}); svg.appendChild(g);
-    graph(g, ROWS, ST, MSG, 60, 1180);
+  function pop(){
+    if(raf) cancelAnimationFrame(raf);
+    a=0; draw();
+    const t0=Date.now();
+    (function step(){
+      const q=Math.min(1,(Date.now()-t0)/420);
+      a=1-Math.pow(1-q,3);
+      draw();
+      if(q<1) raf=requestAnimationFrame(step); else raf=null;
+    })();
   }
+  $('blue').onclick=function(){ mode='blue'; pop(); };
+  $('red').onclick=function(){ mode='red'; pop(); };
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    raf=null; mode=null; a=0; draw();
+  };
   draw();
 })();
 </script>
@@ -1270,22 +965,29 @@
   const NS='http://www.w3.org/2000/svg';
   const blue='blue', red='red';
   const C={ink:'#1a1a2e', muted:'#6f7583', rail:'#9ab4e0',
-           blue:'#1a5fd0', red:'#e0301a', lost:'#1a1a2e'};
+           blue:'#1a5fd0', red:'#e0301a', bad:'#d13d0e'};
   const ROWS=[110,200];
   const ST={r1:{x:300,r:0,c:red},  b2:{x:760,r:0,c:blue},
             b1:{x:300,r:1,c:blue}, r2:{x:760,r:1,c:red}};
   const MSG=[['r1','r2'],['b1','b2']];
-  function el(t,a,txt){
+  const X0=120, X1=1120;
+  // put the blue steps in the past and agent A has a step in the past after a
+  // step in the future; put the red ones in the past and it is agent B.
+  const SIGN={blue:{x:(ST.r1.x+ST.b2.x)/2, r:0},
+              red: {x:(ST.b1.x+ST.r2.x)/2, r:1}};
+  let mode=null, a=0, raf=null;
+  function el(t,at,txt){
     const e=document.createElementNS(NS,t);
-    for(const k in a) e.setAttribute(k,a[k]);
+    for(const k in at) e.setAttribute(k,at[k]);
     if(txt!=null) e.textContent=txt;
     return e;
   }
-  function tag(g,x,y,str,fill,size,anchor){
+  function tag(g,x,y,str,fill,size,anchor,op){
     g.appendChild(el('text',{x:x, y:y,
       'font-family':'ui-monospace,Menlo,Consolas,monospace',
       'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
       'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      opacity:(op===undefined?1:op),
       stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
   }
   function head(g,x,y,ux,uy,col,sz){
@@ -1294,295 +996,71 @@
       (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
       (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
   }
-  // one dataflow graph: agent lines, steps, and the messages between them
-  function graph(g, ROWS, ST, MSG, x0, x1){
-    ROWS.forEach(function(y){
-      g.appendChild(el('line',{x1:x0, y1:y, x2:x1, y2:y, stroke:C.rail,
-        'stroke-width':2}));
-    });
-    MSG.forEach(function(m){
-      const a=ST[m[0]], b=ST[m[1]], lost=(m[2]==='lost');
-      const ax=a.x, ay=ROWS[a.r], bx=b.x, by=lost? b.y : ROWS[b.r];
-      const dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L;
-      g.appendChild(el('line',{x1:ax+ux*13, y1:ay+uy*13,
-        x2:bx-ux*15, y2:by-uy*15, stroke:C[a.c], 'stroke-width':3.4,
-        'stroke-dasharray':lost?'9 7':'none'}));
-      head(g, bx-ux*11, by-uy*11, ux, uy, C[a.c], 8.5);
-    });
-    for(const k in ST){
-      const d=ST[k], y=(d.y!==undefined)? d.y : ROWS[d.r];
-      g.appendChild(el('circle',{cx:d.x, cy:y, r:11, fill:C[d.c],
-        stroke:'#fff', 'stroke-width':2}));
+  function stop(g,x,y,k){
+    const r=23*k, pts=[];
+    for(let i=0;i<8;i++){
+      const th=Math.PI/8 + i*Math.PI/4;
+      pts.push((x+r*Math.cos(th)).toFixed(1)+','+(y+r*Math.sin(th)).toFixed(1));
     }
+    g.appendChild(el('polygon',{points:pts.join(' '), fill:C.bad,
+      stroke:'#fff', 'stroke-width':3}));
+    if(k>0.6) tag(g, x, y+1, 'STOP', '#fff', 9.5*k, 'middle', (k-0.6)/0.4);
   }
   function draw(){
     while(svg.firstChild) svg.removeChild(svg.firstChild);
     const g=el('g',{}); svg.appendChild(g);
-    graph(g, ROWS, ST, MSG, 120, 1120);
-  }
-  draw();
-})();
-</script>
-
-<script>
-(function(){
-  const PFX='c2_', $=function(id){return document.getElementById(PFX+id);};
-  const svg=$('g'); if(!svg) return;
-  const NS='http://www.w3.org/2000/svg';
-  const blue='blue', red='red';
-  const C={ink:'#1a1a2e', muted:'#6f7583', rail:'#9ab4e0',
-           blue:'#1a5fd0', red:'#e0301a', lost:'#1a1a2e'};
-  const ROWS=[110,200];
-  const ST={r1:{x:300,r:0,c:red},  b2:{x:760,r:0,c:blue},
-            b1:{x:300,r:1,c:blue}, r2:{x:760,r:1,c:red}};
-  const MSG=[['r1','r2'],['b1','b2']];
-  function el(t,a,txt){
-    const e=document.createElementNS(NS,t);
-    for(const k in a) e.setAttribute(k,a[k]);
-    if(txt!=null) e.textContent=txt;
-    return e;
-  }
-  function tag(g,x,y,str,fill,size,anchor){
-    g.appendChild(el('text',{x:x, y:y,
-      'font-family':'ui-monospace,Menlo,Consolas,monospace',
-      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
-      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
-      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
-  }
-  function head(g,x,y,ux,uy,col,sz){
-    const s=sz||8, px=-uy, py=ux;
-    g.appendChild(el('polygon',{points:
-      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
-      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
-  }
-  // one dataflow graph: agent lines, steps, and the messages between them
-  function graph(g, ROWS, ST, MSG, x0, x1){
-    ROWS.forEach(function(y){
-      g.appendChild(el('line',{x1:x0, y1:y, x2:x1, y2:y, stroke:C.rail,
+    ROWS.forEach(function(y,i){
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y, stroke:C.rail,
         'stroke-width':2}));
+      tag(g, 96, y, 'AB'[i], C.muted, 15, 'end');
     });
     MSG.forEach(function(m){
-      const a=ST[m[0]], b=ST[m[1]], lost=(m[2]==='lost');
-      const ax=a.x, ay=ROWS[a.r], bx=b.x, by=lost? b.y : ROWS[b.r];
+      const p=ST[m[0]], q=ST[m[1]];
+      const ax=p.x, ay=ROWS[p.r], bx=q.x, by=ROWS[q.r];
       const dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L;
-      g.appendChild(el('line',{x1:ax+ux*13, y1:ay+uy*13,
-        x2:bx-ux*15, y2:by-uy*15, stroke:C[a.c], 'stroke-width':3.4,
-        'stroke-dasharray':lost?'9 7':'none'}));
-      head(g, bx-ux*11, by-uy*11, ux, uy, C[a.c], 8.5);
+      g.appendChild(el('line',{x1:ax+ux*13, y1:ay+uy*13, x2:bx-ux*15,
+        y2:by-uy*15, stroke:C[p.c], 'stroke-width':3.4}));
+      head(g, bx-ux*11, by-uy*11, ux, uy, C[p.c], 8.5);
     });
     for(const k in ST){
-      const d=ST[k], y=(d.y!==undefined)? d.y : ROWS[d.r];
-      g.appendChild(el('circle',{cx:d.x, cy:y, r:11, fill:C[d.c],
+      const d=ST[k];
+      g.appendChild(el('circle',{cx:d.x, cy:ROWS[d.r], r:11, fill:C[d.c],
         stroke:'#fff', 'stroke-width':2}));
     }
-  }
-  function draw(){
-    while(svg.firstChild) svg.removeChild(svg.firstChild);
-    const g=el('g',{}); svg.appendChild(g);
-    graph(g, ROWS, ST, MSG, 120, 1120);
-  }
-  draw();
-})();
-</script>
-
-<script>
-(function(){
-  const PFX='c1_', $=function(id){return document.getElementById(PFX+id);};
-  const svg=$('g'); if(!svg) return;
-  const NS='http://www.w3.org/2000/svg';
-  const blue='blue', red='red';
-  const C={ink:'#1a1a2e', muted:'#6f7583', rail:'#9ab4e0',
-           blue:'#1a5fd0', red:'#e0301a', lost:'#1a1a2e'};
-  // slide 9: the same five agents, steps only
-  const ROWS=[60,102,144,186,228];
-  const ST={a:{x:379,r:0,c:red},
-            b:{x:426,r:1,c:blue}, c:{x:925,r:1,c:blue}, d:{x:995,r:1,c:red},
-            e:{x:257,r:2,c:blue},
-            f:{x:553,r:3,c:blue}, h:{x:834,r:3,c:red},
-            i:{x:150,r:4,c:blue}, j:{x:301,r:4,c:red}};
-  function el(t,a,txt){
-    const e=document.createElementNS(NS,t);
-    for(const k in a) e.setAttribute(k,a[k]);
-    if(txt!=null) e.textContent=txt;
-    return e;
-  }
-  function tag(g,x,y,str,fill,size,anchor){
-    g.appendChild(el('text',{x:x, y:y,
-      'font-family':'ui-monospace,Menlo,Consolas,monospace',
-      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
-      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
-      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
-  }
-  function head(g,x,y,ux,uy,col,sz){
-    const s=sz||8, px=-uy, py=ux;
-    g.appendChild(el('polygon',{points:
-      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
-      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
-  }
-  // one dataflow graph: agent lines, steps, and the messages between them
-  function graph(g, ROWS, ST, MSG, x0, x1){
-    ROWS.forEach(function(y){
-      g.appendChild(el('line',{x1:x0, y1:y, x2:x1, y2:y, stroke:C.rail,
-        'stroke-width':2}));
-    });
-    MSG.forEach(function(m){
-      const a=ST[m[0]], b=ST[m[1]], lost=(m[2]==='lost');
-      const ax=a.x, ay=ROWS[a.r], bx=b.x, by=lost? b.y : ROWS[b.r];
-      const dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L;
-      g.appendChild(el('line',{x1:ax+ux*13, y1:ay+uy*13,
-        x2:bx-ux*15, y2:by-uy*15, stroke:C[a.c], 'stroke-width':3.4,
-        'stroke-dasharray':lost?'9 7':'none'}));
-      head(g, bx-ux*11, by-uy*11, ux, uy, C[a.c], 8.5);
-    });
-    for(const k in ST){
-      const d=ST[k], y=(d.y!==undefined)? d.y : ROWS[d.r];
-      g.appendChild(el('circle',{cx:d.x, cy:y, r:11, fill:C[d.c],
-        stroke:'#fff', 'stroke-width':2}));
+    if(mode){
+      const sg=SIGN[mode], y=ROWS[sg.r];
+      stop(g, sg.x, y, a);
+      if(a>0.5){
+        const op=(a-0.5)/0.5, by=(sg.r===0)? 44 : 266;
+        g.appendChild(el('line',{x1:sg.x, y1:y+(sg.r===0?-24:24), x2:sg.x,
+          y2:(sg.r===0)? by+16 : by-16, stroke:C.bad, 'stroke-width':1.6,
+          opacity:op}));
+        g.appendChild(el('rect',{x:sg.x-125, y:by-16, width:250, height:32,
+          rx:9, fill:'#fff', stroke:C.bad, 'stroke-width':2.2, opacity:op}));
+        tag(g, sg.x, by, 'edge from future to past', C.bad, 13.5, 'middle', op);
+      }
     }
+    $('status').innerHTML = mode
+      ? '<span class="bad">past = '+mode+' steps is not a cut</span>'
+      : '<span class="none">press a button</span>';
   }
-  function draw(){
-    while(svg.firstChild) svg.removeChild(svg.firstChild);
-    const g=el('g',{}); svg.appendChild(g);
-    graph(g, ROWS, ST, [], 100, 1100);
+  function pop(){
+    if(raf) cancelAnimationFrame(raf);
+    a=0; draw();
+    const t0=Date.now();
+    (function step(){
+      const q=Math.min(1,(Date.now()-t0)/420);
+      a=1-Math.pow(1-q,3);
+      draw();
+      if(q<1) raf=requestAnimationFrame(step); else raf=null;
+    })();
   }
-  draw();
-})();
-</script>
-
-<script>
-(function(){
-  const PFX='c3_', $=function(id){return document.getElementById(PFX+id);};
-  const svg=$('g'); if(!svg) return;
-  const NS='http://www.w3.org/2000/svg';
-  const blue='blue', red='red';
-  const C={ink:'#1a1a2e', muted:'#6f7583', rail:'#9ab4e0',
-           blue:'#1a5fd0', red:'#e0301a', lost:'#1a1a2e'};
-  const ROWS=[70,112,154,196,238];
-  const ST={b1:{x:120,r:4,c:blue}, b2:{x:237,r:2,c:blue}, r1:{x:289,r:4,c:red},
-            r2:{x:385,r:0,c:red},  b3:{x:442,r:1,c:blue}, b4:{x:589,r:3,c:blue},
-            r3:{x:914,r:3,c:red},  b5:{x:1024,r:1,c:blue},
-            r4:{x:1100,r:1,c:red}, lost:{x:503,y:266,c:'lost'}};
-  const MSG=[['b1','b2'],['b1','b3'],['r1','r2'],['r2','r3'],['b3','b4'],
-             ['b4','b5'],['r3','r4'],['b2','lost','lost']];
-  function el(t,a,txt){
-    const e=document.createElementNS(NS,t);
-    for(const k in a) e.setAttribute(k,a[k]);
-    if(txt!=null) e.textContent=txt;
-    return e;
-  }
-  function tag(g,x,y,str,fill,size,anchor){
-    g.appendChild(el('text',{x:x, y:y,
-      'font-family':'ui-monospace,Menlo,Consolas,monospace',
-      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
-      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
-      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
-  }
-  function head(g,x,y,ux,uy,col,sz){
-    const s=sz||8, px=-uy, py=ux;
-    g.appendChild(el('polygon',{points:
-      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
-      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
-  }
-  // one dataflow graph: agent lines, steps, and the messages between them
-  function graph(g, ROWS, ST, MSG, x0, x1){
-    ROWS.forEach(function(y){
-      g.appendChild(el('line',{x1:x0, y1:y, x2:x1, y2:y, stroke:C.rail,
-        'stroke-width':2}));
-    });
-    MSG.forEach(function(m){
-      const a=ST[m[0]], b=ST[m[1]], lost=(m[2]==='lost');
-      const ax=a.x, ay=ROWS[a.r], bx=b.x, by=lost? b.y : ROWS[b.r];
-      const dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L;
-      g.appendChild(el('line',{x1:ax+ux*13, y1:ay+uy*13,
-        x2:bx-ux*15, y2:by-uy*15, stroke:C[a.c], 'stroke-width':3.4,
-        'stroke-dasharray':lost?'9 7':'none'}));
-      head(g, bx-ux*11, by-uy*11, ux, uy, C[a.c], 8.5);
-    });
-    for(const k in ST){
-      const d=ST[k], y=(d.y!==undefined)? d.y : ROWS[d.r];
-      g.appendChild(el('circle',{cx:d.x, cy:y, r:11, fill:C[d.c],
-        stroke:'#fff', 'stroke-width':2}));
-    }
-  }
-  function draw(){
-    while(svg.firstChild) svg.removeChild(svg.firstChild);
-    const g=el('g',{}); svg.appendChild(g);
-    graph(g, ROWS, ST, MSG, 60, 1180);
-  }
-  draw();
-})();
-</script>
-
-<script>
-(function(){
-  const PFX='prt_', $=function(id){return document.getElementById(PFX+id);};
-  const svg=$('g'); if(!svg) return;
-  const NS='http://www.w3.org/2000/svg';
-  const blue='blue', red='red';
-  const C={ink:'#1a1a2e', muted:'#6f7583', rail:'#9ab4e0',
-           blue:'#1a5fd0', red:'#e0301a', lost:'#1a1a2e'};
-  const ROWS=[80,122,164,206,248];
-  const ST={b1:{x:120,r:4,c:blue}, b2:{x:237,r:2,c:blue}, b3:{x:442,r:1,c:blue},
-            b4:{x:539,r:3,c:blue}, b5:{x:735,r:1,c:blue},
-            r1:{x:871,r:4,c:red},  r2:{x:968,r:0,c:red},
-            r3:{x:1032,r:3,c:red}, r4:{x:1085,r:1,c:red},
-            lost:{x:503,y:276,c:'lost'}};
-  const MSG=[['b1','b2'],['b1','b3'],['r1','r2'],['r2','r3'],['b3','b4'],
-             ['b4','b5'],['r3','r4'],['b2','lost','lost']];
-  function el(t,a,txt){
-    const e=document.createElementNS(NS,t);
-    for(const k in a) e.setAttribute(k,a[k]);
-    if(txt!=null) e.textContent=txt;
-    return e;
-  }
-  function tag(g,x,y,str,fill,size,anchor){
-    g.appendChild(el('text',{x:x, y:y,
-      'font-family':'ui-monospace,Menlo,Consolas,monospace',
-      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
-      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
-      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
-  }
-  function head(g,x,y,ux,uy,col,sz){
-    const s=sz||8, px=-uy, py=ux;
-    g.appendChild(el('polygon',{points:
-      (x)+','+(y)+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
-      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
-  }
-  // one dataflow graph: agent lines, steps, and the messages between them
-  function graph(g, ROWS, ST, MSG, x0, x1){
-    ROWS.forEach(function(y){
-      g.appendChild(el('line',{x1:x0, y1:y, x2:x1, y2:y, stroke:C.rail,
-        'stroke-width':2}));
-    });
-    MSG.forEach(function(m){
-      const a=ST[m[0]], b=ST[m[1]], lost=(m[2]==='lost');
-      const ax=a.x, ay=ROWS[a.r], bx=b.x, by=lost? b.y : ROWS[b.r];
-      const dx=bx-ax, dy=by-ay, L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L;
-      g.appendChild(el('line',{x1:ax+ux*13, y1:ay+uy*13,
-        x2:bx-ux*15, y2:by-uy*15, stroke:C[a.c], 'stroke-width':3.4,
-        'stroke-dasharray':lost?'9 7':'none'}));
-      head(g, bx-ux*11, by-uy*11, ux, uy, C[a.c], 8.5);
-    });
-    for(const k in ST){
-      const d=ST[k], y=(d.y!==undefined)? d.y : ROWS[d.r];
-      g.appendChild(el('circle',{cx:d.x, cy:y, r:11, fill:C[d.c],
-        stroke:'#fff', 'stroke-width':2}));
-    }
-  }
-  function draw(){
-    while(svg.firstChild) svg.removeChild(svg.firstChild);
-    const g=el('g',{}); svg.appendChild(g);
-    [48, 804, 1131].forEach(function(x){
-      g.appendChild(el('rect',{x:x-9, y:40, width:18, height:264, rx:3,
-        fill:C.ink}));
-    });
-    graph(g, ROWS, ST, MSG, 60, 1180);
-    tag(g, 48, 330, 'past_0 = {}', C.muted, 14);
-    tag(g, 804, 330, 'past_1 = the blue steps', C.blue, 14);
-    tag(g, 1131, 330, 'past_2', C.red, 14);
-    tag(g, 426, 56, 'blue', C.blue, 17);
-    tag(g, 967, 56, 'red',  C.red, 17);
-  }
+  $('blue').onclick=function(){ mode='blue'; pop(); };
+  $('red').onclick=function(){ mode='red'; pop(); };
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    raf=null; mode=null; a=0; draw();
+  };
   draw();
 })();
 </script>
