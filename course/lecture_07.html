@@ -100,6 +100,10 @@
   ul.cuts{margin:0 0 16px; padding-left:22px; color:var(--body);
           font-family:var(--mono); font-size:14.5px}
   ul.cuts li{margin:0 0 6px}
+  pre.code{margin:16px 0 18px; padding:14px 18px; overflow-x:auto;
+    background:#fff; border:1px solid var(--line);
+    border-left:4px solid var(--ink); border-radius:0 10px 10px 0;
+    font:14px/1.6 var(--mono); color:var(--ink)}
   /* the line under the title of the lecture: a subtitle, not a section */
   header.top h2{margin:-2px 0 20px; padding:0; border:0;
     font-family:var(--display); font-weight:600; font-size:22px;
@@ -462,7 +466,42 @@ a message it appends T to the message.
   past are from past.
 </p>
 
+<h3>Consequence of serializability</h3>
+<p>
+When transactions of a computation are serializable, the dataflow graph is
+one in which transactions are executed sequentially. So, the computation of 
+each agent is the same as one obtained by executing the following loop where
+L is the list of transaction ids in increasing order.
+</p>
 
+<pre class="code">for i in L: execute transaction with id i</pre>
+
+<p>
+So, instead of studying computations in which events from different transactions
+may be interspersed we need only study computations in which transactions are
+executed sequentially.
+</p>
+
+  <figure class="fig wideout">
+    <svg id="seq_g" viewBox="0 0 1240 330" role="img"
+         aria-label="Five agents running four transactions with their events interspersed, and the same computation with the four transactions executed one after another"></svg>
+
+    <div class="ctrls">
+      <button id="seq_play" class="primary">Play</button>
+      <button id="seq_reset">Reset</button>
+      <span class="status" id="seq_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 7. What serializability gives us.</b>
+      The diagram shows a computation with five agents and four transactions &mdash; 
+      blue, red, green, magenta &mdash; with their events interspersed. 
+      Messages are not shown. 
+      Press <i>Play</i>. While the dataflow graph remains unchanged, 
+      the events slide into four consecutive blocks, one transaction at a time.
+      Blocks are separated by consistent cuts.
+    </figcaption>
+  </figure>
 <p>
   <a href="lecture_08.html">Next class: the Paxos algorithm</a>
 </p>
@@ -470,6 +509,114 @@ a message it appends T to the message.
 
 </div>
 
+
+<script>
+(function(){
+  const PFX='seq_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', rail:'#9ab4e0',
+           blue:'#1a5fd0', red:'#e0301a', green:'#1a9e46', magenta:'#b02a8f'};
+  const ORD=['blue','red','green','magenta'];
+  const ROWS=[80,122,164,206,248], X0=60, X1=1180;
+  // Each agent's events, in the order it executes them. The transaction ids
+  // never decrease along an agent -- conditions 1 and 2 -- so the whole
+  // computation can be put in transaction order.
+  const A=[
+    {x:[120,210,330,470,640,840,1010],
+     c:['blue','blue','red','red','green','magenta','magenta']},
+    {x:[150,290,380,520,700,880,1060],
+     c:['blue','red','red','green','green','green','magenta']},
+    {x:[130,250,420,560,760,950],
+     c:['blue','blue','blue','red','green','magenta']},
+    {x:[180,310,480,620,820,1000],
+     c:['red','red','green','green','magenta','magenta']},
+    {x:[200,360,540,730,930],
+     c:['blue','red','green','green','magenta']}];
+  const EV=[];
+  A.forEach(function(d,a){ d.x.forEach(function(x,i){
+    EV.push({a:a, x:x, c:d.c[i]}); }); });
+  // where every event goes once the transactions are laid out one after another
+  const GAP=38, STEP=(1060-3*GAP)/(EV.length-1);
+  const BAR=[], MID=[];
+  (function(){
+    const sorted=EV.slice().sort(function(p,q){
+      const d=ORD.indexOf(p.c)-ORD.indexOf(q.c);
+      return d? d : p.x-q.x; });
+    let cur=90, prev=null, start=90;
+    sorted.forEach(function(e){
+      if(prev!==null && e.c!==prev){
+        // halfway between the last event of this transaction and the
+        // first of the next
+        BAR.push(cur - STEP + (GAP+STEP)/2);
+        MID.push([start, cur-STEP, prev]);
+        cur+=GAP; start=cur;
+      }
+      e.sx=cur; cur+=STEP; prev=e.c;
+    });
+    MID.push([start, cur-STEP, prev]);
+  })();
+  let t=0, raf=null;
+  function xOf(e){ return e.x + (e.sx - e.x)*t; }
+  function el(tg,at,txt){
+    const e=document.createElementNS(NS,tg);
+    for(const k in at) e.setAttribute(k,at[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor,op){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      opacity:(op===undefined?1:op),
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    if(t>0.01){
+      BAR.forEach(function(x){
+        g.appendChild(el('rect',{x:x-8, y:56, width:16, height:216, rx:3,
+          fill:C.ink, opacity:t}));
+      });
+      MID.forEach(function(m){
+        tag(g, (m[0]+m[1])/2, 40, m[2], C[m[2]], 16, 'middle', t);
+      });
+    }
+    ROWS.forEach(function(y,i){
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y, stroke:C.rail,
+        'stroke-width':2}));
+      tag(g, 36, y, 'ABCDE'[i], C.muted, 15, 'end');
+    });
+    EV.forEach(function(e){
+      g.appendChild(el('circle',{cx:xOf(e), cy:ROWS[e.a], r:9, fill:C[e.c],
+        stroke:'#fff', 'stroke-width':2}));
+    });
+    $('status').innerHTML = (t>0.99)
+      ? '<b>one transaction after another</b>'
+      : (t>0.001 ? '<b>sliding</b>'
+                 : '<span class="none">press Play</span>');
+  }
+  function play(){
+    if(raf) cancelAnimationFrame(raf);
+    t=0; draw();
+    const t0=Date.now();
+    (function step(){
+      const q=Math.min(1,(Date.now()-t0)/1600);
+      t=(q<.5? 2*q*q : 1-Math.pow(-2*q+2,2)/2);
+      draw();
+      if(q<1) raf=requestAnimationFrame(step); else raf=null;
+    })();
+  }
+  $('play').onclick=play;
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    raf=null; t=0; draw();
+  };
+  draw();
+})();
+</script>
 
 <script>
 (function(){
