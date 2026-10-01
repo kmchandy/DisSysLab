@@ -1,27 +1,34 @@
 # paxos — DRAFT, for review
 
-This code is an example of the Paxos algorithm with 3 proposers, 5 acceptors 
-and 2 learners. See figure 1 of `course/lecture_08.html`
+This code is an example of the Paxos algorithm with 3 proposers, 5 acceptors and 2 learners.
+
+See figure 1 of `course/lecture_08.html`
 
 ## What is here
 
 | file | what it is |
 |---|---|
-| `office.md` | the wiring: 3 proposers × 5 acceptors, 5 acceptors × 2 learners, one outbox per destination |
-| `roles/proposer.py` | start a transaction on a tick; on the M-th reply compute `f` and write |
-| `roles/acceptor.py` | reply to reads, obey writes, drop requests from earlier transactions |
-| `roles/learner.py` | hear M acceptors agree on one pair, then announce it once |
-| `roles/ticker.py` | a clock: ticks the proposers in rotation |
+| `office.md` | the wiring: 3 proposers × 5 acceptors × 2 learners, and the acceptors' replies back |
 
 ## The shape of the network
 
-Every proposer has one outbox per acceptor, `to_q0 … to_q4`; every
-acceptor has one outbox per proposer, `to_p0 … to_p2`, and one per
-learner, `to_l0, to_l1`. Each outbox is connected to exactly one inbox:
-thirty connections between proposers and acceptors, ten more from the
-acceptors to the learners. Each agent has a single inbox, `in_`,
-because `recv` blocks on the port it is given and an agent must be able
-to take whichever message arrives first.
+**One outbox per message, not per destination.** A proposer sends the
+same read, and later the same write, to every acceptor, so it has one
+outbox, `out`, wired to all five:
+
+```
+P0's out are Q0, Q1, Q2, Q3 and Q4.
+```
+
+An acceptor's **reply** is the one message in this office that is not a
+broadcast — it goes to the proposer that asked and to nobody else — so
+an acceptor does need an outbox per proposer, `to_p0 … to_p2`. Its
+messages to the learners are all broadcasts again, so those share one
+outbox, `to_learners`, wired to both.
+
+Each agent has a single inbox, `in_`, because `recv` blocks on the port
+it is given and an agent must be able to take whichever message arrives
+first.
 
 So the sender has to be named *in* the message:
 
@@ -39,10 +46,11 @@ Two details of the framework that this office has to get right, both
 found by running it rather than reading it:
 
 - an outbox has two names, the one the office writes (`to_p1`) and the
-  runtime's positional one (`out_1`, by the order the role entry
-  declares them). The role entry advertises the readable names and
-  `self.send` uses the positional ones — as in
-  `mac_speed_suite/roles/_walkforward.py`;
+  runtime's own (`out_1`, by position, in the order the role entry
+  declares them — or just `out_` when the agent has one outbox). The
+  role entry advertises the readable names and `self.send` uses the
+  runtime's, as in `mac_speed_suite/roles/_walkforward.py` and
+  `loudness_monitor/roles/rms_meter.py`;
 - `self.name` is **not** the name the office wrote: at run time it is
   `paxos::Q2`. The id that travels in a message is the short name, from
   `roles/_names.py`. The first run of this office sent thirty reads and

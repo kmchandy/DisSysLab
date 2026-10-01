@@ -26,10 +26,15 @@ and tuple comparison is the total order the proof needs.
 
 Ports
 -----
-``in_``              clock ticks and replies both arrive here; a
-                     proposer cannot afford to block on one kind while
-                     the other is waiting.
-``to_q0 ... to_q4``  one outbox per acceptor.
+``in_``   clock ticks and replies both arrive here; a proposer cannot
+          afford to block on one kind while the other is waiting.
+``out``   one outbox, wired to all five acceptors. A proposer never
+          sends one acceptor something it does not send the others, so
+          every message it sends is a broadcast and one outbox is
+          enough. The office writes ``P0's out are Q0, Q1, Q2, Q3 and
+          Q4``, and the acceptors are the ones that need an outbox each
+          -- a reply goes to one proposer, and is the only message in
+          this office that is not a broadcast.
 
 Messages in
 -----------
@@ -63,11 +68,11 @@ from dissyslab.core import Agent  # noqa: E402
 from dissyslab.office.library import AgentRoleEntry  # noqa: E402
 
 
-_OUT_PORTS = ("to_q0", "to_q1", "to_q2", "to_q3", "to_q4")
-
-#: The office writes ``P0's to_q0 is Q0``; the runtime names the
-#: outboxes by position, in the order above. See acceptor.py.
-_RUNTIME = ["out_%d" % i for i in range(len(_OUT_PORTS))]
+#: The office writes ``P0's out are Q0, ... and Q4``; an agent with a
+#: single outbox calls it ``out_`` at run time, which is the house
+#: convention -- see ``loudness_monitor/roles/rms_meter.py``.
+_OUT_PORTS = ("out",)
+_OUT = "out_"
 
 _NO_ID = (0, "")
 
@@ -84,7 +89,7 @@ class _Proposer(Agent):
         super().__init__(
             name=name,
             inports=["in_"],
-            outports=list(_RUNTIME),
+            outports=[_OUT],
         )
         self.VALUE = value            # p.VALUE: what p proposes
         self.M = int(majority)
@@ -122,11 +127,12 @@ class _Proposer(Agent):
                 self.number += 1
                 self.t = (self.number, self.id)
                 self.replies = {}
-                for port in self.outports:
-                    self.send(
-                        {"kind": "read", "sender": self.id, "t": self.t},
-                        port,
-                    )
+                # one send, to every acceptor: the office wires this
+                # outbox to all five
+                self.send(
+                    {"kind": "read", "sender": self.id, "t": self.t},
+                    _OUT,
+                )
 
             elif kind == "reply":
                 # An acceptor replies with the id of the request it is
@@ -147,16 +153,15 @@ class _Proposer(Agent):
                 if len(self.replies) == self.M:
                     # the M-th reply completes the read set R
                     d = self.f(list(self.replies.values()))
-                    for port in self.outports:
-                        self.send(
-                            {
-                                "kind":   "write",
-                                "sender": self.id,
-                                "t":      self.t,
-                                "s":      d,
-                            },
-                            port,
-                        )
+                    self.send(
+                        {
+                            "kind":   "write",
+                            "sender": self.id,
+                            "t":      self.t,
+                            "s":      d,
+                        },
+                        _OUT,
+                    )
 
 
 role = AgentRoleEntry(

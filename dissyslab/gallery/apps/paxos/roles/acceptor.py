@@ -19,12 +19,16 @@ Ports
 ``in_``                  every request from every proposer arrives here.
 ``to_p0, to_p1, to_p2``  one outbox per proposer, so a reply goes only
                          to the proposer that asked for it.
-``to_l0, to_l1``         one outbox per learner. Whenever q.v changes,
-                         the acceptor tells every learner the pair it
-                         now holds.
+``to_learners``          one outbox, wired to both learners. Whenever
+                         q.v changes, the acceptor tells every learner
+                         the pair it now holds -- the same message to
+                         each, so one outbox is enough, and the office
+                         writes ``Q2's to_learners are L0 and L1``.
 
+A reply is the one message in this office that is not a broadcast,
+which is why the proposers get an outbox each and the learners do not.
 A request carries the name of the proposer that sent it, which is how
-the acceptor knows which of its outboxes to reply on.
+the acceptor knows which of those outboxes to reply on.
 
 Messages in
 -----------
@@ -62,8 +66,8 @@ from dissyslab.office.library import AgentRoleEntry  # noqa: E402
 
 _PROPOSERS = ("P0", "P1", "P2")
 _REPLY_PORTS = ("to_p0", "to_p1", "to_p2")
-_LEARNER_PORTS = ("to_l0", "to_l1")
-_OUT_PORTS = _REPLY_PORTS + _LEARNER_PORTS
+_LEARNERS_PORT = "to_learners"
+_OUT_PORTS = _REPLY_PORTS + (_LEARNERS_PORT,)
 
 #: An agent with more than one outbox has two names for each of them:
 #: the name the office writes (``Q2's to_p1 is P1``) and the runtime's
@@ -93,7 +97,7 @@ class _Acceptor(Agent):
         self.reply_port: Dict[str, str] = {
             p: _RUNTIME[port] for p, port in zip(proposers, _REPLY_PORTS)
         }
-        self.learner_ports = [_RUNTIME[p] for p in _LEARNER_PORTS]
+        self.learners_port = _RUNTIME[_LEARNERS_PORT]
         self.v_s: Any = None          # q.v.s
         self.v_t = _NO_ID             # q.v.t
         self.t = _NO_ID               # q.t
@@ -134,17 +138,17 @@ class _Acceptor(Agent):
                 )
             else:
                 self.v_s, self.v_t = msg.get("s"), t
-                # q.v has changed, so tell every learner the pair q holds
-                for port in self.learner_ports:
-                    self.send(
-                        {
-                            "kind":   "learn",
-                            "sender": self.id,
-                            "v_s":    self.v_s,
-                            "v_t":    self.v_t,
-                        },
-                        port,
-                    )
+                # q.v has changed: one send, to every learner, because
+                # every learner is told the same thing
+                self.send(
+                    {
+                        "kind":   "learn",
+                        "sender": self.id,
+                        "v_s":    self.v_s,
+                        "v_t":    self.v_t,
+                    },
+                    self.learners_port,
+                )
 
 
 role = AgentRoleEntry(
