@@ -1,0 +1,1399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Byzantine Generals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  h2{font-family:var(--display); font-weight:600; font-size:25px;
+     letter-spacing:-.01em; margin:38px 0 12px}
+  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:34px 0 8px}
+  p{color:var(--body); margin:0 0 15px}
+  h4{font-family:var(--sans); font-weight:700; font-size:15.5px;
+     letter-spacing:.01em; color:var(--ink); margin:20px 0 6px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  header.top h2{margin:-2px 0 20px; padding:0; border:0;
+    font-family:var(--display); font-weight:600; font-size:22px;
+    line-height:1.2; letter-spacing:-.01em; color:var(--muted)}
+  figure.fig{margin:32px 0 30px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  figure.fig figcaption i{color:var(--ink); font-style:normal; font-weight:600}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
+          font-size:13.5px; color:var(--muted)}
+  .legend i{font-style:normal; color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em;
+       background:#f6f4ee; border-radius:5px; padding:1px 5px}
+  .hint{font-size:13px; color:var(--muted)}
+  .ok{color:var(--teal); font-weight:700}
+  .bad{color:var(--orange); font-weight:700}
+  p.key{margin:22px 0 20px; padding:15px 18px 15px 20px; color:var(--ink);
+    background:#fff6ef; border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0; font-size:18px; line-height:1.5; font-weight:600}
+  p.key b, p.key strong{color:var(--ink); font-weight:800}
+  p.key .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
+    margin-bottom:8px}
+  /* a claim: the theorem and the observations read the same way */
+  .thm{margin:24px 0 22px; padding:16px 20px 15px; color:var(--ink);
+    background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:17px; line-height:1.55}
+  .thm b, .thm strong{font-weight:700}
+  .thm > b{display:block; margin-bottom:7px}
+  .thm .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--teal);
+    margin-bottom:9px}
+  .thm p:last-child{margin-bottom:0}
+  /* the observations: numbered, same colour as the theorem */
+  ol.obs{list-style:none; margin:22px 0 20px; padding:0; counter-reset:ob;
+         color:var(--body)}
+  ol.obs > li{counter-increment:ob; position:relative; margin:0 0 12px;
+    padding:14px 18px 13px 54px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:16.5px; line-height:1.5}
+  ol.obs > li::before{content:counter(ob); position:absolute; left:19px; top:13px;
+    width:24px; height:24px; border-radius:999px; background:var(--teal);
+    color:#fff; font:700 13px/24px var(--sans); text-align:center}
+  ol.obs > li > b{color:var(--ink)}
+  ol.obs .why{display:block; margin-top:9px; padding-top:9px;
+    border-top:1px solid var(--line); font-size:15px; color:var(--body)}
+  ol.obs .why em{font-style:normal; font:700 11.5px var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin-right:9px}
+  /* proofs */
+  .proof{margin:6px 0 24px; padding:2px 0 2px 22px;
+         border-left:2px solid var(--line)}
+  .proof > p:last-child{margin-bottom:0}
+  .proof figure.fig.wideout{left:calc(50% - 11px)}
+  .proof .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin:0 0 9px}
+  .case{margin:16px 0 14px; padding:13px 17px 2px; background:#fbf9f5;
+        border:1px solid var(--line); border-radius:10px}
+  .case > p:last-child{margin-bottom:11px}
+  .tag{display:inline-block; font:700 11px var(--sans); letter-spacing:.12em;
+    text-transform:uppercase; color:#fff; background:var(--ink);
+    border-radius:999px; padding:4px 11px; margin-right:11px;
+    vertical-align:1px}
+  .calc{font-family:var(--mono); font-size:15px; color:var(--ink);
+    background:#fbf9f5; border:1px solid var(--line); border-radius:8px;
+    padding:11px 15px; margin:12px 0}
+  /* the specification: two requirements, in the two colours they keep */
+  ol.spec{list-style:none; margin:22px 0 20px; padding:0;
+          counter-reset:req; color:var(--body)}
+  ol.spec > li{counter-increment:req; position:relative; margin:0 0 10px;
+    padding:14px 46px 13px 18px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--muted); border-radius:0 10px 10px 0}
+  ol.spec > li::after{content:counter(req); position:absolute; right:15px;
+    top:13px; font:700 12px var(--mono); color:#c9c4b8}
+  ol.spec .rtag{display:inline-block; font:700 11px var(--sans);
+    letter-spacing:.12em; text-transform:uppercase; color:#fff;
+    background:var(--muted); border-radius:999px; padding:4px 11px;
+    margin-right:11px; vertical-align:1px}
+  li.req-v{border-left-color:var(--teal)}
+  li.req-v .rtag{background:var(--teal)}
+  li.req-c{border-left-color:#1a5fd0}
+  li.req-c .rtag{background:#1a5fd0}
+  .n-v{color:var(--teal); font-weight:700}
+  .n-c{color:#1a5fd0; font-weight:700}
+  /* the aside about fire detectors, which is the point of the whole story */
+  .aside{margin:24px 0 22px; padding:15px 19px 14px; font-size:15.5px;
+    line-height:1.6; color:var(--body); background:#f7f5ef;
+    border:1px solid var(--line); border-radius:10px}
+  .aside b{color:var(--ink)}
+  .aside .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin-bottom:9px}
+  .aside p:last-child{margin-bottom:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab</div>
+    <h1>The Byzantine Generals</h1>
+    <h2>Consensus when some of the agents are lying</h2>
+    <p>
+      Until now an agent that failed simply stopped, or a message was
+      lost. In this lecture some of the agents do not follow the
+      algorithm at all. They may stay silent, they may say one thing to
+      one agent and the opposite to another, and they may do it on
+      purpose. The agents that do follow the algorithm still have to
+      agree.
+    </p>
+  </header>
+
+<h2>Rounds, and why they are allowed</h2>
+
+  <p>
+    The FLP theorem says consensus cannot be reached if messages and
+    agents are arbitrarily slow, or messages may be lost and agents may
+    halt. Paxos lives inside that theorem: it guarantees that <i>if</i>
+    it terminates then all learners agree, and it may not terminate.
+    The algorithm in this lecture escapes the theorem by assuming
+    something FLP does not allow.
+  </p>
+
+  <p class="key">
+    <span class="lead-in">The assumption</span>
+    Byzantine consensus algorithms are <b>synchronous</b>. The algorithm
+    proceeds in <b>rounds</b>: every message sent by a non-faulty agent
+    to a non-faulty agent in one round is delivered before the next
+    round begins.
+  </p>
+
+  <p>
+    How a round is implemented is left unspecified. If message delays
+    are under <code>t</code> seconds and clocks are synchronized, round
+    <code>n</code> can be implemented by having every agent send its
+    messages at time <code>n&middot;T</code> for some <code>T &gt; t</code>,
+    and treating every message that arrives in
+    <code>[n&middot;T, (n+1)&middot;T)</code> as belonging to round
+    <code>n</code>. A missing message is therefore not a mystery, as it
+    is in Paxos. If a letter has not arrived by the end of the round, it
+    is not coming.
+  </p>
+
+<h2>The army</h2>
+
+  <p>
+    There is one <b>general</b> and <code>N</code> <b>lieutenants</b>.
+    The general gives a command, which is either <b>retreat</b> (0) or
+    <b>attack</b> (1).
+  </p>
+
+  <ul style="list-style:none; padding:0; margin:18px 0 10px; color:var(--body)">
+    <li style="margin:0 0 8px">A <b style="color:var(--ink)">loyal</b>
+      general gives the same command to every lieutenant.</li>
+    <li style="margin:0 0 8px">A <b style="color:var(--ink)">disloyal</b>
+      general may give different commands to different lieutenants, and
+      may give no command at all to some of them.</li>
+    <li style="margin:0 0 8px">Loyal lieutenants obey the protocol.
+      Disloyal lieutenants may do anything.</li>
+  </ul>
+
+  <p>
+    You are given <code>t</code>, an upper bound on the number of
+    disloyal officers &mdash; and the general is one of the officers it
+    counts. Nobody knows <i>which</i> officers are disloyal. Your task
+    is to design the protocol that the loyal ones run.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="arm_g" viewBox="0 0 1240 372" role="img"
+         aria-label="A general and three lieutenants. A loyal general sends the same command to all three; a disloyal general sends attack to one, retreat to another and nothing to the third"></svg>
+
+    <div class="ctrls">
+      <button id="arm_a" class="primary">Loyal general: attack</button>
+      <button id="arm_r">Loyal general: retreat</button>
+      <button id="arm_d">Disloyal general</button>
+      <span class="status" id="arm_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 1. Three kinds of general.</b>
+      A <i>blue</i> letter is an attack command, a <i>red</i> letter is
+      retreat. A loyal general (green coat) sends every lieutenant the
+      same letter. A disloyal general (dark coat) does as it likes: here
+      it tells <i>A</i> to attack, tells <i>B</i> to retreat, and sends
+      <i>C</i> nothing at all. Press the buttons to send the letters.
+    </figcaption>
+  </figure>
+
+<h2>The specification</h2>
+
+  <ol class="spec">
+    <li class="req-v"><span class="rtag">Validity</span>
+      <b>Loyal lieutenants must obey a loyal general.</b></li>
+    <li class="req-c"><span class="rtag">Consensus</span>
+      <b>Loyal lieutenants must come to a consensus.</b>
+      Either every loyal lieutenant attacks, or every loyal lieutenant
+      retreats.</li>
+  </ol>
+
+  <p>
+    Notice what the specification does <i>not</i> ask for. It never asks
+    the algorithm to work out which officers are loyal and which are
+    disloyal. It says nothing about what disloyal lieutenants do. And
+    each requirement on its own is trivial:
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="tri_g" viewBox="0 0 1240 430" role="img"
+         aria-label="Two trivial protocols: obey the general, which breaks consensus under a disloyal general; and always retreat, which breaks validity under a loyal general"></svg>
+
+    <div class="ctrls">
+      <button id="tri_o" class="primary">Obey the general</button>
+      <button id="tri_r">Always retreat</button>
+      <button id="tri_t">Switch general</button>
+      <span class="status" id="tri_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 2. Each requirement alone is easy.</b>
+      <i>Obey the general</i> satisfies validity always &mdash; and a
+      disloyal general then splits the loyal lieutenants, which breaks
+      consensus. <i>Always retreat</i> satisfies consensus always
+      &mdash; and disobeys a loyal general who ordered an attack, which
+      breaks validity. Press <i>Switch general</i> to change who is in
+      command and watch the verdicts swap.
+    </figcaption>
+  </figure>
+
+  <p class="key">
+    The problem is hard only because <b>both</b> requirements are
+    demanded at once.
+  </p>
+
+  <div class="aside">
+    <span class="lead-in">Why anyone cares</span>
+    <p>
+      The name is a story, and the story is unfair to Byzantine officers,
+      who were no more treacherous than anyone else&rsquo;s. Read the
+      general as a <b>fire detector</b> that may be faulty, and the
+      lieutenants as the agents that must decide together whether to
+      sound the alarm.
+    </p>
+    <p>
+      Validity then says: if a working detector reports a fire, every
+      working agent raises the alarm. Consensus says: even if the
+      detector is faulty and tells some agents there is a fire and
+      others that there is none, the working agents still agree &mdash;
+      either they all raise the alarm or none of them do. What we will
+      not accept is some of them ringing while the others stay quiet.
+    </p>
+  </div>
+
+<h2>Two kinds of message</h2>
+
+  <p>
+    Everything turns on what a traitor can do to a letter it has been
+    given.
+  </p>
+
+  <ol class="spec">
+    <li><span class="rtag" style="background:var(--ink)">Written</span>
+      <b>Written, or encrypted, messages.</b>
+      A letter containing message <code>M</code> signed by agent
+      <code>X</code> and received by agent <code>Y</code> can be
+      forwarded by <code>Y</code>, but <code>Y</code> can neither change
+      the message nor forge <code>X</code>&rsquo;s signature.</li>
+    <li><span class="rtag" style="background:var(--orange)">Oral</span>
+      <b>Oral, or unencrypted, messages.</b>
+      An agent can forge signatures and corrupt messages.</li>
+  </ol>
+
+  <figure class="fig">
+    <svg id="let_g" viewBox="0 0 840 360" role="img"
+         aria-label="A signed letter forwarded unchanged under the written model, and rewritten under the oral model"></svg>
+
+    <div class="ctrls">
+      <button id="let_w" class="primary">Written: forward it</button>
+      <button id="let_o">Oral: forge it</button>
+      <span class="status" id="let_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 3. What a traitor can do to a letter.</b>
+      The general signs <i>attack</i> and gives the letter to a disloyal
+      lieutenant, who passes it on. Under the written model the seal
+      holds: the letter arrives saying exactly what the general wrote.
+      Under the oral model the traitor rewrites the order and signs it
+      in the general&rsquo;s name, and the lieutenant who receives it
+      cannot tell.
+    </figcaption>
+  </figure>
+
+  <p>
+    The rest of this lecture is the <b>written</b> case. Oral messages
+    come next, and they cost more: with oral messages no algorithm works
+    unless more than two thirds of the officers are loyal.
+  </p>
+
+<h2>The algorithm, with signed messages</h2>
+
+  <p>
+    A lieutenant that has not committed to attack by the end of the
+    algorithm commits to <b>retreat</b>. So the whole algorithm is a rule
+    for when to commit to attack, and the letters are the evidence for
+    doing it.
+  </p>
+
+  <h3>Round 0</h3>
+
+  <p>
+    The general signs one message &mdash; attack or retreat &mdash; and
+    sends it to each lieutenant. Then the general plays no further part.
+    A lieutenant that receives no message from the general in round 0
+    behaves exactly as though it had received <b>retreat</b>.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="r0_g" viewBox="0 0 1240 392" role="img"
+         aria-label="Round 0: the general signs a letter to each of four lieutenants, and the lieutenant who receives nothing treats the silence as a retreat order"></svg>
+
+    <div class="ctrls">
+      <button id="r0_play" class="primary">Round 0</button>
+      <button id="r0_reset">Reset</button>
+      <span class="status" id="r0_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 4. Round 0.</b>
+      The general signs and sends. <i>D</i> gets nothing &mdash; the
+      general is disloyal, or the letter was never written &mdash; and
+      <i>D</i> treats the silence as an order to retreat. Silence is not
+      ambiguous here: the round has ended, so the letter is not coming.
+    </figcaption>
+  </figure>
+
+  <h3>Round j, for j &gt; 0</h3>
+
+  <p class="key">
+    <span class="lead-in">The rule</span>
+    A lieutenant <code>L</code> that has not committed to attack on an
+    earlier round, and that holds
+    <b>a signed attack message from the general</b> and
+    <b>signed attack messages from at least j&minus;1 distinct
+    lieutenants other than L itself</b>,
+    commits to attack on round <code>j</code>. It then sends every
+    lieutenant copies of that evidence &mdash; the general&rsquo;s letter
+    and the j&minus;1 lieutenants&rsquo; letters &mdash; together with an
+    attack message signed by <code>L</code> itself.
+  </p>
+
+  <p>
+    On round 1 that reduces to: a loyal lieutenant commits to attack if
+    it received an attack message from the general, because
+    j&minus;1 = 0 letters from other lieutenants are required.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="rj_g" viewBox="0 0 1240 430" role="img"
+         aria-label="Lieutenant C on round 3 holds signed attack letters from the general and from lieutenants A and B, commits, and broadcasts all three letters plus its own"></svg>
+
+    <div class="ctrls">
+      <button id="rj_step" class="primary">Step</button>
+      <button id="rj_reset">Reset</button>
+      <span class="status" id="rj_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 5. Lieutenant C on round 3.</b>
+      It is the start of round <code>j = 3</code>. <i>C</i> holds a
+      signed letter from the general and <code>j&minus;1 = 2</code>
+      letters from distinct lieutenants, <i>A</i> and <i>B</i>. That is
+      the rule satisfied, so <i>C</i> commits to attack and broadcasts
+      the evidence that convinced it, with its own signature added: four
+      letters, from the general and from <i>A</i>, <i>B</i> and
+      <i>C</i>. Retreat messages are treated exactly like absent ones.
+    </figcaption>
+  </figure>
+
+<h2>Three observations</h2>
+
+  <ol class="obs">
+    <li><b>If the general is loyal and sends attack messages, then every
+      loyal lieutenant commits to attack in round 1.</b>
+      <span class="why"><em>Why</em>
+      On round 1 the rule asks for the general&rsquo;s letter and
+      nothing else, and a loyal general sent that letter to
+      everyone.</span></li>
+
+    <li><b>If the general is loyal and never sends an attack message,
+      then no loyal lieutenant ever commits to attack, in any
+      round.</b>
+      <span class="why"><em>Why</em>
+      A lieutenant commits to attack only if it holds a signed attack
+      message from the general. A loyal general signed none, and under
+      the written model nobody can forge the general&rsquo;s
+      signature.</span></li>
+
+    <li><b>If a loyal lieutenant commits to attack on round j, then
+      every loyal lieutenant commits to attack by round j+1.</b>
+      <span class="why"><em>Why</em>
+      <code>L</code> committed on round <code>j</code>, so it broadcast
+      the general&rsquo;s letter, the letters of j&minus;1 other
+      lieutenants, and its own. Every lieutenant therefore starts round
+      <code>j+1</code> holding the general&rsquo;s letter and attack
+      messages signed by <code>j</code> distinct lieutenants &mdash;
+      which is exactly what the rule asks for on round
+      <code>j+1</code>.</span></li>
+  </ol>
+
+  <figure class="fig wideout">
+    <svg id="csc_g" viewBox="0 0 1240 400" role="img"
+         aria-label="One loyal lieutenant commits on round j and broadcasts its evidence, and every other loyal lieutenant therefore commits on round j plus one"></svg>
+
+    <div class="ctrls">
+      <button id="csc_play" class="primary">Play</button>
+      <button id="csc_reset">Reset</button>
+      <span class="status" id="csc_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 6. Observation 3: one commit pulls the rest in.</b>
+      <i>B</i> commits on round <code>j&nbsp;=&nbsp;3</code> and
+      broadcasts three letters plus its own. Count what <i>A</i> holds at
+      the start of round 4: the general, and three distinct lieutenants.
+      The rule for round 4 asks for the general and
+      <code>4&minus;1&nbsp;=&nbsp;3</code>. So <i>A</i> commits, and so
+      does everyone else.
+    </figcaption>
+  </figure>
+
+<h2>So which round can the algorithm stop on?</h2>
+
+  <p>
+    Observations 1 and 2 settle a loyal general completely: round 1
+    decides it, and nothing later can change it. The question is what a
+    <b>disloyal</b> general can drag out, and the examples are the way to
+    see it. In both of the runs below there are five lieutenants,
+    <i>A</i>, <i>B</i>, <i>C</i> loyal and <i>Y</i>, <i>Z</i> disloyal,
+    and the general is disloyal too.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="run_g" viewBox="0 0 1240 470" role="img"
+         aria-label="Two runs of the algorithm with a disloyal general and two disloyal lieutenants, round by round"></svg>
+
+    <div class="ctrls">
+      <button id="run_a" class="primary">Run 1: the traitors stay silent</button>
+      <button id="run_b">Run 2: the traitors speak on round 2</button>
+      <button id="run_step">Next round</button>
+      <button id="run_reset">Reset</button>
+      <span class="status" id="run_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 7. Two runs, round by round.</b>
+      The general sends attack to <i>Y</i> and <i>Z</i> only. In
+      <b>run 1</b> the traitors say nothing until round 4 and then
+      produce their evidence: two lieutenants&rsquo; signatures, where
+      round 4 needs three, so no loyal lieutenant ever commits and all
+      three retreat &mdash; in consensus. In <b>run 2</b> the traitors
+      hand <i>A</i> alone the general&rsquo;s letter and their own two
+      signatures on round 2. <i>A</i> commits on round 3, broadcasts, and
+      <i>B</i> and <i>C</i> commit on round 4. Consensus again, one round
+      later.
+    </figcaption>
+  </figure>
+
+  <p>
+    Run 2 is the whole difficulty in miniature. A disloyal general and
+    two disloyal lieutenants can delay the commit to round 3 and the
+    consensus to round 4. The question is whether they can keep doing it
+    for ever.
+  </p>
+
+  <div class="thm">
+    <span class="lead-in">Theorem</span>
+    <p>
+      Let <code>t</code> be an upper bound on the number of disloyal
+      officers, the general included. <b>If no loyal lieutenant commits
+      to attack on rounds 1, &hellip;, t, then no loyal lieutenant
+      commits to attack on any later round.</b>
+    </p>
+  </div>
+
+  <div class="proof">
+    <span class="lead-in">Proof</span>
+    <p>
+      By observations 1 and 2, a loyal general settles the matter in
+      round 1, so only a <b>disloyal general</b> is left to consider.
+      The general is then one of the at most <code>t</code> disloyal
+      officers, so at most <code>t&minus;1</code> lieutenants are
+      disloyal.
+    </p>
+    <p>
+      Suppose no loyal lieutenant has committed to attack in rounds
+      1, &hellip;, <code>t</code>. Then on round <code>t+1</code> the
+      only attack messages a loyal lieutenant can be holding from other
+      lieutenants are the ones signed by those at most
+      <code>t&minus;1</code> traitors &mdash; no loyal lieutenant has
+      sent one, because none has committed.
+    </p>
+    <p>
+      But the rule for round <code>t+1</code> asks for signatures from
+      <code>t</code> distinct lieutenants. There are not that many
+      available. So no loyal lieutenant commits on round
+      <code>t+1</code>, and the same count rules out every round after
+      it.
+    </p>
+  </div>
+
+  <figure class="fig">
+    <svg id="thm_g" viewBox="0 0 840 390" role="img"
+         aria-label="On round t plus one the rule needs t lieutenant signatures, but only t minus one disloyal lieutenants exist, so one slot stays empty"></svg>
+
+    <div class="ctrls">
+      <button id="thm_play" class="primary">Fill the evidence</button>
+      <button id="thm_reset">Reset</button>
+      <span class="status" id="thm_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 8. The counting argument, with t = 4.</b>
+      The rule for round <code>t+1 = 5</code> asks a loyal lieutenant for
+      the general&rsquo;s letter and <code>t = 4</code> letters from
+      distinct lieutenants. The traitors can supply only
+      <code>t&minus;1 = 3</code> of them, because the general used up one
+      of the <code>t</code> disloyal officers, and no loyal lieutenant has
+      signed an attack message. One slot can never be filled.
+    </figcaption>
+  </figure>
+
+  <p class="key">
+    <span class="lead-in">The answer</span>
+    The algorithm can stop after round <b>t+1</b>. Every loyal
+    lieutenant that has not committed to attack by then commits to
+    retreat, and by observation 3 they are all in the same position.
+  </p>
+
+<h2>What comes next</h2>
+
+  <p>
+    All of this rested on the seal: a traitor could forward a letter but
+    not change it, and the general&rsquo;s signature could not be forged.
+    Take the seal away &mdash; <b>oral messages</b> &mdash; and a traitor
+    can say &ldquo;the general told me to attack&rdquo; when the general
+    said nothing at all. That is the next lecture, and the first thing it
+    costs us is a bound: there is no solution when the number of loyal
+    agents is at most twice the number of disloyal ones.
+  </p>
+
+</div>
+
+<script>
+/* ------------------------------------------------------------------ *
+ *  BYZ: the cast. One general, some lieutenants, and signed letters.
+ *  Every figure on this page draws its officers through here, so they
+ *  all look like the same army.
+ * ------------------------------------------------------------------ */
+window.BYZ=(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#ddd8cd',
+           green:'#1a9e46', blue:'#1a5fd0', red:'#e0301a', teal:'#00947d',
+           gold:'#d9a429', skin:'#f0c69e', coatL:'#1f8d4e', coatD:'#4b3550',
+           trouser:'#2c3350', boot:'#241f2b', paper:'#fffdf5',
+           seal:'#b8282d', helmL:'#39496b', helmD:'#372f3c'};
+
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function grp(parent,a){ const n=el('g',a||{}); parent.appendChild(n); return n; }
+  function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
+
+  function mono(p,x,y,s,fill,size,anchor,w){
+    p.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||13, 'font-weight':w||700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, s));
+  }
+  function sans(p,x,y,s,fill,size,anchor,w){
+    p.appendChild(el('text',{x:x, y:y,
+      'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':size||14, 'font-weight':w||600, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, s));
+  }
+
+  /* An officer, standing on the ground at (x, y), facing the reader.
+     rank:'general' gets a plume, a moustache and a medal; everyone else
+     gets a plain helmet. loyal:false puts them in a dark coat with a
+     scowl. */
+  function officer(parent,x,y,o){
+    o=o||{};
+    const s=o.scale||1, gen=(o.rank==='general'), loyal=(o.loyal!==false);
+    const coat=loyal?C.coatL:C.coatD, helm=loyal?C.helmL:C.helmD;
+    const G=grp(parent,{});
+    const dim=(o.dim?0.45:1);
+    G.setAttribute('opacity', dim);
+
+    G.appendChild(el('ellipse',{cx:x, cy:y+2*s, rx:25*s, ry:5.5*s,
+      fill:'rgba(26,26,46,.10)'}));
+    /* legs and boots */
+    G.appendChild(el('rect',{x:x-12*s, y:y-30*s, width:9*s, height:25*s, fill:C.trouser}));
+    G.appendChild(el('rect',{x:x+3*s,  y:y-30*s, width:9*s, height:25*s, fill:C.trouser}));
+    G.appendChild(el('rect',{x:x-15*s, y:y-6*s, width:12*s, height:6*s, rx:2*s, fill:C.boot}));
+    G.appendChild(el('rect',{x:x+3*s,  y:y-6*s, width:12*s, height:6*s, rx:2*s, fill:C.boot}));
+    /* coat */
+    G.appendChild(el('path',{d:'M '+(x-21*s)+' '+(y-28*s)+
+      ' L '+(x-17*s)+' '+(y-74*s)+
+      ' Q '+x+' '+(y-82*s)+' '+(x+17*s)+' '+(y-74*s)+
+      ' L '+(x+21*s)+' '+(y-28*s)+' Z', fill:coat}));
+    /* arms */
+    G.appendChild(el('path',{d:'M '+(x-17*s)+' '+(y-70*s)+
+      ' L '+(x-27*s)+' '+(y-44*s)+' L '+(x-20*s)+' '+(y-41*s)+
+      ' L '+(x-11*s)+' '+(y-66*s)+' Z', fill:coat}));
+    G.appendChild(el('path',{d:'M '+(x+17*s)+' '+(y-70*s)+
+      ' L '+(x+27*s)+' '+(y-44*s)+' L '+(x+20*s)+' '+(y-41*s)+
+      ' L '+(x+11*s)+' '+(y-66*s)+' Z', fill:coat}));
+    G.appendChild(el('circle',{cx:x-23*s, cy:y-40*s, r:4.2*s, fill:C.skin}));
+    G.appendChild(el('circle',{cx:x+23*s, cy:y-40*s, r:4.2*s, fill:C.skin}));
+    /* sash, gold on the general and bone on a lieutenant */
+    G.appendChild(el('path',{d:'M '+(x-16*s)+' '+(y-71*s)+
+      ' L '+(x+16*s)+' '+(y-38*s)+' L '+(x+16*s)+' '+(y-30*s)+
+      ' L '+(x-19*s)+' '+(y-64*s)+' Z',
+      fill:gen?C.gold:'#e7e1d2', opacity:.95}));
+    /* belt */
+    G.appendChild(el('rect',{x:x-21*s, y:y-34*s, width:42*s, height:6*s,
+      fill:'#20232e', opacity:.85}));
+    if(gen){
+      G.appendChild(el('circle',{cx:x-9*s, cy:y-56*s, r:3.4*s, fill:C.gold}));
+      G.appendChild(el('circle',{cx:x-9*s, cy:y-56*s, r:1.4*s, fill:'#8a6410'}));
+    }
+    /* epaulettes */
+    G.appendChild(el('rect',{x:x-23*s, y:y-74*s, width:12*s, height:5*s, rx:2.5*s,
+      fill:gen?C.gold:'#cfc8b6'}));
+    G.appendChild(el('rect',{x:x+11*s, y:y-74*s, width:12*s, height:5*s, rx:2.5*s,
+      fill:gen?C.gold:'#cfc8b6'}));
+    /* neck and head */
+    G.appendChild(el('rect',{x:x-4*s, y:y-84*s, width:8*s, height:7*s, fill:'#dcae86'}));
+    G.appendChild(el('circle',{cx:x, cy:y-94*s, r:12.5*s, fill:C.skin}));
+    G.appendChild(el('circle',{cx:x-12.5*s, cy:y-93*s, r:2.6*s, fill:'#e3b189'}));
+    G.appendChild(el('circle',{cx:x+12.5*s, cy:y-93*s, r:2.6*s, fill:'#e3b189'}));
+    /* eyes */
+    G.appendChild(el('circle',{cx:x-4.6*s, cy:y-95*s, r:1.7*s, fill:C.ink}));
+    G.appendChild(el('circle',{cx:x+4.6*s, cy:y-95*s, r:1.7*s, fill:C.ink}));
+    /* brows: level if loyal, down-turned into a scowl if not */
+    const by=y-(loyal?100:99)*s, bt=loyal?0:2.6*s;
+    G.appendChild(el('line',{x1:x-8*s, y1:by-bt, x2:x-2*s, y2:by+(loyal?0:0.6*s),
+      stroke:C.ink, 'stroke-width':1.8*s, 'stroke-linecap':'round'}));
+    G.appendChild(el('line',{x1:x+2*s, y1:by+(loyal?0:0.6*s), x2:x+8*s, y2:by-bt,
+      stroke:C.ink, 'stroke-width':1.8*s, 'stroke-linecap':'round'}));
+    /* mouth */
+    if(loyal){
+      G.appendChild(el('path',{d:'M '+(x-4*s)+' '+(y-88*s)+' Q '+x+' '+(y-85.5*s)+
+        ' '+(x+4*s)+' '+(y-88*s), stroke:'#9a5b3f', 'stroke-width':1.6*s,
+        fill:'none', 'stroke-linecap':'round'}));
+    } else {
+      G.appendChild(el('path',{d:'M '+(x-4*s)+' '+(y-86.5*s)+' Q '+x+' '+(y-89*s)+
+        ' '+(x+4*s)+' '+(y-86.5*s), stroke:'#9a5b3f', 'stroke-width':1.6*s,
+        fill:'none', 'stroke-linecap':'round'}));
+    }
+    if(gen){
+      G.appendChild(el('path',{d:'M '+(x-7*s)+' '+(y-90*s)+' Q '+x+' '+(y-87*s)+
+        ' '+(x+7*s)+' '+(y-90*s)+' Q '+x+' '+(y-91.5*s)+' '+(x-7*s)+' '+(y-90*s)+' Z',
+        fill:'#6b4a35'}));
+    }
+    /* helmet: dome, brim, and a crest */
+    G.appendChild(el('path',{d:'M '+(x-13*s)+' '+(y-99*s)+
+      ' A '+(13*s)+' '+(13*s)+' 0 0 1 '+(x+13*s)+' '+(y-99*s)+' Z', fill:helm}));
+    G.appendChild(el('rect',{x:x-15.5*s, y:y-101*s, width:31*s, height:4.5*s,
+      rx:2.2*s, fill:'#20242f'}));
+    if(gen){
+      G.appendChild(el('path',{d:'M '+x+' '+(y-112*s)+
+        ' C '+(x+9*s)+' '+(y-122*s)+' '+(x+2*s)+' '+(y-130*s)+' '+(x+6*s)+' '+(y-138*s),
+        stroke:C.red, 'stroke-width':5.5*s, fill:'none', 'stroke-linecap':'round'}));
+      G.appendChild(el('circle',{cx:x, cy:y-112*s, r:3.2*s, fill:C.gold}));
+    } else {
+      G.appendChild(el('circle',{cx:x, cy:y-112*s, r:3*s, fill:C.gold}));
+    }
+    if(o.label!=null) mono(G, x, y+17*s, o.label, C.ink, 14*s);
+    if(o.sub!=null) sans(G, x, y+32*s, o.sub, C.muted, 12.5*s, 'middle', 600);
+    return G;
+  }
+
+  /* A signed letter. kind 'attack' is blue, 'retreat' is red; the wax
+     seal carries the signer's initial, and a forged seal is drawn
+     cracked. */
+  function letter(parent,x,y,o){
+    o=o||{};
+    const s=o.scale||1, w=46*s, h=32*s, kind=o.kind||'attack';
+    const col=(kind==='attack')?C.blue:C.red;
+    const G=grp(parent,{});
+    if(o.rot) G.setAttribute('transform','rotate('+o.rot+' '+x+' '+y+')');
+    G.appendChild(el('rect',{x:x-w/2, y:y-h/2, width:w, height:h, rx:2.5*s,
+      fill:C.paper, stroke:'#cbc4b2', 'stroke-width':1.3*s}));
+    G.appendChild(el('rect',{x:x-w/2, y:y-h/2, width:w, height:7*s,
+      rx:2.5*s, fill:col, opacity:.92}));
+    G.appendChild(el('line',{x1:x-w/2+6*s, y1:y+1*s, x2:x+w/2-14*s, y2:y+1*s,
+      stroke:'#d8d1bf', 'stroke-width':1.6*s}));
+    G.appendChild(el('line',{x1:x-w/2+6*s, y1:y+7*s, x2:x+w/2-18*s, y2:y+7*s,
+      stroke:'#d8d1bf', 'stroke-width':1.6*s}));
+    mono(G, x-w/2+5*s, y-h/2+3.6*s, (kind==='attack')?'ATTACK':'RETREAT',
+         '#fff', 7.4*s, 'start', 700);
+    G.appendChild(el('circle',{cx:x+w/2-9*s, cy:y+h/2-8*s, r:7*s,
+      fill:o.forged?'#8d8878':C.seal, stroke:'#fff', 'stroke-width':1.2*s}));
+    mono(G, x+w/2-9*s, y+h/2-8*s, o.signer||'G', '#fff', 8.5*s, 'middle', 700);
+    if(o.forged){
+      G.appendChild(el('path',{d:'M '+(x+w/2-13*s)+' '+(y+h/2-12*s)+
+        ' l '+(4*s)+' '+(4*s)+' l '+(-3*s)+' '+(3*s)+' l '+(4*s)+' '+(3*s),
+        stroke:'#fff', 'stroke-width':1.4*s, fill:'none'}));
+    }
+    return G;
+  }
+
+  function head(p,x,y,ux,uy,col,sz){
+    const s=sz||7, px=-uy, py=ux;
+    p.appendChild(el('polygon',{points:
+      x+','+y+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+
+      (x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col}));
+  }
+  function arrow(p,a,b,col,o){
+    o=o||{};
+    const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.hypot(dx,dy)||1;
+    const ux=dx/L, uy=dy/L, trim=o.trim==null?10:o.trim;
+    const ln=el('line',{x1:a[0]+ux*trim, y1:a[1]+uy*trim,
+      x2:b[0]-ux*(trim+6), y2:b[1]-uy*(trim+6), stroke:col,
+      'stroke-width':o.w||2.6, opacity:o.op==null?1:o.op,
+      'stroke-linecap':'round'});
+    if(o.dash) ln.setAttribute('stroke-dasharray',o.dash);
+    p.appendChild(ln);
+    if(!o.noHead) head(p, b[0]-ux*trim, b[1]-uy*trim, ux, uy, col, o.hs||7);
+  }
+
+  /* A letter travels over the heads of the officers in between, not
+     through them: the route is an arc, drawn faintly all the way, and
+     the letter rides along it. */
+  function ctl(a,b,lift){
+    return [(a[0]+b[0])/2, Math.min(a[1],b[1])-(lift==null?90:lift)];
+  }
+  function qpt(a,c,b,u){
+    const v=1-u;
+    return [v*v*a[0]+2*v*u*c[0]+u*u*b[0],
+            v*v*a[1]+2*v*u*c[1]+u*u*b[1]];
+  }
+  function route(p,a,c,b,col,o){
+    o=o||{};
+    const e=el('path',{d:'M '+a[0]+' '+a[1]+' Q '+c[0]+' '+c[1]+
+      ' '+b[0]+' '+b[1], fill:'none', stroke:col,
+      'stroke-width':o.w||2, opacity:o.op==null?.33:o.op,
+      'stroke-linecap':'round'});
+    if(o.dash!==false) e.setAttribute('stroke-dasharray', o.dash||'7 7');
+    p.appendChild(e);
+    if(o.arrow){
+      const n=qpt(a,c,b,.985), m=qpt(a,c,b,1);
+      const dx=m[0]-n[0], dy=m[1]-n[1], L=Math.hypot(dx,dy)||1;
+      head(p, m[0], m[1], dx/L, dy/L, col, o.hs||6.5);
+    }
+  }
+  /* The banner over an officer's head: what it has committed to. */
+  function banner(p,x,y,text,col){
+    const w=Math.max(58, 9*text.length+26);
+    const G=grp(p,{});
+    G.appendChild(el('rect',{x:x-w/2, y:y-13, width:w, height:24, rx:12,
+      fill:'#fff', stroke:col, 'stroke-width':2}));
+    mono(G, x, y-1, text, col, 11.5, 'middle', 700);
+    return G;
+  }
+  /* A verdict chip: a requirement, and whether this protocol met it. */
+  function verdict(p,x,y,name,ok,note){
+    const G=grp(p,{});
+    G.appendChild(el('rect',{x:x, y:y, width:300, height:46, rx:10,
+      fill:'#fff', stroke:ok?C.teal:C.red, 'stroke-width':2}));
+    G.appendChild(el('circle',{cx:x+25, cy:y+23, r:11, fill:ok?C.teal:C.red}));
+    mono(G, x+25, y+23, ok?'✓':'✕', '#fff', 13);
+    sans(G, x+46, y+16, name, C.ink, 14, 'start', 700);
+    sans(G, x+46, y+33, note, C.muted, 12.5, 'start', 600);
+    return G;
+  }
+  function panel(p,x,y,w,h,title){
+    const G=grp(p,{});
+    G.appendChild(el('rect',{x:x, y:y, width:w, height:h, rx:12,
+      fill:'#fbf9f5', stroke:C.line, 'stroke-width':1.5}));
+    if(title) sans(G, x+16, y+19, title, C.muted, 12.5, 'start', 700);
+    return G;
+  }
+  return {NS:NS, C:C, el:el, grp:grp, clear:clear, mono:mono, sans:sans,
+          officer:officer, letter:letter, arrow:arrow, head:head,
+          ctl:ctl, qpt:qpt, route:route,
+          banner:banner, verdict:verdict, panel:panel};
+})();
+</script>
+
+<script>
+/* Figure 1 — three kinds of general */
+(function(){
+  const PFX='arm_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.BYZ, C=B.C;
+  const GX=180, GY=280, LY=280, LX=[640,860,1080];
+  const NAMES=['A','B','C'];
+  const MODES={
+    attack:  {loyal:true,  send:['attack','attack','attack'],
+              note:'a loyal general: the same letter to all three'},
+    retreat: {loyal:true,  send:['retreat','retreat','retreat'],
+              note:'a loyal general: the same letter to all three'},
+    disloyal:{loyal:false, send:['attack','retreat',null],
+              note:'a disloyal general: attack, retreat, and silence'}
+  };
+  let mode='attack', T=0, raf=null;
+
+  function draw(){
+    B.clear(svg);
+    const M=MODES[mode];
+    B.sans(svg, 620, 30, M.loyal?'A LOYAL GENERAL':'A DISLOYAL GENERAL',
+      M.loyal?C.green:C.coatD, 15, 'middle', 700);
+    B.officer(svg, GX, GY, {rank:'general', loyal:M.loyal,
+      label:'General', scale:1.15});
+    for(let i=0;i<3;i++){
+      B.officer(svg, LX[i], LY, {loyal:true, label:NAMES[i], scale:1});
+      /* what this lieutenant is holding, once the letter lands */
+      if(T>=1){
+        const k=M.send[i];
+        const col=k==='attack'?C.blue:(k==='retreat'?C.red:C.muted);
+        B.banner(svg, LX[i], LY-142,
+          k==='attack'?'attack':(k==='retreat'?'retreat':'nothing'), col);
+        if(k===null) B.sans(svg, LX[i], LY+54,
+          'treats silence as retreat', C.muted, 12.5, 'middle', 600);
+      }
+    }
+    /* the letters, in flight or at rest */
+    for(let i=0;i<3;i++){
+      const k=M.send[i];
+      if(k===null) continue;
+      const a=[GX+58, GY-78], b=[LX[i], LY-120];
+      const c=B.ctl(a, b, 150+i*38);
+      const u=Math.min(1,T), col=(k==='attack'?C.blue:C.red);
+      if(T>0){
+        B.route(svg, a, c, b, col, {w:2.1, arrow:T>=1});
+        const q=B.qpt(a,c,b,u);
+        B.letter(svg, q[0], q[1], {kind:k, signer:'G', scale:.92});
+      }
+    }
+    $('status').innerHTML='<b>'+M.note+'</b>';
+  }
+  function run(){
+    T=0; if(raf) cancelAnimationFrame(raf);
+    const t0=performance.now();
+    (function step(now){
+      T=Math.min(1,(now-t0)/900);
+      draw();
+      if(T<1) raf=requestAnimationFrame(step);
+    })(t0);
+  }
+  function pick(m,btn){
+    mode=m;
+    ['a','r','d'].forEach(function(k){ $(k).className=''; });
+    btn.className='primary';
+    run();
+  }
+  $('a').onclick=function(){ pick('attack',$('a')); };
+  $('r').onclick=function(){ pick('retreat',$('r')); };
+  $('d').onclick=function(){ pick('disloyal',$('d')); };
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 2 — each requirement alone is easy */
+(function(){
+  const PFX='tri_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.BYZ, C=B.C;
+  const GX=165, GY=250, LY=250, LX=[520,700,880];
+  const NAMES=['A','B','C'];
+  let proto='obey', loyal=false;
+
+  function orders(){
+    /* a loyal general here orders the attack; a disloyal one splits them */
+    return loyal ? ['attack','attack','attack'] : ['attack','retreat',null];
+  }
+  function acts(){
+    const o=orders();
+    if(proto==='retreat') return ['retreat','retreat','retreat'];
+    return o.map(function(k){ return k===null?'retreat':k; });
+  }
+  function draw(){
+    B.clear(svg);
+    const o=orders(), a=acts();
+    B.sans(svg, 520, 30, (loyal?'LOYAL':'DISLOYAL')+' GENERAL  ·  '+
+      (proto==='obey'?'PROTOCOL: OBEY THE GENERAL':'PROTOCOL: ALWAYS RETREAT'),
+      C.muted, 14, 'middle', 700);
+    B.officer(svg, GX, GY, {rank:'general', loyal:loyal, label:'General', scale:1.05});
+    for(let i=0;i<3;i++){
+      B.officer(svg, LX[i], LY, {loyal:true, label:NAMES[i], scale:.92});
+      if(o[i]!==null)
+        B.arrow(svg, [GX+52,GY-66], [LX[i]-34,LY-70],
+          o[i]==='attack'?C.blue:C.red, {op:.5, w:2.2, dash:'7 6'});
+      B.banner(svg, LX[i], LY-132, a[i], a[i]==='attack'?C.blue:C.red);
+    }
+    /* the verdicts */
+    const same=a[0]===a[1] && a[1]===a[2];
+    const validityHeld=!loyal || a.every(function(k){return k==='attack';});
+    B.verdict(svg, 940, 120, 'Validity',  validityHeld,
+      validityHeld?'loyal lieutenants obey a loyal general'
+                  :'a loyal general ordered attack; they retreated');
+    B.verdict(svg, 940, 186, 'Consensus', same,
+      same?'all three loyal lieutenants agree'
+          :'A attacks while B and C retreat');
+    $('status').innerHTML='validity <b>'+(validityHeld?'held':'broken')+
+      '</b> · consensus <b>'+(same?'held':'broken')+'</b>';
+  }
+  $('o').onclick=function(){ proto='obey'; $('o').className='primary';
+    $('r').className=''; draw(); };
+  $('r').onclick=function(){ proto='retreat'; $('r').className='primary';
+    $('o').className=''; draw(); };
+  $('t').onclick=function(){ loyal=!loyal; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 3 — what a traitor can do to a letter */
+(function(){
+  const PFX='let_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.BYZ, C=B.C;
+  const GX=110, MX=420, RX=730, Y=250;
+  let mode='written', T=0, raf=null;
+
+  function draw(){
+    B.clear(svg);
+    const forged=(mode==='oral');
+    B.sans(svg, 420, 28, forged?'ORAL: SIGNATURES CAN BE FORGED'
+                                :'WRITTEN: THE SEAL HOLDS',
+      forged?C.red:C.teal, 14, 'middle', 700);
+    B.officer(svg, GX, Y, {rank:'general', loyal:true, label:'General', scale:.86});
+    B.officer(svg, MX, Y, {loyal:false, label:'Y', sub:'disloyal', scale:.86});
+    B.officer(svg, RX, Y, {loyal:true, label:'C', scale:.86});
+
+    /* leg 1: the general's letter reaches the traitor */
+    const a1=[GX+44,Y-62], b1=[MX-44,Y-66];
+    const u1=Math.min(1, T*2);
+    if(T>0){
+      B.arrow(svg, a1, [a1[0]+(b1[0]-a1[0])*u1, a1[1]+(b1[1]-a1[1])*u1],
+        C.blue, {op:.4, dash:'7 6', w:2, noHead:true});
+      B.letter(svg, a1[0]+(b1[0]-a1[0])*u1, a1[1]+(b1[1]-a1[1])*u1,
+        {kind:'attack', signer:'G', scale:.8});
+    }
+    /* leg 2: what the traitor passes on */
+    if(T>0.5){
+      const u2=Math.min(1,(T-0.5)*2);
+      const a2=[MX+44,Y-66], b2=[RX-44,Y-62];
+      B.arrow(svg, a2, [a2[0]+(b2[0]-a2[0])*u2, a2[1]+(b2[1]-a2[1])*u2],
+        forged?C.red:C.blue, {op:.4, dash:'7 6', w:2, noHead:true});
+      B.letter(svg, a2[0]+(b2[0]-a2[0])*u2, a2[1]+(b2[1]-a2[1])*u2,
+        {kind:forged?'retreat':'attack', signer:'G', scale:.8, forged:forged});
+      if(forged && u2>.4)
+        B.sans(svg, MX+150, Y-112, 'rewritten, and signed “General”',
+          C.red, 13, 'middle', 700);
+    }
+    if(T>=1){
+      B.banner(svg, RX, Y-124,
+        forged?'reads retreat':'reads attack', forged?C.red:C.blue);
+      B.sans(svg, 420, 330, forged
+        ? 'C cannot tell the difference, and the general never said it'
+        : 'C reads exactly what the general wrote, and knows it',
+        forged?C.red:C.teal, 13.5, 'middle', 700);
+    }
+    $('status').innerHTML=forged?'the order is <b>changed</b> in flight'
+                                :'the order arrives <b>unchanged</b>';
+  }
+  function run(){
+    if(raf) cancelAnimationFrame(raf);
+    const t0=performance.now();
+    (function step(now){
+      T=Math.min(1,(now-t0)/1600);
+      draw();
+      if(T<1) raf=requestAnimationFrame(step);
+    })(t0);
+  }
+  $('w').onclick=function(){ mode='written'; $('w').className='primary';
+    $('o').className=''; run(); };
+  $('o').onclick=function(){ mode='oral'; $('o').className='primary';
+    $('w').className=''; run(); };
+  T=0; draw();
+})();
+</script>
+
+<script>
+/* Figure 4 — round 0 */
+(function(){
+  const PFX='r0_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.BYZ, C=B.C;
+  const GX=170, GY=278, LY=278, LX=[580,760,940,1120];
+  const NAMES=['A','B','C','D'];
+  const SENT=['attack','attack','attack',null];
+  let T=0, raf=null;
+
+  function draw(){
+    B.clear(svg);
+    B.sans(svg, 620, 32, 'ROUND 0  ·  THE GENERAL SIGNS AND SENDS',
+      C.muted, 14, 'middle', 700);
+    B.officer(svg, GX, GY, {rank:'general', loyal:false, label:'General',
+      sub:'disloyal', scale:1.1});
+    for(let i=0;i<4;i++){
+      B.officer(svg, LX[i], LY, {loyal:true, label:NAMES[i], scale:.95});
+      const k=SENT[i], a=[GX+56, GY-68], b=[LX[i]-42, LY-70];
+      if(k===null){
+        /* no letter at all: a short dead stub by D's own shoulder, so the
+           line does not cut across the lieutenants who did get one */
+        const s0=[b[0]-150, b[1]-4];
+        B.arrow(svg, s0, b, '#c9c4b8', {op:.75, dash:'4 7', w:2, noHead:true});
+        const mx=(s0[0]+b[0])/2, my=(s0[1]+b[1])/2;
+        B.arrow(svg, [mx-9,my-9], [mx+9,my+9], C.red, {trim:0, w:2.6, noHead:true});
+        B.arrow(svg, [mx+9,my-9], [mx-9,my+9], C.red, {trim:0, w:2.6, noHead:true});
+        if(T>=1){
+          B.banner(svg, LX[i], LY-150, 'nothing', C.muted);
+          B.sans(svg, LX[i], LY+52, 'so D acts as if', C.muted, 12.5, 'middle', 600);
+          B.sans(svg, LX[i], LY+69, 'the order were retreat', C.red, 12.5, 'middle', 700);
+        }
+        continue;
+      }
+      const u=Math.min(1,T), cc=B.ctl(a, [b[0]+42, b[1]-44], 150+i*34);
+      if(T>0){
+        const bb=[b[0]+42, b[1]-44];
+        B.route(svg, a, cc, bb, C.blue, {w:2, arrow:T>=1});
+        const q=B.qpt(a,cc,bb,u);
+        B.letter(svg, q[0], q[1], {kind:'attack', signer:'G', scale:.9});
+      }
+      if(T>=1) B.banner(svg, LX[i], LY-150, 'attack', C.blue);
+    }
+    if(T>=1) B.sans(svg, 620, 376,
+      'the round has ended, so D’s letter is not coming — silence here is information',
+      C.ink, 13.5, 'middle', 600);
+    $('status').innerHTML=T>=1?'three letters sent · <b>D got none</b>'
+                               :'the general has not sent yet';
+  }
+  function run(){
+    if(raf) cancelAnimationFrame(raf);
+    const t0=performance.now();
+    (function step(now){
+      T=Math.min(1,(now-t0)/1000); draw();
+      if(T<1) raf=requestAnimationFrame(step);
+    })(t0);
+  }
+  $('play').onclick=run;
+  $('reset').onclick=function(){ T=0; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 5 — lieutenant C on round 3 */
+(function(){
+  const PFX='rj_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.BYZ, C=B.C;
+  const CX=390, CY=330, RX=[870,1090], RY=330;
+  const HELD=[['G','attack'],['A','attack'],['B','attack']];
+  let step=0, T=0, raf=null;
+
+  function draw(){
+    B.clear(svg);
+    B.sans(svg, 620, 30, 'ROUND j = 3  ·  THE RULE NEEDS THE GENERAL AND j−1 = 2 LIEUTENANTS',
+      C.muted, 14, 'middle', 700);
+    /* what C is holding */
+    B.panel(svg, 60, 70, 300, 150, 'C HOLDS, AT THE START OF ROUND 3');
+    for(let i=0;i<3;i++)
+      B.letter(svg, 120+i*86, 155, {kind:HELD[i][1], signer:HELD[i][0], scale:.95});
+    B.mono(svg, 210, 200, 'general + 2 lieutenants', C.ink, 13);
+
+    const committed=step>=1;
+    B.officer(svg, CX, CY, {loyal:true, label:'C', scale:1.15});
+    if(committed){
+      B.banner(svg, CX, CY-172, 'commits: attack', C.blue);
+      B.sans(svg, CX, CY+54, 'the rule is satisfied', C.teal, 13, 'middle', 700);
+    }
+    for(let i=0;i<2;i++)
+      B.officer(svg, RX[i], RY, {loyal:true, label:i?'E':'D', scale:.95,
+        dim:step<2});
+
+    /* step 2: C broadcasts the evidence, with its own signature added */
+    if(step>=2){
+      const u=Math.min(1,T);
+      const sign=[['G','attack'],['A','attack'],['B','attack'],['C','attack']];
+      for(let r=0;r<2;r++){
+        const a=[CX+52, CY-84], b=[RX[r], RY-116];
+        const c=B.ctl(a, b, 104+r*46);
+        B.route(svg, a, c, b, C.blue, {w:2, arrow:u>=1});
+        const q=B.qpt(a,c,b,u);
+        for(let k=0;k<4;k++){
+          const off=k*13-20;
+          B.letter(svg, q[0]+off, q[1]-off*0.45,
+            {kind:sign[k][1], signer:sign[k][0], scale:.62});
+        }
+      }
+      if(u>=1) B.sans(svg, 980, 128,
+        'four letters: the general, A, B, and C’s own signature',
+        C.ink, 13, 'middle', 600);
+    }
+    $('status').innerHTML=['holding the evidence',
+      '<b>commits</b> on round 3', 'broadcasts the evidence + its own signature'][step];
+  }
+  function anim(){
+    if(raf) cancelAnimationFrame(raf);
+    const t0=performance.now();
+    (function s(now){ T=Math.min(1,(now-t0)/900); draw();
+      if(T<1) raf=requestAnimationFrame(s); })(t0);
+  }
+  $('step').onclick=function(){
+    step=Math.min(2, step+1); T=(step===2?0:1);
+    if(step===2) anim(); else draw();
+  };
+  $('reset').onclick=function(){ step=0; T=0; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 6 — observation 3: one commit pulls the rest in */
+(function(){
+  const PFX='csc_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.BYZ, C=B.C;
+  const BX=620, BY=300, AX=250, CX=990, Y=300;
+  let step=0, T=0, raf=null;
+
+  function count(x,y,txt,need,ok){
+    B.mono(svg, x, y, txt, C.ink, 13);
+    B.sans(svg, x, y+19, need, ok?C.teal:C.muted, 12.5, 'middle', 700);
+  }
+  function draw(){
+    B.clear(svg);
+    B.sans(svg, 620, 30, 'B COMMITS ON ROUND 3  ·  WHAT DOES THAT DO TO A AND C?',
+      C.muted, 14, 'middle', 700);
+    B.officer(svg, BX, BY, {loyal:true, label:'B', scale:1.05});
+    B.officer(svg, AX, Y, {loyal:true, label:'A', scale:1.05});
+    B.officer(svg, CX, Y, {loyal:true, label:'C', scale:1.05});
+    if(step>=1) B.banner(svg, BX, BY-160, 'commits: attack', C.blue);
+
+    if(step>=2){
+      const u=Math.min(1,T);
+      const sign=[['G','attack'],['Y','attack'],['Z','attack'],['B','attack']];
+      [[-1,AX],[1,CX]].forEach(function(p){
+        const a=[BX+p[0]*48, BY-84], b=[p[1], Y-114];
+        const c=B.ctl(a, b, 96);
+        B.route(svg, a, c, b, C.blue, {w:2, arrow:u>=1});
+        const q=B.qpt(a,c,b,u);
+        for(let k=0;k<4;k++){
+          const off=k*12-18;
+          B.letter(svg, q[0]+off, q[1]-off*0.4,
+            {kind:sign[k][1], signer:sign[k][0], scale:.58});
+        }
+      });
+      if(u>=1){
+        count(AX, Y+58, 'general + 3 lieutenants', 'round 4 asks for 3', true);
+        count(CX, Y+58, 'general + 3 lieutenants', 'round 4 asks for 3', true);
+      }
+    }
+    if(step>=3){
+      B.banner(svg, AX, Y-160, 'commits: attack', C.blue);
+      B.banner(svg, CX, Y-160, 'commits: attack', C.blue);
+      B.sans(svg, 620, 378,
+        'every loyal lieutenant has committed by round 4',
+        C.teal, 13.5, 'middle', 700);
+    }
+    $('status').innerHTML=['round 3','B commits','B broadcasts four letters',
+      '<b>A and C commit on round 4</b>'][step];
+  }
+  function anim(after){
+    if(raf) cancelAnimationFrame(raf);
+    const t0=performance.now();
+    (function s(now){ T=Math.min(1,(now-t0)/900); draw();
+      if(T<1) raf=requestAnimationFrame(s); else if(after) after(); })(t0);
+  }
+  $('play').onclick=function(){
+    if(step<2){ step=2; T=0; anim(function(){ step=3; draw(); }); }
+    else { step=3; T=1; draw(); }
+  };
+  $('reset').onclick=function(){ step=1; T=0; draw(); };
+  step=1; draw();
+})();
+</script>
+
+<script>
+/* Figure 7 — two runs with a disloyal general, round by round */
+(function(){
+  const PFX='run_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.BYZ, C=B.C;
+  const GX=150, GY=250;
+  const NAMES=['A','B','C','Y','Z'];
+  const LOYAL={A:true,B:true,C:true,Y:false,Z:false};
+  const X={A:470, B:640, C:810, Y:1010, Z:1170}, LY=250;
+
+  /* Each frame is one round: the letters that travel, what each loyal
+     lieutenant holds at the end of it, and who has committed. */
+  const RUNS={
+    a:[
+      {r:0, msgs:[['G','Y'],['G','Z']],
+       note:'the general sends attack to Y and Z only, and nothing to A, B, C',
+       holds:{}, commit:{}},
+      {r:1, msgs:[], note:'Y and Z say nothing, so A, B and C have no evidence at all',
+       holds:{}, commit:{}},
+      {r:2, msgs:[], note:'Y and Z say nothing again', holds:{}, commit:{}},
+      {r:3, msgs:[], note:'and again', holds:{}, commit:{}},
+      {r:4, msgs:[['Y','A'],['Y','B'],['Y','C'],['Z','A'],['Z','B'],['Z','C']],
+       note:'now the traitors produce the general’s letter and their own two signatures',
+       holds:{A:2,B:2,C:2}, commit:{},
+       verdict:'round 4 asks for three lieutenants; they have two — nobody commits, all three retreat, in consensus'}
+    ],
+    b:[
+      {r:0, msgs:[['G','Y'],['G','Z']],
+       note:'the general sends attack to Y and Z only',
+       holds:{}, commit:{}},
+      {r:1, msgs:[], note:'Y and Z say nothing', holds:{}, commit:{}},
+      {r:2, msgs:[['Y','A'],['Z','A']],
+       note:'the traitors hand A alone the general’s letter and their own signatures',
+       holds:{A:2}, commit:{}},
+      {r:3, msgs:[], note:'A holds the general and two lieutenants, and round 3 asks for two',
+       holds:{A:2}, commit:{A:3}},
+      {r:4, msgs:[['A','B'],['A','C']],
+       note:'A broadcasts its evidence with its own signature added',
+       holds:{A:2,B:3,C:3}, commit:{A:3,B:4,C:4},
+       verdict:'B and C hold the general and three lieutenants, which is what round 4 asks for — consensus, one round later'}
+    ]
+  };
+  let run='a', k=0, T=1, raf=null;
+
+  function draw(){
+    B.clear(svg);
+    const F=RUNS[run], f=F[k];
+    B.sans(svg, 620, 28,
+      (run==='a'?'RUN 1':'RUN 2')+'  ·  ROUND '+f.r, C.muted, 14.5, 'middle', 700);
+    B.officer(svg, GX, GY, {rank:'general', loyal:false, label:'General',
+      sub:'disloyal', scale:1.0});
+    NAMES.forEach(function(n){
+      B.officer(svg, X[n], LY, {loyal:LOYAL[n], label:n,
+        sub:LOYAL[n]?null:'disloyal', scale:.9});
+      const c=f.commit[n];
+      const h=f.holds[n];
+      if(h!=null) B.mono(svg, X[n], LY+52, 'G + '+h+' lt', C.ink, 12.5);
+      if(c!=null) B.banner(svg, X[n], LY+82, 'attack (round '+c+')', C.blue);
+      else if(LOYAL[n] && f.r>=4)
+        B.banner(svg, X[n], LY+82, 'retreat', C.red);
+    });
+    /* the letters moving this round */
+    const u=Math.min(1,T);
+    f.msgs.forEach(function(m,mi){
+      const from=(m[0]==='G')?[GX+48,GY-74]:[X[m[0]], LY-112];
+      const to=[X[m[1]], LY-112];
+      const n=(m[0]==='G')?1:(m[0]==='A'?4:2);
+      const c=B.ctl(from, to, 74+(mi%3)*26);
+      B.route(svg, from, c, to, C.blue, {w:1.8, op:.28, arrow:u>=1, hs:5.5});
+      const q=B.qpt(from,c,to,u);
+      for(let i=0;i<n;i++){
+        const off=i*11-(n-1)*5.5;
+        B.letter(svg, q[0]+off, q[1]-off*0.4,
+          {kind:'attack', signer:(m[0]==='G'?'G':m[0]), scale:.56});
+      }
+    });
+    B.sans(svg, 620, 404, f.note, C.ink, 13.5, 'middle', 600);
+    if(f.verdict) B.sans(svg, 620, 434, f.verdict,
+      run==='a'?C.teal:C.blue, 13.5, 'middle', 700);
+    $('status').innerHTML='round <b>'+f.r+'</b> of '+(RUNS[run].length-1);
+  }
+  function anim(){
+    if(raf) cancelAnimationFrame(raf);
+    const t0=performance.now();
+    (function s(now){ T=Math.min(1,(now-t0)/700); draw();
+      if(T<1) raf=requestAnimationFrame(s); })(t0);
+  }
+  function pick(which){
+    run=which; k=0; T=1;
+    $('a').className=(which==='a')?'primary':'';
+    $('b').className=(which==='b')?'primary':'';
+    draw();
+  }
+  $('a').onclick=function(){ pick('a'); };
+  $('b').onclick=function(){ pick('b'); };
+  $('step').onclick=function(){
+    if(k<RUNS[run].length-1){ k++; T=0; anim(); } else { T=1; draw(); }
+  };
+  $('reset').onclick=function(){ k=0; T=1; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 8 — the counting argument behind the theorem */
+(function(){
+  const PFX='thm_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.BYZ, C=B.C;
+  const SLOT=[[150,210],[290,210],[430,210],[570,210],[710,210]];
+  const WHO=['G','Y','Z','W',null];   /* the fifth can never be filled */
+  let n=0, raf=null;
+
+  function draw(){
+    B.clear(svg);
+    B.sans(svg, 420, 30, 'ROUND t+1 = 5  ·  THE RULE ASKS FOR THE GENERAL AND t = 4 LIEUTENANTS',
+      C.muted, 13.5, 'middle', 700);
+    B.sans(svg, 420, 64, 't = 4 disloyal officers, and the general is one of them',
+      C.ink, 14, 'middle', 600);
+    B.sans(svg, 420, 88, 'so at most t−1 = 3 lieutenants can sign an attack message',
+      C.muted, 13, 'middle', 600);
+
+    for(let i=0;i<5;i++){
+      const x=SLOT[i][0], y=SLOT[i][1], filled=i<n && WHO[i]!==null;
+      const box=B.el('rect',{x:x-54, y:y-40, width:108, height:80, rx:10,
+        fill:filled?'#fff':'#fbf9f5',
+        stroke:(i===4)?C.red:(filled?C.blue:C.line),
+        'stroke-width':(i===4)?2.4:1.6,
+        'stroke-dasharray':(i===4)?'7 6':'none'});
+      svg.appendChild(box);
+      B.sans(svg, x, y-56, i===0?'the general':'lieutenant '+(i),
+        C.muted, 12.5, 'middle', 700);
+      if(filled) B.letter(svg, x, y, {kind:'attack', signer:WHO[i], scale:.95});
+      else if(i===4 && n>=5){
+        B.mono(svg, x, y-6, 'no one', C.red, 13);
+        B.mono(svg, x, y+13, 'left to sign', C.red, 13);
+      }
+    }
+    if(n>=5){
+      B.sans(svg, 420, 300,
+        'four slots, three traitors: the fifth can never be filled',
+        C.red, 14.5, 'middle', 700);
+      B.sans(svg, 420, 330,
+        'so no loyal lieutenant commits on round t+1, or on any round after it',
+        C.ink, 13.5, 'middle', 600);
+    }
+    $('status').innerHTML=n>=5?'<b>one slot short, for ever</b>'
+      :'filled <b>'+Math.max(0,n-1)+'</b> of 4 lieutenant slots';
+  }
+  function run(){
+    if(raf) cancelAnimationFrame(raf);
+    n=0;
+    const t0=performance.now();
+    (function s(now){
+      n=Math.min(5, Math.floor((now-t0)/320)+1); draw();
+      if(n<5) raf=requestAnimationFrame(s);
+    })(t0);
+  }
+  $('play').onclick=run;
+  $('reset').onclick=function(){ n=0; draw(); };
+  draw();
+})();
+</script>
+
+</body>
+</html>
