@@ -269,6 +269,27 @@ checkpoints resuming.
 Vikram a source"* can be written. Parser, spec, `check_wiring`,
 codegen.
 
+**Name the outports; stop numbering them.** An outbox used to have two
+names — the office's (`Q2's to_p1 is P1`) and the runtime's positional
+`out_1`, by the order `out_ports` declared — and an `Agent` written by
+hand had to carry a table pairing them. `AgentRoleEntry.out_port_map()`
+is now the one place that knows the difference, and an entry can say
+`names_own_ports=True` and be sent to by the office's own names; the
+four `gallery/apps/paxos` roles do, which is why the acceptor's reply
+is `self.send(reply, sender)` with no table. **The default is still the
+positional one, and it is the wrong way round**: the names are the
+readable thing and the positions are an accident of how `Role` happens
+to name its ports. Flipping it means every entry that *does* number its
+ports saying so — the 27 gallery roles built on `Role`, plus `nl_role`
+and the rest of `roles_lib`. The cheap way to make that one edit
+instead of thirty is for `Role` to build its own entry, so the
+declaration lives with the thing that is actually positional. What will
+not work is inferring it from the agent: `codegen` never constructs
+one, and if it did, `dsl build` would need the credentials that
+`compile_office` already fails for — so the declaration has to stay on
+the entry. Do it alongside the identifier rename above; it is the same
+surface, and both change a public keyword.
+
 **Renames that are pure debt.** `office/utils.py` →
 `office/registry.py` (16 import sites); `start_gallery/` → `chat/`;
 the `OfficeSpeakSpec` / `from_officespeak.py` internals, the last
