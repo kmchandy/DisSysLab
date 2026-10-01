@@ -169,8 +169,8 @@
 The Paxos fault model allows more faults than the FLP theorem assumes.
 Messages may get lost, duplicated, delayed for arbitrary durations,
 and delivered out of order. An arbitrary number of agents may halt (not just
-one) as FLP assumes. Agents may halt and then restart, but 
-retain state while halted.
+one) as FLP assumes. Agents may halt and then restart, and agents may operate
+at arbitrary speeds.
 </p>
 
 <p>
@@ -476,12 +476,6 @@ L is the list of transaction ids in increasing order.
 
 <pre class="code">for i in L: execute transaction with id i</pre>
 
-<p>
-So, instead of studying computations in which events from different transactions
-may be interspersed we need only study computations in which transactions are
-executed sequentially.
-</p>
-
   <figure class="fig wideout">
     <svg id="seq_g" viewBox="0 0 1240 330" role="img"
          aria-label="Five agents running four transactions with their events interspersed, and the same computation with the four transactions executed one after another"></svg>
@@ -502,6 +496,40 @@ executed sequentially.
       Blocks are separated by consistent cuts.
     </figcaption>
   </figure>
+
+
+  <p>
+    Instead of studying computations in which events from different transactions
+    may be interspersed we need only study computations in which transactions are
+    executed sequentially. We can determine the state of each agent after each step
+    in any computation by determining the state in the corresponding sequential 
+    computation.
+    </p>
+    
+  <figure class="fig wideout">
+    <svg id="loc_g" viewBox="0 0 1240 330" role="img"
+         aria-label="Figure 7 again, with thin transaction boundaries and the states of agent A marked between its events"></svg>
+
+    <div class="ctrls">
+      <button id="loc_play" class="primary">Play</button>
+      <button id="loc_reset">Reset</button>
+      <span class="status" id="loc_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 8. The states of one agent.</b>
+      Figure 7 again, with the boundaries between transactions drawn as thin
+      lines, and the states of agent A marked: s0 is A&rsquo;s state before its
+      first event, and s_k is its state after its k-th event. The marks are
+      there before <i>Play</i> and after it. Press <i>Play</i>: the events
+      slide into transaction order and each mark slides with them, staying
+      between the same two events of A. A&rsquo;s events are the same events in
+      the same order before and after, so its states are the same states in the
+      same order. Permuting the events of <b>different</b> agents changes
+      nothing that A holds, and the same argument holds for B, C, D and E.
+    </figcaption>
+  </figure>
+
 <p>
   <a href="lecture_08.html">Next class: the Paxos algorithm</a>
 </p>
@@ -509,6 +537,123 @@ executed sequentially.
 
 </div>
 
+
+<script>
+(function(){
+  const PFX='loc_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', rail:'#9ab4e0', good:'#00947d',
+           blue:'#1a5fd0', red:'#e0301a', green:'#1a9e46', magenta:'#b02a8f'};
+  const ORD=['blue','red','green','magenta'];
+  const ROWS=[80,122,164,206,248], X0=60, X1=1180;
+  // the computation of figure 7
+  const A=[
+    {x:[120,210,330,470,840,1010],
+     c:['blue','blue','red','red','magenta','magenta']},
+    {x:[150,290,380,520,700,880,1060],
+     c:['blue','red','red','green','green','green','magenta']},
+    {x:[130,250,420,560,760],
+     c:['blue','blue','blue','red','green']},
+    {x:[480,620,820,1000],
+     c:['green','green','magenta','magenta']},
+    {x:[540,730,930],
+     c:['green','green','magenta']}];
+  const EV=[];
+  A.forEach(function(d,a){ d.x.forEach(function(x,i){
+    EV.push({a:a, x:x, c:d.c[i]}); }); });
+  const GAP=38, STEP=(1060-3*GAP)/(EV.length-1);
+  const BAR=[], MID=[];
+  (function(){
+    const sorted=EV.slice().sort(function(p,q){
+      const d=ORD.indexOf(p.c)-ORD.indexOf(q.c);
+      return d? d : p.x-q.x; });
+    let cur=90, prev=null, start=90;
+    sorted.forEach(function(e){
+      if(prev!==null && e.c!==prev){
+        BAR.push(cur - STEP + (GAP+STEP)/2);
+        MID.push([start, cur-STEP, prev]);
+        cur+=GAP; start=cur;
+      }
+      e.sx=cur; cur+=STEP; prev=e.c;
+    });
+    MID.push([start, cur-STEP, prev]);
+  })();
+  let t=0, raf=null;
+  function xOf(e){ return e.x + (e.sx - e.x)*t; }
+  function el(tg,at,txt){
+    const e=document.createElementNS(NS,tg);
+    for(const k in at) e.setAttribute(k,at[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function tag(g,x,y,str,fill,size,anchor,op){
+    g.appendChild(el('text',{x:x, y:y,
+      'font-family':'ui-monospace,Menlo,Consolas,monospace',
+      'font-size':size||12.5, 'font-weight':700, fill:fill||C.ink,
+      'text-anchor':anchor||'middle', 'dominant-baseline':'middle',
+      opacity:(op===undefined?1:op),
+      stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, str));
+  }
+  function draw(){
+    while(svg.firstChild) svg.removeChild(svg.firstChild);
+    const g=el('g',{}); svg.appendChild(g);
+    if(t>0.01){
+      BAR.forEach(function(x){
+        g.appendChild(el('line',{x1:x, y1:72, x2:x, y2:276, stroke:C.ink,
+          'stroke-width':2, opacity:t}));
+      });
+      MID.forEach(function(m){
+        tag(g, (m[0]+m[1])/2, 40, m[2], C[m[2]], 16, 'middle', t);
+      });
+    }
+    ROWS.forEach(function(y,i){
+      g.appendChild(el('line',{x1:X0, y1:y, x2:X1, y2:y, stroke:C.rail,
+        'stroke-width':2}));
+      tag(g, 36, y, 'ABCDE'[i], C.muted, 15, 'end');
+    });
+    // the states of agent A, between its own events, wherever those events are
+    (function(){
+      const xs=EV.filter(function(e){return e.a===0;})
+                 .sort(function(p,q){return p.x-q.x;}).map(xOf);
+      for(let k=0;k<=xs.length;k++){
+        const lo=(k===0)? X0+8 : xs[k-1];
+        const hi=(k===xs.length)? X1-8 : xs[k];
+        const x=(lo+hi)/2;
+        g.appendChild(el('rect',{x:x-16, y:ROWS[0]-31, width:32, height:20,
+          rx:6, fill:'#fff', stroke:C.good, 'stroke-width':1.6}));
+        tag(g, x, ROWS[0]-21, 's'+k, C.good, 11.5);
+      }
+    })();
+    EV.forEach(function(e){
+      g.appendChild(el('circle',{cx:xOf(e), cy:ROWS[e.a], r:9, fill:C[e.c],
+        stroke:'#fff', 'stroke-width':2}));
+    });
+    tag(g, 620, 306, 'the marks are the states of agent A: s_k is its state '+
+        'after its k-th event', C.muted, 13.5);
+    $('status').innerHTML = (t>0.99)
+      ? '<b>one transaction after another</b> &middot; A holds s0 &hellip; s6 '+
+        'in that order, as before'
+      : (t>0.001 ? '<b>sliding</b>'
+                 : '<span class="none">press Play</span>');
+  }
+  function play(){
+    if(raf) cancelAnimationFrame(raf);
+    t=0; draw();
+    const t0=Date.now();
+    (function step(){
+      const q=Math.min(1,(Date.now()-t0)/1600);
+      t=(q<.5? 2*q*q : 1-Math.pow(-2*q+2,2)/2);
+      draw();
+      if(q<1) raf=requestAnimationFrame(step); else raf=null;
+    })();
+  }
+  $('play').onclick=play;
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf); raf=null; t=0; draw(); };
+  draw();
+})();
+</script>
 
 <script>
 (function(){
@@ -523,16 +668,16 @@ executed sequentially.
   // never decrease along an agent -- conditions 1 and 2 -- so the whole
   // computation can be put in transaction order.
   const A=[
-    {x:[120,210,330,470,640,840,1010],
-     c:['blue','blue','red','red','green','magenta','magenta']},
+    {x:[120,210,330,470,840,1010],
+     c:['blue','blue','red','red','magenta','magenta']},
     {x:[150,290,380,520,700,880,1060],
      c:['blue','red','red','green','green','green','magenta']},
-    {x:[130,250,420,560,760,950],
-     c:['blue','blue','blue','red','green','magenta']},
-    {x:[180,310,480,620,820,1000],
-     c:['red','red','green','green','magenta','magenta']},
-    {x:[200,360,540,730,930],
-     c:['blue','red','green','green','magenta']}];
+    {x:[130,250,420,560,760],
+     c:['blue','blue','blue','red','green']},
+    {x:[480,620,820,1000],
+     c:['green','green','magenta','magenta']},
+    {x:[540,730,930],
+     c:['green','green','magenta']}];
   const EV=[];
   A.forEach(function(d,a){ d.x.forEach(function(x,i){
     EV.push({a:a, x:x, c:d.c[i]}); }); });
