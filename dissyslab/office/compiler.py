@@ -448,12 +448,13 @@ def _emit_network(
             raise CompileError(
                 f"duplicate block name {ref.agent_name!r} in {spec.name!r}"
             )
-        block, kind, ports = _resolve_role_ref(
+        block, kind, ports, out_map = _resolve_role_ref(
             ref, library, office_dir, warnings
         )
         blocks[ref.agent_name] = block
         if kind == "role":
             table.role_agents[ref.agent_name] = ports
+            table.out_map[ref.agent_name] = out_map
         else:  # subnetwork
             table.subnetworks[ref.agent_name] = ports
 
@@ -563,13 +564,14 @@ def _resolve_role_ref(
     library: Library,
     office_dir: Path,
     warnings: List[CompileWarning],
-) -> Tuple[Union[Agent, Network], str, Tuple[str, ...]]:
+) -> Tuple[Union[Agent, Network], str, Tuple[str, ...], Dict[str, str]]:
     """Resolve a single ``RoleRef`` to a runtime block.
 
-    Returns ``(block, kind, out_ports)`` where ``kind`` is
-    ``"role"`` or ``"subnetwork"`` and ``out_ports`` is the tuple
-    of (semantic) outport names the connection translator will use
-    when this block appears as a connection source.
+    Returns ``(block, kind, out_ports, out_map)``, where ``kind`` is
+    ``"role"`` or ``"subnetwork"``, ``out_ports`` is the tuple of
+    outport names an office may use for this block, and ``out_map``
+    gives the agent's own name for each of them -- empty for a
+    sub-office, whose external port names pass through.
     """
     entry = library.get(ref.role_name)
 
@@ -586,13 +588,13 @@ def _resolve_role_ref(
             )
         else:
             block = entry()
-        return block, "role", entry.out_ports
+        return block, "role", entry.out_ports, entry.out_port_map()
 
     if isinstance(entry, OfficeRoleEntry):
         child_dir = _resolve_subpath(office_dir, entry.path)
         child_net, child_warnings = compile_office(child_dir)
         warnings.extend(child_warnings)
-        return child_net, "subnetwork", tuple(child_net.outports)
+        return child_net, "subnetwork", tuple(child_net.outports), {}
 
     if entry is not None:
         raise CompileError(
@@ -643,7 +645,7 @@ def _resolve_role_ref(
                 f"{ref.role_name!r} rejected these arguments: {exc}"
             ) from exc
         block = entry()
-        return block, "role", entry.out_ports
+        return block, "role", entry.out_ports, entry.out_port_map()
 
     # Not in roles_lib or PARAMETERIZED_LIBRARY. Try fn_lib
     # (framework-shipped Python transformers). Office-local roles win
@@ -678,7 +680,7 @@ def _resolve_role_ref(
         # Single semantic outport called "out". The runtime translates
         # it to "out_" via the single-output convention; Pat writes
         # ``Sasha's out is <dest>.`` in office.md.
-        return block, "role", ("out",)
+        return block, "role", ("out",), {"out": "out_"}
 
     # Not in library. Inline-path sugar?
     if ref.path is not None:
@@ -696,7 +698,7 @@ def _resolve_role_ref(
         child_dir = _resolve_subpath(office_dir, ref.path)
         child_net, child_warnings = compile_office(child_dir)
         warnings.extend(child_warnings)
-        return child_net, "subnetwork", tuple(child_net.outports)
+        return child_net, "subnetwork", tuple(child_net.outports), {}
 
     if ref.role_name == UNASSIGNED:
         # A draft office reaching the compiler. The user has not made a

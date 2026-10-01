@@ -171,6 +171,7 @@ def _build_tree(
         entry = library.get(ref.role_name)
         if isinstance(entry, AgentRoleEntry):
             node.table.role_agents[ref.agent_name] = entry.out_ports
+            node.table.out_map[ref.agent_name] = entry.out_port_map()
         elif isinstance(entry, OfficeRoleEntry):
             child_dir = _resolve_subpath(office_dir, entry.path)
             child = _build_tree(child_dir, library=None, cache=cache)
@@ -211,6 +212,7 @@ def _build_tree(
                     f"agent {ref.agent_name!r}: {exc}"
                 ) from exc
             node.table.role_agents[ref.agent_name] = entry.out_ports
+            node.table.out_map[ref.agent_name] = entry.out_port_map()
             node.parameterized_agents[ref.agent_name] = (
                 ref.role_name, user_kwargs
             )
@@ -228,6 +230,7 @@ def _build_tree(
                     f"accepts these names."
                 )
             node.table.role_agents[ref.agent_name] = ("out",)
+            node.table.out_map[ref.agent_name] = {"out": "out_"}
             node.fn_lib_agents[ref.agent_name] = (
                 ref.role_name, init_kwargs, fn_kwargs
             )

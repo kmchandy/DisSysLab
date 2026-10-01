@@ -121,9 +121,9 @@ class AgentRoleEntry:
         Ordered names of input ports. ``("in_",)`` for prompt-driven
         roles built by ``nl_role``.
     out_ports
-        Ordered names of output ports. The order is meaningful: the
-        runtime maps ``out_ports[i]`` to the runtime name ``out_i``,
-        which the compiler uses when emitting connection 4-tuples.
+        The names of the output ports, as an office may write them.
+        ``out_port_map`` turns one of those names into the name the
+        agent itself uses for that port; see ``names_own_ports``.
     factory
         Zero-arg callable that returns a runtime ``Agent``. The
         compiler / generated code calls this to materialise the agent
@@ -132,6 +132,13 @@ class AgentRoleEntry:
     description
         Free-text description; surfaced in error messages and used by
         ``dsl new`` / ``dsl edit`` UX. Optional.
+    names_own_ports
+        True when the agent this factory builds declares the names in
+        ``out_ports`` as its own port names, so a connection needs no
+        translation at all and the order of ``out_ports`` means
+        nothing. False, the default, is the ``Role`` convention: the
+        agent names its ports ``out_0`` ... ``out_n`` by position, or
+        ``out_`` if it has only one.
 
     Examples
     --------
@@ -156,6 +163,7 @@ class AgentRoleEntry:
     out_ports: Tuple[str, ...]
     factory: Callable[[], Agent]
     description: str = ""
+    names_own_ports: bool = False
 
     def __post_init__(self) -> None:
         # Coerce iterables to tuples so callers may pass lists.
@@ -193,6 +201,20 @@ class AgentRoleEntry:
                 f"AgentRoleEntry {self.name!r} factory must be "
                 f"callable, got {type(self.factory).__name__}"
             )
+
+    def out_port_map(self) -> Dict[str, str]:
+        """Each outport name, mapped to the agent's own name for it.
+
+        The one place in the framework that knows how an office's name
+        for an outbox becomes the name the agent gives it. An agent
+        that names its own ports gets the identity map; everything
+        else gets ``Role``'s positional names.
+        """
+        if self.names_own_ports:
+            return {p: p for p in self.out_ports}
+        if len(self.out_ports) == 1:
+            return {self.out_ports[0]: "out_"}
+        return {p: "out_%d" % i for i, p in enumerate(self.out_ports)}
 
     def __call__(self, **kwargs: Any) -> Agent:
         """Build a fresh runtime ``Agent`` for this role.

@@ -43,7 +43,9 @@ def _resolve(args):
         agent_name="Bryn", role_name="threshold_detector", args=tuple(args)
     )
     library = {"threshold_detector": _entry()}
-    block, kind, ports = _resolve_role_ref(ref, library, Path("."), [])
+    block, kind, ports, out_map = _resolve_role_ref(
+        ref, library, Path("."), []
+    )
     return block
 
 

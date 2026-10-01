@@ -234,9 +234,11 @@ class _BlockTable:
 
     * ``source`` agents always emit on ``"out_"``; whatever port name
       the user wrote (typically ``"destination"``) maps to ``"out_"``.
-    * ``role`` agents (built from ``AgentRoleEntry``) carry an ordered
-      tuple of semantic outport names; the i-th name maps to runtime
-      ``"out_i"``.
+    * ``role`` agents (built from ``AgentRoleEntry``) carry the names
+      an office may use, and ``out_map`` gives the agent's own name for
+      each of them -- identity for an agent that names its own ports,
+      ``"out_i"`` for one that names them by position, as ``Role``
+      does. Nothing here depends on the order of the names.
     * ``subnetwork`` agents (sub-offices) declare their own external
       outport names; we pass the user-written name through verbatim
       and let ``Network.check()`` validate it.
@@ -247,6 +249,9 @@ class _BlockTable:
     sources: Dict[str, None] = field(default_factory=dict)
     sinks: Dict[str, None] = field(default_factory=dict)
     role_agents: Dict[str, Tuple[str, ...]] = field(default_factory=dict)
+    #: ``{agent name: {office's port name: the agent's own name}}``,
+    #: from ``AgentRoleEntry.out_port_map()``.
+    out_map: Dict[str, Dict[str, str]] = field(default_factory=dict)
     subnetworks: Dict[str, Tuple[str, ...]] = field(default_factory=dict)
 
     def known(self, name: str) -> bool:
@@ -288,11 +293,10 @@ def _runtime_outport(
                 f"{semantic_port!r}; declared outports are: "
                 f"{list(ports)}"
             )
-        # Single-output convention: one declared outport → "out_".
-        # Matches Role's runtime port naming and Source's convention.
-        if len(ports) == 1:
-            return "out_"
-        return f"out_{ports.index(semantic_port)}"
+        # Ask the entry what the agent calls this port. Identity for
+        # an agent that names its own; "out_i" for Role's positional
+        # names. Either way, a lookup by name.
+        return table.out_map[block_name][semantic_port]
     if block_name in table.subnetworks:
         # Pass through; the sub-office's runtime Network exposes the
         # named external outport directly.
