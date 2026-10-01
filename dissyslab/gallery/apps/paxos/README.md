@@ -98,13 +98,28 @@ made. Two consequences, checked in `check4.py` and `check5.py`:
    proposer does not even learn that it was dropped. Its next id is
    therefore larger than every id *it* has used, not larger than every
    id in the system, and a proposer that has ticked fewer times than
-   another makes no progress until it has caught up by ticking. Here,
-   with one clock ticking the three proposers in rotation, they stay
-   within one of each other and everyone makes progress. Is that the
-   rule you want the students to read? The alternative is for an
-   acceptor to refuse out loud — a reply carrying `q.t` instead of
-   silence — which is how real Paxos lets a proposer jump ahead, and
-   which would need a new message kind.
+   another makes no progress until it has caught up by ticking.
+
+   Now that each proposer has its own clock, that is measurable, and it
+   is the office's main inefficiency. Thirty transactions, ten at each
+   proposer: between **10 and 20 of them never reach a write**, and
+   raising T from 20 ms to 200 ms does not improve it, because what
+   stops them is not overlap. All three proposers arrive at the same
+   number, the name breaks the tie, and the loser is dropped in
+   silence. Per proposer, at T = 200 ms:
+
+   ```
+   P0 1/10   P1 10/10   P2 10/10
+   P0 2/10   P1  0/10   P2 10/10
+   P0 6/10   P1  9/10   P2  4/10
+   ```
+
+   Nothing unsafe happens — every run reached agreement and both
+   learners learned the same value — but a starved proposer is the
+   first thing a class will ask about. Is that the rule you want them
+   to read? The alternative is for an acceptor to refuse out loud — a
+   reply carrying `q.t` instead of silence — which is how real Paxos
+   lets a proposer jump ahead, and which would need a new message kind.
 2. **`== M` rather than `>= M`.** The write happens on the reply that
    completes the read set, exactly once. Later replies of the same
    transaction are collected but write nothing.
@@ -115,9 +130,15 @@ made. Two consequences, checked in `check4.py` and `check5.py`:
    learner also tell the proposers what it learned, as the lecture's
    section on sequences needs, and should it announce once or on every
    message after it has learned?
-4. **The ticker.** It ticks one proposer at a time, which makes a
-   demonstration readable. Ticking several at once is also a legal
-   computation and a better test. It also has to stay in the office
+4. **The tickers.** Each proposer has its own, waking it after a
+   uniform random wait on `[T - delta, T + delta]` milliseconds, drawn
+   again before every tick — `T = 5`, `delta = 2`, ten ticks each. A
+   transaction takes about 2 ms here, so at T = 5 they overlap
+   constantly, which is what exercises the proposer's guard; `T = 50`
+   makes a calmer demonstration. `roles/ticker.py` carries the
+   measurements. A seed fixes one ticker's sequence of waits but not
+   the run: three runs with the same seeds agreed on red, blue and red.
+   A ticker also has to stay in the office
    after its last tick, blocked on `recv`, because an agent whose
    `run()` returns leaves a dead thread and the shutdown protocol then
    waits for an answer that never comes. That is what the first run of
@@ -143,14 +164,16 @@ dsl run paxos
 It has been run, under the real parser, compiler and network:
 
 ```
-[1] L0 learned green, written in transaction (1, 'P0')
-[2] L1 learned green, written in transaction (1, 'P0')
+[1] L0 learned red, written in transaction (1, 'P2')
+[2] L1 learned red, written in transaction (1, 'P2')
 ```
 
-Six ticks, three transactions each at P0, P1 and P2, both learners
+Thirty transactions, ten at each of P0, P1 and P2, both learners
 agreeing on one value, no errors and no failures, and the network
 reaches quiescence and shuts itself down. `dsl run` prints the two
-lines above through `console_printer`.
+lines above through `console_printer`. Which value, and which
+transaction wrote it, is different every run — three runs agreed on red
+at (1, 'P2'), blue at (6, 'P1'), and red again.
 
 The properties that one run cannot show — that nothing goes wrong under
 *any* pattern of lost messages — were exercised against a stub `Agent`,

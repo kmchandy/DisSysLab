@@ -12,12 +12,20 @@
 # learners, because it tells them both the same thing.
 #
 # A majority of five acceptors is three, which is the `majority=3` below.
+#
+# Each proposer has its own alarm clock, waking it every T ± delta
+# milliseconds. Nothing in the algorithm depends on when a proposer
+# tries; T decides only how often transactions overlap. See
+# roles/ticker.py on choosing it. Drop the seeds for a different run
+# every time.
 
 Sources: starter
 Sinks:   console_printer
 
 Agents:
-CLOCK is a ticker(ticks=6, period=0.5).
+CLOCK0 is a ticker(ticks=10, T=5, delta=2, seed=0).
+CLOCK1 is a ticker(ticks=10, T=5, delta=2, seed=1).
+CLOCK2 is a ticker(ticks=10, T=5, delta=2, seed=2).
 P0 is a proposer(value="green", majority=3).
 P1 is a proposer(value="blue", majority=3).
 P2 is a proposer(value="red", majority=3).
@@ -30,11 +38,11 @@ L0 is a learner(majority=3).
 L1 is a learner(majority=3).
 
 Connections:
-starter's destination is CLOCK.
+starter's destination are CLOCK0, CLOCK1 and CLOCK2.
 
-CLOCK's to_p0 is P0.
-CLOCK's to_p1 is P1.
-CLOCK's to_p2 is P2.
+CLOCK0's out is P0.
+CLOCK1's out is P1.
+CLOCK2's out is P2.
 
 P0's out are Q0, Q1, Q2, Q3 and Q4.
 P1's out are Q0, Q1, Q2, Q3 and Q4.
