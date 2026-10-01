@@ -1,6 +1,6 @@
 # paxos — DRAFT, for review
 
-This code is an example of the Paxos algorithm with 3 proposers, 5 acceptors and 2 learners.
+An example of the Paxos algorithm with 3 proposers, 5 acceptors and 2 learners.
 
 See figure 1 of `course/lecture_08.html`
 
