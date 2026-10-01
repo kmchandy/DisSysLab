@@ -64,9 +64,15 @@ from dissyslab.core import Agent  # noqa: E402
 from dissyslab.office.library import AgentRoleEntry  # noqa: E402
 
 
-_PROPOSERS = ("P0", "P1", "P2")
-_LEARNERS_PORT = "learners"
-_OUT_PORTS = _PROPOSERS + (_LEARNERS_PORT,)
+#: Spelled out as a literal, and derived from rather than built up,
+#: because ``dsl check`` reads this file instead of running it:
+#: ``office/role_ports.py`` resolves a name bound to a literal and
+#: nothing else, so ``_PROPOSERS + (_LEARNERS_PORT,)`` left it unable to
+#: say what the acceptor's ports are -- which is a W15 on every acceptor
+#: in the office, and a failing test.
+_OUT_PORTS = ("P0", "P1", "P2", "learners")
+_PROPOSERS = _OUT_PORTS[:3]
+_LEARNERS_PORT = _OUT_PORTS[3]
 
 _NO_ID = (0, "")          # smaller than every real transaction id
 
