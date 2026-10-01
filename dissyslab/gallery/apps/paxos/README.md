@@ -11,14 +11,19 @@ See figure 1 of `course/lecture_08.html`
 | `office.md` | the wiring: 3 proposers × 5 acceptors × 2 learners, and the acceptors' replies back |
 
 ```
-P0's outboxes are Q0, Q1, Q2, Q3 and Q4.
+P0's out are Q0, Q1, Q2, Q3 and Q4.
 ```
 
 An acceptor's **reply** is the one message in this office that is not a
-broadcast — it goes to the proposer that asked  — so
-an acceptor does need an outbox per proposer, `to_p0 … to_p2`. Its
-messages to the learners are broadcasts, so those share one
-outbox, `to_learners`.
+broadcast — it goes to the proposer that asked — so an acceptor does
+need an outbox per proposer. Each one is named after the proposer it
+reaches, and its messages to the learners are broadcasts again, so
+those share one outbox:
+
+```
+Q0's P0 is P0.
+Q0's learners are L0 and L1.
+```
 
 Each agent has a single inbox, `in_`, because `recv` blocks on the port
 it is given and an agent must be able to take whichever message arrives
@@ -26,9 +31,9 @@ first.
 
 So the sender has to be named *in* the message:
 
-- a **read** or **write** carries `sender`, the proposer's name, and the
-  acceptor uses it to choose the outbox it replies on
-  (`self.reply_port[sender]`);
+- a **read** or **write** carries `sender`, the proposer's name, which
+  is also the name of the outbox that reaches it, so the whole of
+  "reply to the proposer that asked" is `self.send(reply, sender)`;
 - a **reply** carries `sender`, the acceptor's name, and the proposer
   keys `self.replies` by it, so two replies from one acceptor count
   once and `len(self.replies) == M` means M *different* acceptors;
@@ -39,17 +44,17 @@ So the sender has to be named *in* the message:
 Two details of the framework that this office has to get right, both
 found by running it rather than reading it:
 
-- an outbox can be sent to by name — but not by the name the *office*
-  uses for it. `compile_office` translates the name in a connection
-  (`Q2's to_p1 is P1`) into the runtime's positional one, `out_1`, by
-  the order `out_ports` declares; a lone outbox becomes `out_`. So an
-  `Agent` has to know that the outbox the office calls `to_p1` is its
-  own `out_1`. `acceptor.py` keeps that pairing in one table and sends
-  by the office's name everywhere else. `dissyslab.blocks.role.Role`
-  does the same translation for you, keyed by status name — see
-  `adaptive_tutor/roles/tutor_planner.py`, which emits to `to_bank`
-  directly. These roles are explicit `Agent` loops instead, because
-  `recv` and `send` are what the course teaches;
+- **an outbox has one name.** It did not when this office was first
+  written: `compile_office` translated the name a connection used into
+  a positional one, `out_1`, by the order `out_ports` declared, so an
+  agent had to know that the outbox the office called `to_p1` was its
+  own `out_1`, and the acceptor carried a table to say so. That rule is
+  `Role`'s, which names its ports by position; it was being applied to
+  every role. An entry can now say `names_own_ports=True`, and these
+  four roles do, which is why the acceptor has no table and the code
+  above says `send(reply, sender)`. `AgentRoleEntry.out_port_map()` is
+  the one place that knows the difference, and the default is still
+  `Role`'s, so every office written before this is unaffected;
 - `self.name` is **not** the name the office wrote: at run time it is
   `paxos::Q2`. The id that travels in a message is the short name, from
   `roles/_names.py`. The first run of this office sent thirty reads and

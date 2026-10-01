@@ -16,19 +16,19 @@ and totally ordered, and Python's tuple comparison is that order.
 
 Ports
 -----
-``in_``                  every request from every proposer arrives here.
-``to_p0, to_p1, to_p2``  one outbox per proposer, so a reply goes only
-                         to the proposer that asked for it.
-``to_learners``          one outbox, wired to both learners. Whenever
-                         q.v changes, the acceptor tells every learner
-                         the pair it now holds -- the same message to
-                         each, so one outbox is enough, and the office
-                         writes ``Q2's to_learners are L0 and L1``.
+``in_``           every request from every proposer arrives here.
+``P0, P1, P2``    one outbox per proposer, each named after the
+                  proposer it reaches: ``Q2's P1 is P1``. A request
+                  carries the name of the proposer that sent it, so the
+                  reply goes out on the outbox of that name --
+                  ``self.send(reply, sender)``, and no table.
+``learners``      one outbox, wired to both learners: ``Q2's learners
+                  are L0 and L1``. Whenever q.v changes, the acceptor
+                  tells every learner the pair it now holds -- the same
+                  message to each, so one outbox is enough.
 
 A reply is the one message in this office that is not a broadcast,
 which is why the proposers get an outbox each and the learners do not.
-A request carries the name of the proposer that sent it, which is how
-the acceptor knows which of those outboxes to reply on.
 
 Messages in
 -----------
@@ -65,25 +65,8 @@ from dissyslab.office.library import AgentRoleEntry  # noqa: E402
 
 
 _PROPOSERS = ("P0", "P1", "P2")
-_REPLY_PORTS = ("to_p0", "to_p1", "to_p2")
-_LEARNERS_PORT = "to_learners"
-_OUT_PORTS = _REPLY_PORTS + (_LEARNERS_PORT,)
-
-#: ``send`` takes the name of one of this agent's own outboxes, and an
-#: agent may name them whatever it likes. The reason for this table is
-#: the office: ``compile_office`` translates the name a connection uses
-#: (``Q2's to_p1 is P1``) into the runtime's positional name by the
-#: order ``out_ports`` declares, so the outbox that the office calls
-#: ``to_p1`` is the one this agent must call ``out_1``. The table holds
-#: that pairing in one place, so the code below sends by the office's
-#: name and never writes ``out_1`` anywhere.
-#:
-#: ``dissyslab.blocks.role.Role`` does the same translation for you,
-#: keyed by status name -- see ``adaptive_tutor/roles/tutor_planner.py``,
-#: which emits to ``to_bank`` directly. These three roles are written as
-#: explicit ``Agent`` loops instead, with ``recv`` and ``send``, because
-#: that is the office model the course teaches.
-_OUTBOX = {port: "out_%d" % i for i, port in enumerate(_OUT_PORTS)}
+_LEARNERS_PORT = "learners"
+_OUT_PORTS = _PROPOSERS + (_LEARNERS_PORT,)
 
 _NO_ID = (0, "")          # smaller than every real transaction id
 
@@ -99,13 +82,12 @@ class _Acceptor(Agent):
         super().__init__(
             name=name,
             inports=["in_"],
-            outports=[_OUTBOX[p] for p in _OUT_PORTS],
+            outports=list(_OUT_PORTS),
         )
-        # which outbox reaches which proposer
-        self.reply_port: Dict[str, str] = {
-            p: _OUTBOX[port] for p, port in zip(proposers, _REPLY_PORTS)
-        }
-        self.learners_port = _OUTBOX[_LEARNERS_PORT]
+        # Each outbox is named after the proposer it reaches, so a
+        # reply goes out on the outbox named after the proposer that
+        # asked. There is no table to keep in step with anything.
+        self.proposers = tuple(proposers)
         self.v_s: Any = None          # q.v.s
         self.v_t = _NO_ID             # q.v.t
         self.t = _NO_ID               # q.t
@@ -125,7 +107,7 @@ class _Acceptor(Agent):
             sender = bare(msg.get("sender"))
             if kind not in ("read", "write") or t is None:
                 continue
-            if sender not in self.reply_port:
+            if sender not in self.proposers:
                 continue
 
             if t < self.t:
@@ -142,7 +124,7 @@ class _Acceptor(Agent):
                         "v_s":   self.v_s,
                         "v_t":   self.v_t,
                     },
-                    self.reply_port[sender],
+                    sender,
                 )
             else:
                 self.v_s, self.v_t = msg.get("s"), t
@@ -155,7 +137,7 @@ class _Acceptor(Agent):
                         "v_s":    self.v_s,
                         "v_t":    self.v_t,
                     },
-                    self.learners_port,
+                    _LEARNERS_PORT,
                 )
 
 
@@ -164,4 +146,5 @@ role = AgentRoleEntry(
     in_ports=("in_",),
     out_ports=_OUT_PORTS,
     factory=_Acceptor,
+    names_own_ports=True,
 )

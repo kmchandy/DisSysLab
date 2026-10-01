@@ -72,9 +72,9 @@ from dissyslab.core import Agent
 from dissyslab.office.library import AgentRoleEntry
 
 
-#: One outbox, named ``out`` by the office and ``out_`` by the runtime.
+#: One outbox, ``out``, wired to this ticker's own proposer.
 _OUT_PORTS = ("out",)
-_OUT = "out_"
+_OUT = "out"
 
 
 class _Ticker(Agent):
@@ -133,4 +133,5 @@ role = AgentRoleEntry(
     in_ports=("in_",),
     out_ports=_OUT_PORTS,
     factory=_Ticker,
+    names_own_ports=True,
 )

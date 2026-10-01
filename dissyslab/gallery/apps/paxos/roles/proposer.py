@@ -68,12 +68,12 @@ from dissyslab.core import Agent  # noqa: E402
 from dissyslab.office.library import AgentRoleEntry  # noqa: E402
 
 
-#: The office writes ``P0's out are Q0, ... and Q4``, and
-#: ``compile_office`` translates the name of a lone outbox to ``out_``,
-#: so that is the name this agent must give it -- see
-#: ``loudness_monitor/roles/rms_meter.py`` and the table in acceptor.py.
+#: One outbox, ``out``, which the office wires to all five acceptors:
+#: ``P0's out are Q0, Q1, Q2, Q3 and Q4``. The role entry below says
+#: ``names_own_ports``, so this is the name the office uses and the
+#: name ``send`` takes -- there is no second name for it.
 _OUT_PORTS = ("out",)
-_OUT = "out_"
+_OUT = "out"
 
 _NO_ID = (0, "")
 
@@ -170,4 +170,5 @@ role = AgentRoleEntry(
     in_ports=("in_",),
     out_ports=_OUT_PORTS,
     factory=_Proposer,
+    names_own_ports=True,
 )

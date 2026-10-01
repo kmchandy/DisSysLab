@@ -20,10 +20,8 @@ Ports
 ``in_``   one message from each acceptor whenever that acceptor's value
           changes. Some of these are lost, which is why one learner can
           learn later than another, or not at all.
-``out``   an announcement, once, when the value is learned. The office
-          writes ``L0's out is console_printer``, and the compiler
-          translates the name of a lone outbox to ``out_``, so that is
-          what the agent calls it -- see the table in acceptor.py.
+``out``   an announcement, once, when the value is learned:
+          ``L0's out is console_printer``.
 
 Message in
 ----------
@@ -60,7 +58,7 @@ class _Learner(Agent):
         super().__init__(
             name=name,
             inports=["in_"],
-            outports=["out_"],
+            outports=["out"],
         )
         self.M = int(majority)
         self.value: Any = None        # L.value
@@ -99,7 +97,7 @@ class _Learner(Agent):
                             f"transaction {self.at}"
                         ),
                     },
-                    "out_",
+                    "out",
                 )
 
 
@@ -108,4 +106,5 @@ role = AgentRoleEntry(
     in_ports=("in_",),
     out_ports=("out",),
     factory=_Learner,
+    names_own_ports=True,
 )

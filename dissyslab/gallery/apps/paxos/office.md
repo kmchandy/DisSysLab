@@ -48,31 +48,31 @@ P0's out are Q0, Q1, Q2, Q3 and Q4.
 P1's out are Q0, Q1, Q2, Q3 and Q4.
 P2's out are Q0, Q1, Q2, Q3 and Q4.
 
-Q0's to_p0 is P0.
-Q0's to_p1 is P1.
-Q0's to_p2 is P2.
+Q0's P0 is P0.
+Q0's P1 is P1.
+Q0's P2 is P2.
 
-Q1's to_p0 is P0.
-Q1's to_p1 is P1.
-Q1's to_p2 is P2.
+Q1's P0 is P0.
+Q1's P1 is P1.
+Q1's P2 is P2.
 
-Q2's to_p0 is P0.
-Q2's to_p1 is P1.
-Q2's to_p2 is P2.
+Q2's P0 is P0.
+Q2's P1 is P1.
+Q2's P2 is P2.
 
-Q3's to_p0 is P0.
-Q3's to_p1 is P1.
-Q3's to_p2 is P2.
+Q3's P0 is P0.
+Q3's P1 is P1.
+Q3's P2 is P2.
 
-Q4's to_p0 is P0.
-Q4's to_p1 is P1.
-Q4's to_p2 is P2.
+Q4's P0 is P0.
+Q4's P1 is P1.
+Q4's P2 is P2.
 
-Q0's to_learners are L0 and L1.
-Q1's to_learners are L0 and L1.
-Q2's to_learners are L0 and L1.
-Q3's to_learners are L0 and L1.
-Q4's to_learners are L0 and L1.
+Q0's learners are L0 and L1.
+Q1's learners are L0 and L1.
+Q2's learners are L0 and L1.
+Q3's learners are L0 and L1.
+Q4's learners are L0 and L1.
 
 L0's out is console_printer.
 L1's out is console_printer.
