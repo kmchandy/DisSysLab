@@ -1,15 +1,13 @@
 # paxos — DRAFT, for review
 
-Three proposers and five acceptors agree on one value, by Paxos.
-
-They are the agents of figure 1 of `course/lecture_08.html`, and two
-learners find out what they agreed on.
+This code is an example of the Paxos algorithm with 3 proposers, 5 acceptors 
+and 2 learners. See figure 1 of `course/lecture_08.html`
 
 ## What is here
 
 | file | what it is |
 |---|---|
-| `office.md` | the wiring: 3 proposers × 5 acceptors, one outbox per destination |
+| `office.md` | the wiring: 3 proposers × 5 acceptors, 5 acceptors × 2 learners, one outbox per destination |
 | `roles/proposer.py` | start a transaction on a tick; on the M-th reply compute `f` and write |
 | `roles/acceptor.py` | reply to reads, obey writes, drop requests from earlier transactions |
 | `roles/learner.py` | hear M acceptors agree on one pair, then announce it once |
