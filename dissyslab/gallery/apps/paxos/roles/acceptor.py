@@ -1,0 +1,155 @@
+# dissyslab/gallery/apps/paxos/roles/acceptor.py
+
+"""
+An acceptor of the Paxos algorithm.
+
+DRAFT -- for review. The algorithm is the one in course/lecture_08.html.
+
+An acceptor holds one variable, q.v, which is a pair
+
+    q.v.s   a candidate consensus value, or None
+    q.v.t   the id of the transaction that assigned q.v.s
+
+and one more, q.t, the id of the transaction it is processing. A
+transaction id is a pair ``(number, proposer name)``, so ids are unique
+and totally ordered, and Python's tuple comparison is that order.
+
+Ports
+-----
+``in_``                  every request from every proposer arrives here.
+``to_p0, to_p1, to_p2``  one outbox per proposer, so a reply goes only
+                         to the proposer that asked for it.
+``to_l0, to_l1``         one outbox per learner. Whenever q.v changes,
+                         the acceptor tells every learner the pair it
+                         now holds.
+
+A request carries the name of the proposer that sent it, which is how
+the acceptor knows which of its outboxes to reply on.
+
+Messages in
+-----------
+    {"kind": "read",  "sender": "P1", "t": (3, "P1")}
+    {"kind": "write", "sender": "P1", "t": (3, "P1"), "s": "green"}
+
+Messages out
+------------
+    {"kind": "reply", "sender": "Q2", "t": (3, "P1"),
+     "v_s": "green", "v_t": (2, "P0")}          to one proposer
+    {"kind": "learn", "sender": "Q2",
+     "v_s": "green", "v_t": (3, "P1")}          to every learner
+
+The reply carries the acceptor's own name, which is how a proposer
+counts replies from M *different* acceptors.
+
+The rules of the previous class are the first lines of the loop in
+``run()``: a request from an earlier transaction is dropped, and any
+other request moves the acceptor to the transaction that sent it.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Dict, Sequence
+
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _names import bare  # noqa: E402
+
+from dissyslab.core import Agent  # noqa: E402
+from dissyslab.office.library import AgentRoleEntry  # noqa: E402
+
+
+_PROPOSERS = ("P0", "P1", "P2")
+_REPLY_PORTS = ("to_p0", "to_p1", "to_p2")
+_LEARNER_PORTS = ("to_l0", "to_l1")
+_OUT_PORTS = _REPLY_PORTS + _LEARNER_PORTS
+
+#: An agent with more than one outbox has two names for each of them:
+#: the name the office writes (``Q2's to_p1 is P1``) and the runtime's
+#: positional name, in the order ``_OUT_PORTS`` declares. The compiler
+#: maps one to the other, so the role entry below advertises the
+#: readable names and ``self.send`` uses the positional ones. Same
+#: two-level naming as ``mac_speed_suite/roles/_walkforward.py``.
+_RUNTIME = {port: "out_%d" % i for i, port in enumerate(_OUT_PORTS)}
+
+_NO_ID = (0, "")          # smaller than every real transaction id
+
+
+class _Acceptor(Agent):
+    """One acceptor: reply to reads, obey writes, ignore the past."""
+
+    def __init__(
+        self,
+        name: str | None = None,
+        proposers: Sequence[str] = _PROPOSERS,
+    ):
+        super().__init__(
+            name=name,
+            inports=["in_"],
+            outports=[_RUNTIME[p] for p in _OUT_PORTS],
+        )
+        # which outbox reaches which proposer
+        self.reply_port: Dict[str, str] = {
+            p: _RUNTIME[port] for p, port in zip(proposers, _REPLY_PORTS)
+        }
+        self.learner_ports = [_RUNTIME[p] for p in _LEARNER_PORTS]
+        self.v_s: Any = None          # q.v.s
+        self.v_t = _NO_ID             # q.v.t
+        self.t = _NO_ID               # q.t
+
+    @property
+    def id(self) -> str:
+        """``Q2``: the name the office wrote, and the id q puts in a
+        message. ``self.name`` is ``paxos::Q2`` -- see ``_names.py``."""
+        return bare(self.name)
+
+    def run(self) -> None:
+        while True:
+            msg = self.recv("in_")
+            if not isinstance(msg, dict):
+                continue
+            kind, t = msg.get("kind"), msg.get("t")
+            sender = bare(msg.get("sender"))
+            if kind not in ("read", "write") or t is None:
+                continue
+            if sender not in self.reply_port:
+                continue
+
+            if t < self.t:
+                # a request from an earlier transaction: treated as lost
+                continue
+            self.t = t                       # join the newer transaction
+
+            if kind == "read":
+                self.send(
+                    {
+                        "kind": "reply",
+                        "sender": self.id,
+                        "t":     self.t,
+                        "v_s":   self.v_s,
+                        "v_t":   self.v_t,
+                    },
+                    self.reply_port[sender],
+                )
+            else:
+                self.v_s, self.v_t = msg.get("s"), t
+                # q.v has changed, so tell every learner the pair q holds
+                for port in self.learner_ports:
+                    self.send(
+                        {
+                            "kind":   "learn",
+                            "sender": self.id,
+                            "v_s":    self.v_s,
+                            "v_t":    self.v_t,
+                        },
+                        port,
+                    )
+
+
+role = AgentRoleEntry(
+    name="acceptor",
+    in_ports=("in_",),
+    out_ports=_OUT_PORTS,
+    factory=_Acceptor,
+)
