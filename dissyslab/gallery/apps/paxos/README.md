@@ -10,21 +10,15 @@ See figure 1 of `course/lecture_08.html`
 |---|---|
 | `office.md` | the wiring: 3 proposers × 5 acceptors × 2 learners, and the acceptors' replies back |
 
-## The shape of the network
-
-**One outbox per message, not per destination.** A proposer sends the
-same read, and later the same write, to every acceptor, so it has one
-outbox, `out`, wired to all five:
-
 ```
-P0's out are Q0, Q1, Q2, Q3 and Q4.
+P0's outboxes are Q0, Q1, Q2, Q3 and Q4.
 ```
 
 An acceptor's **reply** is the one message in this office that is not a
-broadcast — it goes to the proposer that asked and to nobody else — so
+broadcast — it goes to the proposer that asked  — so
 an acceptor does need an outbox per proposer, `to_p0 … to_p2`. Its
-messages to the learners are all broadcasts again, so those share one
-outbox, `to_learners`, wired to both.
+messages to the learners are broadcasts, so those share one
+outbox, `to_learners`.
 
 Each agent has a single inbox, `in_`, because `recv` blocks on the port
 it is given and an agent must be able to take whichever message arrives
@@ -45,12 +39,17 @@ So the sender has to be named *in* the message:
 Two details of the framework that this office has to get right, both
 found by running it rather than reading it:
 
-- an outbox has two names, the one the office writes (`to_p1`) and the
-  runtime's own (`out_1`, by position, in the order the role entry
-  declares them — or just `out_` when the agent has one outbox). The
-  role entry advertises the readable names and `self.send` uses the
-  runtime's, as in `mac_speed_suite/roles/_walkforward.py` and
-  `loudness_monitor/roles/rms_meter.py`;
+- an outbox can be sent to by name — but not by the name the *office*
+  uses for it. `compile_office` translates the name in a connection
+  (`Q2's to_p1 is P1`) into the runtime's positional one, `out_1`, by
+  the order `out_ports` declares; a lone outbox becomes `out_`. So an
+  `Agent` has to know that the outbox the office calls `to_p1` is its
+  own `out_1`. `acceptor.py` keeps that pairing in one table and sends
+  by the office's name everywhere else. `dissyslab.blocks.role.Role`
+  does the same translation for you, keyed by status name — see
+  `adaptive_tutor/roles/tutor_planner.py`, which emits to `to_bank`
+  directly. These roles are explicit `Agent` loops instead, because
+  `recv` and `send` are what the course teaches;
 - `self.name` is **not** the name the office wrote: at run time it is
   `paxos::Q2`. The id that travels in a message is the short name, from
   `roles/_names.py`. The first run of this office sent thirty reads and

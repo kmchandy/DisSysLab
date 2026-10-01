@@ -69,13 +69,21 @@ _REPLY_PORTS = ("to_p0", "to_p1", "to_p2")
 _LEARNERS_PORT = "to_learners"
 _OUT_PORTS = _REPLY_PORTS + (_LEARNERS_PORT,)
 
-#: An agent with more than one outbox has two names for each of them:
-#: the name the office writes (``Q2's to_p1 is P1``) and the runtime's
-#: positional name, in the order ``_OUT_PORTS`` declares. The compiler
-#: maps one to the other, so the role entry below advertises the
-#: readable names and ``self.send`` uses the positional ones. Same
-#: two-level naming as ``mac_speed_suite/roles/_walkforward.py``.
-_RUNTIME = {port: "out_%d" % i for i, port in enumerate(_OUT_PORTS)}
+#: ``send`` takes the name of one of this agent's own outboxes, and an
+#: agent may name them whatever it likes. The reason for this table is
+#: the office: ``compile_office`` translates the name a connection uses
+#: (``Q2's to_p1 is P1``) into the runtime's positional name by the
+#: order ``out_ports`` declares, so the outbox that the office calls
+#: ``to_p1`` is the one this agent must call ``out_1``. The table holds
+#: that pairing in one place, so the code below sends by the office's
+#: name and never writes ``out_1`` anywhere.
+#:
+#: ``dissyslab.blocks.role.Role`` does the same translation for you,
+#: keyed by status name -- see ``adaptive_tutor/roles/tutor_planner.py``,
+#: which emits to ``to_bank`` directly. These three roles are written as
+#: explicit ``Agent`` loops instead, with ``recv`` and ``send``, because
+#: that is the office model the course teaches.
+_OUTBOX = {port: "out_%d" % i for i, port in enumerate(_OUT_PORTS)}
 
 _NO_ID = (0, "")          # smaller than every real transaction id
 
@@ -91,13 +99,13 @@ class _Acceptor(Agent):
         super().__init__(
             name=name,
             inports=["in_"],
-            outports=[_RUNTIME[p] for p in _OUT_PORTS],
+            outports=[_OUTBOX[p] for p in _OUT_PORTS],
         )
         # which outbox reaches which proposer
         self.reply_port: Dict[str, str] = {
-            p: _RUNTIME[port] for p, port in zip(proposers, _REPLY_PORTS)
+            p: _OUTBOX[port] for p, port in zip(proposers, _REPLY_PORTS)
         }
-        self.learners_port = _RUNTIME[_LEARNERS_PORT]
+        self.learners_port = _OUTBOX[_LEARNERS_PORT]
         self.v_s: Any = None          # q.v.s
         self.v_t = _NO_ID             # q.v.t
         self.t = _NO_ID               # q.t

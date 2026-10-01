@@ -21,9 +21,9 @@ Ports
           changes. Some of these are lost, which is why one learner can
           learn later than another, or not at all.
 ``out``   an announcement, once, when the value is learned. The office
-          writes ``L0's out is console_printer``; inside the agent the
-          single outbox is the runtime's ``out_``, which is the house
-          convention -- see ``loudness_monitor/roles/rms_meter.py``.
+          writes ``L0's out is console_printer``, and the compiler
+          translates the name of a lone outbox to ``out_``, so that is
+          what the agent calls it -- see the table in acceptor.py.
 
 Message in
 ----------

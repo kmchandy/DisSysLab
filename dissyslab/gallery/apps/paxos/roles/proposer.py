@@ -68,9 +68,10 @@ from dissyslab.core import Agent  # noqa: E402
 from dissyslab.office.library import AgentRoleEntry  # noqa: E402
 
 
-#: The office writes ``P0's out are Q0, ... and Q4``; an agent with a
-#: single outbox calls it ``out_`` at run time, which is the house
-#: convention -- see ``loudness_monitor/roles/rms_meter.py``.
+#: The office writes ``P0's out are Q0, ... and Q4``, and
+#: ``compile_office`` translates the name of a lone outbox to ``out_``,
+#: so that is the name this agent must give it -- see
+#: ``loudness_monitor/roles/rms_meter.py`` and the table in acceptor.py.
 _OUT_PORTS = ("out",)
 _OUT = "out_"
 
