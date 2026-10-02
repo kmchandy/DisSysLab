@@ -1349,26 +1349,40 @@ window.BYZ=(function(){
       'step 3: <b>nothing to C</b>',
       'step 4: <b>a forgery for D</b>'][step];
   }
+  /* A letter should take long enough to read the label it carries, and
+     each step should land before the next one starts. The marks below
+     are seconds: travel, then a beat to look at what happened. */
+  const MARKS=[[0,1.8],[2.5,4.3],[5.0,6.0],[6.7,8.7]], END=9.4;
   function frame(now){
     const e=(now-t0)/1000;
-    if(e<0.9){ step=1; T=e/0.9; }
-    else if(e<1.2){ step=1; T=1; }
-    else if(e<2.1){ step=2; T=(e-1.2)/0.9; }
-    else if(e<2.4){ step=2; T=1; }
-    else if(e<3.0){ step=3; T=(e-2.4)/0.6; }
-    else if(e<3.3){ step=3; T=1; }
-    else if(e<4.2){ step=4; T=(e-3.3)/0.9; }
-    else { step=4; T=1; }
+    for(let i=MARKS.length-1;i>=0;i--){
+      const m=MARKS[i];
+      if(e>=m[0]){
+        step=i+1;
+        T=Math.min(1,(e-m[0])/(m[1]-m[0]));
+        break;
+      }
+      if(i===0){ step=0; T=1; }
+    }
     draw();
-    if(e<4.2) raf=requestAnimationFrame(frame);
+    if(e<END) raf=requestAnimationFrame(frame);
   }
   $('play').onclick=function(){
     if(raf) cancelAnimationFrame(raf);
-    t0=performance.now(); raf=requestAnimationFrame(frame);
+    step=0; T=1; t0=performance.now(); raf=requestAnimationFrame(frame);
   };
-  $('step').onclick=function(){
+  /* Step animates the step it adds, at the same pace as Play. */
+  function one(dur){
     if(raf) cancelAnimationFrame(raf);
-    step=Math.min(4, step+1); T=1; draw();
+    const s0=performance.now();
+    (function go(now){
+      T=Math.min(1,(now-s0)/dur); draw();
+      if(T<1) raf=requestAnimationFrame(go);
+    })(s0);
+  }
+  $('step').onclick=function(){
+    if(step>=4){ T=1; draw(); return; }
+    step+=1; T=0; one(step===3?1000:1800);
   };
   $('reset').onclick=function(){
     if(raf) cancelAnimationFrame(raf);
