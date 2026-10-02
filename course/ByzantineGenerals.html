@@ -247,6 +247,35 @@ there are more efficient ways, which we won't discuss here.
     </figcaption>
   </figure>
 
+  <figure class="fig wideout">
+    <svg id="big_g" viewBox="0 0 1240 672" role="img"
+         aria-label="Example 2: a disloyal general sends attack to 499,999 loyal lieutenants and to the one disloyal lieutenant, and retreat to the other 500,000; the traitor then tells the first group attack and the second retreat, and the first group counts 500,000 attacks while the second counts 499,999"></svg>
+
+    <div class="ctrls">
+      <button id="big_play" class="primary">Play</button>
+      <button id="big_step">Step</button>
+      <button id="big_reset">Reset</button>
+      <span class="status" id="big_status"></span>
+    </div>
+
+    <figcaption>
+      <b>Figure 2. Example 2: a million lieutenants, and one traitor
+      still splits them.</b>
+      Nothing above depended on the army being small. Here the general
+      is disloyal and exactly <b>one</b> lieutenant is: it sends attack
+      to 499,999 loyal lieutenants and to the traitor, and retreat to
+      the other 500,000. Every lieutenant then reports what it heard to
+      all the others &mdash; and the traitor tells the first group
+      attack and the second group retreat. Counting its own order
+      together with the 999,999 reports, each lieutenant of the first
+      group holds <b>500,000</b> attacks and 500,000 retreats, and each
+      of the second holds <b>499,999</b> attacks and 500,001. One
+      traitor moved one vote, and half a million lieutenants march while
+      half a million stay.
+    </figcaption>
+  </figure>
+
+
 <h2>The specification</h2>
 
   <ol class="spec">
@@ -310,7 +339,7 @@ there are more efficient ways, which we won't discuss here.
     </div>
 
     <figcaption>
-      <b>Figure 2. Each requirement alone is easy.</b>
+      <b>Figure 3. Each requirement alone is easy.</b>
       <i>Obey the general</i> satisfies validity always &mdash; and a
       disloyal general then splits the loyal lieutenants, which breaks
       consensus. <i>Always retreat</i> satisfies consensus always
@@ -369,7 +398,7 @@ there are more efficient ways, which we won't discuss here.
     </div>
 
     <figcaption>
-      <b>Figure 3. What a traitor can do to a letter.</b>
+      <b>Figure 4. What a traitor can do to a letter.</b>
       The general signs <i>attack</i> and gives the letter to a disloyal
       lieutenant, who passes it on. Under the written model the seal
       holds: the letter arrives saying exactly what the general wrote.
@@ -414,7 +443,7 @@ there are more efficient ways, which we won't discuss here.
     </div>
 
     <figcaption>
-      <b>Figure 4. Round 0.</b>
+      <b>Figure 5. Round 0.</b>
       The general signs and sends. <i>D</i> gets nothing &mdash; the
       general is disloyal, or the letter was never written &mdash; and
       <i>D</i> treats the silence as an order to retreat. Silence is not
@@ -454,7 +483,7 @@ there are more efficient ways, which we won't discuss here.
     </div>
 
     <figcaption>
-      <b>Figure 5. Lieutenant C on round 3.</b>
+      <b>Figure 6. Lieutenant C on round 3.</b>
       It is the start of round <code>j = 3</code>. <i>C</i> holds a
       signed letter from the general and <code>j&minus;1 = 2</code>
       letters from distinct lieutenants, <i>A</i> and <i>B</i>. That is
@@ -507,7 +536,7 @@ there are more efficient ways, which we won't discuss here.
     </div>
 
     <figcaption>
-      <b>Figure 6. Observation 3: one commit pulls the rest in.</b>
+      <b>Figure 7. Observation 3: one commit pulls the rest in.</b>
       <i>B</i> commits on round <code>j&nbsp;=&nbsp;3</code> and
       broadcasts three letters plus its own. Count what <i>A</i> holds at
       the start of round 4: the general, and three distinct lieutenants.
@@ -541,7 +570,7 @@ there are more efficient ways, which we won't discuss here.
     </div>
 
     <figcaption>
-      <b>Figure 7. Two runs, round by round.</b>
+      <b>Figure 8. Two runs, round by round.</b>
       The general sends attack to <i>Y</i> and <i>Z</i> only. In
       <b>run 1</b> the traitors say nothing until round 4 and then
       produce their evidence: two lieutenants&rsquo; signatures, where
@@ -608,7 +637,7 @@ there are more efficient ways, which we won't discuss here.
     </div>
 
     <figcaption>
-      <b>Figure 8. The counting argument, with t = 4.</b>
+      <b>Figure 9. The counting argument, with t = 4.</b>
       The rule for round <code>t+1 = 5</code> asks a loyal lieutenant for
       the general&rsquo;s letter and <code>t = 4</code> letters from
       distinct lieutenants. The traitors can supply only
@@ -823,6 +852,27 @@ window.BYZ=(function(){
     if(!o.noHead) head(p, b[0]-ux*trim, b[1]-uy*trim, ux, uy, col, o.hs||7);
   }
 
+  /* Too many officers to draw one by one: a crowd of silhouettes, in
+     rows, with the count written under it. */
+  function crowd(p,x,y,cols,rows,loyal,s){
+    s=s||1;
+    const coat=loyal?C.coatL:C.coatD, helm=loyal?C.helmL:C.helmD;
+    const G=grp(p,{});
+    for(let r=rows-1;r>=0;r--){
+      for(let c=0;c<cols;c++){
+        const dx=x+c*15*s+(r%2?7.5*s:0), dy=y+r*15*s;
+        G.appendChild(el('path',{d:'M '+(dx-5.2*s)+' '+dy+
+          ' L '+(dx-4.2*s)+' '+(dy-11*s)+
+          ' Q '+dx+' '+(dy-13.5*s)+' '+(dx+4.2*s)+' '+(dy-11*s)+
+          ' L '+(dx+5.2*s)+' '+dy+' Z', fill:coat}));
+        G.appendChild(el('circle',{cx:dx, cy:dy-17*s, r:3.7*s, fill:C.skin}));
+        G.appendChild(el('path',{d:'M '+(dx-3.9*s)+' '+(dy-18.4*s)+
+          ' A '+(3.9*s)+' '+(3.9*s)+' 0 0 1 '+(dx+3.9*s)+' '+(dy-18.4*s)+
+          ' Z', fill:helm}));
+      }
+    }
+    return G;
+  }
   /* A letter travels over the heads of the officers in between, not
      through them: the route is an arc, drawn faintly all the way, and
      the letter rides along it. */
@@ -877,6 +927,7 @@ window.BYZ=(function(){
   }
   return {NS:NS, C:C, el:el, grp:grp, clear:clear, mono:mono, sans:sans,
           officer:officer, letter:letter, arrow:arrow, head:head,
+          crowd:crowd,
           ctl:ctl, qpt:qpt, route:route,
           banner:banner, verdict:verdict, panel:panel};
 })();
@@ -975,9 +1026,8 @@ window.BYZ=(function(){
         B.banner(svg, LX[i], LY+140, win, (t[0]>t[1])?C.blue:C.red);
       }
       B.sans(svg, 620, 584,
-        'B and C attack while D and E retreat: four loyal lieutenants, '+
-        'two different answers, and no consensus',
-        C.red, 14.5, 'middle', 700);
+        'B and C attack while D and E retreat',
+        C.red, 15, 'middle', 700);
     }
     $('status').innerHTML=['press play',
       'round 0: <b>the general splits them</b>',
@@ -1012,7 +1062,138 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 2 — each requirement alone is easy */
+/* Figure 2 - example 2: a million lieutenants, one traitor */
+(function(){
+  const PFX='big_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.BYZ, C=B.C;
+  const GX=620, GY=152;
+  /* the two halves of the army, and the one traitor between them */
+  const L={x:90,  w:430, cx:305, order:'attack',  n:'499,999',
+           att:'500,000', ret:'500,000', verdict:'attacks',
+           foot:'a tie, and a tie goes to attack'};
+  const R={x:720, w:430, cx:935, order:'retreat', n:'500,000',
+           att:'499,999', ret:'500,001', verdict:'retreats',
+           foot:'one vote the other way'};
+  const PY=296, PH=176, AX=620, AY=432;
+  let stage=0, T=1, raf=null, t0=0;
+
+  function half(g){
+    B.panel(svg, g.x, PY, g.w, PH, (g.n+' LOYAL LIEUTENANTS').toUpperCase());
+    B.crowd(svg, g.x+36, PY+92, 24, 4, true, .78);
+    B.mono(svg, g.cx, PY+156, g.n, C.ink, 19);
+  }
+  function tally(g){
+    const y=PY+196;
+    svg.appendChild(B.el('rect',{x:g.cx-110, y:y, width:220, height:66, rx:10,
+      fill:'#fff', stroke:C.line, 'stroke-width':1.5}));
+    B.mono(svg, g.cx-44, y+21, g.att, C.blue, 15, 'end');
+    B.sans(svg, g.cx-34, y+21, 'attack', C.ink, 13, 'start', 600);
+    B.mono(svg, g.cx-44, y+46, g.ret, C.red, 15, 'end');
+    B.sans(svg, g.cx-34, y+46, 'retreat', C.ink, 13, 'start', 600);
+    B.banner(svg, g.cx, y+96, g.verdict,
+      g.verdict==='attacks'?C.blue:C.red);
+    B.sans(svg, g.cx, y+124, g.foot, C.muted, 12.5, 'middle', 600);
+  }
+  function draw(){
+    B.clear(svg);
+    B.sans(svg, 620, 26,
+      'ONE DISLOYAL GENERAL  \u00b7  ONE DISLOYAL LIEUTENANT  \u00b7  999,999 LOYAL ONES',
+      C.muted, 14, 'middle', 700);
+    B.officer(svg, GX, GY, {rank:'general', loyal:false, label:'General',
+      sub:'disloyal', scale:.8});
+    half(L); half(R);
+    B.officer(svg, AX, AY, {loyal:false, label:'A', sub:'the one traitor',
+      scale:.52});
+
+    /* ---- round 0 ------------------------------------------------- */
+    if(stage>=1){
+      const u=(stage===1)?Math.min(1,T):1;
+      const legs=[[[GX-70,GY+14],[L.cx,PY-16],'attack'],
+                  [[GX,GY+18],[AX,AY-104],'attack'],
+                  [[GX+70,GY+14],[R.cx,PY-16],'retreat']];
+      legs.forEach(function(leg){
+        const a=leg[0], b=leg[1], col=(leg[2]==='attack')?C.blue:C.red;
+        B.arrow(svg, a, [a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u], col,
+          {op:.45, dash:'7 6', w:2.2, noHead:u<1, trim:6});
+        if(u<1) B.letter(svg, a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u,
+          {kind:leg[2], signer:'G', scale:.7});
+      });
+      if(u>=1){
+        B.banner(svg, L.cx, PY-34, 'attack',  C.blue);
+        B.banner(svg, R.cx, PY-34, 'retreat', C.red);
+        B.banner(svg, AX+70, AY-58, 'attack', C.blue);
+      }
+    }
+    /* ---- round 1: the traitor tells each half what it wants to hear */
+    if(stage===2){
+      const u=Math.min(1,T);
+      /* the loyal reports, unlabelled: there are 999,999 of them each */
+      for(let k=0;k<3;k++){
+        const a=[L.cx+40+k*30, PY+PH-6], b=[R.cx-100+k*30, PY+PH-6];
+        const c=[(a[0]+b[0])/2, PY+PH+56+k*26];
+        B.route(svg, a, c, b, C.muted, {op:.20, w:1.6, dash:'5 7'});
+      }
+      B.sans(svg, 620, PY+PH+128,
+        'every lieutenant reports what it heard to all the others',
+        C.muted, 13, 'middle', 600);
+      [[L,'attack'],[R,'retreat']].forEach(function(pair){
+        const g=pair[0], kind=pair[1];
+        /* hand the letter to the near edge of each crowd, so it does
+           not land on top of the count */
+        const a=[AX+(g===L?-26:26), AY-70],
+              b=[g.cx+(g===L?175:-175), PY+PH-8];
+        const c=[(a[0]+b[0])/2, PY+PH+30];
+        const col=(kind==='attack')?C.blue:C.red;
+        B.route(svg, a, c, b, col, {op:.6, w:2.4, dash:false, arrow:u>=1});
+        const q=B.qpt(a,c,b,Math.max(.15,u*.88));
+        B.letter(svg, q[0], q[1], {kind:kind, signer:'A', scale:.66});
+      });
+      B.sans(svg, 620, PY+PH+154,
+        'and A tells the first half \u201cattack\u201d and the second \u201cretreat\u201d',
+        C.ink, 13.5, 'middle', 700);
+    }
+    /* ---- the count ----------------------------------------------- */
+    if(stage>=3){
+      tally(L); tally(R);
+      B.sans(svg, 620, 648,
+        '499,999 lieutenants attack while 500,000 retreat',
+        C.red, 15, 'middle', 700);
+    }
+    $('status').innerHTML=['press play',
+      'round 0: <b>the general cuts the army in half</b>',
+      'round 1: <b>one traitor, two different stories</b>',
+      '<b>no consensus</b>'][stage];
+  }
+  function frame(now){
+    const e=(now-t0)/1000;
+    if(e<1.0){ stage=1; T=e; }
+    else if(e<1.5){ stage=1; T=1; }
+    else if(e<2.6){ stage=2; T=(e-1.5)/1.1; }
+    else if(e<3.1){ stage=2; T=1; }
+    else { stage=3; T=1; }
+    draw();
+    if(e<3.1) raf=requestAnimationFrame(frame);
+  }
+  $('play').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    t0=performance.now(); raf=requestAnimationFrame(frame);
+  };
+  $('step').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    stage=Math.min(3, stage+1); T=1; draw();
+  };
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    stage=0; T=1; draw();
+  };
+  draw();
+})();
+</script>
+
+
+<script>
+/* Figure 3 — each requirement alone is easy */
 (function(){
   const PFX='tri_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
@@ -1066,7 +1247,7 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 3 — what a traitor can do to a letter */
+/* Figure 4 — what a traitor can do to a letter */
 (function(){
   const PFX='let_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
@@ -1134,7 +1315,7 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 4 — round 0 */
+/* Figure 5 — round 0 */
 (function(){
   const PFX='r0_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
@@ -1198,7 +1379,7 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 5 — lieutenant C on round 3 */
+/* Figure 6 — lieutenant C on round 3 */
 (function(){
   const PFX='rj_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
@@ -1265,7 +1446,7 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 6 — observation 3: one commit pulls the rest in */
+/* Figure 7 — observation 3: one commit pulls the rest in */
 (function(){
   const PFX='csc_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
@@ -1331,7 +1512,7 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 7 — two runs with a disloyal general, round by round */
+/* Figure 8 — two runs with a disloyal general, round by round */
 (function(){
   const PFX='run_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
@@ -1435,7 +1616,7 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 8 — the counting argument behind the theorem */
+/* Figure 9 — the counting argument behind the theorem */
 (function(){
   const PFX='thm_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
