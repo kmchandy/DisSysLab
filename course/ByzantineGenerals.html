@@ -141,36 +141,28 @@
 <div class="wrap">
   <header class="top">
     <div class="kicker">DisSysLab</div>
-    <h1>The Byzantine Generals</h1>
-    <h2>Consensus when some of the agents are lying</h2>
+    <h1>Byzantine Generals Consensus</h1>
+    <h2>Consensus when agents may lie</h2>
     <p>
-      Until now an agent that failed simply stopped, or a message was
-      lost. In this lecture some of the agents do not follow the
-      algorithm at all. They may stay silent, they may say one thing to
-      one agent and the opposite to another, and they may do it on
-      purpose. The agents that do follow the algorithm still have to
-      agree.
+      The Byzantine generals consensus algorithm is a consensus algorithm
+      specified by the requirements of validity, agreement and termination
+      see lecture_07.html
+      The Byzantine algorithm allows non-faulty agents to reach a consensus
+      even if faulty agents halt, lie and forward modified messages.
+      The FLP theorem says consensus cannot be reached in this case.
+      Byzantine consensus makes an assumption of synchrony for which FLP does not apply.
+    </p>
+    
+    <p class="key">
+      <span class="lead-in">The assumption of synchronous rounds</span>
+      Byzantine consensus algorithms are <b>synchronous</b>. The algorithm
+      proceeds in <b>rounds</b>: every message sent by a non-faulty agent
+      to a non-faulty agent in one round is delivered before the next
+      round begins.
     </p>
   </header>
 
-<h2>Rounds, and why they are allowed</h2>
-
-  <p>
-    The FLP theorem says consensus cannot be reached if messages and
-    agents are arbitrarily slow, or messages may be lost and agents may
-    halt. Paxos lives inside that theorem: it guarantees that <i>if</i>
-    it terminates then all learners agree, and it may not terminate.
-    The algorithm in this lecture escapes the theorem by assuming
-    something FLP does not allow.
-  </p>
-
-  <p class="key">
-    <span class="lead-in">The assumption</span>
-    Byzantine consensus algorithms are <b>synchronous</b>. The algorithm
-    proceeds in <b>rounds</b>: every message sent by a non-faulty agent
-    to a non-faulty agent in one round is delivered before the next
-    round begins.
-  </p>
+  
 
   <p>
     How a round is implemented is left unspecified. If message delays
@@ -179,12 +171,29 @@
     messages at time <code>n&middot;T</code> for some <code>T &gt; t</code>,
     and treating every message that arrives in
     <code>[n&middot;T, (n+1)&middot;T)</code> as belonging to round
-    <code>n</code>. A missing message is therefore not a mystery, as it
-    is in Paxos. If a letter has not arrived by the end of the round, it
-    is not coming.
+    <code>n</code>. 
   </p>
 
-<h2>The army</h2>
+<h2>Specification</h2>
+<p>
+The consensus problem is to come to consensus on a value.
+We will assume that the value is a boolean or a single bit.
+To get consensus on a 64-bit value, the brute-force way is 
+to run the algorithm 64 times, once for each bit; however, 
+there are more efficient ways, which we won't discuss here.
+</p>
+
+<p>
+  Some computer scientists have a (wierd?) sense of humor.
+  In Leslie Lamport's story, Paxos is a Greek island where voting 
+  requirements gave rise to a consensus algorithm.
+  Later we will look at the Dining Philosophers Problem and the
+  Drinking Philosophers Problem which have nothing to do with philosophers,
+  dining or drinking. The Byzantine Generals Problem 
+  is a story about an army with a general and officers where the
+  general and some officers may be traitors. The problem is to
+  develop an algorithm by which loyal officers can come to a consensus 
+  on whether to attack or retreat, despite the traitors.
 
   <p>
     There is one <b>general</b> and <code>N</code> <b>lieutenants</b>.
@@ -206,48 +215,89 @@
     You are given <code>t</code>, an upper bound on the number of
     disloyal officers &mdash; and the general is one of the officers it
     counts. Nobody knows <i>which</i> officers are disloyal. Your task
-    is to design the protocol that the loyal ones run.
+    is to design a consensus protocol that has the following specification.
   </p>
 
   <figure class="fig wideout">
-    <svg id="arm_g" viewBox="0 0 1240 372" role="img"
-         aria-label="A general and three lieutenants. A loyal general sends the same command to all three; a disloyal general sends attack to one, retreat to another and nothing to the third"></svg>
+    <svg id="ex1_g" viewBox="0 0 1240 620" role="img"
+         aria-label="Example 1: a disloyal general sends attack to A, B and C and retreat to D and E; the lieutenants exchange what they heard, with the disloyal A telling B and C attack and D and E retreat; B and C then count three attacks to two retreats while D and E count two attacks to three retreats"></svg>
 
     <div class="ctrls">
-      <button id="arm_a" class="primary">Loyal general: attack</button>
-      <button id="arm_r">Loyal general: retreat</button>
-      <button id="arm_d">Disloyal general</button>
-      <span class="status" id="arm_status"></span>
+      <button id="ex1_play" class="primary">Play</button>
+      <button id="ex1_step">Step</button>
+      <button id="ex1_reset">Reset</button>
+      <span class="status" id="ex1_status"></span>
     </div>
 
     <figcaption>
-      <b>Figure 1. Three kinds of general.</b>
-      A <i>blue</i> letter is an attack command, a <i>red</i> letter is
-      retreat. A loyal general (green coat) sends every lieutenant the
-      same letter. A disloyal general (dark coat) does as it likes: here
-      it tells <i>A</i> to attack, tells <i>B</i> to retreat, and sends
-      <i>C</i> nothing at all. Press the buttons to send the letters.
+      <b>Figure 1. Example 1: two traitors are enough to split the army.</b>
+      The general and lieutenant <i>A</i> are disloyal (dark coats);
+      <i>B</i>, <i>C</i>, <i>D</i> and <i>E</i> are loyal. A
+      <i>blue</i> letter says attack and a <i>red</i> letter says
+      retreat. <b>Round 0:</b> the general sends attack to <i>A</i>,
+      <i>B</i> and <i>C</i>, and retreat to <i>D</i> and <i>E</i>.
+      <b>Round 1:</b> every lieutenant tells the others what it heard
+      &mdash; which message goes where is not drawn, except for
+      <i>A</i>&rsquo;s, and <i>A</i> says attack to <i>B</i> and
+      <i>C</i> and retreat to <i>D</i> and <i>E</i>. <b>Then they
+      count.</b> <i>B</i> and <i>C</i> hold three attacks against two
+      retreats, while <i>D</i> and <i>E</i> hold two against three. Every
+      loyal lieutenant follows the majority it can see, and the army
+      marches both ways at once.
     </figcaption>
   </figure>
 
 <h2>The specification</h2>
 
   <ol class="spec">
+    <li  class="req-c"><span class="rtag">Termination</span>
+      <b>The algorithm terminates</b></li>
+    <li class="req-c"><span class="rtag">Agreement</span>
+      <b>Loyal lieutenants come to a consensus.</b>
+      When the algorithm terminates, 
+      all loyal lieutenants have come to a consensus to attack or 
+      all loyal lieutenants have come to a consensus to retreat.
+      retreat.</li>
     <li class="req-v"><span class="rtag">Validity</span>
-      <b>Loyal lieutenants must obey a loyal general.</b></li>
-    <li class="req-c"><span class="rtag">Consensus</span>
-      <b>Loyal lieutenants must come to a consensus.</b>
-      Either every loyal lieutenant attacks, or every loyal lieutenant
-      retreats.</li>
+      <b>Loyal lieutenants obey a loyal general.</b></li>
   </ol>
 
   <p>
-    Notice what the specification does <i>not</i> ask for. It never asks
-    the algorithm to work out which officers are loyal and which are
-    disloyal. It says nothing about what disloyal lieutenants do. And
-    each requirement on its own is trivial:
+    The specification does <i>not</i> require that disloyal
+    officers be identified. If the specification does not have the
+    validity requirement, then the solution is trivial: 
+    all loyal lieutenants retreat. 
+    If the specification does not have the
+    agreement requirement, then the solution is trivial: 
+    obey the general.
+    The problem is non-trivial because both requirements must be
+    satisfied.
   </p>
 
+  <p>
+    <b>Example 1: General and five lieutenants</b>
+    Let's look at the case where the general and one of the five 
+    lieutenants is disloyal. The general sends attack messages to
+    two of the loyal lieutenans, and retreat messages to the other 
+    two loyal lieutenants. The disloyal lieutenant is an adversary
+    that sends messages to the loyal lieutenants to break consensus. 
+  </p>
+
+  <p>
+    Suppose the lieutenants decide to take a majority vote. Two vote
+    attack and two vote retreat. The disloyal lieutenant can swing
+    the decision made by each of the loyal lieutenants.
+  </p>
+
+  <p>
+    Now consider the case of a disloyal general and a million loyal lieutenants. 
+    The disloyal general can send attack messages to 500,000 loyal lieutenants 
+    and 499,999 retreate messages to the other loyal lieutenants. The disloyal 
+    lieutenant can swing a majority vote either way.
+  </p>
+
+
+  </p>
   <figure class="fig wideout">
     <svg id="tri_g" viewBox="0 0 1240 430" role="img"
          aria-label="Two trivial protocols: obey the general, which breaks consensus under a disloyal general; and always retreat, which breaks validity under a loyal general"></svg>
@@ -269,11 +319,6 @@
       command and watch the verdicts swap.
     </figcaption>
   </figure>
-
-  <p class="key">
-    The problem is hard only because <b>both</b> requirements are
-    demanded at once.
-  </p>
 
   <div class="aside">
     <span class="lead-in">Why anyone cares</span>
@@ -838,75 +883,130 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 1 — three kinds of general */
+/* Figure 1 - example 1: a disloyal general and a disloyal lieutenant */
 (function(){
-  const PFX='arm_', $=function(id){return document.getElementById(PFX+id);};
+  const PFX='ex1_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
   const B=window.BYZ, C=B.C;
-  const GX=180, GY=280, LY=280, LX=[640,860,1080];
-  const NAMES=['A','B','C'];
-  const MODES={
-    attack:  {loyal:true,  send:['attack','attack','attack'],
-              note:'a loyal general: the same letter to all three'},
-    retreat: {loyal:true,  send:['retreat','retreat','retreat'],
-              note:'a loyal general: the same letter to all three'},
-    disloyal:{loyal:false, send:['attack','retreat',null],
-              note:'a disloyal general: attack, retreat, and silence'}
-  };
-  let mode='attack', T=0, raf=null;
+  const GX=620, GY=152;
+  const NAMES=['A','B','C','D','E'];
+  const LOYAL=[false,true,true,true,true];
+  const LX=[230,430,630,830,1030], LY=352, S=.62;
+  /* round 0: what the general sends to each lieutenant */
+  const ORDER=['attack','attack','attack','retreat','retreat'];
+  /* round 1: what the traitor A tells each of the others */
+  const ALIE=[null,'attack','attack','retreat','retreat'];
+  /* and what each loyal lieutenant then holds: its own order, plus one
+     report from each of the other four */
+  const TALLY=[null,[3,2],[3,2],[2,3],[2,3]];
 
+  let stage=0, T=1, raf=null, t0=0;
+
+  function card(x,y,a,r){
+    svg.appendChild(B.el('rect',{x:x-76, y:y, width:152, height:62, rx:10,
+      fill:'#fff', stroke:C.line, 'stroke-width':1.5}));
+    B.mono(svg, x-52, y+19, String(a), C.blue, 15, 'middle');
+    B.sans(svg, x-36, y+19, 'attack', C.ink, 12.5, 'start', 600);
+    B.mono(svg, x-52, y+43, String(r), C.red, 15, 'middle');
+    B.sans(svg, x-36, y+43, 'retreat', C.ink, 12.5, 'start', 600);
+  }
   function draw(){
     B.clear(svg);
-    const M=MODES[mode];
-    B.sans(svg, 620, 30, M.loyal?'A LOYAL GENERAL':'A DISLOYAL GENERAL',
-      M.loyal?C.green:C.coatD, 15, 'middle', 700);
-    B.officer(svg, GX, GY, {rank:'general', loyal:M.loyal,
-      label:'General', scale:1.15});
-    for(let i=0;i<3;i++){
-      B.officer(svg, LX[i], LY, {loyal:true, label:NAMES[i], scale:1});
-      /* what this lieutenant is holding, once the letter lands */
-      if(T>=1){
-        const k=M.send[i];
-        const col=k==='attack'?C.blue:(k==='retreat'?C.red:C.muted);
-        B.banner(svg, LX[i], LY-142,
-          k==='attack'?'attack':(k==='retreat'?'retreat':'nothing'), col);
-        if(k===null) B.sans(svg, LX[i], LY+54,
-          'treats silence as retreat', C.muted, 12.5, 'middle', 600);
+    B.sans(svg, 620, 26,
+      'THE GENERAL AND LIEUTENANT A ARE DISLOYAL  \u00b7  B, C, D, E ARE LOYAL',
+      C.muted, 14, 'middle', 700);
+    B.officer(svg, GX, GY, {rank:'general', loyal:false, label:'General',
+      sub:'disloyal', scale:.82});
+    for(let i=0;i<5;i++){
+      B.officer(svg, LX[i], LY, {loyal:LOYAL[i], label:NAMES[i],
+        sub:LOYAL[i]?null:'disloyal', scale:S});
+      if(stage>=1 && !(stage===1 && T<1))
+        B.banner(svg, LX[i], LY-96, ORDER[i],
+          ORDER[i]==='attack'?C.blue:C.red);
+    }
+    /* ---- round 0: the general's five letters ---------------------- */
+    if(stage>=1){
+      const u=(stage===1)?Math.min(1,T):1;
+      for(let i=0;i<5;i++){
+        const a=[GX+(i-2)*22, GY+16], b=[LX[i], LY-104];
+        const col=(ORDER[i]==='attack')?C.blue:C.red;
+        B.arrow(svg, a, [a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u], col,
+          {op:.4, dash:'7 6', w:2, noHead:u<1, trim:6});
+        if(u<1) B.letter(svg, a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u,
+          {kind:ORDER[i], signer:'G', scale:.62});
       }
     }
-    /* the letters, in flight or at rest */
-    for(let i=0;i<3;i++){
-      const k=M.send[i];
-      if(k===null) continue;
-      const a=[GX+58, GY-78], b=[LX[i], LY-120];
-      const c=B.ctl(a, b, 150+i*38);
-      const u=Math.min(1,T), col=(k==='attack'?C.blue:C.red);
-      if(T>0){
-        B.route(svg, a, c, b, col, {w:2.1, arrow:T>=1});
-        const q=B.qpt(a,c,b,u);
-        B.letter(svg, q[0], q[1], {kind:k, signer:'G', scale:.92});
+    /* ---- round 1: everyone tells everyone, and A lies ------------- */
+    if(stage===2){
+      const u=Math.min(1,T);
+      /* the mesh, unlabelled on purpose: which message goes where is
+         not the point, and drawing it would hide the point */
+      for(let i=0;i<5;i++) for(let j=i+1;j<5;j++){
+        if(i===0) continue;                /* A's own four are drawn below */
+        const a=[LX[i], LY+14], b=[LX[j], LY+14];
+        const c=[(a[0]+b[0])/2, LY+62+(j-i)*34];
+        B.route(svg, a, c, b, C.muted, {op:.20, w:1.6, dash:'5 7'});
       }
+      /* A's four, which are the whole trick */
+      for(let j=1;j<5;j++){
+        const a=[LX[0], LY+14], b=[LX[j], LY+14];
+        const c=[(a[0]+b[0])/2, LY+86+j*30];
+        const col=(ALIE[j]==='attack')?C.blue:C.red;
+        B.route(svg, a, c, b, col, {op:.55, w:2.2, dash:false, arrow:u>=1});
+        const q=B.qpt(a,c,b,Math.max(.15,u*.86));
+        B.letter(svg, q[0], q[1], {kind:ALIE[j], signer:'A', scale:.56});
+      }
+      B.sans(svg, 620, 584,
+        'A tells B and C \u201cattack\u201d and D and E \u201cretreat\u201d \u2014 '+
+        'the other four simply repeat what they heard',
+        C.ink, 13.5, 'middle', 600);
     }
-    $('status').innerHTML='<b>'+M.note+'</b>';
+    /* ---- the count ----------------------------------------------- */
+    if(stage>=3){
+      for(let i=0;i<5;i++){
+        if(!LOYAL[i]){
+          B.sans(svg, LX[i], LY+72, 'disloyal:', C.muted, 13, 'middle', 700);
+          B.sans(svg, LX[i], LY+92, 'votes either way', C.muted, 13, 'middle', 600);
+          continue;
+        }
+        const t=TALLY[i];
+        card(LX[i], LY+52, t[0], t[1]);
+        const win=(t[0]>t[1])?'attacks':'retreats';
+        B.banner(svg, LX[i], LY+140, win, (t[0]>t[1])?C.blue:C.red);
+      }
+      B.sans(svg, 620, 584,
+        'B and C attack while D and E retreat: four loyal lieutenants, '+
+        'two different answers, and no consensus',
+        C.red, 14.5, 'middle', 700);
+    }
+    $('status').innerHTML=['press play',
+      'round 0: <b>the general splits them</b>',
+      'round 1: <b>the lieutenants compare notes</b>',
+      '<b>no consensus</b>'][stage];
   }
-  function run(){
-    T=0; if(raf) cancelAnimationFrame(raf);
-    const t0=performance.now();
-    (function step(now){
-      T=Math.min(1,(now-t0)/900);
-      draw();
-      if(T<1) raf=requestAnimationFrame(step);
-    })(t0);
+  /* Play walks the three stages on one clock; Step does them by hand. */
+  function frame(now){
+    const e=(now-t0)/1000;
+    if(e<1.0){ stage=1; T=e; }
+    else if(e<1.5){ stage=1; T=1; }
+    else if(e<2.6){ stage=2; T=(e-1.5)/1.1; }
+    else if(e<3.1){ stage=2; T=1; }
+    else { stage=3; T=1; }
+    draw();
+    if(e<3.1) raf=requestAnimationFrame(frame);
   }
-  function pick(m,btn){
-    mode=m;
-    ['a','r','d'].forEach(function(k){ $(k).className=''; });
-    btn.className='primary';
-    run();
-  }
-  $('a').onclick=function(){ pick('attack',$('a')); };
-  $('r').onclick=function(){ pick('retreat',$('r')); };
-  $('d').onclick=function(){ pick('disloyal',$('d')); };
+  $('play').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    t0=performance.now(); raf=requestAnimationFrame(frame);
+  };
+  $('step').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    stage=Math.min(3, stage+1); T=1; draw();
+  };
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    stage=0; T=1; draw();
+  };
   draw();
 })();
 </script>
