@@ -387,29 +387,28 @@ there are more efficient ways, which we won't discuss here.
       An agent can forge signatures and corrupt messages.</li>
   </ol>
 
-  <figure class="fig">
-    <svg id="fwd_g" viewBox="0 0 940 486" role="img"
-         aria-label="Three things lieutenant A can do with a signed letter from the general: forward it unchanged to B, withhold it, or try to forge one, which fails when messages are encrypted and succeeds when they are not"></svg>
+  <figure class="fig wideout">
+    <svg id="fwd_g" viewBox="0 0 1240 580" role="img"
+         aria-label="A signed attack message reaches lieutenant A, which forwards it unchanged to B, sends nothing to C, and tries to send D a forged retreat in the general's name -- impossible with encrypted messages and free without them"></svg>
 
     <div class="ctrls">
-      <button id="fwd_f" class="primary">Forward message</button>
-      <button id="fwd_n">Don&rsquo;t forward message</button>
-      <button id="fwd_g2">Forge message</button>
+      <button id="fwd_play" class="primary">Play</button>
+      <button id="fwd_step">Step</button>
+      <button id="fwd_reset">Reset</button>
       <span class="status" id="fwd_status"></span>
     </div>
 
     <figcaption>
-      <b>Figure 4. What a lieutenant can do with a signed letter.</b>
-      The general <i>G</i> signs <i>attack</i> and sends it to <i>A</i>,
-      who is disloyal. <i>Forward</i>: <i>A</i> passes on the letter it
-      received, and what reaches <i>B</i> is the same message under the
-      same signature &mdash; the one thing a traitor can do with a
-      sealed letter is hand it over. <i>Don&rsquo;t forward</i>:
-      <i>A</i> keeps quiet, and <i>B</i> cannot tell that from a general
-      who never wrote. <i>Forge</i>: <i>A</i> tries to send a letter of
-      its own in the general&rsquo;s name. With encrypted messages it
-      cannot &mdash; and with unencrypted ones nothing stops it, which is
-      the whole difference between the two models.
+      <b>Figure 4. The three things a lieutenant can do, all at once.</b>
+      <b>1.</b> A signed <i>attack</i> message reaches <i>A</i> from the
+      general. <b>2.</b> <i>A</i> forwards it to <i>B</i> &mdash; the
+      same message under the same signature, which is the one thing a
+      traitor can do with a sealed letter. <b>3.</b> <i>A</i> sends
+      <i>C</i> nothing at all, and <i>C</i> cannot tell that from a
+      general who never wrote. <b>4.</b> <i>A</i> tries to send <i>D</i>
+      a <i>retreat</i> in the general&rsquo;s name. With written,
+      encrypted messages it cannot: the signature is not forgeable. With
+      oral messages nothing stops it, and <i>D</i> cannot tell.
     </figcaption>
   </figure>
 
@@ -1252,121 +1251,130 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 4 - the three things a lieutenant can do with a signed letter */
+/* Figure 4 - what A does to B, to C and to D, in four steps */
 (function(){
   const PFX='fwd_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
   const B=window.BYZ, C=B.C;
-  const GX=110, AX=430, BX=750, Y=240;
-  let mode='forward', T=0, raf=null, t0=0;
+  const GX=130, GY=280, AX=480, AY=280;
+  const RX=900, RY=[140, 290, 440], NAMES=['B','C','D'];
+  let step=0, T=1, raf=null, t0=0;
 
-  function cast(){
-    B.officer(svg, GX, Y, {rank:'general', loyal:true, label:'G',
-      sub:'the general', scale:.84});
-    B.officer(svg, AX, Y, {loyal:false, label:'A', sub:'disloyal', scale:.84});
-    B.officer(svg, BX, Y, {loyal:true, label:'B', scale:.84});
+  function lerp(a,b,u){ return [a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u]; }
+  function cross(x,y,r,col){
+    B.arrow(svg, [x-r,y-r], [x+r,y+r], col, {trim:0, w:3, noHead:true});
+    B.arrow(svg, [x+r,y-r], [x-r,y+r], col, {trim:0, w:3, noHead:true});
   }
-  function leg1(u){
-    /* the general's letter, on its way to A */
-    const a=[GX+44, Y-62], b=[AX-46, Y-66];
-    B.arrow(svg, a, [a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u], C.blue,
-      {op:.4, dash:'7 6', w:2, noHead:u<1});
-    B.letter(svg, a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u,
-      {kind:'attack', signer:'G', scale:.8});
-  }
+  function toR(i){ return [RX-50, RY[i]-54]; }
+  const FROM_A=[AX+56, AY-76];
+
   function draw(){
     B.clear(svg);
-    const head={forward:'A FORWARDS WHAT IT RECEIVED',
-                none:'A FORWARDS NOTHING',
-                forge:'A TRIES TO WRITE ITS OWN ORDER IN G\u2019S NAME'}[mode];
-    B.sans(svg, 470, 28, head,
-      (mode==='forge')?C.coatD:C.muted, 14, 'middle', 700);
-    cast();
+    B.sans(svg, 620, 26,
+      'ONE SEALED LETTER IN, AND THREE DIFFERENT THINGS OUT',
+      C.muted, 14, 'middle', 700);
+    B.officer(svg, GX, GY, {rank:'general', loyal:true, label:'G',
+      sub:'the general', scale:.9});
+    B.officer(svg, AX, AY, {loyal:false, label:'A', sub:'disloyal', scale:.9});
+    for(let i=0;i<3;i++)
+      B.officer(svg, RX, RY[i], {loyal:true, label:NAMES[i], scale:.72,
+        dim:step<i+2});
 
-    if(mode==='forward'){
-      /* two steps: the letter arrives, then the very same letter goes on */
-      const u1=Math.min(1, T*2.2), u2=Math.max(0, Math.min(1,(T-0.55)*2.2));
-      leg1(u1);
-      if(T>0.55){
-        const a=[AX+46, Y-66], b=[BX-44, Y-62];
-        B.arrow(svg, a, [a[0]+(b[0]-a[0])*u2, a[1]+(b[1]-a[1])*u2], C.blue,
-          {op:.4, dash:'7 6', w:2, noHead:u2<1});
-        B.letter(svg, a[0]+(b[0]-a[0])*u2, a[1]+(b[1]-a[1])*u2,
-          {kind:'attack', signer:'G', scale:.8});
-      }
-      if(T>=1){
-        B.banner(svg, BX, Y-130, 'attack, signed G', C.blue);
-        B.sans(svg, 470, 352,
-          'the same message, under the same signature: A cannot change '+
-          'either of them', C.ink, 13.5, 'middle', 600);
-      }
+    /* step 1 -- the general's letter reaches A */
+    if(step>=1){
+      const u=(step===1)?Math.min(1,T):1;
+      const a=[GX+56, GY-70], b=[AX-56, AY-74];
+      B.arrow(svg, a, lerp(a,b,u), C.blue,
+        {op:.42, dash:'7 6', w:2.2, noHead:u<1});
+      B.letter(svg, lerp(a,b,u)[0], lerp(a,b,u)[1],
+        {kind:'attack', signer:'G', scale:.84});
+      if(u>=1) B.sans(svg, (GX+AX)/2, GY-118, 'signed attack',
+        C.blue, 13, 'middle', 700);
     }
-
-    if(mode==='none'){
-      leg1(Math.min(1,T));
-      /* a dead stub towards B, and a cross on it */
-      const a=[AX+46, Y-66], b=[BX-44, Y-62];
-      B.arrow(svg, a, b, '#c9c4b8', {op:.7, dash:'4 7', w:2, noHead:true});
-      const mx=(a[0]+b[0])/2, my=(a[1]+b[1])/2;
-      B.arrow(svg, [mx-10,my-10], [mx+10,my+10], C.red, {trim:0, w:2.8, noHead:true});
-      B.arrow(svg, [mx+10,my-10], [mx-10,my+10], C.red, {trim:0, w:2.8, noHead:true});
-      if(T>=1){
-        B.banner(svg, BX, Y-130, 'nothing', C.muted);
-        B.sans(svg, 470, 352,
-          'withholding is always open to a traitor, and B cannot tell '+
-          'silence from a general who never wrote',
-          C.ink, 13.5, 'middle', 600);
-      }
-    }
-
-    if(mode==='forge'){
-      leg1(1);
-      const u=Math.min(1,T);
-      const a=[AX+46, Y-66], b=[BX-44, Y-62];
-      const stopAt=0.45;
-      const px=a[0]+(b[0]-a[0])*stopAt*Math.min(1,u/stopAt*0.9+0.1);
-      const py=a[1]+(b[1]-a[1])*stopAt;
-      /* the attempt, stopped in its tracks */
-      B.arrow(svg, a, [px,py], C.red, {op:.45, dash:'7 6', w:2, noHead:true});
-      B.letter(svg, px, py, {kind:'retreat', signer:'G', scale:.8, forged:true});
+    /* step 2 -- forwarded to B, unchanged */
+    if(step>=2){
+      const u=(step===2)?Math.min(1,T):1;
+      const b=toR(0);
+      B.arrow(svg, FROM_A, lerp(FROM_A,b,u), C.blue,
+        {op:.42, dash:'7 6', w:2.2, noHead:u<1});
+      B.letter(svg, lerp(FROM_A,b,u)[0], lerp(FROM_A,b,u)[1],
+        {kind:'attack', signer:'G', scale:.74});
       if(u>=1){
-        B.arrow(svg, [px-13,py-30], [px+13,py-4], C.red, {trim:0, w:3, noHead:true});
-        B.arrow(svg, [px+13,py-30], [px-13,py-4], C.red, {trim:0, w:3, noHead:true});
-        /* what the same move would do without encryption */
-        B.arrow(svg, [px+26,py], [b[0],b[1]], C.teal,
-          {op:.35, dash:'3 7', w:2, noHead:false});
-        B.letter(svg, b[0]+14, b[1]-2,
-          {kind:'retreat', signer:'G', scale:.66, forged:true});
-        B.sans(svg, BX+6, Y-128, 'if messages are not encrypted',
-          C.teal, 12.5, 'middle', 700);
-        B.verdict(svg, 320, 350, 'Written, encrypted messages', false,
-          'A cannot forge the general\u2019s signature');
-        B.verdict(svg, 320, 414, 'Oral, unencrypted messages', true,
-          'A can: nothing stops it, and B cannot tell');
+        B.banner(svg, RX+128, RY[0]-58, 'attack, signed G', C.blue);
+        B.sans(svg, RX+128, RY[0]-30, 'the very same letter',
+          C.muted, 12.5, 'middle', 600);
       }
     }
-    $('status').innerHTML={
-      forward:'<b>forwarded</b>, unchanged',
-      none:   '<b>withheld</b>',
-      forge:  'blocked by the seal \u00b7 <b>free without it</b>'}[mode];
+    /* step 3 -- nothing at all to C */
+    if(step>=3){
+      const b=toR(1);
+      B.arrow(svg, FROM_A, b, '#c9c4b8', {op:.75, dash:'4 7', w:2, noHead:true});
+      cross((FROM_A[0]+b[0])/2, (FROM_A[1]+b[1])/2, 13, C.red);
+      if(step>3 || T>=1){
+        B.banner(svg, RX+112, RY[1]-58, 'nothing', C.muted);
+        B.sans(svg, RX+112, RY[1]-30, 'and C cannot tell why',
+          C.muted, 12.5, 'middle', 600);
+      }
+    }
+    /* step 4 -- a forged retreat, in the general's name */
+    if(step>=4){
+      const u=Math.min(1,T);
+      const b=toR(2), stop=lerp(FROM_A, b, .52);
+      const q=lerp(FROM_A, stop, u);
+      B.arrow(svg, FROM_A, q, C.red, {op:.45, dash:'7 6', w:2.2, noHead:true});
+      B.letter(svg, q[0], q[1],
+        {kind:'retreat', signer:'G', scale:.74, forged:true});
+      if(u>=1){
+        /* the error sign goes on the letter itself, and its label under
+           it: above it the label collided with step 3's cross */
+        cross(stop[0], stop[1], 17, C.red);
+        B.sans(svg, stop[0]-4, stop[1]+38,
+          'the seal cannot be forged', C.red, 13, 'middle', 700);
+        B.arrow(svg, [stop[0]+26, stop[1]+8], b, C.teal,
+          {op:.4, dash:'3 7', w:2});
+        B.letter(svg, b[0]+18, b[1]+6,
+          {kind:'retreat', signer:'G', scale:.6, forged:true});
+        B.banner(svg, RX+118, RY[2]-58, 'retreat, \u201csigned G\u201d', C.teal);
+        B.sans(svg, RX+118, RY[2]-30, 'if messages are not encrypted',
+          C.teal, 12.5, 'middle', 600);
+        B.verdict(svg, 120, 424, 'Written, encrypted messages', false,
+          'A cannot forge the general\u2019s signature');
+        B.verdict(svg, 120, 488, 'Oral, unencrypted messages', true,
+          'A can, and D cannot tell');
+      }
+    }
+    $('status').innerHTML=['press play',
+      'step 1: <b>a signed attack reaches A</b>',
+      'step 2: <b>forwarded to B, unchanged</b>',
+      'step 3: <b>nothing to C</b>',
+      'step 4: <b>a forgery for D</b>'][step];
   }
-  function run(){
+  function frame(now){
+    const e=(now-t0)/1000;
+    if(e<0.9){ step=1; T=e/0.9; }
+    else if(e<1.2){ step=1; T=1; }
+    else if(e<2.1){ step=2; T=(e-1.2)/0.9; }
+    else if(e<2.4){ step=2; T=1; }
+    else if(e<3.0){ step=3; T=(e-2.4)/0.6; }
+    else if(e<3.3){ step=3; T=1; }
+    else if(e<4.2){ step=4; T=(e-3.3)/0.9; }
+    else { step=4; T=1; }
+    draw();
+    if(e<4.2) raf=requestAnimationFrame(frame);
+  }
+  $('play').onclick=function(){
     if(raf) cancelAnimationFrame(raf);
-    t0=performance.now();
-    (function step(now){
-      T=Math.min(1,(now-t0)/(mode==='forward'?1700:1000));
-      draw();
-      if(T<1) raf=requestAnimationFrame(step);
-    })(t0);
-  }
-  function pick(m, id){
-    mode=m; ['f','n','g2'].forEach(function(k){ $(k).className=''; });
-    $(id).className='primary'; run();
-  }
-  $('f').onclick=function(){ pick('forward','f'); };
-  $('n').onclick=function(){ pick('none','n'); };
-  $('g2').onclick=function(){ pick('forge','g2'); };
-  T=0; draw();
+    t0=performance.now(); raf=requestAnimationFrame(frame);
+  };
+  $('step').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    step=Math.min(4, step+1); T=1; draw();
+  };
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    step=0; T=1; draw();
+  };
+  draw();
 })();
 </script>
 
