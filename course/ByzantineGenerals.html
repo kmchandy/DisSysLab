@@ -405,27 +405,28 @@ there are more efficient ways, which we won't discuss here.
   <p>
     The rest of this document considers the <b>encrypted</b> message case. 
     Oral messages are discussed elsewhere. Note that for oral messages, 
-    when there can be up to t faulty agents, the number of correct agents must 
-    exceed 2t for consensus to be possible. 
-    For written messages, there is no lower bound on the number of correct agents
-    required for consensus to be possible.
+    when there can be up to t disloyal officers (general or lieutenants), 
+    the number of loyal officers must exceed 2t for consensus to be possible. 
+    For written messages, there is no bound on the number of correct officers.
   </p>
 
 <h2>The algorithm with encrypted messages</h2>
-
+  <p>
+    We use the term <b>source</b> for the general and <b>agent</b> 
+    for lieutenant, and we use 1 for attack and 0 for retreat.
+  </p>
   <p>
     Messages are sent in <b>rounds</b>: a message sent in round
     <code>k</code> is received at the start of round <code>k+1</code>.
     An agent that sends a message can <b>sign</b> it with its own
     signature, and any agent can read a message and verify a signature.
-    Let 1 stand for attack and 0 for retreat.
   </p>
 
   <p class="key">
     <span class="lead-in">One simplification, used throughout</span>
     In a round an agent sends 0, 1, or nothing at all. Treat a
-    0&#8209;message as <b>equivalent to no message</b>. Every message
-    the algorithm actually sends is then a 1&#8209;message, and the
+    0&#8209;message as <b>equivalent to no message</b>. Then, every message
+    in the algorithm is a 1&#8209;message, and the
     absence of a message stands for either a 0 or a silence.
   </p>
 
@@ -435,7 +436,7 @@ there are more efficient ways, which we won't discuss here.
     <code>x</code>.
   </p>
 
-  <h3>A first attempt</h3>
+  <h3>A first attempt to gain intuition</h3>
 
   <p>
     Round 0: the source sends <b>S</b>&#8209;msg to some, all, or none
@@ -443,17 +444,12 @@ there are more efficient ways, which we won't discuss here.
     decides 1 if an <b>S</b>&#8209;msg ever reached it:
   </p>
 
-<pre class="code"><span class="cm"># code for agent x. K is left open for now</span>
+<pre class="code"><span class="cm">K determined later. # code for agent x. </span>
 x.v = <b>0</b>
 <span class="kw">for</span> k <span class="kw">in</span> [1, K]:
     <span class="kw">if</span> x received an <b>S</b>-msg in round k-1:
         x.v = <b>1</b>
-        <span class="kw">send</span> the <b>S</b>-msg to every agent</pre>
-
-  <p>
-    The agent forwards the message it received, signature and all. It
-    cannot do anything else with it: that is figure 3.
-  </p>
+        <span class="kw">send</span> a copy of the <b>S</b>-msg to every agent</pre>
 
   <h3>What is K?</h3>
 
@@ -471,7 +467,8 @@ x.v = <b>0</b>
     <ol style="margin:0 0 12px; padding-left:24px; color:var(--body)">
       <li><b>Round 0.</b> The source sends an <b>S</b>&#8209;msg to
         <code>x</code>, and nothing to any correct agent.</li>
-      <li><b>Round 1.</b> <code>x</code> forwards it to a correct agent
+      <li><b>Round 1.</b> <code>x</code> forwards a copy of the 
+        <b>S</b>&#8209;msg to a correct agent
         <code>y</code>, and not to a correct agent <code>z</code>.</li>
     </ol>
     <p>
@@ -485,31 +482,14 @@ x.v = <b>0</b>
     <span class="lead-in">And no K works</span>
     The same argument defeats every <code>K</code>: the faulty agent
     stays silent until round <code>K&minus;1</code> and then sends the
-    <b>S</b>&#8209;msg to some correct agents and not others. The
-    algorithm stops before anyone can forward it, and the agents that
-    got it disagree with the agents that did not.
+    <b>S</b>&#8209;msg to some correct agents and not others.
   </p>
 
   <p>
-    What to do?
+    How can you modify the algorithm so that it stops with a consensus 
+    after some round K?
   </p>
 
-<p>
-  The algorithm tells us that if a correct agent receives a signed attack 
-  message on round k then all correct agents receive a signed attack message
-  by round k+1. Can we deal with the situation described in the previous paragraph
-  by stopping in round 3?  We could show that if a correct agent has received 
-  a signed attack by round 2 then all correct agents will have received a 
-  signed attack by round 3. This won't work either because the faulty agent 
-  can wait till round 2 to send signed attacks.
-</p>
-
-  <p>
-    An agent that has not committed to attack by the end of the
-    algorithm commits to <b>retreat</b>. So the whole algorithm is a rule
-    for when to commit to attack, and the letters are the evidence for
-    doing it.
-  </p>
 
   <h3>Round 0</h3>
 
