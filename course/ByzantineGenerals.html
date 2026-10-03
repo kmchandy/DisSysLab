@@ -53,6 +53,14 @@
   .legend i{font-style:normal; color:var(--ink); font-weight:600}
   code{font-family:var(--mono); font-size:.88em;
        background:#f6f4ee; border-radius:5px; padding:1px 5px}
+  /* a block of code: the same rule as the lecture notes before it */
+  pre.code{margin:16px 0 18px; padding:14px 18px; overflow-x:auto;
+    background:#fff; border:1px solid var(--line); border-left:4px solid var(--ink);
+    border-radius:0 10px 10px 0; font:13.5px/1.7 var(--mono); color:var(--ink)}
+  pre.code b{font-weight:700}
+  pre.code .cm{color:var(--muted)}
+  pre.code .kw{color:var(--orange)}
+  pre.code code{background:none; padding:0}
   .hint{font-size:13px; color:var(--muted)}
   .ok{color:var(--teal); font-weight:700}
   .bad{color:var(--orange); font-weight:700}
@@ -147,17 +155,18 @@
       The Byzantine generals consensus algorithm is a consensus algorithm
       specified by the requirements of validity, agreement and termination
       see lecture_07.html
-      The Byzantine algorithm allows non-faulty agents to reach a consensus
+      The Byzantine algorithm allows correct agents to reach a consensus
       even if faulty agents halt, lie and forward modified messages.
       The FLP theorem says consensus cannot be reached in this case.
-      Byzantine consensus makes an assumption of synchrony for which FLP does not apply.
+      Byzantine consensus makes an assumption of synchrony for which FLP 
+      does not apply. The algorithm was created by Shostak et al.
     </p>
     
     <p class="key">
       <span class="lead-in">The assumption of synchronous rounds</span>
       Byzantine consensus algorithms are <b>synchronous</b>. The algorithm
-      proceeds in <b>rounds</b>: every message sent by a non-faulty agent
-      to a non-faulty agent in one round is delivered before the next
+      proceeds in <b>rounds</b>: every message sent by a correct agent
+      to a correct agent in one round is delivered before the next
       round begins.
     </p>
   </header>
@@ -194,33 +203,78 @@ there are more efficient ways, which we won't discuss here.
   general and some officers may be traitors. The problem is to
   develop an algorithm by which loyal officers can come to a consensus 
   on whether to attack or retreat, despite the traitors.
+</p>
 
   <p>
-    There is one <b>general</b> and <code>N</code> <b>lieutenants</b>.
-    The general gives a command, which is either <b>retreat</b> (0) or
+    There is one <b>source</b> and <code>N</code> <b>agents</b>.
+    The source gives a command, which is either <b>retreat</b> (0) or
     <b>attack</b> (1).
   </p>
 
   <ul style="list-style:none; padding:0; margin:18px 0 10px; color:var(--body)">
-    <li style="margin:0 0 8px">A <b style="color:var(--ink)">loyal</b>
-      general gives the same command to every lieutenant.</li>
-    <li style="margin:0 0 8px">A <b style="color:var(--ink)">disloyal</b>
-      general may give different commands to different lieutenants, and
+    <li style="margin:0 0 8px">A <b style="color:var(--ink)">correct</b>
+      source gives the same command to every agent.</li>
+    <li style="margin:0 0 8px">A <b style="color:var(--ink)">faulty</b>
+      source may give different commands to different agents, and
       may give no command at all to some of them.</li>
-    <li style="margin:0 0 8px">Loyal lieutenants obey the protocol.
-      Disloyal lieutenants may do anything.</li>
+    <li style="margin:0 0 8px">Correct agents obey the protocol.
+      Faulty agents may do anything.</li>
   </ul>
 
   <p>
     You are given <code>t</code>, an upper bound on the number of
-    disloyal officers &mdash; and the general is one of the officers it
-    counts. Nobody knows <i>which</i> officers are disloyal. Your task
+    faulty agents &mdash; and the source is one of the agents it
+    counts. Nobody knows <i>which</i> of them is faulty
+    which, if any, agents are faulty. Your task
     is to design a consensus protocol that has the following specification.
   </p>
 
+
+
+<h2>The specification</h2>
+<p>
+  For an agent <b>x</b>,  let <b>x.v</b> be a local value of <b>x</b>.
+  Let <b>S</b> be the source, and <b>S.v</b> be the value of the source.
+</p>
+
+<ol class="spec">
+  <li  class="req-c"><span class="rtag">Termination</span>
+    <b>The algorithm terminates</b></li>
+  <li class="req-c"><span class="rtag">Agreement</span>
+    <b>Correct agents come to a consensus.</b>
+    When the algorithm terminates, 
+    all correct agents have come to a consensus to attack or 
+    all correct agents have come to a consensus to retreat.
+    retreat.
+  <br>
+  for all correct agents <b>x</b> and <b>y</b>, <b>x.v = y.v</b>.
+  </li>
+  <li class="req-v"><span class="rtag">Validity</span>
+    <b>Correct agents obey a correct source.</b>
+    <br>
+    If the source is correct, then for all correct agents <b>x</b>, 
+    <b>x.v = S.v</b>.
+  </li>
+</ol>
+
+<p>
+  The specification does <i>not</i> require that faulty
+  agents be identified. If the specification does not have the
+  validity requirement, then the solution is trivial: 
+  all correct agents retreat. 
+  If the specification does not have the
+  agreement requirement, then the solution is trivial: 
+  obey the source.
+  The problem is non-trivial because both requirements must be
+  satisfied.
+</p>
+
+
+
+
   <figure class="fig wideout">
     <svg id="ex1_g" viewBox="0 0 1240 620" role="img"
-         aria-label="Example 1: a disloyal general sends attack to A, B and C and retreat to D and E; the lieutenants exchange what they heard, with the disloyal A telling B and C attack and D and E retreat; B and C then count three attacks to two retreats while D and E count two attacks to three retreats"></svg>
+         aria-label="Example 1: a faulty source sends attack to A, B and C and retreat to D and E; the agents exchange what they heard, with the faulty A telling B and C attack and D and E retreat; B and C then count three attacks to two retreats while D and E count two attacks to three retreats"></svg>
 
     <div class="ctrls">
       <button id="ex1_play" class="primary">Play</button>
@@ -230,26 +284,42 @@ there are more efficient ways, which we won't discuss here.
     </div>
 
     <figcaption>
-      <b>Figure 1. Example 1: two traitors are enough to split the army.</b>
-      The general and lieutenant <i>A</i> are disloyal (dark coats);
-      <i>B</i>, <i>C</i>, <i>D</i> and <i>E</i> are loyal. A
+      <b>Figure 1. Example 1: two faulty agents are enough to split the rest.</b>
+      The source and agent <i>A</i> are faulty (dark coats);
+      <i>B</i>, <i>C</i>, <i>D</i> and <i>E</i> are correct. A
       <i>blue</i> letter says attack and a <i>red</i> letter says
-      retreat. <b>Round 0:</b> the general sends attack to <i>A</i>,
+      retreat. <b>Round 0:</b> the source sends attack to <i>A</i>,
       <i>B</i> and <i>C</i>, and retreat to <i>D</i> and <i>E</i>.
-      <b>Round 1:</b> every lieutenant tells the others what it heard
+      <b>Round 1:</b> every agent tells the others what it heard
       &mdash; which message goes where is not drawn, except for
       <i>A</i>&rsquo;s, and <i>A</i> says attack to <i>B</i> and
       <i>C</i> and retreat to <i>D</i> and <i>E</i>. <b>Then they
       count.</b> <i>B</i> and <i>C</i> hold three attacks against two
       retreats, while <i>D</i> and <i>E</i> hold two against three. Every
-      loyal lieutenant follows the majority it can see, and the army
-      marches both ways at once.
+      correct agent follows the majority it can see, and the two halves
+      decide opposite things.
     </figcaption>
   </figure>
 
+  <p>
+    <b>Example</b>
+    Let's look at the case where the source and one of the five 
+    agents is faulty. The source sends attack messages to
+    two of the correct lieutenans, and retreat messages to the other 
+    two correct agents. The faulty agent is an adversary
+    that sends messages to the correct agents to break consensus. 
+  </p>
+
+  <p>
+    Suppose the agents decide to take a majority vote. Two vote
+    attack and two vote retreat. The faulty agent can swing
+    the decision made by each of the correct agents.
+  </p>
+
+
   <figure class="fig wideout">
     <svg id="big_g" viewBox="0 0 1240 672" role="img"
-         aria-label="Example 2: a disloyal general sends attack to 499,999 loyal lieutenants and to the one disloyal lieutenant, and retreat to the other 500,000; the traitor then tells the first group attack and the second retreat, and the first group counts 500,000 attacks while the second counts 499,999"></svg>
+         aria-label="Example 2: a faulty source sends attack to 499,999 correct agents and to the one faulty agent, and retreat to the other 500,000; the faulty agent then tells the first group attack and the second retreat, and the first group counts 500,000 attacks while the second counts 499,999"></svg>
 
     <div class="ctrls">
       <button id="big_play" class="primary">Play</button>
@@ -259,120 +329,40 @@ there are more efficient ways, which we won't discuss here.
     </div>
 
     <figcaption>
-      <b>Figure 2. Example 2: a million lieutenants, and one traitor
+      <b>Figure 2. Example 2: a million agents, and one faulty agent
       still splits them.</b>
-      Nothing above depended on the army being small. Here the general
-      is disloyal and exactly <b>one</b> lieutenant is: it sends attack
-      to 499,999 loyal lieutenants and to the traitor, and retreat to
-      the other 500,000. Every lieutenant then reports what it heard to
-      all the others &mdash; and the traitor tells the first group
+      Nothing above depended on there being only five agents. Here the source
+      is faulty and exactly <b>one</b> agent is: it sends attack
+      to 499,999 correct agents and to the faulty agent, and retreat to
+      the other 500,000. Every agent then reports what it heard to
+      all the others &mdash; and the faulty agent tells the first group
       attack and the second group retreat. Counting its own order
-      together with the 999,999 reports, each lieutenant of the first
+      together with the 999,999 reports, each agent of the first
       group holds <b>500,000</b> attacks and 500,000 retreats, and each
       of the second holds <b>499,999</b> attacks and 500,001. One
-      traitor moved one vote, and half a million lieutenants march while
+      faulty agent moved one vote, and half a million agents march while
       half a million stay.
     </figcaption>
   </figure>
 
-
-<h2>The specification</h2>
-
-  <ol class="spec">
-    <li  class="req-c"><span class="rtag">Termination</span>
-      <b>The algorithm terminates</b></li>
-    <li class="req-c"><span class="rtag">Agreement</span>
-      <b>Loyal lieutenants come to a consensus.</b>
-      When the algorithm terminates, 
-      all loyal lieutenants have come to a consensus to attack or 
-      all loyal lieutenants have come to a consensus to retreat.
-      retreat.</li>
-    <li class="req-v"><span class="rtag">Validity</span>
-      <b>Loyal lieutenants obey a loyal general.</b></li>
-  </ol>
-
   <p>
-    The specification does <i>not</i> require that disloyal
-    officers be identified. If the specification does not have the
-    validity requirement, then the solution is trivial: 
-    all loyal lieutenants retreat. 
-    If the specification does not have the
-    agreement requirement, then the solution is trivial: 
-    obey the general.
-    The problem is non-trivial because both requirements must be
-    satisfied.
-  </p>
-
-  <p>
-    <b>Example 1: General and five lieutenants</b>
-    Let's look at the case where the general and one of the five 
-    lieutenants is disloyal. The general sends attack messages to
-    two of the loyal lieutenans, and retreat messages to the other 
-    two loyal lieutenants. The disloyal lieutenant is an adversary
-    that sends messages to the loyal lieutenants to break consensus. 
-  </p>
-
-  <p>
-    Suppose the lieutenants decide to take a majority vote. Two vote
-    attack and two vote retreat. The disloyal lieutenant can swing
-    the decision made by each of the loyal lieutenants.
-  </p>
-
-  <p>
-    Now consider the case of a disloyal general and a million loyal lieutenants. 
-    The disloyal general can send attack messages to 500,000 loyal lieutenants 
-    and 499,999 retreate messages to the other loyal lieutenants. The disloyal 
-    lieutenant can swing a majority vote either way.
+    Now consider the case of a faulty source and a million correct agents. 
+    The faulty source can send attack messages to 500,000 correct agents 
+    and 499,999 retreate messages to the other correct agents. The faulty 
+    agent can swing a majority vote either way.
   </p>
 
 
-  </p>
-  <figure class="fig wideout">
-    <svg id="tri_g" viewBox="0 0 1240 430" role="img"
-         aria-label="Two trivial protocols: obey the general, which breaks consensus under a disloyal general; and always retreat, which breaks validity under a loyal general"></svg>
-
-    <div class="ctrls">
-      <button id="tri_o" class="primary">Obey the general</button>
-      <button id="tri_r">Always retreat</button>
-      <button id="tri_t">Switch general</button>
-      <span class="status" id="tri_status"></span>
-    </div>
-
-    <figcaption>
-      <b>Figure 3. Each requirement alone is easy.</b>
-      <i>Obey the general</i> satisfies validity always &mdash; and a
-      disloyal general then splits the loyal lieutenants, which breaks
-      consensus. <i>Always retreat</i> satisfies consensus always
-      &mdash; and disobeys a loyal general who ordered an attack, which
-      breaks validity. Press <i>Switch general</i> to change who is in
-      command and watch the verdicts swap.
-    </figcaption>
-  </figure>
-
-  <div class="aside">
-    <span class="lead-in">Why anyone cares</span>
-    <p>
-      The name is a story, and the story is unfair to Byzantine officers,
-      who were no more treacherous than anyone else&rsquo;s. Read the
-      general as a <b>fire detector</b> that may be faulty, and the
-      lieutenants as the agents that must decide together whether to
-      sound the alarm.
-    </p>
-    <p>
-      Validity then says: if a working detector reports a fire, every
-      working agent raises the alarm. Consensus says: even if the
-      detector is faulty and tells some agents there is a fire and
-      others that there is none, the working agents still agree &mdash;
-      either they all raise the alarm or none of them do. What we will
-      not accept is some of them ringing while the others stay quiet.
-    </p>
-  </div>
-
-<h2>Two kinds of message</h2>
+<h2>Encrypted message</h2>
 
   <p>
-    Everything turns on what a traitor can do to a letter it has been
-    given.
+    If messages are encrypted, then a faulty agent can make copies of the message
+    and forward copies to other agents, but it cannot change the message.
+    When messages are unencrypted, a faulty agent can change the message and forge 
+    signatures.
+    In both cases, a faulty agent can choose to send nothing to some agents.
+    The problem with encrypted messages is called the "Written Message" problem, 
+    and the problem with unencrypted messages is called the "Oral Message" problem.
   </p>
 
   <ol class="spec">
@@ -389,7 +379,7 @@ there are more efficient ways, which we won't discuss here.
 
   <figure class="fig wideout">
     <svg id="fwd_g" viewBox="0 0 1240 580" role="img"
-         aria-label="A signed attack message reaches lieutenant A, which forwards it unchanged to B, sends nothing to C, and tries to send D a forged retreat in the general's name -- impossible with encrypted messages and free without them"></svg>
+         aria-label="A signed attack message reaches agent A, which forwards it unchanged to B, sends nothing to C, and tries to send D a forged retreat in the source's name -- impossible with encrypted messages and free without them"></svg>
 
     <div class="ctrls">
       <button id="fwd_play" class="primary">Play</button>
@@ -399,29 +389,123 @@ there are more efficient ways, which we won't discuss here.
     </div>
 
     <figcaption>
-      <b>Figure 4. The three things a lieutenant can do, all at once.</b>
+      <b>Figure 3. The three things an agent can do, all at once.</b>
       <b>1.</b> A signed <i>attack</i> message reaches <i>A</i> from the
-      general. <b>2.</b> <i>A</i> forwards it to <i>B</i> &mdash; the
+      source. <b>2.</b> <i>A</i> forwards it to <i>B</i> &mdash; the
       same message under the same signature, which is the one thing a
-      traitor can do with a sealed letter. <b>3.</b> <i>A</i> sends
+      faulty agent can do with a sealed letter. <b>3.</b> <i>A</i> sends
       <i>C</i> nothing at all, and <i>C</i> cannot tell that from a
-      general who never wrote. <b>4.</b> <i>A</i> tries to send <i>D</i>
-      a <i>retreat</i> in the general&rsquo;s name. With written,
+      source who never wrote. <b>4.</b> <i>A</i> tries to send <i>D</i>
+      a <i>retreat</i> in the source&rsquo;s name. With written,
       encrypted messages it cannot: the signature is not forgeable. With
       oral messages nothing stops it, and <i>D</i> cannot tell.
     </figcaption>
   </figure>
 
   <p>
-    The rest of this lecture is the <b>written</b> case. Oral messages
-    come next, and they cost more: with oral messages no algorithm works
-    unless more than two thirds of the officers are loyal.
+    The rest of this document considers the <b>encrypted</b> message case. 
+    Oral messages are discussed elsewhere. Note that for oral messages, 
+    when there can be up to t faulty agents, the number of correct agents must 
+    exceed 2t for consensus to be possible. 
+    For written messages, there is no lower bound on the number of correct agents
+    required for consensus to be possible.
   </p>
 
-<h2>The algorithm, with signed messages</h2>
+<h2>The algorithm with encrypted messages</h2>
 
   <p>
-    A lieutenant that has not committed to attack by the end of the
+    Messages are sent in <b>rounds</b>: a message sent in round
+    <code>k</code> is received at the start of round <code>k+1</code>.
+    An agent that sends a message can <b>sign</b> it with its own
+    signature, and any agent can read a message and verify a signature.
+    Let 1 stand for attack and 0 for retreat.
+  </p>
+
+  <p class="key">
+    <span class="lead-in">One simplification, used throughout</span>
+    In a round an agent sends 0, 1, or nothing at all. Treat a
+    0&#8209;message as <b>equivalent to no message</b>. Every message
+    the algorithm actually sends is then a 1&#8209;message, and the
+    absence of a message stands for either a 0 or a silence.
+  </p>
+
+  <p>
+    Write <b>S</b>&#8209;msg for a message signed by the source, and
+    <b>x</b>&#8209;msg for one signed by the agent whose id is
+    <code>x</code>.
+  </p>
+
+  <h3>A first attempt</h3>
+
+  <p>
+    Round 0: the source sends <b>S</b>&#8209;msg to some, all, or none
+    of the agents. Then every agent runs <code>K</code> rounds, and
+    decides 1 if an <b>S</b>&#8209;msg ever reached it:
+  </p>
+
+<pre class="code"><span class="cm"># code for agent x. K is left open for now</span>
+x.v = <b>0</b>
+<span class="kw">for</span> k <span class="kw">in</span> [1, K]:
+    <span class="kw">if</span> x received an <b>S</b>-msg in round k-1:
+        x.v = <b>1</b>
+        <span class="kw">send</span> the <b>S</b>-msg to every agent</pre>
+
+  <p>
+    The agent forwards the message it received, signature and all. It
+    cannot do anything else with it: that is figure 3.
+  </p>
+
+  <h3>What is K?</h3>
+
+  <p>
+    <b>Can K be 1?</b> If a single correct agent <code>x</code> gets an
+    <b>S</b>&#8209;msg in round 0, then every correct agent <code>y</code>
+    receives a copy of it in round 1 and sets <code>y.v = 1</code>. So
+    one round is enough &mdash; <i>when the agent that received it is
+    correct</i>.
+  </p>
+
+  <div class="case">
+    <p><span class="tag">The counterexample</span>
+      a faulty source and a faulty agent <code>x</code>.</p>
+    <ol style="margin:0 0 12px; padding-left:24px; color:var(--body)">
+      <li><b>Round 0.</b> The source sends an <b>S</b>&#8209;msg to
+        <code>x</code>, and nothing to any correct agent.</li>
+      <li><b>Round 1.</b> <code>x</code> forwards it to a correct agent
+        <code>y</code>, and not to a correct agent <code>z</code>.</li>
+    </ol>
+    <p>
+      At the end of round 1, <code>y.v = 1</code> and
+      <code>z.v = 0</code>. <b>Agreement is violated</b>, so K = 1 does
+      not work.
+    </p>
+  </div>
+
+  <p class="key">
+    <span class="lead-in">And no K works</span>
+    The same argument defeats every <code>K</code>: the faulty agent
+    stays silent until round <code>K&minus;1</code> and then sends the
+    <b>S</b>&#8209;msg to some correct agents and not others. The
+    algorithm stops before anyone can forward it, and the agents that
+    got it disagree with the agents that did not.
+  </p>
+
+  <p>
+    What to do?
+  </p>
+
+<p>
+  The algorithm tells us that if a correct agent receives a signed attack 
+  message on round k then all correct agents receive a signed attack message
+  by round k+1. Can we deal with the situation described in the previous paragraph
+  by stopping in round 3?  We could show that if a correct agent has received 
+  a signed attack by round 2 then all correct agents will have received a 
+  signed attack by round 3. This won't work either because the faulty agent 
+  can wait till round 2 to send signed attacks.
+</p>
+
+  <p>
+    An agent that has not committed to attack by the end of the
     algorithm commits to <b>retreat</b>. So the whole algorithm is a rule
     for when to commit to attack, and the letters are the evidence for
     doing it.
@@ -430,15 +514,15 @@ there are more efficient ways, which we won't discuss here.
   <h3>Round 0</h3>
 
   <p>
-    The general signs one message &mdash; attack or retreat &mdash; and
-    sends it to each lieutenant. Then the general plays no further part.
-    A lieutenant that receives no message from the general in round 0
+    The source signs one message &mdash; attack or retreat &mdash; and
+    sends it to each agent. Then the source plays no further part.
+    An agent that receives no message from the source in round 0
     behaves exactly as though it had received <b>retreat</b>.
   </p>
 
   <figure class="fig wideout">
     <svg id="r0_g" viewBox="0 0 1240 392" role="img"
-         aria-label="Round 0: the general signs a letter to each of four lieutenants, and the lieutenant who receives nothing treats the silence as a retreat order"></svg>
+         aria-label="Round 0: the source signs a letter to each of four agents, and the agent who receives nothing treats the silence as a retreat order"></svg>
 
     <div class="ctrls">
       <button id="r0_play" class="primary">Round 0</button>
@@ -447,9 +531,9 @@ there are more efficient ways, which we won't discuss here.
     </div>
 
     <figcaption>
-      <b>Figure 5. Round 0.</b>
-      The general signs and sends. <i>D</i> gets nothing &mdash; the
-      general is disloyal, or the letter was never written &mdash; and
+      <b>Figure 4. Round 0.</b>
+      The source signs and sends. <i>D</i> gets nothing &mdash; the
+      source is faulty, or the letter was never written &mdash; and
       <i>D</i> treats the silence as an order to retreat. Silence is not
       ambiguous here: the round has ended, so the letter is not coming.
     </figcaption>
@@ -459,26 +543,26 @@ there are more efficient ways, which we won't discuss here.
 
   <p class="key">
     <span class="lead-in">The rule</span>
-    A lieutenant <code>L</code> that has not committed to attack on an
+    An agent <code>L</code> that has not committed to attack on an
     earlier round, and that holds
-    <b>a signed attack message from the general</b> and
+    <b>a signed attack message from the source</b> and
     <b>signed attack messages from at least j&minus;1 distinct
-    lieutenants other than L itself</b>,
+    agents other than L itself</b>,
     commits to attack on round <code>j</code>. It then sends every
-    lieutenant copies of that evidence &mdash; the general&rsquo;s letter
-    and the j&minus;1 lieutenants&rsquo; letters &mdash; together with an
+    agent copies of that evidence &mdash; the source&rsquo;s letter
+    and the j&minus;1 agents&rsquo; letters &mdash; together with an
     attack message signed by <code>L</code> itself.
   </p>
 
   <p>
-    On round 1 that reduces to: a loyal lieutenant commits to attack if
-    it received an attack message from the general, because
-    j&minus;1 = 0 letters from other lieutenants are required.
+    On round 1 that reduces to: a correct agent commits to attack if
+    it received an attack message from the source, because
+    j&minus;1 = 0 letters from other agents are required.
   </p>
 
   <figure class="fig wideout">
     <svg id="rj_g" viewBox="0 0 1240 430" role="img"
-         aria-label="Lieutenant C on round 3 holds signed attack letters from the general and from lieutenants A and B, commits, and broadcasts all three letters plus its own"></svg>
+         aria-label="Agent C on round 3 holds signed attack letters from the source and from agents A and B, commits, and broadcasts all three letters plus its own"></svg>
 
     <div class="ctrls">
       <button id="rj_step" class="primary">Step</button>
@@ -487,13 +571,13 @@ there are more efficient ways, which we won't discuss here.
     </div>
 
     <figcaption>
-      <b>Figure 6. Lieutenant C on round 3.</b>
+      <b>Figure 5. Agent C on round 3.</b>
       It is the start of round <code>j = 3</code>. <i>C</i> holds a
-      signed letter from the general and <code>j&minus;1 = 2</code>
-      letters from distinct lieutenants, <i>A</i> and <i>B</i>. That is
+      signed letter from the source and <code>j&minus;1 = 2</code>
+      letters from distinct agents, <i>A</i> and <i>B</i>. That is
       the rule satisfied, so <i>C</i> commits to attack and broadcasts
       the evidence that convinced it, with its own signature added: four
-      letters, from the general and from <i>A</i>, <i>B</i> and
+      letters, from the source and from <i>A</i>, <i>B</i> and
       <i>C</i>. Retreat messages are treated exactly like absent ones.
     </figcaption>
   </figure>
@@ -501,37 +585,37 @@ there are more efficient ways, which we won't discuss here.
 <h2>Three observations</h2>
 
   <ol class="obs">
-    <li><b>If the general is loyal and sends attack messages, then every
-      loyal lieutenant commits to attack in round 1.</b>
+    <li><b>If the source is correct and sends attack messages, then every
+      correct agent commits to attack in round 1.</b>
       <span class="why"><em>Why</em>
-      On round 1 the rule asks for the general&rsquo;s letter and
-      nothing else, and a loyal general sent that letter to
+      On round 1 the rule asks for the source&rsquo;s letter and
+      nothing else, and a correct source sent that letter to
       everyone.</span></li>
 
-    <li><b>If the general is loyal and never sends an attack message,
-      then no loyal lieutenant ever commits to attack, in any
+    <li><b>If the source is correct and never sends an attack message,
+      then no correct agent ever commits to attack, in any
       round.</b>
       <span class="why"><em>Why</em>
-      A lieutenant commits to attack only if it holds a signed attack
-      message from the general. A loyal general signed none, and under
-      the written model nobody can forge the general&rsquo;s
+      An agent commits to attack only if it holds a signed attack
+      message from the source. A correct source signed none, and under
+      the written model nobody can forge the source&rsquo;s
       signature.</span></li>
 
-    <li><b>If a loyal lieutenant commits to attack on round j, then
-      every loyal lieutenant commits to attack by round j+1.</b>
+    <li><b>If a correct agent commits to attack on round j, then
+      every correct agent commits to attack by round j+1.</b>
       <span class="why"><em>Why</em>
       <code>L</code> committed on round <code>j</code>, so it broadcast
-      the general&rsquo;s letter, the letters of j&minus;1 other
-      lieutenants, and its own. Every lieutenant therefore starts round
-      <code>j+1</code> holding the general&rsquo;s letter and attack
-      messages signed by <code>j</code> distinct lieutenants &mdash;
+      the source&rsquo;s letter, the letters of j&minus;1 other
+      agents, and its own. Every agent therefore starts round
+      <code>j+1</code> holding the source&rsquo;s letter and attack
+      messages signed by <code>j</code> distinct agents &mdash;
       which is exactly what the rule asks for on round
       <code>j+1</code>.</span></li>
   </ol>
 
   <figure class="fig wideout">
     <svg id="csc_g" viewBox="0 0 1240 400" role="img"
-         aria-label="One loyal lieutenant commits on round j and broadcasts its evidence, and every other loyal lieutenant therefore commits on round j plus one"></svg>
+         aria-label="One correct agent commits on round j and broadcasts its evidence, and every other correct agent therefore commits on round j plus one"></svg>
 
     <div class="ctrls">
       <button id="csc_play" class="primary">Play</button>
@@ -540,11 +624,11 @@ there are more efficient ways, which we won't discuss here.
     </div>
 
     <figcaption>
-      <b>Figure 7. Observation 3: one commit pulls the rest in.</b>
+      <b>Figure 6. Observation 3: one commit pulls the rest in.</b>
       <i>B</i> commits on round <code>j&nbsp;=&nbsp;3</code> and
       broadcasts three letters plus its own. Count what <i>A</i> holds at
-      the start of round 4: the general, and three distinct lieutenants.
-      The rule for round 4 asks for the general and
+      the start of round 4: the source, and three distinct agents.
+      The rule for round 4 asks for the source and
       <code>4&minus;1&nbsp;=&nbsp;3</code>. So <i>A</i> commits, and so
       does everyone else.
     </figcaption>
@@ -553,34 +637,34 @@ there are more efficient ways, which we won't discuss here.
 <h2>So which round can the algorithm stop on?</h2>
 
   <p>
-    Observations 1 and 2 settle a loyal general completely: round 1
+    Observations 1 and 2 settle a correct source completely: round 1
     decides it, and nothing later can change it. The question is what a
-    <b>disloyal</b> general can drag out, and the examples are the way to
-    see it. In both of the runs below there are five lieutenants,
-    <i>A</i>, <i>B</i>, <i>C</i> loyal and <i>Y</i>, <i>Z</i> disloyal,
-    and the general is disloyal too.
+    <b>faulty</b> source can drag out, and the examples are the way to
+    see it. In both of the runs below there are five agents,
+    <i>A</i>, <i>B</i>, <i>C</i> correct and <i>Y</i>, <i>Z</i> faulty,
+    and the source is faulty too.
   </p>
 
   <figure class="fig wideout">
     <svg id="run_g" viewBox="0 0 1240 470" role="img"
-         aria-label="Two runs of the algorithm with a disloyal general and two disloyal lieutenants, round by round"></svg>
+         aria-label="Two runs of the algorithm with a faulty source and two faulty agents, round by round"></svg>
 
     <div class="ctrls">
-      <button id="run_a" class="primary">Run 1: the traitors stay silent</button>
-      <button id="run_b">Run 2: the traitors speak on round 2</button>
+      <button id="run_a" class="primary">Run 1: the faulty agents stay silent</button>
+      <button id="run_b">Run 2: the faulty agents speak on round 2</button>
       <button id="run_step">Next round</button>
       <button id="run_reset">Reset</button>
       <span class="status" id="run_status"></span>
     </div>
 
     <figcaption>
-      <b>Figure 8. Two runs, round by round.</b>
-      The general sends attack to <i>Y</i> and <i>Z</i> only. In
-      <b>run 1</b> the traitors say nothing until round 4 and then
-      produce their evidence: two lieutenants&rsquo; signatures, where
-      round 4 needs three, so no loyal lieutenant ever commits and all
-      three retreat &mdash; in consensus. In <b>run 2</b> the traitors
-      hand <i>A</i> alone the general&rsquo;s letter and their own two
+      <b>Figure 7. Two runs, round by round.</b>
+      The source sends attack to <i>Y</i> and <i>Z</i> only. In
+      <b>run 1</b> the faulty agents say nothing until round 4 and then
+      produce their evidence: two agents&rsquo; signatures, where
+      round 4 needs three, so no correct agent ever commits and all
+      three retreat &mdash; in consensus. In <b>run 2</b> the faulty agents
+      hand <i>A</i> alone the source&rsquo;s letter and their own two
       signatures on round 2. <i>A</i> commits on round 3, broadcasts, and
       <i>B</i> and <i>C</i> commit on round 4. Consensus again, one round
       later.
@@ -588,8 +672,8 @@ there are more efficient ways, which we won't discuss here.
   </figure>
 
   <p>
-    Run 2 is the whole difficulty in miniature. A disloyal general and
-    two disloyal lieutenants can delay the commit to round 3 and the
+    Run 2 is the whole difficulty in miniature. A faulty source and
+    two faulty agents can delay the commit to round 3 and the
     consensus to round 4. The question is whether they can keep doing it
     for ever.
   </p>
@@ -597,9 +681,9 @@ there are more efficient ways, which we won't discuss here.
   <div class="thm">
     <span class="lead-in">Theorem</span>
     <p>
-      Let <code>t</code> be an upper bound on the number of disloyal
-      officers, the general included. <b>If no loyal lieutenant commits
-      to attack on rounds 1, &hellip;, t, then no loyal lieutenant
+      Let <code>t</code> be an upper bound on the number of faulty
+      agents, the source included. <b>If no correct agent commits
+      to attack on rounds 1, &hellip;, t, then no correct agent
       commits to attack on any later round.</b>
     </p>
   </div>
@@ -607,24 +691,24 @@ there are more efficient ways, which we won't discuss here.
   <div class="proof">
     <span class="lead-in">Proof</span>
     <p>
-      By observations 1 and 2, a loyal general settles the matter in
-      round 1, so only a <b>disloyal general</b> is left to consider.
-      The general is then one of the at most <code>t</code> disloyal
-      officers, so at most <code>t&minus;1</code> lieutenants are
-      disloyal.
+      By observations 1 and 2, a correct source settles the matter in
+      round 1, so only a <b>faulty source</b> is left to consider.
+      The source is then one of the at most <code>t</code> faulty
+      agents, so at most <code>t&minus;1</code> agents are
+      faulty.
     </p>
     <p>
-      Suppose no loyal lieutenant has committed to attack in rounds
+      Suppose no correct agent has committed to attack in rounds
       1, &hellip;, <code>t</code>. Then on round <code>t+1</code> the
-      only attack messages a loyal lieutenant can be holding from other
-      lieutenants are the ones signed by those at most
-      <code>t&minus;1</code> traitors &mdash; no loyal lieutenant has
+      only attack messages a correct agent can be holding from other
+      agents are the ones signed by those at most
+      <code>t&minus;1</code> faulty agents &mdash; no correct agent has
       sent one, because none has committed.
     </p>
     <p>
       But the rule for round <code>t+1</code> asks for signatures from
-      <code>t</code> distinct lieutenants. There are not that many
-      available. So no loyal lieutenant commits on round
+      <code>t</code> distinct agents. There are not that many
+      available. So no correct agent commits on round
       <code>t+1</code>, and the same count rules out every round after
       it.
     </p>
@@ -632,7 +716,7 @@ there are more efficient ways, which we won't discuss here.
 
   <figure class="fig">
     <svg id="thm_g" viewBox="0 0 840 390" role="img"
-         aria-label="On round t plus one the rule needs t lieutenant signatures, but only t minus one disloyal lieutenants exist, so one slot stays empty"></svg>
+         aria-label="On round t plus one the rule needs t agent signatures, but only t minus one faulty agents exist, so one slot stays empty"></svg>
 
     <div class="ctrls">
       <button id="thm_play" class="primary">Fill the evidence</button>
@@ -641,42 +725,42 @@ there are more efficient ways, which we won't discuss here.
     </div>
 
     <figcaption>
-      <b>Figure 9. The counting argument, with t = 4.</b>
-      The rule for round <code>t+1 = 5</code> asks a loyal lieutenant for
-      the general&rsquo;s letter and <code>t = 4</code> letters from
-      distinct lieutenants. The traitors can supply only
-      <code>t&minus;1 = 3</code> of them, because the general used up one
-      of the <code>t</code> disloyal officers, and no loyal lieutenant has
+      <b>Figure 8. The counting argument, with t = 4.</b>
+      The rule for round <code>t+1 = 5</code> asks a correct agent for
+      the source&rsquo;s letter and <code>t = 4</code> letters from
+      distinct agents. The faulty agents can supply only
+      <code>t&minus;1 = 3</code> of them, because the source used up one
+      of the <code>t</code> faulty agents, and no correct agent has
       signed an attack message. One slot can never be filled.
     </figcaption>
   </figure>
 
   <p class="key">
     <span class="lead-in">The answer</span>
-    The algorithm can stop after round <b>t+1</b>. Every loyal
-    lieutenant that has not committed to attack by then commits to
+    The algorithm can stop after round <b>t+1</b>. Every correct
+    agent that has not committed to attack by then commits to
     retreat, and by observation 3 they are all in the same position.
   </p>
 
 <h2>What comes next</h2>
 
   <p>
-    All of this rested on the seal: a traitor could forward a letter but
-    not change it, and the general&rsquo;s signature could not be forged.
-    Take the seal away &mdash; <b>oral messages</b> &mdash; and a traitor
-    can say &ldquo;the general told me to attack&rdquo; when the general
+    All of this rested on the seal: a faulty agent could forward a letter but
+    not change it, and the source&rsquo;s signature could not be forged.
+    Take the seal away &mdash; <b>oral messages</b> &mdash; and a faulty agent
+    can say &ldquo;the source told me to attack&rdquo; when the source
     said nothing at all. That is the next lecture, and the first thing it
-    costs us is a bound: there is no solution when the number of loyal
-    agents is at most twice the number of disloyal ones.
+    costs us is a bound: there is no solution when the number of correct
+    agents is at most twice the number of faulty ones.
   </p>
 
 </div>
 
 <script>
 /* ------------------------------------------------------------------ *
- *  BYZ: the cast. One general, some lieutenants, and signed letters.
- *  Every figure on this page draws its officers through here, so they
- *  all look like the same army.
+ *  BYZ: the cast. One source, some agents, and signed letters.
+ *  Every figure on this page draws its agents through here, so they
+ *  all come out of the same box.
  * ------------------------------------------------------------------ */
 window.BYZ=(function(){
   const NS='http://www.w3.org/2000/svg';
@@ -710,14 +794,14 @@ window.BYZ=(function(){
       stroke:'#fff', 'stroke-width':3.5, 'paint-order':'stroke'}, s));
   }
 
-  /* An officer, standing on the ground at (x, y), facing the reader.
-     rank:'general' gets a plume, a moustache and a medal; everyone else
-     gets a plain helmet. loyal:false puts them in a dark coat with a
+  /* An agent, standing on the ground at (x, y), facing the reader.
+     rank:'source' gets a plume, a moustache and a medal; everyone else
+     gets a plain helmet. correct:false puts them in a dark coat with a
      scowl. */
-  function officer(parent,x,y,o){
+  function agent(parent,x,y,o){
     o=o||{};
-    const s=o.scale||1, gen=(o.rank==='general'), loyal=(o.loyal!==false);
-    const coat=loyal?C.coatL:C.coatD, helm=loyal?C.helmL:C.helmD;
+    const s=o.scale||1, gen=(o.rank==='source'), correct=(o.correct!==false);
+    const coat=correct?C.coatL:C.coatD, helm=correct?C.helmL:C.helmD;
     const G=grp(parent,{});
     const dim=(o.dim?0.45:1);
     G.setAttribute('opacity', dim);
@@ -743,7 +827,7 @@ window.BYZ=(function(){
       ' L '+(x+11*s)+' '+(y-66*s)+' Z', fill:coat}));
     G.appendChild(el('circle',{cx:x-23*s, cy:y-40*s, r:4.2*s, fill:C.skin}));
     G.appendChild(el('circle',{cx:x+23*s, cy:y-40*s, r:4.2*s, fill:C.skin}));
-    /* sash, gold on the general and bone on a lieutenant */
+    /* sash, gold on the source and bone on an agent */
     G.appendChild(el('path',{d:'M '+(x-16*s)+' '+(y-71*s)+
       ' L '+(x+16*s)+' '+(y-38*s)+' L '+(x+16*s)+' '+(y-30*s)+
       ' L '+(x-19*s)+' '+(y-64*s)+' Z',
@@ -768,14 +852,14 @@ window.BYZ=(function(){
     /* eyes */
     G.appendChild(el('circle',{cx:x-4.6*s, cy:y-95*s, r:1.7*s, fill:C.ink}));
     G.appendChild(el('circle',{cx:x+4.6*s, cy:y-95*s, r:1.7*s, fill:C.ink}));
-    /* brows: level if loyal, down-turned into a scowl if not */
-    const by=y-(loyal?100:99)*s, bt=loyal?0:2.6*s;
-    G.appendChild(el('line',{x1:x-8*s, y1:by-bt, x2:x-2*s, y2:by+(loyal?0:0.6*s),
+    /* brows: level if correct, down-turned into a scowl if not */
+    const by=y-(correct?100:99)*s, bt=correct?0:2.6*s;
+    G.appendChild(el('line',{x1:x-8*s, y1:by-bt, x2:x-2*s, y2:by+(correct?0:0.6*s),
       stroke:C.ink, 'stroke-width':1.8*s, 'stroke-linecap':'round'}));
-    G.appendChild(el('line',{x1:x+2*s, y1:by+(loyal?0:0.6*s), x2:x+8*s, y2:by-bt,
+    G.appendChild(el('line',{x1:x+2*s, y1:by+(correct?0:0.6*s), x2:x+8*s, y2:by-bt,
       stroke:C.ink, 'stroke-width':1.8*s, 'stroke-linecap':'round'}));
     /* mouth */
-    if(loyal){
+    if(correct){
       G.appendChild(el('path',{d:'M '+(x-4*s)+' '+(y-88*s)+' Q '+x+' '+(y-85.5*s)+
         ' '+(x+4*s)+' '+(y-88*s), stroke:'#9a5b3f', 'stroke-width':1.6*s,
         fill:'none', 'stroke-linecap':'round'}));
@@ -828,7 +912,7 @@ window.BYZ=(function(){
          '#fff', 7.4*s, 'start', 700);
     G.appendChild(el('circle',{cx:x+w/2-9*s, cy:y+h/2-8*s, r:7*s,
       fill:o.forged?'#8d8878':C.seal, stroke:'#fff', 'stroke-width':1.2*s}));
-    mono(G, x+w/2-9*s, y+h/2-8*s, o.signer||'G', '#fff', 8.5*s, 'middle', 700);
+    mono(G, x+w/2-9*s, y+h/2-8*s, o.signer||'S', '#fff', 8.5*s, 'middle', 700);
     if(o.forged){
       G.appendChild(el('path',{d:'M '+(x+w/2-13*s)+' '+(y+h/2-12*s)+
         ' l '+(4*s)+' '+(4*s)+' l '+(-3*s)+' '+(3*s)+' l '+(4*s)+' '+(3*s),
@@ -856,11 +940,11 @@ window.BYZ=(function(){
     if(!o.noHead) head(p, b[0]-ux*trim, b[1]-uy*trim, ux, uy, col, o.hs||7);
   }
 
-  /* Too many officers to draw one by one: a crowd of silhouettes, in
+  /* Too many agents to draw one by one: a crowd of silhouettes, in
      rows, with the count written under it. */
-  function crowd(p,x,y,cols,rows,loyal,s){
+  function crowd(p,x,y,cols,rows,correct,s){
     s=s||1;
-    const coat=loyal?C.coatL:C.coatD, helm=loyal?C.helmL:C.helmD;
+    const coat=correct?C.coatL:C.coatD, helm=correct?C.helmL:C.helmD;
     const G=grp(p,{});
     for(let r=rows-1;r>=0;r--){
       for(let c=0;c<cols;c++){
@@ -877,7 +961,7 @@ window.BYZ=(function(){
     }
     return G;
   }
-  /* A letter travels over the heads of the officers in between, not
+  /* A letter travels over the heads of the agents in between, not
      through them: the route is an arc, drawn faintly all the way, and
      the letter rides along it. */
   function ctl(a,b,lift){
@@ -902,7 +986,7 @@ window.BYZ=(function(){
       head(p, m[0], m[1], dx/L, dy/L, col, o.hs||6.5);
     }
   }
-  /* The banner over an officer's head: what it has committed to. */
+  /* The banner over an agent's head: what it has committed to. */
   function banner(p,x,y,text,col){
     const w=Math.max(58, 9*text.length+26);
     const G=grp(p,{});
@@ -930,7 +1014,7 @@ window.BYZ=(function(){
     return G;
   }
   return {NS:NS, C:C, el:el, grp:grp, clear:clear, mono:mono, sans:sans,
-          officer:officer, letter:letter, arrow:arrow, head:head,
+          agent:agent, letter:letter, arrow:arrow, head:head,
           crowd:crowd,
           ctl:ctl, qpt:qpt, route:route,
           banner:banner, verdict:verdict, panel:panel};
@@ -938,20 +1022,20 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 1 - example 1: a disloyal general and a disloyal lieutenant */
+/* Figure 1 - example 1: a faulty source and a faulty agent */
 (function(){
   const PFX='ex1_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
   const B=window.BYZ, C=B.C;
   const GX=620, GY=152;
   const NAMES=['A','B','C','D','E'];
-  const LOYAL=[false,true,true,true,true];
+  const CORRECT=[false,true,true,true,true];
   const LX=[230,430,630,830,1030], LY=352, S=.62;
-  /* round 0: what the general sends to each lieutenant */
+  /* round 0: what the source sends to each agent */
   const ORDER=['attack','attack','attack','retreat','retreat'];
-  /* round 1: what the traitor A tells each of the others */
+  /* round 1: what the faulty agent A tells each of the others */
   const ALIE=[null,'attack','attack','retreat','retreat'];
-  /* and what each loyal lieutenant then holds: its own order, plus one
+  /* and what each correct agent then holds: its own order, plus one
      report from each of the other four */
   const TALLY=[null,[3,2],[3,2],[2,3],[2,3]];
 
@@ -968,18 +1052,18 @@ window.BYZ=(function(){
   function draw(){
     B.clear(svg);
     B.sans(svg, 620, 26,
-      'THE GENERAL AND LIEUTENANT A ARE DISLOYAL  \u00b7  B, C, D, E ARE LOYAL',
+      'THE SOURCE AND AGENT A ARE FAULTY  \u00b7  B, C, D, E ARE CORRECT',
       C.muted, 14, 'middle', 700);
-    B.officer(svg, GX, GY, {rank:'general', loyal:false, label:'General',
-      sub:'disloyal', scale:.82});
+    B.agent(svg, GX, GY, {rank:'source', correct:false, label:'Source',
+      sub:'faulty', scale:.82});
     for(let i=0;i<5;i++){
-      B.officer(svg, LX[i], LY, {loyal:LOYAL[i], label:NAMES[i],
-        sub:LOYAL[i]?null:'disloyal', scale:S});
+      B.agent(svg, LX[i], LY, {correct:CORRECT[i], label:NAMES[i],
+        sub:CORRECT[i]?null:'faulty', scale:S});
       if(stage>=1 && !(stage===1 && T<1))
         B.banner(svg, LX[i], LY-96, ORDER[i],
           ORDER[i]==='attack'?C.blue:C.red);
     }
-    /* ---- round 0: the general's five letters ---------------------- */
+    /* ---- round 0: the source's five letters ---------------------- */
     if(stage>=1){
       const u=(stage===1)?Math.min(1,T):1;
       for(let i=0;i<5;i++){
@@ -988,7 +1072,7 @@ window.BYZ=(function(){
         B.arrow(svg, a, [a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u], col,
           {op:.4, dash:'7 6', w:2, noHead:u<1, trim:6});
         if(u<1) B.letter(svg, a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u,
-          {kind:ORDER[i], signer:'G', scale:.62});
+          {kind:ORDER[i], signer:'S', scale:.62});
       }
     }
     /* ---- round 1: everyone tells everyone, and A lies ------------- */
@@ -1019,8 +1103,8 @@ window.BYZ=(function(){
     /* ---- the count ----------------------------------------------- */
     if(stage>=3){
       for(let i=0;i<5;i++){
-        if(!LOYAL[i]){
-          B.sans(svg, LX[i], LY+72, 'disloyal:', C.muted, 13, 'middle', 700);
+        if(!CORRECT[i]){
+          B.sans(svg, LX[i], LY+72, 'faulty:', C.muted, 13, 'middle', 700);
           B.sans(svg, LX[i], LY+92, 'votes either way', C.muted, 13, 'middle', 600);
           continue;
         }
@@ -1034,8 +1118,8 @@ window.BYZ=(function(){
         C.red, 15, 'middle', 700);
     }
     $('status').innerHTML=['press play',
-      'round 0: <b>the general splits them</b>',
-      'round 1: <b>the lieutenants compare notes</b>',
+      'round 0: <b>the source splits them</b>',
+      'round 1: <b>the agents compare notes</b>',
       '<b>no consensus</b>'][stage];
   }
   /* Play walks the three stages on one clock; Step does them by hand. */
@@ -1066,13 +1150,13 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 2 - example 2: a million lieutenants, one traitor */
+/* Figure 2 - example 2: a million agents, one faulty agent */
 (function(){
   const PFX='big_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
   const B=window.BYZ, C=B.C;
   const GX=620, GY=152;
-  /* the two halves of the army, and the one traitor between them */
+  /* the two halves of the system, and the one faulty agent between them */
   const L={x:90,  w:430, cx:305, order:'attack',  n:'499,999',
            att:'500,000', ret:'500,000', verdict:'attacks',
            foot:'a tie, and a tie goes to attack'};
@@ -1083,7 +1167,7 @@ window.BYZ=(function(){
   let stage=0, T=1, raf=null, t0=0;
 
   function half(g){
-    B.panel(svg, g.x, PY, g.w, PH, (g.n+' LOYAL LIEUTENANTS').toUpperCase());
+    B.panel(svg, g.x, PY, g.w, PH, (g.n+' CORRECT AGENTS').toUpperCase());
     B.crowd(svg, g.x+36, PY+92, 24, 4, true, .78);
     B.mono(svg, g.cx, PY+156, g.n, C.ink, 19);
   }
@@ -1102,12 +1186,12 @@ window.BYZ=(function(){
   function draw(){
     B.clear(svg);
     B.sans(svg, 620, 26,
-      'ONE DISLOYAL GENERAL  \u00b7  ONE DISLOYAL LIEUTENANT  \u00b7  999,999 LOYAL ONES',
+      'ONE FAULTY SOURCE  \u00b7  ONE FAULTY AGENT  \u00b7  999,999 CORRECT ONES',
       C.muted, 14, 'middle', 700);
-    B.officer(svg, GX, GY, {rank:'general', loyal:false, label:'General',
-      sub:'disloyal', scale:.8});
+    B.agent(svg, GX, GY, {rank:'source', correct:false, label:'Source',
+      sub:'faulty', scale:.8});
     half(L); half(R);
-    B.officer(svg, AX, AY, {loyal:false, label:'A', sub:'the one traitor',
+    B.agent(svg, AX, AY, {correct:false, label:'A', sub:'the one faulty agent',
       scale:.52});
 
     /* ---- round 0 ------------------------------------------------- */
@@ -1121,7 +1205,7 @@ window.BYZ=(function(){
         B.arrow(svg, a, [a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u], col,
           {op:.45, dash:'7 6', w:2.2, noHead:u<1, trim:6});
         if(u<1) B.letter(svg, a[0]+(b[0]-a[0])*u, a[1]+(b[1]-a[1])*u,
-          {kind:leg[2], signer:'G', scale:.7});
+          {kind:leg[2], signer:'S', scale:.7});
       });
       if(u>=1){
         B.banner(svg, L.cx, PY-34, 'attack',  C.blue);
@@ -1129,17 +1213,17 @@ window.BYZ=(function(){
         B.banner(svg, AX+70, AY-58, 'attack', C.blue);
       }
     }
-    /* ---- round 1: the traitor tells each half what it wants to hear */
+    /* ---- round 1: the faulty agent tells each half what it wants to hear */
     if(stage===2){
       const u=Math.min(1,T);
-      /* the loyal reports, unlabelled: there are 999,999 of them each */
+      /* the correct reports, unlabelled: there are 999,999 of them each */
       for(let k=0;k<3;k++){
         const a=[L.cx+40+k*30, PY+PH-6], b=[R.cx-100+k*30, PY+PH-6];
         const c=[(a[0]+b[0])/2, PY+PH+56+k*26];
         B.route(svg, a, c, b, C.muted, {op:.20, w:1.6, dash:'5 7'});
       }
       B.sans(svg, 620, PY+PH+128,
-        'every lieutenant reports what it heard to all the others',
+        'every agent reports what it heard to all the others',
         C.muted, 13, 'middle', 600);
       [[L,'attack'],[R,'retreat']].forEach(function(pair){
         const g=pair[0], kind=pair[1];
@@ -1161,12 +1245,12 @@ window.BYZ=(function(){
     if(stage>=3){
       tally(L); tally(R);
       B.sans(svg, 620, 648,
-        '499,999 lieutenants attack while 500,000 retreat',
+        '499,999 agents attack while 500,000 retreat',
         C.red, 15, 'middle', 700);
     }
     $('status').innerHTML=['press play',
-      'round 0: <b>the general cuts the army in half</b>',
-      'round 1: <b>one traitor, two different stories</b>',
+      'round 0: <b>the source cuts them in half</b>',
+      'round 1: <b>one faulty agent, two different stories</b>',
       '<b>no consensus</b>'][stage];
   }
   function frame(now){
@@ -1196,62 +1280,9 @@ window.BYZ=(function(){
 </script>
 
 
-<script>
-/* Figure 3 — each requirement alone is easy */
-(function(){
-  const PFX='tri_', $=function(id){return document.getElementById(PFX+id);};
-  const svg=$('g'); if(!svg) return;
-  const B=window.BYZ, C=B.C;
-  const GX=165, GY=250, LY=250, LX=[520,700,880];
-  const NAMES=['A','B','C'];
-  let proto='obey', loyal=false;
-
-  function orders(){
-    /* a loyal general here orders the attack; a disloyal one splits them */
-    return loyal ? ['attack','attack','attack'] : ['attack','retreat',null];
-  }
-  function acts(){
-    const o=orders();
-    if(proto==='retreat') return ['retreat','retreat','retreat'];
-    return o.map(function(k){ return k===null?'retreat':k; });
-  }
-  function draw(){
-    B.clear(svg);
-    const o=orders(), a=acts();
-    B.sans(svg, 520, 30, (loyal?'LOYAL':'DISLOYAL')+' GENERAL  ·  '+
-      (proto==='obey'?'PROTOCOL: OBEY THE GENERAL':'PROTOCOL: ALWAYS RETREAT'),
-      C.muted, 14, 'middle', 700);
-    B.officer(svg, GX, GY, {rank:'general', loyal:loyal, label:'General', scale:1.05});
-    for(let i=0;i<3;i++){
-      B.officer(svg, LX[i], LY, {loyal:true, label:NAMES[i], scale:.92});
-      if(o[i]!==null)
-        B.arrow(svg, [GX+52,GY-66], [LX[i]-34,LY-70],
-          o[i]==='attack'?C.blue:C.red, {op:.5, w:2.2, dash:'7 6'});
-      B.banner(svg, LX[i], LY-132, a[i], a[i]==='attack'?C.blue:C.red);
-    }
-    /* the verdicts */
-    const same=a[0]===a[1] && a[1]===a[2];
-    const validityHeld=!loyal || a.every(function(k){return k==='attack';});
-    B.verdict(svg, 940, 120, 'Validity',  validityHeld,
-      validityHeld?'loyal lieutenants obey a loyal general'
-                  :'a loyal general ordered attack; they retreated');
-    B.verdict(svg, 940, 186, 'Consensus', same,
-      same?'all three loyal lieutenants agree'
-          :'A attacks while B and C retreat');
-    $('status').innerHTML='validity <b>'+(validityHeld?'held':'broken')+
-      '</b> · consensus <b>'+(same?'held':'broken')+'</b>';
-  }
-  $('o').onclick=function(){ proto='obey'; $('o').className='primary';
-    $('r').className=''; draw(); };
-  $('r').onclick=function(){ proto='retreat'; $('r').className='primary';
-    $('o').className=''; draw(); };
-  $('t').onclick=function(){ loyal=!loyal; draw(); };
-  draw();
-})();
-</script>
 
 <script>
-/* Figure 4 - what A does to B, to C and to D, in four steps */
+/* Figure 3 - what A does to B, to C and to D, in four steps */
 (function(){
   const PFX='fwd_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
@@ -1273,21 +1304,21 @@ window.BYZ=(function(){
     B.sans(svg, 620, 26,
       'ONE SEALED LETTER IN, AND THREE DIFFERENT THINGS OUT',
       C.muted, 14, 'middle', 700);
-    B.officer(svg, GX, GY, {rank:'general', loyal:true, label:'G',
-      sub:'the general', scale:.9});
-    B.officer(svg, AX, AY, {loyal:false, label:'A', sub:'disloyal', scale:.9});
+    B.agent(svg, GX, GY, {rank:'source', correct:true, label:'S',
+      sub:'the source', scale:.9});
+    B.agent(svg, AX, AY, {correct:false, label:'A', sub:'faulty', scale:.9});
     for(let i=0;i<3;i++)
-      B.officer(svg, RX, RY[i], {loyal:true, label:NAMES[i], scale:.72,
+      B.agent(svg, RX, RY[i], {correct:true, label:NAMES[i], scale:.72,
         dim:step<i+2});
 
-    /* step 1 -- the general's letter reaches A */
+    /* step 1 -- the source's letter reaches A */
     if(step>=1){
       const u=(step===1)?Math.min(1,T):1;
       const a=[GX+56, GY-70], b=[AX-56, AY-74];
       B.arrow(svg, a, lerp(a,b,u), C.blue,
         {op:.42, dash:'7 6', w:2.2, noHead:u<1});
       B.letter(svg, lerp(a,b,u)[0], lerp(a,b,u)[1],
-        {kind:'attack', signer:'G', scale:.84});
+        {kind:'attack', signer:'S', scale:.84});
       if(u>=1) B.sans(svg, (GX+AX)/2, GY-118, 'signed attack',
         C.blue, 13, 'middle', 700);
     }
@@ -1298,9 +1329,9 @@ window.BYZ=(function(){
       B.arrow(svg, FROM_A, lerp(FROM_A,b,u), C.blue,
         {op:.42, dash:'7 6', w:2.2, noHead:u<1});
       B.letter(svg, lerp(FROM_A,b,u)[0], lerp(FROM_A,b,u)[1],
-        {kind:'attack', signer:'G', scale:.74});
+        {kind:'attack', signer:'S', scale:.74});
       if(u>=1){
-        B.banner(svg, RX+128, RY[0]-58, 'attack, signed G', C.blue);
+        B.banner(svg, RX+128, RY[0]-58, 'attack, signed S', C.blue);
         B.sans(svg, RX+128, RY[0]-30, 'the very same letter',
           C.muted, 12.5, 'middle', 600);
       }
@@ -1316,14 +1347,14 @@ window.BYZ=(function(){
           C.muted, 12.5, 'middle', 600);
       }
     }
-    /* step 4 -- a forged retreat, in the general's name */
+    /* step 4 -- a forged retreat, in the source's name */
     if(step>=4){
       const u=Math.min(1,T);
       const b=toR(2), stop=lerp(FROM_A, b, .52);
       const q=lerp(FROM_A, stop, u);
       B.arrow(svg, FROM_A, q, C.red, {op:.45, dash:'7 6', w:2.2, noHead:true});
       B.letter(svg, q[0], q[1],
-        {kind:'retreat', signer:'G', scale:.74, forged:true});
+        {kind:'retreat', signer:'S', scale:.74, forged:true});
       if(u>=1){
         /* the error sign goes on the letter itself, and its label under
            it: above it the label collided with step 3's cross */
@@ -1333,12 +1364,12 @@ window.BYZ=(function(){
         B.arrow(svg, [stop[0]+26, stop[1]+8], b, C.teal,
           {op:.4, dash:'3 7', w:2});
         B.letter(svg, b[0]+18, b[1]+6,
-          {kind:'retreat', signer:'G', scale:.6, forged:true});
-        B.banner(svg, RX+118, RY[2]-58, 'retreat, \u201csigned G\u201d', C.teal);
+          {kind:'retreat', signer:'S', scale:.6, forged:true});
+        B.banner(svg, RX+118, RY[2]-58, 'retreat, \u201csigned S\u201d', C.teal);
         B.sans(svg, RX+118, RY[2]-30, 'if messages are not encrypted',
           C.teal, 12.5, 'middle', 600);
         B.verdict(svg, 120, 424, 'Written, encrypted messages', false,
-          'A cannot forge the general\u2019s signature');
+          'A cannot forge the source\u2019s signature');
         B.verdict(svg, 120, 488, 'Oral, unencrypted messages', true,
           'A can, and D cannot tell');
       }
@@ -1393,7 +1424,7 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 5 — round 0 */
+/* Figure 4 — round 0 */
 (function(){
   const PFX='r0_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
@@ -1405,16 +1436,16 @@ window.BYZ=(function(){
 
   function draw(){
     B.clear(svg);
-    B.sans(svg, 620, 32, 'ROUND 0  ·  THE GENERAL SIGNS AND SENDS',
+    B.sans(svg, 620, 32, 'ROUND 0  ·  THE SOURCE SIGNS AND SENDS',
       C.muted, 14, 'middle', 700);
-    B.officer(svg, GX, GY, {rank:'general', loyal:false, label:'General',
-      sub:'disloyal', scale:1.1});
+    B.agent(svg, GX, GY, {rank:'source', correct:false, label:'Source',
+      sub:'faulty', scale:1.1});
     for(let i=0;i<4;i++){
-      B.officer(svg, LX[i], LY, {loyal:true, label:NAMES[i], scale:.95});
+      B.agent(svg, LX[i], LY, {correct:true, label:NAMES[i], scale:.95});
       const k=SENT[i], a=[GX+56, GY-68], b=[LX[i]-42, LY-70];
       if(k===null){
         /* no letter at all: a short dead stub by D's own shoulder, so the
-           line does not cut across the lieutenants who did get one */
+           line does not cut across the agents who did get one */
         const s0=[b[0]-150, b[1]-4];
         B.arrow(svg, s0, b, '#c9c4b8', {op:.75, dash:'4 7', w:2, noHead:true});
         const mx=(s0[0]+b[0])/2, my=(s0[1]+b[1])/2;
@@ -1432,7 +1463,7 @@ window.BYZ=(function(){
         const bb=[b[0]+42, b[1]-44];
         B.route(svg, a, cc, bb, C.blue, {w:2, arrow:T>=1});
         const q=B.qpt(a,cc,bb,u);
-        B.letter(svg, q[0], q[1], {kind:'attack', signer:'G', scale:.9});
+        B.letter(svg, q[0], q[1], {kind:'attack', signer:'S', scale:.9});
       }
       if(T>=1) B.banner(svg, LX[i], LY-150, 'attack', C.blue);
     }
@@ -1440,7 +1471,7 @@ window.BYZ=(function(){
       'the round has ended, so D’s letter is not coming — silence here is information',
       C.ink, 13.5, 'middle', 600);
     $('status').innerHTML=T>=1?'three letters sent · <b>D got none</b>'
-                               :'the general has not sent yet';
+                               :'the source has not sent yet';
   }
   function run(){
     if(raf) cancelAnimationFrame(raf);
@@ -1457,39 +1488,39 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 6 — lieutenant C on round 3 */
+/* Figure 5 — agent C on round 3 */
 (function(){
   const PFX='rj_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
   const B=window.BYZ, C=B.C;
   const CX=390, CY=330, RX=[870,1090], RY=330;
-  const HELD=[['G','attack'],['A','attack'],['B','attack']];
+  const HELD=[['S','attack'],['A','attack'],['B','attack']];
   let step=0, T=0, raf=null;
 
   function draw(){
     B.clear(svg);
-    B.sans(svg, 620, 30, 'ROUND j = 3  ·  THE RULE NEEDS THE GENERAL AND j−1 = 2 LIEUTENANTS',
+    B.sans(svg, 620, 30, 'ROUND j = 3  ·  THE RULE NEEDS THE SOURCE AND j−1 = 2 AGENTS',
       C.muted, 14, 'middle', 700);
     /* what C is holding */
     B.panel(svg, 60, 70, 300, 150, 'C HOLDS, AT THE START OF ROUND 3');
     for(let i=0;i<3;i++)
       B.letter(svg, 120+i*86, 155, {kind:HELD[i][1], signer:HELD[i][0], scale:.95});
-    B.mono(svg, 210, 200, 'general + 2 lieutenants', C.ink, 13);
+    B.mono(svg, 210, 200, 'source + 2 agents', C.ink, 13);
 
     const committed=step>=1;
-    B.officer(svg, CX, CY, {loyal:true, label:'C', scale:1.15});
+    B.agent(svg, CX, CY, {correct:true, label:'C', scale:1.15});
     if(committed){
       B.banner(svg, CX, CY-172, 'commits: attack', C.blue);
       B.sans(svg, CX, CY+54, 'the rule is satisfied', C.teal, 13, 'middle', 700);
     }
     for(let i=0;i<2;i++)
-      B.officer(svg, RX[i], RY, {loyal:true, label:i?'E':'D', scale:.95,
+      B.agent(svg, RX[i], RY, {correct:true, label:i?'E':'D', scale:.95,
         dim:step<2});
 
     /* step 2: C broadcasts the evidence, with its own signature added */
     if(step>=2){
       const u=Math.min(1,T);
-      const sign=[['G','attack'],['A','attack'],['B','attack'],['C','attack']];
+      const sign=[['S','attack'],['A','attack'],['B','attack'],['C','attack']];
       for(let r=0;r<2;r++){
         const a=[CX+52, CY-84], b=[RX[r], RY-116];
         const c=B.ctl(a, b, 104+r*46);
@@ -1502,7 +1533,7 @@ window.BYZ=(function(){
         }
       }
       if(u>=1) B.sans(svg, 980, 128,
-        'four letters: the general, A, B, and C’s own signature',
+        'four letters: the source, A, B, and C’s own signature',
         C.ink, 13, 'middle', 600);
     }
     $('status').innerHTML=['holding the evidence',
@@ -1524,7 +1555,7 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 7 — observation 3: one commit pulls the rest in */
+/* Figure 6 — observation 3: one commit pulls the rest in */
 (function(){
   const PFX='csc_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
@@ -1540,14 +1571,14 @@ window.BYZ=(function(){
     B.clear(svg);
     B.sans(svg, 620, 30, 'B COMMITS ON ROUND 3  ·  WHAT DOES THAT DO TO A AND C?',
       C.muted, 14, 'middle', 700);
-    B.officer(svg, BX, BY, {loyal:true, label:'B', scale:1.05});
-    B.officer(svg, AX, Y, {loyal:true, label:'A', scale:1.05});
-    B.officer(svg, CX, Y, {loyal:true, label:'C', scale:1.05});
+    B.agent(svg, BX, BY, {correct:true, label:'B', scale:1.05});
+    B.agent(svg, AX, Y, {correct:true, label:'A', scale:1.05});
+    B.agent(svg, CX, Y, {correct:true, label:'C', scale:1.05});
     if(step>=1) B.banner(svg, BX, BY-160, 'commits: attack', C.blue);
 
     if(step>=2){
       const u=Math.min(1,T);
-      const sign=[['G','attack'],['Y','attack'],['Z','attack'],['B','attack']];
+      const sign=[['S','attack'],['Y','attack'],['Z','attack'],['B','attack']];
       [[-1,AX],[1,CX]].forEach(function(p){
         const a=[BX+p[0]*48, BY-84], b=[p[1], Y-114];
         const c=B.ctl(a, b, 96);
@@ -1560,15 +1591,15 @@ window.BYZ=(function(){
         }
       });
       if(u>=1){
-        count(AX, Y+58, 'general + 3 lieutenants', 'round 4 asks for 3', true);
-        count(CX, Y+58, 'general + 3 lieutenants', 'round 4 asks for 3', true);
+        count(AX, Y+58, 'source + 3 agents', 'round 4 asks for 3', true);
+        count(CX, Y+58, 'source + 3 agents', 'round 4 asks for 3', true);
       }
     }
     if(step>=3){
       B.banner(svg, AX, Y-160, 'commits: attack', C.blue);
       B.banner(svg, CX, Y-160, 'commits: attack', C.blue);
       B.sans(svg, 620, 378,
-        'every loyal lieutenant has committed by round 4',
+        'every correct agent has committed by round 4',
         C.teal, 13.5, 'middle', 700);
     }
     $('status').innerHTML=['round 3','B commits','B broadcasts four letters',
@@ -1590,46 +1621,46 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 8 — two runs with a disloyal general, round by round */
+/* Figure 7 — two runs with a faulty source, round by round */
 (function(){
   const PFX='run_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
   const B=window.BYZ, C=B.C;
   const GX=150, GY=250;
   const NAMES=['A','B','C','Y','Z'];
-  const LOYAL={A:true,B:true,C:true,Y:false,Z:false};
+  const CORRECT={A:true,B:true,C:true,Y:false,Z:false};
   const X={A:470, B:640, C:810, Y:1010, Z:1170}, LY=250;
 
-  /* Each frame is one round: the letters that travel, what each loyal
-     lieutenant holds at the end of it, and who has committed. */
+  /* Each frame is one round: the letters that travel, what each correct
+     agent holds at the end of it, and who has committed. */
   const RUNS={
     a:[
-      {r:0, msgs:[['G','Y'],['G','Z']],
-       note:'the general sends attack to Y and Z only, and nothing to A, B, C',
+      {r:0, msgs:[['S','Y'],['S','Z']],
+       note:'the source sends attack to Y and Z only, and nothing to A, B, C',
        holds:{}, commit:{}},
       {r:1, msgs:[], note:'Y and Z say nothing, so A, B and C have no evidence at all',
        holds:{}, commit:{}},
       {r:2, msgs:[], note:'Y and Z say nothing again', holds:{}, commit:{}},
       {r:3, msgs:[], note:'and again', holds:{}, commit:{}},
       {r:4, msgs:[['Y','A'],['Y','B'],['Y','C'],['Z','A'],['Z','B'],['Z','C']],
-       note:'now the traitors produce the general’s letter and their own two signatures',
+       note:'now the faulty agents produce the source’s letter and their own two signatures',
        holds:{A:2,B:2,C:2}, commit:{},
-       verdict:'round 4 asks for three lieutenants; they have two — nobody commits, all three retreat, in consensus'}
+       verdict:'round 4 asks for three agents; they have two — nobody commits, all three retreat, in consensus'}
     ],
     b:[
-      {r:0, msgs:[['G','Y'],['G','Z']],
-       note:'the general sends attack to Y and Z only',
+      {r:0, msgs:[['S','Y'],['S','Z']],
+       note:'the source sends attack to Y and Z only',
        holds:{}, commit:{}},
       {r:1, msgs:[], note:'Y and Z say nothing', holds:{}, commit:{}},
       {r:2, msgs:[['Y','A'],['Z','A']],
-       note:'the traitors hand A alone the general’s letter and their own signatures',
+       note:'the faulty agents hand A alone the source’s letter and their own signatures',
        holds:{A:2}, commit:{}},
-      {r:3, msgs:[], note:'A holds the general and two lieutenants, and round 3 asks for two',
+      {r:3, msgs:[], note:'A holds the source and two agents, and round 3 asks for two',
        holds:{A:2}, commit:{A:3}},
       {r:4, msgs:[['A','B'],['A','C']],
        note:'A broadcasts its evidence with its own signature added',
        holds:{A:2,B:3,C:3}, commit:{A:3,B:4,C:4},
-       verdict:'B and C hold the general and three lieutenants, which is what round 4 asks for — consensus, one round later'}
+       verdict:'B and C hold the source and three agents, which is what round 4 asks for — consensus, one round later'}
     ]
   };
   let run='a', k=0, T=1, raf=null;
@@ -1639,31 +1670,31 @@ window.BYZ=(function(){
     const F=RUNS[run], f=F[k];
     B.sans(svg, 620, 28,
       (run==='a'?'RUN 1':'RUN 2')+'  ·  ROUND '+f.r, C.muted, 14.5, 'middle', 700);
-    B.officer(svg, GX, GY, {rank:'general', loyal:false, label:'General',
-      sub:'disloyal', scale:1.0});
+    B.agent(svg, GX, GY, {rank:'source', correct:false, label:'Source',
+      sub:'faulty', scale:1.0});
     NAMES.forEach(function(n){
-      B.officer(svg, X[n], LY, {loyal:LOYAL[n], label:n,
-        sub:LOYAL[n]?null:'disloyal', scale:.9});
+      B.agent(svg, X[n], LY, {correct:CORRECT[n], label:n,
+        sub:CORRECT[n]?null:'faulty', scale:.9});
       const c=f.commit[n];
       const h=f.holds[n];
-      if(h!=null) B.mono(svg, X[n], LY+52, 'G + '+h+' lt', C.ink, 12.5);
+      if(h!=null) B.mono(svg, X[n], LY+52, 'S + '+h+' ag', C.ink, 12.5);
       if(c!=null) B.banner(svg, X[n], LY+82, 'attack (round '+c+')', C.blue);
-      else if(LOYAL[n] && f.r>=4)
+      else if(CORRECT[n] && f.r>=4)
         B.banner(svg, X[n], LY+82, 'retreat', C.red);
     });
     /* the letters moving this round */
     const u=Math.min(1,T);
     f.msgs.forEach(function(m,mi){
-      const from=(m[0]==='G')?[GX+48,GY-74]:[X[m[0]], LY-112];
+      const from=(m[0]==='S')?[GX+48,GY-74]:[X[m[0]], LY-112];
       const to=[X[m[1]], LY-112];
-      const n=(m[0]==='G')?1:(m[0]==='A'?4:2);
+      const n=(m[0]==='S')?1:(m[0]==='A'?4:2);
       const c=B.ctl(from, to, 74+(mi%3)*26);
       B.route(svg, from, c, to, C.blue, {w:1.8, op:.28, arrow:u>=1, hs:5.5});
       const q=B.qpt(from,c,to,u);
       for(let i=0;i<n;i++){
         const off=i*11-(n-1)*5.5;
         B.letter(svg, q[0]+off, q[1]-off*0.4,
-          {kind:'attack', signer:(m[0]==='G'?'G':m[0]), scale:.56});
+          {kind:'attack', signer:(m[0]==='S'?'S':m[0]), scale:.56});
       }
     });
     B.sans(svg, 620, 404, f.note, C.ink, 13.5, 'middle', 600);
@@ -1694,22 +1725,22 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 9 — the counting argument behind the theorem */
+/* Figure 8 — the counting argument behind the theorem */
 (function(){
   const PFX='thm_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
   const B=window.BYZ, C=B.C;
   const SLOT=[[150,210],[290,210],[430,210],[570,210],[710,210]];
-  const WHO=['G','Y','Z','W',null];   /* the fifth can never be filled */
+  const WHO=['S','Y','Z','W',null];   /* the fifth can never be filled */
   let n=0, raf=null;
 
   function draw(){
     B.clear(svg);
-    B.sans(svg, 420, 30, 'ROUND t+1 = 5  ·  THE RULE ASKS FOR THE GENERAL AND t = 4 LIEUTENANTS',
+    B.sans(svg, 420, 30, 'ROUND t+1 = 5  ·  THE RULE ASKS FOR THE SOURCE AND t = 4 AGENTS',
       C.muted, 13.5, 'middle', 700);
-    B.sans(svg, 420, 64, 't = 4 disloyal officers, and the general is one of them',
+    B.sans(svg, 420, 64, 't = 4 faulty agents, and the source is one of them',
       C.ink, 14, 'middle', 600);
-    B.sans(svg, 420, 88, 'so at most t−1 = 3 lieutenants can sign an attack message',
+    B.sans(svg, 420, 88, 'so at most t−1 = 3 agents can sign an attack message',
       C.muted, 13, 'middle', 600);
 
     for(let i=0;i<5;i++){
@@ -1720,7 +1751,7 @@ window.BYZ=(function(){
         'stroke-width':(i===4)?2.4:1.6,
         'stroke-dasharray':(i===4)?'7 6':'none'});
       svg.appendChild(box);
-      B.sans(svg, x, y-56, i===0?'the general':'lieutenant '+(i),
+      B.sans(svg, x, y-56, i===0?'the source':'agent '+(i),
         C.muted, 12.5, 'middle', 700);
       if(filled) B.letter(svg, x, y, {kind:'attack', signer:WHO[i], scale:.95});
       else if(i===4 && n>=5){
@@ -1730,14 +1761,14 @@ window.BYZ=(function(){
     }
     if(n>=5){
       B.sans(svg, 420, 300,
-        'four slots, three traitors: the fifth can never be filled',
+        'four slots, three faulty agents: the fifth can never be filled',
         C.red, 14.5, 'middle', 700);
       B.sans(svg, 420, 330,
-        'so no loyal lieutenant commits on round t+1, or on any round after it',
+        'so no correct agent commits on round t+1, or on any round after it',
         C.ink, 13.5, 'middle', 600);
     }
     $('status').innerHTML=n>=5?'<b>one slot short, for ever</b>'
-      :'filled <b>'+Math.max(0,n-1)+'</b> of 4 lieutenant slots';
+      :'filled <b>'+Math.max(0,n-1)+'</b> of 4 agent slots';
   }
   function run(){
     if(raf) cancelAnimationFrame(raf);
