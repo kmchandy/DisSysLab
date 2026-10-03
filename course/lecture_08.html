@@ -460,51 +460,8 @@ the ledger.
 <p>
 Deriving the code for proposers and acceptors from the sequential 
 algorithm is straightforward - see 
-https://github.com/kmchandy/DisSysLab/dissyslab/gallery/apps/paxos
+<a href="https://github.com/kmchandy/DisSysLab/tree/main/dissyslab/gallery/apps/paxos">the paxos office</a>.
 </p>
-
-<h4>Acceptor q</h4>
-
-<pre class="code"><span class="cm"># q.v is the pair (q.v.s, q.v.t): the candidate value q holds and the id</span>
-<span class="cm"># of the transaction that assigned it. q.t is the id of the transaction</span>
-<span class="cm"># that q is processing.</span>
-q.v.s, q.v.t = null, 0
-q.t = 0
-
-<span class="kw">def</span> receive(request, p):
-    <span class="kw">if</span> request.t &lt; q.t:
-        <span class="cm"># a request from an earlier transaction: treat it as lost</span>
-        <span class="kw">return</span>
-    q.t = request.t
-    <span class="kw">if</span> isinstance(request, ReadRequest):
-        send(Reply(q.v, q.t), p)
-    <span class="kw">else</span>:
-        <span class="cm"># a WriteRequest, which carries the value and the transaction id</span>
-        q.v.s, q.v.t = request.s, request.t</pre>
-
-<h4>Proposer p</h4>
-
-<pre class="code"><span class="cm"># p.t is the id of the transaction p is executing, and p.replies holds the</span>
-<span class="cm"># replies it has received in that transaction, one for each acceptor.</span>
-p.t = 0
-p.replies = {}
-
-<span class="kw">def</span> receive(message, sender):
-    <span class="kw">if</span> isinstance(message, ClockTick):
-        <span class="cm"># start a new transaction with an id larger than any p has used</span>
-        p.t = next_id(p.t)
-        p.replies = {}
-        <span class="kw">for</span> q <span class="kw">in</span> acceptors:
-            send(ReadRequest(p.t), q)
-    <span class="kw">elif</span> isinstance(message, Reply):
-        <span class="kw">if</span> message.t == p.t:
-            <span class="cm"># replies from other transactions are ignored</span>
-            p.replies[sender] = message.v
-            <span class="kw">if</span> len(p.replies) == M:
-                <span class="cm"># the M-th reply completes the read set R</span>
-                d = f(p, list(p.replies.values()))
-                <span class="kw">for</span> q <span class="kw">in</span> acceptors:
-                    send(WriteRequest(d, p.t), q)</pre>
 
 </div>
 
