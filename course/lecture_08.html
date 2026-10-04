@@ -8,8 +8,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
 <style>
-
-
   :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
     --muted:#6f7583; --body:rgba(26,26,46,.80);
     --orange:#d13d0e; --teal:#00947d;
@@ -24,13 +22,13 @@
      line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
   h2{font-family:var(--display); font-weight:600; font-size:25px;
      letter-spacing:-.01em; margin:38px 0 12px}
-  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:26px 0 8px}
-  p{color:var(--body); margin:0 0 15px}
+  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:34px 0 8px}
   h4{font-family:var(--sans); font-weight:700; font-size:15.5px;
-     letter-spacing:.01em; color:var(--ink); margin:20px 0 6px}
+     letter-spacing:.01em; color:var(--ink); margin:24px 0 8px}
+  p{color:var(--body); margin:0 0 15px}
   .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
           color:var(--orange); margin-bottom:14px}
-  figure.fig{margin:30px 0 26px; padding:20px 20px 16px;
+  figure.fig{margin:32px 0 30px; padding:20px 20px 16px;
     background:var(--panel); border:1px solid var(--line); border-radius:12px}
   figure.fig svg{display:block; width:100%; height:auto}
   figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
@@ -46,19 +44,15 @@
   button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
   .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
   .status b{color:var(--ink); font-weight:600}
-  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
-          font-size:13.5px; color:var(--muted)}
-  .legend i{font-style:normal; color:var(--ink); font-weight:600}
-  code{font-family:var(--mono); font-size:.88em}
+  code{font-family:var(--mono); font-size:.88em;
+       background:#f6f4ee; border-radius:5px; padding:1px 5px}
   pre.code{margin:16px 0 18px; padding:14px 18px; overflow-x:auto;
     background:#fff; border:1px solid var(--line); border-left:4px solid var(--ink);
     border-radius:0 10px 10px 0; font:13.5px/1.6 var(--mono); color:var(--ink)}
   pre.code b{font-weight:700}
   pre.code .cm{color:var(--muted)}
   pre.code .kw{color:var(--orange)}
-  h4{font-family:var(--sans); font-weight:700; font-size:15.5px;
-     letter-spacing:.01em; color:var(--ink); margin:24px 0 8px}
-  .hint{font-size:13px; color:var(--muted)}
+  pre.code code{background:none; padding:0}
   .facts{margin-top:14px; font:14px/1.7 var(--mono)}
   .facts div{display:flex; gap:10px; align-items:baseline; padding:5px 0;
              border-top:1px solid var(--line)}
@@ -82,15 +76,23 @@
     border-radius:0 10px 10px 0}
   ul.spec > li > b{display:block; color:var(--ink); font-weight:700;
     margin-bottom:7px}
-  ul.spec code{background:#f6f4ee; border-radius:5px; padding:1px 5px}
-  /* a claim: the two properties and the theorem read the same way */
+  /* a claim: the two properties and the theorem read the same way
+     (the same boxes as ByzantineGenerals.html) */
+  .thm{margin:24px 0 22px; padding:16px 20px 15px; color:var(--ink);
+    background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:17px; line-height:1.55}
+  .thm b, .thm strong{font-weight:700}
   .thm > b{display:block; margin-bottom:7px}
-  code{background:#f6f4ee; border-radius:5px; padding:1px 5px}
-  pre.code code{background:none; padding:0}
-  /* room to breathe around the section headings and the figures */
-  h3{margin-top:34px}
-  figure.fig{margin:32px 0 30px; padding:20px 20px 16px;
-    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  .thm .why{display:block; margin-top:9px; padding-top:9px;
+    border-top:1px solid var(--line); font-size:15px; color:var(--body)}
+  /* proofs */
+  .proof{margin:6px 0 24px; padding:2px 0 2px 22px;
+         border-left:2px solid var(--line)}
+  .proof > p:last-child{margin-bottom:0}
+  .proof .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin:0 0 9px}
 </style>
 </head>
 <body>
@@ -101,8 +103,9 @@
     <p>
       The Paxos algorithm is a distributed consensus algorithm
       created by Leslie Lamport. 
-      The FLP theorem says no distributed consensus algorithm
-      can guarantee validity, agreement and termination if 
+      The FLP theorem (see <a href="lecture_06.html">lecture 6</a>) says
+      no distributed consensus algorithm in an asynchronous system
+      can guarantee validity, agreement and termination if
       a single agent may halt.
       Paxos guarantees validity and agreement, but not termination.
     </p>
@@ -119,20 +122,20 @@
     </p>
 
     <ul class="spec">
-      <li><b>All learners only learn values that were proposed.</b>
+      <li><b>Validity: All learners only learn values that were proposed.</b>
         <br>
         For all learners L:
         <br>
-          <code>(L.value = null)</code> OR 
-          (exists proposer p where: <code>L.value = p.VALUE)</code>.</li>
-      <li><b>All learners learn the same value.</b>
+          <code>(L.value = null)</code> OR
+          (exists proposer p where: <code>L.value = p.VALUE</code>).</li>
+      <li><b>Agreement: All learners learn the same value.</b>
         <br>
           For all learners L, L&prime;:
           <br>
           <code>(L.value = null)</code> OR
           <code>(L&prime;.value = null)</code> OR
           <code>(L.value = L&prime;.value)</code>.</li>
-      <li><b>A learner does not change what it learned.</b>
+      <li><b>Stability: A learner does not change what it learned.</b>
         <br>
         For all learners L: 
         <br>
@@ -143,7 +146,8 @@
 
 <h2>The algorithm</h2>
     <p>
-      The previous class described a model of transactions in a computation
+      The previous class (<a href="lecture_07.html">lecture 7</a>)
+      described a model of transactions in a computation
       and gave sufficient conditions for transactions to be serializable.
       Serializability allows us to convert a
       system in which messages may be lost, duplicated and delivered out
@@ -153,7 +157,7 @@
 <h3>Proposers and acceptors</h3>
 <p>
 We describe the Paxos algorithm in two parts. 
-The first part deals with network
+The first part deals with a network
 of two layers of agents: <b>proposers</b> that propose values to be
 considered for consensus, and <b>acceptors</b> that receive proposals
 and carry out computations that lead to a consensus. 
@@ -161,7 +165,7 @@ and carry out computations that lead to a consensus.
 
 <p>
   Proposers send messages to, and receive messages from, acceptors.
-  Acceptors send messages and receive messages from proposers. 
+  Acceptors send messages to, and receive messages from, proposers.
   Proposers do not communicate directly with each other.
   Likewise acceptors do not communicate directly with each other.
   In our model each proposer and each acceptor has a single outbox 
@@ -172,10 +176,9 @@ and carry out computations that lead to a consensus.
 <p>
   Associated with each proposer p is a local constant <code>p.VALUE</code>
   which is the value that p proposes as a candidate for consensus.
-  Each acceptor q has a local variable q.v where q.v has components q.v.s
-  and q.v.t, and q.v.s is a 
-  candidate consensus value and q.v.t is the id of the transaction in which q.v.s
-  was assigned its current value.
+  Each acceptor q has a local variable q.v = (q.v.s, q.v.t): q.v.s is a
+  candidate consensus value, and q.v.t is the id of the transaction that
+  last assigned it. Initially q.v = (null, 0).
   Let N be the number of acceptors, and let M acceptors be a majority.
   M = floor(N/2) + 1.
 </p>
@@ -186,10 +189,10 @@ and carry out computations that lead to a consensus.
          aria-label="Three proposers and five acceptors: every proposer's outbox is connected to every acceptor's inbox, and every acceptor's outbox to every proposer's inbox"></svg>
 
     <div class="ctrls">
-      <button id="pnet_p0" class="primary">p0</button>
+      <button id="pnet_p0">p0</button>
       <button id="pnet_p1">p1</button>
       <button id="pnet_p2">p2</button>
-      <button id="pnet_all">All</button>
+      <button id="pnet_all" class="primary">All</button>
       <span class="status" id="pnet_status"></span>
     </div>
 
@@ -221,12 +224,14 @@ determined nondeterministically.
   <li>
     <b>Proposer reads acceptor variables:</b>
     p reads the local variable r.v of acceptor r in a set R of acceptors.
+    R is the set of acceptors whose replies reach p.
   </li>
   <li>
-    <b>Proposer writes acceptor variables:</b> If the size of R is at least M, 
-    p computes a value d from the values of acceptor local variables, r.v, that p 
-    read in this transaction. p assigns d to local variable, q.v, of acceptor q, 
-    for all q in a set W of acceptors.
+    <b>Proposer writes acceptor variables:</b> If the size of R is at least M,
+    p computes a value d from the values of acceptor local variables, r.v, that p
+    read in this transaction. p assigns d to local variable, q.v, of acceptor q,
+    for all q in a set W of acceptors. W is the set of acceptors that
+    p&rsquo;s writes reach.
   </li>
 </ol>
 
@@ -234,7 +239,8 @@ determined nondeterministically.
 
 <p class="key">
   <span class="lead-in">The transaction</span>
-  T, p, R and W are selected nondeterministically.
+  R and W are nondeterministic because messages can be lost: any
+  acceptor&rsquo;s reply, and any write, may fail to arrive.
 </p>
 
 <pre class="code"><span class="kw">if</span> len(R) &gt;= M:
@@ -251,66 +257,10 @@ determined nondeterministically.
         <span class="cm"># return the candidate value that was assigned most recently among</span>
         <span class="cm"># the acceptors that were read: the rv.s with the largest rv.t</span>
         t_max = max(rv.t <span class="kw">for</span> rv <span class="kw">in</span> list_of_rv)
+        <span class="cm"># every rv with rv.t == t_max was written by the same transaction,</span>
+        <span class="cm"># so they all hold the same value: any one of them will do</span>
         r_s_list = [rv.s <span class="kw">for</span> rv <span class="kw">in</span> list_of_rv <span class="kw">if</span> rv.t == t_max]
         <span class="kw">return</span> r_s_list[0]</pre>
-
-<h2>Properties of the algorithm</h2>
-
-<p class="thm">
-  <b>Acceptors only accept values proposed by proposers:</b> 
-  <br>
-  For all acceptors q: (q.v.s = null) OR (exists proposer p: q.v.s = p.VALUE)
-</p>
-
-<p class="thm">
-  <b>Monotone nondecreasing acceptor timestamps</b>
-<br>
-  If in a transaction 
-  q.v.t = t*  then in all subsequent transactions :
-  q.v.t &gt;= t*.
-</p>
-
-<h3>Theorem: Candidate value assigned to a majority in a 
-    transaction remains unchanged</h3>
-
-<p class="thm">
-  If the set W of acceptors assigned values in a transaction with id t* is a
-  majority, and s* is the candidate value assigned in the transaction,
-  then
-  <br>
-   for all q: (q.v.s = s*) OR (q.v.t &lt; t*).
-</p>
-
-<div class="proof">
-<p>
-  <span class="lead-in">Proof by induction</span>
-  Base case &mdash; The condition holds for the transaction with 
-  id t where t = t*.
-</p>
-<p>
-  Induction step: Assume that the conditions holds for a transaction with id t &gt;= t* 
-  and show that it holds for the next transaction with id t' &gt; t.
-</p>
-
-<p>
-  If len(R) &lt; M then acceptor values are not modified in the transaction with id t', 
-  and so the condition continues to hold.
-</p>
-
-<p>
-  If len(R) &gt;= M
-  then there is at least one element common to R and W*,
-  because two majorities must have an element in common. Let q be an acceptor 
-  in R and in W*. Then q.v.t &gt;= t*, because of monotone nondecreasing
-  timestamps. So t_max &gt;= q.v.t &gt;= t*. 
-</p>
-<p>
-  For all q: (q.v.s = s*)  OR (q.v.t &lt; t*).
-  Therefore, if q.v.t = t_max then q.v.s = s*. And the value returned by 
-  function f is s*.
-</p>
-</div>
-
 
   <figure class="fig wideout">
     <svg id="pax_g" viewBox="0 0 1240 470" role="img"
@@ -339,12 +289,78 @@ determined nondeterministically.
       acceptors and write nothing. The third writes green to a0. The fourth
       reads a majority that includes a0, so f returns green although p1
       proposes blue, and it writes green to a majority &mdash; from that point
-      the invariant applies with s* = green and t* = 30. The fifth reads a
+      the theorem below applies with s* = green and t* = 30. The fifth reads a
       majority that includes one of those acceptors, so p2 writes green too,
       though it proposes red. Notice a4: no transaction ever writes it, so it
       holds (null, 0) to the end. An acceptor need never be assigned a value.
     </figcaption>
   </figure>
+
+<h2>Properties of the algorithm</h2>
+
+<p class="thm">
+  <b>Acceptors only accept values proposed by proposers:</b> 
+  For all acceptors q: (q.v.s = null) OR (exists proposer p: q.v.s = p.VALUE)
+  <span class="why">Why: f returns either p.VALUE or a value that an
+  acceptor already holds.</span>
+</p>
+
+<p class="thm">
+  <b>Monotone nondecreasing acceptor timestamps:</b>
+  If in a transaction 
+  q.v.t = t*  then in all subsequent transactions:
+  q.v.t &gt;= t*.
+  <span class="why">Why: transactions are executed in increasing order of
+  id, and a write in the transaction with id T sets q.v.t = T.</span>
+</p>
+
+<h3>Theorem: Candidate value assigned to a majority in a 
+    transaction remains unchanged</h3>
+
+<p class="thm">
+  If the set W* of acceptors assigned values in a transaction with id t* is a
+  majority, and s* is the candidate value assigned in the transaction,
+  then after the transaction with id t*, and after every later transaction,
+  <br>
+   for all q: (q.v.s = s*) OR (q.v.t &lt; t*).
+</p>
+
+<div class="proof">
+<p>
+  <span class="lead-in">Proof by induction</span>
+  Base case &mdash; The condition holds after the transaction with 
+  id t*: the acceptors in W* hold (s*, t*), and every other acceptor was
+  last assigned in an earlier transaction, so its q.v.t &lt; t*.
+</p>
+<p>
+  Induction step: Assume that the condition holds after a transaction with id t &gt;= t* 
+  and show that it holds after the next transaction with id t' &gt; t.
+</p>
+
+<p>
+  If len(R) &lt; M then acceptor values are not modified in the transaction with id t', 
+  and so the condition continues to hold.
+</p>
+
+<p>
+  If len(R) &gt;= M
+  then there is at least one element common to R and W*,
+  because two majorities must have an element in common. Let r be an acceptor 
+  in R and in W*. Then r.v.t &gt;= t*, because of monotone nondecreasing
+  timestamps. So t_max &gt;= r.v.t &gt;= t*. 
+</p>
+<p>
+  For all q: (q.v.s = s*)  OR (q.v.t &lt; t*).
+  Therefore, if q.v.t = t_max then q.v.s = s*. And the value returned by 
+  function f is s*.
+</p>
+<p>
+  So every acceptor in W is assigned (s*, t'), and every other acceptor
+  is unchanged. The condition holds after the transaction with id t'.
+</p>
+</div>
+
+
 
 <h3>Learners</h3>
 <p>
@@ -354,10 +370,8 @@ How can a learner know if a majority has reached consensus?
 
 <p>
   When an acceptor q changes its value it sends a message containing q.v to 
-  all learners. If a learner L has a null value and L
-  receives messages from  at least M acceptors, q, where all the messages have the same
-  value of q.v, then L sets L.value = q.v.s. The proof of correctness is
-  as follows.
+  all learners. If L.value is null and L has received the same pair q.v
+  from at least M different acceptors, L sets L.value = q.v.s.
 </p>
 
   <figure class="fig wideout">
@@ -392,16 +406,29 @@ How can a learner know if a majority has reached consensus?
   </figure>
 
 
+<p>
+  Messages to learners can be lost, so a learner may never learn a value:
+  L1 in figure 3 learns only because a later transaction writes the same
+  value again. This is why Paxos does not guarantee termination.
+</p>
+
+<p>The proof of correctness is as follows.</p>
+
 <div class="proof">
 <p>
   <b>Validity:</b> An acceptor q assigns only proposer values to q.v.s, and so 
   L.value is only assigned proposer values.
 </p>
 <p>
-  <b>Agreement:</b> After a majority W of acceptors is assigned a value s*, t*,
-  all changes to q.v for any acceptor q assign q.v.s = s*.
-  Therefore for t* &lt; t', if another majority W' of acceptors is assigned
-  s', t' then s' = s*. 
+  <b>Agreement:</b> If L learns (s, t), then M acceptors reported (s, t),
+  so the transaction with id t assigned s to a majority of acceptors.
+  If another learner L&prime; learns (s&prime;, t&prime;) with t &lt;= t&prime;,
+  then the transaction with id t&prime; also assigned s&prime; to a majority,
+  and by the theorem s&prime; = s.
+</p>
+<p>
+  <b>Stability:</b> L sets L.value only while L.value is null, so it
+  changes L.value at most once.
 </p>
 </div>
 
@@ -414,9 +441,9 @@ of values. Determining a consensus on an account ledger illustrates the problem.
 
 <p>
   Consider the following sequence of deposits and withdrawals from an account
-  which has $0 initially. Proposer 0  proposes "Deposit $100 in the account."
-  Proposer 1 proposes "Withdraw $95", presumable expecting to wait until the
-  deposit was made. So the sequence of operations on the consensus ledger could
+  which has $0 initially. Proposer 0 proposes "Deposit $100 in the account."
+  Proposer 1 proposes "Withdraw $95", presumably expecting the deposit
+  to be made first. So the sequence of operations on the consensus ledger could
   be
 </p>
 
@@ -425,23 +452,25 @@ of values. Determining a consensus on an account ledger illustrates the problem.
        Proposer 0's proposal is the consensus. Balance is $100
     </li>
     <li>
-      Then: Proposal 1's proposal is the consensus. Balance is $5
+      Then: Proposer 1's proposal is the consensus. Balance is $5
     </li>
   </ol>
 
 <p>
 A problem arises if the withdrawal is made before the deposit. 
+</p>
 
 <ol>
   <li>
-    Proposal 1's proposal is the consensus. Balance is -$95. Penalty $5
-     
+    Proposer 1's proposal is the consensus. An overdraft penalty of $5
+    is charged, so the balance is -$100.
   </li>
   <li>
     Then: Proposer 0's proposal is the consensus. Balance is $0.
   </li>
 </ol>
 
+<p>
 We want a consensus on the <b>sequence</b> of operations on
 the ledger.
 </p>
@@ -454,13 +483,20 @@ the ledger.
   proposed value. A proposer that reads q.v.s = sequence_0 and 
   u.v.s = sequence_1 in the same transaction, treats q.v.s as null if the length
   of sequence_0 is less than that of sequence_1.
+  We omit the proof that this rule preserves the theorem. A simpler
+  alternative, used in practice, runs a separate instance of Paxos for
+  each position in the ledger.
 </p>
 
 <h3>Code</h3>
 <p>
 Deriving the code for proposers and acceptors from the sequential 
-algorithm is straightforward - see 
+algorithm is straightforward; see 
 <a href="https://github.com/kmchandy/DisSysLab/tree/main/dissyslab/gallery/apps/paxos">the paxos office</a>.
+The office differs from figure 1 in one detail: an acceptor&rsquo;s reply
+goes only to the proposer that asked, so in the office each acceptor has
+one outbox per proposer, and one more for the learners. Its
+<code>office.md</code> explains why.
 </p>
 
 </div>
@@ -551,10 +587,15 @@ algorithm is straightforward - see
       ? '<b>30 connections</b>'
       : '<b>10 connections at p'+only+'</b>';
   }
+  /* the highlighted button is the one being shown */
+  function mark(){
+    [0,1,2].forEach(function(k){ $('p'+k).className=(only===k)?'primary':''; });
+    $('all').className=(only===null)?'primary':'';
+  }
   [0,1,2].forEach(function(k){
-    $('p'+k).onclick=function(){ only=k; draw(); };
+    $('p'+k).onclick=function(){ only=k; mark(); draw(); };
   });
-  $('all').onclick=function(){ only=null; draw(); };
+  $('all').onclick=function(){ only=null; mark(); draw(); };
   draw();
 })();
 </script>
@@ -586,9 +627,13 @@ algorithm is straightforward - see
     const rv=x.R.map(function(q){return A[q];});
     if(rv.length<M) return null;
     if(rv.every(function(v){return v.s===null;})) return PV[x.p];
-    let tmax=-1; rv.forEach(function(v){ if(v.t>tmax) tmax=v.t; });
-    return rv.filter(function(v){return v.t===tmax;})[0].s;
+    return rv.filter(function(v){return v.t===tmax(A,x);})[0].s;
   }
+  function tmax(A,x){                    // the largest r.v.t among the replies
+    let m=-1; x.R.forEach(function(q){ if(A[q].t>m) m=A[q].t; }); return m;
+  }
+  /* figure 3 runs the same transactions through the same f */
+  window.PAXOS={TX:TX, PV:PV, N:N, M:M, fresh:fresh, f:f, tmax:tmax};
   function majority(A){                  // a majority holding the same pair
     for(let i=0;i<N;i++){
       if(A[i].s===null) continue;
@@ -678,15 +723,18 @@ algorithm is straightforward - see
           arrow(g, AX[q], AY-46, px, PY+34, c, false, null);
           tag(g, AX[q], AY-64, '('+(v.s? NAME[v.s] : 'null')+', '+v.t+')',
               c, 12); });
+        const tm=tmax(before,x);
         tag(g, 620, 390, (x.R.length<M)
           ? 'only '+x.R.length+' replies, fewer than the majority of '+M
-          : 'f returns '+NAME[r.d], (x.R.length<M)? C.red : C[r.d], 15);
+          : (tm>0 ? 't_max = '+tm+', so f returns '+NAME[r.d]
+                  : 'every reply is null, so f returns p'+x.p+'.VALUE = '+NAME[r.d]),
+          (x.R.length<M)? C.red : C[r.d], 15);
       }
       if(ph===2){
         if(r.d===null) tag(g, 620, 390, 'nothing is written', C.red, 15);
         else x.W.forEach(function(q){
           arrow(g, px, PY+34, AX[q], AY-46, C[r.d], false, null);
-          tag(g, AX[q], AY-64, 'write ('+NAME[r.d]+', '+x.t+')',
+          tag(g, AX[q], AY-84, 'write ('+NAME[r.d]+', '+x.t+')',
               C[r.d], 12); });
       }
     }
@@ -741,12 +789,9 @@ algorithm is straightforward - see
   const N=5, M=3, NL=2;
   const AX=[180,395,610,825,1040], AY=262, PX=[300,620,940], PY=72;
   const LX=[420,820], LY=440;
-  const PV=['green','blue','red'];
-  const TX=[{t:10, p:0, R:[0],       W:[]},
-            {t:15, p:1, R:[1,2],     W:[]},
-            {t:22, p:0, R:[2,3,4],   W:[0]},
-            {t:30, p:1, R:[0,1,2],   W:[1,2,3]},
-            {t:41, p:2, R:[0,3,4],   W:[0,1,2]}];
+  /* the scenario and f come from figure 2, so the two cannot drift apart */
+  const PV=window.PAXOS.PV, TX=window.PAXOS.TX;
+  const fresh=window.PAXOS.fresh, f=window.PAXOS.f, tmax=window.PAXOS.tmax;
   // the messages that never arrive: transaction index, acceptor, learner
   const LOST=[[2,0,1],[3,3,1]];
   function lost(i,q,l){
@@ -754,16 +799,6 @@ algorithm is straightforward - see
   }
   const LAST=TX.length*3;
   let st=0;
-  function fresh(){
-    const A=[]; for(let i=0;i<N;i++) A.push({s:null, t:0}); return A;
-  }
-  function f(A,x){
-    const rv=x.R.map(function(q){return A[q];});
-    if(rv.length<M) return null;
-    if(rv.every(function(v){return v.s===null;})) return PV[x.p];
-    let tmax=-1; rv.forEach(function(v){ if(v.t>tmax) tmax=v.t; });
-    return rv.filter(function(v){return v.t===tmax;})[0].s;
-  }
   // a learner learns a value when it has heard the same pair from a majority
   function learn(heard){
     const seen={};
@@ -874,16 +909,19 @@ algorithm is straightforward - see
           arrow(g, AX[q], AY-46, px, PY+34, c, false);
           tag(g, AX[q], AY-64, '('+(v.s? NAME[v.s] : 'null')+', '+v.t+')',
               c, 12); });
+        const tm=tmax(before,x);
         tag(g, 620, 542, (x.R.length<M)
           ? 'only '+x.R.length+' replies, fewer than the majority of '+M
-          : 'f returns '+NAME[r.d], (x.R.length<M)? C.red : C[r.d], 15);
+          : (tm>0 ? 't_max = '+tm+', so f returns '+NAME[r.d]
+                  : 'every reply is null, so f returns p'+x.p+'.VALUE = '+NAME[r.d]),
+          (x.R.length<M)? C.red : C[r.d], 15);
       }
       if(ph===2){
         if(r.d===null) tag(g, 620, 542, 'nothing is written', C.red, 15);
         else {
           x.W.forEach(function(q){
             arrow(g, px, PY+34, AX[q], AY-46, C[r.d], false);
-            tag(g, AX[q], AY-64, 'write ('+NAME[r.d]+', '+x.t+')',
+            tag(g, AX[q], AY-84, 'write ('+NAME[r.d]+', '+x.t+')',
                 C[r.d], 12); });
           // and every acceptor that changed tells the learners
           r.msgs.forEach(function(m){
@@ -926,11 +964,19 @@ algorithm is straightforward - see
           : '');
     $('what').innerHTML=what;
     $('lrn').innerHTML=[0,1].map(function(l){
-      const g0=r.got[l], n=Object.keys(r.heard[l]).length;
+      const g0=r.got[l], cnt={};
+      let best=null, n=0;
+      for(const q in r.heard[l]){
+        const h=r.heard[l][q], k=h.s+'@'+h.t;
+        cnt[k]=(cnt[k]||0)+1;
+        if(cnt[k]>n){ n=cnt[k]; best=h; }
+      }
       return 'L'+l+': '+(g0
         ? '<span class="ok">'+NAME[g0.s]+'</span>'
         : '<span class="none">null</span>')+
-        ' <span class="none">(heard from '+n+')</span>';
+        ' <span class="none">('+(best
+          ? 'heard ('+NAME[best.s]+', '+best.t+') from '+n
+          : 'heard nothing')+')</span>';
     }).join(' &middot; ');
   }
   $('step').onclick=function(){ if(st<LAST) st++; draw(); };

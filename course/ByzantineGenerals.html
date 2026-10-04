@@ -143,6 +143,30 @@
     letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
     margin-bottom:9px}
   .aside p:last-child{margin-bottom:0}
+  /* the comparison with Paxos */
+  table.cmp{width:100%; border-collapse:collapse; margin:16px 0 22px;
+    background:#fff; font-size:15px; color:var(--body)}
+  table.cmp th, table.cmp td{border:1px solid var(--line); padding:8px 12px;
+    text-align:left; vertical-align:top}
+  table.cmp th{background:#f6f4ee; color:var(--ink); font-weight:700}
+  /* figure 8: the sandbox */
+  .sbx-row{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center;
+    padding:8px 0; border-top:1px solid var(--line); font-size:14.5px}
+  .sbx-row:first-child{border-top:0}
+  .sbx-row .k{width:230px; flex:none; font:600 11.5px var(--sans);
+    letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+  .sbx-row label{white-space:nowrap; cursor:pointer}
+  .sbx-row select{font:14px var(--sans)}
+  .sbx-off{opacity:.4}
+  table.sbx{border-collapse:collapse; margin:14px 0 6px; background:#fff;
+    font:14px var(--mono)}
+  table.sbx th, table.sbx td{border:1px solid var(--line); padding:6px 12px;
+    text-align:center}
+  table.sbx th{background:#f6f4ee; font:600 12px var(--sans); color:var(--muted)}
+  table.sbx td.one{background:#e8f0fd; color:#1a5fd0; font-weight:700}
+  table.sbx td.acc{box-shadow:inset 0 0 0 2px #1a5fd0}
+  table.sbx td .m{display:block; font-size:11px; color:var(--muted); font-weight:400}
+  .sbx-verdict{font-size:15.5px; margin:8px 0 2px}
 </style>
 </head>
 <body>
@@ -152,80 +176,90 @@
     <h1>Byzantine Generals Consensus</h1>
     <h2>Consensus when agents may lie</h2>
     <p>
-      The Byzantine generals consensus algorithm is a consensus algorithm
+      The Byzantine generals algorithm solves the consensus problem
       specified by the requirements of validity, agreement and termination
-      see lecture_07.html
-      The Byzantine algorithm allows correct agents to reach a consensus
-      even if faulty agents halt, lie and forward modified messages.
-      The FLP theorem says consensus cannot be reached in this case.
-      Byzantine consensus makes an assumption of synchrony for which FLP 
-      does not apply. The algorithm was created by Shostak et al.
+      (see <a href="lecture_06.html">lecture 6</a>).
+      The algorithm, created by Pease et al., allows correct 
+      (i.e., non-faulty) agents to reach a consensus even if faulty agents 
+      halt, lie, and send different messages to different agents.
+      The FLP theorem says that in an <b>asynchronous</b> system no
+      algorithm can guarantee consensus if even one agent may halt.
+      Byzantine consensus assumes that agents operate
+      <b>synchronously</b>, and the FLP theorem does not apply under this
+      assumption. 
     </p>
     
     <p class="key">
       <span class="lead-in">The assumption of synchronous rounds</span>
       Byzantine consensus algorithms are <b>synchronous</b>. The algorithm
       proceeds in <b>rounds</b>: every message sent by a correct agent
-      to a correct agent in one round is delivered before the next
-      round begins.
+      to a correct agent in a round is received when the next round begins.
     </p>
   </header>
 
   
 
   <p>
-    How a round is implemented is left unspecified. If message delays
-    are under <code>t</code> seconds and clocks are synchronized, round
-    <code>n</code> can be implemented by having every agent send its
-    messages at time <code>n&middot;T</code> for some <code>T &gt; t</code>,
-    and treating every message that arrives in
-    <code>[n&middot;T, (n+1)&middot;T)</code> as belonging to round
-    <code>n</code>. 
+    The implementation of rounds is unspecified. There are many ways to 
+    implement rounds. A central clock can send signals to agents to start
+    rounds. Or each agent starts a round when its local clock
+    reaches a multiple of T, where T is larger than the maximum message
+    delay plus the maximum difference between local clocks.
   </p>
 
-<h2>Specification</h2>
-<p>
-The consensus problem is to come to consensus on a value.
-We will assume that the value is a boolean or a single bit.
-To get consensus on a 64-bit value, the brute-force way is 
-to run the algorithm 64 times, once for each bit; however, 
-there are more efficient ways, which we won't discuss here.
-</p>
-
-<p>
-  Some computer scientists have a (wierd?) sense of humor.
-  In Leslie Lamport's story, Paxos is a Greek island where voting 
-  requirements gave rise to a consensus algorithm.
-  Later we will look at the Dining Philosophers Problem and the
-  Drinking Philosophers Problem which have nothing to do with philosophers,
-  dining or drinking. The Byzantine Generals Problem 
-  is a story about an army with a general and officers where the
-  general and some officers may be traitors. The problem is to
-  develop an algorithm by which loyal officers can come to a consensus 
-  on whether to attack or retreat, despite the traitors.
-</p>
-
   <p>
-    There is one <b>source</b> and <code>N</code> <b>agents</b>.
-    The source gives a command, which is either <b>retreat</b> (0) or
-    <b>attack</b> (1).
+    The consensus problem is to come to consensus on a value.
+    We will assume that the value is a single bit.
+    To get consensus on a 64-bit value, the brute-force way is 
+    to run the algorithm 64 times; however, 
+    there are more efficient ways, which you can determine for
+    yourselves.
   </p>
 
-  <ul style="list-style:none; padding:0; margin:18px 0 10px; color:var(--body)">
-    <li style="margin:0 0 8px">A <b style="color:var(--ink)">correct</b>
-      source gives the same command to every agent.</li>
-    <li style="margin:0 0 8px">A <b style="color:var(--ink)">faulty</b>
-      source may give different commands to different agents, and
-      may give no command at all to some of them.</li>
-    <li style="margin:0 0 8px">Correct agents obey the protocol.
-      Faulty agents may do anything.</li>
-  </ul>
+  <div class="aside">
+    <span class="lead-in">Why this matters</span>
+    <p>
+      Faulty agents need not be malicious. A sensor with a failing chip
+      can report different readings to different receivers; an agent in
+      an office can be hacked; a buggy agent can give different answers to
+      different peers. In each case an agent tells different listeners
+      different things &mdash; exactly the fault this lecture tolerates.
+      Blockchains face the same problem with participants nobody trusts.
+    </p>
+  </div>
+
+<h2>The problem</h2>
+<p>
+   The Byzantine Generals Problem 
+  is faced by an army in which the general and some lieutenants
+  may be traitors. The problem is to
+  develop an algorithm by which loyal lieutenants come to a consensus 
+  on whether to attack or retreat.
+    We use the term <b>source</b> for the general and <b>agent</b>
+    for a lieutenant.
+  We use the term <b>faulty</b> for a source or agent that does not obey
+  the specified protocol, and <b>correct</b> for one that does.
+  </p>
 
   <p>
+    A <b>correct</b> source sends the same command to every agent.
+    The command is either <b>retreat</b> (0) or <b>attack</b> (1).
+    A <b>faulty</b> source may send different commands to different
+    agents, and may send no command at all to some agents.
+  </p>
+
+  <p class="key">
+    <span class="lead-in">The fault bound t</span>
     You are given <code>t</code>, an upper bound on the number of
-    faulty agents &mdash; and the source is one of the agents it
-    counts. Nobody knows <i>which</i> of them is faulty
-    which, if any, agents are faulty. Your task
+    faulty participants, <b>the source included</b>.
+  </p>
+
+  <p>
+    For example, if <code>t = 1</code>, then either the source is faulty
+    and all the agents are correct, or the source is correct and at most
+    one of the agents is faulty.
+    We are not told whether the source is faulty, nor
+    <i>which</i>, if any, of the agents are faulty. The problem
     is to design a consensus protocol that has the following specification.
   </p>
 
@@ -233,23 +267,22 @@ there are more efficient ways, which we won't discuss here.
 
 <h2>The specification</h2>
 <p>
-  For an agent <b>x</b>,  let <b>x.v</b> be a local value of <b>x</b>.
+  For an agent <b>x</b>, let <b>x.v</b> be the local value of <b>x</b>:
+  its decision when the algorithm terminates.
   Let <b>S</b> be the source, and <b>S.v</b> be the value of the source.
 </p>
 
 <ol class="spec">
-  <li  class="req-c"><span class="rtag">Termination</span>
-    <b>The algorithm terminates</b></li>
+  <li class="req-c"><span class="rtag">Termination</span>
+    <b>The algorithm terminates.</b></li>
   <li class="req-c"><span class="rtag">Agreement</span>
     <b>Correct agents come to a consensus.</b>
     When the algorithm terminates, 
-    all correct agents have come to a consensus to attack or 
-    all correct agents have come to a consensus to retreat.
-    retreat.
+    all correct agents have come to a consensus.
   <br>
-  for all correct agents <b>x</b> and <b>y</b>, <b>x.v = y.v</b>.
+  For all correct agents <b>x</b> and <b>y</b>, <b>x.v = y.v</b>.
   </li>
-  <li class="req-v"><span class="rtag">Validity</span>
+  <li class="req-c"><span class="rtag">Validity</span>
     <b>Correct agents obey a correct source.</b>
     <br>
     If the source is correct, then for all correct agents <b>x</b>, 
@@ -259,21 +292,27 @@ there are more efficient ways, which we won't discuss here.
 
 <p>
   The specification does <i>not</i> require that faulty
-  agents be identified. If the specification does not have the
-  validity requirement, then the solution is trivial: 
+  agents be identified. Without the
+  validity requirement, the solution is trivial: 
   all correct agents retreat. 
-  If the specification does not have the
-  agreement requirement, then the solution is trivial: 
+  Without the agreement requirement, the solution is trivial: 
   obey the source.
-  The problem is non-trivial because both requirements must be
-  satisfied.
+  The problem is non-trivial because <b>both</b> requirements must hold
+  at once.
 </p>
 
 
 
 
+  <p>
+    <b>Example 1.</b> Suppose the agents decide by majority vote, and
+    the source and one of five agents are faulty. The source sends attack
+    to two of the correct agents and retreat to the other two, so the
+    faulty agent can swing the decision of each correct agent either way.
+  </p>
+
   <figure class="fig wideout">
-    <svg id="ex1_g" viewBox="0 0 1240 620" role="img"
+    <svg id="ex1_g" viewBox="0 -30 1240 650" role="img"
          aria-label="Example 1: a faulty source sends attack to A, B and C and retreat to D and E; the agents exchange what they heard, with the faulty A telling B and C attack and D and E retreat; B and C then count three attacks to two retreats while D and E count two attacks to three retreats"></svg>
 
     <div class="ctrls">
@@ -302,20 +341,11 @@ there are more efficient ways, which we won't discuss here.
   </figure>
 
   <p>
-    <b>Example</b>
-    Let's look at the case where the source and one of the five 
-    agents is faulty. The source sends attack messages to
-    two of the correct lieutenans, and retreat messages to the other 
-    two correct agents. The faulty agent is an adversary
-    that sends messages to the correct agents to break consensus. 
+    <b>Example 2.</b> Majority voting fails however many agents there
+    are. Consider a faulty source, one faulty agent, and 999,999 correct
+    agents. The source sends attack to 499,999 of them and retreat to the
+    other 500,000.
   </p>
-
-  <p>
-    Suppose the agents decide to take a majority vote. Two vote
-    attack and two vote retreat. The faulty agent can swing
-    the decision made by each of the correct agents.
-  </p>
-
 
   <figure class="fig wideout">
     <svg id="big_g" viewBox="0 0 1240 672" role="img"
@@ -339,21 +369,14 @@ there are more efficient ways, which we won't discuss here.
       attack and the second group retreat. Counting its own order
       together with the 999,999 reports, each agent of the first
       group holds <b>500,000</b> attacks and 500,000 retreats, and each
-      of the second holds <b>499,999</b> attacks and 500,001. One
-      faulty agent moved one vote, and half a million agents march while
-      half a million stay.
+      of the second holds <b>499,999</b> attacks and 500,001. A tie
+      goes to attack. One faulty agent moved one vote, and half a
+      million agents march while half a million stay.
     </figcaption>
   </figure>
 
-  <p>
-    Now consider the case of a faulty source and a million correct agents. 
-    The faulty source can send attack messages to 500,000 correct agents 
-    and 499,999 retreate messages to the other correct agents. The faulty 
-    agent can swing a majority vote either way.
-  </p>
 
-
-<h2>Encrypted message</h2>
+<h2>Encrypted messages</h2>
 
   <p>
     If messages are encrypted, then a faulty agent can make copies of the message
@@ -365,13 +388,26 @@ there are more efficient ways, which we won't discuss here.
     and the problem with unencrypted messages is called the "Oral Message" problem.
   </p>
 
+  <div class="aside">
+    <span class="lead-in">What a signature guarantees</span>
+    <p>
+      A digital signature is computed from the message and a secret key
+      that only the signer holds; anyone can check it with the
+      signer&rsquo;s public key. It guarantees two things: <b>the signer
+      produced it</b>, and <b>the message has not changed since</b>. It
+      does not hide the message &mdash; that is encryption, a different
+      tool. The algorithm needs signatures, not secrecy; this lecture
+      says &ldquo;encrypted&rdquo; as shorthand for &ldquo;signed&rdquo;.
+    </p>
+  </div>
+
   <ol class="spec">
     <li><span class="rtag" style="background:var(--ink)">Written</span>
       <b>Written, or encrypted, messages.</b>
       A letter containing message <code>M</code> signed by agent
       <code>X</code> and received by agent <code>Y</code> can be
-      forwarded by <code>Y</code>, but <code>Y</code> can neither change
-      the message nor forge <code>X</code>&rsquo;s signature.</li>
+      forwarded by <code>Y</code>, but <code>Y</code> cannot change
+      the message or forge <code>X</code>&rsquo;s signature.</li>
     <li><span class="rtag" style="background:var(--orange)">Oral</span>
       <b>Oral, or unencrypted, messages.</b>
       An agent can forge signatures and corrupt messages.</li>
@@ -393,7 +429,7 @@ there are more efficient ways, which we won't discuss here.
       <b>1.</b> A signed <i>attack</i> message reaches <i>A</i> from the
       source. <b>2.</b> <i>A</i> forwards it to <i>B</i> &mdash; the
       same message under the same signature, which is the one thing a
-      faulty agent can do with a sealed letter. <b>3.</b> <i>A</i> sends
+      faulty agent can do with a signed letter. <b>3.</b> <i>A</i> sends
       <i>C</i> nothing at all, and <i>C</i> cannot tell that from a
       source who never wrote. <b>4.</b> <i>A</i> tries to send <i>D</i>
       a <i>retreat</i> in the source&rsquo;s name. With written,
@@ -404,72 +440,71 @@ there are more efficient ways, which we won't discuss here.
 
   <p>
     The rest of this document considers the <b>encrypted</b> message case. 
-    Oral messages are discussed elsewhere. Note that for oral messages, 
-    when there can be up to t disloyal officers (general or lieutenants), 
-    the number of loyal officers must exceed 2t for consensus to be possible. 
-    For written messages, there is no bound on the number of correct officers.
+    Oral messages are not covered in this lecture. Note that for oral
+    messages, when there can be up to t faulty agents (source included),
+    the number of correct agents must exceed 2t for consensus to be possible.
+    For written messages there is no such bound.
   </p>
 
 <h2>The algorithm with encrypted messages</h2>
   <p>
-    We use the term <b>source</b> for the general and <b>agent</b> 
-    for lieutenant, and we use 1 for attack and 0 for retreat.
-  </p>
-  <p>
     Messages are sent in <b>rounds</b>: a message sent in round
     <code>k</code> is received at the start of round <code>k+1</code>.
     An agent that sends a message can <b>sign</b> it with its own
-    signature, and any agent can read a message and verify a signature.
+    signature, and an agent that reads the message can verify the signature.
   </p>
 
   <p class="key">
     <span class="lead-in">One simplification, used throughout</span>
-    In a round an agent sends 0, 1, or nothing at all. Treat a
+    In a round an agent sends 0, 1, or nothing. Treat a
     0&#8209;message as <b>equivalent to no message</b>. Then, every message
     in the algorithm is a 1&#8209;message, and the
-    absence of a message stands for either a 0 or a silence.
+    absence of a message stands for either a 0 or no message.
   </p>
 
   <p>
-    Write <b>S</b>&#8209;msg for a message signed by the source, and
-    <b>x</b>&#8209;msg for one signed by the agent whose id is
-    <code>x</code>.
+    Let <b>S.sign</b> be the signature of the source, and <b>x.sign</b>
+    the signature of agent <b>x</b>. A message is a set of signatures:
+    the source&rsquo;s message is <b>{S.sign}</b>.
   </p>
 
   <h3>A first attempt to gain intuition</h3>
 
   <p>
-    Round 0: the source sends <b>S</b>&#8209;msg to some, all, or none
-    of the agents. Then every agent runs <code>K</code> rounds, and
-    decides 1 if an <b>S</b>&#8209;msg ever reached it:
+    Round 0: the source sends <b>{S.sign}</b> to some, all, or none
+    of the agents. In this 
+    algorithm, if a correct agent <b>x</b> receives <b>{S.sign}</b> in
+    round k, then it sets <code>x.v = 1</code> and broadcasts
+    <b>{S.sign}</b> to all agents in round k; these messages are
+    received at the start of round k+1. 
   </p>
 
-<pre class="code"><span class="cm">K determined later. # code for agent x. </span>
+<pre class="code"><span class="cm"># code for agent x; K is determined later</span>
 x.v = <b>0</b>
-<span class="kw">for</span> k <span class="kw">in</span> [1, K]:
-    <span class="kw">if</span> x received an <b>S</b>-msg in round k-1:
+<span class="kw">for</span> k <span class="kw">in</span> 1..K:
+    <span class="kw">if</span> x receives {<b>S</b>.sign} in round k:
         x.v = <b>1</b>
-        <span class="kw">send</span> a copy of the <b>S</b>-msg to every agent</pre>
+        <span class="kw">broadcast</span> {<b>S</b>.sign}</pre>
 
   <h3>What is K?</h3>
 
   <p>
-    <b>Can K be 1?</b> If a single correct agent <code>x</code> gets an
-    <b>S</b>&#8209;msg in round 0, then every correct agent <code>y</code>
-    receives a copy of it in round 1 and sets <code>y.v = 1</code>. So
-    one round is enough &mdash; <i>when the agent that received it is
-    correct</i>.
+    <b>Can K be 1?</b> If the source is correct, it sends
+    <b>{S.sign}</b> to every agent in round 0, and every correct agent
+    <code>y</code> receives it at the start of round 1 and sets
+    <code>y.v = 1</code>. But the source may be faulty.
   </p>
 
   <div class="case">
     <p><span class="tag">The counterexample</span>
-      a faulty source and a faulty agent <code>x</code>.</p>
+      a faulty source, and correct agents <code>y</code> and <code>z</code>.</p>
     <ol style="margin:0 0 12px; padding-left:24px; color:var(--body)">
-      <li><b>Round 0.</b> The source sends an <b>S</b>&#8209;msg to
-        <code>x</code>, and nothing to any correct agent.</li>
-      <li><b>Round 1.</b> <code>x</code> forwards a copy of the 
-        <b>S</b>&#8209;msg to a correct agent
-        <code>y</code>, and not to a correct agent <code>z</code>.</li>
+      <li><b>Round 0.</b> The source sends <b>{S.sign}</b> to
+        <code>y</code>, and nothing to <code>z</code>.</li>
+      <li><b>Round 1.</b> <code>y</code> receives it, sets
+        <code>y.v = 1</code> and broadcasts it; <code>z</code> receives
+        nothing. The algorithm stops before <code>y</code>&rsquo;s
+        broadcast reaches <code>z</code>.</li>
     </ol>
     <p>
       At the end of round 1, <code>y.v = 1</code> and
@@ -480,9 +515,12 @@ x.v = <b>0</b>
 
   <p class="key">
     <span class="lead-in">And no K works</span>
-    The same argument defeats every <code>K</code>: the faulty agent
-    stays silent until round <code>K&minus;1</code> and then sends the
-    <b>S</b>&#8209;msg to some correct agents and not others.
+    A faulty source sends <b>{S.sign}</b> only to a faulty agent
+    <code>x</code>. <code>x</code> stays silent until round
+    <code>K&minus;1</code> and then sends it to <code>y</code> and not to
+    <code>z</code>. <code>y</code> sets <code>y.v = 1</code> in round
+    <code>K</code>, but its broadcast arrives in round <code>K+1</code>,
+    after the algorithm stops.
   </p>
 
   <p>
@@ -491,248 +529,329 @@ x.v = <b>0</b>
   </p>
 
 
-  <h3>Round 0</h3>
-
+  <h3>The algorithm</h3>
   <p>
-    The source signs one message &mdash; attack or retreat &mdash; and
-    sends it to each agent. Then the source plays no further part.
-    An agent that receives no message from the source in round 0
-    behaves exactly as though it had received <b>retreat</b>.
+  In the algorithm, every message is a set of signatures that
+  includes <b>S.sign</b>.
+  In the code, <code>m + x.sign = m UNION {x.sign}</code>.
   </p>
 
+  <p class="key">
+    <span class="lead-in">The rule</span>
+    If a correct agent <b>x</b> receives, in round k, a message <b>m</b>
+    that contains <b>S.sign</b> and has <b>at least k signatures</b>,
+    then <b>x</b> sets <code>x.v = 1</code> and broadcasts
+    <b>m + x.sign</b>.
+  </p>
+
+  <pre class="code"><span class="cm"># code for the source S, in round 0</span>
+<span class="kw">if</span> S.v == <b>1</b>:
+    <span class="kw">send</span> {<b>S</b>.sign} to every agent
+
+<span class="cm"># code for agent x; K is determined later</span>
+x.v = <b>0</b>
+<span class="kw">for</span> k <span class="kw">in</span> 1..K:
+    <span class="kw">if</span> message <b>m</b> is received where <b>S</b>.sign in m <span class="kw">and</span> len(m) >= k:
+        x.v = <b>1</b>
+        <span class="kw">broadcast</span> m + x.sign</pre>
+  
+
   <figure class="fig wideout">
-    <svg id="r0_g" viewBox="0 0 1240 392" role="img"
-         aria-label="Round 0: the source signs a letter to each of four agents, and the agent who receives nothing treats the silence as a retreat order"></svg>
+    <svg id="r0_g" viewBox="0 0 1240 440" role="img"
+         aria-label="A faulty source sends its signature to the faulty agent A only, in round 0. Nothing is sent in round 1. In round 2, A sends the source's signature and its own to B and nothing to C. In round 3, B receives a message with 2 signatures, fewer than 3, so B does not broadcast"></svg>
 
     <div class="ctrls">
-      <button id="r0_play" class="primary">Round 0</button>
+      <button id="r0_play" class="primary">Play</button>
+      <button id="r0_step">Step</button>
       <button id="r0_reset">Reset</button>
       <span class="status" id="r0_status"></span>
     </div>
 
     <figcaption>
-      <b>Figure 4. Round 0.</b>
-      The source signs and sends. <i>D</i> gets nothing &mdash; the
-      source is faulty, or the letter was never written &mdash; and
-      <i>D</i> treats the silence as an order to retreat. Silence is not
-      ambiguous here: the round has ended, so the letter is not coming.
+      <b>Figure 4.</b>
+      The source and <i>A</i> are faulty; <i>B</i> and <i>C</i> are
+      correct. <b>Round 0:</b> the source sends {S.sign} to <i>A</i> and
+      nothing to <i>B</i> or <i>C</i>. <b>Round 1:</b> no messages are
+      sent; <i>A</i> holds the source&rsquo;s message and waits.
+      <b>Round 2:</b> <i>A</i> adds its signature and sends
+      {S.sign, A.sign} to <i>B</i>, and nothing to <i>C</i>. <i>B</i>
+      and <i>C</i> have nothing to send. <b>Round 3:</b> <i>B</i>
+      receives the message, but <code>len(m) = 2 &lt; 3</code>, so
+      <i>B</i> does not set <code>B.v = 1</code> and does not broadcast.
+      <i>B</i> and <i>C</i> still agree.
     </figcaption>
   </figure>
 
-  <h3>Round j, for j &gt; 0</h3>
-
-  <p class="key">
-    <span class="lead-in">The rule</span>
-    An agent <code>L</code> that has not committed to attack on an
-    earlier round, and that holds
-    <b>a signed attack message from the source</b> and
-    <b>signed attack messages from at least j&minus;1 distinct
-    agents other than L itself</b>,
-    commits to attack on round <code>j</code>. It then sends every
-    agent copies of that evidence &mdash; the source&rsquo;s letter
-    and the j&minus;1 agents&rsquo; letters &mdash; together with an
-    attack message signed by <code>L</code> itself.
-  </p>
-
-  <p>
-    On round 1 that reduces to: a correct agent commits to attack if
-    it received an attack message from the source, because
-    j&minus;1 = 0 letters from other agents are required.
-  </p>
-
   <figure class="fig wideout">
-    <svg id="rj_g" viewBox="0 0 1240 430" role="img"
-         aria-label="Agent C on round 3 holds signed attack letters from the source and from agents A and B, commits, and broadcasts all three letters plus its own"></svg>
+    <svg id="rj_g" viewBox="0 0 1240 440" role="img"
+         aria-label="A faulty source sends its signature to the faulty agent A only, in round 0. In round 1, A sends the source's signature and its own to B and nothing to C. In round 2, B receives a message with 2 signatures, at least 2, so B sets B.v to 1 and broadcasts the message with its own signature added. In round 3, C receives a message with 3 signatures, at least 3, so C sets C.v to 1"></svg>
 
     <div class="ctrls">
-      <button id="rj_step" class="primary">Step</button>
+      <button id="rj_play" class="primary">Play</button>
+      <button id="rj_step">Step</button>
       <button id="rj_reset">Reset</button>
       <span class="status" id="rj_status"></span>
     </div>
 
     <figcaption>
-      <b>Figure 5. Agent C on round 3.</b>
-      It is the start of round <code>j = 3</code>. <i>C</i> holds a
-      signed letter from the source and <code>j&minus;1 = 2</code>
-      letters from distinct agents, <i>A</i> and <i>B</i>. That is
-      the rule satisfied, so <i>C</i> commits to attack and broadcasts
-      the evidence that convinced it, with its own signature added: four
-      letters, from the source and from <i>A</i>, <i>B</i> and
-      <i>C</i>. Retreat messages are treated exactly like absent ones.
+      <b>Figure 5.</b>
+      The same agents as figure 4, but <i>A</i> sends a round earlier.
+      <b>Round 0:</b> the source sends {S.sign} to <i>A</i> and nothing
+      to <i>B</i> or <i>C</i>. <b>Round 1:</b> <i>A</i> adds its
+      signature and sends {S.sign, A.sign} to <i>B</i>, and nothing to
+      <i>C</i>. <b>Round 2:</b> <i>B</i> receives the message;
+      <code>len(m) = 2 &ge; 2</code>, so <i>B</i> sets
+      <code>B.v = 1</code> and broadcasts {S.sign, A.sign, B.sign}.
+      <b>Round 3:</b> <i>C</i> receives <i>B</i>&rsquo;s message;
+      <code>len(m) = 3 &ge; 3</code>, so <i>C</i> sets
+      <code>C.v = 1</code>. <i>B</i> and <i>C</i> agree.
     </figcaption>
   </figure>
 
-<h2>Three observations</h2>
+<h2>Observations</h2>
 
   <ol class="obs">
-    <li><b>If the source is correct and sends attack messages, then every
-      correct agent commits to attack in round 1.</b>
+    <li><b>If the source is correct and sends S.sign, then every
+      correct agent x sets x.v = 1 by the end of round 1.</b>
       <span class="why"><em>Why</em>
-      On round 1 the rule asks for the source&rsquo;s letter and
-      nothing else, and a correct source sent that letter to
-      everyone.</span></li>
+      At the start of round 1, all correct agents <b>x</b> have received {S.sign}, 
+      and so len(m) >= 1.</span></li>
 
-    <li><b>If the source is correct and never sends an attack message,
-      then no correct agent ever commits to attack, in any
-      round.</b>
+    <li><b>If the source is correct and does not send S.sign, then
+      x.v = 0 in all rounds for all correct agents x.</b>
       <span class="why"><em>Why</em>
-      An agent commits to attack only if it holds a signed attack
-      message from the source. A correct source signed none, and under
-      the written model nobody can forge the source&rsquo;s
-      signature.</span></li>
-
-    <li><b>If a correct agent commits to attack on round j, then
-      every correct agent commits to attack by round j+1.</b>
+      No message contains S.sign: the source signed none, and no one
+      can forge it.</span></li>
+    <li><b>If a correct agent x changes the 
+      value of x.v from 0 to 1 in round j, where
+      j &lt; K, then every correct agent y sets y.v = 1 by
+      the end of round j+1.</b>
       <span class="why"><em>Why</em>
-      <code>L</code> committed on round <code>j</code>, so it broadcast
-      the source&rsquo;s letter, the letters of j&minus;1 other
-      agents, and its own. Every agent therefore starts round
-      <code>j+1</code> holding the source&rsquo;s letter and attack
-      messages signed by <code>j</code> distinct agents &mdash;
-      which is exactly what the rule asks for on round
-      <code>j+1</code>.</span></li>
+        An invariant of the algorithm is that for all correct agents
+        <b>x</b>, a message contains x.sign only if <b>x.v</b> = 1.
+      In round j, <b>x</b> received a message m that contains S.sign and
+      has len(m) &gt;= j, and <b>x</b> broadcast m + x.sign. Since m does
+      not contain x.sign, len(m + x.sign) &gt;= j+1. So at the start of
+      round j+1, all correct agents <b>y</b> have received a message that
+      contains S.sign and has len &gt;= j+1.</span></li>
   </ol>
 
   <figure class="fig wideout">
     <svg id="csc_g" viewBox="0 0 1240 400" role="img"
-         aria-label="One correct agent commits on round j and broadcasts its evidence, and every other correct agent therefore commits on round j plus one"></svg>
+         aria-label="Round 2: A, B and C, all correct, have value 0. Round 3: a message with the signatures of the source and faulty agents u and v reaches B; it has 3 signatures, at least 3, so B sets B.v to 1 and sends the message with its own signature added to A and C. Round 4: the message reaches A and C; it has 4 signatures, at least 4, so A and C set their values to 1"></svg>
 
     <div class="ctrls">
       <button id="csc_play" class="primary">Play</button>
+      <button id="csc_step">Step</button>
       <button id="csc_reset">Reset</button>
       <span class="status" id="csc_status"></span>
     </div>
 
     <figcaption>
-      <b>Figure 6. Observation 3: one commit pulls the rest in.</b>
-      <i>B</i> commits on round <code>j&nbsp;=&nbsp;3</code> and
-      broadcasts three letters plus its own. Count what <i>A</i> holds at
-      the start of round 4: the source, and three distinct agents.
-      The rule for round 4 asks for the source and
-      <code>4&minus;1&nbsp;=&nbsp;3</code>. So <i>A</i> commits, and so
-      does everyone else.
+      <b>Figure 6. Observation 3.</b>
+      <i>A</i>, <i>B</i> and <i>C</i> are correct; <i>u</i> and <i>v</i>
+      are faulty agents. <b>Round 2:</b> <code>A.v = B.v = C.v = 0</code>.
+      <b>Round 3:</b> <i>B</i> receives {S.sign, u.sign, v.sign};
+      <code>len(m) = 3 &ge; 3</code>, so <i>B</i> sets
+      <code>B.v = 1</code> and sends {S.sign, u.sign, v.sign, B.sign} to
+      <i>A</i> and <i>C</i>. <b>Round 4:</b> <i>A</i> and <i>C</i>
+      receive it; <code>len(m) = 4 &ge; 4</code>, so <i>A</i> and
+      <i>C</i> set <code>A.v = 1</code> and <code>C.v = 1</code>.
     </figcaption>
   </figure>
 
-<h2>So which round can the algorithm stop on?</h2>
+<h2>On which round should the algorithm stop?</h2>
 
+<div class="thm">
+  <span class="lead-in">Lemma</span>
+  <p>If <code>K = t+1</code>, the algorithm satisfies termination,
+  agreement and validity.</p>
+</div>
+
+<div class="proof">
+  <span class="lead-in">Proof</span>
   <p>
-    Observations 1 and 2 settle a correct source completely: round 1
-    decides it, and nothing later can change it. The question is what a
-    <b>faulty</b> source can drag out, and the examples are the way to
-    see it. In both of the runs below there are five agents,
-    <i>A</i>, <i>B</i>, <i>C</i> correct and <i>Y</i>, <i>Z</i> faulty,
-    and the source is faulty too.
+    Termination holds because the algorithm runs for <code>K</code>
+    rounds.
   </p>
+  <p>
+    <b>Case 1: the source is correct.</b>
+    Agreement and validity follow from observations 1 and 2.
+  </p>
+  <p>
+    <b>Case 2: the source is faulty, and there exist k &le; t and a correct
+    agent x such that x.v changes from 0 to 1 in round k.</b>
+    By observation 3, for all correct agents y, y.v = 1 by the end of
+    round k+1 &le; t+1. So the agreement requirement is satisfied.
+    Validity holds trivially because the source is faulty.
+  </p>
+  <p>
+    <b>Case 3: the source is faulty, and for all rounds k &le; t and all
+    correct agents x, x.v = 0.</b>
+    In rounds 1 to t, no correct agent signs a message, because a correct
+    agent x signs only after setting x.v = 1. The source is faulty, so at
+    most t&minus;1 agents are faulty. So every message received at the
+    start of round t+1 has at most t signatures: the source&rsquo;s and
+    those of at most t&minus;1 faulty agents. That is not enough for a
+    correct agent y to set y.v = 1 in round t+1. So, for all correct agents
+    y, y.v = 0 at the end of round t+1, and the agreement requirement is
+    satisfied. Figure 7 shows this case.
+  </p>
+</div>
+
+<p class="key">
+  <span class="lead-in">The answer</span>
+  The algorithm stops after round <b>t+1</b>. Each correct agent x
+  attacks if x.v = 1 and retreats if x.v = 0.
+</p>
 
   <figure class="fig wideout">
-    <svg id="run_g" viewBox="0 0 1240 470" role="img"
-         aria-label="Two runs of the algorithm with a faulty source and two faulty agents, round by round"></svg>
+    <svg id="run_g" viewBox="0 0 1240 440" role="img"
+         aria-label="The source and agents u and v are faulty, and A, B and C are correct. In round 2 all three correct agents have value 0. In round 3, u and v send the signatures of the source, u and v to A, B and C. In round 4, A, B and C receive a message with 3 signatures, fewer than 4, so their values stay 0"></svg>
 
     <div class="ctrls">
-      <button id="run_a" class="primary">Run 1: the faulty agents stay silent</button>
-      <button id="run_b">Run 2: the faulty agents speak on round 2</button>
-      <button id="run_step">Next round</button>
+      <button id="run_play" class="primary">Play</button>
+      <button id="run_step">Step</button>
       <button id="run_reset">Reset</button>
       <span class="status" id="run_status"></span>
     </div>
 
     <figcaption>
-      <b>Figure 7. Two runs, round by round.</b>
-      The source sends attack to <i>Y</i> and <i>Z</i> only. In
-      <b>run 1</b> the faulty agents say nothing until round 4 and then
-      produce their evidence: two agents&rsquo; signatures, where
-      round 4 needs three, so no correct agent ever commits and all
-      three retreat &mdash; in consensus. In <b>run 2</b> the faulty agents
-      hand <i>A</i> alone the source&rsquo;s letter and their own two
-      signatures on round 2. <i>A</i> commits on round 3, broadcasts, and
-      <i>B</i> and <i>C</i> commit on round 4. Consensus again, one round
-      later.
+      <b>Figure 7.</b>
+      The source, <i>u</i> and <i>v</i> are faulty, so <code>t = 3</code>
+      and the algorithm stops after round <code>t+1 = 4</code>.
+      <i>A</i>, <i>B</i> and <i>C</i> are correct. In round 0 the source
+      sends {S.sign} to <i>u</i> and <i>v</i> only.
+      <b>Round 2:</b> <code>A.v = B.v = C.v = 0</code>.
+      <b>Round 3:</b> <i>u</i> and <i>v</i> send
+      {S.sign, u.sign, v.sign} to <i>A</i>, <i>B</i> and <i>C</i>.
+      <b>Round 4:</b> <i>A</i>, <i>B</i> and <i>C</i> receive the
+      message, but <code>len(m) = 3 &lt; 4</code>, so their values stay 0.
     </figcaption>
   </figure>
 
+<h3>Why not stop after round t?</h3>
+
+  <div class="case">
+    <p><span class="tag">The counterexample</span>
+      <code>t = 3</code>: a faulty source and faulty agents <i>u</i> and
+      <i>v</i>; correct agents <i>A</i>, <i>B</i> and <i>C</i>; and
+      <code>K = t = 3</code>.</p>
+    <ol style="margin:0 0 12px; padding-left:24px; color:var(--body)">
+      <li><b>Round 0.</b> The source sends {S.sign} to <i>u</i> and
+        <i>v</i> only.</li>
+      <li><b>Round 2.</b> <i>u</i> and <i>v</i> send
+        {S.sign, u.sign, v.sign} to <i>A</i> only.</li>
+      <li><b>Round 3.</b> <i>A</i> receives a message with
+        <code>3 &ge; 3</code> signatures, sets <code>A.v = 1</code> and
+        broadcasts {S.sign, u.sign, v.sign, A.sign}. That broadcast
+        arrives in round 4, after the algorithm stops.</li>
+    </ol>
+    <p>
+      <code>A.v = 1</code> but <code>B.v = C.v = 0</code>:
+      <b>agreement is violated</b>. With <code>K = t+1 = 4</code>,
+      <i>B</i> and <i>C</i> receive <i>A</i>&rsquo;s message in round 4,
+      with <code>4 &ge; 4</code> signatures, and agree. Try it in
+      figure 8.
+    </p>
+  </div>
+
+<h2>Try it yourself</h2>
+
   <p>
-    Run 2 is the whole difficulty in miniature. A faulty source and
-    two faulty agents can delay the commit to round 3 and the
-    consensus to round 4. The question is whether they can keep doing it
-    for ever.
+    Choose which participants are faulty and what the faulty ones do,
+    then read off what each correct agent decides. The faulty participants
+    collude: they can sign for one another, so a faulty agent can send
+    {S.sign} together with every faulty agent&rsquo;s signature.
   </p>
 
-  <div class="thm">
-    <span class="lead-in">Theorem</span>
-    <p>
-      Let <code>t</code> be an upper bound on the number of faulty
-      agents, the source included. <b>If no correct agent commits
-      to attack on rounds 1, &hellip;, t, then no correct agent
-      commits to attack on any later round.</b>
-    </p>
-  </div>
-
-  <div class="proof">
-    <span class="lead-in">Proof</span>
-    <p>
-      By observations 1 and 2, a correct source settles the matter in
-      round 1, so only a <b>faulty source</b> is left to consider.
-      The source is then one of the at most <code>t</code> faulty
-      agents, so at most <code>t&minus;1</code> agents are
-      faulty.
-    </p>
-    <p>
-      Suppose no correct agent has committed to attack in rounds
-      1, &hellip;, <code>t</code>. Then on round <code>t+1</code> the
-      only attack messages a correct agent can be holding from other
-      agents are the ones signed by those at most
-      <code>t&minus;1</code> faulty agents &mdash; no correct agent has
-      sent one, because none has committed.
-    </p>
-    <p>
-      But the rule for round <code>t+1</code> asks for signatures from
-      <code>t</code> distinct agents. There are not that many
-      available. So no correct agent commits on round
-      <code>t+1</code>, and the same count rules out every round after
-      it.
-    </p>
-  </div>
-
-  <figure class="fig">
-    <svg id="thm_g" viewBox="0 0 840 390" role="img"
-         aria-label="On round t plus one the rule needs t agent signatures, but only t minus one faulty agents exist, so one slot stays empty"></svg>
-
-    <div class="ctrls">
-      <button id="thm_play" class="primary">Fill the evidence</button>
-      <button id="thm_reset">Reset</button>
-      <span class="status" id="thm_status"></span>
+  <figure class="fig wideout">
+    <div class="sbx-rows">
+      <div class="sbx-row"><span class="k">Faulty</span>
+        <label><input type="checkbox" id="sbx_fS" checked> source</label>
+        <label><input type="checkbox" id="sbx_fA"> A</label>
+        <label><input type="checkbox" id="sbx_fB"> B</label>
+        <label><input type="checkbox" id="sbx_fC"> C</label>
+        <label><input type="checkbox" id="sbx_fD" checked> D</label>
+        <label><input type="checkbox" id="sbx_fE" checked> E</label>
+      </div>
+      <div class="sbx-row" id="sbx_rowSv"><span class="k">A correct source sends</span>
+        <select id="sbx_Sv"><option value="1">attack: {S.sign} to everyone</option>
+          <option value="0">retreat: nothing</option></select>
+      </div>
+      <div class="sbx-row" id="sbx_rowR0"><span class="k">In round 0, the faulty source sends {S.sign} to</span>
+        <label><input type="checkbox" id="sbx_r0A"> A</label>
+        <label><input type="checkbox" id="sbx_r0B"> B</label>
+        <label><input type="checkbox" id="sbx_r0C"> C</label>
+        <label><input type="checkbox" id="sbx_r0D"> D</label>
+        <label><input type="checkbox" id="sbx_r0E"> E</label>
+      </div>
+      <div class="sbx-row" id="sbx_rowR1"><span class="k">The faulty agents send</span>
+        every faulty signature in round <select id="sbx_r"></select> to
+        <label><input type="checkbox" id="sbx_r1A" checked> A</label>
+        <label><input type="checkbox" id="sbx_r1B"> B</label>
+        <label><input type="checkbox" id="sbx_r1C"> C</label>
+        <label><input type="checkbox" id="sbx_r1D"> D</label>
+        <label><input type="checkbox" id="sbx_r1E"> E</label>
+      </div>
+      <div class="sbx-row"><span class="k">Number of rounds K</span>
+        <select id="sbx_K"><option value="t1">K = t+1</option>
+          <option value="t">K = t</option></select>
+        <span id="sbx_tK"></span>
+      </div>
     </div>
 
+    <div id="sbx_out"></div>
+
     <figcaption>
-      <b>Figure 8. The counting argument, with t = 4.</b>
-      The rule for round <code>t+1 = 5</code> asks a correct agent for
-      the source&rsquo;s letter and <code>t = 4</code> letters from
-      distinct agents. The faulty agents can supply only
-      <code>t&minus;1 = 3</code> of them, because the source used up one
-      of the <code>t</code> faulty agents, and no correct agent has
-      signed an attack message. One slot can never be filled.
+      <b>Figure 8. Try it yourself.</b>
+      Each row is a correct agent and each column a round; a cell shows
+      the agent&rsquo;s value at the end of that round. An outlined cell is
+      where the agent accepted a message, shown under the 1. With
+      <code>K = t+1</code> no choice of faults breaks agreement; with
+      <code>K = t</code>, look for one that does.
     </figcaption>
   </figure>
 
-  <p class="key">
-    <span class="lead-in">The answer</span>
-    The algorithm can stop after round <b>t+1</b>. Every correct
-    agent that has not committed to attack by then commits to
-    retreat, and by observation 3 they are all in the same position.
-  </p>
+<h2>Paxos and Byzantine consensus compared</h2>
 
-<h2>What comes next</h2>
+  <table class="cmp">
+    <tr><th></th><th>Paxos (<a href="lecture_08.html">lecture 8</a>)</th>
+        <th>Byzantine consensus, signed messages</th></tr>
+    <tr><td><b>Timing</b></td><td>Asynchronous: messages may be delayed or
+        lost</td><td>Synchronous rounds</td></tr>
+    <tr><td><b>Faults</b></td><td>Agents may halt</td><td>Faulty participants may
+        do anything except forge signatures</td></tr>
+    <tr><td><b>Fault bound</b></td><td>A majority of acceptors must be
+        reachable</td><td>Any number t of faulty participants, if t is
+        known</td></tr>
+    <tr><td><b>Termination</b></td><td>Not guaranteed (FLP)</td><td>Guaranteed:
+        t+1 rounds</td></tr>
+  </table>
 
   <p>
-    All of this rested on the seal: a faulty agent could forward a letter but
-    not change it, and the source&rsquo;s signature could not be forged.
-    Take the seal away &mdash; <b>oral messages</b> &mdash; and a faulty agent
-    can say &ldquo;the source told me to attack&rdquo; when the source
-    said nothing at all. That is the next lecture, and the first thing it
-    costs us is a bound: there is no solution when the number of correct
-    agents is at most twice the number of faulty ones.
+    No algorithm that tolerates t faulty participants can always finish in
+    fewer than t+1 rounds (Fischer and Lynch, 1982), so this algorithm is
+    as fast as possible in the worst case.
   </p>
+
+<h2>Exercises</h2>
+
+  <ol>
+    <li>In the worst case, how many messages do the correct agents send
+      in one round? In the whole algorithm?</li>
+    <li>Suppose signatures could be forged. Construct a run with
+      <code>t = 1</code> in which the algorithm violates agreement or
+      validity.</li>
+    <li>Extend the algorithm to agree on a 64-bit value with fewer than
+      64 runs.</li>
+    <li>Prove the invariant used in observation 3: for every correct agent
+      <b>x</b>, a message contains <b>x.sign</b> only if
+      <code>x.v = 1</code>.</li>
+    <li>In figure 8, set <code>K = t</code> and find a choice of faults
+      that violates agreement. Then explain why no choice works with
+      <code>K = t+1</code>.</li>
+  </ol>
 
 </div>
 
@@ -872,7 +991,7 @@ window.BYZ=(function(){
   }
 
   /* A signed letter. kind 'attack' is blue, 'retreat' is red; the wax
-     seal carries the signer's initial, and a forged seal is drawn
+     signature carries the signer's initial, and a forged signature is drawn
      cracked. */
   function letter(parent,x,y,o){
     o=o||{};
@@ -993,7 +1112,26 @@ window.BYZ=(function(){
     if(title) sans(G, x+16, y+19, title, C.muted, 12.5, 'start', 700);
     return G;
   }
-  return {NS:NS, C:C, el:el, grp:grp, clear:clear, mono:mono, sans:sans,
+  /* Play for the step-by-step figures: Reset, then press Step every gap
+     milliseconds until the last step. Reset stops it. */
+  function autoplay(pfx, n, gap){
+    const play=document.getElementById(pfx+'play'),
+          step=document.getElementById(pfx+'step'),
+          reset=document.getElementById(pfx+'reset');
+    if(!play || !step || !reset) return;
+    let timer=null, busy=false;
+    function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+    reset.addEventListener('click', function(){ if(!busy) stop(); });
+    play.addEventListener('click', function(){
+      stop(); busy=true; reset.click(); busy=false;
+      let i=1; step.click();
+      timer=setInterval(function(){
+        if(i>=n){ stop(); return; }
+        step.click(); i++;
+      }, gap);
+    });
+  }
+  return {NS:NS, C:C, el:el, grp:grp, clear:clear, mono:mono, sans:sans, autoplay:autoplay,
           agent:agent, letter:letter, arrow:arrow, head:head,
           crowd:crowd,
           ctl:ctl, qpt:qpt, route:route,
@@ -1031,8 +1169,10 @@ window.BYZ=(function(){
   }
   function draw(){
     B.clear(svg);
-    B.sans(svg, 620, 26,
+    B.sans(svg, 620, -6,
       'THE SOURCE AND AGENT A ARE FAULTY  \u00b7  B, C, D, E ARE CORRECT',
+      C.muted, 14, 'middle', 700);
+    B.sans(svg, 620, 18, 'AGENTS TAKE MAJORITY VOTE',
       C.muted, 14, 'middle', 700);
     B.agent(svg, GX, GY, {rank:'source', correct:false, label:'Source',
       sub:'faulty', scale:.82});
@@ -1282,7 +1422,7 @@ window.BYZ=(function(){
   function draw(){
     B.clear(svg);
     B.sans(svg, 620, 26,
-      'ONE SEALED LETTER IN, AND THREE DIFFERENT THINGS OUT',
+      'ONE SIGNED LETTER IN, AND THREE DIFFERENT THINGS OUT',
       C.muted, 14, 'middle', 700);
     B.agent(svg, GX, GY, {rank:'source', correct:true, label:'S',
       sub:'the source', scale:.9});
@@ -1340,7 +1480,7 @@ window.BYZ=(function(){
            it: above it the label collided with step 3's cross */
         cross(stop[0], stop[1], 17, C.red);
         B.sans(svg, stop[0]-4, stop[1]+38,
-          'the seal cannot be forged', C.red, 13, 'middle', 700);
+          'the signature cannot be forged', C.red, 13, 'middle', 700);
         B.arrow(svg, [stop[0]+26, stop[1]+8], b, C.teal,
           {op:.4, dash:'3 7', w:2});
         B.letter(svg, b[0]+18, b[1]+6,
@@ -1404,364 +1544,573 @@ window.BYZ=(function(){
 </script>
 
 <script>
-/* Figure 4 — round 0 */
+/* Figure 4 — a faulty source, a faulty agent, and a late message.
+   Step 1 is round 0, step 2 round 1, step 3 round 2, step 4 round 3. */
 (function(){
   const PFX='r0_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
   const B=window.BYZ, C=B.C;
-  const GX=170, GY=278, LY=278, LX=[580,760,940,1120];
-  const NAMES=['A','B','C','D'];
-  const SENT=['attack','attack','attack',null];
-  let T=0, raf=null;
+  const Y=330, SX=150, AX=480, BX=820, CX=1090;
+  const LAST=4;
+  let step=0, T=1, raf=null;
+
+  /* A message in this algorithm is a set of signatures: one circle each. */
+  function card(x,y,signers,s){
+    s=s||1;
+    const n=signers.length, w=(18+22*n)*s, h=30*s;
+    const G=B.grp(svg,{});
+    G.appendChild(B.el('rect',{x:x-w/2, y:y-h/2, width:w, height:h, rx:3*s,
+      fill:C.paper, stroke:'#cbc4b2', 'stroke-width':1.3*s}));
+    G.appendChild(B.el('rect',{x:x-w/2, y:y-h/2, width:w, height:6*s,
+      rx:3*s, fill:C.blue, opacity:.92}));
+    signers.forEach(function(g,i){
+      const cx=x-w/2+(20+22*i)*s, cy=y+3*s;
+      G.appendChild(B.el('circle',{cx:cx, cy:cy, r:8*s, fill:C.seal,
+        stroke:'#fff', 'stroke-width':1.2*s}));
+      B.mono(G, cx, cy, g, '#fff', 9*s, 'middle', 700);
+    });
+    return G;
+  }
+  /* The four rounds across the top; the current one is filled in. */
+  function bar(){
+    const w=150, gap=14, x0=620-(4*w+3*gap)/2, y=64;
+    for(let i=0;i<4;i++){
+      const on=(step-1===i), done=(step-1>i), x=x0+i*(w+gap);
+      svg.appendChild(B.el('rect',{x:x, y:y-14, width:w, height:28, rx:14,
+        fill:on?C.ink:'#fff', stroke:on?C.ink:C.line, 'stroke-width':1.5}));
+      svg.appendChild(B.el('text',{x:x+w/2, y:y,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace',
+        'font-size':12.5, 'font-weight':700,
+        fill:on?'#fff':(done?C.ink:C.muted),
+        'text-anchor':'middle', 'dominant-baseline':'middle'}, 'round '+i));
+    }
+  }
+  function under(x,l1,c1,l2,c2){
+    if(l1) B.sans(svg, x, Y+64, l1, c1||C.ink, 13, 'middle', 700);
+    if(l2) B.sans(svg, x, Y+84, l2, c2||C.muted, 12.5, 'middle', 600);
+  }
 
   function draw(){
     B.clear(svg);
-    B.sans(svg, 620, 32, 'ROUND 0  ·  THE SOURCE SIGNS AND SENDS',
+    B.sans(svg, 620, 26, 'A FAULTY SOURCE, A FAULTY AGENT, AND A LATE MESSAGE',
       C.muted, 14, 'middle', 700);
-    B.agent(svg, GX, GY, {rank:'source', correct:false, label:'Source',
-      sub:'faulty', scale:1.1});
-    for(let i=0;i<4;i++){
-      B.agent(svg, LX[i], LY, {correct:true, label:NAMES[i], scale:.95});
-      const k=SENT[i], a=[GX+56, GY-68], b=[LX[i]-42, LY-70];
-      if(k===null){
-        /* no letter at all: a short dead stub by D's own shoulder, so the
-           line does not cut across the agents who did get one */
-        const s0=[b[0]-150, b[1]-4];
-        B.arrow(svg, s0, b, '#c9c4b8', {op:.75, dash:'4 7', w:2, noHead:true});
-        const mx=(s0[0]+b[0])/2, my=(s0[1]+b[1])/2;
-        B.arrow(svg, [mx-9,my-9], [mx+9,my+9], C.red, {trim:0, w:2.6, noHead:true});
-        B.arrow(svg, [mx+9,my-9], [mx-9,my+9], C.red, {trim:0, w:2.6, noHead:true});
-        if(T>=1){
-          B.banner(svg, LX[i], LY-150, 'nothing', C.muted);
-          B.sans(svg, LX[i], LY+52, 'so D acts as if', C.muted, 12.5, 'middle', 600);
-          B.sans(svg, LX[i], LY+69, 'the order were retreat', C.red, 12.5, 'middle', 700);
-        }
-        continue;
+    bar();
+    B.agent(svg, SX, Y, {rank:'source', correct:false, label:'S',
+      sub:'source · faulty', scale:1});
+    B.agent(svg, AX, Y, {correct:false, label:'A', sub:'faulty', scale:.95});
+    B.agent(svg, BX, Y, {correct:true, label:'B', sub:'correct', scale:.95});
+    B.agent(svg, CX, Y, {correct:true, label:'C', sub:'correct', scale:.95});
+    const u=Math.min(1,T);
+
+    /* round 0 -- the source sends {S.sign} to A, and nothing to B or C */
+    if(step>=1){
+      const a=[SX+44, Y-72], b=[AX-44, Y-72], c=B.ctl(a,b,90);
+      const here=(step>1)||u>=1;
+      B.route(svg, a, c, b, C.blue, {w:2, arrow:here, op:step>1?.2:.33});
+      if(!here){ const q=B.qpt(a,c,b,u); card(q[0], q[1], ['S'], .95); }
+      else {
+        card(AX, Y-168, ['S'], .95);
+        B.mono(svg, AX, Y-198, '{S.sign}', C.ink, 12.5);
       }
-      const u=Math.min(1,T), cc=B.ctl(a, [b[0]+42, b[1]-44], 150+i*34);
-      if(T>0){
-        const bb=[b[0]+42, b[1]-44];
-        B.route(svg, a, cc, bb, C.blue, {w:2, arrow:T>=1});
-        const q=B.qpt(a,cc,bb,u);
-        B.letter(svg, q[0], q[1], {kind:'attack', signer:'S', scale:.9});
+      if(step===1 && here){
+        under(BX, 'nothing', C.muted);
+        under(CX, 'nothing', C.muted);
       }
-      if(T>=1) B.banner(svg, LX[i], LY-150, 'attack', C.blue);
     }
-    if(T>=1) B.sans(svg, 620, 376,
-      'the round has ended, so D’s letter is not coming — silence here is information',
-      C.ink, 13.5, 'middle', 600);
-    $('status').innerHTML=T>=1?'three letters sent · <b>D got none</b>'
-                               :'the source has not sent yet';
+    /* round 1 -- nobody sends anything */
+    if(step===2){
+      B.sans(svg, 650, 225, 'no messages in round 1', C.muted, 15, 'middle', 700);
+      under(AX, 'holds {S.sign}', C.ink, 'and waits');
+      under(BX, 'nothing to send', C.muted);
+      under(CX, 'nothing to send', C.muted);
+    }
+    /* round 2 -- A signs and sends {S.sign, A.sign} to B, nothing to C */
+    if(step>=3){
+      const a=[AX+44, Y-72], b=[BX-80, Y-96], c=B.ctl(a,b,70);
+      const here=(step>3)||u>=1;
+      B.route(svg, a, c, b, C.blue, {w:2, arrow:here});
+      const q=here?b:B.qpt(a,c,b,u);
+      card(q[0], q[1], ['S','A'], .95);
+      /* the letter C never gets: a grey route, crossed out, high enough
+         to clear B and the card B receives */
+      const a2=[AX+44, Y-72], b2=[CX-44, Y-72], c2=B.ctl(a2,b2,260);
+      B.route(svg, a2, c2, b2, '#b9b3a6', {w:2, op:.8, dash:'4 7'});
+      const m=B.qpt(a2,c2,b2,.5);
+      B.arrow(svg, [m[0]-10,m[1]-10], [m[0]+10,m[1]+10], C.red, {trim:0, w:2.8, noHead:true});
+      B.arrow(svg, [m[0]+10,m[1]-10], [m[0]-10,m[1]+10], C.red, {trim:0, w:2.8, noHead:true});
+      if(step===3){
+        under(AX, 'sends {S.sign, A.sign}', C.blue, 'to B only');
+        under(BX, 'sends nothing', C.muted);
+        under(CX, 'sends nothing', C.muted);
+      }
+    }
+    /* round 3 -- B receives it, but 2 signatures are fewer than 3 */
+    if(step>=4){
+      B.mono(svg, BX-80, Y-126, '{S.sign, A.sign}', C.ink, 12.5);
+      if(u>=.5){
+        under(BX, 'len(m) = 2 < 3', C.red, 'so B does not broadcast');
+        under(CX, 'received nothing', C.muted, 'C.v = 0');
+      }
+    }
+
+    $('status').innerHTML=['press step',
+      'round 0: <b>the source sends to A only</b>',
+      'round 1: <b>no messages</b>',
+      'round 2: A sends to B &middot; <b>will B accept?</b>',
+      'round 3: <b>no: len(m) = 2 &lt; 3</b>'][step];
   }
-  function run(){
+  /* Step animates the round it adds. */
+  function one(dur){
     if(raf) cancelAnimationFrame(raf);
-    const t0=performance.now();
-    (function step(now){
-      T=Math.min(1,(now-t0)/1000); draw();
-      if(T<1) raf=requestAnimationFrame(step);
-    })(t0);
+    const s0=performance.now();
+    (function go(now){
+      T=Math.min(1,(now-s0)/dur); draw();
+      if(T<1) raf=requestAnimationFrame(go);
+    })(s0);
   }
-  $('play').onclick=run;
-  $('reset').onclick=function(){ T=0; draw(); };
+  $('step').onclick=function(){
+    if(step>=LAST){ T=1; draw(); return; }
+    step+=1; T=0; one(step===2?600:1600);
+  };
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    step=0; T=1; draw();
+  };
+  B.autoplay(PFX, LAST, 2200);
   draw();
 })();
 </script>
 
 <script>
-/* Figure 5 — agent C on round 3 */
+/* Figure 5 — the same agents as figure 4, but A sends a round earlier.
+   Step 1 is round 0, step 2 round 1, step 3 round 2, step 4 round 3. */
 (function(){
   const PFX='rj_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
   const B=window.BYZ, C=B.C;
-  const CX=390, CY=330, RX=[870,1090], RY=330;
-  const HELD=[['S','attack'],['A','attack'],['B','attack']];
-  let step=0, T=0, raf=null;
+  const Y=330, SX=150, AX=480, BX=820, CX=1090;
+  const LAST=4;
+  let step=0, T=1, raf=null;
+
+  /* A message in this algorithm is a set of signatures: one circle each. */
+  function card(x,y,signers,s){
+    s=s||1;
+    const n=signers.length, w=(18+22*n)*s, h=30*s;
+    const G=B.grp(svg,{});
+    G.appendChild(B.el('rect',{x:x-w/2, y:y-h/2, width:w, height:h, rx:3*s,
+      fill:C.paper, stroke:'#cbc4b2', 'stroke-width':1.3*s}));
+    G.appendChild(B.el('rect',{x:x-w/2, y:y-h/2, width:w, height:6*s,
+      rx:3*s, fill:C.blue, opacity:.92}));
+    signers.forEach(function(g,i){
+      const cx=x-w/2+(20+22*i)*s, cy=y+3*s;
+      G.appendChild(B.el('circle',{cx:cx, cy:cy, r:8*s, fill:C.seal,
+        stroke:'#fff', 'stroke-width':1.2*s}));
+      B.mono(G, cx, cy, g, '#fff', 9*s, 'middle', 700);
+    });
+    return G;
+  }
+  /* The four rounds across the top; the current one is filled in. */
+  function bar(){
+    const w=150, gap=14, x0=620-(4*w+3*gap)/2, y=64;
+    for(let i=0;i<4;i++){
+      const on=(step-1===i), done=(step-1>i), x=x0+i*(w+gap);
+      svg.appendChild(B.el('rect',{x:x, y:y-14, width:w, height:28, rx:14,
+        fill:on?C.ink:'#fff', stroke:on?C.ink:C.line, 'stroke-width':1.5}));
+      svg.appendChild(B.el('text',{x:x+w/2, y:y,
+        'font-family':'ui-monospace,Menlo,Consolas,monospace',
+        'font-size':12.5, 'font-weight':700,
+        fill:on?'#fff':(done?C.ink:C.muted),
+        'text-anchor':'middle', 'dominant-baseline':'middle'}, 'round '+i));
+    }
+  }
+  function under(x,l1,c1,l2,c2){
+    if(l1) B.sans(svg, x, Y+64, l1, c1||C.ink, 13, 'middle', 700);
+    if(l2) B.sans(svg, x, Y+84, l2, c2||C.muted, 12.5, 'middle', 600);
+  }
+  /* A message travelling from a to b along an arc; once it has arrived
+     it rests at b with its signatures written above it. */
+  function send(a,b,lift,signers,stepNo){
+    const c=B.ctl(a,b,lift), here=(step>stepNo)||T>=1;
+    B.route(svg, a, c, b, C.blue, {w:2, arrow:here});
+    const q=here?b:B.qpt(a,c,b,Math.min(1,T));
+    card(q[0], q[1], signers, .95);
+    if(here) B.mono(svg, b[0], b[1]-30,
+      '{'+signers.map(function(g){return g+'.sign';}).join(', ')+'}', C.ink, 12.5);
+  }
 
   function draw(){
     B.clear(svg);
-    B.sans(svg, 620, 30, 'ROUND j = 3  ·  THE RULE NEEDS THE SOURCE AND j−1 = 2 AGENTS',
+    B.sans(svg, 620, 26, 'THE SAME START, BUT A SENDS IN ROUND 1',
       C.muted, 14, 'middle', 700);
-    /* what C is holding */
-    B.panel(svg, 60, 70, 300, 150, 'C HOLDS, AT THE START OF ROUND 3');
-    for(let i=0;i<3;i++)
-      B.letter(svg, 120+i*86, 155, {kind:HELD[i][1], signer:HELD[i][0], scale:.95});
-    B.mono(svg, 210, 200, 'source + 2 agents', C.ink, 13);
+    bar();
+    B.agent(svg, SX, Y, {rank:'source', correct:false, label:'S',
+      sub:'source · faulty', scale:1});
+    B.agent(svg, AX, Y, {correct:false, label:'A', sub:'faulty', scale:.95});
+    B.agent(svg, BX, Y, {correct:true, label:'B', sub:'correct', scale:.95});
+    B.agent(svg, CX, Y, {correct:true, label:'C', sub:'correct', scale:.95});
 
-    const committed=step>=1;
-    B.agent(svg, CX, CY, {correct:true, label:'C', scale:1.15});
-    if(committed){
-      B.banner(svg, CX, CY-172, 'commits: attack', C.blue);
-      B.sans(svg, CX, CY+54, 'the rule is satisfied', C.teal, 13, 'middle', 700);
-    }
-    for(let i=0;i<2;i++)
-      B.agent(svg, RX[i], RY, {correct:true, label:i?'E':'D', scale:.95,
-        dim:step<2});
-
-    /* step 2: C broadcasts the evidence, with its own signature added */
-    if(step>=2){
-      const u=Math.min(1,T);
-      const sign=[['S','attack'],['A','attack'],['B','attack'],['C','attack']];
-      for(let r=0;r<2;r++){
-        const a=[CX+52, CY-84], b=[RX[r], RY-116];
-        const c=B.ctl(a, b, 104+r*46);
-        B.route(svg, a, c, b, C.blue, {w:2, arrow:u>=1});
-        const q=B.qpt(a,c,b,u);
-        for(let k=0;k<4;k++){
-          const off=k*13-20;
-          B.letter(svg, q[0]+off, q[1]-off*0.45,
-            {kind:sign[k][1], signer:sign[k][0], scale:.62});
-        }
+    /* round 0 -- the source sends {S.sign} to A, and nothing to B or C */
+    if(step>=1){
+      const a=[SX+44, Y-72], b=[AX-44, Y-72], c=B.ctl(a,b,90);
+      const here=(step>1)||T>=1;
+      B.route(svg, a, c, b, C.blue, {w:2, arrow:here, op:step>1?.2:.33});
+      if(!here){ const q=B.qpt(a,c,b,Math.min(1,T)); card(q[0], q[1], ['S'], .95); }
+      else {
+        card(AX, Y-168, ['S'], .95);
+        B.mono(svg, AX, Y-198, '{S.sign}', C.ink, 12.5);
       }
-      if(u>=1) B.sans(svg, 980, 128,
-        'four letters: the source, A, B, and C’s own signature',
-        C.ink, 13, 'middle', 600);
+      if(step===1 && here){
+        under(BX, 'nothing', C.muted);
+        under(CX, 'nothing', C.muted);
+      }
     }
-    $('status').innerHTML=['holding the evidence',
-      '<b>commits</b> on round 3', 'broadcasts the evidence + its own signature'][step];
+    /* round 1 -- A signs and sends {S.sign, A.sign} to B, nothing to C */
+    if(step>=2){
+      send([AX+44, Y-72], [BX-80, Y-96], 70, ['S','A'], 2);
+      const a2=[AX+44, Y-72], b2=[CX-44, Y-72], c2=B.ctl(a2,b2,260);
+      B.route(svg, a2, c2, b2, '#b9b3a6', {w:2, op:.8, dash:'4 7'});
+      const m=B.qpt(a2,c2,b2,.5);
+      B.arrow(svg, [m[0]-10,m[1]-10], [m[0]+10,m[1]+10], C.red, {trim:0, w:2.8, noHead:true});
+      B.arrow(svg, [m[0]+10,m[1]-10], [m[0]-10,m[1]+10], C.red, {trim:0, w:2.8, noHead:true});
+      if(step===2){
+        under(AX, 'sends {S.sign, A.sign}', C.blue, 'to B only');
+        under(BX, 'sends nothing', C.muted);
+        under(CX, 'sends nothing', C.muted);
+      }
+    }
+    /* round 2 -- B: 2 signatures, at least 2, so B.v = 1 and B broadcasts */
+    if(step>=3){
+      send([BX+44, Y-72], [CX-96, Y-96], 60, ['S','A','B'], 3);
+      if(step===3) under(CX, 'nothing yet', C.muted);
+      if(step>3||T>=.5) under(BX, 'len(m) = 2 ≥ 2', C.teal,
+        step===3?'B.v = 1, and B broadcasts':'B.v = 1');
+    }
+    /* round 3 -- C: 3 signatures, at least 3, so C.v = 1 */
+    if(step>=4 && T>=.5)
+      under(CX, 'len(m) = 3 ≥ 3', C.teal, 'C.v = 1');
+
+    $('status').innerHTML=['press step',
+      'round 0: <b>the source sends to A only</b>',
+      'round 1: A sends to B &middot; <b>will B accept?</b>',
+      'round 2: <b>yes: 2 &ge; 2</b> &middot; will C accept?',
+      'round 3: <b>yes: 3 &ge; 3</b>'][step];
   }
-  function anim(){
+  /* Step animates the round it adds. */
+  function one(dur){
     if(raf) cancelAnimationFrame(raf);
-    const t0=performance.now();
-    (function s(now){ T=Math.min(1,(now-t0)/900); draw();
-      if(T<1) raf=requestAnimationFrame(s); })(t0);
+    const s0=performance.now();
+    (function go(now){
+      T=Math.min(1,(now-s0)/dur); draw();
+      if(T<1) raf=requestAnimationFrame(go);
+    })(s0);
   }
   $('step').onclick=function(){
-    step=Math.min(2, step+1); T=(step===2?0:1);
-    if(step===2) anim(); else draw();
+    if(step>=LAST){ T=1; draw(); return; }
+    step+=1; T=0; one(step===4?800:1600);
   };
-  $('reset').onclick=function(){ step=0; T=0; draw(); };
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    step=0; T=1; draw();
+  };
+  B.autoplay(PFX, LAST, 2200);
   draw();
 })();
 </script>
 
 <script>
-/* Figure 6 — observation 3: one commit pulls the rest in */
+/* Figure 6 — observation 3: B sets B.v = 1, and A and C follow.
+   Step 0 is round 2; steps 1-3 are round 3; steps 4-5 are round 4. */
 (function(){
   const PFX='csc_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
   const B=window.BYZ, C=B.C;
-  const BX=620, BY=300, AX=250, CX=990, Y=300;
-  let step=0, T=0, raf=null;
+  const BX=620, AX=250, CX=990, Y=300;
+  const ROUND=[2,3,3,3,4,4], LAST=5;
+  const IN=['S','u','v'], OUT=['S','u','v','B'];
+  const setText=function(a){ return '{'+a.map(function(g){return g+'.sign';}).join(', ')+'}'; };
+  let step=0, T=1, raf=null;
 
-  function count(x,y,txt,need,ok){
-    B.mono(svg, x, y, txt, C.ink, 13);
-    B.sans(svg, x, y+19, need, ok?C.teal:C.muted, 12.5, 'middle', 700);
+  /* A message in this algorithm is a set of signatures: one circle each. */
+  function card(x,y,signers,s){
+    s=s||1;
+    const n=signers.length, w=(18+22*n)*s, h=30*s;
+    const G=B.grp(svg,{});
+    G.appendChild(B.el('rect',{x:x-w/2, y:y-h/2, width:w, height:h, rx:3*s,
+      fill:C.paper, stroke:'#cbc4b2', 'stroke-width':1.3*s}));
+    G.appendChild(B.el('rect',{x:x-w/2, y:y-h/2, width:w, height:6*s,
+      rx:3*s, fill:C.blue, opacity:.92}));
+    signers.forEach(function(g,i){
+      const cx=x-w/2+(20+22*i)*s, cy=y+3*s;
+      G.appendChild(B.el('circle',{cx:cx, cy:cy, r:8*s, fill:C.seal,
+        stroke:'#fff', 'stroke-width':1.2*s}));
+      B.mono(G, cx, cy, g, '#fff', 9*s, 'middle', 700);
+    });
+    return G;
   }
+  function under(x,l1,c1,l2,c2){
+    if(l1) B.sans(svg, x, Y+58, l1, c1||C.ink, 13.5, 'middle', 700);
+    if(l2) B.sans(svg, x, Y+78, l2, c2||C.muted, 12.5, 'middle', 600);
+  }
+  /* a message along an arc from a to b; at rest it shows its signatures */
+  function send(a,b,lift,signers,moving){
+    const c=B.ctl(a,b,lift), u=moving?Math.min(1,T):1;
+    B.route(svg, a, c, b, C.blue, {w:2, arrow:u>=1});
+    const q=B.qpt(a,c,b,u);
+    card(q[0], q[1], signers, .85);
+    if(u>=1) B.mono(svg, b[0], b[1]-28, setText(signers), C.ink, 12.5);
+  }
+
   function draw(){
     B.clear(svg);
-    B.sans(svg, 620, 30, 'B COMMITS ON ROUND 3  ·  WHAT DOES THAT DO TO A AND C?',
-      C.muted, 14, 'middle', 700);
-    B.agent(svg, BX, BY, {correct:true, label:'B', scale:1.05});
+    B.sans(svg, 620, 26, 'ROUND '+ROUND[step], C.muted, 14.5, 'middle', 700);
     B.agent(svg, AX, Y, {correct:true, label:'A', scale:1.05});
+    B.agent(svg, BX, Y, {correct:true, label:'B', scale:1.05});
     B.agent(svg, CX, Y, {correct:true, label:'C', scale:1.05});
-    if(step>=1) B.banner(svg, BX, BY-160, 'commits: attack', C.blue);
 
-    if(step>=2){
-      const u=Math.min(1,T);
-      const sign=[['S','attack'],['Y','attack'],['Z','attack'],['B','attack']];
-      [[-1,AX],[1,CX]].forEach(function(p){
-        const a=[BX+p[0]*48, BY-84], b=[p[1], Y-114];
-        const c=B.ctl(a, b, 96);
-        B.route(svg, a, c, b, C.blue, {w:2, arrow:u>=1});
-        const q=B.qpt(a,c,b,u);
-        for(let k=0;k<4;k++){
-          const off=k*12-18;
-          B.letter(svg, q[0]+off, q[1]-off*0.4,
-            {kind:sign[k][1], signer:sign[k][0], scale:.58});
-        }
-      });
-      if(u>=1){
-        count(AX, Y+58, 'source + 3 agents', 'round 4 asks for 3', true);
-        count(CX, Y+58, 'source + 3 agents', 'round 4 asks for 3', true);
-      }
+    /* round 3: {S.sign, u.sign, v.sign} reaches B; u and v are faulty */
+    if(step>=1){
+      const o=[BX+330, 84];
+      B.sans(svg, o[0]+40, o[1]-18, 'from u and v (faulty)', C.muted, 12.5, 'middle', 700);
+      send(o, [BX, Y-160], 0, IN, step===1);
     }
+    /* B sends {S.sign, u.sign, v.sign, B.sign} to A and C */
     if(step>=3){
-      B.banner(svg, AX, Y-160, 'commits: attack', C.blue);
-      B.banner(svg, CX, Y-160, 'commits: attack', C.blue);
-      B.sans(svg, 620, 378,
-        'every correct agent has committed by round 4',
-        C.teal, 13.5, 'middle', 700);
+      send([BX-30, Y-150], [AX+92, Y-104], 50, OUT, step===3);
+      send([BX+30, Y-150], [CX-92, Y-104], 50, OUT, step===3);
     }
-    $('status').innerHTML=['round 3','B commits','B broadcasts four letters',
-      '<b>A and C commit on round 4</b>'][step];
+
+    /* what each agent's value is, and why */
+    if(step<2) under(BX, 'B.v = 0');
+    else under(BX, 'len(m) = 3 ≥ 3', C.teal, 'B.v = 1', C.blue);
+    [['A',AX],['C',CX]].forEach(function(p){
+      if(step<5) under(p[1], p[0]+'.v = 0');
+      else under(p[1], 'len(m) = 4 ≥ 4', C.teal, p[0]+'.v = 1', C.blue);
+    });
+
+    $('status').innerHTML=[
+      'round 2: <b>A.v = B.v = C.v = 0</b>',
+      'round 3: a message reaches B &middot; <b>will B accept?</b>',
+      'round 3: <b>yes: 3 &ge; 3, so B.v = 1</b>',
+      'round 3: <b>B sends to A and C</b>',
+      'round 4: messages reach A, C &middot; <b>will they accept?</b>',
+      'round 4: <b>yes: 4 &ge; 4, so A.v = C.v = 1</b>'][step];
   }
-  function anim(after){
+  /* Step animates the step it adds. */
+  function one(dur){
     if(raf) cancelAnimationFrame(raf);
-    const t0=performance.now();
-    (function s(now){ T=Math.min(1,(now-t0)/900); draw();
-      if(T<1) raf=requestAnimationFrame(s); else if(after) after(); })(t0);
+    const s0=performance.now();
+    (function go(now){
+      T=Math.min(1,(now-s0)/dur); draw();
+      if(T<1) raf=requestAnimationFrame(go);
+    })(s0);
   }
-  $('play').onclick=function(){
-    if(step<2){ step=2; T=0; anim(function(){ step=3; draw(); }); }
-    else { step=3; T=1; draw(); }
+  $('step').onclick=function(){
+    if(step>=LAST){ T=1; draw(); return; }
+    step+=1; T=0; one((step===1||step===3)?1500:400);
   };
-  $('reset').onclick=function(){ step=1; T=0; draw(); };
-  step=1; draw();
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    step=0; T=1; draw();
+  };
+  B.autoplay(PFX, LAST, 2200);
+  draw();
 })();
 </script>
 
 <script>
-/* Figure 7 — two runs with a faulty source, round by round */
+/* Figure 7 — the faulty agents wait until round 3.
+   Step 0 is round 2, step 1 round 3, step 2 round 4. */
 (function(){
   const PFX='run_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
   const B=window.BYZ, C=B.C;
-  const GX=150, GY=250;
-  const NAMES=['A','B','C','Y','Z'];
-  const CORRECT={A:true,B:true,C:true,Y:false,Z:false};
-  const X={A:470, B:640, C:810, Y:1010, Z:1170}, LY=250;
+  const GX=150, GY=290;
+  const NAMES=['A','B','C','u','v'];
+  const CORRECT={A:true,B:true,C:true,u:false,v:false};
+  const X={A:470, B:640, C:810, u:1010, v:1170}, LY=290;
+  const ROUND=[2,3,4], LAST=2;
+  let step=0, T=1, raf=null;
 
-  /* Each frame is one round: the letters that travel, what each correct
-     agent holds at the end of it, and who has committed. */
-  const RUNS={
-    a:[
-      {r:0, msgs:[['S','Y'],['S','Z']],
-       note:'the source sends attack to Y and Z only, and nothing to A, B, C',
-       holds:{}, commit:{}},
-      {r:1, msgs:[], note:'Y and Z say nothing, so A, B and C have no evidence at all',
-       holds:{}, commit:{}},
-      {r:2, msgs:[], note:'Y and Z say nothing again', holds:{}, commit:{}},
-      {r:3, msgs:[], note:'and again', holds:{}, commit:{}},
-      {r:4, msgs:[['Y','A'],['Y','B'],['Y','C'],['Z','A'],['Z','B'],['Z','C']],
-       note:'now the faulty agents produce the source’s letter and their own two signatures',
-       holds:{A:2,B:2,C:2}, commit:{},
-       verdict:'round 4 asks for three agents; they have two — nobody commits, all three retreat, in consensus'}
-    ],
-    b:[
-      {r:0, msgs:[['S','Y'],['S','Z']],
-       note:'the source sends attack to Y and Z only',
-       holds:{}, commit:{}},
-      {r:1, msgs:[], note:'Y and Z say nothing', holds:{}, commit:{}},
-      {r:2, msgs:[['Y','A'],['Z','A']],
-       note:'the faulty agents hand A alone the source’s letter and their own signatures',
-       holds:{A:2}, commit:{}},
-      {r:3, msgs:[], note:'A holds the source and two agents, and round 3 asks for two',
-       holds:{A:2}, commit:{A:3}},
-      {r:4, msgs:[['A','B'],['A','C']],
-       note:'A broadcasts its evidence with its own signature added',
-       holds:{A:2,B:3,C:3}, commit:{A:3,B:4,C:4},
-       verdict:'B and C hold the source and three agents, which is what round 4 asks for — consensus, one round later'}
-    ]
-  };
-  let run='a', k=0, T=1, raf=null;
+  /* A message in this algorithm is a set of signatures: one circle each. */
+  function card(x,y,signers,s){
+    s=s||1;
+    const n=signers.length, w=(18+22*n)*s, h=30*s;
+    const G=B.grp(svg,{});
+    G.appendChild(B.el('rect',{x:x-w/2, y:y-h/2, width:w, height:h, rx:3*s,
+      fill:C.paper, stroke:'#cbc4b2', 'stroke-width':1.3*s}));
+    G.appendChild(B.el('rect',{x:x-w/2, y:y-h/2, width:w, height:6*s,
+      rx:3*s, fill:C.blue, opacity:.92}));
+    signers.forEach(function(g,i){
+      const cx=x-w/2+(20+22*i)*s, cy=y+3*s;
+      G.appendChild(B.el('circle',{cx:cx, cy:cy, r:8*s, fill:C.seal,
+        stroke:'#fff', 'stroke-width':1.2*s}));
+      B.mono(G, cx, cy, g, '#fff', 9*s, 'middle', 700);
+    });
+    return G;
+  }
+  function under(x,l1,c1,l2,c2){
+    if(l1) B.sans(svg, x, LY+54, l1, c1||C.ink, 13, 'middle', 700);
+    if(l2) B.sans(svg, x, LY+74, l2, c2||C.muted, 12.5, 'middle', 600);
+  }
 
   function draw(){
     B.clear(svg);
-    const F=RUNS[run], f=F[k];
-    B.sans(svg, 620, 28,
-      (run==='a'?'RUN 1':'RUN 2')+'  ·  ROUND '+f.r, C.muted, 14.5, 'middle', 700);
-    B.agent(svg, GX, GY, {rank:'source', correct:false, label:'Source',
-      sub:'faulty', scale:1.0});
+    B.sans(svg, 620, 28, 'ROUND '+ROUND[step], C.muted, 14.5, 'middle', 700);
+    B.agent(svg, GX, GY, {rank:'source', correct:false, label:'S',
+      sub:'source · faulty', scale:1.0});
     NAMES.forEach(function(n){
       B.agent(svg, X[n], LY, {correct:CORRECT[n], label:n,
-        sub:CORRECT[n]?null:'faulty', scale:.9});
-      const c=f.commit[n];
-      const h=f.holds[n];
-      if(h!=null) B.mono(svg, X[n], LY+52, 'S + '+h+' ag', C.ink, 12.5);
-      if(c!=null) B.banner(svg, X[n], LY+82, 'attack (round '+c+')', C.blue);
-      else if(CORRECT[n] && f.r>=4)
-        B.banner(svg, X[n], LY+82, 'retreat', C.red);
+        sub:CORRECT[n]?'correct':'faulty', scale:.9});
     });
-    /* the letters moving this round */
-    const u=Math.min(1,T);
-    f.msgs.forEach(function(m,mi){
-      const from=(m[0]==='S')?[GX+48,GY-74]:[X[m[0]], LY-112];
-      const to=[X[m[1]], LY-112];
-      const n=(m[0]==='S')?1:(m[0]==='A'?4:2);
-      const c=B.ctl(from, to, 74+(mi%3)*26);
-      B.route(svg, from, c, to, C.blue, {w:1.8, op:.28, arrow:u>=1, hs:5.5});
-      const q=B.qpt(from,c,to,u);
-      for(let i=0;i<n;i++){
-        const off=i*11-(n-1)*5.5;
-        B.letter(svg, q[0]+off, q[1]-off*0.4,
-          {kind:'attack', signer:(m[0]==='S'?'S':m[0]), scale:.56});
-      }
+    under(X.u, 'holds {S.sign}', C.muted);
+    under(X.v, 'holds {S.sign}', C.muted);
+
+    /* round 3 -- u and v both send {S.sign, u.sign, v.sign} to A, B, C:
+       the two sends meet above u and v, and one route goes to each agent */
+    const sig=['S','u','v'];
+    if(step>=1){
+      const here=(step>1)||T>=1, u=Math.min(1,T);
+      const hub=[(X.u+X.v)/2, LY-176];
+      B.route(svg, [X.u, LY-118], [X.u, hub[1]], hub, C.blue, {w:1.8, op:.35});
+      B.route(svg, [X.v, LY-118], [X.v, hub[1]], hub, C.blue, {w:1.8, op:.35});
+      ['A','B','C'].forEach(function(d,di){
+        const to=[X[d], LY-160];
+        const c=B.ctl(hub, to, 40+di*18);
+        B.route(svg, hub, c, to, C.blue, {w:1.8, op:.3, arrow:here, hs:5.5});
+        const q=here?to:B.qpt(hub,c,to,u);
+        card(q[0], q[1]-(here?14:0), sig, .7);
+      });
+      B.sans(svg, hub[0], hub[1]-18, 'from u and v', C.muted, 12.5, 'middle', 700);
+    }
+    ['A','B','C'].forEach(function(n){
+      if(step<2 || T<.5) under(X[n], n+'.v = 0', C.ink);
+      else under(X[n], 'len(m) = 3 < 4', C.red, n+'.v = 0');
     });
-    B.sans(svg, 620, 404, f.note, C.ink, 13.5, 'middle', 600);
-    if(f.verdict) B.sans(svg, 620, 434, f.verdict,
-      run==='a'?C.teal:C.blue, 13.5, 'middle', 700);
-    $('status').innerHTML='round <b>'+f.r+'</b> of '+(RUNS[run].length-1);
+
+    const notes=[
+      'the source sent {S.sign} to u and v only, in round 0; nobody has sent anything since',
+      'u and v send {S.sign, u.sign, v.sign} to A, B and C',
+      'A, B and C receive it, but len(m) = 3 < 4, so their values stay 0'];
+    B.sans(svg, 620, 404, notes[step], C.ink, 13.5, 'middle', 600);
+    $('status').innerHTML=['round 2: <b>A.v = B.v = C.v = 0</b>',
+      'round 3: u and v send &middot; <b>will A, B, C accept?</b>',
+      'round 4: <b>no: 3 &lt; 4, values unchanged</b>'][step];
   }
-  function anim(){
+  /* Step animates the round it adds. */
+  function one(dur){
     if(raf) cancelAnimationFrame(raf);
-    const t0=performance.now();
-    (function s(now){ T=Math.min(1,(now-t0)/700); draw();
-      if(T<1) raf=requestAnimationFrame(s); })(t0);
+    const s0=performance.now();
+    (function go(now){
+      T=Math.min(1,(now-s0)/dur); draw();
+      if(T<1) raf=requestAnimationFrame(go);
+    })(s0);
   }
-  function pick(which){
-    run=which; k=0; T=1;
-    $('a').className=(which==='a')?'primary':'';
-    $('b').className=(which==='b')?'primary':'';
-    draw();
-  }
-  $('a').onclick=function(){ pick('a'); };
-  $('b').onclick=function(){ pick('b'); };
   $('step').onclick=function(){
-    if(k<RUNS[run].length-1){ k++; T=0; anim(); } else { T=1; draw(); }
+    if(step>=LAST){ T=1; draw(); return; }
+    step+=1; T=0; one(step===1?1600:800);
   };
-  $('reset').onclick=function(){ k=0; T=1; draw(); };
+  $('reset').onclick=function(){
+    if(raf) cancelAnimationFrame(raf);
+    step=0; T=1; draw();
+  };
+  B.autoplay(PFX, LAST, 2200);
   draw();
 })();
 </script>
-
 <script>
-/* Figure 8 — the counting argument behind the theorem */
+/* Figure 8 — try it yourself. The faulty participants collude: they can
+   sign for one another, and they hold {S.sign} if the source is faulty,
+   or if a correct source sent it. */
 (function(){
-  const PFX='thm_', $=function(id){return document.getElementById(PFX+id);};
-  const svg=$('g'); if(!svg) return;
-  const B=window.BYZ, C=B.C;
-  const SLOT=[[150,210],[290,210],[430,210],[570,210],[710,210]];
-  const WHO=['S','Y','Z','W',null];   /* the fifth can never be filled */
-  let n=0, raf=null;
-
-  function draw(){
-    B.clear(svg);
-    B.sans(svg, 420, 30, 'ROUND t+1 = 5  ·  THE RULE ASKS FOR THE SOURCE AND t = 4 AGENTS',
-      C.muted, 13.5, 'middle', 700);
-    B.sans(svg, 420, 64, 't = 4 faulty agents, and the source is one of them',
-      C.ink, 14, 'middle', 600);
-    B.sans(svg, 420, 88, 'so at most t−1 = 3 agents can sign an attack message',
-      C.muted, 13, 'middle', 600);
-
-    for(let i=0;i<5;i++){
-      const x=SLOT[i][0], y=SLOT[i][1], filled=i<n && WHO[i]!==null;
-      const box=B.el('rect',{x:x-54, y:y-40, width:108, height:80, rx:10,
-        fill:filled?'#fff':'#fbf9f5',
-        stroke:(i===4)?C.red:(filled?C.blue:C.line),
-        'stroke-width':(i===4)?2.4:1.6,
-        'stroke-dasharray':(i===4)?'7 6':'none'});
-      svg.appendChild(box);
-      B.sans(svg, x, y-56, i===0?'the source':'agent '+(i),
-        C.muted, 12.5, 'middle', 700);
-      if(filled) B.letter(svg, x, y, {kind:'attack', signer:WHO[i], scale:.95});
-      else if(i===4 && n>=5){
-        B.mono(svg, x, y-6, 'no one', C.red, 13);
-        B.mono(svg, x, y+13, 'left to sign', C.red, 13);
-      }
+  const $=function(id){return document.getElementById('sbx_'+id);};
+  if(!$('out')) return;
+  const AG=['A','B','C','D','E'];
+  function on(id){ const e=$(id); return !!(e && e.checked); }
+  function fillRounds(K){
+    const sel=$('r'), keep=sel.value;
+    sel.innerHTML='';
+    for(let r=0;r<=K;r++){
+      const o=document.createElement('option');
+      o.value=String(r); o.textContent=String(r); sel.appendChild(o);
     }
-    if(n>=5){
-      B.sans(svg, 420, 300,
-        'four slots, three faulty agents: the fifth can never be filled',
-        C.red, 14.5, 'middle', 700);
-      B.sans(svg, 420, 330,
-        'so no correct agent commits on round t+1, or on any round after it',
-        C.ink, 13.5, 'middle', 600);
-    }
-    $('status').innerHTML=n>=5?'<b>one slot short, for ever</b>'
-      :'filled <b>'+Math.max(0,n-1)+'</b> of 4 agent slots';
+    sel.value=(keep!==''&&+keep<=K)?keep:String(Math.max(0,K-1));
   }
+  function setTxt(m){ return '{'+Array.from(m).map(function(g){return g+'.sign';}).join(', ')+'}'; }
   function run(){
-    if(raf) cancelAnimationFrame(raf);
-    n=0;
-    const t0=performance.now();
-    (function s(now){
-      n=Math.min(5, Math.floor((now-t0)/320)+1); draw();
-      if(n<5) raf=requestAnimationFrame(s);
-    })(t0);
+    const srcF=on('fS');
+    const F=AG.filter(function(a){return on('f'+a);});
+    const correct=AG.filter(function(a){return F.indexOf(a)<0;});
+    const t=F.length+(srcF?1:0);
+    const K=($('K').value==='t')?Math.max(1,t):t+1;
+    fillRounds(K);
+    $('rowSv').className='sbx-row'+(srcF?' sbx-off':'');
+    $('rowR0').className='sbx-row'+(srcF?'':' sbx-off');
+    $('rowR1').className='sbx-row'+(F.length?'':' sbx-off');
+    $('tK').innerHTML='&nbsp; t = '+t+', K = '+K;
+
+    const inbox=[]; for(let k=0;k<=K+1;k++){ const b={}; AG.forEach(function(a){b[a]=[];}); inbox.push(b); }
+    const Sv=+$('Sv').value;
+    if(!srcF){ if(Sv===1) AG.forEach(function(a){ inbox[1][a].push(new Set(['S'])); }); }
+    else AG.forEach(function(a){ if(on('r0'+a)) inbox[1][a].push(new Set(['S'])); });
+    /* the faulty agents' message: the source's signature and all of theirs */
+    const hasS=srcF || Sv===1, r=+$('r').value, earliest=srcF?0:1;
+    if(F.length && hasS && r>=earliest && r<=K){
+      const m=new Set(['S'].concat(F));
+      AG.forEach(function(a){ if(on('r1'+a)) inbox[r+1][a].push(m); });
+    }
+    /* the correct agents run the algorithm */
+    const v={}, at={}, how={}, hist={};
+    correct.forEach(function(x){ v[x]=0; hist[x]=[]; });
+    for(let k=1;k<=K;k++){
+      correct.forEach(function(x){
+        if(v[x]===0){
+          for(const m of inbox[k][x]){
+            if(m.has('S') && m.size>=k){
+              v[x]=1; at[x]=k; how[x]=m;
+              const m2=new Set(m); m2.add(x);
+              AG.forEach(function(y){ if(y!==x) inbox[k+1][y].push(m2); });
+              break;
+            }
+          }
+        }
+        hist[x].push(v[x]);
+      });
+    }
+    /* the table */
+    let h='';
+    if(!correct.length) h='<p class="sbx-verdict">Every agent is faulty: there is nothing to agree on.</p>';
+    else {
+      h='<table class="sbx"><tr><th>agent</th>';
+      for(let k=1;k<=K;k++) h+='<th>round '+k+'</th>';
+      h+='<th>decides</th></tr>';
+      correct.forEach(function(x){
+        h+='<tr><th>'+x+'</th>';
+        for(let k=1;k<=K;k++){
+          const one=hist[x][k-1]===1, acc=at[x]===k;
+          h+='<td class="'+(one?'one':'')+(acc?' acc':'')+'">'+hist[x][k-1]+
+             (acc?'<span class="m">'+setTxt(how[x])+'</span>':'')+'</td>';
+        }
+        h+='<td>'+(v[x]?'attack':'retreat')+'</td></tr>';
+      });
+      h+='</table>';
+      const vals=correct.map(function(x){return v[x];});
+      const agree=vals.every(function(a){return a===vals[0];});
+      h+='<p class="sbx-verdict">Agreement: '+(agree
+        ? '<span class="ok">holds</span>'
+        : '<span class="bad">violated</span>');
+      if(!srcF){
+        const valid=vals.every(function(a){return a===Sv;});
+        h+=' &middot; Validity: '+(valid?'<span class="ok">holds</span>':'<span class="bad">violated</span>');
+      } else h+=' &middot; Validity: <span class="none">nothing to check, the source is faulty</span>';
+      h+='</p>';
+    }
+    $('out').innerHTML=h;
   }
-  $('play').onclick=run;
-  $('reset').onclick=function(){ n=0; draw(); };
-  draw();
+  ['fS','fA','fB','fC','fD','fE','Sv','r0A','r0B','r0C','r0D','r0E','r',
+   'r1A','r1B','r1C','r1D','r1E','K'].forEach(function(id){
+    const e=$(id); if(e) e.addEventListener('change', run);
+  });
+  run();
 })();
 </script>
 
