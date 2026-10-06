@@ -1,0 +1,1804 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bitcoin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  h2{font-family:var(--display); font-weight:600; font-size:25px;
+     letter-spacing:-.01em; margin:38px 0 12px}
+  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:34px 0 8px}
+  p{color:var(--body); margin:0 0 15px}
+  h4{font-family:var(--sans); font-weight:700; font-size:15.5px;
+     letter-spacing:.01em; color:var(--ink); margin:20px 0 6px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  header.top h2{margin:-2px 0 20px; padding:0; border:0;
+    font-family:var(--display); font-weight:600; font-size:22px;
+    line-height:1.2; letter-spacing:-.01em; color:var(--muted)}
+  figure.fig{margin:32px 0 30px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  figure.fig figcaption i{color:var(--ink); font-style:normal; font-weight:600}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
+          font-size:13.5px; color:var(--muted)}
+  .legend i{font-style:normal; color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em;
+       background:#f6f4ee; border-radius:5px; padding:1px 5px}
+  /* a block of code: the same rule as the lecture notes before it */
+  pre.code{margin:16px 0 18px; padding:14px 18px; overflow-x:auto;
+    background:#fff; border:1px solid var(--line); border-left:4px solid var(--ink);
+    border-radius:0 10px 10px 0; font:13.5px/1.7 var(--mono); color:var(--ink)}
+  pre.code b{font-weight:700}
+  pre.code .cm{color:var(--muted)}
+  pre.code .kw{color:var(--orange)}
+  pre.code code{background:none; padding:0}
+  .hint{font-size:13px; color:var(--muted)}
+  .ok{color:var(--teal); font-weight:700}
+  .bad{color:var(--orange); font-weight:700}
+  p.key{margin:22px 0 20px; padding:15px 18px 15px 20px; color:var(--ink);
+    background:#fff6ef; border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0; font-size:18px; line-height:1.5; font-weight:600}
+  p.key b, p.key strong{color:var(--ink); font-weight:800}
+  p.key .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
+    margin-bottom:8px}
+  /* a claim: the theorem and the observations read the same way */
+  .thm{margin:24px 0 22px; padding:16px 20px 15px; color:var(--ink);
+    background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:17px; line-height:1.55}
+  .thm b, .thm strong{font-weight:700}
+  .thm > b{display:block; margin-bottom:7px}
+  .thm .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--teal);
+    margin-bottom:9px}
+  .thm p:last-child{margin-bottom:0}
+  /* the observations: numbered, same colour as the theorem */
+  ol.obs{list-style:none; margin:22px 0 20px; padding:0; counter-reset:ob;
+         color:var(--body)}
+  ol.obs > li{counter-increment:ob; position:relative; margin:0 0 12px;
+    padding:14px 18px 13px 54px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:16.5px; line-height:1.5}
+  ol.obs > li::before{content:counter(ob); position:absolute; left:19px; top:13px;
+    width:24px; height:24px; border-radius:999px; background:var(--teal);
+    color:#fff; font:700 13px/24px var(--sans); text-align:center}
+  ol.obs > li > b{color:var(--ink)}
+  ol.obs .why{display:block; margin-top:9px; padding-top:9px;
+    border-top:1px solid var(--line); font-size:15px; color:var(--body)}
+  ol.obs .why em{font-style:normal; font:700 11.5px var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin-right:9px}
+  /* proofs */
+  .proof{margin:6px 0 24px; padding:2px 0 2px 22px;
+         border-left:2px solid var(--line)}
+  .proof > p:last-child{margin-bottom:0}
+  .proof figure.fig.wideout{left:calc(50% - 11px)}
+  .proof .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin:0 0 9px}
+  .case{margin:16px 0 14px; padding:13px 17px 2px; background:#fbf9f5;
+        border:1px solid var(--line); border-radius:10px}
+  .case > p:last-child{margin-bottom:11px}
+  .tag{display:inline-block; font:700 11px var(--sans); letter-spacing:.12em;
+    text-transform:uppercase; color:#fff; background:var(--ink);
+    border-radius:999px; padding:4px 11px; margin-right:11px;
+    vertical-align:1px}
+  .calc{font-family:var(--mono); font-size:15px; color:var(--ink);
+    background:#fbf9f5; border:1px solid var(--line); border-radius:8px;
+    padding:11px 15px; margin:12px 0}
+  /* the specification: two requirements, in the two colours they keep */
+  ol.spec{list-style:none; margin:22px 0 20px; padding:0;
+          counter-reset:req; color:var(--body)}
+  ol.spec > li{counter-increment:req; position:relative; margin:0 0 10px;
+    padding:14px 46px 13px 18px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--muted); border-radius:0 10px 10px 0}
+  ol.spec > li::after{content:counter(req); position:absolute; right:15px;
+    top:13px; font:700 12px var(--mono); color:#c9c4b8}
+  ol.spec .rtag{display:inline-block; font:700 11px var(--sans);
+    letter-spacing:.12em; text-transform:uppercase; color:#fff;
+    background:var(--muted); border-radius:999px; padding:4px 11px;
+    margin-right:11px; vertical-align:1px}
+  li.req-v{border-left-color:var(--teal)}
+  li.req-v .rtag{background:var(--teal)}
+  li.req-c{border-left-color:#1a5fd0}
+  li.req-c .rtag{background:#1a5fd0}
+  .n-v{color:var(--teal); font-weight:700}
+  .n-c{color:#1a5fd0; font-weight:700}
+  /* the aside about fire detectors, which is the point of the whole story */
+  .aside{margin:24px 0 22px; padding:15px 19px 14px; font-size:15.5px;
+    line-height:1.6; color:var(--body); background:#f7f5ef;
+    border:1px solid var(--line); border-radius:10px}
+  .aside b{color:var(--ink)}
+  .aside .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin-bottom:9px}
+  .aside p:last-child{margin-bottom:0}
+  /* the comparison with Paxos */
+  table.cmp{width:100%; border-collapse:collapse; margin:16px 0 22px;
+    background:#fff; font-size:15px; color:var(--body)}
+  table.cmp th, table.cmp td{border:1px solid var(--line); padding:8px 12px;
+    text-align:left; vertical-align:top}
+  table.cmp th{background:#f6f4ee; color:var(--ink); font-weight:700}
+  /* figure 8: the sandbox */
+  .sbx-row{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center;
+    padding:8px 0; border-top:1px solid var(--line); font-size:14.5px}
+  .sbx-row:first-child{border-top:0}
+  .sbx-row .k{width:230px; flex:none; font:600 11.5px var(--sans);
+    letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+  .sbx-row label{white-space:nowrap; cursor:pointer}
+  .sbx-row select{font:14px var(--sans)}
+  .sbx-off{opacity:.4}
+  table.sbx{border-collapse:collapse; margin:14px 0 6px; background:#fff;
+    font:14px var(--mono)}
+  table.sbx th, table.sbx td{border:1px solid var(--line); padding:6px 12px;
+    text-align:center}
+  table.sbx th{background:#f6f4ee; font:600 12px var(--sans); color:var(--muted)}
+  table.sbx td.one{background:#e8f0fd; color:#1a5fd0; font-weight:700}
+  table.sbx td.acc{box-shadow:inset 0 0 0 2px #1a5fd0}
+  table.sbx td .m{display:block; font-size:11px; color:var(--muted); font-weight:400}
+  .sbx-verdict{font-size:15.5px; margin:8px 0 2px}
+  /* widgets for this lecture */
+  .hexout{font:13.5px/1.55 var(--mono); word-break:break-all; color:var(--ink)}
+  .hexout .d{color:var(--orange); font-weight:700}
+  .hexout .z{color:var(--teal); font-weight:700}
+  input.txt, textarea.txt, select.txt{font:14px var(--mono); width:100%;
+    padding:7px 9px; border:1px solid var(--line); border-radius:8px;
+    background:#fffdf8; color:var(--ink)}
+  select.txt{width:auto; font-family:var(--sans)}
+  textarea.txt{min-height:64px; resize:vertical}
+  .row{display:flex; gap:10px 16px; flex-wrap:wrap; align-items:center; margin:10px 0}
+  .lbl{font:600 11.5px var(--sans); letter-spacing:.1em; text-transform:uppercase;
+    color:var(--muted)}
+  .readout{margin-top:10px; padding:10px 12px; background:#fbf9f5;
+    border:1px solid var(--line); border-radius:10px; font-size:14.5px}
+  .readout b{color:var(--ink)}
+  /* figure 7: the block chain */
+  .chain{display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; padding:6px 2px}
+  .blk{ border:2px solid var(--line); border-radius:10px;
+    padding:10px; background:#fbf9f5; transition:border-color .3s, background .3s}
+  .blk.bad{border-color:var(--orange); background:#fff1ea}
+  .blk.head{background:#fff}
+  .blk input.txt{font-size:13px; padding:6px 7px}
+  .blk .t{font:700 12px var(--sans); letter-spacing:.08em; text-transform:uppercase;
+    color:var(--muted); margin-bottom:6px}
+  .blk .f{font:12px var(--mono); color:var(--muted); margin-top:6px; overflow-wrap:anywhere}
+  .blk .f b{color:var(--ink)}
+  .blk .f.badf b{color:var(--orange)}
+  .harrow{align-self:center; font:22px var(--sans); color:var(--muted); flex:none}
+  /* figure 11: Scroogecoin */
+  .sc{display:grid; grid-template-columns:1.25fr 1fr; gap:14px}
+  @media (max-width:800px){ .sc{grid-template-columns:1fr} }
+  .sc h4{margin:0 0 8px}
+  .txcard{border:1px solid var(--line); border-radius:10px; background:#fff;
+    padding:9px 11px; margin:0 0 8px; font:13px/1.5 var(--mono)}
+  .txcard.acc{border-left:5px solid var(--teal)}
+  .txcard.rej{border-left:5px solid var(--orange); background:#fff6f1}
+  .txcard.now{box-shadow:0 0 0 2px var(--ink)}
+  .checks{font:13px/1.6 var(--sans); margin-top:5px}
+  table.utxo{border-collapse:collapse; width:100%; background:#fff; font:13px var(--mono)}
+  table.utxo th, table.utxo td{border:1px solid var(--line); padding:5px 8px; text-align:left}
+  table.utxo th{background:#f6f4ee; font:600 11.5px var(--sans); color:var(--muted)}
+  table.utxo tr.gone td{color:#b9b4a8; text-decoration:line-through}
+  table.utxo tr.new td{background:#eef7f4}
+  .fade{animation:fadein .5s ease}
+  @keyframes fadein{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab</div>
+    <h1>Bitcoin</h1>
+    <h2>Consensus without a trusted party</h2>
+    <p>
+      A cryptocurrency is a <b>ledger</b> of payments kept by agents who do
+      not trust each other. We start with two simple currencies. Goofycoin
+      shows the central problem, <b>double spending</b>. Scroogecoin solves
+      it with a trusted bank. <b>Bitcoin</b> keeps the same kind of ledger
+      with nobody in charge. It was described by Satoshi Nakamoto in 2008,
+      and its network has run since January 2009.
+    </p>
+    <p>
+      This lecture uses the tools of the
+      <a href="Cryptography.html">cryptography lecture</a> &mdash; hash
+      functions, block chains, Merkle trees, signatures and search puzzles
+      &mdash; and follows section 1.5 and chapters 2 and 3 of Narayanan, Bonneau, Felten,
+      Miller and Goldfeder, <i>Bitcoin and Cryptocurrency Technologies</i>
+      (<a href="https://bitcoinbook.cs.princeton.edu/">bitcoinbook.cs.princeton.edu</a>).
+      Parts 1 and 2 study the <b>algorithm</b>; part 3 shows how it is
+      engineered.
+    </p>
+    <p class="key">
+      <span class="lead-in">Three parts</span>
+      <b>Part 1</b> (sections 1&ndash;5): how agents who do not trust each
+      other agree on one ledger. <b>Part 2</b> (sections 6&ndash;9): why
+      agents take part, and what attackers can and cannot do.
+      <b>Part 3</b> (sections 10&ndash;14): how Bitcoin is engineered
+      &mdash; transactions, scripts, blocks and the network.
+    </p>
+  </header>
+
+<h2>Part 1. Consensus without a bank</h2>
+
+<h3>1. Signatures are not enough: Goofycoin</h3>
+
+  <p>
+    Goofycoin has two rules.
+  </p>
+  <ol>
+    <li><b>Goofy creates coins.</b> He signs the statement
+      &ldquo;CreateCoin [uniqueCoinID]&rdquo;. The new coin belongs to
+      Goofy.</li>
+    <li><b>An owner spends a coin</b> by signing &ldquo;Pay this coin to
+      pk&rdquo;, together with a hash pointer to the coin. The coin now
+      belongs to the owner of <code>pk</code>. Anyone can check the chain
+      of signatures back to Goofy.</li>
+  </ol>
+  <p>
+    Every signature in Goofycoin verifies, and nobody can forge one. Yet it
+    has a fatal flaw.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="gf_g" viewBox="0 0 1240 420" role="img"
+         aria-label="Goofy creates a coin and pays it to Alice; Alice signs a payment of the coin to Bob, and also a payment of the same coin to Chuck; both payments verify, and the coin has been spent twice"></svg>
+    <div class="ctrls">
+      <button id="gf_play" class="primary">Play</button>
+      <button id="gf_step">Step</button>
+      <button id="gf_reset">Reset</button>
+      <span class="status" id="gf_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 1. Double spending in Goofycoin.</b>
+      Goofy creates a coin and pays it to Alice. Alice signs a payment of
+      the coin to Bob, and then signs a payment of the <i>same</i> coin to
+      Chuck. Both chains of signatures verify. Bob and Chuck each believe
+      they own the coin: it has been spent twice.
+    </figcaption>
+  </figure>
+
+  <p class="key">
+    <span class="lead-in">The double-spending problem</span>
+    Signatures show who authorized a payment. They cannot show that the
+    payer had not <b>already</b> spent the coin. For that, everyone must
+    agree on <b>one history</b> of all transactions.
+  </p>
+
+<h3>2. A trusted bank: Scroogecoin</h3>
+
+  <p>
+    Scroogecoin fixes double spending with a trusted <b>bank</b>, Scrooge,
+    who keeps the one history. Agents are identified by their public keys.
+    The bank keeps a tamper-evident <b>ledger</b>: a block chain of
+    transactions, with the hash pointer to its head signed by the bank. A
+    transaction either <b>creates</b> coins, which the bank gives to
+    agents, or <b>pays</b> coins: agents (the payers) give coins they own
+    to other agents (the payees). A coin is named by
+    <code>(transaction id, index)</code>: coin <code>(1, 0)</code> is the
+    first coin created by transaction 1.
+  </p>
+  <p>
+    Before appending a payment, the bank checks that
+  </p>
+  <ol>
+    <li>it is <b>signed</b> by every payer;</li>
+    <li>the coins paid in equal the coins paid out;</li>
+    <li>every coin paid in is <b>genuine</b> &mdash; created in an earlier
+      transaction &mdash; and <b>not already spent</b>.</li>
+  </ol>
+  <p>
+    Rule 3 is what stops <b>double spending</b>: an agent cannot pay
+    Amazon and then pay Walmart with the same coins. The bank groups
+    transactions into blocks and signs the hash pointer to the head of the
+    chain. Agents keep copies of the ledger and can check every
+    transaction themselves, and the bank cannot rewrite the history
+    without being caught.
+  </p>
+
+  <figure class="fig wideout">
+    <div class="sc">
+      <div><h4>Transactions sent to Scrooge</h4><div id="sc_tx"></div></div>
+      <div><h4>Coins (unspent coins are not struck through)</h4><div id="sc_coins"></div></div>
+    </div>
+    <div class="ctrls">
+      <button id="sc_play" class="primary">Play</button>
+      <button id="sc_step">Step</button>
+      <button id="sc_reset">Reset</button>
+      <span class="status" id="sc_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 2. Scroogecoin stops a double spend.</b>
+      Scrooge checks each transaction against the three rules before he
+      appends it. Transaction 1 creates coins for Ana and Ben. In
+      transaction 2, Ana pays Ben 2 with her coin <code>(1, 0)</code> and
+      gets 3 back as change. In transaction 3, Ana tries to pay Chuck with
+      the same coin <code>(1, 0)</code>. It was consumed in transaction 2, so
+      Scrooge rejects it. Transaction 4 shows a payment that is valid.
+    </figcaption>
+  </figure>
+
+
+  <p class="key">
+    <span class="lead-in">The key property</span>
+    The bank holds the <b>master copy</b> of the ledger. An agent&rsquo;s copy
+    can differ from the master copy in only one way: it may be a
+    <b>prefix</b> of the master copy &mdash; it may not yet have the newest
+    blocks.
+  </p>
+
+  <table class="cmp">
+    <tr><th>Advantages</th><th>Disadvantages</th></tr>
+    <tr><td>Every agent can verify every transaction in its copy.</td>
+        <td>The bank is a single point of failure.</td></tr>
+    <tr><td>An agent&rsquo;s copy is a prefix of the master copy.</td>
+        <td>The bank can refuse service to agents it dislikes.</td></tr>
+    <tr><td>Nobody, not even the bank, can forge a payer&rsquo;s signature.</td>
+        <td>The bank can create as many coins as it likes.</td></tr>
+    <tr><td>Agents are anonymous: they are known only by public keys.</td>
+        <td>Agents must trust the bank.</td></tr>
+  </table>
+
+<h3>3. Removing the bank</h3>
+
+  <p>
+    Scroogecoin works, but everything depends on Scrooge. Can we get rid of
+    him? Suppose there is no bank: every agent keeps its own copy of the
+    ledger, and the agents themselves must do the bank&rsquo;s work. Four
+    challenges appear.
+  </p>
+  <ol>
+    <li><b>Selection.</b> Some single agent must play the role of the bank
+      for the next block.</li>
+    <li><b>Synchronization.</b> Agents must wait long enough for everyone
+      to update their copies.</li>
+    <li><b>Incentives.</b> Why would an agent do the bank&rsquo;s work?</li>
+    <li><b>Untrustworthy agents.</b> Some agents will cheat.</li>
+  </ol>
+
+  <p class="key">
+    <span class="lead-in">The key problem</span>
+    All agents must come to a <b>consensus</b> about which block enters the
+    ledger next.
+  </p>
+
+  <p>
+    <b>Question for you.</b> Why can&rsquo;t we use Paxos or the Byzantine
+    generals algorithm to reach that consensus?
+  </p>
+  <ul>
+    <li><b>Nobody knows who the agents are.</b> Anyone can join or leave at
+      any time, so nobody knows how many agents there are, or how many are
+      faulty.</li>
+    <li><b>Identities are free.</b> A public key is an identity, and anyone
+      can generate a million of them. If each identity had one vote, a
+      single attacker with many identities could win every vote: a
+      <b>Sybil attack</b>.</li>
+    <li><b>Paxos</b> may not terminate. <b>Byzantine</b> consensus needs
+      synchronous rounds and a known bound <code>t</code> on the number of
+      faulty agents.</li>
+  </ul>
+  <p>
+    And the FLP theorem says that in an asynchronous system no algorithm
+    can guarantee consensus if even one agent may be faulty. So how does
+    Bitcoin work?
+  </p>
+
+  <p class="key">
+    <span class="lead-in">Bitcoin&rsquo;s answer</span>
+    Bitcoin reaches consensus <b>with very high probability</b>, and the
+    probability grows the longer you wait. It does not guarantee
+    consensus, so FLP does not rule it out.
+  </p>
+
+<h3>4. Selecting one agent with a puzzle</h3>
+
+  <p>
+    How can the agents choose one of themselves, at random, to act as the
+    bank for the next block? Imagine a room of people solving puzzles. The
+    first to solve hers shouts &ldquo;I&rsquo;ve solved it!&rdquo;, and
+    everyone agrees that she is &ldquo;it&rdquo;: she adds the next block.
+  </p>
+  <p>
+    Bitcoin uses the search puzzles of the
+    <a href="Cryptography.html">cryptography lecture</a>. An agent
+    collects valid transactions into a block <code>trans</code>, and
+    searches for a number <code>nonce</code> such that
+  </p>
+  <div class="calc">H(nonce &#8214; ptr &#8214; trans) &lt; target</div>
+  <p>
+    where <code>H</code> is a cryptographic hash function (SHA-256),
+    <code>ptr</code> is the hash pointer to the head of the agent&rsquo;s
+    chain, and <code>target</code> is a number: the smaller the target, the
+    harder the puzzle. This is called <b>proof of work</b>, and the search
+    is called <b>mining</b>.
+  </p>
+
+  <p>
+    <b>Questions for you</b>, from the room of puzzle solvers:
+  </p>
+  <ul>
+    <li><b>How does everyone check that the winner really solved the
+      puzzle?</b> By computing one hash. Solving is hard; checking is
+      easy.</li>
+    <li><b>Can we use timestamps to decide who was first?</b> No: nobody
+      could check that the timestamps are honest.</li>
+    <li><b>Can two agents solve their puzzles at the same instant?</b> It
+      is unlikely. Each agent solves a <i>different</i> puzzle, because its
+      block holds its own choice of transactions and pays the reward to its
+      own key. Because <code>H</code> is puzzle friendly, the time to solve
+      is random, and agents have different amounts of computing power. But
+      collisions do happen; section 5 deals with them.</li>
+  </ul>
+
+  <p class="key">
+    <span class="lead-in">Why puzzles defeat the Sybil attack</span>
+    An agent&rsquo;s chance of winning is proportional to its share of the
+    total <b>computing power</b>, not to its number of identities. A
+    million public keys cost nothing; a million computers do not.
+  </p>
+
+  <p>
+    Bitcoin adjusts the target every 2,016 blocks, about every two weeks,
+    so that the whole network solves one puzzle about every
+    <b>10 minutes</b> on average, however much computing power joins or
+    leaves.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="mn_g" viewBox="0 0 1240 400" role="img"
+         aria-label="Four miners with 40, 30, 20 and 10 percent of the computing power race to solve their puzzles; the first to find a hash with enough leading zero bits wins the block"></svg>
+    <div class="ctrls">
+      <button id="mn_play" class="primary">Race</button>
+      <button id="mn_many">Run 200 races</button>
+      <button id="mn_reset">Reset</button>
+      <span class="status" id="mn_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 3. A mining race.</b>
+      Four miners own 40%, 30%, 20% and 10% of the computing power, so
+      in each instant they try 8, 6, 4 and 2 nonces respectively. Each
+      hashes its own block &mdash; its own puzzle &mdash; with real SHA-256,
+      and wins if the hash starts with 10 zero bits (about 1 chance in
+      1,000 per try). Press <i>Race</i> to watch one race. Press
+      <i>Run 200 races</i>: each miner wins about its share of the races.
+      Luck decides each race; computing power decides the long run.
+    </figcaption>
+  </figure>
+
+<h3>5. Forks and the longest chain</h3>
+
+  <p>
+    When an agent solves its puzzle, it appends its block to its copy of
+    the chain and <b>broadcasts</b> the new chain to everyone. That is
+    &ldquo;I&rsquo;ve solved it!&rdquo; shouted across the room. Every
+    agent that follows the protocol obeys one rule:
+  </p>
+
+  <p class="key">
+    <span class="lead-in">The longest-chain rule</span>
+    Accept a chain only if every block and every transaction in it is
+    valid. Keep the <b>longest</b> valid chain you have seen; on a tie,
+    keep the one you saw first. Always mine on top of the chain you keep.
+  </p>
+
+  <p>
+    When agent <code>A&prime;</code> receives a longer chain
+    <code>L + B</code>, it stops solving its own puzzle and starts a new
+    one, to extend <code>L + B</code>. If message delays are short compared
+    with the time to solve a puzzle (10 minutes), it is unlikely that
+    <code>A&prime;</code> solves its old puzzle while <code>L + B</code> is
+    in transit. Unlikely, but possible.
+  </p>
+  <p>
+    <b>A collision.</b> Agent <code>A</code>&rsquo;s chain is
+    <code>L</code>. It receives <code>L + X</code> and switches to it,
+    because it is longer. Then it receives <code>L + Y</code>, from an agent
+    that solved its puzzle at about the same time. <code>L + Y</code> is
+    not longer, so <code>A</code> ignores it. Other agents may have received
+    <code>L + Y</code> first and kept it. The chain has <b>forked</b>.
+  </p>
+  <p>
+    The fork ends when someone solves the next puzzle. If an agent with
+    <code>L + X</code> finds <code>X&prime;</code>, then
+    <code>L + X + X&prime;</code> is the longest chain, and everyone
+    switches to it. Block <code>Y</code> becomes an <b>orphan</b>. Its
+    transactions are not lost: they return to the pool, and a later block
+    includes them.
+  </p>
+  <p>
+    Collisions can continue: <code>B</code> appends <code>X&prime;</code>
+    to <code>L + X</code> while <code>C</code> appends
+    <code>Y&prime;</code> to <code>L + Y</code>, and so on. But each
+    further collision is again unlikely, so a run of <code>k</code>
+    collisions becomes very unlikely as <code>k</code> grows.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="nw_g" viewBox="0 0 1240 430" role="img"
+         aria-label="Four agents each keep a copy of the chain; blocks are found at random and broadcast with a delay; when two blocks are found close together the chain forks, and the fork is resolved when one branch grows longer"></svg>
+    <div class="row">
+      <span class="lbl">Message delay</span>
+      <select class="txt" id="nw_delay">
+        <option value="1">short: 1 tenth of the block time</option>
+        <option value="4" selected>long: 4 tenths of the block time</option>
+        <option value="8">very long: 8 tenths of the block time</option>
+      </select>
+    </div>
+    <div class="ctrls">
+      <button id="nw_play" class="primary">Play</button>
+      <button id="nw_step">Step</button>
+      <button id="nw_reset">Reset</button>
+      <span class="status" id="nw_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 4. Forks, and the prefix everyone agrees on.</b>
+      Each row is one agent&rsquo;s copy of the chain; a block is colored
+      by the agent that mined it. Blocks are found at random, on average
+      once every 10 steps, and reach the other agents after the message
+      delay. The shaded part is the <b>common prefix</b>: the blocks that
+      every agent&rsquo;s copy shares. With long delays, two agents
+      sometimes find blocks before hearing of each other&rsquo;s, and the
+      copies differ at the end. The fork never lasts: soon one branch is
+      longer, and the shaded prefix catches up. Orphaned blocks are counted
+      below the chains. This figure is a simulation of the rules, not of
+      real mining.
+    </figcaption>
+  </figure>
+
+<h3>Is there a master copy?</h3>
+
+  <p>
+    With a bank, every agent&rsquo;s copy was a prefix of the master copy.
+    Bitcoin has no master copy. What it has instead is figure 4&rsquo;s
+    shaded region: honest agents&rsquo; copies share a long common prefix
+    and may differ only in the last few blocks.
+  </p>
+  <p>
+    Suppose agent <code>B</code>&rsquo;s chain is
+    <code>L + X<sub>1</sub> + &hellip; + X<sub>k</sub></code>. How likely
+    is it that some other honest agent&rsquo;s chain does not start with
+    <code>L</code>? For that to happen, there must have been a run of about
+    <code>k</code> collisions, and that becomes very unlikely as
+    <code>k</code> grows.
+  </p>
+
+  <p class="key">
+    <span class="lead-in">Confidence grows with depth</span>
+    A block that is <code>k</code> blocks deep is in every honest
+    agent&rsquo;s chain with a probability that approaches 1 quickly as
+    <code>k</code> grows. Old blocks are settled with very high confidence;
+    the newest blocks with low confidence. A common rule is to treat a
+    payment as final after <b>6 confirmations</b>: six blocks on top of
+    the block holding it, about an hour.
+  </p>
+
+<h2>Part 2. Incentives and attacks</h2>
+
+<h3>6. Why would anyone mine?</h3>
+
+  <p>
+    Mining costs computing power and electricity. Agents do the
+    bank&rsquo;s work because <b>they get paid</b>, in two ways.
+  </p>
+  <ul>
+    <li><b>The block reward.</b> Each block may contain one special
+      transaction that creates new coins and pays them to the miner. This
+      is the <b>only</b> way bitcoins are created. The reward halves every
+      210,000 blocks, about every four years: it was 50 bitcoins in 2009,
+      and has been 3.125 since April 2024. So the total number of bitcoins
+      will never exceed 21 million.</li>
+    <li><b>Transaction fees.</b> A payer may pay in more than it pays out;
+      the difference is a fee for the miner who includes the transaction.
+      Miners prefer transactions with higher fees, so these are processed
+      faster. As block rewards shrink, fees will become the main
+      incentive.</li>
+  </ul>
+  <p class="key">
+    <span class="lead-in">Incentives keep miners honest</span>
+    A miner is paid only if its block ends up in the chain that everyone
+    keeps. So it pays to mine on the longest chain, and to include only
+    valid transactions: an invalid block is rejected by every honest agent,
+    and its reward is worthless.
+  </p>
+
+<h3>7. What an agent does</h3>
+
+  <p>
+    Putting sections 2&ndash;6 together, every mining agent runs this loop.
+    The checks are the bank&rsquo;s three rules, now carried out by
+    everyone.
+  </p>
+
+  <pre class="code"><span class="kw">loop</span>:
+    <span class="cm"># keep the longest valid chain heard so far</span>
+    <span class="kw">if</span> a valid chain longer than mine arrives:
+        switch to it
+
+    <span class="cm"># build a block on the head of my chain</span>
+    trans = valid transactions not yet in my chain   <span class="cm"># signed, in = out, unspent</span>
+    trans = [reward to my public key] + trans
+    ptr   = hash pointer to the head of my chain
+
+    <span class="cm"># proof of work</span>
+    try nonces until H(nonce &#8214; ptr &#8214; trans) &lt; target,
+        or until a longer chain arrives
+    <span class="kw">if</span> solved:
+        append the block to my chain and broadcast it</pre>
+
+  <p>
+    The block itself is small: a header with the hash pointer to the
+    previous block, the root of a <b>Merkle tree</b> of its transactions,
+    the target and the nonce; then the transactions. The Merkle root lets
+    a phone check that one payment is in a block without downloading the
+    whole block.
+  </p>
+
+<h3>8. Attacks</h3>
+
+  <table class="cmp">
+    <tr><th>Attack</th><th>Does it work?</th></tr>
+    <tr><td><b>Steal coins</b> by spending someone else&rsquo;s coins</td>
+        <td>No. A payment must be signed by the owner, and signatures cannot
+        be forged.</td></tr>
+    <tr><td><b>Mine an invalid block</b>, for example creating extra coins</td>
+        <td>No. Honest agents check every block and reject it, so the miner
+        is never paid.</td></tr>
+    <tr><td><b>Denial of service</b>: a miner leaves your transaction
+        out</td>
+        <td>Only briefly. The next honest miner includes it.</td></tr>
+    <tr><td><b>Fraud outside the ledger</b>: you pay for a video and it
+        never arrives</td>
+        <td>Bitcoin cannot help. It records payments; it cannot enforce what
+        is bought.</td></tr>
+    <tr><td><b>Double spend</b>: pay a seller, then replace the block
+        holding the payment with a longer chain that leaves it out</td>
+        <td>Only if the attacker can outrun all honest miners. The seller
+        defends by waiting for confirmations.</td></tr>
+    <tr><td><b>51% attack</b>: an attacker with most of the computing
+        power</td>
+        <td>Can double spend and censor transactions. Still cannot steal,
+        because it cannot forge signatures.</td></tr>
+  </table>
+
+  <p>
+    The double spend is the attack that the longest-chain rule must stop.
+    The attacker pays a seller in a block, waits until the seller sees
+    <code>z</code> confirmations and hands over the goods, then tries to
+    build, in secret, a longer chain without the payment. It starts
+    <code>z</code> blocks behind. If the attacker has a fraction
+    <code>q</code> of the computing power and the honest miners
+    <code>p = 1 &minus; q</code>, each new block is the attacker&rsquo;s with
+    probability <code>q</code>: the race is a random walk. Nakamoto showed
+    that the probability the attacker <b>ever</b> catches up is
+  </p>
+  <div class="calc">(q / p)<sup>z</sup> &nbsp; if q &lt; p, &nbsp; and 1 if q &ge; p.</div>
+
+  <figure class="fig wideout">
+    <svg id="at_g" viewBox="0 0 1240 400" role="img"
+         aria-label="A bar chart of the probability that an attacker with a chosen share of the computing power ever catches up from z blocks behind, for z from 0 to 10"></svg>
+    <div class="row">
+      <span class="lbl">Attacker&rsquo;s share of computing power q</span>
+      <input type="range" id="at_q" min="5" max="60" value="25">
+      <b id="at_qv">25%</b>
+    </div>
+    <div class="ctrls">
+      <button id="at_sim" class="primary">Simulate 1,000 races from 6 behind</button>
+      <span class="status" id="at_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 5. Can an attacker catch up?</b>
+      Each bar is the probability <code>(q/p)<sup>z</sup></code> that an
+      attacker with share <code>q</code> ever catches up from <code>z</code>
+      blocks behind. With 25% of the power and 6 confirmations it is under
+      0.2%. Move the slider: the probability falls exponentially with
+      <code>z</code> while <code>q</code> is below one half, and jumps to 1
+      when the attacker has a majority. <i>Simulate</i> runs 1,000 random
+      races from 6 behind and compares the fraction the attacker wins with
+      the formula.
+    </figcaption>
+  </figure>
+
+  <p class="key">
+    <span class="lead-in">The security assumption</span>
+    Bitcoin is safe as long as honest agents control <b>most of the
+    computing power</b> &mdash; not most of the identities, which would be
+    worthless, but most of the work.
+  </p>
+
+<h3>9. Bitcoin compared</h3>
+
+  <table class="cmp">
+    <tr><th></th><th>Paxos</th><th>Byzantine (signed)</th><th>Bitcoin</th></tr>
+    <tr><td><b>Who takes part</b></td><td>Known agents</td><td>Known agents</td>
+        <td>Anyone, at any time</td></tr>
+    <tr><td><b>Timing</b></td><td>Asynchronous</td><td>Synchronous rounds</td>
+        <td>Delays short compared with 10 minutes</td></tr>
+    <tr><td><b>Faults</b></td><td>Agents halt</td><td>Up to t faulty agents</td>
+        <td>A minority of the computing power</td></tr>
+    <tr><td><b>Agreement</b></td><td>Certain</td><td>Certain</td>
+        <td>With probability growing with depth</td></tr>
+    <tr><td><b>Cost</b></td><td>Messages</td><td>Messages, t+1 rounds</td>
+        <td>Messages and a great deal of computation</td></tr>
+  </table>
+
+  <p>
+    The cost in the last row is real: Bitcoin mining uses as much
+    electricity as a small country, roughly. Other cryptocurrencies replace proof of
+    work with <b>proof of stake</b>, in which the chance of adding the next
+    block depends on the coins an agent has locked up rather than on its
+    computing power. Ethereum, the second-largest cryptocurrency, switched
+    to proof of stake in 2022.
+  </p>
+
+<h2>Part 3. How Bitcoin is engineered</h2>
+
+  <p>
+    Parts 1 and 2 describe the algorithm. Part 3 describes how Bitcoin
+    actually stores coins, checks payments, packs them into blocks and
+    spreads them across the Internet. It follows chapter 3 of the
+    Princeton book, and leaves out byte-level details.
+  </p>
+
+<h3>10. Transactions</h3>
+
+  <p>
+    Bitcoin has no accounts and no balances. Like Scroogecoin, it has only
+    <b>transactions</b>, and a coin is an <b>output</b> of a transaction:
+    a value and the identity of its owner. An output is named by
+    <code>(transaction id, index)</code>. For example, the transaction
+  </p>
+  <div class="calc">(3146, create, [(2.1, 7xxxx&hellip;), (3.2, 8xxxx&hellip;)])</div>
+  <p>
+    has id 3146 and two outputs: <code>(3146, 0)</code> gives 2.1 coins to
+    the owner of public key <code>7xxxx&hellip;</code>, and
+    <code>(3146, 1)</code> gives 3.2 coins to <code>8xxxx&hellip;</code>.
+  </p>
+  <p>
+    A payment has <b>inputs</b> and <b>outputs</b>. Each input names an
+    earlier output that the payer owns, and is signed by its owner. Each
+    output is a value and a payee. Every output is spent <b>in full</b>,
+    the first time it is used as an input; if the payer wants to pay less,
+    it pays the rest back to itself as <b>change</b>. Whatever the inputs
+    hold beyond the outputs is the <b>transaction fee</b> for the miner.
+  </p>
+
+  <p class="key">
+    <span class="lead-in">Unspent outputs</span>
+    At any moment, the coins that exist are exactly the
+    <b>unspent transaction outputs</b>. To check a payment, a node checks
+    that every input is an unspent output, signed by its owner, and that
+    the inputs hold at least as much as the outputs.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="tx_g" viewBox="0 0 1240 430" role="img"
+         aria-label="Transaction 3146 creates two outputs; transaction 7359 has an output 3 worth 8.5; transaction 8001 spends outputs (3146, 1) and (7359, 3) and creates three new outputs, leaving a fee of 0.1"></svg>
+    <div class="ctrls">
+      <button id="tx_play" class="primary">Play</button>
+      <button id="tx_step">Step</button>
+      <button id="tx_reset">Reset</button>
+      <span class="status" id="tx_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 6. Following coins through transactions.</b>
+      Transaction 3146 creates two outputs. An earlier transaction 7359
+      left an output <code>(7359, 3)</code> worth 8.5 to
+      <code>6xxxx</code>. Transaction 8001 spends <code>(3146, 1)</code>
+      and <code>(7359, 3)</code>, so it must be signed by both owners, and
+      creates three outputs worth 0.5, 3.5 and 7.6. The inputs hold 11.7
+      and the outputs 11.6: the remaining 0.1 is the fee. The two spent
+      outputs leave the set of unspent outputs, and the three new ones
+      join it.
+    </figcaption>
+  </figure>
+
+<h3>11. Scripts</h3>
+
+  <p>
+    An output does not simply name its owner. It holds a small program, a
+    <b>script</b>, that says what anyone must provide in order to spend
+    it. The input that spends it supplies the data, and every node runs
+    the two together. The output can be spent only if the script finishes
+    with <b>true</b>.
+  </p>
+  <p>
+    Almost every output uses the same script, <b>pay to public key
+    hash</b>. The output holds the hash of the owner&rsquo;s public key
+    &mdash; this hash is the owner&rsquo;s <b>address</b>. To spend it, the
+    owner supplies a signature and the public key itself. The script checks
+    that the key hashes to the address, and that the signature verifies
+    with that key.
+  </p>
+
+  <pre class="code"><span class="cm"># supplied by the spender (in the input)</span>
+&lt;sig&gt; &lt;pubKey&gt;
+<span class="cm"># in the output being spent</span>
+DUP  HASH160  &lt;pubKeyHash&gt;  EQUALVERIFY  CHECKSIG</pre>
+
+  <p>
+    The script language works on a <b>stack</b>. Data items are pushed on
+    it. <code>DUP</code> copies the top item; <code>HASH160</code> replaces
+    the top item by its hash; <code>EQUALVERIFY</code> removes the top two
+    items and stops with <i>false</i> unless they are equal;
+    <code>CHECKSIG</code> removes a public key and a signature and pushes
+    <i>true</i> if the signature verifies on the transaction. The language
+    deliberately has no loops, so every script finishes quickly.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="scr_g" viewBox="0 0 1240 430" role="img"
+         aria-label="The pay-to-public-key-hash script runs step by step on a stack: the signature and public key are pushed, the key is duplicated and hashed, the hash is compared with the address, and the signature is checked"></svg>
+    <div class="ctrls">
+      <button id="scr_play" class="primary">Play</button>
+      <button id="scr_step">Step</button>
+      <button id="scr_reset">Reset</button>
+      <button id="scr_wrong">Try someone else&rsquo;s key</button>
+      <span class="status" id="scr_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 7. Running a script.</b>
+      Each step runs one instruction; the stack is on the right. With the
+      owner&rsquo;s key, the hash matches the address, the signature
+      verifies, and the script ends with <i>true</i>: the output may be
+      spent. Press <i>Try someone else&rsquo;s key</i>: a thief who supplies
+      its own public key and signature fails at <code>EQUALVERIFY</code>,
+      because its key does not hash to the address.
+    </figcaption>
+  </figure>
+
+  <p>
+    Scripts allow more than plain payments. A <b>multisignature</b> output
+    needs, say, any 2 of 3 named keys to sign. That gives <b>escrow</b>:
+    a buyer pays into an output that needs 2 signatures out of the buyer,
+    the seller and a judge. If the video arrives, buyer and seller sign
+    and the seller is paid; if not, the judge signs with whichever side is
+    right. This answers, in part, the &ldquo;video never arrives&rdquo; attack
+    of section 8. A <b>lock time</b> can also make an output spendable only
+    after a given block.
+  </p>
+
+<h3>12. Blocks</h3>
+
+  <p>
+    A block has a small <b>header</b> and a list of transactions. The
+    header holds
+  </p>
+  <ul>
+    <li>the hash of the previous block&rsquo;s header &mdash; the hash
+      pointer that makes the block chain;</li>
+    <li>the root of a <b>Merkle tree</b> of the block&rsquo;s transactions;</li>
+    <li>a timestamp, the target, and the <b>nonce</b>.</li>
+  </ul>
+  <p>
+    Mining hashes only the header (with SHA-256, twice), so a miner can
+    try billions of nonces without touching the transactions. Because the
+    header contains the Merkle root, the proof of work covers every
+    transaction in the block. The first transaction in every block is the
+    <b>coinbase</b> transaction: it has no inputs, and its outputs pay the
+    block reward plus all the fees of the block to the miner.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="blk_g" viewBox="0 0 1240 440" role="img"
+         aria-label="A block: its header holds the hash of the previous header, the Merkle root, a timestamp, the target and the nonce; the Merkle tree below covers the block's transactions, the first of which is the coinbase transaction"></svg>
+    <figcaption>
+      <b>Figure 8. The structure of a block.</b>
+      The header (top) is hashed for the proof of work and points to the
+      previous block. Its Merkle root covers the transactions below it;
+      the first is the coinbase transaction that pays the miner. A
+      lightweight node, such as a phone wallet, keeps only the headers, and
+      checks that its payment is in a block with a Merkle proof, as in the
+      <a href="Cryptography.html">cryptography lecture</a>.
+    </figcaption>
+  </figure>
+
+<h3>13. The network</h3>
+
+  <p>
+    Bitcoin&rsquo;s nodes form a <b>peer-to-peer</b> network: each node is
+    connected to a few others, chosen at random, and anyone can join by
+    contacting a few known nodes. There is no central server.
+  </p>
+  <p>
+    A new transaction or block spreads by <b>flooding</b>, also called
+    gossip. A node that hears something new checks that it is valid,
+    passes it on to its neighbors, and ignores any copy it has already
+    seen. Each node keeps the valid transactions it has heard of but not
+    yet seen in a block in a pool, the <b>mempool</b>, and miners build
+    their blocks from it. If two transactions spend the same output, a
+    node keeps the first it hears and drops the other.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="gs_g" viewBox="0 0 1240 460" role="img"
+         aria-label="A random peer-to-peer network of 40 nodes; a new transaction starts at one node and spreads to all of them, each node passing it to its neighbors the first time it hears it"></svg>
+    <div class="ctrls">
+      <button id="gs_play" class="primary">Play</button>
+      <button id="gs_step">Step</button>
+      <button id="gs_reset">Reset</button>
+      <button id="gs_new">New network</button>
+      <span class="status" id="gs_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 9. Flooding a transaction through the network.</b>
+      Each of 40 nodes is connected to a few peers, mostly nearby ones,
+      plus a few long links. A transaction starts at one node (orange). At
+      each step, every node that heard it in the previous step passes it to
+      all its neighbors; a node that has already seen it does nothing. In
+      the real network, peers are chosen at random from all over the
+      Internet, so the number of steps grows only with the logarithm of the
+      number of nodes. That is why a new block reaches most of the network
+      within seconds.
+    </figcaption>
+  </figure>
+
+  <p>
+    Not every node does everything. A <b>full node</b> stores the whole
+    block chain and checks every transaction. A <b>lightweight node</b>
+    keeps only block headers and trusts that the longest chain is valid.
+    <b>Miners</b> are full nodes that also search for proofs of work.
+  </p>
+
+<h3>14. Limitations</h3>
+
+  <ul>
+    <li><b>Throughput.</b> Blocks have a size limit and come every 10
+      minutes, so Bitcoin handles only a few transactions per second
+      &mdash; the book estimates about 7 &mdash; compared with thousands for
+      a credit-card network.</li>
+    <li><b>Waiting.</b> A payment is settled only after several
+      confirmations, about an hour for 6.</li>
+    <li><b>Changing the rules.</b> Every node checks every rule, so a
+      change must be adopted by the network: a <b>soft fork</b> tightens
+      the rules, and old nodes still accept the new blocks; a <b>hard
+      fork</b> loosens them, and nodes that do not upgrade split off onto a
+      chain of their own.</li>
+  </ul>
+
+<h2>Summary</h2>
+
+  <table class="cmp">
+    <tr><th>Problem</th><th>Bitcoin&rsquo;s answer</th></tr>
+    <tr><td>Who acts as the bank for the next block?</td>
+        <td>Whoever solves a search puzzle first (proof of work)</td></tr>
+    <tr><td>Identities are free (Sybil attacks)</td>
+        <td>Winning depends on computing power, not identities</td></tr>
+    <tr><td>Two blocks found at once (forks)</td>
+        <td>Keep the longest valid chain; the fork soon ends</td></tr>
+    <tr><td>No master copy</td>
+        <td>A common prefix, settled with confidence that grows with depth</td></tr>
+    <tr><td>Why do the work?</td>
+        <td>Block rewards and transaction fees</td></tr>
+    <tr><td>Double spending</td>
+        <td>Wait for confirmations; safe while honest miners have most of the power</td></tr>
+    <tr><td>What is a coin?</td>
+        <td>An unspent output of a transaction, locked by a script</td></tr>
+    <tr><td>How does news spread?</td>
+        <td>Flooding over a peer-to-peer network; each node validates before relaying</td></tr>
+  </table>
+
+<h2>Exercises</h2>
+
+  <ol>
+    <li>List three ways Scrooge could harm users. Which of them can users
+      detect from the ledger?</li>
+    <li>Why can&rsquo;t Bitcoin decide the next block by a majority vote
+      of all agents?</li>
+    <li>In figure 3, a miner has 10% of the computing power. About how
+      many blocks a day does it win, if a block is found every 10
+      minutes?</li>
+    <li>In figure 4, choose a very long delay. What happens to the number
+      of orphaned blocks, and why? Why does Bitcoin choose a block time of
+      10 minutes rather than 10 seconds?</li>
+    <li>A transaction is in an orphaned block. Is the money lost? What
+      happens to the transaction?</li>
+    <li>An attacker has 30% of the computing power. Using the formula of
+      section 8, how many confirmations should a seller wait for to make
+      the probability of a successful double spend less than 0.1%?</li>
+    <li>An attacker with 51% of the computing power wants to take coins
+      from your public key. Can it? What <i>can</i> it do?</li>
+    <li>The block reward halves every 210,000 blocks. Why does this make
+      the total number of bitcoins less than 21 million? (Hint: 210,000
+      &times; 50 &times; (1 + 1/2 + 1/4 + &hellip;).)</li>
+    <li>Ana owns one output worth 5 coins and wants to pay Ben 2 coins with
+      a fee of 0.1. Write down the inputs and outputs of her transaction.</li>
+    <li>In figure 7, why does the script hash the public key and compare it
+      with the address, instead of storing the public key in the output?
+      What would a thief need in order to spend the output?</li>
+    <li>Design an escrow for buying a video, using a 2-of-3 multisignature
+      output. Who are the three key holders, and who signs in each case?</li>
+    <li>In figure 9, about how many steps does flooding take with 40 nodes?
+      Roughly how would that change with 40,000 nodes?</li>
+  </ol>
+
+</div>
+
+<script>
+/* SHA-256, written out so the page needs no library and works offline.
+   sha256(str) returns the hex digest of the UTF-8 bytes of str.
+   sha256States(str) also returns the chaining value after each 64-byte
+   block: SHA-256 is a Merkle-Damgard hash, and figure 6 shows it. */
+window.SHA=(function(){
+  const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+    0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+    0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+    0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+    0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  const IV=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const W=new Uint32Array(64);
+  function utf8(str){
+    if(typeof TextEncoder!=='undefined') return new TextEncoder().encode(str);
+    const out=[]; const s=unescape(encodeURIComponent(str));
+    for(let i=0;i<s.length;i++) out.push(s.charCodeAt(i)); return new Uint8Array(out);
+  }
+  function pad(bytes){
+    const L=bytes.length, n=((L+9+63)>>6)<<6, b=new Uint8Array(n);
+    b.set(bytes); b[L]=0x80;
+    const bits=L*8;
+    b[n-4]=(bits>>>24)&255; b[n-3]=(bits>>>16)&255; b[n-2]=(bits>>>8)&255; b[n-1]=bits&255;
+    b[n-8]=Math.floor(bits/4294967296)&255;
+    return b;
+  }
+  function compress(H,b,o){            // the compression function f
+    for(let i=0;i<16;i++) W[i]=(b[o+4*i]<<24)|(b[o+4*i+1]<<16)|(b[o+4*i+2]<<8)|b[o+4*i+3];
+    for(let i=16;i<64;i++){
+      const x=W[i-15], y=W[i-2];
+      const s0=((x>>>7)|(x<<25))^((x>>>18)|(x<<14))^(x>>>3);
+      const s1=((y>>>17)|(y<<15))^((y>>>19)|(y<<13))^(y>>>10);
+      W[i]=(W[i-16]+s0+W[i-7]+s1)|0;
+    }
+    let a=H[0],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7],bb=H[1];
+    for(let i=0;i<64;i++){
+      const S1=((e>>>6)|(e<<26))^((e>>>11)|(e<<21))^((e>>>25)|(e<<7));
+      const ch=(e&f)^(~e&g);
+      const t1=(h+S1+ch+K[i]+W[i])|0;
+      const S0=((a>>>2)|(a<<30))^((a>>>13)|(a<<19))^((a>>>22)|(a<<10));
+      const mj=(a&bb)^(a&c)^(bb&c);
+      const t2=(S0+mj)|0;
+      h=g; g=f; f=e; e=(d+t1)|0; d=c; c=bb; bb=a; a=(t1+t2)|0;
+    }
+    return [(H[0]+a)|0,(H[1]+bb)|0,(H[2]+c)|0,(H[3]+d)|0,(H[4]+e)|0,(H[5]+f)|0,(H[6]+g)|0,(H[7]+h)|0];
+  }
+  function hex(H){ return H.map(function(w){return ('00000000'+(w>>>0).toString(16)).slice(-8);}).join(''); }
+  function sha256States(str){
+    const raw=utf8(str), b=pad(raw); let H=IV.slice(); const states=[hex(H)], blocks=[];
+    for(let o=0;o<b.length;o+=64){ blocks.push(b.slice(o,o+64)); H=compress(H,b,o); states.push(hex(H)); }
+    return {hex:hex(H), states:states, blocks:blocks, length:raw.length};
+  }
+  function sha256(str){ return sha256States(str).hex; }
+  /* the first `bits` bits of the hash, as a number: the tiny hashes of
+     figures 2 and 5 */
+  function bitsOf(h, bits){ return parseInt(h.slice(0,8),16)>>>(32-bits); }
+  function leadingZeroBits(h){
+    let n=0;
+    for(let i=0;i<h.length;i++){
+      const v=parseInt(h[i],16);
+      if(v===0){ n+=4; continue; }
+      return n+(v<8?(v<4?(v<2?3:2):1):0);
+    }
+    return n;
+  }
+  return {sha256:sha256, sha256States:sha256States, bitsOf:bitsOf,
+          leadingZeroBits:leadingZeroBits};
+})();
+</script>
+
+<script>
+/* CRY: drawing helpers shared by the figures on this page. */
+window.CRY=(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#ddd8cd', paper:'#fbf9f5',
+           blue:'#1a5fd0', teal:'#00947d', orange:'#d13d0e', red:'#e0301a',
+           gold:'#d9a429', light:'#e8f0fd', pale:'#fff1ea', green:'#e6f4ef'};
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
+  function text(p,x,y,s,o){
+    o=o||{};
+    const e=el('text',{x:x, y:y,
+      'font-family':o.mono?'ui-monospace,Menlo,Consolas,monospace'
+                         :'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':o.size||14, 'font-weight':o.w||600, fill:o.fill||C.ink,
+      'text-anchor':o.anchor||'middle', 'dominant-baseline':'middle'}, s);
+    p.appendChild(e); return e;
+  }
+  function box(p,x,y,w,h,o){
+    o=o||{};
+    const e=el('rect',{x:x, y:y, width:w, height:h, rx:o.rx==null?10:o.rx,
+      fill:o.fill||'#fff', stroke:o.stroke||C.line, 'stroke-width':o.sw||1.6});
+    p.appendChild(e); return e;
+  }
+  function arrow(p,a,b,col,o){
+    o=o||{};
+    const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L;
+    const ln=el('line',{x1:a[0], y1:a[1], x2:b[0]-ux*9, y2:b[1]-uy*9,
+      stroke:col, 'stroke-width':o.w||2.2, 'stroke-linecap':'round'});
+    if(o.dash) ln.setAttribute('stroke-dasharray',o.dash);
+    p.appendChild(ln);
+    if(!o.noHead){
+      const s=6, px=-uy, py=ux;
+      p.appendChild(el('polygon',{points:
+        b[0]+','+b[1]+' '+(b[0]-ux*s*2+px*s)+','+(b[1]-uy*s*2+py*s)+' '+
+        (b[0]-ux*s*2-px*s)+','+(b[1]-uy*s*2-py*s), fill:col}));
+    }
+  }
+  function randHex(n){
+    let s='';
+    const a=new Uint8Array(Math.ceil(n/2));
+    if(window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(a);
+    else for(let i=0;i<a.length;i++) a[i]=Math.floor(Math.random()*256);
+    for(let i=0;i<a.length;i++) s+=('0'+a[i].toString(16)).slice(-2);
+    return s.slice(0,n);
+  }
+  /* Play for step-by-step figures: Reset, then press Step every gap ms
+     until the last step. Reset stops it. */
+  function autoplay(pfx, n, gap){
+    const play=document.getElementById(pfx+'play'),
+          step=document.getElementById(pfx+'step'),
+          reset=document.getElementById(pfx+'reset');
+    if(!play || !step || !reset) return;
+    let timer=null, busy=false;
+    function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+    reset.addEventListener('click', function(){ if(!busy) stop(); });
+    play.addEventListener('click', function(){
+      stop(); busy=true; reset.click(); busy=false;
+      let i=1; step.click();
+      timer=setInterval(function(){ if(i>=n){ stop(); return; } step.click(); i++; }, gap);
+    });
+  }
+  return {NS:NS, C:C, el:el, clear:clear, text:text, box:box, arrow:arrow,
+          randHex:randHex, autoplay:autoplay};
+})();
+</script>
+
+<script>
+/* Figure 1 — double spending in Goofycoin */
+(function(){
+  const PFX='gf_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.CRY, C=B.C;
+  const LAST=5;
+  let step=0;
+  function card(x,y,l1,l2,signer,col){
+    B.box(svg, x, y, 250, 86, {fill:'#fff', stroke:col||C.ink, sw:2});
+    B.text(svg, x+14, y+24, l1, {anchor:'start', size:16, w:700});
+    B.text(svg, x+14, y+48, l2, {anchor:'start', size:15, fill:C.muted});
+    B.text(svg, x+14, y+70, 'signed: '+signer+'  ✓', {anchor:'start', size:15, w:700, fill:C.teal});
+  }
+  function draw(){
+    B.clear(svg);
+    if(step>=1) card(40, 160, 'CreateCoin [coin 73]', 'Goofy creates a coin', 'Goofy');
+    if(step>=2){ B.arrow(svg, [370,203], [292,203], C.muted, {}); card(372, 160, 'Pay coin 73 to Alice', 'hash pointer ← to the coin', 'Goofy'); }
+    if(step>=3){ B.arrow(svg, [752,95], [624,180], C.muted); card(752, 40, 'Pay coin 73 to Bob', 'hash pointer ← to Alice’s coin', 'Alice', C.blue); }
+    if(step>=4){ B.arrow(svg, [752,312], [624,226], C.muted); card(752, 270, 'Pay coin 73 to Chuck', 'hash pointer ← the same coin', 'Alice', C.orange); }
+    if(step>=5){
+      B.box(svg, 40, 372, 1160, 40, {fill:C.pale, stroke:C.orange});
+      B.text(svg, 620, 392, 'Every signature verifies, yet Bob and Chuck both own coin 73: Alice spent it twice.',
+        {size:16.5, w:700, fill:C.orange});
+    }
+    $('status').innerHTML=['press play','Goofy creates coin 73','Goofy pays it to Alice',
+      'Alice pays Bob','Alice pays Chuck <b>the same coin</b>','<b>double spend</b>'][step];
+  }
+  $('step').onclick=function(){ if(step<LAST) step++; draw(); };
+  $('reset').onclick=function(){ step=0; draw(); };
+  B.autoplay(PFX, LAST, 1600);
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 2 — Scroogecoin checks every transaction */
+(function(){
+  const PFX='sc_', $=function(id){return document.getElementById(PFX+id);};
+  if(!$('tx')) return;
+  const B=window.CRY;
+  const TXS=[
+    {id:1, kind:'CreateCoins', consumes:[], creates:[[5,'Ana'],[3,'Ben']], signers:['Scrooge'],
+     text:'Scrooge creates 5 coins for Ana and 3 for Ben'},
+    {id:2, kind:'PayCoins', consumes:['1,0'], creates:[[2,'Ben'],[3,'Ana']], signers:['Ana'],
+     text:'Ana pays Ben 2 with coin (1,0); 3 back to Ana'},
+    {id:3, kind:'PayCoins', consumes:['1,0'], creates:[[5,'Chuck']], signers:['Ana'],
+     text:'Ana pays Chuck 5 with coin (1,0) again'},
+    {id:4, kind:'PayCoins', consumes:['1,1','2,0'], creates:[[4,'Chuck'],[1,'Ben']], signers:['Ben'],
+     text:'Ben pays Chuck 4 with coins (1,1) and (2,0); 1 back to Ben'}];
+  const LAST=TXS.length;
+  let step=0;
+  function run(n){
+    const coins={}, order=[], res=[];
+    for(let i=0;i<n;i++){
+      const t=TXS[i]; let ok=true; const checks=[];
+      if(t.kind==='CreateCoins') checks.push(['created by Scrooge', true]);
+      else {
+        const exist=t.consumes.every(function(c){ return coins[c] && !coins[c].spent; });
+        const why=t.consumes.filter(function(c){ return coins[c] && coins[c].spent; });
+        checks.push(['coins exist and are unspent'+(why.length?': coin ('+why[0]+') was consumed by transaction '+coins[why[0]].spent:''), exist]);
+        const tin=t.consumes.reduce(function(a,c){ return a+(coins[c]?coins[c].v:0); },0);
+        const tout=t.creates.reduce(function(a,c){ return a+c[0]; },0);
+        checks.push(['value in = value out: '+tin+' = '+tout, tin===tout]);
+        const owners=t.consumes.map(function(c){ return coins[c]?coins[c].o:'?'; });
+        const signed=owners.every(function(o){ return t.signers.indexOf(o)>=0; });
+        checks.push(['signed by the owner'+(owners.length>1?'s':'')+': '+t.signers.join(', '), signed]);
+        ok=exist && tin===tout && signed;
+      }
+      if(ok){
+        t.consumes.forEach(function(c){ coins[c].spent=t.id; });
+        t.creates.forEach(function(c,k){ const key=t.id+','+k; coins[key]={v:c[0], o:c[1], spent:0, by:t.id}; order.push(key); });
+      }
+      res.push({t:t, ok:ok, checks:checks});
+    }
+    return {coins:coins, order:order, res:res};
+  }
+  function draw(){
+    const R=run(step);
+    let h='';
+    R.res.forEach(function(r,i){
+      const t=r.t;
+      h+='<div class="txcard '+(r.ok?'acc':'rej')+(i===step-1?' now fade':'')+'">'+
+        '<b>Transaction '+t.id+': '+t.kind+'</b><br>'+t.text+
+        '<div class="checks">'+r.checks.map(function(c){
+          return (c[1]?'<span class="ok">✓</span> ':'<span class="bad">✗</span> ')+c[0];
+        }).join('<br>')+'<br>'+(r.ok?'<b>Appended</b>; Scrooge signs the new head.'
+          :'<span class="bad">Rejected: a double spend.</span>')+'</div></div>';
+    });
+    if(!step) h='<div class="txcard">Press <b>Play</b> or <b>Step</b> to send transactions to Scrooge.</div>';
+    $('tx').innerHTML=h;
+    let c='<table class="utxo"><tr><th>coin</th><th>value</th><th>owner</th><th>status</th></tr>';
+    R.order.forEach(function(k){
+      const v=R.coins[k], isNew=(v.by===TXS[step-1].id && R.res[step-1].ok);
+      c+='<tr class="'+(v.spent?'gone':(isNew?'new':''))+'"><td>('+k+')</td><td>'+v.v+'</td><td>'+v.o+'</td><td>'+
+        (v.spent?'consumed by '+v.spent:'unspent')+'</td></tr>';
+    });
+    c+='</table>';
+    $('coins').innerHTML=R.order.length? c : '<div class="txcard">No coins yet.</div>';
+    $('status').innerHTML=step? ('transaction '+TXS[step-1].id+': '+(R.res[step-1].ok?'<b>appended</b>':'<b>rejected</b>')) : 'press play';
+  }
+  $('step').onclick=function(){ if(step<LAST) step++; draw(); };
+  $('reset').onclick=function(){ step=0; draw(); };
+  B.autoplay(PFX, LAST, 2400);
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 3 — a mining race. Each miner hashes its own block with real
+   SHA-256; a miner with twice the computing power tries twice as many
+   nonces in each instant. */
+(function(){
+  const PFX='mn_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.CRY, C=B.C;
+  const M=[{n:'Miner A', share:40, rate:8, col:C.blue},
+           {n:'Miner B', share:30, rate:6, col:C.teal},
+           {n:'Miner C', share:20, rate:4, col:C.gold},
+           {n:'Miner D', share:10, rate:2, col:C.orange}];
+  const D=10;
+  let prev, tries, best, bestH, nonce, winner, wins, races, timer=null;
+  function puzzle(i){ return prev.slice(0,16)+' | reward to '+M[i].n+' | transactions | '; }
+  function newRace(){
+    tries=[0,0,0,0]; best=[-1,-1,-1,-1]; bestH=['','','','']; nonce=[0,0,0,0]; winner=null;
+  }
+  function resetAll(){
+    if(timer){ clearInterval(timer); timer=null; }
+    prev=SHA.sha256('genesis'); wins=[0,0,0,0]; races=0; newRace(); draw();
+  }
+  /* one instant: every miner tries `rate` nonces. If several succeed in
+     the same instant, the one that succeeded earliest in the instant wins. */
+  function tick(){
+    let first=null;
+    M.forEach(function(m,i){
+      for(let k=0;k<m.rate;k++){
+        const x=nonce[i]++, h=SHA.sha256(puzzle(i)+x), z=SHA.leadingZeroBits(h);
+        tries[i]++;
+        if(z>best[i]){ best[i]=z; bestH[i]=h; }
+        if(z>=D){
+          const when=(k+1)/m.rate;
+          if(!first || when<first.when || (when===first.when && Math.random()<0.5))
+            first={i:i, h:h, x:x, when:when};
+          break;
+        }
+      }
+    });
+    if(first){
+      winner=first; wins[first.i]++; races++;
+      prev=first.h;
+    }
+    return first;
+  }
+  function draw(){
+    B.clear(svg);
+    B.text(svg, 40, 26, 'EACH MINER SEARCHES FOR A HASH STARTING WITH '+D+' ZERO BITS',
+      {anchor:'start', size:14, w:700, fill:C.muted});
+    B.text(svg, 760, 56, 'best hash so far', {anchor:'start', size:13, w:700, fill:C.muted});
+    B.text(svg, 1090, 56, 'blocks won', {anchor:'start', size:13, w:700, fill:C.muted});
+    M.forEach(function(m,i){
+      const y=90+i*66, won=winner && winner.i===i;
+      B.box(svg, 30, y-26, 1180, 52, {fill:won?C.green:'#fff', stroke:won?C.teal:C.line, sw:won?2.4:1.4});
+      B.text(svg, 46, y-6, m.n, {anchor:'start', size:16, w:700, fill:m.col});
+      B.text(svg, 46, y+13, m.share+'% of the power', {anchor:'start', size:13, fill:C.muted});
+      const w=Math.min(1, tries[i]/1200)*380;
+      B.box(svg, 220, y-10, 380, 20, {rx:4, fill:'#f6f4ee', stroke:C.line, sw:1});
+      if(w>0) B.box(svg, 220, y-10, w, 20, {rx:4, fill:m.col, stroke:'none', sw:0});
+      B.text(svg, 612, y, tries[i].toLocaleString()+' tries', {anchor:'start', mono:true, size:13.5});
+      if(best[i]>=0){
+        B.text(svg, 760, y-8, bestH[i].slice(0,18)+'…', {anchor:'start', mono:true, size:13.5});
+        B.text(svg, 760, y+12, best[i]+' zero bits'+(won?'  ✓ solved':''),
+          {anchor:'start', size:13, w:700, fill:won?C.teal:C.muted});
+      }
+      const pct=races? Math.round(100*wins[i]/races) : 0;
+      B.text(svg, 1090, y, wins[i]+(races?'  ('+pct+'%)':''), {anchor:'start', mono:true, size:15, w:700});
+    });
+    if(winner){
+      B.text(svg, 620, 378, M[winner.i].n+' wins the block and broadcasts it; the next race starts from its block.',
+        {size:15, w:700, fill:C.teal});
+    }
+    $('status').innerHTML=races? ('<b>'+races+'</b> race'+(races>1?'s':'')+' run') : 'press Race';
+  }
+  $('play').onclick=function(){
+    if(timer) return;
+    newRace(); draw();
+    timer=setInterval(function(){
+      const w=tick(); draw();
+      if(w){ clearInterval(timer); timer=null; }
+    }, 60);
+  };
+  $('many').onclick=function(){
+    if(timer){ clearInterval(timer); timer=null; }
+    for(let r=0;r<200;r++){ newRace(); while(!tick()){} }
+    draw();
+  };
+  $('reset').onclick=resetAll;
+  resetAll();
+})();
+</script>
+
+<script>
+/* Figure 4 — forks and the common prefix. A simulation of the rules:
+   blocks are found at random, each agent keeps the longest chain it has
+   heard of (the first one on a tie), and messages take `delay` steps. */
+(function(){
+  const PFX='nw_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.CRY, C=B.C;
+  const AG=[{n:'A', share:.3, col:C.blue}, {n:'B', share:.3, col:C.teal},
+            {n:'C', share:.2, col:C.gold}, {n:'D', share:.2, col:C.orange}];
+  const RATE=0.1, W=19;
+  let blocks, tip, inflight, t, delay, lastFound;
+  function reset(){
+    delay=+$('delay').value;
+    blocks=[{id:0, parent:-1, h:0, miner:-1}];
+    tip=[0,0,0,0]; inflight=[]; t=0; lastFound=null; draw();
+  }
+  function chainOf(id){ const c=[]; while(id>=0){ c.push(id); id=blocks[id].parent; } return c.reverse(); }
+  function step(){
+    t++;
+    /* deliver messages that have arrived */
+    inflight=inflight.filter(function(m){
+      if(m.at>t) return true;
+      if(blocks[m.b].h>blocks[tip[m.to]].h) tip[m.to]=m.b;
+      return false;
+    });
+    /* perhaps someone finds a block */
+    lastFound=null;
+    if(Math.random()<RATE){
+      let r=Math.random(), i=0;
+      while(i<AG.length-1 && r>AG[i].share){ r-=AG[i].share; i++; }
+      const parent=tip[i], b={id:blocks.length, parent:parent, h:blocks[parent].h+1, miner:i};
+      blocks.push(b); tip[i]=b.id; lastFound=b.id;
+      for(let j=0;j<AG.length;j++) if(j!==i) inflight.push({to:j, b:b.id, at:t+delay});
+    }
+    draw();
+  }
+  function draw(){
+    B.clear(svg);
+    const chains=tip.map(chainOf);
+    const maxH=Math.max.apply(null, tip.map(function(id){return blocks[id].h;}));
+    const lo=Math.max(0, maxH-W+1);
+    let common=0;
+    for(let h=0;;h++){
+      const id=chains[0][h];
+      if(id===undefined || !chains.every(function(c){ return c[h]===id; })) break;
+      common=h;
+    }
+    const X0=150, BW=54;
+    const xOf=function(h){ return X0+(h-lo)*BW; };
+    if(common>=lo){
+      B.box(svg, X0-6, 44, xOf(common)-X0+BW+2, 4*76+8, {fill:'#eef7f4', stroke:'none', sw:0, rx:8});
+    }
+    B.text(svg, X0, 30, 'common prefix: every agent agrees up to block height '+common,
+      {anchor:'start', size:14, w:700, fill:C.teal});
+    const inChain={}; chains.forEach(function(c){ c.forEach(function(id){ inChain[id]=1; }); });
+    AG.forEach(function(a,i){
+      const y=60+i*76;
+      B.text(svg, 20, y+26, 'Agent '+a.n, {anchor:'start', size:16, w:700, fill:a.col});
+      B.text(svg, 20, y+46, Math.round(a.share*100)+'% power', {anchor:'start', size:12.5, fill:C.muted});
+      chains[i].forEach(function(id){
+        const bk=blocks[id]; if(bk.h<lo) return;
+        const x=xOf(bk.h), fresh=(id===lastFound);
+        B.box(svg, x, y+8, BW-8, 44, {rx:6, fill:bk.miner<0?'#fff':bk.miner===i?AG[bk.miner].col:'#fff',
+          stroke:bk.miner<0?C.ink:AG[bk.miner].col, sw:fresh?3.5:2});
+        B.text(svg, x+(BW-8)/2, y+30, bk.miner<0?'G':String(id), {mono:true, size:13, w:700,
+          fill:bk.miner===i?'#fff':(bk.miner<0?C.ink:AG[bk.miner].col)});
+      });
+    });
+    const orphans=blocks.filter(function(b){ return b.id>0 && !inChain[b.id] && b.h<=maxH; }).length;
+    B.text(svg, 20, 384, 'step '+t+'   ·   blocks found: '+(blocks.length-1)+'   ·   orphaned blocks: '+orphans+
+      '   ·   messages in transit: '+inflight.length, {anchor:'start', size:14, w:700});
+    B.text(svg, 20, 410, 'A filled block was mined by that agent itself; an outlined block came from another agent, in that agent’s color.',
+      {anchor:'start', size:13, fill:C.muted});
+    $('status').innerHTML='step <b>'+t+'</b>';
+  }
+  $('step').onclick=step;
+  $('reset').onclick=reset;
+  $('delay').addEventListener('change', reset);
+  B.autoplay(PFX, 400, 220);
+  reset();
+})();
+</script>
+
+<script>
+/* Figure 5 — can an attacker catch up from z blocks behind? */
+(function(){
+  const PFX='at_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.CRY, C=B.C;
+  let sim=null;
+  function prob(q,z){ const p=1-q; return q>=p? 1 : Math.pow(q/p, z); }
+  function fmt(v){
+    if(v>=0.995) return '1';
+    if(v>=0.01) return (100*v).toFixed(v>=0.1?0:1)+'%';
+    if(v>=0.0001) return (100*v).toFixed(2)+'%';
+    return '<0.01%';
+  }
+  function draw(){
+    const q=+$('q').value/100;
+    $('qv').textContent=Math.round(q*100)+'%';
+    B.clear(svg);
+    const X0=90, Y0=320, H=250, BW=90;
+    B.text(svg, X0, 26, 'PROBABILITY THAT AN ATTACKER WITH '+Math.round(q*100)+
+      '% OF THE POWER EVER CATCHES UP FROM z BLOCKS BEHIND', {anchor:'start', size:14, w:700, fill:C.muted});
+    svg.appendChild(B.el('line',{x1:X0-10, y1:Y0, x2:X0+11*BW, y2:Y0, stroke:C.ink, 'stroke-width':1.2}));
+    for(let z=0;z<=10;z++){
+      const v=prob(q,z), h=Math.max(1.5, v*H), x=X0+z*BW;
+      const six=(z===6);
+      B.box(svg, x+12, Y0-h, BW-24, h, {rx:3, sw:six?2.4:0, fill:q>=0.5?C.orange:C.blue,
+        stroke:six?C.ink:'none'});
+      B.text(svg, x+BW/2, Y0-h-14, fmt(v), {size:13.5, w:700, fill:six?C.ink:C.muted});
+      B.text(svg, x+BW/2, Y0+18, String(z), {mono:true, size:14, w:700});
+    }
+    B.text(svg, X0+5.5*BW, Y0+44, 'z = confirmations the seller waited for', {size:14, w:700, fill:C.muted});
+    if(sim){
+      B.text(svg, X0+5.5*BW, 380, 'Simulated: the attacker caught up in '+sim.wins+' of 1,000 races from 6 behind ('+
+        fmt(sim.wins/1000)+'); the formula gives '+fmt(prob(sim.q,6))+'.', {size:14.5, w:700, fill:C.teal});
+    } else if(q>=0.5){
+      B.text(svg, X0+5.5*BW, 380, 'With a majority of the power, the attacker always catches up eventually.',
+        {size:14.5, w:700, fill:C.orange});
+    }
+    $('status').innerHTML='q = '+Math.round(q*100)+'%: from 6 behind, <b>'+fmt(prob(q,6))+'</b>';
+  }
+  $('q').addEventListener('input', function(){ sim=null; draw(); });
+  $('sim').onclick=function(){
+    const q=+$('q').value/100; let wins=0;
+    for(let r=0;r<1000;r++){
+      let behind=6, steps=0;
+      while(behind>0 && behind<60 && steps<20000){
+        behind+= (Math.random()<q)? -1 : 1; steps++;
+      }
+      if(behind<=0) wins++;
+    }
+    sim={q:q, wins:wins}; draw();
+  };
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 6 — following coins through transactions */
+(function(){
+  const PFX='tx_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.CRY, C=B.C;
+  const LAST=4;
+  let step=0;
+  function out(x,y,name,val,owner,state){
+    const col=state==='spent'?C.muted:(state==='new'?C.teal:C.ink);
+    B.box(svg, x, y, 300, 30, {rx:6, fill:state==='spent'?'#f3f1ec':(state==='new'?C.green:'#fff'),
+      stroke:state==='new'?C.teal:C.line, sw:1.4});
+    B.text(svg, x+12, y+15, name+'  '+val+' → '+owner, {anchor:'start', mono:true, size:14, fill:col});
+    if(state==='spent'){
+      svg.appendChild(B.el('line',{x1:x+8, y1:y+15, x2:x+292, y2:y+15, stroke:C.muted, 'stroke-width':1.4}));
+    }
+  }
+  function card(x,y,h,title,sub){
+    B.box(svg, x, y, 340, h, {fill:C.paper});
+    B.text(svg, x+14, y+20, title, {anchor:'start', size:15.5, w:700});
+    if(sub) B.text(svg, x+14, y+40, sub, {anchor:'start', size:13, fill:C.muted});
+  }
+  function draw(){
+    B.clear(svg);
+    const spent=step>=4;
+    if(step>=1){
+      card(30, 30, 140, 'Transaction 3146', 'create');
+      out(50, 80, '(3146, 0)', '2.1', '7xxxx', 'unspent');
+      out(50, 118, '(3146, 1)', '3.2', '8xxxx', spent?'spent':'unspent');
+    }
+    if(step>=2){
+      card(30, 200, 104, 'Transaction 7359', 'an earlier payment (other outputs not shown)');
+      out(50, 254, '(7359, 3)', '8.5', '6xxxx', spent?'spent':'unspent');
+    }
+    if(step>=3){
+      card(500, 30, step>=4?274:150, 'Transaction 8001', 'pay');
+      B.text(svg, 514, 84, 'inputs', {anchor:'start', size:13, w:700, fill:C.muted});
+      B.text(svg, 514, 106, '(3146, 1)   signed by 8xxxx ✓', {anchor:'start', mono:true, size:14});
+      B.text(svg, 514, 130, '(7359, 3)   signed by 6xxxx ✓', {anchor:'start', mono:true, size:14});
+      B.arrow(svg, [352,133], [508,106], C.blue);
+      B.arrow(svg, [352,269], [508,130], C.blue);
+      B.text(svg, 514, 154, 'in: 3.2 + 8.5 = 11.7', {anchor:'start', mono:true, size:14, fill:C.blue});
+    }
+    if(step>=4){
+      B.text(svg, 514, 178, 'outputs', {anchor:'start', size:13, w:700, fill:C.muted});
+      out(514, 190, '(8001, 0)', '0.5', '7xxxx', 'new');
+      out(514, 226, '(8001, 1)', '3.5', '8xxxx', 'new');
+      out(514, 262, '(8001, 2)', '7.6', '9xxxx', 'new');
+      B.box(svg, 880, 120, 320, 100, {fill:'#fff', stroke:C.gold, sw:2});
+      B.text(svg, 1040, 146, 'out: 0.5 + 3.5 + 7.6 = 11.6', {mono:true, size:14});
+      B.text(svg, 1040, 172, 'fee = 11.7 − 11.6 = 0.1', {mono:true, size:14, w:700, fill:C.gold});
+      B.text(svg, 1040, 196, 'goes to the miner', {size:13, fill:C.muted});
+    }
+    /* the set of unspent outputs */
+    B.text(svg, 30, 350, 'UNSPENT OUTPUTS: THE COINS THAT EXIST', {anchor:'start', size:13, w:700, fill:C.muted});
+    const set=[];
+    if(step>=1) set.push(['(3146, 0)','2.1',false]);
+    if(step>=1 && !spent) set.push(['(3146, 1)','3.2',false]);
+    if(step>=2 && !spent) set.push(['(7359, 3)','8.5',false]);
+    if(step>=4) set.push(['(8001, 0)','0.5',true],['(8001, 1)','3.5',true],['(8001, 2)','7.6',true]);
+    set.forEach(function(u,k){
+      const x=30+k*196;
+      B.box(svg, x, 368, 184, 40, {rx:8, fill:u[2]?C.green:'#fff', stroke:u[2]?C.teal:C.line, sw:1.6});
+      B.text(svg, x+92, 388, u[0]+'  '+u[1], {mono:true, size:14, w:700});
+    });
+    if(!set.length) B.text(svg, 30, 388, 'none yet', {anchor:'start', size:14, fill:C.muted});
+    $('status').innerHTML=['press play','transaction 3146 creates two outputs',
+      'an earlier output (7359, 3)','8001 spends two outputs, <b>signed by both owners</b>',
+      'three new outputs; <b>fee 0.1</b>'][step];
+  }
+  $('step').onclick=function(){ if(step<LAST) step++; draw(); };
+  $('reset').onclick=function(){ step=0; draw(); };
+  B.autoplay(PFX, LAST, 1800);
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 7 — running the pay-to-public-key-hash script on a stack */
+(function(){
+  const PFX='scr_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.CRY, C=B.C;
+  const PROG=['<sig>','<pubKey>','DUP','HASH160','<pubKeyHash>','EQUALVERIFY','CHECKSIG'];
+  let step=0, wrong=false;
+  function run(n){
+    const who=wrong?'Eve':'Ana', st=[]; let fail=null;
+    for(let i=0;i<n && !fail;i++){
+      const op=PROG[i];
+      if(op==='<sig>') st.push('sig('+who+')');
+      else if(op==='<pubKey>') st.push('pubKey('+who+')');
+      else if(op==='DUP') st.push(st[st.length-1]);
+      else if(op==='HASH160'){ const k=st.pop(); st.push('H('+k+')'); }
+      else if(op==='<pubKeyHash>') st.push('H(pubKey(Ana))');
+      else if(op==='EQUALVERIFY'){ const a=st.pop(), b=st.pop(); if(a!==b) fail='EQUALVERIFY: the key does not hash to the address'; }
+      else if(op==='CHECKSIG'){ const k=st.pop(), s=st.pop(); st.push((k==='pubKey(Ana)' && s==='sig(Ana)')?'true':'false'); }
+    }
+    return {st:st, fail:fail};
+  }
+  function draw(){
+    B.clear(svg);
+    const r=run(step);
+    B.text(svg, 40, 28, wrong?'EVE, A THIEF, TRIES TO SPEND ANA’S OUTPUT WITH HER OWN KEY':'ANA SPENDS HER OUTPUT',
+      {anchor:'start', size:14, w:700, fill:wrong?C.orange:C.muted});
+    B.text(svg, 40, 62, 'supplied in the input', {anchor:'start', size:13, fill:C.muted});
+    B.text(svg, 40, 160, 'in the output being spent', {anchor:'start', size:13, fill:C.muted});
+    PROG.forEach(function(op,i){
+      const x=40+(i<2? i*170 : (i-2)*150), y=i<2? 78 : 176;
+      const done=i<step, cur=(i===step-1);
+      B.box(svg, x, y, i<2?160:140, 44, {rx:8, fill:cur?C.light:(done?'#f3f1ec':'#fff'),
+        stroke:cur?C.blue:C.line, sw:cur?2.4:1.4});
+      let label=op;
+      if(op==='<sig>') label='<sig'+(wrong?' Eve':' Ana')+'>';
+      if(op==='<pubKey>') label='<pubKey'+(wrong?' Eve':' Ana')+'>';
+      B.text(svg, x+(i<2?80:70), y+22, label, {mono:true, size:13.5, w:700, fill:cur?C.blue:C.ink});
+    });
+    /* the stack */
+    const SX=880, SY=380;
+    B.text(svg, SX+150, 62, 'stack (top at the top)', {size:13, w:700, fill:C.muted});
+    svg.appendChild(B.el('line',{x1:SX, y1:SY, x2:SX+300, y2:SY, stroke:C.ink, 'stroke-width':2}));
+    r.st.forEach(function(v,k){
+      const y=SY-48*(k+1);
+      const isT=(v==='true'), isF=(v==='false');
+      B.box(svg, SX+10, y, 280, 40, {rx:6, fill:isT?C.green:(isF?C.pale:'#fff'),
+        stroke:isT?C.teal:(isF?C.orange:C.line), sw:1.6});
+      B.text(svg, SX+150, y+20, v, {mono:true, size:14, w:700, fill:isT?C.teal:(isF?C.orange:C.ink)});
+    });
+    let msg='';
+    if(r.fail) msg='✗ stopped at '+r.fail+': Eve cannot spend it';
+    else if(step===PROG.length) msg=(r.st[0]==='true')?'✓ the script ends with true: Ana may spend the output'
+      :'✗ the script ends with false';
+    if(msg) B.text(svg, 40, 300, msg, {anchor:'start', size:15, w:700, fill:msg[0]==='✓'?C.teal:C.orange});
+    const what={'<sig>':'push the signature','<pubKey>':'push the public key','DUP':'copy the top item',
+      'HASH160':'hash the top item','<pubKeyHash>':'push the address stored in the output',
+      'EQUALVERIFY':'compare the top two items','CHECKSIG':'check the signature with the key'};
+    $('status').innerHTML=step? ('step '+step+': '+what[PROG[step-1]]) : 'press play';
+  }
+  $('step').onclick=function(){ const r=run(step); if(step<PROG.length && !r.fail) step++; draw(); };
+  $('reset').onclick=function(){ step=0; draw(); };
+  $('wrong').onclick=function(){
+    wrong=!wrong; step=0;
+    $('wrong').textContent=wrong?'Use Ana’s own key':'Try someone else’s key';
+    draw();
+  };
+  B.autoplay(PFX, PROG.length, 1200);
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 8 — the structure of a block (a static drawing; the hashes are
+   real SHA-256 values of the example data) */
+(function(){
+  const svg=document.getElementById('blk_g'); if(!svg) return;
+  const B=window.CRY, C=B.C;
+  const TX=['coinbase: reward + fees → miner','Ana pays Ben 2','Ben pays Chuck 4','Chuck pays Dee 1'];
+  const h=function(s){ return SHA.sha256(s); };
+  const L=TX.map(h), N1=[h(L[0]+L[1]), h(L[2]+L[3])], root=h(N1[0]+N1[1]);
+  const prev=h('the previous block header');
+  /* the previous block */
+  B.box(svg, 20, 40, 170, 120, {fill:'#f3f1ec'});
+  B.text(svg, 105, 60, 'previous block', {size:13.5, w:700, fill:C.muted});
+  B.text(svg, 105, 100, 'header', {size:13, fill:C.muted});
+  B.text(svg, 105, 120, 'hash '+prev.slice(0,8)+'…', {mono:true, size:12.5, fill:C.muted});
+  /* the header */
+  B.box(svg, 250, 20, 960, 160, {fill:C.paper, stroke:C.ink, sw:2});
+  B.text(svg, 270, 42, 'BLOCK HEADER (hashed for the proof of work)', {anchor:'start', size:13.5, w:700, fill:C.muted});
+  const F=[['previous header hash', prev.slice(0,12)+'…'],['Merkle root', root.slice(0,12)+'…'],
+           ['timestamp','2026-10-05 10:42'],['target','≈ 2^256 / difficulty'],['nonce','2,083,236,893']];
+  F.forEach(function(f,i){
+    const x=270+i*186;
+    B.box(svg, x, 60, 176, 100, {fill:'#fff', stroke:i===1?C.blue:C.line, sw:i===1?2.2:1.4});
+    B.text(svg, x+88, 88, f[0], {size:13.5, w:700, fill:i===1?C.blue:C.ink});
+    B.text(svg, x+88, 122, f[1], {mono:true, size:13});
+  });
+  B.arrow(svg, [270,110], [194,110], C.ink);
+  /* the Merkle tree: leaves, two inner nodes, and the root */
+  const LC=[210,460,710,960], NC=[(LC[0]+LC[1])/2, (LC[2]+LC[3])/2], RC=(NC[0]+NC[1])/2;
+  const fieldX=270+186+88;
+  B.box(svg, RC-85, 214, 170, 40, {fill:C.light, stroke:C.blue});
+  B.text(svg, RC, 234, 'root '+root.slice(0,8)+'…', {mono:true, size:13, w:700, fill:C.blue});
+  B.arrow(svg, [RC,214], [fieldX,164], C.blue);
+  NC.forEach(function(x,i){
+    B.box(svg, x-80, 290, 160, 40, {fill:'#fff'});
+    B.text(svg, x, 310, N1[i].slice(0,8)+'…', {mono:true, size:13});
+    B.arrow(svg, [x,290], [RC,254], C.line, {noHead:true});
+  });
+  TX.forEach(function(t,i){
+    const x=LC[i];
+    B.box(svg, x-110, 360, 220, 56, {fill:i===0?'#fff4e8':'#fff', stroke:i===0?C.gold:C.line, sw:i===0?2:1.4});
+    B.text(svg, x, 380, t, {size:13, w:700});
+    B.text(svg, x, 400, L[i].slice(0,8)+'…', {mono:true, size:12.5, fill:C.muted});
+    B.arrow(svg, [x,360], [NC[i<2?0:1],330], C.line, {noHead:true});
+  });
+  B.text(svg, 20, 290, 'transactions', {anchor:'start', size:13, w:700, fill:C.muted});
+  B.text(svg, 20, 310, '(the block body)', {anchor:'start', size:13, fill:C.muted});
+})();
+</script>
+
+<script>
+/* Figure 9 — flooding a transaction through a peer-to-peer network */
+(function(){
+  const PFX='gs_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.CRY, C=B.C;
+  const N=40;
+  let pos, adj, seen, fresh, step;
+  function build(){
+    pos=[]; adj=[]; for(let i=0;i<N;i++) adj.push([]);
+    const cols=8, rows=5;
+    for(let i=0;i<N;i++){
+      const c=i%cols, r=Math.floor(i/cols);
+      pos.push([80+c*150+(Math.random()-0.5)*70, 50+r*82+(Math.random()-0.5)*36]);
+    }
+    function link(a,b){ if(a!==b && adj[a].indexOf(b)<0){ adj[a].push(b); adj[b].push(a); } }
+    /* each node joins by linking to the nearest node already in the
+       network, which keeps it connected; then each node adds a link to a
+       near neighbor, and a few long random links make it a mesh */
+    function d(a,b){ return Math.hypot(pos[a][0]-pos[b][0], pos[a][1]-pos[b][1]); }
+    const order=[]; for(let i=0;i<N;i++) order.push(i);
+    order.sort(function(){ return Math.random()-0.5; });
+    for(let k=1;k<N;k++){
+      let best=order[0];
+      for(let j=0;j<k;j++) if(d(order[k],order[j])<d(order[k],best)) best=order[j];
+      link(order[k], best);
+    }
+    for(let i=0;i<N;i++){
+      const near=[]; for(let j=0;j<N;j++) if(j!==i) near.push(j);
+      near.sort(function(x,y){ return d(i,x)-d(i,y); });
+      link(i, near[1+Math.floor(Math.random()*2)]);
+    }
+    for(let k=0;k<6;k++) link(Math.floor(Math.random()*N), Math.floor(Math.random()*N));
+  }
+  function start(){ seen={}; const s=Math.floor(Math.random()*N); seen[s]=0; fresh=[s]; step=0; draw(); }
+  function advance(){
+    if(!fresh.length) return;
+    step++;
+    const next=[];
+    fresh.forEach(function(a){ adj[a].forEach(function(b){ if(!(b in seen)){ seen[b]=step; next.push(b); } }); });
+    fresh=next; draw();
+  }
+  function draw(){
+    B.clear(svg);
+    for(let a=0;a<N;a++) adj[a].forEach(function(b){
+      if(a<b){
+        const lit=(a in seen)&&(b in seen)&&Math.abs(seen[a]-seen[b])===1;
+        svg.appendChild(B.el('line',{x1:pos[a][0], y1:pos[a][1], x2:pos[b][0], y2:pos[b][1],
+          stroke:lit?'#9cbcf0':C.line, 'stroke-width':lit?2:1.2}));
+      }
+    });
+    for(let i=0;i<N;i++){
+      const s=(i in seen)? seen[i] : -1;
+      const col=s===0?C.orange:(s<0?'#fff':(s===step?C.teal:C.blue));
+      svg.appendChild(B.el('circle',{cx:pos[i][0], cy:pos[i][1], r:14, fill:col,
+        stroke:s<0?C.muted:col, 'stroke-width':1.6}));
+      if(s>0) B.text(svg, pos[i][0], pos[i][1], String(s), {size:11.5, w:700, fill:'#fff'});
+    }
+    const n=Object.keys(seen).length;
+    B.text(svg, 20, 448, 'step '+step+': '+n+' of '+N+' nodes have the transaction'+
+      (n===N?' — every node has it':'')+'.   Numbers show the step at which each node heard it.',
+      {anchor:'start', size:14, w:700, fill:n===N?C.teal:C.ink});
+    $('status').innerHTML='step <b>'+step+'</b> &middot; '+n+'/'+N+' nodes';
+  }
+  $('step').onclick=advance;
+  $('reset').onclick=start;
+  $('new').onclick=function(){ build(); start(); };
+  B.autoplay(PFX, 20, 900);
+  build(); start();
+})();
+</script>
+
+</body>
+</html>
