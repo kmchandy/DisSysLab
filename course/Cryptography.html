@@ -1,0 +1,1700 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Cryptography for Cryptocurrency</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  h2{font-family:var(--display); font-weight:600; font-size:25px;
+     letter-spacing:-.01em; margin:38px 0 12px}
+  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:34px 0 8px}
+  p{color:var(--body); margin:0 0 15px}
+  h4{font-family:var(--sans); font-weight:700; font-size:15.5px;
+     letter-spacing:.01em; color:var(--ink); margin:20px 0 6px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  header.top h2{margin:-2px 0 20px; padding:0; border:0;
+    font-family:var(--display); font-weight:600; font-size:22px;
+    line-height:1.2; letter-spacing:-.01em; color:var(--muted)}
+  figure.fig{margin:32px 0 30px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  figure.fig figcaption i{color:var(--ink); font-style:normal; font-weight:600}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
+          font-size:13.5px; color:var(--muted)}
+  .legend i{font-style:normal; color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em;
+       background:#f6f4ee; border-radius:5px; padding:1px 5px}
+  /* a block of code: the same rule as the lecture notes before it */
+  pre.code{margin:16px 0 18px; padding:14px 18px; overflow-x:auto;
+    background:#fff; border:1px solid var(--line); border-left:4px solid var(--ink);
+    border-radius:0 10px 10px 0; font:13.5px/1.7 var(--mono); color:var(--ink)}
+  pre.code b{font-weight:700}
+  pre.code .cm{color:var(--muted)}
+  pre.code .kw{color:var(--orange)}
+  pre.code code{background:none; padding:0}
+  .hint{font-size:13px; color:var(--muted)}
+  .ok{color:var(--teal); font-weight:700}
+  .bad{color:var(--orange); font-weight:700}
+  p.key{margin:22px 0 20px; padding:15px 18px 15px 20px; color:var(--ink);
+    background:#fff6ef; border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0; font-size:18px; line-height:1.5; font-weight:600}
+  p.key b, p.key strong{color:var(--ink); font-weight:800}
+  p.key .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
+    margin-bottom:8px}
+  /* a claim: the theorem and the observations read the same way */
+  .thm{margin:24px 0 22px; padding:16px 20px 15px; color:var(--ink);
+    background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:17px; line-height:1.55}
+  .thm b, .thm strong{font-weight:700}
+  .thm > b{display:block; margin-bottom:7px}
+  .thm .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--teal);
+    margin-bottom:9px}
+  .thm p:last-child{margin-bottom:0}
+  /* the observations: numbered, same colour as the theorem */
+  ol.obs{list-style:none; margin:22px 0 20px; padding:0; counter-reset:ob;
+         color:var(--body)}
+  ol.obs > li{counter-increment:ob; position:relative; margin:0 0 12px;
+    padding:14px 18px 13px 54px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:16.5px; line-height:1.5}
+  ol.obs > li::before{content:counter(ob); position:absolute; left:19px; top:13px;
+    width:24px; height:24px; border-radius:999px; background:var(--teal);
+    color:#fff; font:700 13px/24px var(--sans); text-align:center}
+  ol.obs > li > b{color:var(--ink)}
+  ol.obs .why{display:block; margin-top:9px; padding-top:9px;
+    border-top:1px solid var(--line); font-size:15px; color:var(--body)}
+  ol.obs .why em{font-style:normal; font:700 11.5px var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin-right:9px}
+  /* proofs */
+  .proof{margin:6px 0 24px; padding:2px 0 2px 22px;
+         border-left:2px solid var(--line)}
+  .proof > p:last-child{margin-bottom:0}
+  .proof figure.fig.wideout{left:calc(50% - 11px)}
+  .proof .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin:0 0 9px}
+  .case{margin:16px 0 14px; padding:13px 17px 2px; background:#fbf9f5;
+        border:1px solid var(--line); border-radius:10px}
+  .case > p:last-child{margin-bottom:11px}
+  .tag{display:inline-block; font:700 11px var(--sans); letter-spacing:.12em;
+    text-transform:uppercase; color:#fff; background:var(--ink);
+    border-radius:999px; padding:4px 11px; margin-right:11px;
+    vertical-align:1px}
+  .calc{font-family:var(--mono); font-size:15px; color:var(--ink);
+    background:#fbf9f5; border:1px solid var(--line); border-radius:8px;
+    padding:11px 15px; margin:12px 0}
+  /* the specification: two requirements, in the two colours they keep */
+  ol.spec{list-style:none; margin:22px 0 20px; padding:0;
+          counter-reset:req; color:var(--body)}
+  ol.spec > li{counter-increment:req; position:relative; margin:0 0 10px;
+    padding:14px 46px 13px 18px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--muted); border-radius:0 10px 10px 0}
+  ol.spec > li::after{content:counter(req); position:absolute; right:15px;
+    top:13px; font:700 12px var(--mono); color:#c9c4b8}
+  ol.spec .rtag{display:inline-block; font:700 11px var(--sans);
+    letter-spacing:.12em; text-transform:uppercase; color:#fff;
+    background:var(--muted); border-radius:999px; padding:4px 11px;
+    margin-right:11px; vertical-align:1px}
+  li.req-v{border-left-color:var(--teal)}
+  li.req-v .rtag{background:var(--teal)}
+  li.req-c{border-left-color:#1a5fd0}
+  li.req-c .rtag{background:#1a5fd0}
+  .n-v{color:var(--teal); font-weight:700}
+  .n-c{color:#1a5fd0; font-weight:700}
+  /* the aside about fire detectors, which is the point of the whole story */
+  .aside{margin:24px 0 22px; padding:15px 19px 14px; font-size:15.5px;
+    line-height:1.6; color:var(--body); background:#f7f5ef;
+    border:1px solid var(--line); border-radius:10px}
+  .aside b{color:var(--ink)}
+  .aside .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin-bottom:9px}
+  .aside p:last-child{margin-bottom:0}
+  /* the comparison with Paxos */
+  table.cmp{width:100%; border-collapse:collapse; margin:16px 0 22px;
+    background:#fff; font-size:15px; color:var(--body)}
+  table.cmp th, table.cmp td{border:1px solid var(--line); padding:8px 12px;
+    text-align:left; vertical-align:top}
+  table.cmp th{background:#f6f4ee; color:var(--ink); font-weight:700}
+  /* figure 8: the sandbox */
+  .sbx-row{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center;
+    padding:8px 0; border-top:1px solid var(--line); font-size:14.5px}
+  .sbx-row:first-child{border-top:0}
+  .sbx-row .k{width:230px; flex:none; font:600 11.5px var(--sans);
+    letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+  .sbx-row label{white-space:nowrap; cursor:pointer}
+  .sbx-row select{font:14px var(--sans)}
+  .sbx-off{opacity:.4}
+  table.sbx{border-collapse:collapse; margin:14px 0 6px; background:#fff;
+    font:14px var(--mono)}
+  table.sbx th, table.sbx td{border:1px solid var(--line); padding:6px 12px;
+    text-align:center}
+  table.sbx th{background:#f6f4ee; font:600 12px var(--sans); color:var(--muted)}
+  table.sbx td.one{background:#e8f0fd; color:#1a5fd0; font-weight:700}
+  table.sbx td.acc{box-shadow:inset 0 0 0 2px #1a5fd0}
+  table.sbx td .m{display:block; font-size:11px; color:var(--muted); font-weight:400}
+  .sbx-verdict{font-size:15.5px; margin:8px 0 2px}
+  /* widgets for this lecture */
+  .hexout{font:13.5px/1.55 var(--mono); word-break:break-all; color:var(--ink)}
+  .hexout .d{color:var(--orange); font-weight:700}
+  .hexout .z{color:var(--teal); font-weight:700}
+  input.txt, textarea.txt, select.txt{font:14px var(--mono); width:100%;
+    padding:7px 9px; border:1px solid var(--line); border-radius:8px;
+    background:#fffdf8; color:var(--ink)}
+  select.txt{width:auto; font-family:var(--sans)}
+  textarea.txt{min-height:64px; resize:vertical}
+  .row{display:flex; gap:10px 16px; flex-wrap:wrap; align-items:center; margin:10px 0}
+  .lbl{font:600 11.5px var(--sans); letter-spacing:.1em; text-transform:uppercase;
+    color:var(--muted)}
+  .readout{margin-top:10px; padding:10px 12px; background:#fbf9f5;
+    border:1px solid var(--line); border-radius:10px; font-size:14.5px}
+  .readout b{color:var(--ink)}
+  /* figure 7: the block chain */
+  .chain{display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; padding:6px 2px}
+  .blk{ border:2px solid var(--line); border-radius:10px;
+    padding:10px; background:#fbf9f5; transition:border-color .3s, background .3s}
+  .blk.bad{border-color:var(--orange); background:#fff1ea}
+  .blk.head{background:#fff}
+  .blk input.txt{font-size:13px; padding:6px 7px}
+  .blk .t{font:700 12px var(--sans); letter-spacing:.08em; text-transform:uppercase;
+    color:var(--muted); margin-bottom:6px}
+  .blk .f{font:12px var(--mono); color:var(--muted); margin-top:6px; overflow-wrap:anywhere}
+  .blk .f b{color:var(--ink)}
+  .blk .f.badf b{color:var(--orange)}
+  .harrow{align-self:center; font:22px var(--sans); color:var(--muted); flex:none}
+  /* figure 11: Scroogecoin */
+  .sc{display:grid; grid-template-columns:1.25fr 1fr; gap:14px}
+  @media (max-width:800px){ .sc{grid-template-columns:1fr} }
+  .sc h4{margin:0 0 8px}
+  .txcard{border:1px solid var(--line); border-radius:10px; background:#fff;
+    padding:9px 11px; margin:0 0 8px; font:13px/1.5 var(--mono)}
+  .txcard.acc{border-left:5px solid var(--teal)}
+  .txcard.rej{border-left:5px solid var(--orange); background:#fff6f1}
+  .txcard.now{box-shadow:0 0 0 2px var(--ink)}
+  .checks{font:13px/1.6 var(--sans); margin-top:5px}
+  table.utxo{border-collapse:collapse; width:100%; background:#fff; font:13px var(--mono)}
+  table.utxo th, table.utxo td{border:1px solid var(--line); padding:5px 8px; text-align:left}
+  table.utxo th{background:#f6f4ee; font:600 11.5px var(--sans); color:var(--muted)}
+  table.utxo tr.gone td{color:#b9b4a8; text-decoration:line-through}
+  table.utxo tr.new td{background:#eef7f4}
+  .fade{animation:fadein .5s ease}
+  @keyframes fadein{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab</div>
+    <h1>Cryptography for Cryptocurrency</h1>
+    <h2>Hash functions, hash pointers and digital signatures</h2>
+    <p>
+      A cryptocurrency is a distributed system in which agents who do not
+      trust each other keep a shared <b>ledger</b> of payments. Before we can
+      study how they agree on the ledger, we
+      need three tools from cryptography: <b>hash functions</b>,
+      <b>hash pointers</b> and <b>digital signatures</b>. The next lecture,
+      <a href="CyberCurrency.html">CyberCurrency</a>, puts them together
+      into simple cryptocurrencies.
+    </p>
+    <p>
+      This lecture follows chapter 1 of Narayanan, Bonneau, Felten, Miller
+      and Goldfeder, <i>Bitcoin and Cryptocurrency Technologies</i>
+      (Princeton University Press, 2016). A free draft of the book, video
+      lectures and programming assignments are at
+      <a href="https://bitcoinbook.cs.princeton.edu/">bitcoinbook.cs.princeton.edu</a>.
+    </p>
+    <p class="key">
+      <span class="lead-in">Every hash on this page is real</span>
+      The figures compute SHA-256, the hash function Bitcoin uses, in your
+      browser. Type into them, change them, and try to break them.
+    </p>
+  </header>
+
+<h2>1. Hash functions</h2>
+
+  <p>
+    A <b>hash function</b> <code>H</code> maps an input string of
+    <b>any size</b> to an output of <b>fixed size</b>, and it is fast to
+    compute. SHA-256 maps any input to 256 bits, written as 64 hexadecimal
+    digits. The output is often called a <b>digest</b>: a short summary of
+    a long message.
+  </p>
+
+  <figure class="fig">
+    <div class="row"><span class="lbl">Input x</span></div>
+    <input class="txt" id="hash_in" value="Ana pays Ben 10 coins">
+    <div class="row"><span class="lbl">H(x) = SHA-256(x)</span></div>
+    <div class="hexout" id="hash_out"></div>
+    <div class="ctrls">
+      <button id="hash_flip" class="primary">Change one character</button>
+      <button id="hash_reset">Reset</button>
+      <span class="status" id="hash_status"></span>
+    </div>
+    <div class="readout" id="hash_cmp"></div>
+    <figcaption>
+      <b>Figure 1. A hash function.</b>
+      Type anything: a word, a sentence, a whole book. The output is always
+      64 hexadecimal digits (256 bits). Press <i>Change one character</i>:
+      the new hash differs from the old one in about half of its 256 bits
+      (the changed hexadecimal digits are in orange). A small change to the
+      input gives an unrecognizably different output.
+    </figcaption>
+  </figure>
+
+  <p class="key">
+    <span class="lead-in">Three properties we will assume</span>
+    A <b>cryptographic hash function</b> is <b>collision resistant</b>,
+    <b>hiding</b> and <b>puzzle friendly</b>. The rest of this section
+    explains each one and shows how they are used in cryptocurrency. 
+  </p>
+
+<h3>1.1 Collision resistance</h3>
+
+  <p>
+    Inputs <code>x &ne; y</code> <b>collide</b> if
+    <code>H(x) = H(y)</code>. Collisions must exist: there are infinitely
+    many inputs and only finitely many outputs (2<sup>256</sup> for
+    SHA-256), so some outputs are shared
+    by many inputs (the pigeonhole principle). A hash function is
+    <b>collision resistant</b> if a collision &mdash; <code>x &ne; y</code>
+    where <code>H(x) = H(y)</code> &mdash; cannot be found in a reasonable 
+    number of computational steps.
+  </p>
+
+  <div class="aside">
+    <span class="lead-in">A caution</span>
+    <p>
+      No hash function has been <b>proved</b> collision resistant. We use
+      functions such as SHA-256 that experts have attacked for years
+      without finding a collision.
+      Some hash functions are clearly not collision
+      resistant: one that returns the last 8 bits of its input collides on
+      any two inputs that end in the same byte.
+    </p>
+  </div>
+
+  <p>
+    <b>Question for you.</b> Suppose <code>H</code> returns a 4-bit number,
+    so there are 16 possible outputs. Keep an array <code>D</code> of 16
+    entries, all empty. Repeatedly pick a random input <code>x</code>,
+    compute <code>y = H(x)</code>; if <code>D[y]</code> is empty, store
+    <code>x</code> there, and otherwise <code>D[y]</code> and
+    <code>x</code> collide. How many times will you have to pick an input before
+    you find the first collision? In the worst case you need 17 inputs: the first
+    16 could all land in different entries. How many do you need on
+    average?
+  </p>
+
+  <p>
+    Let the hash have <code>N</code> possible outputs. The first collision
+    happens at input number <code>k</code> if the first <code>k&minus;1</code>
+    inputs land in different entries and input <code>k</code> lands in one
+    of the <code>k&minus;1</code> occupied entries:
+  </p>
+  <div class="calc">
+    P(first collision at input k) = (N&minus;1)/N &middot; (N&minus;2)/N &middot; &hellip; &middot; (N&minus;k+2)/N &middot; (k&minus;1)/N,
+    &nbsp; for 2 &le; k &le; N+1.
+  </div>
+  <p>
+    This is the <b>birthday paradox</b>: in a room of only 23 people, the
+    probability that two share a birthday is about 1/2, although there are
+    365 birthdays. A collision is expected after about
+    <code>&radic;N</code> inputs. For an <code>n</code>-bit hash,
+    <code>N = 2<sup>n</sup></code>, so a collision is expected after about
+    <code>2<sup>n/2</sup></code> inputs &mdash; for SHA-256,
+    2<sup>128</sup> &asymp; 3&times;10<sup>38</sup>, a very large number.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="col_g" viewBox="0 0 1240 470" role="img"
+         aria-label="A 16 by 16 grid of the 256 outputs of an 8-bit hash. Random inputs land in cells until one lands in a cell that is already full: a collision."></svg>
+    <div class="ctrls">
+      <button id="col_play" class="primary">Play</button>
+      <button id="col_step">Step</button>
+      <button id="col_reset">Reset</button>
+      <button id="col_many">Run 1,000 hunts</button>
+      <span class="status" id="col_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 2. Hunting for a collision.</b>
+      To make collisions easy to find, this figure keeps only the first
+      8 bits of SHA-256, so there are <code>N = 256</code> possible outputs,
+      one per cell. Each step hashes a new random input and fills its cell.
+      The hunt ends when an input lands in a cell that is already full. You
+      might expect to need over a hundred inputs; you usually need about
+      20, close to <code>&radic;(&pi;N/2) &asymp; 20</code>. Press
+      <i>Run 1,000 hunts</i> to see the spread.
+    </figcaption>
+  </figure>
+
+  <p>
+    <b>How collision resistance helps: message digests.</b> If
+    <code>H(x) = H(y)</code>, we assume <code>x = y</code>, since
+    H is collision resistant. To check that a file you downloaded is the file 
+    that was published, compare its hash with the published hash.
+  </p>
+
+<h3>1.2 Hiding</h3>
+
+  <p>
+    Su makes a bet with Al that she can predict whether Al will wear shorts
+    or trousers the next day.
+    She puts her prediction in a sealed envelope and gives it to 
+    Tim for safekeeping. After Al appears the next day, they get
+    the envelope from Tim and check whether Su was right.
+  </p>
+  <p>
+    Next, they want to use digital technology instead of depending on Tim.
+    Su publishes <code>y = H(x)</code> where <code>H</code> is
+    a collision-resistant hash, but Su keeps <code>x</code> secret.
+    After Al appears the next day, Su reveals <code>x</code>; Al checks
+    if <code>H(x) = y</code>; and they settle the bet.
+  </p>
+
+  <p>
+    If Al can find <code>x</code> from <code>y</code> and <code>H</code>
+    then Al can choose what to wear to falsify Su's prediction.
+  </p>
+  <p>
+    <b>Question for you.</b> Can <code>x</code> be discovered?
+  </p>
+  <p>
+    Yes. There are only two possibilities. Al computes <code>H</code> for each
+    possibility and finds the one that matches <code>y</code>. 
+    Though <code>H</code> is collision resistant, <code>H</code> 
+    does not hide information that comes from a small set.
+  </p>
+  <p>
+    The fix is to add a <b>secret random value</b> <code>r</code>, chosen
+    from a spread-out distribution, for example 256 random bits. Su
+    computes <code>y = H(r &#8214; x)</code>, where &#8214; means
+    concatenation. Su publishes <code>y</code> and <code>H</code> but not
+    <code>r</code> or <code>x</code>. Now Al must guess both <code>r</code> and
+    <code>x</code>: 2 &times; 2<sup>256</sup> possibilities. There are only
+    two predictions, but <code>r</code> alone makes guessing hopeless.
+    The next day Su reveals both <code>r</code> and <code>x</code>, and Al
+    checks that <code>H(r &#8214; x) = y</code>. The value <code>y</code>
+    that Su publishes is called her <b>commitment</b>; from now on we
+    write it <code>c</code>.
+  </p>
+
+  <p class="key">
+    <span class="lead-in">Hiding</span>
+    <code>H</code> is <b>hiding</b> if, when <code>r</code> is chosen from a
+    very spread-out distribution, there is no feasible way to find
+    <code>x</code> from <code>H(r &#8214; x)</code>.
+  </p>
+
+  <figure class="fig">
+    <div class="row">
+      <span class="lbl">Length of Su&rsquo;s secret r</span>
+      <select class="txt" id="hide_bits">
+        <option value="0">no r: Su publishes H(x)</option>
+        <option value="8">8 bits</option>
+        <option value="12">12 bits</option>
+        <option value="16">16 bits</option>
+        <option value="20">20 bits</option>
+      </select>
+    </div>
+    <div class="readout" id="hide_lark"></div>
+    <div class="readout" id="hide_out"></div>
+    <div class="ctrls">
+      <button id="hide_attack" class="primary">Attack</button>
+      <button id="hide_reset">New prediction</button>
+      <span class="status" id="hide_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 3. Al tries to discover Su&rsquo;s prediction.</b>
+      Su predicts shorts or trousers, and picks a secret <code>r</code> of
+      the length you choose. Al sees only <code>y</code> and tries every pair
+      (<code>r</code>, prediction) until one matches. With no <code>r</code>
+      he needs at most 2 tries. Every extra bit of <code>r</code> doubles the
+      work: at 20 bits he needs up to two million tries, and with a 256-bit
+      <code>r</code> he would need up to 2 &times; 2<sup>256</sup>, about
+      2&times;10<sup>77</sup>.
+    </figcaption>
+  </figure>
+
+<h3>1.3 Commitments</h3>
+
+  <p>
+    Hiding protects Su from Al. Now look at it from Al&rsquo;s side. Suppose
+    Su predicted shorts, and the next morning Al appears in trousers. Su
+    would like to claim that she predicted trousers. To do that, she must
+    reveal some <code>r&prime;</code> with
+    <code>H(r&prime; &#8214; trousers) = c = H(r &#8214; shorts)</code>:
+    a collision, which she cannot find.
+  </p>
+  <p>
+    So the same scheme stops both of them. It lets Su <b>commit</b> to a
+    prediction now and <b>reveal</b> it later, so that Al cannot learn it
+    early and Su cannot change it. It is called a
+    <b>commitment scheme</b>:
+  </p>
+
+  <pre class="code"><span class="cm"># commit: Su picks a fresh random nonce r and publishes c</span>
+r = random_256_bits()
+c = H(r &#8214; prediction)
+
+<span class="cm"># reveal: Su publishes r and prediction; anyone can check</span>
+<span class="kw">def</span> verify(c, r, prediction):
+    <span class="kw">return</span> H(r &#8214; prediction) == c</pre>
+
+  <ol class="spec">
+    <li class="req-c"><span class="rtag">Hiding</span>
+      <b>Seeing c reveals nothing about the prediction.</b>
+      This is the hiding property of section 1.2. It protects Su from
+      Al.</li>
+    <li class="req-c"><span class="rtag">Binding</span>
+      <b>Su cannot change her prediction after committing.</b>
+      To claim a different prediction p&prime;, Su needs some
+      r&prime; with H(r&prime; &#8214; p&prime;) = c = H(r &#8214; prediction):
+      a collision. Collision resistance makes the commitment binding. It
+      protects Al from Su.</li>
+  </ol>
+
+  <p>
+    A commitment is <b>not encrypted</b>, and it is never decrypted. Su
+    opens it by revealing <code>r</code> and her prediction, and anyone can
+    check them against <code>c</code>. And <b>Tim is no longer needed</b>:
+    Su can publish <code>c</code> anywhere, because nobody has to be
+    trusted to hold it.
+  </p>
+
+  <p>
+    A secret value used once is called a <b>nonce</b>. Choose a
+    <b>new</b> <code>r</code> for every commitment: if Su bets with Al
+    every day and reuses <code>r</code>, equal predictions produce equal
+    commitments, and Al learns when she predicts the same thing again.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="com_g" viewBox="0 0 1240 430" role="img"
+         aria-label="Su commits to a prediction by publishing a hash; the next day she reveals her nonce and prediction and Al checks them; when she tries to claim a different prediction the check fails"></svg>
+    <div class="ctrls">
+      <button id="com_play" class="primary">Play</button>
+      <button id="com_step">Step</button>
+      <button id="com_reset">Reset</button>
+      <span class="status" id="com_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 4. Commit, reveal and an attempt to cheat.</b>
+      <b>1.</b> Su picks a nonce <code>r</code>, predicts shorts, and
+      publishes <code>c = H(r &#8214; shorts)</code>. <b>2.</b> The next
+      morning Al appears in trousers. <b>3.</b> Su reveals honestly; Al
+      recomputes the hash and it matches <code>c</code>: Su loses the bet.
+      <b>4.</b> Su tries instead to claim she predicted trousers, with the
+      same <code>r</code>. The hash does not match. To succeed she would
+      have to find a collision.
+    </figcaption>
+  </figure>
+
+<h3>1.4 Puzzle friendliness</h3>
+
+  <p>
+    A <b>search puzzle</b> is given by a hash function <code>H</code>, a
+    puzzle id <code>id</code>, and a set <code>Y</code> of target outputs.
+    A solution is any <code>x</code> with
+    <code>H(id &#8214; x)</code> in <code>Y</code>.
+  </p>
+
+  <p class="key">
+    <span class="lead-in">Puzzle friendly</span>
+    Let <code>H</code> have <code>N</code> possible outputs.
+    <code>H</code> is <b>puzzle friendly</b> if there is no way to solve a
+    search puzzle much faster than trying random values of
+    <code>x</code>. Each try then succeeds with probability about
+    <code>|Y| / N</code>, so the expected number of tries is about
+    <code>N / |Y|</code>.
+  </p>
+
+  <p>
+    These numbers are approximate because no real hash function is
+    perfect: its outputs are spread almost, but not exactly, evenly over
+    the <code>N</code> possibilities.
+  </p>
+
+  <p>
+    <b>Example.</b> SHA-256 returns 256 bits, so it has
+    <code>N = 2<sup>256</sup></code> possible outputs. Each try succeeds
+    with probability about <code>|Y| / 2<sup>256</sup></code>, and the
+    expected number of tries is about <code>2<sup>256</sup> / |Y|</code>.
+  </p>
+
+  <p>
+    So the size of <code>Y</code> sets the <b>difficulty</b> of the puzzle.
+    If <code>Y</code> is the set of all possible outputs, the first try succeeds. 
+    If <code>Y</code> is half the set of outputs, the expected number of tries
+    to get a value in <code>Y</code> is about 2.
+    If <code>Y</code> is the set of outputs in which the first
+    <code>d</code> bits are zero, then increasing <code>d</code> by 1
+    reduces the size of <code>Y</code> by half, and the expected number of tries to
+    get a value in <code>Y</code> doubles. This is Bitcoin&rsquo;s
+    <b>mining</b> puzzle, and it is the subject of a later lecture.
+  </p>
+
+  <figure class="fig">
+    <div class="row">
+      <span class="lbl">Puzzle id</span>
+      <input class="txt" id="pz_id" value="block 17: Ana pays Ben 10" style="max-width:340px">
+      <span class="lbl">Leading zero bits d</span>
+      <input type="range" id="pz_d" min="1" max="22" value="12">
+      <b id="pz_dv">12</b>
+    </div>
+    <div class="readout"><span class="lbl">Current try</span>
+      <div class="hexout" id="pz_cur"></div></div>
+    <div class="readout" id="pz_stats"></div>
+    <div class="ctrls">
+      <button id="pz_mine" class="primary">Solve</button>
+      <button id="pz_reset">Reset</button>
+      <span class="status" id="pz_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 5. Solving a search puzzle.</b>
+      Find a number <code>x</code> such that
+      <code>H(id &#8214; x)</code> begins with <code>d</code> zero bits
+      (shown in teal). Each press of <i>Solve</i> numbers the id #1, #2,
+      &hellip;, so each press is a new puzzle. The only method is to try <code>x</code> = 0, 1, 2,
+      &hellip; Press <i>Solve</i> several times: the number of tries varies
+      a lot from puzzle to puzzle, but averages about 2<sup>d</sup>. Raise
+      <code>d</code> by one and the average doubles.
+    </figcaption>
+  </figure>
+
+<h3>1.5 How a hash handles inputs of any length</h3>
+
+  <p>
+    <b>Question for you.</b> Suppose you have a function <code>f</code> that
+    maps inputs of exactly <code>m + n</code> bits to outputs of
+    <code>m</code> bits. How would you build a hash function for inputs of
+    any length?
+  </p>
+  <p>
+    The <b>Merkle&ndash;Damg&aring;rd transform</b> does it, and SHA-256 is
+    built this way. Its compression function <code>f</code> takes
+    768 bits &mdash; a 256-bit <b>chaining value</b> and a 512-bit block of
+    the message &mdash; and returns 256 bits.
+  </p>
+  <ol>
+    <li><b>Pad</b> the message so that its length is a multiple of 512 bits.
+      The padding includes the length of the message; the security argument
+      below depends on it.</li>
+    <li><b>Split</b> it into 512-bit blocks <code>B<sub>1</sub></code>,
+      &hellip;, <code>B<sub>k</sub></code>.</li>
+    <li>Start from a fixed 256-bit <b>initialization vector</b>
+      <code>IV</code>, given in the SHA-256 standard.</li>
+    <li><b>Chain</b>: <code>C<sub>0</sub> = IV</code>, and for i &gt; 0,
+      <code>C<sub>i</sub> = f(C<sub>i&minus;1</sub>, B<sub>i</sub>)</code>.
+      The hash is <code>C<sub>k</sub></code>.</li>
+  </ol>
+  <p class="key">
+    <span class="lead-in">Why it is secure</span>
+    If the compression function <code>f</code> is collision resistant, then
+    so is the hash built from it. A collision in the whole hash would give
+    a collision in <code>f</code> at some step of the chain.
+  </p>
+
+  <figure class="fig wideout">
+    <textarea class="txt" id="md_in">Ana pays Ben 10 coins. Ben pays Chuck 4 coins. Chuck pays Dee 2 coins. Dee pays Ana 1 coin. Ana pays Chuck 3 coins. Ben pays Dee 5 coins.</textarea>
+    <svg id="md_g" viewBox="0 0 1240 330" role="img"
+         aria-label="The message is padded and split into 512-bit blocks; the compression function f combines the chaining value with each block in turn, starting from the initialization vector; the last chaining value is the SHA-256 hash"></svg>
+    <div class="ctrls">
+      <button id="md_play" class="primary">Play</button>
+      <button id="md_step">Step</button>
+      <button id="md_reset">Reset</button>
+      <span class="status" id="md_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 6. SHA-256 as a chain of compression steps.</b>
+      The message is split into 64-byte (512-bit) blocks; the last block
+      ends with padding, shown as &middot;. Starting from the IV, each
+      step feeds the chaining value and the next block into
+      <code>f</code>. These are SHA-256&rsquo;s real chaining values (the
+      first 10 of 64 hex digits are shown), and the last one is the
+      SHA-256 hash of the message. Edit the message: every chaining value
+      after the block you changed is different.
+    </figcaption>
+  </figure>
+
+<h2>2. Hash pointers</h2>
+
+  <p>
+    A <b>hash pointer</b> to data <code>D</code> is a pair
+    <code>(ptr, H(D))</code>: <code>ptr</code> says <b>where</b>
+    <code>D</code> is, and <code>H(D)</code> lets you check that
+    <code>D</code> <b>has not changed</b>. If the
+    data to which <code>ptr</code> points is modified from <code>D</code>
+    to <code>D&prime;</code>, while the hash pointer
+    <code>(ptr, H(D))</code> remains unchanged, then an agent can detect
+    the modification because <code>H(D&prime;) &ne; H(D)</code>: since
+    <code>H</code> is collision resistant, nobody can find a
+    <code>D&prime; &ne; D</code> with <code>H(D&prime;) = H(D)</code>.
+    So the data pointed to by a hash pointer is <b>tamper-evident</b>,
+    provided the hash pointer itself is kept somewhere safe.
+  </p>
+
+<h3>2.1 The block chain</h3>
+
+  <p>
+    <b>Question for you.</b> Design a <b>tamper-evident ledger</b>: a
+    sequence of transactions that nobody can modify without others being
+    able to tell.
+  </p>
+  <p>
+    A <b>block chain</b> is a linked list that uses hash pointers rather
+    than regular pointers. The list starts
+    with a standard <b>genesis block</b> &mdash; the zeroth block,
+    B<sub>0</sub>, in the list. 
+    The k-th block, B<sub>k</sub>, for k &gt; 0, contains (1) a hash pointer 
+    <code>(p<sub>k&minus;1</sub>, H(B<sub>k&minus;1</sub>))</code> and
+    (2) data D<sub>k</sub>, where <code>p<sub>k&minus;1</sub></code> is a
+    pointer to B<sub>k&minus;1</sub>.
+    An agent gets access to the list from the hash pointer to the head of
+    the list.
+  </p>
+
+  <p class="key">
+    <span class="lead-in">Tamper evidence</span>
+    <b>Lemma:</b> If the hash pointer
+    <code>(p<sub>k</sub>, H(B<sub>k</sub>))</code> to the k-th block
+    remains unchanged, then a change to any block B<sub>i</sub>, for
+    i &le; k, is detectable.
+  </p>
+  <div class="proof">
+    <span class="lead-in">Proof, by induction on k</span>
+    <p>
+      If block B<sub>k</sub> is changed to B<sub>k</sub>&prime;, the change
+      is detected because H(B<sub>k</sub>&prime;) &ne; H(B<sub>k</sub>):
+      since H is collision resistant, nobody can find a different block
+      with the same hash. In particular, this proves the case k = 0: a
+      change to the genesis block is detected.
+    </p>
+    <p>
+      If k &gt; 0 and B<sub>k</sub> is unchanged, then the hash pointer
+      that B<sub>k</sub> contains,
+      (p<sub>k&minus;1</sub>, H(B<sub>k&minus;1</sub>)), is unchanged too.
+      So, by induction, a change to any of B<sub>k&minus;1</sub>, &hellip;,
+      B<sub>0</sub> is detectable.
+    </p>
+  </div>
+  <figure class="fig wideout">
+    <div class="chain" id="bc_chain"></div>
+    <div class="ctrls">
+      <button id="bc_tamper" class="primary">Tamper with block 2</button>
+      <button id="bc_repair">Attacker rewrites the later blocks</button>
+      <button id="bc_reset">Reset</button>
+      <span class="status" id="bc_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 7. A tamper-evident block chain.</b>
+      Each block stores <i>prev</i>, the hash of the previous block (the
+      first 10 hex digits are shown), and the figure recomputes that hash
+      and checks it. You hold the hash pointer to the head, in the last box.
+      Edit any block&rsquo;s data, or press <i>Tamper</i>: the next block
+      turns orange. Press <i>Attacker rewrites</i>: the attacker updates
+      every later block, and the mismatch moves to the head pointer, which
+      the attacker cannot change.
+    </figcaption>
+  </figure>
+
+<h3>2.2 Merkle trees</h3>
+
+  <p>
+    A <b>Merkle tree</b> is a binary tree that uses hash pointers in
+    place of regular pointers. The tree is used as a tamper-evident 
+    data structure for storing data. The data is stored in the leaves 
+    of the tree. The verifier already holds the hash of the
+    <b>root</b>, from a source it trusts. To show that data D is in the
+    tree and has not changed, the prover supplies D and the hashes along
+    D&rsquo;s path to the root: one <b>sibling hash</b> per level. The
+    verifier rehashes up the path and compares the result with the root
+    it holds.
+  </p>
+  <p>
+    Using the same reasoning as for block chains, any change to D is
+    detectable. The root must come from the verifier, not from the prover:
+    a prover who could supply its own root could build any tree it liked.
+  </p>
+  <p>
+    With <code>n</code> items, the proof requires about
+    <code>log<sub>2</sub> n</code> hashes: 20 hashes for a million
+    transactions. Checking one item in a block chain of <code>n</code>
+    blocks can mean rehashing all <code>n</code> blocks; a Merkle tree
+    needs only <code>log<sub>2</sub> n</code>. Bitcoin puts each
+    block&rsquo;s transactions in a Merkle tree.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="mk_g" viewBox="0 0 1240 520" role="img"
+         aria-label="A Merkle tree of eight transactions; clicking a transaction highlights its path to the root and the three sibling hashes that prove it is in the tree"></svg>
+    <div class="ctrls">
+      <button id="mk_play" class="primary">Verify a proof</button>
+      <button id="mk_tamper">Tamper with a transaction</button>
+      <button id="mk_reset">Reset</button>
+      <span class="status" id="mk_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 8. A Merkle tree and a proof of membership.</b>
+      Click a transaction at the bottom. Its path to the root is in blue,
+      and the proof &mdash; one sibling hash per level, three for eight
+      transactions &mdash; is in orange. <i>Verify a proof</i> rehashes up
+      the path step by step and compares with the root that you hold.
+      <i>Tamper</i> changes a transaction: every hash on its path changes,
+      and the root no longer matches.
+    </figcaption>
+  </figure>
+
+  <p>
+    If the leaves are kept <b>sorted</b>, a Merkle tree can also prove
+    <b>non-membership</b>: show the two adjacent leaves between which the
+    missing item would be, with their paths to the root.
+  </p>
+
+<h2>3. Digital signatures</h2>
+  <p>
+    Digital signatures with secret and public keys are implemented in
+    three parts.
+  </p>
+
+  <p>
+    <b>1. Create the keys.</b> The owner generates a pair of keys. The
+    owner keeps the <b>secret key</b> <code>sk</code> to itself, and
+    publishes the <b>public key</b> <code>pk</code> for everyone.
+  </p>
+  <pre class="code">(sk, pk) = generateKeys(keysize)</pre>
+
+  <p>
+    <b>2. Sign a message.</b> The owner signs a message with its secret
+    key, and sends the message together with the signature. In the
+    code below, the function <code>sign</code> is the <b>signing algorithm</b>.
+  </p>
+  <pre class="code">sig = sign(sk, message)
+<span class="kw">send</span> (message, sig)</pre>
+
+  <p>
+    <b>3. Verify the message.</b> A receiver checks the signature with the
+    owner&rsquo;s public key. <code>verify</code> returns True or False.
+  </p>
+  <pre class="code">ok = verify(pk, message, sig)</pre>
+
+  <ol class="spec">
+    <li class="req-c"><span class="rtag">Valid</span>
+      <b>Valid signatures verify.</b>
+      verify(pk, message, sign(sk, message)) is True.</li>
+    <li class="req-c"><span class="rtag">Unforgeable</span>
+      <b>An agent without the secret key cannot sign a message
+        so that it is verified using the public key.</b>
+        For any message that the owner of sk has not signed, an agent
+        without sk cannot produce a sig with
+        verify(pk, message, sig) = True, except with negligible
+        probability.
+    </li>
+  </ol>
+
+  <div class="aside">
+    <span class="lead-in">A signature is not encryption</span>
+    <p>
+      Bitcoin uses ECDSA, which has no encryption step 
+      for signing messages. Encryption is a
+      different tool for keeping a message secret.
+    </p>
+  </div>
+
+  <p>
+    <b>Unforgeability</b> is defined by a game
+    between a <b>challenger</b>, who holds the secret key <code>sk</code>, and an
+    <b>attacker</b>, who knows only the challenger&rsquo;s public key
+    <code>pk</code>. The attacker may ask the challenger to sign any
+    messages it chooses, a reasonable number of times &mdash; for example
+    2<sup>30</sup>, but not 2<sup>128</sup>.
+    Then the attacker must produce a signature that verifies on a
+    <b>new</b> message (which is different from the messages that the attacker
+    asked the challenger to sign). The scheme is
+    <b>unforgeable</b> if every attacker that runs for a reasonable time,
+    and asks for a reasonable number of signatures, wins with negligible
+    probability.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="uf_g" viewBox="0 0 1240 490" role="img"
+         aria-label="The unforgeability game: the challenger gives the attacker the public key and signs the messages the attacker chooses; the attacker then submits a message it never asked about with a made-up signature, and verification fails"></svg>
+    <div class="ctrls">
+      <button id="uf_play" class="primary">Play</button>
+      <button id="uf_step">Step</button>
+      <button id="uf_reset">Reset</button>
+      <span class="status" id="uf_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 9. The unforgeability game.</b>
+      The challenger generates keys and gives the attacker <code>pk</code>.
+      The attacker picks messages and the challenger signs them. Then the
+      attacker submits a <i>new</i> message with a signature it has made up.
+      The signatures it has seen are no help: each belongs to its own
+      message. <code>verify</code> fails, and the attacker loses. (The
+      &sigma; values here stand in for real signatures; the page does not
+      implement a signature scheme.)
+    </figcaption>
+  </figure>
+
+  <p>
+    <b>Sign the hash.</b> A signature scheme signs short messages. To sign
+    a long message <code>M</code>, sign <code>H(M)</code>; because
+    <code>H</code> is collision resistant, this is as good as signing
+    <code>M</code>. In particular, to sign a whole ledger kept as a block
+    chain, sign the hash pointer to its head: that one signature covers
+    every block in the chain.
+  </p>
+
+<h3>3.1 How to send secret, signed messages</h3>
+
+
+  <p>
+    Ana wants to send Ben a
+    message <code>M</code> that only Ben can read, and Ben wants to be sure
+    it came from Ana and was not changed. 
+  </p>
+  <ol>
+    <li>Ana <b>signs</b> using her secret key: <code>sig = sign(sk<sub>Ana</sub>, M)</code>.</li>
+    <li>Ana <b>encrypts</b> the pair <code>(M, sig)</code> with Ben&rsquo;s
+      public encryption key, <code>msg = encrypt(pk<sub>Ben</sub>, (M, sig))</code>,
+      and sends <code>msg</code> to Ben.</li>
+    <li>Ben <b>decrypts</b> <code>msg</code> with his secret key and gets
+      <code>(M, sig) = decrypt(sk<sub>Ben</sub>, msg)</code>.</li>
+    <li>Ben <b>verifies</b> Ana&rsquo;s signature using her public key. If
+      <code>verify(pk<sub>Ana</sub>, M, sig) = True</code>, then Ana sent
+      <code>M</code> and it was not changed.</li>
+  </ol>
+
+<h2>4. Public keys as identities</h2>
+
+  <p class="key">
+    <span class="lead-in">Decentralized identity</span>
+    An agent can make a new public key, secret key pair by calling
+    <code>generateKeys</code>. There is no registry and no central
+    authority required to generate the keys.
+    An agent can use different public keys that it generates as separate identities.
+  <p>
+    An agent X who uses public key, secret key pairs 
+    <code>(pk<sub>X0</sub>, sk<sub>X0</sub>)</code> 
+    and <code>(pk<sub>X1</sub>, sk<sub>X1</sub>)</code> can send some
+    messages using <code>(pk<sub>X0</sub>, sk<sub>X0</sub>)</code>  and others using
+    <code>(pk<sub>X1</sub>, sk<sub>X1</sub>)</code>.
+    A receiver who gets a message using <code>(pk<sub>X0</sub>, sk<sub>X0</sub>)</code> 
+    only knows that the message is from an agent who has that public key,
+    but cannot learn the agent&rsquo;s name from the key. 
+  
+  <p>
+    The anonymity offered by public keys is
+    limited: every message sent with one key is linked to that key, and
+    patterns in those messages can reveal who is behind it.
+    In Bitcoin these identities are called <b>addresses</b>; an address is
+    the hash of a public key.
+  </p>
+  
+
+  <p class="key">
+    <span class="lead-in">Next</span>
+    <a href="CyberCurrency.html">CyberCurrency</a> uses these tools to build
+    two simple cryptocurrencies, Goofycoin and Scroogecoin, and meets the
+    double-spending problem.
+  </p>
+
+<h2>Summary</h2>
+
+  <table class="cmp">
+    <tr><th>Tool</th><th>Property</th><th>What it gives us</th></tr>
+    <tr><td><b>Hash function</b></td><td>Collision resistant</td>
+        <td>A short digest that identifies a document</td></tr>
+    <tr><td></td><td>Hiding, with collision resistance</td><td>Commitments: commit now, reveal later,
+        no change possible</td></tr>
+    <tr><td></td><td>Puzzle friendly</td><td>Search puzzles whose
+        difficulty we can set</td></tr>
+    <tr><td><b>Hash pointer</b></td><td>Detects any change to the data</td>
+        <td>Block chains and Merkle trees</td></tr>
+    <tr><td><b>Digital signature</b></td><td>Unforgeable</td>
+        <td>Authorised payments; public keys as identities</td></tr>
+  </table>
+
+<h2>Exercises</h2>
+
+  <ol>
+    <li>A hash function returns the last 8 bits of its input. Give two
+      inputs that collide. Why is a hash function that returns the
+      <i>first</i> 8 bits of SHA-256 (as in figure 2) also easy to break?</li>
+    <li>About how many random inputs do you need to find a collision in a
+      16-bit hash? In a 64-bit hash? Use figure 2 to check the 8-bit
+      case.</li>
+    <li>Why must Su choose a <i>new</i> random <code>r</code> for every
+      commitment? Give an example in which reusing <code>r</code> leaks
+      information.</li>
+    <li>In figure 5, how many tries do you expect for <code>d = 20</code>?
+      Bitcoin sets the difficulty so that the whole network solves one
+      puzzle about every 10 minutes. If the network computes
+      10<sup>20</sup> hashes per second, about how many leading zero bits
+      does that correspond to?</li>
+    <li>You keep only the hash pointer to the head of a block chain of
+      1,000 blocks. Someone gives you the whole chain. How do you check it,
+      and how many hashes must you compute?</li>
+    <li>A Merkle tree holds 2<sup>20</sup> transactions. How many hashes
+      are in a proof of membership? Explain how a <i>sorted</i> Merkle tree
+      proves that a transaction is not in it.</li>
+    <li>Explain why signing <code>H(M)</code> is as good as signing
+      <code>M</code>, if <code>H</code> is collision resistant.</li>
+  </ol>
+
+</div>
+
+<script>
+/* SHA-256, written out so the page needs no library and works offline.
+   sha256(str) returns the hex digest of the UTF-8 bytes of str.
+   sha256States(str) also returns the chaining value after each 64-byte
+   block: SHA-256 is a Merkle-Damgard hash, and figure 6 shows it. */
+window.SHA=(function(){
+  const K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+    0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+    0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+    0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+    0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+    0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+    0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+  const IV=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  const W=new Uint32Array(64);
+  function utf8(str){
+    if(typeof TextEncoder!=='undefined') return new TextEncoder().encode(str);
+    const out=[]; const s=unescape(encodeURIComponent(str));
+    for(let i=0;i<s.length;i++) out.push(s.charCodeAt(i)); return new Uint8Array(out);
+  }
+  function pad(bytes){
+    const L=bytes.length, n=((L+9+63)>>6)<<6, b=new Uint8Array(n);
+    b.set(bytes); b[L]=0x80;
+    const bits=L*8;
+    b[n-4]=(bits>>>24)&255; b[n-3]=(bits>>>16)&255; b[n-2]=(bits>>>8)&255; b[n-1]=bits&255;
+    b[n-8]=Math.floor(bits/4294967296)&255;
+    return b;
+  }
+  function compress(H,b,o){            // the compression function f
+    for(let i=0;i<16;i++) W[i]=(b[o+4*i]<<24)|(b[o+4*i+1]<<16)|(b[o+4*i+2]<<8)|b[o+4*i+3];
+    for(let i=16;i<64;i++){
+      const x=W[i-15], y=W[i-2];
+      const s0=((x>>>7)|(x<<25))^((x>>>18)|(x<<14))^(x>>>3);
+      const s1=((y>>>17)|(y<<15))^((y>>>19)|(y<<13))^(y>>>10);
+      W[i]=(W[i-16]+s0+W[i-7]+s1)|0;
+    }
+    let a=H[0],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7],bb=H[1];
+    for(let i=0;i<64;i++){
+      const S1=((e>>>6)|(e<<26))^((e>>>11)|(e<<21))^((e>>>25)|(e<<7));
+      const ch=(e&f)^(~e&g);
+      const t1=(h+S1+ch+K[i]+W[i])|0;
+      const S0=((a>>>2)|(a<<30))^((a>>>13)|(a<<19))^((a>>>22)|(a<<10));
+      const mj=(a&bb)^(a&c)^(bb&c);
+      const t2=(S0+mj)|0;
+      h=g; g=f; f=e; e=(d+t1)|0; d=c; c=bb; bb=a; a=(t1+t2)|0;
+    }
+    return [(H[0]+a)|0,(H[1]+bb)|0,(H[2]+c)|0,(H[3]+d)|0,(H[4]+e)|0,(H[5]+f)|0,(H[6]+g)|0,(H[7]+h)|0];
+  }
+  function hex(H){ return H.map(function(w){return ('00000000'+(w>>>0).toString(16)).slice(-8);}).join(''); }
+  function sha256States(str){
+    const raw=utf8(str), b=pad(raw); let H=IV.slice(); const states=[hex(H)], blocks=[];
+    for(let o=0;o<b.length;o+=64){ blocks.push(b.slice(o,o+64)); H=compress(H,b,o); states.push(hex(H)); }
+    return {hex:hex(H), states:states, blocks:blocks, length:raw.length};
+  }
+  function sha256(str){ return sha256States(str).hex; }
+  /* the first `bits` bits of the hash, as a number: the tiny hashes of
+     figures 2 and 5 */
+  function bitsOf(h, bits){ return parseInt(h.slice(0,8),16)>>>(32-bits); }
+  function leadingZeroBits(h){
+    let n=0;
+    for(let i=0;i<h.length;i++){
+      const v=parseInt(h[i],16);
+      if(v===0){ n+=4; continue; }
+      return n+(v<8?(v<4?(v<2?3:2):1):0);
+    }
+    return n;
+  }
+  return {sha256:sha256, sha256States:sha256States, bitsOf:bitsOf,
+          leadingZeroBits:leadingZeroBits};
+})();
+</script>
+
+<script>
+/* CRY: drawing helpers shared by the figures on this page. */
+window.CRY=(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#ddd8cd', paper:'#fbf9f5',
+           blue:'#1a5fd0', teal:'#00947d', orange:'#d13d0e', red:'#e0301a',
+           gold:'#d9a429', light:'#e8f0fd', pale:'#fff1ea', green:'#e6f4ef'};
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
+  function text(p,x,y,s,o){
+    o=o||{};
+    const e=el('text',{x:x, y:y,
+      'font-family':o.mono?'ui-monospace,Menlo,Consolas,monospace'
+                         :'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':o.size||14, 'font-weight':o.w||600, fill:o.fill||C.ink,
+      'text-anchor':o.anchor||'middle', 'dominant-baseline':'middle'}, s);
+    p.appendChild(e); return e;
+  }
+  function box(p,x,y,w,h,o){
+    o=o||{};
+    const e=el('rect',{x:x, y:y, width:w, height:h, rx:o.rx==null?10:o.rx,
+      fill:o.fill||'#fff', stroke:o.stroke||C.line, 'stroke-width':o.sw||1.6});
+    p.appendChild(e); return e;
+  }
+  function arrow(p,a,b,col,o){
+    o=o||{};
+    const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L;
+    const ln=el('line',{x1:a[0], y1:a[1], x2:b[0]-ux*9, y2:b[1]-uy*9,
+      stroke:col, 'stroke-width':o.w||2.2, 'stroke-linecap':'round'});
+    if(o.dash) ln.setAttribute('stroke-dasharray',o.dash);
+    p.appendChild(ln);
+    if(!o.noHead){
+      const s=6, px=-uy, py=ux;
+      p.appendChild(el('polygon',{points:
+        b[0]+','+b[1]+' '+(b[0]-ux*s*2+px*s)+','+(b[1]-uy*s*2+py*s)+' '+
+        (b[0]-ux*s*2-px*s)+','+(b[1]-uy*s*2-py*s), fill:col}));
+    }
+  }
+  function randHex(n){
+    let s='';
+    const a=new Uint8Array(Math.ceil(n/2));
+    if(window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(a);
+    else for(let i=0;i<a.length;i++) a[i]=Math.floor(Math.random()*256);
+    for(let i=0;i<a.length;i++) s+=('0'+a[i].toString(16)).slice(-2);
+    return s.slice(0,n);
+  }
+  /* Play for step-by-step figures: Reset, then press Step every gap ms
+     until the last step. Reset stops it. */
+  function autoplay(pfx, n, gap){
+    const play=document.getElementById(pfx+'play'),
+          step=document.getElementById(pfx+'step'),
+          reset=document.getElementById(pfx+'reset');
+    if(!play || !step || !reset) return;
+    let timer=null, busy=false;
+    function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+    reset.addEventListener('click', function(){ if(!busy) stop(); });
+    play.addEventListener('click', function(){
+      stop(); busy=true; reset.click(); busy=false;
+      let i=1; step.click();
+      timer=setInterval(function(){ if(i>=n){ stop(); return; } step.click(); i++; }, gap);
+    });
+  }
+  return {NS:NS, C:C, el:el, clear:clear, text:text, box:box, arrow:arrow,
+          randHex:randHex, autoplay:autoplay};
+})();
+</script>
+
+<script>
+/* Figure 1 — a hash function, and how one character changes it */
+(function(){
+  const $=function(id){return document.getElementById('hash_'+id);};
+  if(!$('in')) return;
+  const ORIG='Ana pays Ben 10 coins';
+  let prev=null, prevIn=null;
+  function popc(v){ let n=0; while(v){ n+=v&1; v>>=1; } return n; }
+  function show(){
+    const h=SHA.sha256($('in').value);
+    let html='', bits=0;
+    for(let i=0;i<64;i++){
+      if(prev && prev[i]!==h[i]){
+        html+='<span class="d">'+h[i]+'</span>';
+        bits+=popc(parseInt(prev[i],16)^parseInt(h[i],16));
+      } else html+=h[i];
+    }
+    $('out').innerHTML=html;
+    if(prev){
+      $('cmp').innerHTML='Before: <code>'+prevIn.replace(/</g,'&lt;')+'</code><br>'+
+        '<b>'+bits+' of 256 bits</b> of the hash changed.';
+      $('status').innerHTML='<b>'+bits+'</b> bits changed';
+    } else {
+      $('cmp').innerHTML='Change the input, or press <b>Change one character</b>.';
+      $('status').innerHTML='256-bit output';
+    }
+    return h;
+  }
+  let cur=show(); let curIn=$('in').value;
+  $('in').addEventListener('input', function(){
+    prev=cur; prevIn=curIn; cur=show(); curIn=$('in').value;
+  });
+  $('flip').onclick=function(){
+    const s=$('in').value||'a', i=Math.floor(Math.random()*s.length);
+    const al='abcdefghijklmnopqrstuvwxyz0123456789';
+    let c=s[i]; while(c===s[i]) c=al[Math.floor(Math.random()*al.length)];
+    prev=cur; prevIn=curIn;
+    $('in').value=s.slice(0,i)+c+s.slice(i+1);
+    cur=show(); curIn=$('in').value;
+  };
+  $('reset').onclick=function(){
+    $('in').value=ORIG; prev=null; prevIn=null; cur=show(); curIn=ORIG;
+  };
+})();
+</script>
+
+<script>
+/* Figure 2 — hunting for a collision in an 8-bit hash */
+(function(){
+  const PFX='col_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.CRY, C=B.C;
+  const N=256, CS=25, GX=60, GY=38;
+  let cell={}, draws=[], done=null, hist=null;
+  function draw(){
+    B.clear(svg);
+    B.text(svg, GX+8*CS, 20, 'THE 256 OUTPUTS OF AN 8-BIT HASH', {fill:C.muted, size:13, w:700});
+    for(let i=0;i<N;i++){
+      const r=Math.floor(i/16), c=i%16, x=GX+c*CS, y=GY+r*CS;
+      const hit=done && (i===done.cell), full=(i in cell);
+      const last=!done && draws.length && draws[draws.length-1].cell===i;
+      B.box(svg, x, y, CS-3, CS-3, {rx:4, sw:last?2.6:1.2,
+        fill:hit?C.orange:(last?C.blue:(full?C.light:'#fff')), stroke:hit?C.orange:(full?C.blue:C.line)});
+    }
+    const RX=560;
+    if(hist){ drawHist(RX); return status(); }
+    B.text(svg, RX, 30, 'input', {anchor:'start', fill:C.muted, size:13, w:700});
+    B.text(svg, RX+250, 30, 'first 8 bits of SHA-256', {anchor:'start', fill:C.muted, size:13, w:700});
+    const show=draws.slice(-13);
+    show.forEach(function(d,j){
+      const y=62+j*26, last=(j===show.length-1);
+      B.text(svg, RX, y, d.x, {anchor:'start', mono:true, size:13.5,
+        fill:last?C.ink:C.muted});
+      B.text(svg, RX+250, y, d.h.slice(0,2)+'…  → cell '+d.cell, {anchor:'start', mono:true,
+        size:13.5, fill:(done && d===draws[draws.length-1])?C.orange:(last?C.blue:C.muted)});
+    });
+    if(done){
+      B.box(svg, RX, 410, 600, 46, {fill:C.pale, stroke:C.orange});
+      B.text(svg, RX+300, 433, 'Collision after '+draws.length+' inputs: “'+done.a+'” and “'+done.b+
+        '” both land in cell '+done.cell, {size:14, fill:C.orange, w:700});
+    }
+    status();
+  }
+  function status(){
+    $('status').innerHTML=hist?('<b>1,000 hunts</b>, average '+hist.avg.toFixed(1)+' inputs')
+      :(done?'<b>collision</b> at input '+draws.length:('inputs: <b>'+draws.length+'</b>'));
+  }
+  function one(){
+    const x='x'+B.randHex(7), h=SHA.sha256(x), c=SHA.bitsOf(h,8);
+    return {x:x, h:h, cell:c};
+  }
+  function step(){
+    if(done) return;
+    hist=null;
+    const d=one(); draws.push(d);
+    if(d.cell in cell) done={cell:d.cell, a:cell[d.cell], b:d.x};
+    else cell[d.cell]=d.x;
+    draw();
+  }
+  function drawHist(RX){
+    const W=620, H=300, X0=RX, Y0=60, maxK=70;
+    B.text(svg, X0, 30, 'HOW MANY INPUTS EACH OF 1,000 HUNTS NEEDED', {anchor:'start', fill:C.muted, size:13, w:700});
+    let m=1; for(let k=0;k<=maxK;k++) m=Math.max(m, hist.count[k]||0);
+    const bw=W/maxK;
+    for(let k=2;k<=maxK;k++){
+      const v=hist.count[k]||0, h=v/m*H;
+      B.box(svg, X0+(k-1)*bw, Y0+H-h, bw-1.5, h, {rx:1, sw:0, fill:C.blue, stroke:'none'});
+    }
+    svg.appendChild(B.el('line',{x1:X0, y1:Y0+H, x2:X0+W, y2:Y0+H, stroke:C.ink, 'stroke-width':1.2}));
+    [10,20,30,40,50,60,70].forEach(function(k){
+      B.text(svg, X0+(k-1)*bw+bw/2, Y0+H+16, String(k), {size:12, fill:C.muted});
+    });
+    const ex=Math.sqrt(Math.PI*N/2)+2/3, xe=X0+(ex-1)*bw+bw/2;
+    svg.appendChild(B.el('line',{x1:xe, y1:Y0-6, x2:xe, y2:Y0+H, stroke:C.orange,
+      'stroke-width':2, 'stroke-dasharray':'5 4'}));
+    B.text(svg, xe+8, Y0+4, 'theory: about '+ex.toFixed(1), {anchor:'start', size:13, fill:C.orange, w:700});
+    B.text(svg, X0+W/2, Y0+H+44, 'average over 1,000 hunts: '+hist.avg.toFixed(1)+
+      ' inputs, far fewer than 257', {size:14.5, w:700});
+  }
+  $('step').onclick=step;
+  $('reset').onclick=function(){ cell={}; draws=[]; done=null; hist=null; draw(); };
+  $('many').onclick=function(){
+    const count={}; let sum=0;
+    for(let t=0;t<1000;t++){
+      const seen={}; let k=0;
+      for(;;){ k++; const c=one().cell; if(c in seen) break; seen[c]=1; }
+      count[k]=(count[k]||0)+1; sum+=k;
+    }
+    cell={}; draws=[]; done=null; hist={count:count, avg:sum/1000}; draw();
+  };
+  B.autoplay(PFX, 260, 320);
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 3 — Al tries to discover Su's prediction */
+(function(){
+  const $=function(id){return document.getElementById('hide_'+id);};
+  if(!$('out')) return;
+  const TEAMS=['shorts','trousers'];
+  let team, r, bits, y, job=null;
+  function rstr(v,b){ return b? v.toString(2).padStart(b,'0') : ''; }
+  function commit(){
+    if(job){ clearTimeout(job); job=null; }
+    bits=+$('bits').value;
+    team=Math.floor(Math.random()*TEAMS.length);
+    r=bits? Math.floor(Math.random()*Math.pow(2,bits)) : 0;
+    y=SHA.sha256(rstr(r,bits)+TEAMS[team]);
+    $('lark').innerHTML='Su publishes <b>y = '+(bits?'H(r &#8214; x)':'H(x)')+'</b> = '+
+      '<code>'+y.slice(0,24)+'…</code><br>Her prediction x'+(bits?' and her '+bits+'-bit r are':' is')+' secret.';
+    $('out').innerHTML='Al knows y, and that x is shorts or trousers. Press <b>Attack</b>.';
+    $('status').innerHTML='at most <b>'+(2*Math.pow(2,bits)).toLocaleString()+'</b> tries';
+  }
+  $('attack').onclick=function(){
+    if(job) return;
+    const total=2*Math.pow(2,bits), t0=Date.now();
+    let i=0;
+    (function chunk(){
+      const stop=Math.min(total, i+6000);
+      for(; i<stop; i++){
+        const rv=Math.floor(i/2), tm=i%2;
+        if(SHA.sha256(rstr(rv,bits)+TEAMS[tm])===y){
+          const s=(Date.now()-t0)/1000;
+          const nt=(i+1).toLocaleString()+((i+1)===1?' try':' tries');
+          $('out').innerHTML='<b>Found after '+nt+'</b> ('+s.toFixed(1)+
+            ' s): Su predicted <b>'+TEAMS[tm]+'</b>'+(bits?', with r = '+rstr(rv,bits):'')+
+            '. Al wears the other one.'+
+            (bits?'<br>Each extra bit of r doubles the work. With a 256-bit r, Al would need up to '+
+              '2 &times; 2<sup>256</sup> tries: hopeless.':'<br>Without a secret r, a hash of a prediction from a small set hides nothing.');
+          $('status').innerHTML='<b>found</b> in '+nt;
+          job=null; return;
+        }
+      }
+      $('out').innerHTML='Trying… <b>'+i.toLocaleString()+'</b> of up to '+total.toLocaleString();
+      job=(i<total)? setTimeout(chunk,0) : null;
+    })();
+  };
+  $('reset').onclick=commit;
+  $('bits').addEventListener('change', commit);
+  commit();
+})();
+</script>
+
+<script>
+/* Figure 4 — commit, reveal, and an attempt to cheat */
+(function(){
+  const PFX='com_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.CRY, C=B.C;
+  const PRED='shorts', WIN='trousers', LAST=4;
+  let step=0, r, c;
+  function fresh(){ r=B.randHex(64); c=SHA.sha256(r+PRED); }
+  function draw(){
+    B.clear(svg);
+    B.box(svg, 40, 40, 470, 250, {fill:C.paper});
+    B.text(svg, 60, 66, 'SU', {anchor:'start', size:15.5, w:700, fill:C.muted});
+    B.box(svg, 730, 40, 470, 250, {fill:C.paper});
+    B.text(svg, 750, 66, 'AL', {anchor:'start', size:15.5, w:700, fill:C.muted});
+    if(step>=1){
+      B.text(svg, 60, 104, 'prediction = '+PRED, {anchor:'start', mono:true, size:16.5});
+      B.text(svg, 60, 132, 'r = '+r.slice(0,20)+'…', {anchor:'start', mono:true, size:16.5});
+      B.text(svg, 60, 160, 'c = H(r ‖ prediction)', {anchor:'start', mono:true, size:16.5});
+      B.text(svg, 60, 186, '  = '+c.slice(0,24)+'…', {anchor:'start', mono:true, size:16.5, fill:C.blue});
+      B.arrow(svg, [515,170], [722,170], C.blue);
+      B.text(svg, 618, 150, 'c, published', {size:15.5, fill:C.blue});
+      B.text(svg, 750, 104, 'c = '+c.slice(0,24)+'…', {anchor:'start', mono:true, size:16.5, fill:C.blue});
+      B.text(svg, 750, 132, 'Al cannot tell what Su predicted', {anchor:'start', size:16, fill:C.muted});
+    }
+    if(step>=2){
+      B.box(svg, 400, 310, 440, 36, {fill:'#fff', stroke:C.ink});
+      B.text(svg, 620, 328, 'The next morning Al appears in '+WIN+'.', {size:17, w:700});
+    }
+    if(step===3){
+      const h=SHA.sha256(r+PRED);
+      B.arrow(svg, [515,232], [722,232], C.teal);
+      B.text(svg, 618, 216, 'reveals r, '+PRED, {size:15.5, fill:C.teal});
+      B.text(svg, 750, 188, 'H(r ‖ '+PRED+')', {anchor:'start', mono:true, size:16.5});
+      B.text(svg, 750, 214, '  = '+h.slice(0,24)+'…', {anchor:'start', mono:true, size:16.5, fill:C.teal});
+      B.text(svg, 750, 250, h===c?'✓ matches c: Su predicted '+PRED+', and loses':'✗', {anchor:'start', size:17.5, w:700, fill:C.teal});
+    }
+    if(step>=4){
+      const h=SHA.sha256(r+WIN);
+      B.arrow(svg, [515,232], [722,232], C.orange);
+      B.text(svg, 618, 216, 'claims r, '+WIN, {size:15.5, fill:C.orange});
+      B.text(svg, 750, 188, 'H(r ‖ '+WIN+')', {anchor:'start', mono:true, size:16.5});
+      B.text(svg, 750, 214, '  = '+h.slice(0,24)+'…', {anchor:'start', mono:true, size:16.5, fill:C.orange});
+      B.text(svg, 750, 250, h===c?'?':'✗ does not match c: the claim is rejected', {anchor:'start', size:17.5, w:700, fill:C.orange});
+      B.text(svg, 620, 386, 'To cheat, Su needs some r′ with H(r′ ‖ '+WIN+') = c: a collision. Collision resistance makes the commitment binding.',
+        {size:16.5, w:700, fill:C.ink});
+    }
+    $('status').innerHTML=['press play','<b>1.</b> Su commits','<b>2.</b> Al appears in '+WIN,
+      '<b>3.</b> honest reveal: <b>accepted</b>','<b>4.</b> a false claim: <b>rejected</b>'][step];
+  }
+  $('step').onclick=function(){ if(step<LAST) step++; draw(); };
+  $('reset').onclick=function(){ step=0; fresh(); draw(); };
+  B.autoplay(PFX, LAST, 2200);
+  fresh(); draw();
+})();
+</script>
+
+<script>
+/* Figure 5 — solving a search puzzle */
+(function(){
+  const $=function(id){return document.getElementById('pz_'+id);};
+  if(!$('cur')) return;
+  let job=null, runs=[], puzzle=0;
+  function zhex(h, z){
+    const full=Math.floor(z/4);
+    return '<span class="z">'+h.slice(0,full)+'</span>'+h.slice(full);
+  }
+  function stats(){
+    const d=+$('d').value, n=runs.length;
+    const avg=n? runs.reduce(function(a,b){return a+b;},0)/n : 0;
+    $('stats').innerHTML='Expected tries for d = '+d+': about <b>2<sup>'+d+'</sup> = '+
+      Math.pow(2,d).toLocaleString()+'</b>.'+(n? '<br>Puzzles solved: '+n+' &middot; tries each: '+
+      runs.slice(-8).map(function(v){return v.toLocaleString();}).join(', ')+
+      ' &middot; average <b>'+Math.round(avg).toLocaleString()+'</b>':'');
+  }
+  $('d').addEventListener('input', function(){
+    $('dv').textContent=$('d').value; runs=[]; stats();
+  });
+  $('mine').onclick=function(){
+    if(job) return;
+    const d=+$('d').value; puzzle++;
+    const id=$('id').value+' #'+puzzle;
+    let x=0, best=-1, bestH='';
+    (function chunk(){
+      for(let k=0;k<4000;k++, x++){
+        const h=SHA.sha256(id+x), z=SHA.leadingZeroBits(h);
+        if(z>best){ best=z; bestH=h; }
+        if(z>=d){
+          runs.push(x+1);
+          $('cur').innerHTML='H(&ldquo;'+id.replace(/</g,'&lt;')+'&rdquo; &#8214; '+x+') = '+zhex(h,z)+
+            '<br><b>Solved</b>: '+z+' leading zero bits after '+(x+1).toLocaleString()+' tries.';
+          $('status').innerHTML='solved in <b>'+(x+1).toLocaleString()+'</b> tries';
+          stats(); job=null; return;
+        }
+      }
+      $('cur').innerHTML='x = '+x.toLocaleString()+' &middot; best so far: '+zhex(bestH,best)+
+        ' ('+best+' zero bits)';
+      job=setTimeout(chunk,0);
+    })();
+  };
+  function reset(){
+    if(job){ clearTimeout(job); job=null; }
+    runs=[]; puzzle=0;
+    $('cur').innerHTML='Press <b>Solve</b>.'; $('status').innerHTML=''; stats();
+  }
+  $('reset').onclick=reset;
+  reset();
+})();
+</script>
+
+<script>
+/* Figure 6 — SHA-256 as a Merkle-Damgard chain of compression steps */
+(function(){
+  const PFX='md_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.CRY, C=B.C;
+  let st=null, step=0, MAXB=6;
+  function blockText(b, isLast, len, idx){
+    let s='';
+    for(let i=0;i<64;i++){
+      const pos=idx*64+i, v=b[i];
+      if(pos>=len) s+='·';
+      else s+=(v>=32 && v<127)? String.fromCharCode(v) : '?';
+    }
+    return s;
+  }
+  function compute(){ st=SHA.sha256States($('in').value); step=0; }
+  function draw(){
+    B.clear(svg);
+    const k=st.blocks.length, shown=Math.min(k,MAXB);
+    const X0=170, W=(1240-X0-40)/shown;
+    const cpl=Math.max(8, Math.floor((W-26)/8.4));
+    B.text(svg, 20, 62, 'BLOCKS', {anchor:'start', size:14, w:700, fill:C.muted});
+    B.box(svg, 30, 238, 124, 50, {fill:C.paper});
+    B.text(svg, 92, 255, 'IV = C₀', {size:15, w:700});
+    B.text(svg, 92, 275, st.states[0].slice(0,8)+'…', {mono:true, size:13.5, fill:C.muted});
+    for(let j=0;j<shown;j++){
+      const i=(k>MAXB && j===shown-1)? k-1 : j;
+      const x=X0+j*W, cx=x+W/2, on=(i<step);
+      const t=blockText(st.blocks[i], i===k-1, st.length, i);
+      B.box(svg, x+8, 16, W-16, 92, {fill:'#fff'});
+      B.text(svg, cx, 32, 'B'+(i+1)+(k>MAXB && j===shown-1?' (last)':''), {size:15, w:700});
+      const n=Math.min(32,cpl), l1=(n<32)? t.slice(0,n-1)+'…' : t.slice(0,32),
+            l2=(n<32)? '…'+t.slice(64-n+1) : t.slice(32);
+      B.text(svg, x+14, 60, l1, {anchor:'start', mono:true, size:13.5});
+      B.text(svg, x+14, 84, l2, {anchor:'start', mono:true, size:13.5});
+      const fy=172;
+      svg.appendChild(B.el('circle',{cx:cx, cy:fy, r:24, fill:on?C.light:'#fff',
+        stroke:on?C.blue:C.line, 'stroke-width':2}));
+      B.text(svg, cx, fy, 'f', {size:19, w:700, fill:on?C.blue:C.muted});
+      B.arrow(svg, [cx,110], [cx,146], on?C.blue:C.line);
+      const prevX=(j===0)? 154 : X0+(j-1)*W+W/2+62;
+      B.arrow(svg, [prevX,(j===0)?250:262], [cx-22,fy+10], on?C.blue:C.line);
+      B.arrow(svg, [cx,198], [cx,238], on?C.blue:C.line);
+      B.box(svg, cx-62, 238, 124, 50, {fill:on?C.light:'#fff', stroke:on?C.blue:C.line});
+      B.text(svg, cx, 255, 'C'+(i+1), {size:15, w:700, fill:on?C.blue:C.muted});
+      B.text(svg, cx, 275, on? st.states[i+1].slice(0,10)+'…' : '?', {mono:true, size:13.5, fill:on?C.ink:C.muted});
+      if(k>MAXB && j===shown-2) B.text(svg, x+W+2, 172, '…', {size:20, fill:C.muted});
+    }
+    if(step>=k){
+      B.text(svg, 620, 314, 'C'+k+' = SHA-256(message) = '+st.hex.slice(0,32)+'…',
+        {mono:true, size:15, w:700, fill:C.teal});
+    }
+    $('status').innerHTML=st.length+' bytes &rarr; <b>'+k+' block'+(k>1?'s':'')+'</b>'+
+      (step? ' &middot; step '+Math.min(step,k)+' of '+k : '');
+  }
+  $('step').onclick=function(){ if(step<st.blocks.length) step++; if(st.blocks.length>MAXB && step===MAXB-1) step=st.blocks.length; draw(); };
+  $('reset').onclick=function(){ compute(); draw(); };
+  $('in').addEventListener('input', function(){ const s=step; compute(); step=Math.min(s, st.blocks.length); draw(); });
+  B.autoplay(PFX, MAXB, 1200);
+  compute(); draw();
+})();
+</script>
+
+<script>
+/* Figure 7 — a tamper-evident block chain */
+(function(){
+  const $=function(id){return document.getElementById('bc_'+id);};
+  const box=$('chain'); if(!box) return;
+  const DATA=['genesis','Ana pays Ben 10','Ben pays Chuck 4','Chuck pays Dee 2'];
+  let data, prev, head;
+  function hashOf(i){ return SHA.sha256(prev[i]+'|'+data[i]); }
+  function honest(){
+    data=DATA.slice(); prev=['0'];
+    for(let i=1;i<data.length;i++) prev[i]=SHA.sha256(prev[i-1]+'|'+data[i-1]);
+    head=hashOf(data.length-1);
+  }
+  function build(){
+    box.innerHTML='';
+    for(let i=0;i<data.length;i++){
+      const d=document.createElement('div'); d.className='blk'; d.id='bc_b'+i;
+      d.innerHTML='<div class="t">'+(i?'Block '+i:'Genesis block')+'</div>';
+      const inp=document.createElement('input'); inp.className='txt'; inp.value=data[i];
+      inp.id='bc_d'+i;
+      inp.addEventListener('input', (function(k){ return function(){ data[k]=this.value; check(); }; })(i));
+      d.appendChild(inp);
+      const f=document.createElement('div'); f.className='f'; f.id='bc_f'+i; d.appendChild(f);
+      box.appendChild(d);
+    }
+    const h=document.createElement('div'); h.className='blk head'; h.id='bc_head';
+    h.innerHTML='<div class="t">You hold</div><div class="f" id="bc_hf"></div>';
+    box.appendChild(h);
+  }
+  function check(){
+    let bad=0, first=-1;
+    for(let i=0;i<data.length;i++){
+      const f=document.getElementById('bc_f'+i), b=document.getElementById('bc_b'+i);
+      const inp=document.getElementById('bc_d'+i); if(inp.value!==data[i]) inp.value=data[i];
+      if(i===0){ f.innerHTML='← prev: <b>none</b>'; b.className='blk'; continue; }
+      const want=hashOf(i-1), ok=(prev[i]===want);
+      f.className='f'+(ok?'':' badf');
+      f.innerHTML='← prev = H(block '+(i-1)+'):<br><b>'+prev[i].slice(0,10)+'</b> '+(ok?'✓':'✗<br>but block '+(i-1)+' now hashes to '+want.slice(0,10));
+      b.className='blk'+(ok?'':' bad');
+      if(!ok){ bad++; if(first<0) first=i; }
+    }
+    const want=hashOf(data.length-1), ok=(head===want);
+    document.getElementById('bc_hf').className='f'+(ok?'':' badf');
+    document.getElementById('bc_hf').innerHTML='← hash pointer to the head, H(block '+(data.length-1)+'):<br><b>'+head.slice(0,10)+'</b> '+
+      (ok?'✓':'✗<br>the head now hashes to '+want.slice(0,10));
+    document.getElementById('bc_head').className='blk head'+(ok?'':' bad');
+    $('status').innerHTML=(bad||!ok)? '<b>tampering detected</b>' : 'every hash pointer matches';
+  }
+  $('tamper').onclick=function(){ data[2]='Ben pays Chuck 400'; check(); };
+  $('repair').onclick=function(){
+    for(let i=1;i<data.length;i++) prev[i]=SHA.sha256(prev[i-1]+'|'+data[i-1]);
+    check();
+    $('status').innerHTML='blocks rewritten, but <b>your head pointer</b> does not match';
+    if(head===hashOf(data.length-1)) $('status').innerHTML='nothing was changed';
+  };
+  $('reset').onclick=function(){ honest(); check(); };
+  honest(); build(); check();
+})();
+</script>
+
+<script>
+/* Figure 8 — a Merkle tree and a proof of membership */
+(function(){
+  const PFX='mk_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.CRY, C=B.C;
+  const TX=['Ana→Ben 10','Ben→Chuck 4','Chuck→Dee 2','Dee→Ana 1',
+            'Ana→Chuck 3','Ben→Dee 5','Dee→Ben 2','Chuck→Ana 6'];
+  let tx, levels, honestLevels, rootHeld, sel=2, vstep=-1, timer=null;
+  function build(t){
+    const L=[t.map(function(s){return SHA.sha256(s);})];
+    while(L[L.length-1].length>1){
+      const p=L[L.length-1], q=[];
+      for(let i=0;i<p.length;i+=2) q.push(SHA.sha256(p[i]+p[i+1]));
+      L.push(q);
+    }
+    return L;
+  }
+  function pos(lv,i){
+    const n=levels[lv].length, w=1240/n;
+    return [w*i+w/2, 440-lv*110];
+  }
+  function draw(){
+    B.clear(svg);
+    const path=[], sib=[];
+    let i=sel; for(let lv=0;lv<levels.length;lv++){ path.push([lv,i]); if(lv<levels.length-1) sib.push([lv,i^1]); i>>=1; }
+    function isIn(a,lv,j){ return a.some(function(p){return p[0]===lv && p[1]===j;}); }
+    for(let lv=1;lv<levels.length;lv++){
+      for(let j=0;j<levels[lv].length;j++){
+        const a=pos(lv,j);
+        [2*j,2*j+1].forEach(function(c){
+          const b=pos(lv-1,c);
+          const onp=isIn(path,lv,j) && isIn(path,lv-1,c);
+          svg.appendChild(B.el('line',{x1:a[0], y1:a[1]+22, x2:b[0], y2:b[1]-22,
+            stroke:onp?C.blue:C.line, 'stroke-width':onp?3:1.6}));
+        });
+      }
+    }
+    for(let lv=0;lv<levels.length;lv++){
+      for(let j=0;j<levels[lv].length;j++){
+        const p=pos(lv,j), h=levels[lv][j];
+        const changed=(h!==honestLevels[lv][j]);
+        const onp=isIn(path,lv,j), ons=isIn(sib,lv,j);
+        const verified=(vstep>=0 && onp && lv<=vstep);
+        const w=(lv===0)?140:118, hgt=(lv===0)?58:44;
+        const g=B.el('g',{style:lv===0?'cursor:pointer':''}); svg.appendChild(g);
+        B.box(g, p[0]-w/2, p[1]-hgt/2, w, hgt, {
+          fill:changed?C.pale:(verified?C.green:(onp?C.light:(ons?'#fff4e8':'#fff'))),
+          stroke:changed?C.orange:(onp?C.blue:(ons?C.gold:C.line)), sw:(onp||ons)?2.4:1.4});
+        if(lv===0){
+          B.text(g, p[0], p[1]-11, tx[j], {size:12.5, w:700});
+          B.text(g, p[0], p[1]+11, h.slice(0,8)+'…', {mono:true, size:11.5, fill:C.muted});
+          g.addEventListener('click', (function(k){ return function(){ sel=k; vstep=-1; draw(); }; })(j));
+        } else {
+          B.text(g, p[0], p[1]-8, lv===levels.length-1?'root':'H(·‖·)', {size:11.5, w:700, fill:C.muted});
+          B.text(g, p[0], p[1]+9, h.slice(0,8)+'…', {mono:true, size:12});
+        }
+      }
+    }
+    const rt=levels[levels.length-1][0], ok=(rt===rootHeld);
+    B.box(svg, 900, 20, 320, 48, {fill:ok?'#fff':C.pale, stroke:ok?C.ink:C.orange});
+    B.text(svg, 1060, 36, 'root you hold: '+rootHeld.slice(0,8)+'…', {mono:true, size:13, w:700});
+    B.text(svg, 1060, 55, ok?'the tree matches':'✗ the tree does not match', {size:13, w:700, fill:ok?C.teal:C.orange});
+    B.text(svg, 20, 30, 'Proof that “'+tx[sel]+'” is in the tree: '+sib.length+' sibling hashes (orange)',
+      {anchor:'start', size:14, w:700});
+    if(vstep>=0){
+      const lv=Math.min(vstep, levels.length-1), done=(vstep>=levels.length-1);
+      B.text(svg, 20, 56, done? (ok?'✓ rehashing up the path gives the root you hold':'✗ rehashing gives a different root')
+        : 'level '+lv+': combine with the sibling and hash',
+        {anchor:'start', size:13.5, w:700, fill:done?(ok?C.teal:C.orange):C.blue});
+    }
+    $('status').innerHTML=vstep>=0? 'verifying: level <b>'+Math.min(vstep,levels.length-1)+'</b>' :
+      ('<b>'+sib.length+'</b> hashes prove membership');
+  }
+  $('play').onclick=function(){
+    if(timer) clearInterval(timer);
+    vstep=0; draw();
+    timer=setInterval(function(){
+      vstep++; draw();
+      if(vstep>=levels.length-1){ clearInterval(timer); timer=null; }
+    }, 900);
+  };
+  $('tamper').onclick=function(){
+    tx[sel]=tx[sel].replace(/\d+$/, function(n){ return String(+n*100); });
+    levels=build(tx); vstep=-1; draw();
+  };
+  function reset(){
+    if(timer){ clearInterval(timer); timer=null; }
+    tx=TX.slice(); levels=build(tx); honestLevels=levels; rootHeld=levels[levels.length-1][0];
+    vstep=-1; draw();
+  }
+  $('reset').onclick=reset;
+  reset();
+})();
+</script>
+
+<script>
+/* Figure 9 — the unforgeability game */
+(function(){
+  const PFX='uf_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.CRY, C=B.C;
+  const MSG=['pay Ben 1','pay Chuck 2','pay Dee 3'], FAKE='pay Eve 1000';
+  const LAST=6;
+  let step=0, sk, pk, sigs, guess;
+  function fresh(){
+    sk=B.randHex(16); pk=B.randHex(16);
+    /* placeholders standing in for signatures: each depends on the
+       message and on sk, which the attacker never sees */
+    sigs=MSG.map(function(m){ return SHA.sha256(sk+m).slice(0,16); });
+    guess=B.randHex(16);
+  }
+  function draw(){
+    B.clear(svg);
+    B.box(svg, 40, 30, 330, 380, {fill:C.paper});
+    B.text(svg, 205, 56, 'CHALLENGER', {size:15, w:700, fill:C.muted});
+    B.box(svg, 870, 30, 330, 380, {fill:C.paper});
+    B.text(svg, 1035, 56, 'ATTACKER', {size:15, w:700, fill:C.muted});
+    if(step>=1){
+      B.text(svg, 60, 92, 'sk = ████████ (secret)', {anchor:'start', mono:true, size:15.5});
+      B.text(svg, 60, 116, 'pk = '+pk, {anchor:'start', mono:true, size:15.5});
+    }
+    if(step>=2){
+      B.arrow(svg, [372,116], [866,116], C.ink);
+      B.text(svg, 620, 102, 'pk', {mono:true, size:15.5, w:700});
+      B.text(svg, 890, 116, 'pk = '+pk, {anchor:'start', mono:true, size:15.5});
+    }
+    for(let i=0;i<3;i++){
+      if(step>=3+i){
+        const y=168+i*58;
+        B.arrow(svg, [866,y], [372,y], C.blue);
+        B.text(svg, 620, y-12, 'sign “'+MSG[i]+'”, please', {size:15, fill:C.blue});
+        B.arrow(svg, [372,y+18], [866,y+18], C.teal);
+        B.text(svg, 890, y+18, 'σ'+(i+1)+' = '+sigs[i], {anchor:'start', mono:true, size:15, fill:C.teal});
+      }
+    }
+    if(step>=6){
+      B.box(svg, 220, 424, 800, 56, {fill:C.pale, stroke:C.orange});
+      B.text(svg, 620, 442, 'Attacker submits a NEW message: (“'+FAKE+'”, σ = '+guess+')',
+        {size:15.5, w:700, fill:C.orange});
+      B.text(svg, 620, 464, 'verify(pk, “'+FAKE+'”, σ) = False: the attacker loses', {size:15.5, w:700, fill:C.orange});
+    }
+    $('status').innerHTML=['press play','<b>1.</b> generateKeys','<b>2.</b> pk is public',
+      '<b>3.</b> the attacker chooses messages','','',
+      '<b>4.</b> a forgery on a new message fails'][step]||'<b>3.</b> more signatures';
+  }
+  $('step').onclick=function(){ if(step<LAST) step++; draw(); };
+  $('reset').onclick=function(){ step=0; fresh(); draw(); };
+  B.autoplay(PFX, LAST, 1500);
+  fresh(); draw();
+})();
+</script>
+
+
+
+</body>
+</html>
