@@ -1,0 +1,542 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CyberCurrency</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  h2{font-family:var(--display); font-weight:600; font-size:25px;
+     letter-spacing:-.01em; margin:38px 0 12px}
+  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:34px 0 8px}
+  p{color:var(--body); margin:0 0 15px}
+  h4{font-family:var(--sans); font-weight:700; font-size:15.5px;
+     letter-spacing:.01em; color:var(--ink); margin:20px 0 6px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  header.top h2{margin:-2px 0 20px; padding:0; border:0;
+    font-family:var(--display); font-weight:600; font-size:22px;
+    line-height:1.2; letter-spacing:-.01em; color:var(--muted)}
+  figure.fig{margin:32px 0 30px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  figure.fig figcaption i{color:var(--ink); font-style:normal; font-weight:600}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
+          font-size:13.5px; color:var(--muted)}
+  .legend i{font-style:normal; color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em;
+       background:#f6f4ee; border-radius:5px; padding:1px 5px}
+  /* a block of code: the same rule as the lecture notes before it */
+  pre.code{margin:16px 0 18px; padding:14px 18px; overflow-x:auto;
+    background:#fff; border:1px solid var(--line); border-left:4px solid var(--ink);
+    border-radius:0 10px 10px 0; font:13.5px/1.7 var(--mono); color:var(--ink)}
+  pre.code b{font-weight:700}
+  pre.code .cm{color:var(--muted)}
+  pre.code .kw{color:var(--orange)}
+  pre.code code{background:none; padding:0}
+  .hint{font-size:13px; color:var(--muted)}
+  .ok{color:var(--teal); font-weight:700}
+  .bad{color:var(--orange); font-weight:700}
+  p.key{margin:22px 0 20px; padding:15px 18px 15px 20px; color:var(--ink);
+    background:#fff6ef; border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0; font-size:18px; line-height:1.5; font-weight:600}
+  p.key b, p.key strong{color:var(--ink); font-weight:800}
+  p.key .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
+    margin-bottom:8px}
+  /* a claim: the theorem and the observations read the same way */
+  .thm{margin:24px 0 22px; padding:16px 20px 15px; color:var(--ink);
+    background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:17px; line-height:1.55}
+  .thm b, .thm strong{font-weight:700}
+  .thm > b{display:block; margin-bottom:7px}
+  .thm .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--teal);
+    margin-bottom:9px}
+  .thm p:last-child{margin-bottom:0}
+  /* the observations: numbered, same colour as the theorem */
+  ol.obs{list-style:none; margin:22px 0 20px; padding:0; counter-reset:ob;
+         color:var(--body)}
+  ol.obs > li{counter-increment:ob; position:relative; margin:0 0 12px;
+    padding:14px 18px 13px 54px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:16.5px; line-height:1.5}
+  ol.obs > li::before{content:counter(ob); position:absolute; left:19px; top:13px;
+    width:24px; height:24px; border-radius:999px; background:var(--teal);
+    color:#fff; font:700 13px/24px var(--sans); text-align:center}
+  ol.obs > li > b{color:var(--ink)}
+  ol.obs .why{display:block; margin-top:9px; padding-top:9px;
+    border-top:1px solid var(--line); font-size:15px; color:var(--body)}
+  ol.obs .why em{font-style:normal; font:700 11.5px var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin-right:9px}
+  /* proofs */
+  .proof{margin:6px 0 24px; padding:2px 0 2px 22px;
+         border-left:2px solid var(--line)}
+  .proof > p:last-child{margin-bottom:0}
+  .proof figure.fig.wideout{left:calc(50% - 11px)}
+  .proof .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin:0 0 9px}
+  .case{margin:16px 0 14px; padding:13px 17px 2px; background:#fbf9f5;
+        border:1px solid var(--line); border-radius:10px}
+  .case > p:last-child{margin-bottom:11px}
+  .tag{display:inline-block; font:700 11px var(--sans); letter-spacing:.12em;
+    text-transform:uppercase; color:#fff; background:var(--ink);
+    border-radius:999px; padding:4px 11px; margin-right:11px;
+    vertical-align:1px}
+  .calc{font-family:var(--mono); font-size:15px; color:var(--ink);
+    background:#fbf9f5; border:1px solid var(--line); border-radius:8px;
+    padding:11px 15px; margin:12px 0}
+  /* the specification: two requirements, in the two colours they keep */
+  ol.spec{list-style:none; margin:22px 0 20px; padding:0;
+          counter-reset:req; color:var(--body)}
+  ol.spec > li{counter-increment:req; position:relative; margin:0 0 10px;
+    padding:14px 46px 13px 18px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--muted); border-radius:0 10px 10px 0}
+  ol.spec > li::after{content:counter(req); position:absolute; right:15px;
+    top:13px; font:700 12px var(--mono); color:#c9c4b8}
+  ol.spec .rtag{display:inline-block; font:700 11px var(--sans);
+    letter-spacing:.12em; text-transform:uppercase; color:#fff;
+    background:var(--muted); border-radius:999px; padding:4px 11px;
+    margin-right:11px; vertical-align:1px}
+  li.req-v{border-left-color:var(--teal)}
+  li.req-v .rtag{background:var(--teal)}
+  li.req-c{border-left-color:#1a5fd0}
+  li.req-c .rtag{background:#1a5fd0}
+  .n-v{color:var(--teal); font-weight:700}
+  .n-c{color:#1a5fd0; font-weight:700}
+  /* the aside about fire detectors, which is the point of the whole story */
+  .aside{margin:24px 0 22px; padding:15px 19px 14px; font-size:15.5px;
+    line-height:1.6; color:var(--body); background:#f7f5ef;
+    border:1px solid var(--line); border-radius:10px}
+  .aside b{color:var(--ink)}
+  .aside .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin-bottom:9px}
+  .aside p:last-child{margin-bottom:0}
+  /* the comparison with Paxos */
+  table.cmp{width:100%; border-collapse:collapse; margin:16px 0 22px;
+    background:#fff; font-size:15px; color:var(--body)}
+  table.cmp th, table.cmp td{border:1px solid var(--line); padding:8px 12px;
+    text-align:left; vertical-align:top}
+  table.cmp th{background:#f6f4ee; color:var(--ink); font-weight:700}
+  /* figure 8: the sandbox */
+  .sbx-row{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center;
+    padding:8px 0; border-top:1px solid var(--line); font-size:14.5px}
+  .sbx-row:first-child{border-top:0}
+  .sbx-row .k{width:230px; flex:none; font:600 11.5px var(--sans);
+    letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+  .sbx-row label{white-space:nowrap; cursor:pointer}
+  .sbx-row select{font:14px var(--sans)}
+  .sbx-off{opacity:.4}
+  table.sbx{border-collapse:collapse; margin:14px 0 6px; background:#fff;
+    font:14px var(--mono)}
+  table.sbx th, table.sbx td{border:1px solid var(--line); padding:6px 12px;
+    text-align:center}
+  table.sbx th{background:#f6f4ee; font:600 12px var(--sans); color:var(--muted)}
+  table.sbx td.one{background:#e8f0fd; color:#1a5fd0; font-weight:700}
+  table.sbx td.acc{box-shadow:inset 0 0 0 2px #1a5fd0}
+  table.sbx td .m{display:block; font-size:11px; color:var(--muted); font-weight:400}
+  .sbx-verdict{font-size:15.5px; margin:8px 0 2px}
+  /* widgets for this lecture */
+  .hexout{font:13.5px/1.55 var(--mono); word-break:break-all; color:var(--ink)}
+  .hexout .d{color:var(--orange); font-weight:700}
+  .hexout .z{color:var(--teal); font-weight:700}
+  input.txt, textarea.txt, select.txt{font:14px var(--mono); width:100%;
+    padding:7px 9px; border:1px solid var(--line); border-radius:8px;
+    background:#fffdf8; color:var(--ink)}
+  select.txt{width:auto; font-family:var(--sans)}
+  textarea.txt{min-height:64px; resize:vertical}
+  .row{display:flex; gap:10px 16px; flex-wrap:wrap; align-items:center; margin:10px 0}
+  .lbl{font:600 11.5px var(--sans); letter-spacing:.1em; text-transform:uppercase;
+    color:var(--muted)}
+  .readout{margin-top:10px; padding:10px 12px; background:#fbf9f5;
+    border:1px solid var(--line); border-radius:10px; font-size:14.5px}
+  .readout b{color:var(--ink)}
+  /* figure 7: the block chain */
+  .chain{display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; padding:6px 2px}
+  .blk{ border:2px solid var(--line); border-radius:10px;
+    padding:10px; background:#fbf9f5; transition:border-color .3s, background .3s}
+  .blk.bad{border-color:var(--orange); background:#fff1ea}
+  .blk.head{background:#fff}
+  .blk input.txt{font-size:13px; padding:6px 7px}
+  .blk .t{font:700 12px var(--sans); letter-spacing:.08em; text-transform:uppercase;
+    color:var(--muted); margin-bottom:6px}
+  .blk .f{font:12px var(--mono); color:var(--muted); margin-top:6px; overflow-wrap:anywhere}
+  .blk .f b{color:var(--ink)}
+  .blk .f.badf b{color:var(--orange)}
+  .harrow{align-self:center; font:22px var(--sans); color:var(--muted); flex:none}
+  /* figure 11: Scroogecoin */
+  .sc{display:grid; grid-template-columns:1.25fr 1fr; gap:14px}
+  @media (max-width:800px){ .sc{grid-template-columns:1fr} }
+  .sc h4{margin:0 0 8px}
+  .txcard{border:1px solid var(--line); border-radius:10px; background:#fff;
+    padding:9px 11px; margin:0 0 8px; font:13px/1.5 var(--mono)}
+  .txcard.acc{border-left:5px solid var(--teal)}
+  .txcard.rej{border-left:5px solid var(--orange); background:#fff6f1}
+  .txcard.now{box-shadow:0 0 0 2px var(--ink)}
+  .checks{font:13px/1.6 var(--sans); margin-top:5px}
+  table.utxo{border-collapse:collapse; width:100%; background:#fff; font:13px var(--mono)}
+  table.utxo th, table.utxo td{border:1px solid var(--line); padding:5px 8px; text-align:left}
+  table.utxo th{background:#f6f4ee; font:600 11.5px var(--sans); color:var(--muted)}
+  table.utxo tr.gone td{color:#b9b4a8; text-decoration:line-through}
+  table.utxo tr.new td{background:#eef7f4}
+  .fade{animation:fadein .5s ease}
+  @keyframes fadein{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab</div>
+    <h1>CyberCurrency</h1>
+    <h2>Goofycoin, Scroogecoin, and the double-spending problem</h2>
+    <p>
+      This lecture builds simple cryptocurrencies from the tools of the
+      <a href="Cryptography.html">cryptography lecture</a>: hash pointers,
+      block chains and digital signatures. Agents are identified by their
+      public keys. It follows section 1.5 of Narayanan, Bonneau, Felten,
+      Miller and Goldfeder, <i>Bitcoin and Cryptocurrency Technologies</i>
+      (Princeton University Press, 2016); see
+      <a href="https://bitcoinbook.cs.princeton.edu/">bitcoinbook.cs.princeton.edu</a>.
+    </p>
+  </header>
+
+<h2>Two simple cryptocurrencies</h2>
+
+<h3>1. Goofycoin</h3>
+
+  <p>
+    Goofycoin has two rules.
+  </p>
+  <ol>
+    <li><b>Goofy creates coins.</b> He signs the statement
+      &ldquo;CreateCoin [uniqueCoinID]&rdquo;. The new coin belongs to
+      Goofy.</li>
+    <li><b>An owner spends a coin</b> by signing &ldquo;Pay this coin to
+      pk&rdquo;, together with a hash pointer to the coin. The coin now
+      belongs to the owner of <code>pk</code>. Anyone can check the chain
+      of signatures back to Goofy.</li>
+  </ol>
+  <p>
+    Every signature in Goofycoin verifies, and nobody can forge one. Yet it
+    has a fatal flaw.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="gf_g" viewBox="0 0 1240 420" role="img"
+         aria-label="Goofy creates a coin and pays it to Alice; Alice signs a payment of the coin to Bob, and also a payment of the same coin to Chuck; both payments verify, and the coin has been spent twice"></svg>
+    <div class="ctrls">
+      <button id="gf_play" class="primary">Play</button>
+      <button id="gf_step">Step</button>
+      <button id="gf_reset">Reset</button>
+      <span class="status" id="gf_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 1. Double spending in Goofycoin.</b>
+      Goofy creates a coin and pays it to Alice. Alice signs a payment of
+      the coin to Bob, and then signs a payment of the <i>same</i> coin to
+      Chuck. Both chains of signatures verify. Bob and Chuck each believe
+      they own the coin: it has been spent twice.
+    </figcaption>
+  </figure>
+
+  <p class="key">
+    <span class="lead-in">The double-spending problem</span>
+    Signatures show who authorized a payment. They cannot show that the
+    payer had not <b>already</b> spent the coin. For that, everyone must
+    agree on <b>one history</b> of all transactions.
+  </p>
+
+<h3>2. Scroogecoin</h3>
+
+  <p>
+    Scroogecoin fixes double spending with a trusted party, Scrooge, who
+    keeps the one history. Scrooge publishes an append-only ledger: a
+    <b>block chain</b> of transactions, with the hash pointer to its head
+    signed by Scrooge. Agents are identified by their public keys.
+  </p>
+  <ul>
+    <li><b>CreateCoins</b> creates new coins. Each coin has a value and an
+      owner&rsquo;s public key. A coin is named by
+      <code>(transaction id, index)</code>: coin <code>(1, 0)</code> is the
+      first coin created by transaction 1.</li>
+    <li><b>PayCoins</b> consumes some coins and creates new coins of the
+      same total value, for the payees. It must be signed by the owner of
+      every coin it consumes.</li>
+  </ul>
+  <p>
+    Scrooge appends a PayCoins transaction only if it is <b>valid</b>:
+  </p>
+  <ol>
+    <li>the consumed coins exist and have <b>not already been
+      consumed</b>;</li>
+    <li>the total value consumed equals the total value created;</li>
+    <li>it is signed by the owners of all the consumed coins.</li>
+  </ol>
+  <p>
+    Because the ledger is a block chain whose head Scrooge signs, every agent
+    can check the whole history, and Scrooge cannot rewrite it without being
+    caught.
+  </p>
+
+  <figure class="fig wideout">
+    <div class="sc">
+      <div><h4>Transactions sent to Scrooge</h4><div id="sc_tx"></div></div>
+      <div><h4>Coins (unspent coins are not struck through)</h4><div id="sc_coins"></div></div>
+    </div>
+    <div class="ctrls">
+      <button id="sc_play" class="primary">Play</button>
+      <button id="sc_step">Step</button>
+      <button id="sc_reset">Reset</button>
+      <span class="status" id="sc_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 2. Scroogecoin stops a double spend.</b>
+      Scrooge checks each transaction against the three rules before he
+      appends it. Transaction 1 creates coins for Ana and Ben. In
+      transaction 2, Ana pays Ben 2 with her coin <code>(1, 0)</code> and
+      gets 3 back as change. In transaction 3, Ana tries to pay Chuck with
+      the same coin <code>(1, 0)</code>. It was consumed in transaction 2, so
+      Scrooge rejects it. Transaction 4 shows a payment that is valid.
+    </figcaption>
+  </figure>
+
+  <p>
+    Scroogecoin works, but everything depends on Scrooge. He is a single
+    point of failure; he can refuse to append some users&rsquo;
+    transactions; and he can create as many coins for himself as he likes.
+  </p>
+
+  <p class="key">
+    <span class="lead-in">The next lecture</span>
+    Can we get rid of Scrooge? All agents must then agree on which block
+    enters the ledger next &mdash; a <b>consensus</b> problem. But nobody
+    knows how many agents there are or how many are faulty, so neither
+    Paxos nor the Byzantine generals algorithm applies. Bitcoin&rsquo;s
+    answer combines the tools of the
+    <a href="Cryptography.html">cryptography lecture</a>: block chains,
+    signatures, and search puzzles.
+  </p>
+
+<h2>Exercises</h2>
+
+  <ol>
+    <li>List three ways Scrooge could harm users. Which of them can users
+      detect from the ledger?</li>
+  </ol>
+
+</div>
+
+<script>
+/* CRY: drawing helpers shared by the figures on this page. */
+window.CRY=(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#ddd8cd', paper:'#fbf9f5',
+           blue:'#1a5fd0', teal:'#00947d', orange:'#d13d0e', red:'#e0301a',
+           gold:'#d9a429', light:'#e8f0fd', pale:'#fff1ea', green:'#e6f4ef'};
+  function el(t,a,txt){
+    const e=document.createElementNS(NS,t);
+    for(const k in a) e.setAttribute(k,a[k]);
+    if(txt!=null) e.textContent=txt;
+    return e;
+  }
+  function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
+  function text(p,x,y,s,o){
+    o=o||{};
+    const e=el('text',{x:x, y:y,
+      'font-family':o.mono?'ui-monospace,Menlo,Consolas,monospace'
+                         :'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':o.size||14, 'font-weight':o.w||600, fill:o.fill||C.ink,
+      'text-anchor':o.anchor||'middle', 'dominant-baseline':'middle'}, s);
+    p.appendChild(e); return e;
+  }
+  function box(p,x,y,w,h,o){
+    o=o||{};
+    const e=el('rect',{x:x, y:y, width:w, height:h, rx:o.rx==null?10:o.rx,
+      fill:o.fill||'#fff', stroke:o.stroke||C.line, 'stroke-width':o.sw||1.6});
+    p.appendChild(e); return e;
+  }
+  function arrow(p,a,b,col,o){
+    o=o||{};
+    const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.hypot(dx,dy)||1, ux=dx/L, uy=dy/L;
+    const ln=el('line',{x1:a[0], y1:a[1], x2:b[0]-ux*9, y2:b[1]-uy*9,
+      stroke:col, 'stroke-width':o.w||2.2, 'stroke-linecap':'round'});
+    if(o.dash) ln.setAttribute('stroke-dasharray',o.dash);
+    p.appendChild(ln);
+    if(!o.noHead){
+      const s=6, px=-uy, py=ux;
+      p.appendChild(el('polygon',{points:
+        b[0]+','+b[1]+' '+(b[0]-ux*s*2+px*s)+','+(b[1]-uy*s*2+py*s)+' '+
+        (b[0]-ux*s*2-px*s)+','+(b[1]-uy*s*2-py*s), fill:col}));
+    }
+  }
+  function randHex(n){
+    let s='';
+    const a=new Uint8Array(Math.ceil(n/2));
+    if(window.crypto && window.crypto.getRandomValues) window.crypto.getRandomValues(a);
+    else for(let i=0;i<a.length;i++) a[i]=Math.floor(Math.random()*256);
+    for(let i=0;i<a.length;i++) s+=('0'+a[i].toString(16)).slice(-2);
+    return s.slice(0,n);
+  }
+  /* Play for step-by-step figures: Reset, then press Step every gap ms
+     until the last step. Reset stops it. */
+  function autoplay(pfx, n, gap){
+    const play=document.getElementById(pfx+'play'),
+          step=document.getElementById(pfx+'step'),
+          reset=document.getElementById(pfx+'reset');
+    if(!play || !step || !reset) return;
+    let timer=null, busy=false;
+    function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+    reset.addEventListener('click', function(){ if(!busy) stop(); });
+    play.addEventListener('click', function(){
+      stop(); busy=true; reset.click(); busy=false;
+      let i=1; step.click();
+      timer=setInterval(function(){ if(i>=n){ stop(); return; } step.click(); i++; }, gap);
+    });
+  }
+  return {NS:NS, C:C, el:el, clear:clear, text:text, box:box, arrow:arrow,
+          randHex:randHex, autoplay:autoplay};
+})();
+</script>
+
+<script>
+/* Figure 10 — double spending in Goofycoin */
+(function(){
+  const PFX='gf_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const B=window.CRY, C=B.C;
+  const LAST=5;
+  let step=0;
+  function card(x,y,l1,l2,signer,col){
+    B.box(svg, x, y, 250, 86, {fill:'#fff', stroke:col||C.ink, sw:2});
+    B.text(svg, x+14, y+24, l1, {anchor:'start', size:16, w:700});
+    B.text(svg, x+14, y+48, l2, {anchor:'start', size:15, fill:C.muted});
+    B.text(svg, x+14, y+70, 'signed: '+signer+'  ✓', {anchor:'start', size:15, w:700, fill:C.teal});
+  }
+  function draw(){
+    B.clear(svg);
+    if(step>=1) card(40, 160, 'CreateCoin [coin 73]', 'Goofy creates a coin', 'Goofy');
+    if(step>=2){ B.arrow(svg, [370,203], [292,203], C.muted, {}); card(372, 160, 'Pay coin 73 to Alice', 'hash pointer ← to the coin', 'Goofy'); }
+    if(step>=3){ B.arrow(svg, [752,95], [624,180], C.muted); card(752, 40, 'Pay coin 73 to Bob', 'hash pointer ← to Alice’s coin', 'Alice', C.blue); }
+    if(step>=4){ B.arrow(svg, [752,312], [624,226], C.muted); card(752, 270, 'Pay coin 73 to Chuck', 'hash pointer ← the same coin', 'Alice', C.orange); }
+    if(step>=5){
+      B.box(svg, 40, 372, 1160, 40, {fill:C.pale, stroke:C.orange});
+      B.text(svg, 620, 392, 'Every signature verifies, yet Bob and Chuck both own coin 73: Alice spent it twice.',
+        {size:16.5, w:700, fill:C.orange});
+    }
+    $('status').innerHTML=['press play','Goofy creates coin 73','Goofy pays it to Alice',
+      'Alice pays Bob','Alice pays Chuck <b>the same coin</b>','<b>double spend</b>'][step];
+  }
+  $('step').onclick=function(){ if(step<LAST) step++; draw(); };
+  $('reset').onclick=function(){ step=0; draw(); };
+  B.autoplay(PFX, LAST, 1600);
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 11 — Scroogecoin checks every transaction */
+(function(){
+  const PFX='sc_', $=function(id){return document.getElementById(PFX+id);};
+  if(!$('tx')) return;
+  const B=window.CRY;
+  const TXS=[
+    {id:1, kind:'CreateCoins', consumes:[], creates:[[5,'Ana'],[3,'Ben']], signers:['Scrooge'],
+     text:'Scrooge creates 5 coins for Ana and 3 for Ben'},
+    {id:2, kind:'PayCoins', consumes:['1,0'], creates:[[2,'Ben'],[3,'Ana']], signers:['Ana'],
+     text:'Ana pays Ben 2 with coin (1,0); 3 back to Ana'},
+    {id:3, kind:'PayCoins', consumes:['1,0'], creates:[[5,'Chuck']], signers:['Ana'],
+     text:'Ana pays Chuck 5 with coin (1,0) again'},
+    {id:4, kind:'PayCoins', consumes:['1,1','2,0'], creates:[[4,'Chuck'],[1,'Ben']], signers:['Ben'],
+     text:'Ben pays Chuck 4 with coins (1,1) and (2,0); 1 back to Ben'}];
+  const LAST=TXS.length;
+  let step=0;
+  function run(n){
+    const coins={}, order=[], res=[];
+    for(let i=0;i<n;i++){
+      const t=TXS[i]; let ok=true; const checks=[];
+      if(t.kind==='CreateCoins') checks.push(['created by Scrooge', true]);
+      else {
+        const exist=t.consumes.every(function(c){ return coins[c] && !coins[c].spent; });
+        const why=t.consumes.filter(function(c){ return coins[c] && coins[c].spent; });
+        checks.push(['coins exist and are unspent'+(why.length?': coin ('+why[0]+') was consumed by transaction '+coins[why[0]].spent:''), exist]);
+        const tin=t.consumes.reduce(function(a,c){ return a+(coins[c]?coins[c].v:0); },0);
+        const tout=t.creates.reduce(function(a,c){ return a+c[0]; },0);
+        checks.push(['value in = value out: '+tin+' = '+tout, tin===tout]);
+        const owners=t.consumes.map(function(c){ return coins[c]?coins[c].o:'?'; });
+        const signed=owners.every(function(o){ return t.signers.indexOf(o)>=0; });
+        checks.push(['signed by the owner'+(owners.length>1?'s':'')+': '+t.signers.join(', '), signed]);
+        ok=exist && tin===tout && signed;
+      }
+      if(ok){
+        t.consumes.forEach(function(c){ coins[c].spent=t.id; });
+        t.creates.forEach(function(c,k){ const key=t.id+','+k; coins[key]={v:c[0], o:c[1], spent:0, by:t.id}; order.push(key); });
+      }
+      res.push({t:t, ok:ok, checks:checks});
+    }
+    return {coins:coins, order:order, res:res};
+  }
+  function draw(){
+    const R=run(step);
+    let h='';
+    R.res.forEach(function(r,i){
+      const t=r.t;
+      h+='<div class="txcard '+(r.ok?'acc':'rej')+(i===step-1?' now fade':'')+'">'+
+        '<b>Transaction '+t.id+': '+t.kind+'</b><br>'+t.text+
+        '<div class="checks">'+r.checks.map(function(c){
+          return (c[1]?'<span class="ok">✓</span> ':'<span class="bad">✗</span> ')+c[0];
+        }).join('<br>')+'<br>'+(r.ok?'<b>Appended</b>; Scrooge signs the new head.'
+          :'<span class="bad">Rejected: a double spend.</span>')+'</div></div>';
+    });
+    if(!step) h='<div class="txcard">Press <b>Play</b> or <b>Step</b> to send transactions to Scrooge.</div>';
+    $('tx').innerHTML=h;
+    let c='<table class="utxo"><tr><th>coin</th><th>value</th><th>owner</th><th>status</th></tr>';
+    R.order.forEach(function(k){
+      const v=R.coins[k], isNew=(v.by===TXS[step-1].id && R.res[step-1].ok);
+      c+='<tr class="'+(v.spent?'gone':(isNew?'new':''))+'"><td>('+k+')</td><td>'+v.v+'</td><td>'+v.o+'</td><td>'+
+        (v.spent?'consumed by '+v.spent:'unspent')+'</td></tr>';
+    });
+    c+='</table>';
+    $('coins').innerHTML=R.order.length? c : '<div class="txcard">No coins yet.</div>';
+    $('status').innerHTML=step? ('transaction '+TXS[step-1].id+': '+(R.res[step-1].ok?'<b>appended</b>':'<b>rejected</b>')) : 'press play';
+  }
+  $('step').onclick=function(){ if(step<LAST) step++; draw(); };
+  $('reset').onclick=function(){ step=0; draw(); };
+  B.autoplay(PFX, LAST, 2400);
+  draw();
+})();
+</script>
+
+</body>
+</html>
