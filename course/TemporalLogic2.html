@@ -1,0 +1,1196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elements of Temporal Logic &mdash; Part 2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  h2{font-family:var(--display); font-weight:600; font-size:25px;
+     letter-spacing:-.01em; margin:38px 0 12px}
+  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:34px 0 8px}
+  p{color:var(--body); margin:0 0 15px}
+  h4{font-family:var(--sans); font-weight:700; font-size:15.5px;
+     letter-spacing:.01em; color:var(--ink); margin:20px 0 6px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  header.top h2{margin:-2px 0 20px; padding:0; border:0;
+    font-family:var(--display); font-weight:600; font-size:22px;
+    line-height:1.2; letter-spacing:-.01em; color:var(--muted)}
+  figure.fig{margin:32px 0 30px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  figure.fig figcaption i{color:var(--ink); font-style:normal; font-weight:600}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
+          font-size:13.5px; color:var(--muted)}
+  .legend i{font-style:normal; color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em;
+       background:#f6f4ee; border-radius:5px; padding:1px 5px}
+  /* a block of code: the same rule as the lecture notes before it */
+  pre.code{margin:16px 0 18px; padding:14px 18px; overflow-x:auto;
+    background:#fff; border:1px solid var(--line); border-left:4px solid var(--ink);
+    border-radius:0 10px 10px 0; font:13.5px/1.7 var(--mono); color:var(--ink)}
+  pre.code b{font-weight:700}
+  pre.code .cm{color:var(--muted)}
+  pre.code .kw{color:var(--orange)}
+  pre.code code{background:none; padding:0}
+  .hint{font-size:13px; color:var(--muted)}
+  .ok{color:var(--teal); font-weight:700}
+  .bad{color:var(--orange); font-weight:700}
+  p.key{margin:22px 0 20px; padding:15px 18px 15px 20px; color:var(--ink);
+    background:#fff6ef; border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0; font-size:18px; line-height:1.5; font-weight:600}
+  p.key b, p.key strong{color:var(--ink); font-weight:800}
+  p.key .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
+    margin-bottom:8px}
+  /* a claim: the theorem and the observations read the same way */
+  .thm{margin:24px 0 22px; padding:16px 20px 15px; color:var(--ink);
+    background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:17px; line-height:1.55}
+  .thm b, .thm strong{font-weight:700}
+  .thm > b{display:block; margin-bottom:7px}
+  .thm .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--teal);
+    margin-bottom:9px}
+  .thm p:last-child{margin-bottom:0}
+  /* the observations: numbered, same colour as the theorem */
+  ol.obs{list-style:none; margin:22px 0 20px; padding:0; counter-reset:ob;
+         color:var(--body)}
+  ol.obs > li{counter-increment:ob; position:relative; margin:0 0 12px;
+    padding:14px 18px 13px 54px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:16.5px; line-height:1.5}
+  ol.obs > li::before{content:counter(ob); position:absolute; left:19px; top:13px;
+    width:24px; height:24px; border-radius:999px; background:var(--teal);
+    color:#fff; font:700 13px/24px var(--sans); text-align:center}
+  ol.obs > li > b{color:var(--ink)}
+  ol.obs .why{display:block; margin-top:9px; padding-top:9px;
+    border-top:1px solid var(--line); font-size:15px; color:var(--body)}
+  ol.obs .why em{font-style:normal; font:700 11.5px var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin-right:9px}
+  /* proofs */
+  .proof{margin:6px 0 24px; padding:2px 0 2px 22px;
+         border-left:2px solid var(--line)}
+  .proof > p:last-child{margin-bottom:0}
+  .proof figure.fig.wideout{left:calc(50% - 11px)}
+  .proof .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin:0 0 9px}
+  .case{margin:16px 0 14px; padding:13px 17px 2px; background:#fbf9f5;
+        border:1px solid var(--line); border-radius:10px}
+  .case > p:last-child{margin-bottom:11px}
+  .tag{display:inline-block; font:700 11px var(--sans); letter-spacing:.12em;
+    text-transform:uppercase; color:#fff; background:var(--ink);
+    border-radius:999px; padding:4px 11px; margin-right:11px;
+    vertical-align:1px}
+  .calc{font-family:var(--mono); font-size:15px; color:var(--ink);
+    background:#fbf9f5; border:1px solid var(--line); border-radius:8px;
+    padding:11px 15px; margin:12px 0}
+  /* the specification: two requirements, in the two colours they keep */
+  ol.spec{list-style:none; margin:22px 0 20px; padding:0;
+          counter-reset:req; color:var(--body)}
+  ol.spec > li{counter-increment:req; position:relative; margin:0 0 10px;
+    padding:14px 46px 13px 18px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--muted); border-radius:0 10px 10px 0}
+  ol.spec > li::after{content:counter(req); position:absolute; right:15px;
+    top:13px; font:700 12px var(--mono); color:#c9c4b8}
+  ol.spec .rtag{display:inline-block; font:700 11px var(--sans);
+    letter-spacing:.12em; text-transform:uppercase; color:#fff;
+    background:var(--muted); border-radius:999px; padding:4px 11px;
+    margin-right:11px; vertical-align:1px}
+  li.req-v{border-left-color:var(--teal)}
+  li.req-v .rtag{background:var(--teal)}
+  li.req-c{border-left-color:#1a5fd0}
+  li.req-c .rtag{background:#1a5fd0}
+  .n-v{color:var(--teal); font-weight:700}
+  .n-c{color:#1a5fd0; font-weight:700}
+  /* the aside about fire detectors, which is the point of the whole story */
+  .aside{margin:24px 0 22px; padding:15px 19px 14px; font-size:15.5px;
+    line-height:1.6; color:var(--body); background:#f7f5ef;
+    border:1px solid var(--line); border-radius:10px}
+  .aside b{color:var(--ink)}
+  .aside .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin-bottom:9px}
+  .aside p:last-child{margin-bottom:0}
+  /* the comparison with Paxos */
+  table.cmp{width:100%; border-collapse:collapse; margin:16px 0 22px;
+    background:#fff; font-size:15px; color:var(--body)}
+  table.cmp th, table.cmp td{border:1px solid var(--line); padding:8px 12px;
+    text-align:left; vertical-align:top}
+  table.cmp th{background:#f6f4ee; color:var(--ink); font-weight:700}
+  /* figure 8: the sandbox */
+  .sbx-row{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center;
+    padding:8px 0; border-top:1px solid var(--line); font-size:14.5px}
+  .sbx-row:first-child{border-top:0}
+  .sbx-row .k{width:230px; flex:none; font:600 11.5px var(--sans);
+    letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+  .sbx-row label{white-space:nowrap; cursor:pointer}
+  .sbx-row select{font:14px var(--sans)}
+  .sbx-off{opacity:.4}
+  table.sbx{border-collapse:collapse; margin:14px 0 6px; background:#fff;
+    font:14px var(--mono)}
+  table.sbx th, table.sbx td{border:1px solid var(--line); padding:6px 12px;
+    text-align:center}
+  table.sbx th{background:#f6f4ee; font:600 12px var(--sans); color:var(--muted)}
+  table.sbx td.one{background:#e8f0fd; color:#1a5fd0; font-weight:700}
+  table.sbx td.acc{box-shadow:inset 0 0 0 2px #1a5fd0}
+  table.sbx td .m{display:block; font-size:11px; color:var(--muted); font-weight:400}
+  .sbx-verdict{font-size:15.5px; margin:8px 0 2px}
+  /* widgets for this lecture */
+  .hexout{font:13.5px/1.55 var(--mono); word-break:break-all; color:var(--ink)}
+  .hexout .d{color:var(--orange); font-weight:700}
+  .hexout .z{color:var(--teal); font-weight:700}
+  input.txt, textarea.txt, select.txt{font:14px var(--mono); width:100%;
+    padding:7px 9px; border:1px solid var(--line); border-radius:8px;
+    background:#fffdf8; color:var(--ink)}
+  select.txt{width:auto; font-family:var(--sans)}
+  textarea.txt{min-height:64px; resize:vertical}
+  .row{display:flex; gap:10px 16px; flex-wrap:wrap; align-items:center; margin:10px 0}
+  .lbl{font:600 11.5px var(--sans); letter-spacing:.1em; text-transform:uppercase;
+    color:var(--muted)}
+  .readout{margin-top:10px; padding:10px 12px; background:#fbf9f5;
+    border:1px solid var(--line); border-radius:10px; font-size:14.5px}
+  .readout b{color:var(--ink)}
+  /* figure 7: the block chain */
+  .chain{display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; padding:6px 2px}
+  .blk{ border:2px solid var(--line); border-radius:10px;
+    padding:10px; background:#fbf9f5; transition:border-color .3s, background .3s}
+  .blk.bad{border-color:var(--orange); background:#fff1ea}
+  .blk.head{background:#fff}
+  .blk input.txt{font-size:13px; padding:6px 7px}
+  .blk .t{font:700 12px var(--sans); letter-spacing:.08em; text-transform:uppercase;
+    color:var(--muted); margin-bottom:6px}
+  .blk .f{font:12px var(--mono); color:var(--muted); margin-top:6px; overflow-wrap:anywhere}
+  .blk .f b{color:var(--ink)}
+  .blk .f.badf b{color:var(--orange)}
+  .harrow{align-self:center; font:22px var(--sans); color:var(--muted); flex:none}
+  /* figure 11: Scroogecoin */
+  .sc{display:grid; grid-template-columns:1.25fr 1fr; gap:14px}
+  @media (max-width:800px){ .sc{grid-template-columns:1fr} }
+  .sc h4{margin:0 0 8px}
+  .txcard{border:1px solid var(--line); border-radius:10px; background:#fff;
+    padding:9px 11px; margin:0 0 8px; font:13px/1.5 var(--mono)}
+  .txcard.acc{border-left:5px solid var(--teal)}
+  .txcard.rej{border-left:5px solid var(--orange); background:#fff6f1}
+  .txcard.now{box-shadow:0 0 0 2px var(--ink)}
+  .checks{font:13px/1.6 var(--sans); margin-top:5px}
+  table.utxo{border-collapse:collapse; width:100%; background:#fff; font:13px var(--mono)}
+  table.utxo th, table.utxo td{border:1px solid var(--line); padding:5px 8px; text-align:left}
+  table.utxo th{background:#f6f4ee; font:600 11.5px var(--sans); color:var(--muted)}
+  table.utxo tr.gone td{color:#b9b4a8; text-decoration:line-through}
+  table.utxo tr.new td{background:#eef7f4}
+  .fade{animation:fadein .5s ease}
+  @keyframes fadein{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+  .todo{margin:22px 0; padding:18px; border:2px dashed var(--line);
+    border-radius:12px; color:var(--muted); font-size:14.5px; text-align:center}
+  /* a definition: the formula first, the English below it */
+  .defn{margin:22px 0 20px; padding:14px 18px 14px 20px; background:#fff6ef;
+    border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0}
+  .defn .lead-in{display:block; font:700 11.5px/1 var(--sans); letter-spacing:.14em;
+    text-transform:uppercase; color:var(--orange); margin-bottom:9px}
+  .defn .f{font:600 18px/1.5 var(--mono); color:var(--ink); margin:0 0 8px}
+  .defn .e{font-size:16.5px; line-height:1.55; color:var(--ink); margin:0}
+  .imp{font-size:1.25em; line-height:1}
+  /* links between the three parts */
+  nav.parts{display:flex; flex-wrap:wrap; gap:6px 18px; margin:0 0 26px; padding:10px 14px;
+    background:#fff; border:1px solid var(--line); border-radius:10px; font-size:14.5px}
+  nav.parts a{color:var(--ink); font-weight:600; text-decoration:none}
+  nav.parts a:hover{text-decoration:underline}
+  nav.parts span.here{color:var(--orange); font-weight:700}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab &middot; Temporal logic, part 2 of 3</div>
+    <h1>Elements of Temporal Logic</h1>
+    <h2>Part 2. Until and fairness</h2>
+    <p>
+      Part 1 defined <code>AX</code>, <code>AG</code>, <code>AF</code>,
+      <code>EX</code>, <code>EF</code> and <code>EG</code> as sets of
+      vertices of a directed graph <code>G = (V, E)</code> in which every
+      vertex has an outgoing edge. This part uses the same example graph.
+      It adds <b>until</b>, and then restricts attention to <b>fair</b>
+      paths.
+    </p>
+  </header>
+
+  <nav class="parts"><a href="TemporalLogic1.html">Part 1: all paths and some path</a><span class="here">Part 2: until and fairness</span><a href="TemporalLogic3.html">Part 3: initial states, paths and LTL</a></nav>
+
+<h2>1. Until</h2>
+
+  <p>
+    <code>EF Z</code> says that some path reaches <code>Z</code>, and
+    nothing about the vertices on the way. <b>Until</b> adds a condition on
+    them: the path stays in a set <code>Y</code> until it reaches
+    <code>Z</code>.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">E[Y U Z]: on some path, Y until Z</span>
+    <div class="f">E[Y U Z] = {v | exists path v = v<sub>0</sub> &rarr; &hellip; &rarr; v<sub>k</sub> where v<sub>k</sub> &isin; Z and v<sub>0</sub>, &hellip;, v<sub>(k&minus;1)</sub> &isin; Y}</div>
+    <p class="e">Some path from <code>v</code> reaches <code>Z</code>, and every vertex before it is in <code>Y</code>.</p>
+  </div>
+  <div class="defn">
+    <span class="lead-in">A[Y U Z]: on all paths, Y until Z</span>
+    <div class="f">A[Y U Z] = {v | for every infinite path v = v<sub>0</sub> &rarr; v<sub>1</sub> &rarr; v<sub>2</sub> &rarr; &hellip;, exists k where v<sub>k</sub> &isin; Z and v<sub>0</sub>, &hellip;, v<sub>(k&minus;1)</sub> &isin; Y}</div>
+    <p class="e">Every infinite path from <code>v</code> reaches <code>Z</code>, and every vertex before it is in <code>Y</code>.</p>
+  </div>
+
+  <p>
+    <code>k</code> may be 0, so <code>Z</code> is a subset of both. With
+    <code>Y = V</code> there is no condition on the way:
+  </p>
+  <div class="calc">EF Z = E[V U Z]<br>AF Z = A[V U Z]</div>
+
+  <p>
+    In the figure below, let <code>Y = {a, b, c, d}</code> and <code>Z = {f}</code>. Then
+    <code>E[Y U Z] = {a, b, d, f}</code>, because of
+    <code>a &rarr; b &rarr; d &rarr; f</code>; <code>c</code> is not in it,
+    because its only edge goes to <code>e</code>, which is in neither set.
+    And <code>A[Y U Z] = {f}</code>. Two kinds of path show it:
+  </p>
+  <ul>
+    <li>from <code>a</code>, the path <code>a &rarr; c &rarr; e</code>
+      leaves <code>Y</code> before it reaches <code>Z</code>;</li>
+    <li>from <code>d</code>, the infinite path
+      <code>d &rarr; b &rarr; d &rarr; b &rarr; &hellip;</code> stays in
+      <code>Y</code> and never reaches <code>Z</code>.</li>
+  </ul>
+  <p>
+    Every counterexample to <code>v &isin; A[Y U Z]</code> is one of these
+    two kinds: a path through <code>Y &setminus; Z</code> to a vertex
+    outside <code>Y &cup; Z</code>, or an infinite path that stays in
+    <code>Y &setminus; Z</code>. Both sets grow from <code>W = Z</code>:
+    add a vertex of <code>Y</code> with <i>some</i> edge into
+    <code>W</code> for <code>E[Y U Z]</code>, or with <i>all</i> its edges
+    into <code>W</code> for <code>A[Y U Z]</code>.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="un_g" viewBox="0 0 1240 470" role="img"
+         aria-label="The example graph with sets Y (dashed orange) and Z (green outline); E[Y U Z] or A[Y U Z] is shaded; clicking a start vertex shows a path that stays in Y until Z, or a counterexample"></svg>
+    <div class="ctrls">
+      <button id="un_E" class="primary">E[Y U Z]</button>
+      <button id="un_A">A[Y U Z]</button>
+      <button id="un_mode">Clicks choose a start vertex</button>
+      <button id="un_reset">Reset</button>
+      <span class="status" id="un_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 1. Until.</b>
+      <code>Y</code> has a dashed orange outline and <code>Z</code> a thick
+      green one; the chosen set, <code>E[Y U Z]</code> or
+      <code>A[Y U Z]</code>, is shaded blue. The clicks button cycles
+      through choosing a start vertex, editing <code>Y</code> and editing
+      <code>Z</code>. Start at <code>a</code> and at <code>d</code> with
+      <code>A[Y U Z]</code> to see the two kinds of counterexample.
+      <i>Reset</i> restores <code>Y = {a, b, c, d}</code> and
+      <code>Z = {f}</code>.
+    </figcaption>
+  </figure>
+
+
+<h2>2. Fairness</h2>
+
+  <p>
+    <code>AF Z</code> asks that every infinite path reach <code>Z</code>.
+    Fairness lets us ignore some infinite paths. To say which, give every
+    edge a color.
+  </p>
+  <div class="defn">
+    <span class="lead-in">Colored graph</span>
+    <div class="f">C<sub>fair</sub> &sube; C</div>
+    <p class="e">Every edge has a color in a set <code>C</code> of colors. The colors in a subset <code>C<sub>fair</sub></code> of <code>C</code> are the <b>fair colors</b>. For every vertex <code>v</code> and every fair color <code>c</code>, there is at least one edge of color <code>c</code> from <code>v</code>; the edge could be from <code>v</code> to itself. A color that is not fair has no such requirement: a vertex may have no edge of that color.</p>
+  </div>
+  <p>
+    In our examples the fair colors are red (R) and blue (B). Edges whose
+    color is not in <code>C<sub>fair</sub></code> are drawn <b>grey</b>
+    and dashed. When we describe a colored graph, a vertex that has no edge
+    of a fair color <code>c</code> listed has a self-loop of color
+    <code>c</code>.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">Infinite path, with colors</span>
+    <div class="f">(v<sub>0</sub>, c<sub>0</sub>, v<sub>1</sub>, c<sub>1</sub>, v<sub>2</sub>, c<sub>2</sub>, &hellip;)</div>
+    <p class="e">An <b>infinite path</b> from a vertex <code>v</code> is a sequence in which <code>v<sub>0</sub> = v</code> and, for each <code>i</code>, there is an edge from <code>v<sub>i</sub></code> to <code>v<sub>i+1</sub></code> with color <code>c<sub>i</sub> &isin; C</code>.</p>
+  </div>
+
+  <div class="defn">
+    <span class="lead-in">Fair path</span>
+    <div class="f">every color in C<sub>fair</sub> appears infinitely often among c<sub>0</sub>, c<sub>1</sub>, c<sub>2</sub>, &hellip;</div>
+    <p class="e">A <b>fair path</b> is an infinite path in which every fair color appears infinitely often. So, in a fair path, after any number of steps along the path, for every fair color <code>c</code>, there is a later edge in the path that has color <code>c</code>. Edges whose color is not fair, grey in our examples, may appear infinitely often, a few times, or never.</p>
+  </div>
+
+  <figure class="fig wideout">
+    <svg id="fp_g" viewBox="0 0 1240 510" role="img"
+         aria-label="The example graph with vertices 0 to 7, red and blue edges and two dashed grey edges; a token walks a path and the number of red, blue and grey edges taken is counted"></svg>
+    <div class="ctrls">
+      <button id="fp_a" class="primary">From 6, red only</button>
+      <button id="fp_b">From 6, a fair path</button>
+      <button id="fp_c">From 4, a fair path avoiding 5</button>
+      <button id="fp_d">From 2, grey not forced</button>
+      <button id="fp_e">From 0, grey forever</button>
+      <span class="status" id="fp_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 2. Fair and unfair paths.</b>
+      The example graph has vertices 0 to 7 and two fair colors, red (R)
+      and blue (B). Its edges are 0 &rarr; 1 (R), 0 &rarr; 3 (R),
+      1 &rarr; 2 (R), 2 &rarr; 1 (B), 3 &rarr; 4 (B), 4 &rarr; 5 (B),
+      4 &rarr; 7 (R), 5 &rarr; 4 (B), 5 &rarr; 6 (R), 6 &rarr; 7 (B),
+      7 &rarr; 6 (R), and a self-loop of every color a vertex lacks. It
+      also has two grey edges, whose color is not fair: 1 &rarr; 0 and
+      2 &rarr; 7, drawn dashed.
+      Each button walks one path and counts its red, blue and grey edges.
+      <i>From 6, red only</i> takes the red self-loop forever: it never
+      reaches 7, but it is not fair, because blue never appears.
+      <i>From 6, a fair path</i> must take blue at some point, and blue
+      goes to 7. <i>From 4, a fair path avoiding 5</i> goes to 7 and then
+      cycles 7 &rarr; 6 &rarr; 7 using both colors: a fair path that never
+      visits 5. <i>From 2, grey not forced</i> goes back and forth between
+      2 and 1 using both fair colors, and never takes the grey edge to 7.
+      <i>From 0, grey forever</i> takes the grey edge 1 &rarr; 0 in every
+      round, and is still fair.
+    </figcaption>
+  </figure>
+
+  <div class="defn">
+    <span class="lead-in">A<sub>f</sub>F: on all fair paths, eventually</span>
+    <div class="f">A<sub>f</sub>F Z = {v | for every fair path (v<sub>0</sub>, c<sub>0</sub>, v<sub>1</sub>, c<sub>1</sub>, &hellip;) with v<sub>0</sub> = v, exists k where v<sub>k</sub> &isin; Z}</div>
+    <p class="e">For a set <code>Z</code> of vertices, <b>A<sub>f</sub>F Z</b> is the set of vertices <code>v</code> such that every fair path from <code>v</code> reaches a vertex in <code>Z</code>. The first vertex of the path counts, so a vertex in <code>Z</code> is in <code>A<sub>f</sub>F Z</code>.</p>
+  </div>
+
+  <p>
+    To show that <code>v</code> is <b>not</b> in <code>A<sub>f</sub>F Z</code>,
+    it is enough to give one fair path from <code>v</code> that never
+    visits <code>Z</code>. From 6, the path that takes the red self-loop
+    forever never reaches 7, but it is not fair, so
+    <code>6 &isin; A<sub>f</sub>F {7}</code>, although
+    <code>6 &notin; AF {7}</code>.
+  </p>
+  <p>
+    <b>Grey edges.</b> A grey edge into <code>Z</code> does not help. The
+    grey edge <code>2 &rarr; 7</code> goes straight to 7, but the fair path
+    <code>2 &rarr; 1 &rarr; 2 &rarr; 1 &rarr; &hellip;</code> never takes
+    it, so <code>2 &notin; A<sub>f</sub>F {7}</code>. And a grey edge may be
+    taken forever. The path
+    <code>0 &rarr; 1 &rarr; 0 &rarr; 0 &rarr; 1 &rarr; 0 &rarr; 0 &rarr; &hellip;</code>
+    takes red <code>0 &rarr; 1</code>, grey <code>1 &rarr; 0</code> and
+    blue <code>0 &rarr; 0</code> in every round. It uses both fair colors
+    infinitely often, so it is fair, and it never visits
+    <code>{2, 3}</code>. So <code>0 &notin; A<sub>f</sub>F {2, 3}</code>.
+    Without the grey edge <code>1 &rarr; 0</code>, every fair path from 0
+    would reach <code>{2, 3}</code>.
+  </p>
+
+  <p><b>Observations.</b></p>
+  <ol>
+    <li><code>Z &sube; A<sub>f</sub>F Z</code></li>
+    <li><code>(Y &sube; Z) <span class="imp">&#x27F9;</span> (A<sub>f</sub>F Y &sube; A<sub>f</sub>F Z)</code></li>
+    <li><code>A<sub>f</sub>F Y &cup; A<sub>f</sub>F Z &sube; A<sub>f</sub>F (Y &cup; Z)</code>,
+      and the two sides can differ. In figure 3, 0 is not in
+      <code>A<sub>f</sub>F {1, 2}</code>, because of the fair path that goes
+      0 &rarr; 3 and then cycles between 6 and 7; and 0 is not in
+      <code>A<sub>f</sub>F {3, 4, 5, 6, 7}</code>, because of the fair path
+      that goes 0 &rarr; 1 and then cycles between 1 and 2. But 0 is in
+      <code>A<sub>f</sub>F {1, 2, 3, 4, 5, 6, 7}</code>: a fair path must
+      take red from 0, and both red edges leave 0.</li>
+  </ol>
+
+  <figure class="fig wideout">
+    <svg id="ev_g" viewBox="0 0 1240 510" role="img"
+         aria-label="The example graph with a chosen set Z; vertices in fair AF Z are shaded; clicking a vertex outside it animates a fair path that never visits Z, and clicking a vertex inside it animates fair paths that all reach Z"></svg>
+    <div class="ctrls">
+      <button id="ev_z7">Z = {7}</button>
+      <button id="ev_z12">Z = {1, 2}</button>
+      <button id="ev_z17">Z = {1, &hellip;, 7}</button>
+      <button id="ev_z5">Z = {5}</button>
+      <button id="ev_z23">Z = {2, 3}</button>
+      <button id="ev_mode" class="primary">Clicks choose a start vertex</button>
+      <span class="status" id="ev_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 3. Exploring A<sub>f</sub>F Z.</b>
+      <code>Z</code> has a thick outline; the vertices of
+      <code>A<sub>f</sub>F Z</code> are shaded green. Choose <code>Z</code>
+      with a preset button, or switch the clicks to editing <code>Z</code>.
+      Then click a start vertex. If it is <b>not</b> in
+      <code>A<sub>f</sub>F Z</code>, the figure shows an adversary&rsquo;s
+      fair path that never visits <code>Z</code>: a path to a cycle that
+      avoids <code>Z</code> and uses both fair colors, repeated forever. If it
+      <b>is</b> in <code>A<sub>f</sub>F Z</code>, the figure walks random fair
+      paths from it, and every one of them reaches <code>Z</code>.
+    </figcaption>
+  </figure>
+
+  <p class="key">
+    <span class="lead-in">Only F needs fairness</span>
+    Every finite path can be continued to a fair path: from any vertex,
+    take the fair colors in turn. So a vertex is reachable along some fair path
+    exactly when it is reachable. Counting only fair paths changes nothing
+    for <code>AX</code> and <code>AG</code>; it changes <code>AF</code>.
+  </p>
+  <p>
+    The dual of <code>A<sub>f</sub>F</code> is
+    <code>(E<sub>f</sub>G Z) = (&not;A<sub>f</sub>F &not;Z)</code>: the set of
+    vertices from which <b>some fair path</b> stays in <code>Z</code>
+    forever. Figure 3 shows such a path whenever it shows a vertex outside
+    <code>A<sub>f</sub>F Z</code>.
+  </p>
+
+<h3>AG A<sub>f</sub>F Y and A<sub>f</sub>F AG Y</h3>
+
+  <p>
+    The two operators can be combined, and the order matters. Here is the
+    smallest example: two vertices, <code>a</code> and <code>b</code>, and
+    two fair colors.
+  </p>
+
+  <table class="cmp">
+    <tr><th>Vertex</th><th>Red edge</th><th>Blue edge</th></tr>
+    <tr><td><code>a</code></td><td><code>a &rarr; b</code></td><td><code>a &rarr; a</code></td></tr>
+    <tr><td><code>b</code></td><td><code>b &rarr; b</code></td><td><code>b &rarr; a</code></td></tr>
+  </table>
+
+  <p>Take <code>Y = {a}</code>.</p>
+  <ul>
+    <li><code>AG Y = &empty;</code>, because the edge
+      <code>a &rarr; b</code> leaves <code>{a}</code>. So
+      <code>A<sub>f</sub>F AG Y = &empty;</code>.</li>
+    <li><code>A<sub>f</sub>F Y = {a, b}</code>: a fair path from
+      <code>b</code> must take blue at some point, and blue goes to
+      <code>a</code>. No edge leaves <code>{a, b}</code>, so
+      <code>AG A<sub>f</sub>F Y = {a, b}</code>.</li>
+  </ul>
+
+  <figure class="fig">
+    <svg id="ae_g" viewBox="0 0 840 400" role="img"
+         aria-label="Two vertices a and b; red goes from a to b, blue from b to a; a token alternates between them, visiting a again and again but never staying there"></svg>
+    <div class="ctrls">
+      <button id="ae_play" class="primary">Play</button>
+      <button id="ae_step">Step</button>
+      <button id="ae_reset">Reset</button>
+      <span class="status" id="ae_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 4. Visiting Y forever, without staying in Y.</b>
+      The fair path <code>a &rarr;R b &rarr;B a &rarr;R b &rarr;B &hellip;</code>
+      uses both colors forever. It returns to <code>a</code> again and
+      again, so every vertex is in <code>AG A<sub>f</sub>F {a}</code>.
+      But it can never stay at <code>a</code>, because red always leads
+      away, so no vertex is in <code>A<sub>f</sub>F AG {a}</code>.
+    </figcaption>
+  </figure>
+
+  <ul>
+    <li><b>AG A<sub>f</sub>F Y</b> is the set of vertices from which
+      every fair path visits <code>Y</code> <b>infinitely often</b>:
+      wherever the path is, it will reach <code>Y</code> again.</li>
+    <li><b>A<sub>f</sub>F AG Y</b> is the set of vertices from which
+      every fair path reaches a vertex from which no path ever leaves
+      <code>Y</code>.</li>
+  </ul>
+
+  <p>
+    <b>Observation.</b>
+    <code>A<sub>f</sub>F AG Y &sube; AG A<sub>f</sub>F Y</code>, and
+    figure 4 shows that the two sides can differ.
+  </p>
+  <div class="proof">
+    <span class="lead-in">Proof</span>
+    <p>
+      Let <code>v &isin; A<sub>f</sub>F AG Y</code>, let
+      <code>v &rarr;<sup>*</sup> w</code>, and let <code>P</code> be a fair
+      path from <code>w</code>. Putting the path from <code>v</code> to
+      <code>w</code> in front of <code>P</code> gives a fair path from
+      <code>v</code>, so it reaches some <code>u &isin; AG Y</code>.
+    </p>
+    <p>
+      If <code>u</code> comes before <code>w</code>, then
+      <code>u &rarr;<sup>*</sup> w</code>, so <code>w &isin; Y</code>. If not,
+      <code>u</code> is on <code>P</code>, and <code>u &isin; Y</code>,
+      because <code>AG Y &sube; Y</code>. Either way <code>P</code>
+      reaches <code>Y</code>, so <code>w &isin; A<sub>f</sub>F Y</code>. This
+      holds for every <code>w</code> with <code>v &rarr;<sup>*</sup> w</code>,
+      so <code>v &isin; AG A<sub>f</sub>F Y</code>.
+    </p>
+  </div>
+
+<h3>Composing the operators</h3>
+
+  <p>
+    <code>AX</code>, <code>AG</code> and <code>A<sub>f</sub>F</code> each take a set
+    of vertices and give a set of vertices, so they can be composed. Read a
+    composition from the right:
+    <code>AX AG A<sub>f</sub>F Y</code> first computes
+    <code>A<sub>f</sub>F Y</code>, then <code>AG</code> of that, then
+    <code>AX</code> of that. The examples use the colored graph of figures
+    3 and 4.
+  </p>
+
+  <table class="cmp">
+    <tr><th>Y = {7}</th><th>Set</th><th>Meaning</th></tr>
+    <tr><td><code>A<sub>f</sub>F Y</code></td><td><code>{3, 4, 5, 6, 7}</code></td>
+        <td>every fair path reaches 7</td></tr>
+    <tr><td><code>AG A<sub>f</sub>F Y</code></td><td><code>{3, 4, 5, 6, 7}</code></td>
+        <td>no edge leaves <code>{3, &hellip;, 7}</code>, so every fair path
+        reaches 7 again and again</td></tr>
+    <tr><td><code>AX AG A<sub>f</sub>F Y</code></td><td><code>{3, 4, 5, 6, 7}</code></td>
+        <td>every edge leads to a vertex of the line above</td></tr>
+  </table>
+
+  <table class="cmp">
+    <tr><th>Y = {4}</th><th>Set</th><th>Meaning</th></tr>
+    <tr><td><code>A<sub>f</sub>F Y</code></td><td><code>{3, 4}</code></td>
+        <td>from 3, a fair path must take blue, to 4</td></tr>
+    <tr><td><code>AG A<sub>f</sub>F Y</code></td><td><code>&empty;</code></td>
+        <td>from 4, the edges to 5 and 7 leave <code>{3, 4}</code></td></tr>
+    <tr><td><code>AX AG A<sub>f</sub>F Y</code></td><td><code>&empty;</code></td>
+        <td><code>AX &empty; = &empty;</code>, because every vertex has an edge</td></tr>
+  </table>
+
+  <p>
+    In both examples the last step changes nothing. That is no accident:
+  </p>
+  <p class="key">
+    <span class="lead-in">Observation</span>
+    <code>AX AG A<sub>f</sub>F Y = AG A<sub>f</sub>F Y</code>, for
+    every <code>Y</code>. Visiting <code>Y</code> infinitely often can be
+    neither gained nor lost in one step.
+  </p>
+  <div class="proof">
+    <span class="lead-in">Proof</span>
+    <p>
+      Let <code>W = AG A<sub>f</sub>F Y</code>. <code>W</code> is stable,
+      so <code>W &sube; AX W</code>.
+    </p>
+    <p>
+      Conversely, let <code>v &isin; AX W</code>. Every fair path from
+      <code>v</code> is in <code>W &sube; A<sub>f</sub>F Y</code> after one
+      step, and the rest of the path is still fair, so it reaches
+      <code>Y</code>: <code>v &isin; A<sub>f</sub>F Y</code>. Every other vertex
+      reachable from <code>v</code> is reachable from a vertex of
+      <code>W</code>, so it is in <code>A<sub>f</sub>F Y</code> too. So
+      <code>v &isin; AG A<sub>f</sub>F Y = W</code>.
+    </p>
+  </div>
+
+  <p>
+    <b>The order matters.</b> Take <code>Y = {6}</code>. No vertex has all
+    its edges going to 6, so <code>AX {6} = &empty;</code> and
+    <code>A<sub>f</sub>F AX {6} = &empty;</code>. But
+    <code>A<sub>f</sub>F {6} = {3, 4, 5, 6, 7}</code>, and no edge leaves that
+    set, so <code>AX A<sub>f</sub>F {6} = {3, 4, 5, 6, 7}</code>. And with
+    <code>Y = {4}</code>, <code>AX A<sub>f</sub>F {4} = {3}</code>: vertex 4
+    is in <code>A<sub>f</sub>F {4}</code>, but its edges go to 5 and 7.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="cp_g" viewBox="0 0 1240 560" role="img"
+         aria-label="The colored example graph; choose a set Y and apply AX, AG and fair AF in any order; each step shades the new set and adds a line to the list of results"></svg>
+    <div class="ctrls">
+      <button id="cp_next">Apply AX</button>
+      <button id="cp_always">Apply AG</button>
+      <button id="cp_eventually">Apply A<sub>f</sub>F</button>
+      <button id="cp_play" class="primary">Example: Y = {7}</button>
+      <button id="cp_step" style="display:none">Step</button>
+      <button id="cp_reset">Reset</button>
+      <span class="status" id="cp_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 5. Composing AX, AG and A<sub>f</sub>F.</b>
+      Click vertices to choose <code>Y</code> (thick outline). Each button
+      applies one operator to the current set; the new set is shaded green,
+      and its line is added to the list. The list reads the composition
+      from the inside out. <i>Example</i> builds
+      <code>AX AG A<sub>f</sub>F {7}</code> one step at a time. Try
+      <code>Y = {6}</code> with AX then A<sub>f</sub>F, and then with A<sub>f</sub>F then
+      AX.
+    </figcaption>
+  </figure>
+
+<h2>Notes</h2>
+
+  <div class="aside">
+    <span class="lead-in">Note: fixed points</span>
+    <p>
+      Every operator in this lecture is the largest or the smallest set
+      <code>W</code> that satisfies a condition. Model checkers compute
+      them this way: the largest by peeling from above, the smallest by
+      growing from below.
+    </p>
+    <div class="calc">AG Z: largest W with W &sube; Z &cap; AX W<br>EG Z: largest W with W &sube; Z &cap; EX W<br>AF Z: smallest W with Z &cup; AX W &sube; W<br>EF Z: smallest W with Z &cup; EX W &sube; W<br>A[Y U Z]: smallest W with Z &cup; (Y &cap; AX W) &sube; W<br>E[Y U Z]: smallest W with Z &cup; (Y &cap; EX W) &sube; W</div>
+  </div>
+
+
+  <nav class="parts"><a href="TemporalLogic1.html">Part 1: all paths and some path</a><span class="here">Part 2: until and fairness</span><a href="TemporalLogic3.html">Part 3: initial states, paths and LTL</a></nav>
+
+</div>
+<script>
+/* TLG: the example graph shared by figures 1-4, and the code that draws
+   it. Every vertex has at least one outgoing edge. */
+window.TLG=(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#cfc9bc', orange:'#d13d0e', blue:'#1a5fd0',
+           light:'#dbe7fb', teal:'#00947d', green:'#e3f3ee', red:'#e0301a', pale:'#fde9e2'};
+  const POS={a:[100,230], b:[300,125], c:[300,335], d:[520,125], e:[520,335],
+             f:[740,230], g:[940,125], h:[1140,180], i:[1140,345], j:[920,345]};
+  const V=Object.keys(POS);
+  const EDGES=[['a','b'],['a','c'],['b','d'],['d','b'],['c','e'],['d','f'],['e','f'],
+               ['e','j'],['f','g'],['g','h'],['h','g'],['j','i'],['i','j']];
+  const OUT={}; V.forEach(function(v){ OUT[v]=[]; });
+  EDGES.forEach(function(e){ OUT[e[0]].push(e[1]); });
+  function next(Z){ return new Set(V.filter(function(v){ return OUT[v].every(function(w){ return Z.has(w); }); })); }
+  function N(X){ const s=new Set(); X.forEach(function(v){ OUT[v].forEach(function(w){ s.add(w); }); }); return s; }
+  function R(X){ let s=new Set(X), fr=[...X];
+    while(fr.length){ const nx=[]; fr.forEach(function(v){ OUT[v].forEach(function(w){ if(!s.has(w)){ s.add(w); nx.push(w); } }); }); fr=nx; }
+    return s; }
+  function show(X){ return '{'+[...X].sort().join(', ')+'}'; }
+  function el(t,a,txt){ const e=document.createElementNS(NS,t); for(const k in a) e.setAttribute(k,a[k]); if(txt!=null) e.textContent=txt; return e; }
+  function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
+  /* text; "_f" is drawn as a subscript f, so "A_fF" reads as the fair AF */
+  function text(p,x,y,s,o){ o=o||{};
+    const t=el('text',{x:x, y:y, 'font-family':o.mono?'ui-monospace,Menlo,Consolas,monospace':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':o.size||15, 'font-weight':o.w||600, fill:o.fill||C.ink, 'text-anchor':o.anchor||'middle', 'dominant-baseline':'middle'});
+    const parts=String(s).split('_f');
+    parts.forEach(function(seg,i){
+      if(i>0) t.appendChild(el('tspan',{'baseline-shift':'sub', 'font-size':(o.size||15)*0.7}, 'f'));
+      if(seg) t.appendChild(el('tspan',{}, seg));
+    });
+    p.appendChild(t); return t; }
+  function head(p,x,y,ux,uy,col){ const s=6, px=-uy, py=ux;
+    p.appendChild(el('polygon',{points:x+','+y+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+(x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col})); }
+  const RV=24;
+  /* draw the graph. o.edge(u,v) gives an edge's color (or null for the
+     default), o.fill / o.stroke / o.sw / o.note map vertices to styles,
+     o.click is called with a vertex name. */
+  function draw(svg,o){
+    o=o||{};
+    const g=el('g',{}); svg.appendChild(g);
+    V.forEach(function(u){ OUT[u].forEach(function(v){
+      const col=(o.edge && o.edge(u,v)) || C.line, w=(o.edge && o.edge(u,v))?2.8:1.6;
+      const [x1,y1]=POS[u], [x2,y2]=POS[v];
+      if(u===v){
+        g.appendChild(el('path',{d:'M '+(x1-11)+' '+(y1-RV+3)+' C '+(x1-34)+' '+(y1-74)+' '+(x1+34)+' '+(y1-74)+' '+(x1+11)+' '+(y1-RV+3),
+          fill:'none', stroke:col, 'stroke-width':w}));
+        head(g, x1+11, y1-RV+2, -0.35, 0.94, col);
+        return;
+      }
+      const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
+      const back=OUT[v].indexOf(u)>=0 && v!==u, off=back?16:0, px=-uy*off, py=ux*off;
+      const sx=x1+ux*RV+px, sy=y1+uy*RV+py, ex=x2-ux*(RV+2)+px, ey=y2-uy*(RV+2)+py;
+      g.appendChild(el('line',{x1:sx, y1:sy, x2:ex-ux*10, y2:ey-uy*10, stroke:col, 'stroke-width':w}));
+      head(g, ex, ey, ux, uy, col);
+    }); });
+    V.forEach(function(v){
+      const [x,y]=POS[v];
+      const c=el('circle',{cx:x, cy:y, r:RV, fill:(o.fill&&o.fill[v])||'#fff',
+        stroke:(o.stroke&&o.stroke[v])||C.ink, 'stroke-width':(o.sw&&o.sw[v])||1.8,
+        opacity:(o.faded&&o.faded[v])?0.35:1});
+      if(o.dash && o.dash[v]) c.setAttribute('stroke-dasharray','7 5');
+      if(o.click){ c.setAttribute('style','cursor:pointer'); c.addEventListener('click', function(){ o.click(v); }); }
+      g.appendChild(c);
+      text(g, x, y+1, v, {size:17, w:700, fill:(o.label&&o.label[v])||C.ink});
+      if(o.note && o.note[v]!=null) text(g, x+RV+8, y+RV-2, String(o.note[v]), {size:13, w:700, fill:C.blue, anchor:'start'});
+    });
+    if(o.token!=null){ const [x,y]=POS[o.token];
+      g.appendChild(el('circle',{cx:x+20, cy:y-20, r:9, fill:C.ink, stroke:'#fff', 'stroke-width':2.5})); }
+    return g;
+  }
+  function autoplay(pfx,n,gap){
+    const play=document.getElementById(pfx+'play'), step=document.getElementById(pfx+'step'), reset=document.getElementById(pfx+'reset');
+    if(!play||!step||!reset) return;
+    let timer=null, busy=false;
+    function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+    reset.addEventListener('click', function(){ if(!busy) stop(); });
+    play.addEventListener('click', function(){
+      stop(); busy=true; reset.click(); busy=false;
+      let i=1; step.click();
+      timer=setInterval(function(){ if(i>=n){ stop(); return; } step.click(); i++; }, gap);
+    });
+  }
+  /* the CTL operators, as maps from sets of vertices to sets of vertices */
+  function minus(Z){ return new Set(V.filter(function(v){ return !Z.has(v); })); }
+  function EX(Z){ return new Set(V.filter(function(v){ return OUT[v].some(function(w){ return Z.has(w); }); })); }
+  function AG(Z){ return new Set(V.filter(function(v){ return [...R(new Set([v]))].every(function(w){ return Z.has(w); }); })); }
+  function EF(Z){ return new Set(V.filter(function(v){ return [...R(new Set([v]))].some(function(w){ return Z.has(w); }); })); }
+  /* grow from W = Z: add a vertex of Y with all (or some) of its edges into W */
+  function grow(Y, Z, all){
+    const W=new Set(Z), order=[];
+    for(;;){
+      const u=V.find(function(v){ return !W.has(v) && Y.has(v) &&
+        (all? OUT[v].every(function(w){ return W.has(w); }) : OUT[v].some(function(w){ return W.has(w); })); });
+      if(u==null) return {W:W, order:order};
+      W.add(u); order.push(u);
+    }
+  }
+  const ALL=new Set(V);
+  function AF(Z){ return grow(ALL, Z, true).W; }
+  function AU(Y,Z){ return grow(Y, Z, true).W; }
+  function EU(Y,Z){ return grow(Y, Z, false).W; }
+  /* peel from W = Z: remove a vertex with no edge into W */
+  function EG(Z){
+    const W=new Set(Z);
+    for(;;){ const u=[...W].find(function(v){ return !OUT[v].some(function(w){ return W.has(w); }); });
+      if(u==null) return W; W.delete(u); }
+  }
+  /* a shortest path from v to a vertex of target, every vertex before the
+     last in inner, as a list of edges; null if there is none */
+  function pathTo(inner, v, target){
+    if(target.has(v)) return [];
+    if(!inner.has(v)) return null;
+    const prev=new Map([[v,null]]), q=[v];
+    while(q.length){ const u=q.shift();
+      for(const w of OUT[u]){ if(prev.has(w)) continue; prev.set(w,u);
+        if(target.has(w)){ const p=[]; let x=w; while(x!==v){ const y=prev.get(x); p.unshift([y,x]); x=y; } return p; }
+        if(inner.has(w)) q.push(w); } }
+    return null;
+  }
+  /* an infinite path from v inside S, as a lasso {prefix, cycle}; null if none */
+  function stayIn(S, v){
+    const W=EG(S); if(!W.has(v)) return null;
+    const seen=[v]; let at=v;
+    for(;;){ const w=OUT[at].find(function(x){ return W.has(x); }), i=seen.indexOf(w);
+      if(i>=0){ const vs=seen.concat([w]), ed=[]; for(let j=0;j+1<vs.length;j++) ed.push([vs[j],vs[j+1]]);
+        return {prefix:ed.slice(0,i), cycle:ed.slice(i)}; }
+      seen.push(w); at=w; }
+  }
+  function lassoSeq(L, reps){ const s=L.prefix.slice(); for(let r=0;r<reps;r++) L.cycle.forEach(function(e){ s.push(e); }); return s; }
+  /* a random path from v that stops on reaching stop */
+  function randomPath(v, stop, max){ const p=[]; let at=v;
+    for(let i=0;i<max && !stop.has(at);i++){ const o=OUT[at], w=o[Math.floor(Math.random()*o.length)]; p.push([at,w]); at=w; }
+    return p; }
+  return {C:C, V:V, OUT:OUT, N:N, R:R, next:next, show:show, el:el, clear:clear, text:text, draw:draw, autoplay:autoplay,
+          AX:next, EX:EX, AG:AG, EF:EF, AF:AF, EG:EG, AU:AU, EU:EU, grow:grow, minus:minus,
+          pathTo:pathTo, stayIn:stayIn, lassoSeq:lassoSeq, randomPath:randomPath};
+})();
+</script>
+
+<script>
+/* Figure 1 — until: E[Y U Z] and A[Y U Z], with witnesses and the two kinds
+   of counterexample */
+(function(){
+  const PFX='un_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const G=window.TLG, C=G.C;
+  const Y0=['a','b','c','d'], Z0=['f'], MODES=['start','y','z'],
+        LABEL={start:'Clicks choose a start vertex', y:'Clicks edit Y', z:'Clicks edit Z'};
+  let Y, Z, which='E', mode='start', start=null, seq=[], k=0, mark=null, msg='', kind='', timer=null;
+  function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+  function clearPath(){ stop(); start=null; seq=[]; k=0; mark=null; msg=''; kind=''; }
+  function U(){ return which==='E'? G.EU(Y,Z) : G.AU(Y,Z); }
+  function draw(){
+    G.clear(svg);
+    const S=U(), fill={}, stroke={}, sw={}, dash={};
+    G.V.forEach(function(v){
+      if(S.has(v)) fill[v]=C.light;
+      if(Z.has(v)){ stroke[v]=C.teal; sw[v]=6; }
+      else if(Y.has(v)){ stroke[v]=C.orange; sw[v]=3.5; dash[v]=true; }
+    });
+    const on={}; let at=start;
+    for(let i=0;i<k && i<seq.length;i++){ on[seq[i].join(',')]=1; at=seq[i][1]; }
+    const good=(kind==='yes')? C.teal : C.red;
+    G.draw(svg, {fill:fill, stroke:stroke, sw:sw, dash:dash, token:start==null?null:at,
+      edge:function(u,v){ return on[u+','+v]? good : ((mark && mark.has(u))? good : null); },
+      click:function(v){
+        if(mode==='start') return go(v);
+        const T=(mode==='y')? Y : Z; if(T.has(v)) T.delete(v); else T.add(v); clearPath(); draw(); }});
+    G.text(svg, 30, 398, 'Y = '+G.show(Y)+'   ·   Z = '+G.show(Z), {anchor:'start', mono:true, size:15, w:700});
+    G.text(svg, 30, 424, 'E[Y U Z] = '+G.show(G.EU(Y,Z))+'   ·   A[Y U Z] = '+G.show(G.AU(Y,Z)),
+      {anchor:'start', mono:true, size:15, w:700, fill:C.blue});
+    if(msg) G.text(svg, 30, 450, msg, {anchor:'start', size:15, w:700, fill:good});
+    $('status').innerHTML='shaded: <b>'+which+'[Y U Z]</b>';
+  }
+  function go(v){
+    clearPath(); start=v;
+    const inS=U().has(v), YmZ=new Set([...Y].filter(function(x){ return !Z.has(x); }));
+    const name=which+'[Y U Z]', IN=v+' ∈ '+name+': ', OUT=v+' ∉ '+name+': ';
+    kind=inS? 'yes' : 'no';
+    if(inS && Z.has(v)){ msg=IN+v+' is in Z (a path of length 0)'; }
+    else if(!inS && !Y.has(v) && !Z.has(v)){ msg=OUT+v+' is in neither Y nor Z'; }
+    else if(which==='E'){
+      if(inS){ seq=G.pathTo(Y, v, Z); msg=IN+'this path stays in Y until it reaches Z'; }
+      else { /* everything reachable from v through Y ∖ Z */
+        const seen=new Set([v]), st=[v];
+        while(st.length){ const u=st.pop(); G.OUT[u].forEach(function(w){ if(YmZ.has(w) && !seen.has(w)){ seen.add(w); st.push(w); } }); }
+        mark=seen; msg=OUT+'every path from '+v+' leaves Y before it reaches Z, or stays in Y ∖ Z';
+      }
+    } else {
+      if(inS){ seq=G.randomPath(v, Z, 30); msg=IN+'this path stays in Y until it reaches Z, and so does every path. Click '+v+' again.'; }
+      else {
+        const out=G.minus(new Set([...Y, ...Z])), p=G.pathTo(YmZ, v, out);
+        if(p){ seq=p; msg=OUT+'this path reaches '+p[p.length-1][1]+', in neither Y nor Z, before it reaches Z'; }
+        else { seq=G.lassoSeq(G.stayIn(YmZ, v), 3); msg=OUT+'this infinite path stays in Y ∖ Z forever, and never reaches Z'; }
+      }
+    }
+    draw();
+    timer=setInterval(function(){ if(k<seq.length){ k++; draw(); } else stop(); }, 550);
+  }
+  function pick(w){ which=w; $('E').className=(w==='E')?'primary':''; $('A').className=(w==='A')?'primary':''; clearPath(); draw(); }
+  $('E').onclick=function(){ pick('E'); };
+  $('A').onclick=function(){ pick('A'); };
+  $('mode').onclick=function(){ mode=MODES[(MODES.indexOf(mode)+1)%3]; $('mode').textContent=LABEL[mode]; draw(); };
+  $('reset').onclick=function(){ Y=new Set(Y0); Z=new Set(Z0); clearPath(); draw(); };
+  Y=new Set(Y0); Z=new Set(Z0); draw();
+})();
+</script>
+
+<script>
+/* TLC: the colored example graph of section 2, its fair-path analysis,
+   and its drawing. Every vertex has at least one edge of each color. */
+window.TLC=(function(){
+  const G=window.TLG;
+  const COL={R:'#d6301b', B:'#1a5fd0', N:'#9b978d'};   /* N: grey, unfair */
+  const POS={0:[110,280], 1:[330,160], 2:[580,160], 3:[330,410], 4:[580,410],
+             5:[830,440], 6:[1110,340], 7:[830,230]};
+  /* self-loops point away from the other edges */
+  const LOOP={0:-90, 1:-90, 2:-90, 3:180, 6:0, 7:-90};
+  const E=[[0,1,'R'],[0,3,'R'],[0,0,'B'],[1,2,'R'],[1,1,'B'],[2,2,'R'],[2,1,'B'],
+           [3,3,'R'],[3,4,'B'],[4,7,'R'],[4,5,'B'],[5,6,'R'],[5,4,'B'],
+           [6,6,'R'],[6,7,'B'],[7,6,'R'],[7,7,'B'],
+           [1,0,'N'],[2,7,'N']];
+  /* COLORS is C_fair; a fair path needs each infinitely often.
+     Grey edges (N) are unfair: a fair path may take them or not. */
+  const V=[0,1,2,3,4,5,6,7], COLORS=['R','B'];
+  function out(v){ return E.filter(function(e){ return e[0]===v; }); }
+  /* v is NOT in A_fF Z exactly when, in the graph without Z, v can
+     reach a strongly connected set that has an edge of every color inside
+     it: going round and round that set is a fair path that avoids Z. */
+  function reachIn(allowed, v){
+    const seen=new Set([v]), st=[v];
+    while(st.length){ const u=st.pop(); out(u).forEach(function(e){ if(allowed.has(e[1]) && !seen.has(e[1])){ seen.add(e[1]); st.push(e[1]); } }); }
+    return seen;
+  }
+  function fairComponent(Z, v){
+    const allowed=new Set(V.filter(function(x){ return !Z.has(x); }));
+    if(!allowed.has(v)) return null;
+    const fromV=reachIn(allowed, v);
+    for(const u of fromV){
+      const fromU=reachIn(allowed, u);
+      const scc=[...fromU].filter(function(w){ return reachIn(allowed, w).has(u); });
+      const S=new Set(scc);
+      const inside=E.filter(function(e){ return S.has(e[0]) && S.has(e[1]); });
+      if(COLORS.every(function(c){ return inside.some(function(e){ return e[2]===c; }); })) return {u:u, S:S, inside:inside, allowed:allowed};
+    }
+    return null;
+  }
+  function eventually(Z){ return new Set(V.filter(function(v){ return !fairComponent(Z, v); })); }
+  function next(Z){ return new Set(V.filter(function(v){ return out(v).every(function(e){ return Z.has(e[1]); }); })); }
+  function always(Z){ const all=new Set(V); return new Set(V.filter(function(v){ return [...reachIn(all, v)].every(function(w){ return Z.has(w); }); })); }
+  /* a shortest walk inside `allowed`, as a list of edges */
+  function walk(allowed, a, b){
+    if(a===b) return [];
+    const prev=new Map([[a,null]]), q=[a];
+    while(q.length){ const u=q.shift(); for(const e of out(u)){ if(allowed.has(e[1]) && !prev.has(e[1])){ prev.set(e[1], e); q.push(e[1]); } } }
+    const path=[]; let x=b; while(x!==a){ const e=prev.get(x); path.unshift(e); x=e[0]; } return path;
+  }
+  /* the adversary's lasso: a prefix to u, then a cycle through an edge of
+     every color, back to u */
+  function lasso(Z, v){
+    const fc=fairComponent(Z, v); if(!fc) return null;
+    const prefix=walk(fc.allowed, v, fc.u), cycle=[]; let at=fc.u;
+    COLORS.forEach(function(c){
+      const e=fc.inside.filter(function(x){ return x[2]===c; })[0];
+      walk(fc.S, at, e[0]).forEach(function(x){ cycle.push(x); });
+      cycle.push(e); at=e[1];
+    });
+    walk(fc.S, at, fc.u).forEach(function(x){ cycle.push(x); });
+    return {prefix:prefix, cycle:cycle};
+  }
+  /* draw; o.hl maps "u,v,c" to a highlight, o.fill / o.stroke / o.sw style
+     vertices, o.token is the token's vertex, o.click(v) handles clicks */
+  function draw(svg,o){
+    o=o||{};
+    const g=G.el('g',{}); svg.appendChild(g);
+    function headAt(x,y,ux,uy,col){ const s=6.5, px=-uy, py=ux;
+      g.appendChild(G.el('polygon',{points:x+','+y+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+(x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col})); }
+    E.forEach(function(e){
+      const [u,v,c]=e, key=u+','+v+','+c, hi=o.hl && o.hl[key];
+      const col=COL[c], w=hi?5:2.4, op=(o.dim && !hi)?0.35:1;
+      const [x1,y1]=POS[u], [x2,y2]=POS[v];
+      if(u===v){
+        const a=(LOOP[u]||-90)*Math.PI/180, r=27;
+        const bx=x1+Math.cos(a)*r, by=y1+Math.sin(a)*r;
+        const nx=Math.cos(a), ny=Math.sin(a), tx=-ny, ty=nx;
+        const p1=[bx+tx*11, by+ty*11], p2=[bx-tx*11, by-ty*11];
+        const c1=[p1[0]+nx*52+tx*26, p1[1]+ny*52+ty*26], c2=[p2[0]+nx*52-tx*26, p2[1]+ny*52-ty*26];
+        g.appendChild(G.el('path',{d:'M '+p1[0]+' '+p1[1]+' C '+c1[0]+' '+c1[1]+' '+c2[0]+' '+c2[1]+' '+p2[0]+' '+p2[1],
+          fill:'none', stroke:col, 'stroke-width':w, opacity:op}));
+        const dx=p2[0]-c2[0], dy=p2[1]-c2[1], L=Math.hypot(dx,dy);
+        if(op===1) headAt(p2[0], p2[1], dx/L, dy/L, col);
+        G.text(g, bx+nx*58, by+ny*58, c, {size:13, w:700, fill:col});
+        return;
+      }
+      const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
+      const back=E.some(function(f){ return f[0]===v && f[1]===u; }), off=back?14:0, px=-uy*off, py=ux*off;
+      const sx=x1+ux*27+px, sy=y1+uy*27+py, ex=x2-ux*29+px, ey=y2-uy*29+py;
+      g.appendChild(G.el('line',{x1:sx, y1:sy, x2:ex-ux*11, y2:ey-uy*11, stroke:col, 'stroke-width':w, opacity:op,
+        'stroke-dasharray':c==='N'? '9 6' : 'none'}));
+      if(op===1) headAt(ex, ey, ux, uy, col);
+      const lo=back?1.6:0, nx2=-uy*13, ny2=ux*13;
+      if(c!=='N') G.text(g, (sx+ex)/2+(back?px*lo:nx2), (sy+ey)/2+(back?py*lo:ny2), c, {size:13, w:700, fill:col});
+    });
+    V.forEach(function(v){
+      const [x,y]=POS[v];
+      const cir=G.el('circle',{cx:x, cy:y, r:26, fill:(o.fill&&o.fill[v])||'#fff',
+        stroke:(o.stroke&&o.stroke[v])||'#1a1a2e', 'stroke-width':(o.sw&&o.sw[v])||1.8});
+      if(o.click){ cir.setAttribute('style','cursor:pointer'); cir.addEventListener('click', function(){ o.click(v); }); }
+      g.appendChild(cir);
+      G.text(g, x, y+1, String(v), {size:18, w:700});
+    });
+    if(o.token!=null){
+      const [x,y]=POS[o.token];
+      g.appendChild(G.el('circle',{cx:x+20, cy:y-20, r:10, fill:'#1a1a2e', stroke:'#fff', 'stroke-width':2.5}));
+    }
+    return g;
+  }
+  return {V:V, E:E, COL:COL, out:out, eventually:eventually, next:next, always:always, lasso:lasso, draw:draw};
+})();
+</script>
+
+<script>
+/* Figure 2 — fair and unfair paths, walked by a token */
+(function(){
+  const PFX='fp_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const G=window.TLG, T=window.TLC;
+  const RUNS={
+    a:{start:6, Z:[7], prefix:[], cycle:[[6,6,'R']], note:'red only: never reaches 7, and not fair, because blue never appears'},
+    b:{start:6, Z:[7], prefix:[[6,6,'R'],[6,6,'R'],[6,7,'B']], cycle:[[7,6,'R'],[6,7,'B']], note:'fair: blue must come, and blue goes to 7'},
+    c:{start:4, Z:[5], prefix:[[4,7,'R']], cycle:[[7,6,'R'],[6,7,'B']], note:'fair, both colors forever, and it never visits 5'},
+    d:{start:2, Z:[7], prefix:[], cycle:[[2,1,'B'],[1,2,'R']], note:'fair: red and blue forever; the grey edge 2 → 7 is never taken, so 7 is never reached'},
+    e:{start:0, Z:[2,3], prefix:[], cycle:[[0,1,'R'],[1,0,'N'],[0,0,'B']], note:'fair: red and blue forever, and grey forever too; it never visits 2 or 3'}};
+  let run='a', k=0, timer=null, visited=false;
+  function edgeAt(r,i){ return i<r.prefix.length? r.prefix[i] : r.cycle[(i-r.prefix.length)%r.cycle.length]; }
+  function draw(){
+    G.clear(svg);
+    const r=RUNS[run], Z=new Set(r.Z);
+    let at=r.start, nR=0, nB=0, nN=0; const hl={}; visited=Z.has(at);
+    for(let i=0;i<k;i++){ const e=edgeAt(r,i); hl[e.join(',')]=1; if(e[2]==='R') nR++; else if(e[2]==='B') nB++; else nN++; at=e[1]; if(Z.has(at)) visited=true; }
+    const stroke={}, sw={}; Z.forEach(function(z){ stroke[z]='#00947d'; sw[z]=5; });
+    T.draw(svg, {hl:hl, stroke:stroke, sw:sw, token:at, fill:{[r.start]:'#fff4e8'}});
+    G.text(svg, 30, 30, 'start '+r.start+'   ·   Z = {'+r.Z.join(', ')+'}   ·   steps '+k+'   ·   red '+nR+'   ·   blue '+nB+'   ·   grey '+nN,
+      {anchor:'start', size:15, w:700});
+    G.text(svg, 30, 492, r.note+(visited?'   ·   visited Z ✓':''), {anchor:'start', size:15, w:700,
+      fill:visited?'#00947d':(run==='a'?'#d6301b':'#1a1a2e')});
+    $('status').innerHTML='step <b>'+k+'</b>';
+  }
+  function start(which){
+    run=which; k=0; if(timer) clearInterval(timer);
+    ['a','b','c','d','e'].forEach(function(x){ $(x).className=(x===which)?'primary':''; });
+    draw();
+    timer=setInterval(function(){ k++; draw(); if(k>=12){ clearInterval(timer); timer=null; } }, 650);
+  }
+  $('a').onclick=function(){ start('a'); };
+  $('b').onclick=function(){ start('b'); };
+  $('c').onclick=function(){ start('c'); };
+  $('d').onclick=function(){ start('d'); };
+  $('e').onclick=function(){ start('e'); };
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 3 — exploring fair AF Z: the adversary's fair path avoiding
+   Z, or random fair paths that all reach Z */
+(function(){
+  const PFX='ev_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const G=window.TLG, T=window.TLC;
+  let Z=new Set([7]), mode='start', start=null, seq=[], k=0, timer=null, msg='', kind='';
+  function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+  /* a random path that is fair in practice: a fair color not used for 3
+     steps is forced; a grey edge, where there is one, is sometimes taken */
+  function randomFair(v){
+    const s=[]; let at=v, since={R:0, B:0};
+    for(let i=0;i<40 && !Z.has(at);i++){
+      const grey=T.out(at).filter(function(e){ return e[2]==='N'; });
+      if(grey.length && Math.random()<0.25){ const e=grey[0]; s.push(e); at=e[1]; since={R:since.R+1, B:since.B+1}; continue; }
+      let c=since.R>=3?'R':(since.B>=3?'B':(Math.random()<0.5?'R':'B'));
+      const opts=T.out(at).filter(function(e){ return e[2]===c; });
+      const e=opts[Math.floor(Math.random()*opts.length)];
+      s.push(e); at=e[1]; since={R:since.R+1, B:since.B+1}; since[c]=0;
+    }
+    return s;
+  }
+  function draw(){
+    G.clear(svg);
+    const ev=T.eventually(Z), fill={}, stroke={}, sw={};
+    T.V.forEach(function(v){ if(ev.has(v)) fill[v]='#dff2ea'; if(Z.has(v)){ stroke[v]='#00947d'; sw[v]=5; } });
+    let at=start; const hl={};
+    for(let i=0;i<k && i<seq.length;i++){ hl[seq[i].join(',')]=1; at=seq[i][1]; }
+    T.draw(svg, {fill:fill, stroke:stroke, sw:sw, hl:hl, token:start==null?null:at,
+      click:function(v){
+        if(mode==='z'){ if(Z.has(v)) Z.delete(v); else Z.add(v); stop(); start=null; seq=[]; k=0; msg=''; draw(); }
+        else go(v);
+      }});
+    G.text(svg, 30, 30, 'Z = {'+[...Z].sort().join(', ')+'}   ·   A_fF Z = {'+[...ev].sort().join(', ')+'}',
+      {anchor:'start', size:16, w:700, fill:'#00947d'});
+    if(msg) G.text(svg, 30, 492, msg, {anchor:'start', size:15, w:700, fill:kind==='no'?'#d6301b':'#00947d'});
+    $('status').innerHTML='clicks '+(mode==='z'?'edit <b>Z</b>':'choose a <b>start</b>');
+  }
+  function go(v){
+    stop(); start=v; k=0;
+    const ev=T.eventually(Z);
+    if(!ev.has(v)){
+      const L=T.lasso(Z, v); seq=L.prefix.slice();
+      for(let r=0;r<4;r++) L.cycle.forEach(function(e){ seq.push(e); });
+      kind='no';
+      msg=v+' is not in A_fF Z: this fair path never visits Z. It goes to a cycle that avoids Z and uses both fair colors, and repeats it forever.';
+    } else {
+      seq=randomFair(v); kind='yes';
+      msg=v+' is in A_fF Z: every fair path from '+v+' reaches Z. Click '+v+' again for another random fair path.';
+    }
+    draw();
+    timer=setInterval(function(){ if(k<seq.length){ k++; draw(); } else stop(); }, 550);
+  }
+  function preset(z){ stop(); Z=new Set(z); start=null; seq=[]; k=0; msg=''; draw(); }
+  $('z7').onclick=function(){ preset([7]); };
+  $('z12').onclick=function(){ preset([1,2]); };
+  $('z17').onclick=function(){ preset([1,2,3,4,5,6,7]); };
+  $('z5').onclick=function(){ preset([5]); };
+  $('z23').onclick=function(){ preset([2,3]); };
+  $('mode').onclick=function(){
+    mode=(mode==='start')?'z':'start';
+    $('mode').textContent=(mode==='start')?'Clicks choose a start vertex':'Clicks edit Z';
+    draw();
+  };
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 4 — AG A_fF {a} differs from A_fF AG {a}; the set is called Y in the text */
+(function(){
+  const PFX='ae_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const G=window.TLG, RED='#d6301b', BLUE='#1a5fd0', TEAL='#00947d';
+  const A=[260,200], Bv=[580,200];
+  const PATH=['R','B'];         /* the fair path a ->R b ->B a ... */
+  let k=0;
+  function arrowHead(x,y,ux,uy,col){ const s=7, px=-uy, py=ux;
+    svg.appendChild(G.el('polygon',{points:x+','+y+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+(x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col})); }
+  function curve(p,q,bend,col,w,label){
+    const mx=(p[0]+q[0])/2, my=(p[1]+q[1])/2+bend;
+    const sx=p[0]+34*Math.sign(q[0]-p[0]), ex=q[0]-34*Math.sign(q[0]-p[0]);
+    const sy=p[1]+bend*0.25, ey=q[1]+bend*0.25;
+    svg.appendChild(G.el('path',{d:'M '+sx+' '+sy+' Q '+mx+' '+my+' '+ex+' '+ey, fill:'none', stroke:col, 'stroke-width':w}));
+    const dx=ex-mx, dy=ey-my, L=Math.hypot(dx,dy); arrowHead(ex, ey, dx/L, dy/L, col);
+    G.text(svg, mx, my+(bend<0?-14:16), label, {size:15, w:700, fill:col});
+  }
+  function loop(p,dir,col,w,label){
+    const x=p[0]+dir*34, y=p[1];
+    svg.appendChild(G.el('path',{d:'M '+x+' '+(y-12)+' C '+(x+dir*70)+' '+(y-60)+' '+(x+dir*70)+' '+(y+60)+' '+x+' '+(y+12),
+      fill:'none', stroke:col, 'stroke-width':w}));
+    arrowHead(x, y+12, -dir*0.82, -0.57, col);
+    G.text(svg, x+dir*78, y, label, {size:15, w:700, fill:col});
+  }
+  function draw(){
+    G.clear(svg);
+    const last=k? PATH[(k-1)%2] : null, at=(k%2===0)?'a':'b';
+    let visits=1; for(let i=1;i<=k;i++) if(i%2===0) visits++;
+    curve(A, Bv, -70, RED, last==='R'?5:2.6, 'R: a → b');
+    curve(Bv, A, 70, BLUE, last==='B'?5:2.6, 'B: b → a');
+    loop(A, -1, BLUE, 2.6, 'B');
+    loop(Bv, 1, RED, 2.6, 'R');
+    [['a',A],['b',Bv]].forEach(function(p){
+      svg.appendChild(G.el('circle',{cx:p[1][0], cy:p[1][1], r:32, fill:p[0]==='a'?'#dff2ea':'#fff',
+        stroke:p[0]==='a'?TEAL:'#1a1a2e', 'stroke-width':p[0]==='a'?5:2}));
+      G.text(svg, p[1][0], p[1][1]+1, p[0], {size:22, w:700});
+    });
+    const T=(at==='a')?A:Bv;
+    svg.appendChild(G.el('circle',{cx:T[0]+24, cy:T[1]-26, r:11, fill:'#1a1a2e', stroke:'#fff', 'stroke-width':2.5}));
+    G.text(svg, 30, 30, 'Y = {a}  ·  steps '+k+'  ·  visits to a: '+visits+'  ·  steps spent staying at a: 0',
+      {anchor:'start', size:15, w:700});
+    G.text(svg, 30, 352, 'AG A_fF Y = {a, b}: the path returns to a forever',
+      {anchor:'start', size:15, w:700, fill:TEAL});
+    G.text(svg, 30, 378, 'A_fF AG Y = ∅: red always leads away from a',
+      {anchor:'start', size:15, w:700, fill:RED});
+    $('status').innerHTML='at <b>'+at+'</b>';
+  }
+  $('step').onclick=function(){ k++; draw(); };
+  $('reset').onclick=function(){ k=0; draw(); };
+  G.autoplay(PFX, 12, 800);
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 5 — composing AX, AG and A_fF on the colored graph */
+(function(){
+  const PFX='cp_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const G=window.TLG, T=window.TLC;
+  let X=new Set([7]), ops=[], demo=0;
+  const OPS={'AX':T.next, 'AG':T.always, 'A_fF':T.eventually};
+  const show=function(S){ return '{'+[...S].sort().join(', ')+'}'; };
+  function stages(){
+    const st=[{expr:'Y', set:new Set(X)}];
+    ops.forEach(function(op){ const prev=st[st.length-1]; st.push({expr:op+' '+prev.expr, set:OPS[op](prev.set)}); });
+    return st;
+  }
+  function draw(){
+    G.clear(svg);
+    const st=stages(), cur=st[st.length-1].set, fill={}, stroke={}, sw={};
+    T.V.forEach(function(v){ if(cur.has(v)) fill[v]='#dff2ea'; if(X.has(v)){ stroke[v]='#d13d0e'; sw[v]=5; } });
+    T.draw(svg, {fill:fill, stroke:stroke, sw:sw, click:function(v){
+      if(X.has(v)) X.delete(v); else X.add(v); ops=[]; demo=0; draw(); }});
+    st.forEach(function(s,i){
+      G.text(svg, 30, 470+i*24-(st.length>4?(st.length-4)*24:0), s.expr+' = '+show(s.set),
+        {anchor:'start', mono:true, size:15, w:700, fill:i===st.length-1?'#00947d':'#1a1a2e'});
+    });
+    $('status').innerHTML=ops.length? ('<b>'+st[st.length-1].expr.replace(/_f/g,'<sub>f</sub>')+'</b>') : 'Y = '+show(X);
+  }
+  function apply(op){ if(ops.length<4){ ops.push(op); draw(); } }
+  $('next').onclick=function(){ apply('AX'); };
+  $('always').onclick=function(){ apply('AG'); };
+  $('eventually').onclick=function(){ apply('A_fF'); };
+  $('reset').onclick=function(){ ops=[]; demo=0; draw(); };
+  $('step').onclick=function(){
+    const seq=['A_fF','AG','AX'];
+    if(demo===0){ X=new Set([7]); ops=[]; }
+    if(demo<seq.length){ ops.push(seq[demo]); demo++; }
+    draw();
+  };
+  G.autoplay(PFX, 4, 1300);
+  draw();
+})();
+</script>
+
+</body>
+</html>

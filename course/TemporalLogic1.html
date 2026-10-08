@@ -1,0 +1,1412 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elements of Temporal Logic &mdash; Part 1</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  h2{font-family:var(--display); font-weight:600; font-size:25px;
+     letter-spacing:-.01em; margin:38px 0 12px}
+  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:34px 0 8px}
+  p{color:var(--body); margin:0 0 15px}
+  h4{font-family:var(--sans); font-weight:700; font-size:15.5px;
+     letter-spacing:.01em; color:var(--ink); margin:20px 0 6px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  header.top h2{margin:-2px 0 20px; padding:0; border:0;
+    font-family:var(--display); font-weight:600; font-size:22px;
+    line-height:1.2; letter-spacing:-.01em; color:var(--muted)}
+  figure.fig{margin:32px 0 30px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  figure.fig figcaption i{color:var(--ink); font-style:normal; font-weight:600}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
+          font-size:13.5px; color:var(--muted)}
+  .legend i{font-style:normal; color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em;
+       background:#f6f4ee; border-radius:5px; padding:1px 5px}
+  /* a block of code: the same rule as the lecture notes before it */
+  pre.code{margin:16px 0 18px; padding:14px 18px; overflow-x:auto;
+    background:#fff; border:1px solid var(--line); border-left:4px solid var(--ink);
+    border-radius:0 10px 10px 0; font:13.5px/1.7 var(--mono); color:var(--ink)}
+  pre.code b{font-weight:700}
+  pre.code .cm{color:var(--muted)}
+  pre.code .kw{color:var(--orange)}
+  pre.code code{background:none; padding:0}
+  .hint{font-size:13px; color:var(--muted)}
+  .ok{color:var(--teal); font-weight:700}
+  .bad{color:var(--orange); font-weight:700}
+  p.key{margin:22px 0 20px; padding:15px 18px 15px 20px; color:var(--ink);
+    background:#fff6ef; border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0; font-size:18px; line-height:1.5; font-weight:600}
+  p.key b, p.key strong{color:var(--ink); font-weight:800}
+  p.key .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
+    margin-bottom:8px}
+  /* a claim: the theorem and the observations read the same way */
+  .thm{margin:24px 0 22px; padding:16px 20px 15px; color:var(--ink);
+    background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:17px; line-height:1.55}
+  .thm b, .thm strong{font-weight:700}
+  .thm > b{display:block; margin-bottom:7px}
+  .thm .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--teal);
+    margin-bottom:9px}
+  .thm p:last-child{margin-bottom:0}
+  /* the observations: numbered, same colour as the theorem */
+  ol.obs{list-style:none; margin:22px 0 20px; padding:0; counter-reset:ob;
+         color:var(--body)}
+  ol.obs > li{counter-increment:ob; position:relative; margin:0 0 12px;
+    padding:14px 18px 13px 54px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:16.5px; line-height:1.5}
+  ol.obs > li::before{content:counter(ob); position:absolute; left:19px; top:13px;
+    width:24px; height:24px; border-radius:999px; background:var(--teal);
+    color:#fff; font:700 13px/24px var(--sans); text-align:center}
+  ol.obs > li > b{color:var(--ink)}
+  ol.obs .why{display:block; margin-top:9px; padding-top:9px;
+    border-top:1px solid var(--line); font-size:15px; color:var(--body)}
+  ol.obs .why em{font-style:normal; font:700 11.5px var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin-right:9px}
+  /* proofs */
+  .proof{margin:6px 0 24px; padding:2px 0 2px 22px;
+         border-left:2px solid var(--line)}
+  .proof > p:last-child{margin-bottom:0}
+  .proof figure.fig.wideout{left:calc(50% - 11px)}
+  .proof .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin:0 0 9px}
+  .case{margin:16px 0 14px; padding:13px 17px 2px; background:#fbf9f5;
+        border:1px solid var(--line); border-radius:10px}
+  .case > p:last-child{margin-bottom:11px}
+  .tag{display:inline-block; font:700 11px var(--sans); letter-spacing:.12em;
+    text-transform:uppercase; color:#fff; background:var(--ink);
+    border-radius:999px; padding:4px 11px; margin-right:11px;
+    vertical-align:1px}
+  .calc{font-family:var(--mono); font-size:15px; color:var(--ink);
+    background:#fbf9f5; border:1px solid var(--line); border-radius:8px;
+    padding:11px 15px; margin:12px 0}
+  /* the specification: two requirements, in the two colours they keep */
+  ol.spec{list-style:none; margin:22px 0 20px; padding:0;
+          counter-reset:req; color:var(--body)}
+  ol.spec > li{counter-increment:req; position:relative; margin:0 0 10px;
+    padding:14px 46px 13px 18px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--muted); border-radius:0 10px 10px 0}
+  ol.spec > li::after{content:counter(req); position:absolute; right:15px;
+    top:13px; font:700 12px var(--mono); color:#c9c4b8}
+  ol.spec .rtag{display:inline-block; font:700 11px var(--sans);
+    letter-spacing:.12em; text-transform:uppercase; color:#fff;
+    background:var(--muted); border-radius:999px; padding:4px 11px;
+    margin-right:11px; vertical-align:1px}
+  li.req-v{border-left-color:var(--teal)}
+  li.req-v .rtag{background:var(--teal)}
+  li.req-c{border-left-color:#1a5fd0}
+  li.req-c .rtag{background:#1a5fd0}
+  .n-v{color:var(--teal); font-weight:700}
+  .n-c{color:#1a5fd0; font-weight:700}
+  /* the aside about fire detectors, which is the point of the whole story */
+  .aside{margin:24px 0 22px; padding:15px 19px 14px; font-size:15.5px;
+    line-height:1.6; color:var(--body); background:#f7f5ef;
+    border:1px solid var(--line); border-radius:10px}
+  .aside b{color:var(--ink)}
+  .aside .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin-bottom:9px}
+  .aside p:last-child{margin-bottom:0}
+  /* the comparison with Paxos */
+  table.cmp{width:100%; border-collapse:collapse; margin:16px 0 22px;
+    background:#fff; font-size:15px; color:var(--body)}
+  table.cmp th, table.cmp td{border:1px solid var(--line); padding:8px 12px;
+    text-align:left; vertical-align:top}
+  table.cmp th{background:#f6f4ee; color:var(--ink); font-weight:700}
+  /* figure 8: the sandbox */
+  .sbx-row{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center;
+    padding:8px 0; border-top:1px solid var(--line); font-size:14.5px}
+  .sbx-row:first-child{border-top:0}
+  .sbx-row .k{width:230px; flex:none; font:600 11.5px var(--sans);
+    letter-spacing:.1em; text-transform:uppercase; color:var(--muted)}
+  .sbx-row label{white-space:nowrap; cursor:pointer}
+  .sbx-row select{font:14px var(--sans)}
+  .sbx-off{opacity:.4}
+  table.sbx{border-collapse:collapse; margin:14px 0 6px; background:#fff;
+    font:14px var(--mono)}
+  table.sbx th, table.sbx td{border:1px solid var(--line); padding:6px 12px;
+    text-align:center}
+  table.sbx th{background:#f6f4ee; font:600 12px var(--sans); color:var(--muted)}
+  table.sbx td.one{background:#e8f0fd; color:#1a5fd0; font-weight:700}
+  table.sbx td.acc{box-shadow:inset 0 0 0 2px #1a5fd0}
+  table.sbx td .m{display:block; font-size:11px; color:var(--muted); font-weight:400}
+  .sbx-verdict{font-size:15.5px; margin:8px 0 2px}
+  /* widgets for this lecture */
+  .hexout{font:13.5px/1.55 var(--mono); word-break:break-all; color:var(--ink)}
+  .hexout .d{color:var(--orange); font-weight:700}
+  .hexout .z{color:var(--teal); font-weight:700}
+  input.txt, textarea.txt, select.txt{font:14px var(--mono); width:100%;
+    padding:7px 9px; border:1px solid var(--line); border-radius:8px;
+    background:#fffdf8; color:var(--ink)}
+  select.txt{width:auto; font-family:var(--sans)}
+  textarea.txt{min-height:64px; resize:vertical}
+  .row{display:flex; gap:10px 16px; flex-wrap:wrap; align-items:center; margin:10px 0}
+  .lbl{font:600 11.5px var(--sans); letter-spacing:.1em; text-transform:uppercase;
+    color:var(--muted)}
+  .readout{margin-top:10px; padding:10px 12px; background:#fbf9f5;
+    border:1px solid var(--line); border-radius:10px; font-size:14.5px}
+  .readout b{color:var(--ink)}
+  /* figure 7: the block chain */
+  .chain{display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; padding:6px 2px}
+  .blk{ border:2px solid var(--line); border-radius:10px;
+    padding:10px; background:#fbf9f5; transition:border-color .3s, background .3s}
+  .blk.bad{border-color:var(--orange); background:#fff1ea}
+  .blk.head{background:#fff}
+  .blk input.txt{font-size:13px; padding:6px 7px}
+  .blk .t{font:700 12px var(--sans); letter-spacing:.08em; text-transform:uppercase;
+    color:var(--muted); margin-bottom:6px}
+  .blk .f{font:12px var(--mono); color:var(--muted); margin-top:6px; overflow-wrap:anywhere}
+  .blk .f b{color:var(--ink)}
+  .blk .f.badf b{color:var(--orange)}
+  .harrow{align-self:center; font:22px var(--sans); color:var(--muted); flex:none}
+  /* figure 11: Scroogecoin */
+  .sc{display:grid; grid-template-columns:1.25fr 1fr; gap:14px}
+  @media (max-width:800px){ .sc{grid-template-columns:1fr} }
+  .sc h4{margin:0 0 8px}
+  .txcard{border:1px solid var(--line); border-radius:10px; background:#fff;
+    padding:9px 11px; margin:0 0 8px; font:13px/1.5 var(--mono)}
+  .txcard.acc{border-left:5px solid var(--teal)}
+  .txcard.rej{border-left:5px solid var(--orange); background:#fff6f1}
+  .txcard.now{box-shadow:0 0 0 2px var(--ink)}
+  .checks{font:13px/1.6 var(--sans); margin-top:5px}
+  table.utxo{border-collapse:collapse; width:100%; background:#fff; font:13px var(--mono)}
+  table.utxo th, table.utxo td{border:1px solid var(--line); padding:5px 8px; text-align:left}
+  table.utxo th{background:#f6f4ee; font:600 11.5px var(--sans); color:var(--muted)}
+  table.utxo tr.gone td{color:#b9b4a8; text-decoration:line-through}
+  table.utxo tr.new td{background:#eef7f4}
+  .fade{animation:fadein .5s ease}
+  @keyframes fadein{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+  .todo{margin:22px 0; padding:18px; border:2px dashed var(--line);
+    border-radius:12px; color:var(--muted); font-size:14.5px; text-align:center}
+  /* a definition: the formula first, the English below it */
+  .defn{margin:22px 0 20px; padding:14px 18px 14px 20px; background:#fff6ef;
+    border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0}
+  .defn .lead-in{display:block; font:700 11.5px/1 var(--sans); letter-spacing:.14em;
+    text-transform:uppercase; color:var(--orange); margin-bottom:9px}
+  .defn .f{font:600 18px/1.5 var(--mono); color:var(--ink); margin:0 0 8px}
+  .defn .e{font-size:16.5px; line-height:1.55; color:var(--ink); margin:0}
+  .imp{font-size:1.25em; line-height:1}
+  /* links between the three parts */
+  nav.parts{display:flex; flex-wrap:wrap; gap:6px 18px; margin:0 0 26px; padding:10px 14px;
+    background:#fff; border:1px solid var(--line); border-radius:10px; font-size:14.5px}
+  nav.parts a{color:var(--ink); font-weight:600; text-decoration:none}
+  nav.parts a:hover{text-decoration:underline}
+  nav.parts span.here{color:var(--orange); font-weight:700}
+</style>
+
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab &middot; Temporal logic, part 1 of 3</div>
+    <h1>Elements of Temporal Logic</h1>
+    <h2>Part 1. Sets of vertices: all paths and some path</h2>
+    <p>
+      Temporal logic describes how a system can behave over time. The
+      possible behaviors of a system are the paths in a <b>directed
+      graph</b>: a vertex is a state, and an edge is a step. This lecture
+      defines the operators of the temporal logic <b>CTL</b> as sets of
+      vertices of a graph, where they can be seen. Part 2 adds until and
+      fairness; part 3 brings in initial states, looks at single paths,
+      and explains the logic LTL.
+    </p>
+  </header>
+
+  <nav class="parts"><span class="here">Part 1: all paths and some path</span><a href="TemporalLogic2.html">Part 2: until and fairness</a><a href="TemporalLogic3.html">Part 3: initial states, paths and LTL</a></nav>
+
+<h2>1. Directed graphs</h2>
+
+  <p>
+    A directed graph <code>G = (V, E)</code> has a set <code>V</code> of
+    vertices and a set <code>E</code> of edges. We write
+    <code>v &rarr; v&prime;</code> for the edge <code>(v, v&prime;)</code>,
+    and <code>v &rarr;<sup>*</sup> v&prime;</code> when there is a
+    <b>path</b> from <code>v</code> to <code>v&prime;</code>: a sequence
+    <code>v = v<sub>0</sub> &rarr; v<sub>1</sub> &rarr; &hellip; &rarr;
+    v<sub>k</sub> = v&prime;</code>. A path may have length 0
+    (<code>k = 0</code>), so <code>v &rarr;<sup>*</sup> v</code> for every
+    vertex <code>v</code>.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">We assume every vertex has an outgoing edge</span>
+    <div class="f">for every vertex v: v &rarr; w for some vertex w</div>
+    <p class="e">We consider only graphs in which every vertex has at least one outgoing edge, so that a path can always be continued. Standard temporal logic makes the same assumption.</p>
+  </div>
+  <div class="defn">
+    <span class="lead-in">Infinite path</span>
+    <div class="f">v<sub>0</sub> &rarr; v<sub>1</sub> &rarr; v<sub>2</sub> &rarr; &hellip;</div>
+    <p class="e">An <b>infinite path</b> from <code>v</code> is an infinite sequence of vertices with <code>v<sub>0</sub> = v</code> and an edge <code>v<sub>i</sub> &rarr; v<sub>i+1</sub></code> for every <code>i</code>. Because every vertex has an outgoing edge, every path can be continued to an infinite path.</p>
+  </div>
+  <p>
+    For a set <code>X</code> of vertices:
+  </p>
+  <div class="defn">
+    <span class="lead-in">Out-neighborhood</span>
+    <div class="f">N(X) = {v&prime; | v &rarr; v&prime; for some v &isin; X}</div>
+    <p class="e">The <b>out-neighborhood</b> of <code>X</code> is the set N(X) of vertices reached from <code>X</code> by one edge.</p>
+  </div>
+  <div class="defn">
+    <span class="lead-in">Reachable set</span>
+    <div class="f">R(X) = {v&prime; | v &rarr;<sup>*</sup> v&prime; for some v &isin; X}</div>
+    <p class="e">The set <b>reachable</b> from <code>X</code> is the set of vertices, R(X), reached from <code>X</code> by a path.</p>
+  </div>
+  <p>
+    The out-neighborhood of the empty set &empty; is the empty set:
+    <code>N(&empty;) = &empty;</code> and <code>R(&empty;) = &empty;</code>.
+  </p>
+  <p>
+    Because a path may have length 0, <code>X &sube; R(X)</code>; and
+    <code>N(X) &sube; R(X)</code>. But <code>X</code> need not be a subset
+    of <code>N(X)</code>.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="nr_g" viewBox="0 0 1240 440" role="img"
+         aria-label="An example graph of ten vertices; the chosen set X is orange, and R(X) grows one layer of edges at a time, the first layer being N(X)"></svg>
+    <div class="ctrls">
+      <button id="nr_play" class="primary">Play</button>
+      <button id="nr_step">Step</button>
+      <button id="nr_reset">Reset</button>
+      <span class="status" id="nr_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 1. N(X) and R(X).</b>
+      Click vertices to choose <code>X</code> (orange). <i>Step</i> follows
+      one more edge from everything reached so far. After the first step,
+      the vertices with a thick blue ring are <code>N(X)</code>: the
+      vertices one edge away from <code>X</code>. When no new vertex
+      appears, everything colored is <code>R(X)</code>, including
+      <code>X</code> itself (paths of length 0). The number on a vertex is
+      the length of the shortest path to it from <code>X</code>.
+    </figcaption>
+  </figure>
+
+  <div class="defn">
+    <span class="lead-in">Notation: &equiv;, &#x27F9; and [ ]</span>
+    <p class="e">For predicates <code>P</code> and <code>Q</code>, <code>&and;</code> is <i>and</i>, <code>&or;</code> is <i>or</i>, and <code>&not;</code> is <i>not</i>. A set <code>Z</code> of vertices is also the predicate &ldquo;<code>v &isin; Z</code>&rdquo;, so <code>&not;Z</code> is the <b>complement</b> of <code>Z</code>: <code>&not;Z = V &setminus; Z</code>, the vertices not in <code>Z</code>.</p>
+    <div class="f" style="margin-top:12px">P &equiv; Q &nbsp;is&nbsp; (P &and; Q) &or; (&not;P &and; &not;Q)</div>
+    <p class="e"><code>P &equiv; Q</code>, read &ldquo;<code>P</code> equivales <code>Q</code>&rdquo;, is a predicate. It is true when <code>P</code> and <code>Q</code> are both true or both false. For example, it is false when <code>P</code> is true and <code>Q</code> is false.</p>
+    <div class="f" style="margin-top:12px">P <span class="imp">&#x27F9;</span> Q &nbsp;is&nbsp; &not;P &or; Q</div>
+    <p class="e"><code>P <span class="imp">&#x27F9;</span> Q</code>, read &ldquo;<code>P</code> implies <code>Q</code>&rdquo;, is a predicate. It is false only when <code>P</code> is true and <code>Q</code> is false.</p>
+    <div class="f" style="margin-top:12px">[X]</div>
+    <p class="e">Dijkstra&rsquo;s square brackets: <code>[X]</code> means that the predicate <code>X</code> holds everywhere in the domain. For example, in the domain of integers, <code>[k &gt; 0 &equiv; k &ge; 1]</code>. In these lectures the domain is the set <code>V</code> of vertices. For example, <code>[v &isin; Y <span class="imp">&#x27F9;</span> v &isin; Z]</code> says that every vertex of <code>Y</code> is in <code>Z</code>: it is <code>Y &sube; Z</code>.</p>
+  </div>
+
+<h3>Predicates and truth sets</h3>
+
+  <p>
+    A predicate on vertices is true at some vertices and false at others.
+    Its <b>truth set</b> is the set of vertices at which it is true. We use
+    the same name for both: a set <code>Z</code> of vertices is the
+    predicate &ldquo;<code>v &isin; Z</code>&rdquo;, and a predicate
+    <code>P</code> is the set of vertices at which <code>P</code> holds.
+    Each operator on predicates is then an operation on truth sets:
+  </p>
+
+  <table class="cmp">
+    <tr><th>Predicate</th><th>Truth set</th><th>True at v when</th></tr>
+    <tr><td><code>&not;P</code></td><td><code>V &setminus; P</code></td><td><code>v</code> is not in <code>P</code></td></tr>
+    <tr><td><code>P &and; Q</code></td><td><code>P &cap; Q</code></td><td><code>v</code> is in both</td></tr>
+    <tr><td><code>P &or; Q</code></td><td><code>P &cup; Q</code></td><td><code>v</code> is in either</td></tr>
+    <tr><td><code>P <span class="imp">&#x27F9;</span> Q</code></td><td><code>&not;P &cup; Q</code></td><td><code>v</code> is outside <code>P</code>, or in <code>Q</code></td></tr>
+    <tr><td><code>P &equiv; Q</code></td><td><code>(P &cap; Q) &cup; (&not;P &cap; &not;Q)</code></td><td><code>P</code> and <code>Q</code> agree at <code>v</code></td></tr>
+  </table>
+
+  <p>
+    Notice that <code>P <span class="imp">&#x27F9;</span> Q</code> is true
+    at every vertex outside <code>P</code>. It is false exactly at the
+    vertices that are in <code>P</code> but not in <code>Q</code>.
+  </p>
+
+  <p class="key">
+    <span class="lead-in">With and without brackets</span>
+    <code>P <span class="imp">&#x27F9;</span> Q</code>, without brackets,
+    is a predicate: it is true at some vertices and false at others, and its
+    truth set is <code>&not;P &cup; Q</code>.
+    <code>[P <span class="imp">&#x27F9;</span> Q]</code>, with brackets, is
+    a single truth value: it is true when
+    <code>P <span class="imp">&#x27F9;</span> Q</code> holds at every
+    vertex, that is, when no vertex is in <code>P</code> but not in
+    <code>Q</code>.
+  </p>
+  <div class="calc">[P <span class="imp">&#x27F9;</span> Q] &equiv; (P &sube; Q)<br>[P &equiv; Q] &equiv; (P = Q)</div>
+
+  <figure class="fig wideout">
+    <svg id="ts_g" viewBox="0 0 1240 640" role="img"
+         aria-label="The ten vertices of the example graph, with sets P and Q; the truth set of a chosen predicate is shaded green; a truth table with one column per vertex is filled in one vertex at a time, and a lamp shows whether the predicate holds at every vertex"></svg>
+    <div class="ctrls">
+      <button id="ts_not">&not;P</button>
+      <button id="ts_and">P &and; Q</button>
+      <button id="ts_or">P &or; Q</button>
+      <button id="ts_imp" class="primary">P &#x27F9; Q</button>
+      <button id="ts_eqv">P &equiv; Q</button>
+    </div>
+    <div class="ctrls">
+      <button id="ts_play" class="primary">Fill the table</button>
+      <button id="ts_mode">Clicks edit P</button>
+      <button id="ts_reset">Reset</button>
+      <span class="status" id="ts_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 2. A predicate and its truth set.</b>
+      The edges do not matter here, so only the vertices are drawn. Click
+      vertices to choose <code>P</code> (tag P) and, after switching the
+      clicks, <code>Q</code> (tag Q). Choose a predicate. <i>Fill the
+      table</i> evaluates it one vertex at a time: each column of the table
+      is one vertex, and the vertex turns green when the predicate is true
+      there. The green vertices are the truth set. The lamp on the right is
+      the bracketed predicate: it is green only if every vertex is green.
+      Otherwise the vertices where the predicate is false get a red ring;
+      they are the counterexamples. At the start,
+      <code>P = {a, b, c}</code> and <code>Q = {b, c, d, e}</code>, and
+      <code>[P <span class="imp">&#x27F9;</span> Q]</code> fails only at
+      <code>a</code>. Remove <code>a</code> from <code>P</code>, or add it
+      to <code>Q</code>, and the lamp turns green.
+    </figcaption>
+  </figure>
+
+  <figure class="fig wideout">
+    <svg id="vn_g" viewBox="0 0 1240 450" role="img"
+         aria-label="A Venn diagram: a rectangle V containing two circles P and Q; the truth set of a chosen predicate is shaded green and the region where it is false is red; P can slide inside Q, and a lamp shows whether the predicate holds everywhere"></svg>
+    <div class="ctrls">
+      <button id="vn_not">&not;P</button>
+      <button id="vn_and">P &and; Q</button>
+      <button id="vn_or">P &or; Q</button>
+      <button id="vn_imp" class="primary">P &#x27F9; Q</button>
+      <button id="vn_eqv">P &equiv; Q</button>
+      <button id="vn_play" class="primary">Slide P into Q</button>
+      <button id="vn_reset">Reset</button>
+      <span class="status" id="vn_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 3. Truth sets as regions.</b>
+      The rectangle is <code>V</code>, and the circles are the truth sets of
+      <code>P</code> and <code>Q</code>. They divide <code>V</code> into four
+      regions: in both, in <code>P</code> only, in <code>Q</code> only, and
+      in neither. The truth set of the chosen predicate is shaded green; the
+      regions where it is false are red. For
+      <code>P <span class="imp">&#x27F9;</span> Q</code>, only the region in
+      <code>P</code> but not in <code>Q</code> is red. <i>Slide P into
+      Q</i> moves <code>P</code> until that region is empty: then
+      <code>P &sube; Q</code>, and the lamp for
+      <code>[P <span class="imp">&#x27F9;</span> Q]</code> turns green.
+    </figcaption>
+  </figure>
+
+  <p>
+    <b>Precedence.</b> <code>&not;</code> binds most tightly, then
+    <code>&and;</code> and <code>&or;</code>, then
+    <code><span class="imp">&#x27F9;</span></code>, and <code>&equiv;</code>
+    binds least tightly. So <code>P &and; Q <span class="imp">&#x27F9;</span> R &equiv; S</code>
+    means <code>((P &and; Q) <span class="imp">&#x27F9;</span> R) &equiv; S</code>.
+  </p>
+
+<h2>2. On all paths: AX, AG, AF</h2>
+
+  <p>
+    CTL names each operator with two letters. The first says which paths
+    from a vertex: <b>A</b>, <b>all</b> of them, or <b>E</b>, at least one
+    (there <b>exists</b> one). The second says what happens on them:
+    <b>X</b>, at the ne<b>x</b>t vertex; <b>G</b>, <b>g</b>lobally, at
+    every vertex; <b>F</b>, <b>f</b>inally, at some vertex. Each operator
+    takes a set <code>Z</code> of vertices and gives a set of vertices.
+    This section is about <b>A</b>, and section 3 about <b>E</b>.
+  </p>
+
+<h3>AX</h3>
+
+  <div class="defn">
+    <span class="lead-in">AX: on all paths, next</span>
+    <div class="f">AX Z = {v | N({v}) &sube; Z}</div>
+    <p class="e">For a set <code>Z</code> of vertices, <b>AX Z</b> is the set of vertices all of whose edges end in <code>Z</code>.</p>
+  </div>
+  <p>
+    So every edge from a set <code>Y</code> ends in <code>Z</code> exactly
+    when <code>Y &sube; AX Z</code>:
+  </p>
+  <div class="calc">(N(Y) &sube; Z) &equiv; (Y &sube; AX Z)</div>
+  <p>
+    A vertex can be in <code>AX Z</code> without being in <code>Z</code>:
+    <code>AX Z</code> says where the path goes <i>next</i>, not where it
+    is now.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="nx_g" viewBox="0 0 1240 440" role="img"
+         aria-label="The example graph with a chosen set Z; the vertices all of whose edges end in Z are shaded blue: they are AX Z"></svg>
+    <div class="ctrls">
+      <button id="nx_reset" class="primary">Reset</button>
+      <span class="status" id="nx_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 4. AX Z.</b>
+      Click vertices to choose <code>Z</code> (thick green outline). The
+      vertices of <code>AX Z</code> are shaded blue: all their edges
+      (green) end in <code>Z</code>. A vertex outside <code>AX Z</code>
+      has at least one red edge, which leaves <code>Z</code>. At the start,
+      <code>Z = {b, c, f}</code> and <code>AX Z = {a, d}</code>: neither
+      <code>a</code> nor <code>d</code> is in <code>Z</code>, but every edge
+      from them is.
+    </figcaption>
+  </figure>
+
+<h3>stable</h3>
+
+  <div class="defn">
+    <span class="lead-in">stable</span>
+    <div class="f">stable(Z) &equiv; (Z &sube; AX Z)</div>
+    <p class="e">A vertex set <code>Z</code> is <b>stable</b> exactly when no edge leaves <code>Z</code>: every vertex of <code>Z</code> is in <code>AX Z</code>.</p>
+  </div>
+  <p>
+    Equivalently, <code>stable(Z) &equiv; (N(Z) &sube; Z)</code>. In graph
+    theory a stable set is called <b>closed</b>, because there is no path
+    from a vertex in a stable set to a vertex outside it.
+  </p>
+  <p>
+    In the bracket notation, <code>stable(Z) &equiv; [Z <span class="imp">&#x27F9;</span> AX Z]</code>.
+    For example, with <code>Z = {b, c, f}</code>, <code>AX Z = {a, d}</code>,
+    so the truth set of <code>Z <span class="imp">&#x27F9;</span> AX Z</code>
+    is <code>&not;Z &cup; AX Z = {a, d, e, g, h, i, j}</code>. It is false
+    at <code>b</code>, <code>c</code> and <code>f</code>, and each of them
+    has an edge leaving <code>Z</code>: <code>b &rarr; d</code>,
+    <code>c &rarr; e</code> and <code>f &rarr; g</code>. So
+    <code>[Z <span class="imp">&#x27F9;</span> AX Z]</code> is false, and
+    <code>Z</code> is not stable.
+  </p>
+  <p>
+    <b>Observation.</b> <code>stable(Z) &equiv; (R(Z) = Z)</code>.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="st_g" viewBox="0 0 1240 440" role="img"
+         aria-label="The example graph with a chosen set Z; walkers start inside Z and move along random edges; if Z is stable none of them ever leaves"></svg>
+    <div class="ctrls">
+      <button id="st_play" class="primary">Release walkers</button>
+      <button id="st_step">Step</button>
+      <button id="st_reset">Reset</button>
+      <span class="status" id="st_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 5. A stable set is a trap.</b>
+      Click vertices to choose <code>Z</code> (shaded green). Edges that
+      leave <code>Z</code> are red: <code>Z</code> is stable exactly when
+      there are none. <i>Release walkers</i> puts six walkers on vertices of
+      <code>Z</code>; at each step every walker follows a random edge out of
+      its vertex. If <code>Z</code> is stable, no
+      walker ever leaves, however long they walk. Try <code>{f, g, h}</code>,
+      then add <code>e</code>.
+    </figcaption>
+  </figure>
+
+<h3>AG</h3>
+
+  <div class="defn">
+    <span class="lead-in">AG: on all paths, always</span>
+    <div class="f">AG Z = {v | R({v}) &sube; Z}</div>
+    <p class="e"><b>AG Z</b> is the set of vertices from which every path stays in <code>Z</code>.</p>
+  </div>
+
+  <p><b>Observations.</b></p>
+  <ol>
+    <li><code>AG Z &sube; Z</code>, because
+      <code>v &isin; R({v})</code>.</li>
+    <li><code>stable(AG Z)</code></li>
+    <li><code>(Y &sube; Z) &and; stable(Y) <span class="imp">&#x27F9;</span> (Y &sube; AG Z)</code></li>
+    <li>So <code>AG Z</code> is the <b>largest stable subset</b> of
+      <code>Z</code>, and
+      <code>stable(Z) &equiv; (AG Z = Z)</code>.</li>
+    <li><code>AG Z</code> can be the empty set.</li>
+    <li><code>AG Z</code> is the largest set <code>W</code> with
+      <code>W &sube; Z &cap; AX W</code>. Figure 6 computes it this way:
+      start with <code>W = Z</code>, and remove vertices that are not in
+      <code>AX W</code> until none is left to remove.</li>
+  </ol>
+
+  <figure class="fig wideout">
+    <svg id="al_g" viewBox="0 0 1240 440" role="img"
+         aria-label="The example graph with a chosen set Z; vertices with an edge leaving the remaining set are removed one at a time, and what remains is AG Z"></svg>
+    <div class="ctrls">
+      <button id="al_play" class="primary">Play</button>
+      <button id="al_step">Step</button>
+      <button id="al_reset">Reset</button>
+      <span class="status" id="al_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 6. Computing AG Z by peeling.</b>
+      Click vertices to choose <code>Z</code>. Start with
+      <code>W = Z</code>. At each step, remove from <code>W</code> one vertex
+      that has an edge leaving <code>W</code> (the red edge). When no such
+      vertex is left, <code>W</code> is stable, and it is
+      <code>AG Z</code>: from each remaining vertex, every path stays in
+      <code>Z</code>. Try <code>Z = {a, b, c, d}</code>: everything is
+      peeled away, and <code>AG Z</code> is empty.
+    </figcaption>
+  </figure>
+
+<h3>AF</h3>
+
+  <div class="defn">
+    <span class="lead-in">AF: on all paths, eventually</span>
+    <div class="f">AF Z = {v | for every infinite path v = v<sub>0</sub> &rarr; v<sub>1</sub> &rarr; v<sub>2</sub> &rarr; &hellip;, exists k where v<sub>k</sub> &isin; Z}</div>
+    <p class="e"><b>AF Z</b> is the set of vertices from which every infinite path reaches a vertex of <code>Z</code>. The first vertex of the path counts, so a vertex of <code>Z</code> is in <code>AF Z</code>.</p>
+  </div>
+
+  <p>
+    In the example graph, <code>AF {g, h} = {f, g, h}</code>: the only
+    edge from <code>f</code> goes to <code>g</code>. The vertex
+    <code>e</code> is not in it, because the infinite path
+    <code>e &rarr; j &rarr; i &rarr; j &rarr; i &rarr; &hellip;</code> never
+    visits <code>{g, h}</code>; nor is <code>d</code>, because of
+    <code>d &rarr; b &rarr; d &rarr; b &rarr; &hellip;</code>.
+  </p>
+  <p>
+    To show that <code>v</code> is <b>not</b> in <code>AF Z</code>, it is
+    enough to give one infinite path from <code>v</code> that never visits
+    <code>Z</code>. In a finite graph such a path can always be chosen as a
+    <b>lasso</b>: a path to a cycle outside <code>Z</code>, and then round
+    the cycle forever.
+  </p>
+
+  <p><b>Observations.</b></p>
+  <ol>
+    <li><code>AG Z &sube; Z &sube; AF Z</code></li>
+    <li><code>(Y &sube; Z) <span class="imp">&#x27F9;</span> (AF Y &sube; AF Z)</code></li>
+    <li><code>AF Z</code> is the smallest set <code>W</code> with
+      <code>Z &cup; AX W &sube; W</code>. Figure 7 computes it this way:
+      start with <code>W = Z</code>, and add vertices of <code>AX W</code>
+      until none is left to add. <code>AG</code> is computed from above, by
+      peeling; <code>AF</code> from below, by growing.</li>
+  </ol>
+
+  <figure class="fig wideout">
+    <svg id="af_g" viewBox="0 0 1240 470" role="img"
+         aria-label="The example graph with a chosen set Z; vertices all of whose edges end in the growing set W are added one at a time, and what results is AF Z; clicking a start vertex walks a path"></svg>
+    <div class="ctrls">
+      <button id="af_play" class="primary">Play</button>
+      <button id="af_step">Step</button>
+      <button id="af_reset">Reset</button>
+      <button id="af_mode">Clicks edit Z</button>
+      <span class="status" id="af_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 7. Computing AF Z by growing.</b>
+      Click vertices to choose <code>Z</code> (thick green outline). Start
+      with <code>W = Z</code>. At each step, add to <code>W</code> one
+      vertex all of whose edges end in <code>W</code> (its edges turn
+      green). When no such vertex is left, <code>W</code> is
+      <code>AF Z</code>. Then switch the clicks to choose a start vertex.
+      From a vertex outside <code>AF Z</code>, the figure walks a lasso
+      (red) that never visits <code>Z</code>. From a vertex inside, it walks
+      a random path (blue), which always reaches <code>Z</code>. At the
+      start, <code>Z = {f, j}</code>, and <code>AF Z = {c, e, f, i, j}</code>.
+    </figcaption>
+  </figure>
+
+
+<h2>3. On some path: EX, EF, EG</h2>
+
+  <p>
+    The <b>E</b> operators ask for one path rather than all of them.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">EX: on some path, next</span>
+    <div class="f">EX Z = {v | N({v}) &cap; Z &ne; &empty;}</div>
+    <p class="e"><b>EX Z</b> is the set of vertices with at least one edge that ends in <code>Z</code>.</p>
+  </div>
+  <div class="defn">
+    <span class="lead-in">EF: on some path, eventually</span>
+    <div class="f">EF Z = {v | R({v}) &cap; Z &ne; &empty;}</div>
+    <p class="e"><b>EF Z</b> is the set of vertices from which some path reaches <code>Z</code>.</p>
+  </div>
+  <div class="defn">
+    <span class="lead-in">EG: on some path, always</span>
+    <div class="f">EG Z = {v | exists infinite path v = v<sub>0</sub> &rarr; v<sub>1</sub> &rarr; v<sub>2</sub> &rarr; &hellip; where v<sub>k</sub> &isin; Z for all k &ge; 0}</div>
+    <p class="e"><b>EG Z</b> is the set of vertices from which some infinite path has every one of its vertices in <code>Z</code>.</p>
+  </div>
+
+  <p>
+    In the example graph, <code>EX {b, c, f} = {a, d, e}</code>, and
+    <code>EF {g, h} = {a, b, c, d, e, f, g, h}</code>: only
+    <code>i</code> and <code>j</code> cannot reach <code>{g, h}</code>.
+    And <code>EG {a, b, c, d} = {a, b, d}</code>: the path
+    <code>a &rarr; b &rarr; d &rarr; b &rarr; d &rarr; &hellip;</code> stays
+    in the set, but the only edge from <code>c</code> goes to
+    <code>e</code>.
+  </p>
+
+  <p>
+    <code>AG Z</code> asks that <i>every</i> path stay in <code>Z</code>;
+    <code>EG Z</code> asks only for <i>one</i>. Here is a small graph in
+    which they differ. It has four vertices, <code>p</code>,
+    <code>q</code>, <code>r</code>, <code>s</code>, and edges
+    <code>p &rarr; q</code>, <code>q &rarr; p</code>,
+    <code>p &rarr; r</code>, <code>r &rarr; s</code> and
+    <code>s &rarr; r</code>. Take <code>Z = {p, q}</code>.
+  </p>
+  <ul>
+    <li><code>EG Z = {p, q}</code>: the path
+      <code>p &rarr; q &rarr; p &rarr; q &rarr; &hellip;</code> stays in
+      <code>Z</code> forever.</li>
+    <li><code>AG Z = &empty;</code>: from <code>p</code>, the edge
+      <code>p &rarr; r</code> leaves <code>Z</code>, and from
+      <code>q</code>, the path <code>q &rarr; p &rarr; r</code> does.</li>
+  </ul>
+
+  <figure class="fig">
+    <svg id="ge_g" viewBox="0 0 900 280" role="img"
+         aria-label="Four vertices p, q, r, s; edges p to q, q to p, p to r, r to s, s to r; Z is p and q; one path stays in Z forever, another leaves it"></svg>
+    <div class="ctrls">
+      <button id="ge_stay" class="primary">A path that stays in Z</button>
+      <button id="ge_leave">A path that leaves Z</button>
+      <span class="status" id="ge_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 8. EG Z and AG Z can differ.</b>
+      <code>Z = {p, q}</code> has a thick green outline, and
+      <code>EG Z</code> is shaded blue. <i>A path that stays in Z</i> walks
+      <code>p &rarr; q &rarr; p &rarr; &hellip;</code> (green): one path is
+      enough for <code>EG</code>. <i>A path that leaves Z</i> walks
+      <code>q &rarr; p &rarr; r &rarr; s &rarr; &hellip;</code> (red): one
+      such path is enough to take <code>q</code> out of <code>AG Z</code>,
+      and its tail, from <code>p</code>, takes <code>p</code> out too.
+    </figcaption>
+  </figure>
+
+<h3>A and E are duals</h3>
+
+  <p>
+    Some path does something exactly when not every path does the
+    opposite. Recall that <code>&not;Z</code> is the set of vertices not in
+    <code>Z</code>.
+  </p>
+  <div class="calc">(EX Z) = (&not;AX &not;Z)<br>(EF Z) = (&not;AG &not;Z)<br>(EG Z) = (&not;AF &not;Z)</div>
+  <p>
+    For example, <code>v &isin; EF Z</code> &equiv; some path from
+    <code>v</code> reaches <code>Z</code> &equiv; not every path from
+    <code>v</code> stays in <code>&not;Z</code> &equiv;
+    <code>v &notin; AG &not;Z</code>. Check the third line on the example,
+    with <code>Z = {a, b, c, d}</code>: <code>&not;Z = {e, f, g, h, i, j}</code>,
+    <code>AF &not;Z = {c, e, f, g, h, i, j}</code>, and
+    <code>&not;AF &not;Z = {a, b, d} = EG Z</code>.
+    The same equations, with A and E exchanged, give each A operator from
+    an E operator.
+  </p>
+
+  <p>
+    The E operators are computed like the A operators.
+    <code>EF Z</code> grows from <code>W = Z</code> by adding a vertex with
+    <i>some</i> edge into <code>W</code>; <code>EG Z</code> peels from
+    <code>W = Z</code> by removing a vertex with <i>no</i> edge into
+    <code>W</code>.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="ex_g" viewBox="0 0 1240 470" role="img"
+         aria-label="The example graph; choose one of the six operators AX, EX, AG, EF, AF, EG and a set Z; the operator's set is shaded; clicking a start vertex shows a witness path or a counterexample"></svg>
+    <div class="ctrls">
+      <button id="ex_AX">AX</button>
+      <button id="ex_EX">EX</button>
+      <button id="ex_AG">AG</button>
+      <button id="ex_EF" class="primary">EF</button>
+      <button id="ex_AF">AF</button>
+      <button id="ex_EG">EG</button>
+      <button id="ex_mode">Clicks choose a start vertex</button>
+      <span class="status" id="ex_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 9. The six operators.</b>
+      Choose an operator; its set is shaded blue. <code>Z</code> has a
+      thick green outline; switch the clicks to edit it. Click a start
+      vertex to see why it is or is not in the set. A green path or edge is
+      a <b>witness</b>: a path that reaches <code>Z</code> or stays in it.
+      A red one is a <b>counterexample</b> to a claim about every path. A
+      claim about every path that holds is shown by random paths: click the
+      vertex again for another. The line below the graph computes the same
+      set from its dual. At the start, <code>Z = {b, d, g, h}</code>, on
+      which all six sets differ: compare <code>AG Z = {g, h}</code> with
+      <code>EG Z = {b, d, g, h}</code>, and click <code>d</code> with each.
+    </figcaption>
+  </figure>
+
+<h2>Notes</h2>
+
+  <div class="aside">
+    <span class="lead-in">Note: CTL</span>
+    <p>
+      CTL (computation tree logic) is due to Clarke and Emerson. Its
+      formulas are usually written with propositions, such as
+      <code>AG &not;crash</code>, and the meaning of a formula is the set of
+      vertices, or states, at which it holds. These lectures work with those
+      sets directly: a proposition is a set of vertices, and each operator
+      maps sets to sets.
+    </p>
+  </div>
+
+
+  <nav class="parts"><span class="here">Part 1: all paths and some path</span><a href="TemporalLogic2.html">Part 2: until and fairness</a><a href="TemporalLogic3.html">Part 3: initial states, paths and LTL</a></nav>
+
+</div>
+<script>
+/* TLG: the example graph shared by figures 1-4, and the code that draws
+   it. Every vertex has at least one outgoing edge. */
+window.TLG=(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#cfc9bc', orange:'#d13d0e', blue:'#1a5fd0',
+           light:'#dbe7fb', teal:'#00947d', green:'#e3f3ee', red:'#e0301a', pale:'#fde9e2'};
+  const POS={a:[100,230], b:[300,125], c:[300,335], d:[520,125], e:[520,335],
+             f:[740,230], g:[940,125], h:[1140,180], i:[1140,345], j:[920,345]};
+  const V=Object.keys(POS);
+  const EDGES=[['a','b'],['a','c'],['b','d'],['d','b'],['c','e'],['d','f'],['e','f'],
+               ['e','j'],['f','g'],['g','h'],['h','g'],['j','i'],['i','j']];
+  const OUT={}; V.forEach(function(v){ OUT[v]=[]; });
+  EDGES.forEach(function(e){ OUT[e[0]].push(e[1]); });
+  function next(Z){ return new Set(V.filter(function(v){ return OUT[v].every(function(w){ return Z.has(w); }); })); }
+  function N(X){ const s=new Set(); X.forEach(function(v){ OUT[v].forEach(function(w){ s.add(w); }); }); return s; }
+  function R(X){ let s=new Set(X), fr=[...X];
+    while(fr.length){ const nx=[]; fr.forEach(function(v){ OUT[v].forEach(function(w){ if(!s.has(w)){ s.add(w); nx.push(w); } }); }); fr=nx; }
+    return s; }
+  function show(X){ return '{'+[...X].sort().join(', ')+'}'; }
+  function el(t,a,txt){ const e=document.createElementNS(NS,t); for(const k in a) e.setAttribute(k,a[k]); if(txt!=null) e.textContent=txt; return e; }
+  function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
+  /* text; "_f" is drawn as a subscript f, so "A_fF" reads as the fair AF */
+  function text(p,x,y,s,o){ o=o||{};
+    const t=el('text',{x:x, y:y, 'font-family':o.mono?'ui-monospace,Menlo,Consolas,monospace':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':o.size||15, 'font-weight':o.w||600, fill:o.fill||C.ink, 'text-anchor':o.anchor||'middle', 'dominant-baseline':'middle'});
+    const parts=String(s).split('_f');
+    parts.forEach(function(seg,i){
+      if(i>0) t.appendChild(el('tspan',{'baseline-shift':'sub', 'font-size':(o.size||15)*0.7}, 'f'));
+      if(seg) t.appendChild(el('tspan',{}, seg));
+    });
+    p.appendChild(t); return t; }
+  function head(p,x,y,ux,uy,col){ const s=6, px=-uy, py=ux;
+    p.appendChild(el('polygon',{points:x+','+y+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+(x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col})); }
+  const RV=24;
+  /* draw the graph. o.edge(u,v) gives an edge's color (or null for the
+     default), o.fill / o.stroke / o.sw / o.note map vertices to styles,
+     o.click is called with a vertex name. */
+  function draw(svg,o){
+    o=o||{};
+    const g=el('g',{}); svg.appendChild(g);
+    if(!o.noEdges) V.forEach(function(u){ OUT[u].forEach(function(v){
+      const col=(o.edge && o.edge(u,v)) || C.line, w=(o.edge && o.edge(u,v))?2.8:1.6;
+      const [x1,y1]=POS[u], [x2,y2]=POS[v];
+      if(u===v){
+        g.appendChild(el('path',{d:'M '+(x1-11)+' '+(y1-RV+3)+' C '+(x1-34)+' '+(y1-74)+' '+(x1+34)+' '+(y1-74)+' '+(x1+11)+' '+(y1-RV+3),
+          fill:'none', stroke:col, 'stroke-width':w}));
+        head(g, x1+11, y1-RV+2, -0.35, 0.94, col);
+        return;
+      }
+      const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
+      const back=OUT[v].indexOf(u)>=0 && v!==u, off=back?16:0, px=-uy*off, py=ux*off;
+      const sx=x1+ux*RV+px, sy=y1+uy*RV+py, ex=x2-ux*(RV+2)+px, ey=y2-uy*(RV+2)+py;
+      g.appendChild(el('line',{x1:sx, y1:sy, x2:ex-ux*10, y2:ey-uy*10, stroke:col, 'stroke-width':w}));
+      head(g, ex, ey, ux, uy, col);
+    }); });
+    V.forEach(function(v){
+      const [x,y]=POS[v];
+      const c=el('circle',{cx:x, cy:y, r:RV, fill:(o.fill&&o.fill[v])||'#fff',
+        stroke:(o.stroke&&o.stroke[v])||C.ink, 'stroke-width':(o.sw&&o.sw[v])||1.8,
+        opacity:(o.faded&&o.faded[v])?0.35:1});
+      if(o.dash && o.dash[v]) c.setAttribute('stroke-dasharray','7 5');
+      if(o.click){ c.setAttribute('style','cursor:pointer'); c.addEventListener('click', function(){ o.click(v); }); }
+      g.appendChild(c);
+      text(g, x, y+1, v, {size:17, w:700, fill:(o.label&&o.label[v])||C.ink});
+      if(o.note && o.note[v]!=null) text(g, x+RV+8, y+RV-2, String(o.note[v]), {size:13, w:700, fill:C.blue, anchor:'start'});
+    });
+    if(o.token!=null){ const [x,y]=POS[o.token];
+      g.appendChild(el('circle',{cx:x+20, cy:y-20, r:9, fill:C.ink, stroke:'#fff', 'stroke-width':2.5})); }
+    return g;
+  }
+  function autoplay(pfx,n,gap){
+    const play=document.getElementById(pfx+'play'), step=document.getElementById(pfx+'step'), reset=document.getElementById(pfx+'reset');
+    if(!play||!step||!reset) return;
+    let timer=null, busy=false;
+    function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+    reset.addEventListener('click', function(){ if(!busy) stop(); });
+    play.addEventListener('click', function(){
+      stop(); busy=true; reset.click(); busy=false;
+      let i=1; step.click();
+      timer=setInterval(function(){ if(i>=n){ stop(); return; } step.click(); i++; }, gap);
+    });
+  }
+  /* the CTL operators, as maps from sets of vertices to sets of vertices */
+  function minus(Z){ return new Set(V.filter(function(v){ return !Z.has(v); })); }
+  function EX(Z){ return new Set(V.filter(function(v){ return OUT[v].some(function(w){ return Z.has(w); }); })); }
+  function AG(Z){ return new Set(V.filter(function(v){ return [...R(new Set([v]))].every(function(w){ return Z.has(w); }); })); }
+  function EF(Z){ return new Set(V.filter(function(v){ return [...R(new Set([v]))].some(function(w){ return Z.has(w); }); })); }
+  /* grow from W = Z: add a vertex of Y with all (or some) of its edges into W */
+  function grow(Y, Z, all){
+    const W=new Set(Z), order=[];
+    for(;;){
+      const u=V.find(function(v){ return !W.has(v) && Y.has(v) &&
+        (all? OUT[v].every(function(w){ return W.has(w); }) : OUT[v].some(function(w){ return W.has(w); })); });
+      if(u==null) return {W:W, order:order};
+      W.add(u); order.push(u);
+    }
+  }
+  const ALL=new Set(V);
+  function AF(Z){ return grow(ALL, Z, true).W; }
+  function AU(Y,Z){ return grow(Y, Z, true).W; }
+  function EU(Y,Z){ return grow(Y, Z, false).W; }
+  /* peel from W = Z: remove a vertex with no edge into W */
+  function EG(Z){
+    const W=new Set(Z);
+    for(;;){ const u=[...W].find(function(v){ return !OUT[v].some(function(w){ return W.has(w); }); });
+      if(u==null) return W; W.delete(u); }
+  }
+  /* a shortest path from v to a vertex of target, every vertex before the
+     last in inner, as a list of edges; null if there is none */
+  function pathTo(inner, v, target){
+    if(target.has(v)) return [];
+    if(!inner.has(v)) return null;
+    const prev=new Map([[v,null]]), q=[v];
+    while(q.length){ const u=q.shift();
+      for(const w of OUT[u]){ if(prev.has(w)) continue; prev.set(w,u);
+        if(target.has(w)){ const p=[]; let x=w; while(x!==v){ const y=prev.get(x); p.unshift([y,x]); x=y; } return p; }
+        if(inner.has(w)) q.push(w); } }
+    return null;
+  }
+  /* an infinite path from v inside S, as a lasso {prefix, cycle}; null if none */
+  function stayIn(S, v){
+    const W=EG(S); if(!W.has(v)) return null;
+    const seen=[v]; let at=v;
+    for(;;){ const w=OUT[at].find(function(x){ return W.has(x); }), i=seen.indexOf(w);
+      if(i>=0){ const vs=seen.concat([w]), ed=[]; for(let j=0;j+1<vs.length;j++) ed.push([vs[j],vs[j+1]]);
+        return {prefix:ed.slice(0,i), cycle:ed.slice(i)}; }
+      seen.push(w); at=w; }
+  }
+  function lassoSeq(L, reps){ const s=L.prefix.slice(); for(let r=0;r<reps;r++) L.cycle.forEach(function(e){ s.push(e); }); return s; }
+  /* a random path from v that stops on reaching stop */
+  function randomPath(v, stop, max){ const p=[]; let at=v;
+    for(let i=0;i<max && !stop.has(at);i++){ const o=OUT[at], w=o[Math.floor(Math.random()*o.length)]; p.push([at,w]); at=w; }
+    return p; }
+  return {C:C, V:V, POS:POS, OUT:OUT, N:N, R:R, next:next, show:show, el:el, clear:clear, text:text, draw:draw, autoplay:autoplay,
+          AX:next, EX:EX, AG:AG, EF:EF, AF:AF, EG:EG, AU:AU, EU:EU, grow:grow, minus:minus,
+          pathTo:pathTo, stayIn:stayIn, lassoSeq:lassoSeq, randomPath:randomPath};
+})();
+</script>
+
+<script>
+/* Figure 2 — a predicate and its truth set: a truth table filled one vertex
+   at a time, and a lamp for the bracketed predicate */
+(function(){
+  const PFX='ts_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const G=window.TLG, C=G.C, V=G.V;
+  const OPS={
+    not:{name:'¬P',    set:'V ∖ P',               f:function(p,q){ return !p; }},
+    and:{name:'P ∧ Q', set:'P ∩ Q',               f:function(p,q){ return p && q; }},
+    or: {name:'P ∨ Q', set:'P ∪ Q',               f:function(p,q){ return p || q; }},
+    imp:{name:'P ⟹ Q', set:'¬P ∪ Q',              f:function(p,q){ return !p || q; }},
+    eqv:{name:'P ≡ Q', set:'(P ∩ Q) ∪ (¬P ∩ ¬Q)', f:function(p,q){ return p===q; }}};
+  const P0=['a','b','c'], Q0=['b','c','d','e'];
+  const X0=200, CW=80, TY=410, RH=36, LX=1150, LY=470;
+  let P, Q, op='imp', mode='P', scan=V.length, timer=null;
+  function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+  function val(v){ return OPS[op].f(P.has(v), Q.has(v)); }
+  function draw(){
+    G.clear(svg);
+    const done=(scan>=V.length), truth=V.filter(val), falses=V.filter(function(v){ return !val(v); });
+    const fill={}, stroke={}, sw={};
+    V.forEach(function(v,i){
+      if(i<scan && val(v)) fill[v]=C.green;
+      if(done && falses.length && !val(v)){ stroke[v]=C.red; sw[v]=5; }
+    });
+    G.draw(svg, {noEdges:true, fill:fill, stroke:stroke, sw:sw,
+      click:function(v){ const S=(mode==='P')? P : Q; if(S.has(v)) S.delete(v); else S.add(v); stop(); scan=V.length; draw(); }});
+    /* tags P and Q beside each vertex */
+    V.forEach(function(v){ const p=G.POS[v];
+      if(P.has(v)) G.text(svg, p[0]-32, p[1]-30, 'P', {size:15, w:800, fill:C.orange});
+      if(Q.has(v)) G.text(svg, p[0]+32, p[1]-30, 'Q', {size:15, w:800, fill:C.blue});
+    });
+    /* the truth table: one column per vertex */
+    const rows=[['vertex',null],['P',function(v){ return P.has(v); }],['Q',function(v){ return Q.has(v); }],[OPS[op].name,val]];
+    if(scan>0 && !done) svg.appendChild(G.el('rect',{x:X0+(scan-1)*CW+4, y:TY-RH/2-4, width:CW-8, height:RH*4+8, rx:8, fill:'none', stroke:C.ink, 'stroke-width':2.5}));
+    rows.forEach(function(r,ri){
+      const y=TY+ri*RH;
+      G.text(svg, X0-14, y, r[0], {size:15, w:800, anchor:'end', fill:ri===3? C.teal : (ri===1? C.orange : (ri===2? C.blue : C.muted))});
+      V.forEach(function(v,i){
+        const x=X0+i*CW+CW/2;
+        if(ri===0){ G.text(svg, x, y, v, {size:16, w:800}); return; }
+        const shown=(ri<3) || i<scan, t=r[1](v);
+        if(ri===3 && shown) svg.appendChild(G.el('rect',{x:x-CW/2+8, y:y-RH/2+3, width:CW-16, height:RH-6, rx:6, fill:t? C.green : C.pale}));
+        if(shown) G.text(svg, x, y+1, t? 'T' : 'F', {size:16, w:800, mono:true, fill:t? C.teal : C.red});
+      });
+    });
+    /* the lamp: the bracketed predicate */
+    const ok=!falses.length;
+    G.text(svg, LX, LY-66, '['+OPS[op].name+']', {size:17, w:800, mono:true});
+    svg.appendChild(G.el('circle',{cx:LX, cy:LY, r:42, fill:done? (ok? C.teal : C.red) : '#e9e6de', stroke:C.ink, 'stroke-width':2}));
+    G.text(svg, LX, LY+2, done? (ok? 'true' : 'false') : '?', {size:18, w:800, fill:done? '#fff' : C.muted});
+    G.text(svg, 30, 578, OPS[op].name+' = '+OPS[op].set+' = '+G.show(new Set(truth))+'   (the truth set: the green vertices)',
+      {anchor:'start', mono:true, size:15, w:700, fill:C.teal});
+    let msg;
+    if(!done) msg='evaluating '+OPS[op].name+' at vertex '+V[scan-1]+' …';
+    else if(ok) msg='['+OPS[op].name+'] is true: '+OPS[op].name+' holds at every vertex'+(op==='imp'? ', that is, P ⊆ Q' : (op==='eqv'? ', that is, P = Q' : ''));
+    else msg='['+OPS[op].name+'] is false: '+OPS[op].name+' is false at '+falses.join(', ')+(op==='imp'? ', the vertices in P but not in Q' : '');
+    G.text(svg, 30, 610, msg, {anchor:'start', size:15, w:700, fill:!done? C.ink : (ok? C.teal : C.red)});
+    $('status').innerHTML='clicks edit <b>'+mode+'</b>';
+  }
+  Object.keys(OPS).forEach(function(k){
+    $(k).onclick=function(){ op=k; Object.keys(OPS).forEach(function(x){ $(x).className=(x===k)?'primary':''; }); stop(); scan=V.length; draw(); };
+  });
+  $('play').onclick=function(){
+    stop(); scan=0; draw();
+    timer=setInterval(function(){ scan++; draw(); if(scan>=V.length) stop(); }, 650);
+  };
+  $('mode').onclick=function(){ mode=(mode==='P')? 'Q' : 'P'; $('mode').textContent='Clicks edit '+mode; draw(); };
+  $('reset').onclick=function(){ stop(); P=new Set(P0); Q=new Set(Q0); scan=V.length; draw(); };
+  P=new Set(P0); Q=new Set(Q0); draw();
+})();
+</script>
+
+<script>
+/* Figure 3 — truth sets as regions of a Venn diagram; P slides inside Q */
+(function(){
+  const PFX='vn_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const G=window.TLG, C=G.C;
+  const OPS={
+    not:{name:'¬P',    f:function(p,q){ return !p; }},
+    and:{name:'P ∧ Q', f:function(p,q){ return p && q; }},
+    or: {name:'P ∨ Q', f:function(p,q){ return p || q; }},
+    imp:{name:'P ⟹ Q', f:function(p,q){ return !p || q; }},
+    eqv:{name:'P ≡ Q', f:function(p,q){ return p===q; }}};
+  const RX=60, RY=40, RW=700, RH=360, QX=490, QY=220, QR=150, PR=90, PX0=290, PX1=480;
+  const GREEN='#cdeedd', RED='#fbd5cc';
+  let op='imp', px=PX0, timer=null;
+  function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+  function circle(x,r,a){ const o={cx:x, cy:QY, r:r}; for(const k in a) o[k]=a[k]; return G.el('circle',o); }
+  function draw(){
+    G.clear(svg);
+    const d=Math.abs(px-QX);
+    /* the four regions, and whether each one is empty */
+    const REG=[
+      {key:'both',  p:true,  q:true,  label:'in P and in Q', empty:d>=PR+QR},
+      {key:'ponly', p:true,  q:false, label:'in P, not in Q', empty:d+PR<=QR},
+      {key:'qonly', p:false, q:true,  label:'in Q, not in P', empty:d+QR<=PR},
+      {key:'none',  p:false, q:false, label:'in neither',     empty:false}];
+    const defs=G.el('defs',{}); svg.appendChild(defs);
+    const U={maskUnits:'userSpaceOnUse', x:0, y:0, width:1240, height:450};
+    function mask(id, holes){ const m=G.el('mask',Object.assign({id:id},U));
+      m.appendChild(G.el('rect',{x:0, y:0, width:1240, height:450, fill:'#fff'}));
+      holes.forEach(function(h){ m.appendChild(h); }); defs.appendChild(m); }
+    mask('vn_mq', [circle(QX,QR,{fill:'#000'})]);
+    mask('vn_mp', [circle(px,PR,{fill:'#000'})]);
+    mask('vn_mpq', [circle(QX,QR,{fill:'#000'}), circle(px,PR,{fill:'#000'})]);
+    const cp=G.el('clipPath',{id:'vn_cq'}); cp.appendChild(circle(QX,QR,{})); defs.appendChild(cp);
+    const f=OPS[op].f, col=function(r){ return f(r.p,r.q)? GREEN : RED; };
+    svg.appendChild(G.el('rect',{x:RX, y:RY, width:RW, height:RH, fill:col(REG[3]), mask:'url(#vn_mpq)'}));
+    svg.appendChild(circle(QX,QR,{fill:col(REG[2]), mask:'url(#vn_mp)'}));
+    svg.appendChild(circle(px,PR,{fill:col(REG[1]), mask:'url(#vn_mq)'}));
+    svg.appendChild(circle(px,PR,{fill:col(REG[0]), 'clip-path':'url(#vn_cq)'}));
+    svg.appendChild(G.el('rect',{x:RX, y:RY, width:RW, height:RH, fill:'none', stroke:C.ink, 'stroke-width':2}));
+    svg.appendChild(circle(QX,QR,{fill:'none', stroke:C.blue, 'stroke-width':3.5}));
+    svg.appendChild(circle(px,PR,{fill:'none', stroke:C.orange, 'stroke-width':3.5}));
+    G.text(svg, RX+22, RY+26, 'V', {size:20, w:800});
+    G.text(svg, QX+QR*0.55, QY-QR*0.72, 'Q', {size:22, w:800, fill:C.blue});
+    G.text(svg, px-PR*0.45, QY-PR*0.62, 'P', {size:22, w:800, fill:C.orange});
+    /* the regions, the lamp and the verdict */
+    const bad=REG.filter(function(r){ return !r.empty && !f(r.p,r.q); }), ok=!bad.length;
+    REG.forEach(function(r,i){ const y=72+i*34;
+      svg.appendChild(G.el('rect',{x:800, y:y-12, width:24, height:24, rx:4, fill:r.empty? '#fff' : col(r), stroke:C.line}));
+      G.text(svg, 836, y, r.label+(r.empty? ':  empty' : ':  '+(f(r.p,r.q)? 'T' : 'F')), {anchor:'start', size:15, w:700, fill:r.empty? C.muted : C.ink});
+    });
+    const LX=1110, LY=110;
+    G.text(svg, LX, LY-62, '['+OPS[op].name+']', {size:17, w:800, mono:true});
+    svg.appendChild(G.el('circle',{cx:LX, cy:LY, r:40, fill:ok? C.teal : C.red, stroke:C.ink, 'stroke-width':2}));
+    G.text(svg, LX, LY+2, ok? 'true' : 'false', {size:18, w:800, fill:'#fff'});
+    const m1=ok? '['+OPS[op].name+'] is true: no region where it is false is left.'
+               : '['+OPS[op].name+'] is false: it is false in the red region'+(bad.length>1? 's.' : '.');
+    let m2='';
+    if(op==='imp') m2=ok? 'P lies inside Q: P ⊆ Q.' : 'The red region is P ∖ Q. Slide P into Q to empty it.';
+    if(op==='eqv') m2=ok? 'P = Q.' : '[P ≡ Q] needs P = Q: no region in one but not the other.';
+    G.text(svg, 800, 260, m1, {anchor:'start', size:15, w:700, fill:ok? C.teal : C.red});
+    if(m2) G.text(svg, 800, 290, m2, {anchor:'start', size:15, w:700, fill:C.ink});
+    $('status').innerHTML='<b>'+OPS[op].name+'</b>';
+  }
+  Object.keys(OPS).forEach(function(k){
+    $(k).onclick=function(){ op=k; Object.keys(OPS).forEach(function(x){ $(x).className=(x===k)?'primary':''; }); draw(); };
+  });
+  $('play').onclick=function(){
+    stop(); px=PX0; draw();
+    timer=setInterval(function(){ px=Math.min(PX1, px+5); draw(); if(px>=PX1) stop(); }, 40);
+  };
+  $('reset').onclick=function(){ stop(); px=PX0; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 1 — N(X) and R(X), grown one layer of edges at a time */
+(function(){
+  const PFX='nr_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const G=window.TLG, C=G.C;
+  let X=new Set(['c']), shown=0;
+  function layers(){
+    const L=[new Set(X)], seen=new Set(X);
+    for(;;){ const nx=new Set(); L[L.length-1].forEach(function(v){ G.OUT[v].forEach(function(w){ if(!seen.has(w)){ seen.add(w); nx.add(w); } }); });
+      if(!nx.size) break; L.push(nx); }
+    return L;
+  }
+  function draw(){
+    G.clear(svg);
+    const L=layers(), depth={};
+    L.forEach(function(s,k){ if(k<=shown) s.forEach(function(v){ depth[v]=k; }); });
+    const fill={}, note={}, label={}, stroke={}, sw={};
+    if(shown>=1) G.N(X).forEach(function(v){ stroke[v]=C.blue; sw[v]=6; });
+    G.V.forEach(function(v){
+      if(depth[v]===0){ fill[v]=C.orange; label[v]='#fff'; }
+      else if(depth[v]===1){ fill[v]=C.blue; label[v]='#fff'; note[v]=1; }
+      else if(depth[v]!=null){ fill[v]=C.light; note[v]=depth[v]; }
+    });
+    G.draw(svg, {fill:fill, note:note, label:label, stroke:stroke, sw:sw,
+      edge:function(u,v){ return (depth[u]!=null && depth[v]===depth[u]+1)? C.blue : null; },
+      click:function(v){ if(X.has(v)) X.delete(v); else X.add(v); shown=0; draw(); }});
+    G.text(svg, 30, 398, 'X = '+G.show(X), {anchor:'start', mono:true, size:15, w:700, fill:C.orange});
+    if(shown>=1) G.text(svg, 330, 398, 'N(X) = '+G.show(G.N(X)), {anchor:'start', mono:true, size:15, w:700, fill:C.blue});
+    const done=shown>=L.length-1;
+    if(shown>=1 && done) G.text(svg, 30, 424, 'R(X) = '+G.show(G.R(X))+'   — no new vertex: this is everything reachable from X',
+      {anchor:'start', mono:true, size:15, w:700, fill:C.ink});
+    $('status').innerHTML=shown? (done?'<b>R(X)</b> complete':'step <b>'+shown+'</b>') : 'click vertices, then Step';
+  }
+  $('step').onclick=function(){ if(shown<layers().length-1) shown++; draw(); };
+  $('reset').onclick=function(){ shown=0; draw(); };
+  G.autoplay(PFX, 8, 900);
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 4 — AX Z: the vertices all of whose edges end in Z */
+(function(){
+  const PFX='nx_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const G=window.TLG, C=G.C;
+  const Z0=['b','c','f'];
+  let Z;
+  function draw(){
+    G.clear(svg);
+    const nz=G.next(Z), fill={}, stroke={}, sw={}, label={};
+    G.V.forEach(function(v){ if(nz.has(v)){ fill[v]=C.blue; label[v]='#fff'; } if(Z.has(v)){ stroke[v]=C.teal; sw[v]=6; } });
+    G.draw(svg, {fill:fill, stroke:stroke, sw:sw, label:label,
+      edge:function(u,v){ return nz.has(u)? C.teal : (Z.has(v)? null : C.red); },
+      click:function(v){ if(Z.has(v)) Z.delete(v); else Z.add(v); draw(); }});
+    G.text(svg, 30, 398, 'Z = '+G.show(Z), {anchor:'start', mono:true, size:15, w:700, fill:C.teal});
+    G.text(svg, 330, 398, 'AX Z = '+G.show(nz), {anchor:'start', mono:true, size:15, w:700, fill:C.blue});
+    const st=[...Z].every(function(v){ return nz.has(v); });
+    G.text(svg, 30, 424, 'Z ⊆ AX Z ≡ '+st+(st?': no edge leaves Z, so Z is stable':''),
+      {anchor:'start', mono:true, size:15, w:700, fill:st?C.teal:C.muted});
+    $('status').innerHTML='click vertices to edit <b>Z</b>';
+  }
+  $('reset').onclick=function(){ Z=new Set(Z0); draw(); };
+  Z=new Set(Z0); draw();
+})();
+</script>
+
+<script>
+/* Figure 5 — a stable set is a trap: random walkers never leave it */
+(function(){
+  const PFX='st_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const G=window.TLG, C=G.C;
+  let Z=new Set(['f','g','h']), walkers=[], steps=0, timer=null;
+  function release(){
+    const zs=[...Z]; walkers=[]; steps=0;
+    for(let k=0;k<6 && zs.length;k++) walkers.push(zs[Math.floor(Math.random()*zs.length)]);
+  }
+  function move(){
+    walkers=walkers.map(function(v){ const o=G.OUT[v]; return o[Math.floor(Math.random()*o.length)]; });
+    steps++;
+  }
+  function draw(){
+    G.clear(svg);
+    const fill={}; G.V.forEach(function(v){ if(Z.has(v)) fill[v]=C.green; });
+    const g=G.draw(svg, {fill:fill,
+      edge:function(u,v){ return (Z.has(u) && !Z.has(v))? C.red : null; },
+      click:function(v){ if(Z.has(v)) Z.delete(v); else Z.add(v); stop(); walkers=[]; steps=0; draw(); }});
+    /* the walkers, spread around their vertices */
+    const at={};
+    walkers.forEach(function(v,k){
+      const n=(at[v]=(at[v]||0)+1)-1, ang=n*1.05+0.4;
+      const pos={a:[100,230], b:[300,125], c:[300,335], d:[520,125], e:[520,335], f:[740,230], g:[940,125], h:[1140,180], i:[1140,345], j:[920,345]}[v];
+      const x=pos[0]+Math.cos(ang)*34, y=pos[1]+Math.sin(ang)*34;
+      g.appendChild(G.el('circle',{cx:x, cy:y, r:8, fill:Z.has(v)?C.blue:C.red, stroke:'#fff', 'stroke-width':2}));
+    });
+    const leaving=[]; Z.forEach(function(u){ G.OUT[u].forEach(function(v){ if(!Z.has(v)) leaving.push(u+' → '+v); }); });
+    const st=!leaving.length, out=walkers.filter(function(v){ return !Z.has(v); }).length;
+    G.text(svg, 30, 398, 'Z = '+G.show(Z)+'  ·  stable(Z) ≡ '+st+(st?'':'   — edges leaving Z: '+leaving.join(', ')),
+      {anchor:'start', mono:true, size:15, w:700, fill:st?C.teal:C.red});
+    if(walkers.length) G.text(svg, 30, 424, 'after '+steps+' steps, walkers outside Z: '+out+' of '+walkers.length,
+      {anchor:'start', size:15, w:700, fill:out?C.red:C.teal});
+    $('status').innerHTML=walkers.length? ('step <b>'+steps+'</b>') : 'click vertices to choose Z';
+  }
+  function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+  $('play').onclick=function(){
+    stop(); release(); draw();
+    timer=setInterval(function(){ move(); draw(); if(steps>=30) stop(); }, 450);
+  };
+  $('step').onclick=function(){ if(!walkers.length) release(); else move(); draw(); };
+  $('reset').onclick=function(){ stop(); walkers=[]; steps=0; draw(); };
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 6 — AG Z: peel off vertices with an edge leaving W */
+(function(){
+  const PFX='al_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const G=window.TLG, C=G.C;
+  let Z=new Set(['c','e','f','g','h']), W=new Set(Z), removed=[], last=null;
+  function leaver(){
+    for(const u of [...W].sort()) for(const v of G.OUT[u]) if(!W.has(v)) return [u,v];
+    return null;
+  }
+  function draw(){
+    G.clear(svg);
+    const fill={}, faded={}, stroke={}, sw={};
+    G.V.forEach(function(v){
+      if(W.has(v)) fill[v]=C.green;
+      else if(Z.has(v)){ fill[v]=C.pale; faded[v]=false; stroke[v]=C.red; }
+    });
+    G.draw(svg, {fill:fill, stroke:stroke, sw:sw,
+      edge:function(u,v){ return (last && u===last[0] && v===last[1])? C.red : (W.has(u) && W.has(v) && u!==v ? C.teal : null); },
+      click:function(v){ if(Z.has(v)) Z.delete(v); else Z.add(v); W=new Set(Z); removed=[]; last=null; draw(); }});
+    G.text(svg, 30, 398, 'Z = '+G.show(Z)+'  ·  W = '+G.show(W)+(removed.length?'  ·  removed: '+removed.join(', '):''),
+      {anchor:'start', mono:true, size:15, w:700});
+    const done=!leaver();
+    if(done) G.text(svg, 30, 424, 'No edge leaves W, so W is stable:  AG Z = '+G.show(W)+(W.size?'':'  (empty)'),
+      {anchor:'start', mono:true, size:15, w:700, fill:C.teal});
+    else if(last) G.text(svg, 30, 424, 'removed '+last[0]+', because of the edge '+last[0]+' → '+last[1]+', which leaves W',
+      {anchor:'start', mono:true, size:15, w:700, fill:C.red});
+    $('status').innerHTML=done? '<b>AG Z</b> found' : (removed.length? 'removed <b>'+removed.length+'</b>' : 'press Step');
+  }
+  $('step').onclick=function(){ const e=leaver(); if(e){ W.delete(e[0]); removed.push(e[0]); last=e; } draw(); };
+  $('reset').onclick=function(){ W=new Set(Z); removed=[]; last=null; draw(); };
+  G.autoplay(PFX, 11, 1100);
+  draw();
+})();
+</script>
+
+<script>
+/* Figure 7 — AF Z: grow W from Z by adding vertices all of whose edges end
+   in W; clicking a start vertex walks a lasso avoiding Z, or a random path */
+(function(){
+  const PFX='af_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const G=window.TLG, C=G.C;
+  let Z=new Set(['f','j']), W, added, last, mode='z', start, seq, k, msg, kind, timer=null;
+  function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+  function clearPath(){ stop(); start=null; seq=[]; k=0; msg=''; kind=''; }
+  function restart(){ clearPath(); W=new Set(Z); added=[]; last=null; }
+  function addable(){ return G.V.find(function(v){ return !W.has(v) && G.OUT[v].every(function(w){ return W.has(w); }); }); }
+  function draw(){
+    G.clear(svg);
+    const fill={}, stroke={}, sw={};
+    G.V.forEach(function(v){ if(W.has(v)) fill[v]=C.green; if(Z.has(v)){ stroke[v]=C.teal; sw[v]=6; } });
+    const on={}; let at=start;
+    for(let i=0;i<k && i<seq.length;i++){ on[seq[i].join(',')]=1; at=seq[i][1]; }
+    G.draw(svg, {fill:fill, stroke:stroke, sw:sw, token:start,
+      edge:function(u,v){ return on[u+','+v]? (kind==='no'? C.red : C.blue) : (start==null && last===u? C.teal : null); },
+      click:function(v){ if(mode==='z'){ if(Z.has(v)) Z.delete(v); else Z.add(v); restart(); draw(); } else go(v); }});
+    G.text(svg, 30, 398, 'Z = '+G.show(Z)+'  ·  W = '+G.show(W)+(added.length?'  ·  added: '+added.join(', '):''),
+      {anchor:'start', mono:true, size:15, w:700});
+    const done=addable()==null;
+    if(done) G.text(svg, 30, 424, 'No vertex outside W has all its edges in W:  AF Z = '+G.show(W),
+      {anchor:'start', mono:true, size:15, w:700, fill:C.teal});
+    else if(last) G.text(svg, 30, 424, 'added '+last+': every edge from '+last+' ends in W',
+      {anchor:'start', mono:true, size:15, w:700, fill:C.teal});
+    if(msg) G.text(svg, 30, 450, msg, {anchor:'start', size:15, w:700, fill:kind==='no'?C.red:C.blue});
+    $('status').innerHTML=start!=null? 'from <b>'+start+'</b>' : (done? '<b>AF Z</b> found' : (added.length? 'added <b>'+added.length+'</b>' : 'press Step'));
+  }
+  function go(v){
+    restart(); const g=G.grow(new Set(G.V), Z, true); W=g.W; added=g.order; start=v;
+    if(W.has(v)){
+      seq=G.randomPath(v, Z, 30); kind='yes';
+      msg=Z.has(v)? v+' is in Z: every path visits Z at its first vertex'
+                  : v+' ∈ AF Z: this path reaches Z, and so does every path from '+v+'. Click '+v+' again for another.';
+    } else {
+      seq=G.lassoSeq(G.stayIn(G.minus(Z), v), 3); kind='no';
+      msg=v+' ∉ AF Z: this infinite path never visits Z. It reaches a cycle outside Z and goes round it forever.';
+    }
+    draw();
+    timer=setInterval(function(){ if(k<seq.length){ k++; draw(); } else stop(); }, 550);
+  }
+  $('step').onclick=function(){ if(start!=null) restart(); const u=addable(); if(u!=null){ W.add(u); added.push(u); last=u; } draw(); };
+  $('reset').onclick=function(){ restart(); draw(); };
+  $('mode').onclick=function(){
+    mode=(mode==='z')?'start':'z';
+    $('mode').textContent=(mode==='z')?'Clicks edit Z':'Clicks choose a start vertex';
+    draw();
+  };
+  G.autoplay(PFX, 10, 1000);
+  restart(); draw();
+})();
+</script>
+
+<script>
+/* Figure 8 — EG Z and AG Z differ: p <-> q, p -> r, r <-> s, Z = {p, q} */
+(function(){
+  const PFX='ge_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const G=window.TLG, C=G.C;
+  const P={q:[150,90], p:[380,90], r:[610,90], s:[820,90]};
+  const E=[['p','q'],['q','p'],['p','r'],['r','s'],['s','r']], Z=new Set(['p','q']);
+  const RUNS={stay:{path:'pqpqpqpqp', col:C.teal, note:'p ∈ EG Z and q ∈ EG Z: this path stays in Z forever'},
+              leave:{path:'qprsrsrsr', col:C.red, note:'q ∉ AG Z: this path leaves Z at r; so does its tail from p, so p ∉ AG Z.  AG Z = ∅'}};
+  let run='stay', k=0, timer=null;
+  function head(x,y,ux,uy,col){ const s=7, px=-uy, py=ux;
+    svg.appendChild(G.el('polygon',{points:x+','+y+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+(x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col})); }
+  function draw(){
+    G.clear(svg);
+    const r=RUNS[run], on={};
+    for(let i=0;i<k;i++) on[r.path[i]+r.path[i+1]]=1;
+    E.forEach(function(e){
+      const u=e[0], v=e[1], x1=P[u][0], y1=P[u][1], x2=P[v][0], y2=P[v][1];
+      const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
+      const back=E.some(function(f){ return f[0]===v && f[1]===u; }), off=back?10:0, px=-uy*off, py=ux*off;
+      const hot=on[u+v], col=hot? r.col : C.ink, w=hot? 5 : 2;
+      const sx=x1+ux*32+px, sy=y1+uy*32+py, ex=x2-ux*33+px, ey=y2-uy*33+py;
+      svg.appendChild(G.el('line',{x1:sx, y1:sy, x2:ex-ux*12, y2:ey-uy*12, stroke:col, 'stroke-width':w}));
+      head(ex, ey, ux, uy, col);
+    });
+    Object.keys(P).forEach(function(v){ const x=P[v][0], y=P[v][1];
+      svg.appendChild(G.el('circle',{cx:x, cy:y, r:30, fill:Z.has(v)? C.light : '#fff',
+        stroke:Z.has(v)? C.teal : C.ink, 'stroke-width':Z.has(v)? 6 : 2}));
+      G.text(svg, x, y+1, v, {size:22, w:700});
+    });
+    const at=r.path[k];
+    svg.appendChild(G.el('circle',{cx:P[at][0]+24, cy:P[at][1]-26, r:10, fill:C.ink, stroke:'#fff', 'stroke-width':2.5}));
+    G.text(svg, 30, 190, 'Z = {p, q}   ·   EG Z = {p, q}   ·   AG Z = ∅', {anchor:'start', mono:true, size:16, w:700});
+    G.text(svg, 30, 222, 'path: '+r.path.slice(0,k+1).split('').join(' → ')+(k>=r.path.length-1?' → …':''),
+      {anchor:'start', mono:true, size:15, w:700, fill:r.col});
+    if(k>=r.path.length-1) G.text(svg, 30, 254, r.note, {anchor:'start', size:15, w:700, fill:r.col});
+    $('status').innerHTML='step <b>'+k+'</b>';
+  }
+  function start(w){
+    run=w; k=0; if(timer) clearInterval(timer);
+    ['stay','leave'].forEach(function(x){ $(x).className=(x===w)?'primary':''; });
+    draw();
+    timer=setInterval(function(){ if(k<RUNS[run].path.length-1){ k++; draw(); } else { clearInterval(timer); timer=null; } }, 650);
+  }
+  $('stay').onclick=function(){ start('stay'); };
+  $('leave').onclick=function(){ start('leave'); };
+  k=RUNS[run].path.length-1; draw();
+})();
+</script>
+
+<script>
+/* Figure 9 — the six operators AX, EX, AG, EF, AF, EG, with witnesses and
+   counterexamples, and each set computed again from its dual */
+(function(){
+  const PFX='ex_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const G=window.TLG, C=G.C;
+  const OPS={AX:G.AX, EX:G.EX, AG:G.AG, EF:G.EF, AF:G.AF, EG:G.EG};
+  const DUAL={AX:'EX', EX:'AX', AG:'EF', EF:'AG', AF:'EG', EG:'AF'};
+  const SAYS={AX:'every edge ends in Z', EX:'some edge ends in Z', AG:'every path stays in Z',
+              EF:'some path reaches Z', AF:'every infinite path reaches Z', EG:'some infinite path stays in Z'};
+  let op='EF', Z=new Set(['b','d','g','h']), mode='start', start=null, seq=[], k=0, mark=null, msg='', kind='', timer=null;
+  function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+  function clearPath(){ stop(); start=null; seq=[]; k=0; mark=null; msg=''; kind=''; }
+  function draw(){
+    G.clear(svg);
+    const S=OPS[op](Z), fill={}, stroke={}, sw={}, label={};
+    G.V.forEach(function(v){ if(S.has(v)){ fill[v]=C.light; } if(Z.has(v)){ stroke[v]=C.teal; sw[v]=6; } });
+    const on={}; let at=start;
+    for(let i=0;i<k && i<seq.length;i++){ on[seq[i].join(',')]=1; at=seq[i][1]; }
+    const good=(kind==='yes')? C.teal : C.red;
+    G.draw(svg, {fill:fill, stroke:stroke, sw:sw, token:start==null?null:at,
+      edge:function(u,v){ return on[u+','+v]? good : ((mark && mark.has(u))? good : null); },
+      click:function(v){ if(mode==='z'){ if(Z.has(v)) Z.delete(v); else Z.add(v); clearPath(); draw(); } else go(v); }});
+    G.text(svg, 30, 398, 'Z = '+G.show(Z)+'   ·   '+op+' Z = '+G.show(S)+'   ('+SAYS[op]+')',
+      {anchor:'start', mono:true, size:15, w:700, fill:C.blue});
+    const D=OPS[DUAL[op]](G.minus(Z)), back=G.minus(D);
+    G.text(svg, 30, 424, '('+op+' Z) = (¬'+DUAL[op]+' ¬Z) = ¬'+G.show(D)+' = '+G.show(back),
+      {anchor:'start', mono:true, size:15, w:700, fill:C.muted});
+    if(msg) G.text(svg, 30, 450, msg, {anchor:'start', size:15, w:700, fill:good});
+    $('status').innerHTML='clicks '+(mode==='z'?'edit <b>Z</b>':'choose a <b>start</b>');
+  }
+  function reach(v){ return G.R(new Set([v])); }
+  function go(v){
+    clearPath(); start=v;
+    const inS=OPS[op](Z).has(v), notZ=G.minus(Z), IN=v+' ∈ '+op+' Z: ', OUT=v+' ∉ '+op+' Z: ';
+    kind=inS? 'yes' : 'no';
+    if(op==='AX'){
+      if(inS){ mark=new Set([v]); msg=IN+'every edge from '+v+' ends in Z'; }
+      else { const w=G.OUT[v].find(function(x){ return !Z.has(x); }); seq=[[v,w]]; msg=OUT+'the edge '+v+' → '+w+' ends outside Z'; }
+    } else if(op==='EX'){
+      if(inS){ const w=G.OUT[v].find(function(x){ return Z.has(x); }); seq=[[v,w]]; msg=IN+'the edge '+v+' → '+w+' ends in Z'; }
+      else { mark=new Set([v]); msg=OUT+'no edge from '+v+' ends in Z'; }
+    } else if(op==='EF'){
+      if(inS){ seq=G.pathTo(new Set(G.V), v, Z); msg=IN+(seq.length? 'this path reaches Z' : v+' is in Z (a path of length 0)'); }
+      else { mark=reach(v); msg=OUT+'no vertex reachable from '+v+' is in Z: R({'+v+'}) = '+G.show(mark); }
+    } else if(op==='AG'){
+      if(inS){ mark=reach(v); msg=IN+'every vertex reachable from '+v+' is in Z: R({'+v+'}) = '+G.show(mark); }
+      else { seq=G.pathTo(new Set(G.V), v, notZ); const w=seq.length? seq[seq.length-1][1] : v;
+        msg=OUT+(seq.length? 'this path reaches '+w+', which is not in Z' : v+' itself is not in Z'); }
+    } else if(op==='AF'){
+      if(inS){ seq=G.randomPath(v, Z, 30); msg=IN+(seq.length? 'this path reaches Z, and so does every path. Click '+v+' again for another.' : v+' is in Z'); }
+      else { seq=G.lassoSeq(G.stayIn(notZ, v), 3); msg=OUT+'this infinite path never visits Z'; }
+    } else if(op==='EG'){
+      if(inS){ seq=G.lassoSeq(G.stayIn(Z, v), 3); msg=IN+'this infinite path stays in Z forever'; }
+      else { seq=G.randomPath(v, notZ, 30); msg=OUT+(seq.length? 'this path leaves Z, and so does every path. Click '+v+' again for another.' : v+' itself is not in Z'); }
+    }
+    draw();
+    timer=setInterval(function(){ if(k<seq.length){ k++; draw(); } else stop(); }, 550);
+  }
+  Object.keys(OPS).forEach(function(o){
+    $(o).onclick=function(){ op=o; Object.keys(OPS).forEach(function(x){ $(x).className=(x===op)?'primary':''; }); clearPath(); draw(); };
+  });
+  $('mode').onclick=function(){
+    mode=(mode==='start')?'z':'start';
+    $('mode').textContent=(mode==='start')?'Clicks choose a start vertex':'Clicks edit Z';
+    draw();
+  };
+  draw();
+})();
+</script>
+
+</body>
+</html>
