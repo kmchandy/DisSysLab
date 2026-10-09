@@ -2,7 +2,7 @@
 
 An example of the Paxos algorithm with 3 proposers, 5 acceptors and 2 learners.
 
-See figure 1 of `course/lecture_08.html`
+See figure 1 of `course/Paxos.html`
 
 ## What is here
 

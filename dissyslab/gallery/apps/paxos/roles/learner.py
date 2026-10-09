@@ -3,7 +3,7 @@
 """
 A learner of the Paxos algorithm.
 
-DRAFT -- for review. The rule is the one in course/lecture_08.html:
+DRAFT -- for review. The rule is the one in course/Paxos.html:
 
     When an acceptor q changes its value it sends a message containing
     q.v to all learners. If a learner L has a null value and L receives

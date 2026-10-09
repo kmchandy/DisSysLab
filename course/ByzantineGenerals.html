@@ -173,12 +173,12 @@
 <div class="wrap">
   <header class="top">
     <div class="kicker">DisSysLab</div>
-    <h1>Byzantine Generals Consensus</h1>
+    <h1>Byzantine Consensus</h1>
     <h2>Consensus when agents may lie</h2>
     <p>
       The Byzantine generals algorithm solves the consensus problem
       specified by the requirements of validity, agreement and termination
-      (see <a href="lecture_06.html">lecture 6</a>).
+      (see <a href="DistributedConsensus.html">Distributed Consensus</a>).
       The algorithm, created by Pease et al., allows correct 
       (i.e., non-faulty) agents to reach a consensus even if faulty agents 
       halt, lie, and send different messages to different agents.
@@ -816,7 +816,7 @@ x.v = <b>0</b>
 <h2>Paxos and Byzantine consensus compared</h2>
 
   <table class="cmp">
-    <tr><th></th><th>Paxos (<a href="lecture_08.html">lecture 8</a>)</th>
+    <tr><th></th><th><a href="Paxos.html">Paxos</a></th>
         <th>Byzantine consensus, signed messages</th></tr>
     <tr><td><b>Timing</b></td><td>Asynchronous: messages may be delayed or
         lost</td><td>Synchronous rounds</td></tr>

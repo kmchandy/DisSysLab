@@ -3,7 +3,7 @@
 """
 A proposer of the Paxos algorithm.
 
-DRAFT -- for review. The algorithm is the one in course/lecture_08.html.
+DRAFT -- for review. The algorithm is the one in course/Paxos.html.
 
 A proposer holds the value it would like the system to agree on,
 ``self.VALUE``, and has two things to do:

@@ -3,7 +3,7 @@
 """
 An acceptor of the Paxos algorithm.
 
-DRAFT -- for review. The algorithm is the one in course/lecture_08.html.
+DRAFT -- for review. The algorithm is the one in course/Paxos.html.
 
 An acceptor holds one variable, q.v, which is a pair
 

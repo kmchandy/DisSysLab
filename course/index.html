@@ -71,136 +71,219 @@
 <div class="wrap">
 
   <div class="kicker">Caltech &middot; Winter 2027 &middot; 4 January – 10 March</div>
-  <h1>Multi-agent systems</h1>
-  <p class="lead">The safety of systems built from many agents. We prove
-     algorithms correct with UNITY, a small fragment of temporal logic; we
-     demonstrate programs correct by testing them systematically; we check what
-     goes into and out of every agent; and we fence the whole thing in. Along
-     the way you build a distributed system you would actually check.</p>
+  <h1>Distributed Systems</h1>
+  <p class="lead">
+    This course is about building safe systems with multiple agents, 
+    some of which may be LLMs. The course emphasizes safety.
+    We use temporal logic to prove that our algorithms 
+    do what they are specified to do, and we use systematic ways
+    of testing multi-agent systems. We take particular care that the systems
+    we create do not modify the environment in unintendend ways.
+    </p>
   <div class="meta">
     <span><b>Every page</b> is HTML — press <b>P</b> to present</span>
     <span><b>Graded</b> pass/fail</span>
   </div>
 
-  <h2>Lectures</h2>
-  <p class="sub">Each lecture is one page. Read it before or after; it is the
-     same page either way. What goes into the four labs, and the demos in
-     order, is in <a href="labs.html">labs.html</a>.</p>
+  <h2>Notes</h2>
+  <p class="sub">The classes follow these notes and 
+    <a href="labs.html">labs.html</a>.</p>
 
   <ol class="plan">
+
     <li>
       <div class="li-body">
-        <h3>Introduction to distributed systems</h3>
-        <p>Two labs lost control of their agents in one month, and what came out
-           later was that the agents had built a distributed system in order to
-           coordinate. The dilemma this course lives in, the four rules, and a
-           program that watches your own campus.</p>
+        <h3>A model of a distributed system</h3>
+        <p>Agents and messages. Execution model.</p>
         <div class="links">
-          <a class="primary" href="lecture_01.html">Open</a>
+          <a class="primary" href="DistributedSystemModel.html">Open</a>
         </div>
       </div>
     </li>
+
     <li>
       <div class="li-body">
-        <h3>Model of a distributed system</h3>
-        <p>Agents, inboxes, outboxes, connections, and the four axioms
-           everything later is proved from. Two agents and one channel are
-           enough to raise every question in the course.</p>
+        <h3>Lab: An office representation of a distributed system</h3>
+        <p>Grading, collaboration, safety, ombudsperson.</p>
+        <p>Examples of distributed systems using DisSysLab.
+          coordinators &mdash; <code>select</code>, <code>gate</code>,
+           <code>match</code>, <code>synchronizer</code> &mdash;
         <div class="links">
-          <a class="primary" href="lecture_02.html">Open</a>
+          <a class="primary" href="OfficeRepresentation.html">Open</a>
         </div>
       </div>
     </li>
+
     <li>
       <div class="li-body">
-        <h3>Lab: building distributed systems</h3>
-        <p>What the framework will do once you ask it for more than a pipeline:
-           the kinds of agent it ships, offices built out of offices, and the
-           coordinators &mdash; <code>select</code>, <code>gate</code>,
-           <code>match</code>, <code>synchronizer</code> &mdash; that hold a
-           queue still until an answer comes back.</p>
+        <h3>Computations and Data Flow</h3>
+          <a class="primary" href="ComputationsAndDataFlow.html">Open</a>
+        
+      </div>
+    </li>
+
+    <li>
+      <div class="li-body">
+        <h3>Global snapshots, rollback and recovery</h3>
         <div class="links">
-          <a class="primary" href="lecture_build.html">Open</a>
+          <a class="primary" href="GlobalSnapshots.html">Open</a>
         </div>
       </div>
     </li>
-    <li>
-      <div class="li-body">
-        <h3>Message Ordering</h3>
-        <p>A computation drawn as a picture &mdash; a line for every agent and
-           every one of its boxes, and a state as a vertical line. Then, with no
-           clocks: what each agent can record, the dataflow graph built from
-           those records, and which orderings of them are computations.</p>
-        <div class="links">
-          <a class="primary" href="lecture_03.html">Open</a>
-        </div>
-      </div>
-    </li>
-    <li>
-      <div class="li-body">
-        <h3>Global Snapshots</h3>
-        <p>Photographing a system whose parts are all still moving. Why no
-           instant is available, which collections of local snapshots are
-           states the system could have been in, and the algorithm that finds
-           one &mdash; proved from the previous class's theorem.</p>
-        <div class="links">
-          <a class="primary" href="lecture_04.html">Open</a>
-        </div>
-      </div>
-    </li>
-    <li>
-      <div class="li-body">
-        <h3>What Agents Know</h3>
-        <p>&ldquo;Agent X knows P&rdquo;, made precise for a predicate P about
-           the rest of the system: a controller that cannot see its own
-           furnace, knowledge as truth in every consistent cut through a point,
-           and why an agent loses what it knows by sending and gains it only by
-           receiving.</p>
-        <div class="links">
-          <a class="primary" href="lecture_05.html">Open</a>
-        </div>
-      </div>
-    </li>
-    <li class="soon">
-      <div class="li-body">
-        <h3>Lab: watching and extending a system</h3>
-        <p>Start from an office that senses something real, then take it apart:
-           trace and snapshot a run, kill it and resume from a checkpoint, read
-           the Python the office compiles to, find out what
-           <code>dsl check</code> refuses to run, and write a source or a sink
-           of your own.</p>
-        <div class="links"><a href="#">Not written yet</a></div>
-      </div>
-    </li>
+
+
     <li class="soon">
       <div class="li-body">
         <h3>Logical time, termination and deadlock detection</h3>
-        <p>An office that cannot tell it has finished. Build the case, watch it
-           hang, then read the algorithms that fix it.</p>
         <div class="links"><a href="#">Not written yet</a></div>
       </div>
     </li>
-    <li class="soon">
+
+    <li>
       <div class="li-body">
-        <h3>Lab: AI skills</h3>
-        <p>Extend a contract that already has a checker &mdash; the backtester
-           &mdash; then write the contract, and the checks, for a domain you
-           care about. Then try to pass your own checks while being wrong. And
-           what each agent's choice of model costs to run.</p>
-        <div class="links"><a href="#">Not written yet</a></div>
+        <h3>What Agents Know</h3>
+        <p>&ldquo;Agent X knows P&rdquo;, 
+          Formal definition of knowledge.
+        </p>
+        <div class="links">
+          <a class="primary" href="WhatAgentsKnow.html">Open</a>
+        </div>
       </div>
     </li>
-    <li class="soon">
+
+    <li>
       <div class="li-body">
-        <h3>Lab: agents that create agents, fenced in</h3>
-        <p>Least privilege at the boundary, capabilities that can only be
-           split, a budget that bounds how much a population can try, and a
-           shared write-once whiteboard. Alongside it, the primary reports on
-           agents that got out &mdash; the reports themselves, not the coverage
-           of them.</p>
-        <div class="links"><a href="#">Not written yet</a></div>
+        <h3>Lab: Safety and coordination in multi agent systems</h3>
+        <p>What can go wrong. Different types of agent coordination.
+          LLM Skills. MCP connectors. Sub-agents and parallel agents.
+        </p>
+        <p>Not written yet</p>
       </div>
     </li>
+
+
+    <li>
+      <div class="li-body">
+        <h3>Distributed consensus: The FLP theorem</h3>
+        <p>Agents propose values and must agree on one: validity, agreement and
+           termination. Why no deterministic algorithm can guarantee all three
+           if even one agent may halt &mdash; the FLP theorem.</p>
+        <div class="links">
+          <a class="primary" href="DistributedConsensus.html">Open</a>
+        </div>
+      </div>
+    </li>
+
+    <li>
+      <div class="li-body">
+        <h3>The Paxos algorithm: serializing transactions</h3>
+      
+        <div class="links">
+          <a class="primary" href="PaxosTransactions.html">Open</a>
+        </div>
+      </div>
+    </li>
+
+    <li>
+      <div class="li-body">
+        <h3>The Paxos algorithm</h3>
+        <div class="links">
+          <a class="primary" href="Paxos.html">Open</a>
+        </div>
+      </div>
+    </li>
+
+
+    <li>
+      <div class="li-body">
+        <h3>Lab: Agent SDK, managed agents</h3>
+        <p>Not written yet</p>
+      </div>
+    </li>
+
+    <li>
+      <div class="li-body">
+        <h3>Byzantine consensus</h3>
+        <p>Consensus when agents may lie. Why majority voting fails, how signed
+           messages help, and why the algorithm can stop after t+1 rounds
+           &mdash; with a figure in which you choose the faults.</p>
+        <div class="links">
+          <a class="primary" href="ByzantineGenerals.html">Open</a>
+        </div>
+      </div>
+    </li>
+
+    <li>
+      <div class="li-body">
+        <h3>Cryptography and cryptocurrency</h3>
+        <p>Hash functions, commitments, search puzzles, block chains, Merkle
+           trees and digital signatures &mdash; every hash on the page computed
+           live in your browser.</p>
+        <div class="links">
+          <a class="primary" href="Cryptography.html">Open</a>
+        </div>
+      </div>
+    </li>
+
+    <li>
+      <div class="li-body">
+        <h3>Bitcoin</h3>
+        <p>Goofycoin, Scroogecoin and the double-spending problem; then consensus
+           without a trusted party: proof of work, the longest chain,
+           incentives and attacks, and how Bitcoin is engineered.</p>
+        <div class="links">
+          <a class="primary" href="Bitcoin.html">Open</a>
+        </div>
+      </div>
+    </li>
+
+
+    <li>
+      <div class="li-body">
+        <h3>Nondeterministic iterations and UNITY logic; 
+          Proofs of Concurrent Programs; Distributed dining philosophers</h3>
+        <p>Not written yet</p>
+      </div>
+    </li>
+
+
+    <li>
+      <div class="li-body">
+        <h3>Managing shared resources in distributed systems;
+          Diffusing computation.
+        </h3>
+        <p>Not written yet</p>
+      </div>
+    </li>
+
+    <li>
+      <div class="li-body">
+        <h3>Lab: Agent collaboration</h3>
+        <p>Not written yet</p>
+      </div>
+    </li>
+
+
+
+    <li>
+      <div class="li-body">
+        <h3>Concepts in temporal logic</h3>
+        <div class="links">
+          <a class="primary" href="TemporalLogic1.html">Open</a>
+        </div>
+      </div>
+    </li>
+
+    <li>
+      <div class="li-body">
+        <h3>Computation tree logic (CTL) and Linear Temporal Logic</h3>
+        <div class="links">
+          <a class="primary" href="TemporalLogic2.html">Open</a>
+          <a class="primary" href="TemporalLogic3.html">Open</a>
+        </div>
+      </div>
+    </li>
+  
   </ol>
 
   <h2>Before the first class</h2>
@@ -208,39 +291,8 @@
   <ul class="plain">
     <li><a href="setup.html">setup.html</a>
         <span>Install it, run one office, read what you ran, and give your
-              assistant the skill.</span></li>
-  </ul>
-
-  <h2>Everything, one list</h2>
-  <p class="sub">The order lives here and nowhere else. If you want to
-     reorder the course, this is the only file that changes. The pages are
-     named for their subject and numbered only by their position here, so
-     moving one costs an edit to this list and nothing else.</p>
-  <ul class="plain">
-    <li><a href="setup.html">setup.html</a>
-        <span>Setting up.</span></li>
-    <li><a href="lecture_01.html">lecture_01.html</a>
-        <span>Introduction to distributed systems: power, safety, and the four
-              rules.</span></li>
-    <li><a href="lecture_02.html">lecture_02.html</a>
-        <span>Model of a distributed system, and the four axioms.</span></li>
-    <li><a href="lecture_build.html">lecture_build.html</a>
-        <span>Lab: building distributed systems with <code>dsl</code>.</span></li>
-    <li><a href="lecture_03.html">lecture_03.html</a>
-        <span>Message ordering: timelines, states, the dataflow graph, and which
-              interleavings of agent computations are system
-              computations.</span></li>
-    <li><a href="lecture_05.html">lecture_05.html</a>
-        <span>What agents know: the definition by consistent cuts, and the four
-              theorems that follow from it.</span></li>
-    <li><a href="labs.html">labs.html</a>
-        <span>What goes into each lab, and the demos in order. A planning
-              document, not a class.</span></li>
-    <li><a href="lecture_04.html">lecture_04.html</a>
-        <span>Global snapshots: consistent cuts, the snapshot theorem, and the
-              marker algorithm.</span></li>
-  </ul>
-
+        office a name.</span></li>
+        
   <div class="note">
     <b>Presenting.</b> The first class is already a deck: open it and use the
     arrow keys, <b>B</b> to blank the screen. The rest are readings that

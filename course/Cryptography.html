@@ -907,16 +907,19 @@ c = H(r &#8214; prediction)
     <code>generateKeys</code>. There is no registry and no central
     authority required to generate the keys.
     An agent can use different public keys that it generates as separate identities.
+  </p>
   <p>
     An agent X who uses public key, secret key pairs 
     <code>(pk<sub>X0</sub>, sk<sub>X0</sub>)</code> 
     and <code>(pk<sub>X1</sub>, sk<sub>X1</sub>)</code> can send some
     messages using <code>(pk<sub>X0</sub>, sk<sub>X0</sub>)</code>  and others using
     <code>(pk<sub>X1</sub>, sk<sub>X1</sub>)</code>.
-    A receiver who gets a message using <code>(pk<sub>X0</sub>, sk<sub>X0</sub>)</code> 
-    only knows that the message is from an agent who has that public key,
-    but cannot learn the agent&rsquo;s name from the key. 
-  
+    A receiver who gets a message signed with <code>sk<sub>X0</sub></code>
+    checks it with <code>pk<sub>X0</sub></code>; the secret key never
+    leaves X. The receiver knows only that the message is from the agent
+    that holds that key pair, but cannot learn the agent&rsquo;s name from
+    the key.
+  </p>
   <p>
     The anonymity offered by public keys is
     limited: every message sent with one key is linked to that key, and

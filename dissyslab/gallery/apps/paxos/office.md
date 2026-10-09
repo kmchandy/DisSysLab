@@ -3,7 +3,7 @@
 # DRAFT -- for review.
 #
 # Three proposers and five acceptors, the agents of figure 1 of
-# course/lecture_08.html.
+# course/Paxos.html.
 #
 # A proposer sends the same read, and later the same write, to every
 # acceptor, so it needs one outbox for all five. An acceptor's reply, on

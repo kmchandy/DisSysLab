@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Class 1 — podium notes</title>
+<style>
+  :root{ --ink:#111; --grey:#5b5b5b; --rule:#c9c4b8; --hot:#b03a12; }
+  *{box-sizing:border-box}
+  body{margin:0; background:#f6f4ef; color:var(--ink);
+       font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif}
+  .sheet{max-width:820px; margin:0 auto; padding:26px 30px 70px; background:#fff}
+  h1{font-size:23px; margin:0 0 2px; letter-spacing:-.01em}
+  .sub{color:var(--grey); font-size:13.5px; margin:0 0 6px}
+  .pre{border:1.5px solid var(--ink); padding:12px 14px; margin:14px 0 22px}
+  .pre h2{font-size:12px; letter-spacing:.1em; text-transform:uppercase; margin:0 0 8px}
+  .pre ul{margin:0; padding-left:18px; font-size:13.5px; column-count:2; column-gap:26px}
+  .pre li{margin-bottom:3px; break-inside:avoid}
+
+  .blk{border-top:1.5px solid var(--ink); padding:10px 0 4px; break-inside:avoid}
+  .hd{display:flex; align-items:baseline; gap:12px; margin-bottom:7px}
+  .t{font:700 20px/1 var(--sans,inherit); min-width:74px; letter-spacing:-.02em}
+  .ttl{font-size:16.5px; font-weight:700}
+  .mins{margin-left:auto; font-size:12px; color:var(--grey); white-space:nowrap}
+
+  .say{border-left:3px solid var(--ink); padding:2px 0 2px 11px; margin:0 0 9px;
+       font-size:14.5px}
+  .say b{font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+         display:block; color:var(--grey); margin-bottom:2px; font-weight:700}
+  code, .cmd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  .cmd{display:block; border:1px solid var(--rule); background:#f7f5f0;
+       padding:9px 12px; margin:0 0 9px; font-size:14.5px; line-height:1.5;
+       white-space:pre-wrap}
+  .cmd b{font-weight:700}
+  .out{display:block; border-left:2px solid var(--rule); padding:4px 0 4px 11px;
+       margin:0 0 9px; font-family:ui-monospace,Menlo,Consolas,monospace;
+       font-size:12.5px; line-height:1.45; color:var(--grey); white-space:pre-wrap}
+  .note{font-size:13.5px; color:var(--grey); margin:0 0 8px}
+  .warn{border:1.5px solid var(--hot); padding:8px 11px; margin:0 0 10px;
+        font-size:13.5px}
+  .warn b{color:var(--hot)}
+  ul.pts{margin:0 0 9px; padding-left:19px; font-size:14.5px}
+  ul.pts li{margin-bottom:5px}
+  .kbd{border:1px solid var(--rule); border-bottom-width:2px; border-radius:3px;
+       padding:0 5px; font-size:12.5px; font-family:ui-monospace,Menlo,monospace}
+
+  @page{ margin:13mm }
+  @media print{
+    body{background:#fff; font-size:10.5pt; line-height:1.35}
+    .sheet{max-width:none; padding:0}
+    .cmd{background:#fff}
+    .blk{break-inside:avoid; page-break-inside:avoid}
+    .noprint{display:none}
+    a{color:#000; text-decoration:none}
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <h1>Class 1 — 45 minutes</h1>
+  <p class="sub">Podium notes. Times are cumulative. The only block that can
+    overrun is 26&ndash;35; the abort rule is at the bottom of it.</p>
+
+  <div class="pre">
+    <h2>Before you walk in</h2>
+    <ul>
+      <li>Terminal font ≥ 24pt. Browser zoom ≥ 150%.</li>
+      <li>Cold-run the whole thing on the podium machine, not yours.</li>
+      <li><b>API key exported in the shell you will use — needed from 7:00 now,
+        not 26:00.</b> <code>caltech_radar</code> makes ~25 model calls.</li>
+      <li>Delete any old <code>my_radar/</code>, <code>radar.html</code>,
+        <code>not_for_me.jsonl</code>.</li>
+      <li>Fallback folder ready: a built office you can open if 26&ndash;35 dies.
+        <b>Also save a <code>radar.html</code> and a
+        <code>not_for_me.jsonl</code> from a good run</b> — those are the
+        fallback for 7:00 and 10:00.</li>
+      <li>Wi-fi confirmed. <code>caltech_radar</code> fetches the live Caltech
+        calendar feed and scrapes arXiv. Two sites, either can be down.</li>
+      <li>Glance at <code>radar.html</code> from your rehearsal run the night
+        before. If the week's calendar happens to hold nothing about computing,
+        the Schedule section will be thin — know that before the room does.</li>
+      <li>Handout printed: grading, AI policy, groups, safety rules.</li>
+      <li>Two browser tabs preloaded: <code>ai_safety.html</code>, <code>01_one_connection.html</code>.</li>
+    </ul>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <div class="blk">
+    <div class="hd"><div class="t">0:00</div><div class="ttl">Why you are here</div>
+      <div class="mins">7 min · slides 1&ndash;7</div></div>
+
+    <div class="say"><b>Open with</b>
+      In one month last July, the two most capable AI labs in the world each
+      had models get out of a test environment and reach real systems.</div>
+
+    <ul class="pts">
+      <li><b>OpenAI, 21 July.</b> Models tested on security tasks found a hole in
+        the test rig, reached the internet, and went to Hugging Face's production
+        systems to look up the answers to the benchmark they were being graded on.</li>
+      <li><b>Anthropic, 30 July.</b> Models believed to have no internet did.
+        They attacked three real organisations and published a malicious package
+        to PyPI. Fifteen machines downloaded it within the hour.</li>
+    </ul>
+
+    <div class="say"><b>The line that matters</b>
+      In both cases the model did what it was asked. What failed was the box
+      around it. That is an engineering problem, and it is this course.</div>
+
+    <p class="note"><b>Slides 4–5 — the part that came out later.</b> These are
+      read-aloud slides, about forty-five seconds each. Do not gloss them; the
+      list <i>is</i> the point and it builds.</p>
+
+    <ul class="pts">
+      <li><b>Slide 4.</b> Take the five lines in order and let the last one land
+        on its own: the channel was taken away, and they built another one out
+        of directory names. Then the closing line — nobody asked them for a
+        distributed system; they needed to coordinate, so they built one.</li>
+      <li><b>The sentence worth saying here.</b> Addressing, delegation,
+        message signing — those are four weeks of this syllabus, and they were
+        invented by systems that were not trying to take a course.</li>
+      <li><b>Slide 5.</b> The distinction to draw is <i>accident</i> versus
+        <i>experiment</i>. The July events were nobody's plan. This one was
+        deliberate — three agents, incompatible instructions, none told the
+        others existed — and it still ended in sabotage.</li>
+    </ul>
+
+    <div class="warn"><b>Check your figures before you say them.</b> The agent
+      count and the message volume differ between outlets. Quote OpenAI's own
+      Black Hat write-up, not a news summary, since you are the one who will be
+      asked.</div>
+
+    <div class="say"><b>The promise</b>
+      You will build something you would actually check — and then find out
+      what is holding it up.</div>
+    <p class="note">Do not define anything yet. No agents, no inboxes, no
+      distributed systems. That comes at 10:00 when they have seen one.</p>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <div class="blk">
+    <div class="hd"><div class="t">7:00</div><div class="ttl">Something works</div>
+      <div class="mins">3 min · terminal</div></div>
+
+    <div class="cmd">dsl init caltech_radar my_radar
+cd my_radar
+dsl run .</div>
+
+    <div class="say"><b>Before you press return</b>
+      This watches three things: the Caltech calendar, the new AI papers on
+      arXiv, and the weather outside this building. It keeps the ones about
+      computing and throws the rest away.</div>
+
+    <p class="note">It takes 30–60 seconds — 25 messages, one model call each.
+      Do not fill the silence with definitions. Let it run.</p>
+
+    <p class="note">Then <code>radar.html</code> opens by itself. Three
+      sections: <b>Schedule</b> — the talks on this campus this week that are
+      about computing. <b>News</b> — today's AI papers. <b>Weather</b> — say
+      <i>Pasadena</i> out loud, it lands.</p>
+
+    <div class="say"><b>The line to land</b>
+      Nobody chose those talks for you. A program read the whole calendar this
+      morning and decided which ones you would want.</div>
+
+    <div class="warn"><b>If nothing appears:</b> it is the network or arXiv,
+      not you. Say so, open the saved <code>radar.html</code>, carry on.
+      Losing this block is survivable; losing your composure is not.</div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <div class="blk">
+    <div class="hd"><div class="t">10:00</div><div class="ttl">What you just watched</div>
+      <div class="mins">7 min · slides 11&ndash;12 · editor + terminal</div></div>
+
+    <p class="note">Open <code>my_radar/office.md</code>. This is the whole
+      program. Read it aloud, slowly.</p>
+
+    <div class="out"># Office: caltech_radar
+
+Sources: rss(url="https://www.caltech.edu/campus-life-events/calendar/rss", name="caltech_calendar", max_articles=15), arxiv_cs_ai(max_articles=10), weather(city="Pasadena", max_readings=1)
+Sinks: periodic_brief_html_sink(path="radar.html"), jsonl_recorder(path="not_for_me.jsonl")
+
+Agents:
+Screen is a cs_ai_filter.
+
+Connections:
+rss's destination is Screen.
+arxiv_cs_ai's destination is Screen.
+Screen's keep is periodic_brief_html_sink.
+Screen's discard is jsonl_recorder.
+weather's destination is periodic_brief_html_sink.</div>
+
+    <ul class="pts">
+      <li><b>Five English words</b> — Office, Sources, Sinks, Agents,
+        Connections. There is nothing else. No sixth thing you have not
+        been shown.</li>
+      <li><b>Point at every line.</b> Say what each does. This is the skill you
+        want by week one: you can read what was built for you.</li>
+      <li><b>Point at the weather line last.</b> It goes straight to the page.
+        It never reaches Screen. There is nothing to decide about the weather —
+        so no agent decides about it.</li>
+      <li><b>Then the picture.</b></li>
+    </ul>
+
+    <div class="cmd">dsl draw .</div>
+    <div class="out">rss          destination ──▶ in_  Screen
+arxiv_cs_ai  destination ──▶ in_  Screen
+Screen       keep        ──▶ in_  periodic_brief_html_sink
+Screen       discard     ──▶ in_  jsonl_recorder
+weather      destination ──▶ in_  periodic_brief_html_sink</div>
+
+    <div class="say"><b>Say</b>
+      Five lines in the file, five lines in the picture. Same thing twice. If
+      it is not in this file, it does not happen.</div>
+
+    <p class="note"><b>Now slide 12 &mdash; the role file.</b> Open
+      <code>roles/cs_ai_filter.md</code> beside it. This is the second file,
+      and the last one.</p>
+
+    <div class="say"><b>Say</b>
+      That is the entire specification of what Screen does. Not a summary of
+      it — it. There is no Python under this. English is the program.</div>
+
+    <p class="note">Point at the front matter. <code>outboxes: keep,
+      discard</code> is not a comment: if Screen tries to send anywhere else,
+      it raises. <code>adds: reason</code> is not a comment either: a reply
+      without a reason is rejected.</p>
+
+    <div class="cmd">dsl check .</div>
+    <p class="note"><b>Expect exactly one note.</b> Do not skip it. Use it:</p>
+    <div class="out">check_wiring: ./office.md -- 1 note
+
+  note      sinks/periodic_brief_html_sink.py imports `subprocess`; subprocess.run() — runs another program.
+            An office's declared power is its Sources and Sinks.
+            Python inside a role can act outside that, and this check
+            only reads imports -- it cannot see what the code does.
+            If you did not write this file, read it.
+            what this means: dsl checks W12</div>
+
+    <div class="say"><b>Say</b>
+      That is a note, not an error. The office says its power is three sources
+      and two sinks. This is the tool telling me that one file in it can act
+      outside that list, and asking whether I meant it. I did — it opens your
+      browser. But read the last line: <i>if you did not write this file, read
+      it.</i> You did not write it. It is sitting in your folder.</div>
+
+    <p class="note"><b>If you have 60 seconds spare here</b>, open
+      <code>not_for_me.jsonl</code> and read two <code>reason</code> fields out
+      loud. That file is what your English actually meant. Ask the room whether
+      the agent got it right. Somebody will say no — that is the course.</p>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <div class="blk">
+    <div class="hd"><div class="t">17:00</div><div class="ttl">Two kinds of agent</div>
+      <div class="mins">5 min · slide 8 · ↓ advances the stages</div></div>
+
+    <p class="note">Three stages on one slide. <span class="kbd">↓</span> advances,
+      <span class="kbd">↑</span> goes back. <b>Do not press → until stage 3.</b></p>
+
+    <div class="say"><b>Stage 1 — one document each</b>
+      Two agents doing the same job. On the left I wrote the code, so I can read
+      it, test it, and prove things about it. On the right I wrote one English
+      sentence, and I cannot open the box.</div>
+
+    <div class="say"><b>Stage 2 — twelve more</b>
+      Left: the same answer every time. Right: it scatters. Nothing is broken.
+      That is what the thing does.</div>
+
+    <div class="say"><b>Stage 3 — let it run</b>
+      Now it has been running since Tuesday, and one document in fourteen
+      thousand comes back at 0.04. Who saw it?</div>
+
+    <p class="note">Land it: <b>you cannot test what you cannot read, and you
+      cannot watch what runs while you sleep.</b> That is the tension this whole
+      course is organised around.</p>
+  </div>
+
+  <div class="blk">
+    <div class="hd"><div class="t">22:00</div><div class="ttl">The dilemma, and four rules</div>
+      <div class="mins">4 min · slides 9&ndash;10</div></div>
+
+    <div class="say"><b>Slide 9 &mdash; say</b>
+      We want systems we can specify and show are safe. We also want the power
+      of AI, which we cannot predict. We are not going to resolve that. We are
+      going to manage it — with proofs, with tests, and with fences.</div>
+
+    <ul class="pts">
+      <li><b>R0 · Obey the honor code.</b> Spend a full minute on it. The slide
+        makes it concrete rather than abstract: a system that seems harmless —
+        an office that analyses an audio stream in a public space — can still
+        break it. Give one more example of your own; the point is that the
+        honor code applies to what they <i>build</i>, not only to what they
+        hand in.</li>
+      <li><b>R1</b> output is unpredictable · <b>R2</b> nothing confidential in
+        a prompt · <b>R3</b> do not gather what is private to others.
+        <span style="color:#5b5b5b">R0 and R3 now overlap; if someone notices,
+        the answer is that R3 is a rule about data and R0 is a rule about
+        judgment.</span></li>
+      <li>Say that R1–R3 have <b>reasons</b> attached on the course page, and
+        that a rule you understand survives a case its author did not foresee.</li>
+    </ul>
+  </div>
+
+  <div class="blk">
+    <div class="hd"><div class="t">26:00</div><div class="ttl">Build one, live, from the room</div>
+      <div class="mins">9 min · Cowork + terminal</div></div>
+
+    <div class="say"><b>Ask the room</b>
+      Name a web page or a feed you actually check. Not one you think you
+      should check — one you do.</div>
+
+    <p class="note">Take one. Then, deliberately underspecified first:</p>
+    <div class="cmd">Give me an office with agents Dan and Jay.</div>
+    <p class="note">It should write down two names and ask what they do. It
+      should <b>not</b> invent jobs or offer a menu.</p>
+    <div class="say"><b>Say</b>
+      I gave it two names and nothing else, and two names is what it wrote
+      down. It did not guess. That is what I want from it.</div>
+
+    <p class="note">Now the real thing, in the room's words:</p>
+    <div class="cmd">Dan reads &lt;their feed&gt; and keeps only the ones about &lt;topic&gt;.
+Jay writes one sentence about each one Dan keeps. Show them on screen.</div>
+
+    <ul class="pts">
+      <li><b>Read the office.md it wrote, out loud.</b> Same four words. They
+        have now seen the vocabulary twice, in two different files.</li>
+      <li><b>Run <code>dsl check</code> before <code>dsl run</code>.</b> Every
+        time. Say that you always do this, then do it.</li>
+      <li><b>Break it on purpose.</b> Change one outbox name in
+        <code>office.md</code> and re-check:</li>
+    </ul>
+
+    <div class="cmd">Alex's <b>briefing</b> is console_printer.   →   Alex's <b>summary</b> is console_printer.</div>
+    <div class="out">problem   Alex's 'summary' is wired to console_printer, but the role
+          'analyst' has no outbox called 'summary' -- nothing will ever
+          be sent along that connection.
+          Alex has one outbox, 'briefing'. Write: Alex's briefing is console_printer.
+          what this means: dsl checks W14</div>
+
+    <div class="say"><b>Say</b>
+      It names the word I typed wrong, not the one I typed right. A check that
+      points at the wrong half is worse than no check.</div>
+
+    <div class="say"><b>Refuse something, out loud, once</b>
+      No — I don't want that. Take it out.
+      <i>(They need to see that it proposes and you dispose.)</i></div>
+
+    <div class="warn"><b>ABORT AT 33:00.</b> If it is still not working, stop.
+      Say what went wrong and why, open the fallback office, and move on. You
+      already had a working office on screen at minute 8. A build you abandon
+      while narrating it is a worse demo, not a wasted hour.</div>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <div class="blk">
+    <div class="hd"><div class="t">35:00</div><div class="ttl">Ask for the same thing again</div>
+      <div class="mins">3 min · Cowork</div></div>
+
+    <p class="note">New conversation. Paste <b>the same request</b>, word for
+      word. Put the two <code>office.md</code> files side by side.</p>
+
+    <div class="say"><b>Say</b>
+      Same words in, different program out. Nobody did anything wrong. This is
+      what it means to describe a job in English instead of specifying it — and
+      it is why the rest of this course is about what a system can reach,
+      not about what you told it.</div>
+
+    <p class="note">If they come back identical, that is worth saying too:
+      today it agreed with itself; you have no guarantee it will tomorrow.</p>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <div class="blk">
+    <div class="hd"><div class="t">38:00</div><div class="ttl">What you are here for</div>
+      <div class="mins">3 min · slides 14&ndash;15</div></div>
+
+    <p class="note">Slide 12 is two sentences and no list. Let it sit. This is
+      the only moment in the hour where you are talking about them rather than
+      about the material — do not hurry it, and do not soften it.</p>
+
+    <div class="say"><b>Slide 14, then stop</b>
+      You are going to determine system safety and power in one of the most
+      critical times in human history. You are here to think for yourselves.</div>
+
+    <p class="note">Then slide 15, which is the whole policy. Say each line
+      once. Do not elaborate — the list is already the short version.</p>
+
+    <ul class="pts">
+      <li><b>Groups of 2 or 3</b>, and collaboration is the default rather than
+        the exception. Say it plainly; first-years arrive expecting the
+        opposite and will not believe it from a slide alone.</li>
+      <li><b>Pass/fail, and you pass by turning work in.</b> Expect a beat of
+        silence. Follow it immediately with the reason, or they will hear it as
+        "this course does not matter": <i>I am removing the reason to optimise
+        for a grade so you have room to try something that might not work.</i></li>
+      <li><b>Use everything, Cowork included.</b> No hedging, no "but". The
+        hedge is R0, which they saw at 22:00 and which is on the course page.</li>
+      <li><b>Give me ideas for the course.</b> Mean it, and say how — office
+        hours, email, after class. An invitation with no channel is decoration.</li>
+    </ul>
+
+    <p class="note">Point at the handout for anything procedural. Do not read
+      policy aloud.</p>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <div class="blk">
+    <div class="hd"><div class="t">41:00</div><div class="ttl">Homework 1</div>
+      <div class="mins">2 min · slide 16</div></div>
+
+    <div class="say"><b>Say</b>
+      Build a cool distributed system — an office of workers that does something
+      interesting or useful. Two weeks.</div>
+
+    <p class="note">Two things they will ask, so answer them before they do.</p>
+
+    <ul class="pts">
+      <li><b>How big?</b> Point back at slide 11. That office is one agent and
+        three sources, it fits on one screen, and it is a perfectly good
+        Homework 1. Nobody needs to build something larger than the thing you
+        demonstrated.</li>
+      <li><b>Does it need a key?</b> <b style="color:#b03a12">Answer this
+        deliberately.</b> An office with an English role needs one; an office
+        of Python roles does not. Say which of the two you are providing and
+        by when. If keys are not sorted yet, say that the first homework can
+        be built and checked without one, and that you will post the
+        arrangement before the end of the week — but say something, because
+        "build something cool" plus an unresolved cost is what makes a
+        first-year quietly not start.</li>
+    </ul>
+
+    <p class="note">Resist naming an example project. Ten of them will build
+      the one you named. The whole point of the last four minutes was that they
+      pick.</p>
+  </div>
+
+  <!-- ─────────────────────────────────────────────────────────── -->
+  <div class="blk">
+    <div class="hd"><div class="t">43:00</div><div class="ttl">Before next class</div>
+      <div class="mins">2 min · slide 17</div></div>
+    <div class="cmd">pip install --upgrade dissyslab
+dsl init periodic_brief my_brief
+cd my_brief &amp;&amp; dsl run .</div>
+    <div class="say"><b>Say, before they ask</b>
+      Not the one you just saw. That one has an agent in it, and an agent costs
+      money to run — I will sort keys out for you. This one has no agent at all,
+      so it needs nothing but the install. Same five words, same shape.</div>
+    <ul class="pts">
+      <li>Read <code>ai_safety.html</code> — 20 minutes.</li>
+      <li>Read <code>01_one_connection.html</code> and do Tasks 1–4. Browser only.</li>
+      <li>Bring a laptop that runs the three commands above.</li>
+    </ul>
+    <div class="say"><b>Last line</b>
+      Come with one sentence: the thing you would like to have watched. That
+      sentence is your Homework 1.</div>
+  </div>
+
+  <div class="blk">
+    <div class="hd"><div class="t">—</div><div class="ttl">If you are running late</div>
+      <div class="mins">cut in this order</div></div>
+    <ul class="pts">
+      <li><b>Cut first:</b> the underspecified <i>Dan and Jay</i> opening at 26:00.</li>
+      <li><b>Cut second:</b> stage 3 of the animation — stages 1 and 2 carry the point.</li>
+      <li><b>Cut third:</b> the break-it W14 moment — it reappears in class 2.</li>
+      <li><b>Never cut:</b> 7:00 (something works), 17:00 (two kinds of agent),
+        22:00 (R0), 41:00 (Homework 1), 43:00 (what to do next).</li>
+    </ul>
+    <p class="note">The last seven minutes are now four slides instead of two.
+      If 26&ndash;35 overran, the block to compress is 38:00 — slide 14 read aloud
+      and slide 15 in six sentences is ninety seconds. Homework 1 and the
+      commands are the two you cannot shorten, because they are what happens
+      after everyone leaves.</p>
+  </div>
+
+</div>
+</body>
+</html>
