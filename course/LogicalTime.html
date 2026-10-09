@@ -1,0 +1,1267 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Logical Time and Termination Detection</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  h2{font-family:var(--display); font-weight:600; font-size:25px;
+     letter-spacing:-.01em; margin:38px 0 12px}
+  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:34px 0 8px}
+  p{color:var(--body); margin:0 0 15px}
+  h4{font-family:var(--sans); font-weight:700; font-size:15.5px;
+     letter-spacing:.01em; color:var(--ink); margin:20px 0 6px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  header.top h2{margin:-2px 0 20px; padding:0; border:0;
+    font-family:var(--display); font-weight:600; font-size:22px;
+    line-height:1.2; letter-spacing:-.01em; color:var(--muted)}
+  figure.fig{margin:32px 0 30px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  figure.fig figcaption i{color:var(--ink); font-style:normal; font-weight:600}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  .legend{display:flex; flex-wrap:wrap; gap:6px 22px; margin-top:10px;
+          font-size:13.5px; color:var(--muted)}
+  .legend i{font-style:normal; color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em;
+       background:#f6f4ee; border-radius:5px; padding:1px 5px}
+  /* a block of code: the same rule as the lecture notes before it */
+  pre.code{margin:16px 0 18px; padding:14px 18px; overflow-x:auto;
+    background:#fff; border:1px solid var(--line); border-left:4px solid var(--ink);
+    border-radius:0 10px 10px 0; font:13.5px/1.7 var(--mono); color:var(--ink)}
+  pre.code b{font-weight:700}
+  pre.code .cm{color:var(--muted)}
+  pre.code .kw{color:var(--orange)}
+  pre.code code{background:none; padding:0}
+  .hint{font-size:13px; color:var(--muted)}
+  .ok{color:var(--teal); font-weight:700}
+  .bad{color:var(--orange); font-weight:700}
+  p.key{margin:22px 0 20px; padding:15px 18px 15px 20px; color:var(--ink);
+    background:#fff6ef; border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0; font-size:18px; line-height:1.5; font-weight:600}
+  p.key b, p.key strong{color:var(--ink); font-weight:800}
+  p.key .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
+    margin-bottom:8px}
+  /* a claim: the theorem and the observations read the same way */
+  .thm{margin:24px 0 22px; padding:16px 20px 15px; color:var(--ink);
+    background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:17px; line-height:1.55}
+  .thm b, .thm strong{font-weight:700}
+  .thm > b{display:block; margin-bottom:7px}
+  .thm .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--teal);
+    margin-bottom:9px}
+  .thm p:last-child{margin-bottom:0}
+  /* the observations: numbered, same colour as the theorem */
+  ol.obs{list-style:none; margin:22px 0 20px; padding:0; counter-reset:ob;
+         color:var(--body)}
+  ol.obs > li{counter-increment:ob; position:relative; margin:0 0 12px;
+    padding:14px 18px 13px 54px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--teal); border-radius:0 10px 10px 0;
+    font-size:16.5px; line-height:1.5}
+  ol.obs > li::before{content:counter(ob); position:absolute; left:19px; top:13px;
+    width:24px; height:24px; border-radius:999px; background:var(--teal);
+    color:#fff; font:700 13px/24px var(--sans); text-align:center}
+  ol.obs > li > b{color:var(--ink)}
+  ol.obs .why{display:block; margin-top:9px; padding-top:9px;
+    border-top:1px solid var(--line); font-size:15px; color:var(--body)}
+  ol.obs .why em{font-style:normal; font:700 11.5px var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin-right:9px}
+  /* proofs */
+  .proof{margin:6px 0 24px; padding:2px 0 2px 22px;
+         border-left:2px solid var(--line)}
+  .proof > p:last-child{margin-bottom:0}
+  .proof figure.fig.wideout{left:calc(50% - 11px)}
+  .proof .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin:0 0 9px}
+  .case{margin:16px 0 14px; padding:13px 17px 2px; background:#fbf9f5;
+        border:1px solid var(--line); border-radius:10px}
+  .case > p:last-child{margin-bottom:11px}
+  .tag{display:inline-block; font:700 11px var(--sans); letter-spacing:.12em;
+    text-transform:uppercase; color:#fff; background:var(--ink);
+    border-radius:999px; padding:4px 11px; margin-right:11px;
+    vertical-align:1px}
+  .calc{font-family:var(--mono); font-size:15px; color:var(--ink);
+    background:#fbf9f5; border:1px solid var(--line); border-radius:8px;
+    padding:11px 15px; margin:12px 0}
+  /* the specification: two requirements, in the two colours they keep */
+  ol.spec{list-style:none; margin:22px 0 20px; padding:0;
+          counter-reset:req; color:var(--body)}
+  ol.spec > li{counter-increment:req; position:relative; margin:0 0 10px;
+    padding:14px 46px 13px 18px; background:#fff; border:1px solid var(--line);
+    border-left:5px solid var(--muted); border-radius:0 10px 10px 0}
+  ol.spec > li::after{content:counter(req); position:absolute; right:15px;
+    top:13px; font:700 12px var(--mono); color:#c9c4b8}
+  ol.spec .rtag{display:inline-block; font:700 11px var(--sans);
+    letter-spacing:.12em; text-transform:uppercase; color:#fff;
+    background:var(--muted); border-radius:999px; padding:4px 11px;
+    margin-right:11px; vertical-align:1px}
+  li.req-v{border-left-color:var(--teal)}
+  li.req-v .rtag{background:var(--teal)}
+  li.req-c{border-left-color:#1a5fd0}
+  li.req-c .rtag{background:#1a5fd0}
+  .n-v{color:var(--teal); font-weight:700}
+  .n-c{color:#1a5fd0; font-weight:700}
+  /* the aside about fire detectors, which is the point of the whole story */
+  .aside{margin:24px 0 22px; padding:15px 19px 14px; font-size:15.5px;
+    line-height:1.6; color:var(--body); background:#f7f5ef;
+    border:1px solid var(--line); border-radius:10px}
+  .aside b{color:var(--ink)}
+  .aside .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    margin-bottom:9px}
+  .aside p:last-child{margin-bottom:0}
+  /* the comparison with Paxos */
+  table.cmp{width:100%; border-collapse:collapse; margin:16px 0 22px;
+    background:#fff; font-size:15px; color:var(--body)}
+  table.cmp th, table.cmp td{border:1px solid var(--line); padding:8px 12px;
+    text-align:left; vertical-align:top}
+  table.cmp th{background:#f6f4ee; color:var(--ink); font-weight:700}
+  /* inputs and readouts used inside figures */
+  input.txt, textarea.txt, select.txt{font:14px var(--mono); width:100%;
+    padding:7px 9px; border:1px solid var(--line); border-radius:8px;
+    background:#fffdf8; color:var(--ink)}
+  select.txt{width:auto; font-family:var(--sans)}
+  textarea.txt{min-height:64px; resize:vertical}
+  .row{display:flex; gap:10px 16px; flex-wrap:wrap; align-items:center; margin:10px 0}
+  .lbl{font:600 11.5px var(--sans); letter-spacing:.1em; text-transform:uppercase;
+    color:var(--muted)}
+  .readout{margin-top:10px; padding:10px 12px; background:#fbf9f5;
+    border:1px solid var(--line); border-radius:10px; font-size:14.5px}
+  .readout b{color:var(--ink)}
+  .fade{animation:fadein .5s ease}
+  @keyframes fadein{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:none}}
+  .todo{margin:22px 0; padding:18px; border:2px dashed var(--line);
+    border-radius:12px; color:var(--muted); font-size:14.5px; text-align:center}
+  /* a definition: the formula first, the English below it */
+  .defn{margin:22px 0 20px; padding:14px 18px 14px 20px; background:#fff6ef;
+    border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0}
+  .defn .lead-in{display:block; font:700 11.5px/1 var(--sans); letter-spacing:.14em;
+    text-transform:uppercase; color:var(--orange); margin-bottom:9px}
+  .defn .f{font:600 18px/1.5 var(--mono); color:var(--ink); margin:0 0 8px}
+  .defn .e{font-size:16.5px; line-height:1.55; color:var(--ink); margin:0}
+  .imp{font-size:1.25em; line-height:1}
+  /* links between the three parts */
+  nav.parts{display:flex; flex-wrap:wrap; gap:6px 18px; margin:0 0 26px; padding:10px 14px;
+    background:#fff; border:1px solid var(--line); border-radius:10px; font-size:14.5px}
+  nav.parts a{color:var(--ink); font-weight:600; text-decoration:none}
+  nav.parts a:hover{text-decoration:underline}
+  nav.parts span.here{color:var(--orange); font-weight:700}
+  /* check yourself: a question the reader answers before seeing the answer */
+  .check{margin:24px 0 22px; padding:15px 19px 13px; background:#fff;
+    border:1px solid var(--line); border-left:5px solid #1a5fd0;
+    border-radius:0 10px 10px 0}
+  .check .lead-in{display:block; font:700 11.5px/1 var(--sans); letter-spacing:.14em;
+    text-transform:uppercase; color:#1a5fd0; margin-bottom:9px}
+  .check .q{font-size:16.5px; color:var(--ink); margin:0 0 10px}
+  .check .opts{display:flex; flex-wrap:wrap; gap:8px; margin:0 0 10px}
+  .check .opts button.on{background:#e8f0fd; border-color:#1a5fd0; color:#1a5fd0}
+  .check .verdict{font-size:15px; margin:8px 0 2px; min-height:1.2em}
+  .check .why{display:none; margin-top:8px; padding-top:9px;
+    border-top:1px solid var(--line); font-size:15px; color:var(--body)}
+  .check.shown .why{display:block}
+  .check .opts button.on{background:#e8f0fd; border-color:#1a5fd0; color:#1a5fd0}
+  button:disabled{cursor:default}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab &middot; Draft</div>
+    <h1>Logical Time and Termination Detection</h1>
+    <h2>Logical clocks, vector clocks, and detecting that a computation has ended</h2>
+  </header>
+
+  <div class="aside">
+    <span class="lead-in">This page assumes</span>
+    <p>
+      A computation is drawn as a <b>dataflow graph</b>: a horizontal line for
+      each agent, a dot for each event, and an arrow for each message (see
+      <a href="ComputationsAndDataFlow.html">Computations and Data Flow</a>).
+      Channels are first-in-first-out. A <b>cut</b> splits the events into a
+      <b>past</b> and a <b>future</b>, with every agent's past events before its
+      future events. A cut is <b>consistent</b> when every message received in
+      the past is sent in the past, and then the states at the cut form a
+      global snapshot (see <a href="GlobalSnapshots.html">Global Snapshots</a>).
+    </p>
+  </div>
+
+<h2>1. The Problem: Why Logical Clocks?</h2>
+<p>
+The problem is to assign timestamps to events so that
+past(T), future(T) is a consistent cut where
+past(T) is the set of events with timestamps T or less,
+and future(T) is the set of events with timestamps greater than T.
+</p>
+
+<div class="defn">
+  <span class="lead-in">past(T) and future(T)</span>
+  <div class="f">past(T) = {e | t(e) &le; T} &nbsp;&nbsp; future(T) = {e | t(e) &gt; T}</div>
+  <p class="e">For a number <code>T</code>, the events with timestamps at most
+    <code>T</code> are in the past at <code>T</code>, and the others are in
+    the future.
+</div>
+<p>
+  A simple solution, which is easily proved correct is:
+</p>
+
+  <div class="defn">
+    <span class="lead-in">Logical clock</span>
+    <div class="f">t(e) &lt; t(e&prime;) for every edge (e, e&prime;) of the dataflow graph</div>
+  </div>
+
+
+<h3>The algorithm</h3>
+
+  <p>
+    When an agent sends a message in an event it puts the
+    event timestamp on the message.
+    The timestamp t(e) of an event e is larger than the timestamp of 
+    the previous event e<sub>p</sub> at that agent and the timestamp
+    t(e<sub>s</sub>) of the message (if any) that it receives
+    in the event.
+    <div class="f">t(e) &gt; max(t(e<sub>p</sub>), t(e<sub>s</sub>))</div>
+  </p>
+
+  <p>
+    A common choice is 
+    <code>t(e) = max(t(e<sub>p</sub>), t(e<sub>s</sub>)) + 1</code>.
+  </p>
+
+  <div class="check" data-answer="7|8|9" data-multi>
+    <span class="lead-in">Check yourself</span>
+    <p class="q">In Figure 1, <code>t(b3) = 4</code> and <code>t(c5) = 6</code>.
+      Which of these are possible
+      timestamps for <code>b4</code>? Pick all that apply.</p>
+    <div class="opts"><button>4</button><button>5</button><button>6</button><button>7</button><button>8</button><button>9</button></div>
+    <div class="why">The algorithm requires only
+      <code>t(b4) &gt; max(t(b3), t(c5)) = max(4, 6) = 6</code>, so 7, 8 and 9 are
+      all possible. Adding 1 is a convention, not a requirement. Figure 1 uses
+      it and gives <code>t(b4) = 7</code>.</div>
+  </div>
+
+  <figure class="fig wideout">
+    <svg id="lc_g" viewBox="0 0 1240 430" role="img"
+         aria-label="A computation with agents A, B and C; timestamps are assigned one event at a time, and then a cut at logical time T divides past from future"></svg>
+    <div class="ctrls">
+      <button id="lc_play" class="primary">Play</button>
+      <button id="lc_step">Next event</button>
+      <button id="lc_reset">Reset</button>
+      <span class="hint">cut at</span>
+      <button id="lc_tm">T &minus;</button>
+      <button id="lc_tp">T +</button>
+      <span class="status" id="lc_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 1. Logical clocks.</b>
+      <i>Next event</i> assigns timestamps in the
+      order the events happened, and the status line shows the rule at work:
+      the event being stamped has a blue ring, its inputs have orange rings,
+      and an event turns green once it has its timestamp. When every event has a
+      timestamp, use <i>T &minus;</i> and <i>T +</i> to draw the cut
+      <code>[past(T), future(T)]</code>: past events are dark, future events
+      are green, and the messages that cross the cut are blue. Every crossing
+      message goes from the past to the future, for every <code>T</code>.
+    </figcaption>
+  </figure>
+
+<h2>2. A snapshot at logical time T</h2>
+
+  <div class="defn">
+    <span class="lead-in">Snapshot at logical time T</span>
+    <div class="f">local state: after the last event with t &le; T, before the first with t &gt; T</div>
+    <p class="e">Each agent records its local state at the boundary between
+      its past and its future. An agent <code>v</code> starts recording the
+      messages it receives on channel <code>(u, v)</code> when it records its
+      local state, and stops when it receives on that channel a message with
+      timestamp greater than <code>T</code>. That message is not recorded. The
+      state of channel <code>(u, v)</code> is the sequence of messages
+      recorded. The algorithm requires every agent to send messages on all its
+      output channels to ensure that all channel state are recorded.</p>
+  </div>
+  <p>
+    The message with timestamp greater than <code>T</code> plays the role of
+    the marker in the marker algorithm. The messages <code>v</code> records are
+    exactly those sent in the past and received in the future: they are
+    received after <code>v</code>'s snapshot, and, because the channel is
+    first-in-first-out, they are sent before the first message from
+    <code>u</code> with a timestamp greater than <code>T</code>.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="sn_g" viewBox="0 0 1240 640" role="img"
+         aria-label="The computation of figure 1 with the local snapshots at logical time T as yellow dots, and a table of recorded channel states"></svg>
+    <div class="ctrls">
+      <button id="sn_tm">T &minus;</button>
+      <button id="sn_tp" class="primary">T +</button>
+      <button id="sn_null">Agents keep sending: off</button>
+      <span class="status" id="sn_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 2. Recording channel states at logical time T.</b>
+      Yellow dots are the points at which agents record their local states.
+      The table lists the six channels. For each, it shows the messages that
+      cross the cut (the true state of the channel), what the receiver has
+      recorded, and whether the receiver has stopped recording. Try
+      <code>T = 3</code>: channel <code>(B, C)</code> holds <code>m3</code>, and
+      <code>C</code> records it correctly, but then <code>C</code> waits for a
+      message from <code>B</code> with a timestamp above 3, and none ever
+      comes. Then turn on <i>Agents keep sending</i>.
+    </figcaption>
+  </figure>
+
+  <div class="check" data-answer="It may never stop recording">
+    <span class="lead-in">Check yourself</span>
+    <p class="q">There is a bug in the algorithm. What happens to agent
+      <code>v</code> if agent <code>u</code> never sends <code>v</code> a
+      message with timestamp greater than <code>T</code>?</p>
+    <div class="opts"><button>It records a wrong channel state</button><button>It may never stop recording</button><button>Its local snapshot is inconsistent</button></div>
+    <div class="why">
+      Agent <code>v</code> stops recording channel <code>(u, v)</code> only
+      when a message with timestamp greater than <code>T</code> arrives on it.
+      If none is ever sent, <code>v</code> never knows that the state it has
+      recorded is complete, and the algorithm does not terminate. Compare the
+      marker algorithm, in which every agent sends a marker on every outgoing
+      channel. The fix is the same: the algorithm is correct if every agent
+      keeps sending messages with increasing timestamps on every outgoing
+      channel &mdash; null messages, if it has nothing else to send.
+    </div>
+  </div>
+
+<h2>3. Logical time does not capture dependence</h2>
+
+  <p>
+    Say that event <code>e&prime;</code> <b>depends on</b> event
+    <code>e</code> when there is a path from <code>e</code> to
+    <code>e&prime;</code> in the dataflow graph. A logical clock guarantees
+  </p>
+  <div class="calc">(path from e to e&prime;) <span class="imp">&#x27F9;</span> t(e) &lt; t(e&prime;)</div>
+  <p>
+    but not the converse. In Figure 1, <code>t(c2) = 2 &lt; 3 = t(a3)</code>,
+    yet there is no path from <code>c2</code> to <code>a3</code>: after
+    <code>c2</code>, the only message <code>C</code> sends is <code>m6</code>,
+    to <code>B</code>, and <code>B</code> sends nothing after receiving it.
+    From timestamps alone, an agent cannot tell whether one event could have
+    influenced another.
+  </p>
+
+<h2>4. Vector clocks</h2>
+
+  <p>
+    Can timestamps capture dependence exactly?
+  </p>
+  <div class="defn">
+    <span class="lead-in">Specification of a vector clock</span>
+    <div class="f">t(e) &lt; t(e&prime;) &equiv; (path from e to e&prime;)</div>
+    <p class="e">Assign timestamps to events so that <code>t(e)</code> is less
+      than <code>t(e&prime;)</code> exactly when <code>e&prime;</code> depends
+      on <code>e</code>.</p>
+  </div>
+  <p>
+    No numbers can do this, because any two numbers are ordered, while two
+    events may be independent, with no path either way. So the timestamps are
+    vectors, with one element per agent, ordered element by element:
+  </p>
+  <div class="defn">
+    <span class="lead-in">Order on vectors</span>
+    <div class="f">n &le; m &equiv; (&forall; j : n<sub>j</sub> &le; m<sub>j</sub>) &nbsp;&nbsp; n &lt; m &equiv; (n &le; m) &and; (n &ne; m)</div>
+    <p class="e">A vector <code>n</code> is at most <code>m</code> when it is
+      at most <code>m</code> in every element. Two vectors can be unordered:
+      neither <code>[1, 0] &le; [0, 1]</code> nor
+      <code>[0, 1] &le; [1, 0]</code>.</p>
+  </div>
+
+  <div class="defn">
+    <span class="lead-in">Vector clock algorithm</span>
+    <div class="f">t(e) = max(t(e<sub>p</sub>), t(e<sub>s</sub>)) + u<sub>j</sub></div>
+    <p class="e">For an event <code>e</code> of agent <code>j</code>,
+      <code>t(e)</code> is the element-wise maximum of the timestamp of
+      <code>j</code>'s previous event <code>e<sub>p</sub></code> and, if
+      <code>e</code> receives a message, the timestamp <code>t(e<sub>s</sub>)</code>
+      carried by the message; plus <code>u<sub>j</sub></code>, the vector with 1
+      in element <code>j</code> and 0 elsewhere. The initial event of agent
+      <code>j</code> has timestamp <code>u<sub>j</sub></code>.</p>
+  </div>
+  <p>
+    For example, with four agents: if event <code>e</code> of agent 1 has
+    previous event with timestamp <code>[3, 8, 2, 4]</code> and receives a
+    message carrying <code>[10, 5, 3, 2]</code>, then
+    <code>t(e) = [10, 8, 3, 4] + [0, 1, 0, 0] = [10, 9, 3, 4]</code>.
+  </p>
+
+  <div class="thm">
+    <span class="lead-in">What a vector timestamp says</span>
+    If <code>t(e) = [n<sub>0</sub>, n<sub>1</sub>, &hellip;]</code> then, for
+    every agent <code>j</code>, exactly <code>n<sub>j</sub></code> events of
+    agent <code>j</code> have a path to <code>e</code>, counting
+    <code>e</code> itself: the first <code>n<sub>j</sub></code> events on
+    <code>j</code>'s line.
+  </div>
+  <div class="proof">
+    <span class="lead-in">Proof sketch</span>
+    <p>
+      By induction over the events in the order they occur. The events with a
+      path to <code>e</code> are <code>e</code> itself and the events with a
+      path to <code>e<sub>p</sub></code> or to <code>e<sub>s</sub></code>. The
+      events of agent <code>j</code> with a path to any event form a prefix of
+      <code>j</code>'s line, so the union of two such sets is the longer
+      prefix: the maximum. Adding <code>u<sub>j</sub></code> counts
+      <code>e</code> itself.
+    </p>
+  </div>
+
+  <div class="thm">
+    <span class="lead-in">Theorem</span>
+    Vector clocks meet the specification: for events <code>e &ne; e&prime;</code>,
+    <code>t(e) &lt; t(e&prime;)</code> exactly when there is a path from
+    <code>e</code> to <code>e&prime;</code>.
+  </div>
+  <div class="proof">
+    <span class="lead-in">Proof</span>
+    <p>
+      Let <code>e</code> be the <code>k</code>-th event of agent
+      <code>j</code>, so <code>t(e)<sub>j</sub> = k</code>. If there is a
+      path from <code>e</code> to <code>e&prime;</code>, every event with a
+      path to <code>e</code> has a path to <code>e&prime;</code>, so
+      <code>t(e) &le; t(e&prime;)</code>. Conversely, if
+      <code>t(e) &le; t(e&prime;)</code> then <code>t(e&prime;)<sub>j</sub> &ge; k</code>,
+      so the first <code>k</code> events of <code>j</code>, <code>e</code>
+      among them, have a path to <code>e&prime;</code>. Finally,
+      <code>t(e) = t(e&prime;)</code> is impossible for <code>e &ne; e&prime;</code>:
+      it would give paths both ways, and the dataflow graph has no cycles.
+    </p>
+  </div>
+
+  <figure class="fig wideout">
+    <svg id="vc_g" viewBox="0 0 1240 500" role="img"
+         aria-label="The computation of figure 1 with Lamport or vector timestamps; clicking two events compares their timestamps and shows whether there is a path between them"></svg>
+    <div class="ctrls">
+      <button id="vc_mode" class="primary">Showing: vector clocks</button>
+      <button id="vc_reset">Clear</button>
+      <span class="status" id="vc_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 3. Lamport timestamps and vector timestamps compared.</b>
+      Click an event <code>e</code> (orange ring), then an event
+      <code>e&prime;</code> (blue ring). The figure draws a path from
+      <code>e</code> to <code>e&prime;</code> if there is one, and compares
+      the timestamps. The line below the graph counts, over all pairs of
+      events, those where the order of timestamps and the existence of a path
+      disagree. For Lamport timestamps there are many, such as
+      <code>c2</code> and <code>a3</code>. For vector timestamps there are
+      none.
+    </figcaption>
+  </figure>
+
+  <div class="check" data-answer="[5, 4, 2]">
+    <span class="lead-in">Check yourself</span>
+    <p class="q">With agents <code>A, B, C</code>, event <code>b3</code> of
+      Figure 3 sends <code>m5</code> with timestamp <code>[2, 4, 0]</code>.
+      Event <code>a3</code>, the previous event of <code>A</code>, has
+      timestamp <code>[4, 0, 2]</code>. What is the timestamp of
+      <code>a4</code>, which receives <code>m5</code>?</p>
+    <div class="opts"><button>[4, 4, 2]</button><button>[5, 4, 2]</button><button>[6, 4, 2]</button><button>[5, 5, 2]</button></div>
+    <div class="why">
+      <code>max([4, 0, 2], [2, 4, 0]) + [1, 0, 0] = [4, 4, 2] + [1, 0, 0] = [5, 4, 2]</code>.
+      Check it in Figure 3.
+    </div>
+  </div>
+
+<h2>5. Detection algorithms</h2>
+
+  <p>
+    A <b>detection algorithm</b> is run by the operating system's agents to
+    find out whether the client computation they manage has some property. The
+    properties of interest are <b>stable</b>: once they hold, they hold for
+    ever. Termination is one: a computation that has ended stays ended.
+    Deadlock is another.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">stable</span>
+    <div class="f">stable(P) &equiv; [P <span class="imp">&#x27F9;</span> AX P]</div>
+    <p class="e">A predicate <code>P</code> on system states is <b>stable</b>
+      when every step from a state in which <code>P</code> holds goes to a
+      state in which <code>P</code> holds (see
+      <a href="TemporalLogic1.html">Temporal Logic, part 1</a>).</p>
+  </div>
+
+  <p>
+    A detection algorithm takes time: its agents exchange messages while the
+    client computation keeps moving. So its specification is asymmetric
+    between the state in which it starts and the state in which it ends.
+  </p>
+  <div class="defn">
+    <span class="lead-in">Specification of a detection algorithm for stable P</span>
+    <div class="f">returns &ldquo;P&rdquo; <span class="imp">&#x27F9;</span> P holds when it ends; &nbsp; returns &ldquo;&not;P&rdquo; <span class="imp">&#x27F9;</span> &not;P held when it started</div>
+    <p class="e">If <code>P</code> holds throughout the run, the algorithm
+      reports <code>P</code>. If <code>&not;P</code> holds throughout, it reports
+      <code>&not;P</code>. If <code>P</code> becomes true during the run, it may
+      report either.</p>
+  </div>
+
+  <p class="key">
+    <span class="lead-in">The generic solution</span>
+    Take a global snapshot. Each agent sends its local state and the states
+    of its incoming channels to a <b>detector</b> agent. The detector puts them
+    together and checks <code>P</code> in the snapshot.
+  </p>
+  <p>
+    This works because <code>P</code> is stable. The snapshot is a state the
+    system could have passed through between the start and the end of the
+    algorithm. If <code>P</code> holds in it, <code>P</code> holds from then
+    on, and so it holds at the end. If <code>P</code> does not hold in it,
+    <code>P</code> did not hold at the start. A snapshot is static, which makes
+    it much easier to analyze than the moving system. For particular
+    properties, the generic solution can be streamlined, as the next section
+    does for termination.
+  </p>
+
+<h2>6. Termination detection</h2>
+
+  <div class="defn">
+    <span class="lead-in">Active and idle agents</span>
+    <div class="f">terminated &equiv; all agents idle &and; all channels empty</div>
+    <p class="e">Each client agent is either <b>active</b> or <b>idle</b>. An
+      active agent may send messages, and may become idle at any time. An idle
+      agent sends no messages, and becomes active when it receives a message.
+      Initially every agent is active and every channel is empty. The
+      computation has <b>terminated</b> when every agent is idle and every
+      channel is empty.</p>
+  </div>
+  <p>
+    Termination is stable: no agent can become active again, because no
+    message is in transit and no idle agent sends one. The detector has a
+    variable <code>terminated</code>, initially false, and must satisfy:
+  </p>
+  <ol class="spec">
+    <li class="req-v"><span class="rtag">Safety</span>
+      invariant(terminated <span class="imp">&#x27F9;</span> the computation has terminated)</li>
+    <li class="req-c"><span class="rtag">Progress</span>
+      if the computation terminates, then <code>terminated</code> eventually
+      becomes true</li>
+  </ol>
+
+<h3>Counting messages</h3>
+
+  <p>
+    For each channel <code>X</code>, the sender keeps a count
+    <code>X<sub>s</sub></code> of the messages it has sent on <code>X</code>,
+    and the receiver keeps a count <code>X<sub>r</sub></code> of those it has
+    received. The number of messages in transit on <code>X</code> is
+    <code>X<sub>s</sub> &minus; X<sub>r</sub></code>. But no agent knows both
+    numbers at the same moment.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">Termination detection by counting</span>
+    <div class="f">terminated := terminated &or; (&forall; X : X&prime;<sub>s</sub> = X&prime;<sub>r</sub>)</div>
+    <p class="e">When an agent becomes idle, it sends its counts for all its
+      channels to the detector. For each channel <code>X</code> the detector
+      keeps <code>X&prime;<sub>s</sub></code> and <code>X&prime;<sub>r</sub></code>,
+      the most recent counts it has received from the sender and from the
+      receiver of <code>X</code>, initially <code>0</code> and
+      <code>&minus;1</code>. Each time it receives counts, it sets
+      <code>terminated</code> to true if <code>X&prime;<sub>s</sub> = X&prime;<sub>r</sub></code>
+      for every channel <code>X</code>.</p>
+  </div>
+  <p>
+    The values <code>X&prime;<sub>s</sub></code> and <code>X&prime;<sub>r</sub></code>
+    are <b>not</b> the current counts. They are values the agents sent in the
+    past, at different moments, and <code>X&prime;<sub>s</sub> &minus;
+    X&prime;<sub>r</sub></code> need not be the number of messages in transit
+    now. The initial values <code>0 &ne; &minus;1</code> make sure the
+    detector hears from both ends of every channel before it decides.
+  </p>
+
+  <div class="thm">
+    <span class="lead-in">Why it is safe</span>
+    <p>
+      Consider the points at which the agents sent the counts that the detector
+      holds. If <code>X&prime;<sub>s</sub> &ge; X&prime;<sub>r</sub></code> for every
+      channel <code>X</code>, those points form a consistent cut: the
+      receiver of <code>X</code> had received <code>X&prime;<sub>r</sub></code>
+      messages, and because the channel is first-in-first-out these are the
+      first <code>X&prime;<sub>r</sub></code> messages sent on <code>X</code>,
+      all sent before the sender's point. At that cut every agent is idle,
+      because agents send counts when they become idle, and every channel
+      <code>X</code> holds <code>X&prime;<sub>s</sub> &minus; X&prime;<sub>r</sub> = 0</code>
+      messages. So the computation had terminated at the cut, and termination
+      is stable.
+    </p>
+  </div>
+  <p>
+    <b>Progress.</b> Every agent is active initially, so it becomes idle at
+    least once and sends counts. After the computation terminates, each
+    agent's last counts are its final counts, and in them every message sent
+    has been received. When the detector has them all,
+    <code>X&prime;<sub>s</sub> = X&prime;<sub>r</sub></code> for every channel.
+  </p>
+
+  <div class="check" data-answer="No">
+    <span class="lead-in">Check yourself</span>
+    <p class="q">Both agents have become idle and reported, and the detector
+      holds <code>C&prime;<sub>s</sub> = 3, C&prime;<sub>r</sub> = 1,
+      D&prime;<sub>s</sub> = 2, D&prime;<sub>r</sub> = 2</code>. Should it
+      conclude that the computation has terminated?</p>
+    <div class="opts"><button>Yes</button><button>No</button></div>
+    <div class="why">
+      No. At the cut of the two reports, channel <code>C</code> held
+      <code>3 &minus; 1 = 2</code> messages. When <code>B</code> receives them it
+      becomes active again. A detector that only checked &ldquo;every agent has
+      reported idle&rdquo; would make exactly this mistake. Figure 4's
+      <i>Play the example</i> passes through this state.
+    </div>
+  </div>
+
+  <figure class="fig wideout">
+    <svg id="td_g" viewBox="0 0 1240 640" role="img"
+         aria-label="Agents A and B with channels C and D, a detector with its recorded counts, and a timeline of the run with the cut formed by the counts the detector holds"></svg>
+    <div class="ctrls" id="td_acts"></div>
+    <div class="ctrls">
+      <button id="td_play" class="primary">Play the example</button>
+      <button id="td_step">Step</button>
+      <button id="td_reset">Reset</button>
+    </div>
+    <div class="readout" id="td_status">
+    </div>
+    <figcaption>
+      <b>Figure 4. Detecting termination by counting.</b>
+      Agent <code>A</code> sends on channel <code>C</code> to <code>B</code>,
+      and <code>B</code> sends on channel <code>D</code> to <code>A</code>. The
+      top half shows the current state: counts, messages in transit, and the
+      detector's variables. The bottom half is the timeline: red arrows are
+      client messages, green arrows carry counts to the detector, and the
+      purple line is the cut formed by the counts the detector holds. Drive it
+      yourself with the buttons in the first row, or press <i>Play the
+      example</i>. <i>Truth</i> says whether the computation has terminated,
+      which no agent can see. <i>Detector</i> must never say
+      &ldquo;terminated&rdquo; before <i>Truth</i> does. <i>Naive</i> is a
+      detector that ignores the counts and checks only that both agents have
+      reported idle; try to make it wrong.
+    </figcaption>
+  </figure>
+
+<h2>Notes</h2>
+
+  <p>
+    Logical clocks are due to Lamport, &ldquo;Time, clocks, and the ordering of
+    events in a distributed system&rdquo; (1978). Vector clocks were
+    introduced independently by Fidge and by Mattern in 1988. The snapshot at
+    a logical time, with markers replaced by messages carrying timestamps, is
+    a variant of the Chandy&ndash;Lamport snapshot algorithm (1985).
+    Detecting termination by counting messages is in the spirit of Mattern's
+    counting algorithms (1987); Dijkstra and Scholten (1980) and Francez
+    (1980) gave early termination detection algorithms.
+  </p>
+
+</div>
+
+<script>
+/* LTG: the computation shared by figures 1-3, the clocks computed on it,
+   and the code that draws it. */
+window.LTG=(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#cfc9bc', orange:'#d13d0e', blue:'#1a5fd0',
+           light:'#dbe7fb', teal:'#00947d', green:'#e3f3ee', red:'#e0301a', pale:'#fde9e2',
+           yellow:'#f2c230', purple:'#7b3fa0'};
+  const AG=['A','B','C'];
+  /* events in the order they happen; k is the position on the page */
+  const EV=[
+    {id:'a0', ag:'A', k:0}, {id:'b0', ag:'B', k:0}, {id:'c0', ag:'C', k:0},
+    {id:'a1', ag:'A', k:1,  send:'m1'},
+    {id:'c1', ag:'C', k:2,  send:'m2'},
+    {id:'b1', ag:'B', k:3,  recv:'m1'},
+    {id:'b2', ag:'B', k:4,  send:'m3'},
+    {id:'a2', ag:'A', k:5,  recv:'m2'},
+    {id:'c2', ag:'C', k:6},
+    {id:'a3', ag:'A', k:7,  send:'m4'},
+    {id:'c3', ag:'C', k:8,  recv:'m3'},
+    {id:'b3', ag:'B', k:9,  send:'m5'},
+    {id:'c4', ag:'C', k:10, recv:'m4'},
+    {id:'c5', ag:'C', k:11, send:'m6'},
+    {id:'a4', ag:'A', k:12, recv:'m5'},
+    {id:'b4', ag:'B', k:13, recv:'m6'},
+    {id:'a5', ag:'A', k:14, send:'m7'},
+    {id:'b5', ag:'B', k:15, recv:'m7'}];
+  const MSG={m1:['A','B'], m2:['C','A'], m3:['B','C'], m4:['A','C'], m5:['B','A'], m6:['C','B'], m7:['A','B']};
+  const BY={}; EV.forEach(function(e){ BY[e.id]=e; });
+  const SENDER={}, RECVR={};
+  EV.forEach(function(e){ if(e.send) SENDER[e.send]=e; if(e.recv) RECVR[e.recv]=e; });
+  /* previous event of the same agent */
+  const PREV={}; const last={};
+  EV.forEach(function(e){ PREV[e.id]=last[e.ag]||null; last[e.ag]=e; });
+  /* the edges of the dataflow graph */
+  const EDGES=[];
+  EV.forEach(function(e){ if(PREV[e.id]) EDGES.push([PREV[e.id].id, e.id, null]); if(e.recv) EDGES.push([SENDER[e.recv].id, e.id, e.recv]); });
+  /* Lamport: t(e) = max(t(prev), t(sender)) + 1, initial events 0 */
+  const LT={};
+  EV.forEach(function(e){ const p=PREV[e.id];
+    if(!p){ LT[e.id]=0; return; }
+    LT[e.id]=Math.max(LT[p.id], e.recv? LT[SENDER[e.recv].id] : -Infinity)+1; });
+  /* vector clocks: t(e) = max(t(prev), t(sender)) + u_j, initial events u_j */
+  const VT={};
+  EV.forEach(function(e){ const j=AG.indexOf(e.ag), p=PREV[e.id];
+    let v=[0,0,0];
+    if(p) v=VT[p.id].slice();
+    if(e.recv){ const s=VT[SENDER[e.recv].id]; v=v.map(function(x,i){ return Math.max(x,s[i]); }); }
+    v[j]++; VT[e.id]=v; });
+  function vle(n,m){ return n.every(function(x,i){ return x<=m[i]; }); }
+  function vlt(n,m){ return vle(n,m) && n.join()!==m.join(); }
+  function vshow(v){ return '['+v.join(', ')+']'; }
+  /* a path from a to b, as a list of edges; null if none (a path of length 0 does not count) */
+  function path(a,b){
+    const prev=new Map(), q=[a]; prev.set(a,null);
+    while(q.length){ const u=q.shift();
+      for(const ed of EDGES){ if(ed[0]!==u || prev.has(ed[1])) continue;
+        prev.set(ed[1], ed); if(ed[1]===b){ const p=[]; let x=b; while(x!==a){ const d=prev.get(x); p.unshift(d); x=d[0]; } return p; }
+        q.push(ed[1]); } }
+    return null; }
+  /* the point on agent g's line between past(T) and future(T), as a position k */
+  function cutK(g,T){
+    const evs=EV.filter(function(e){ return e.ag===g; });
+    const lastPast=evs.filter(function(e){ return LT[e.id]<=T; }).pop();
+    const firstFut=evs.find(function(e){ return LT[e.id]>T; });
+    if(!firstFut) return lastPast.k+0.55;
+    return (lastPast.k+firstFut.k)/2; }
+  /* channel states at logical time T: what crosses the cut, and what the receiver records */
+  function channels(T, keepSending){
+    const out=[];
+    const pairs=[['A','B'],['A','C'],['B','A'],['B','C'],['C','A'],['C','B']];
+    pairs.forEach(function(pr){
+      const ms=Object.keys(MSG).filter(function(m){ return MSG[m][0]===pr[0] && MSG[m][1]===pr[1]; })
+        .sort(function(x,y){ return RECVR[x].k-RECVR[y].k; });
+      const cross=ms.filter(function(m){ return LT[SENDER[m].id]<=T && LT[RECVR[m].id]>T; });
+      const rec=[]; let stop=null;
+      for(const m of ms){ if(LT[RECVR[m].id]<=T) continue;   /* received before the snapshot */
+        if(LT[SENDER[m].id]>T){ stop=m; break; }
+        rec.push(m); }
+      out.push({from:pr[0], to:pr[1], cross:cross, rec:rec, stop:stop, nul:(!stop && keepSending)});
+    });
+    return out; }
+
+  function el(t,a,txt){ const e=document.createElementNS(NS,t); for(const k in a) e.setAttribute(k,a[k]); if(txt!=null) e.textContent=txt; return e; }
+  function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
+  function text(p,x,y,s,o){ o=o||{};
+    const t=el('text',{x:x, y:y, 'font-family':o.mono?'ui-monospace,Menlo,Consolas,monospace':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':o.size||15, 'font-weight':o.w||600, fill:o.fill||C.ink, 'text-anchor':o.anchor||'middle', 'dominant-baseline':'middle'}, String(s));
+    p.appendChild(t); return t; }
+  function head(p,x,y,ux,uy,col){ const s=6, px=-uy, py=ux;
+    p.appendChild(el('polygon',{points:x+','+y+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+(x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col})); }
+  function arrow(p,x1,y1,x2,y2,col,w,r1,r2,dash){
+    const dx=x2-x1, dy=y2-y1, L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
+    const sx=x1+ux*r1, sy=y1+uy*r1, ex=x2-ux*(r2+1), ey=y2-uy*(r2+1);
+    const a={x1:sx, y1:sy, x2:ex-ux*10, y2:ey-uy*10, stroke:col, 'stroke-width':w};
+    if(dash) a['stroke-dasharray']=dash;
+    p.appendChild(el('line',a)); head(p,ex,ey,ux,uy,col); }
+  const R=16;
+  function X(k){ return 110+k*66; }
+  /* draw the computation. o.Y: y of each agent; o.inside(e), o.above(e), o.below(e): text;
+     o.fill, o.stroke, o.sw, o.txt: per-event styles; o.msg(m): {col, w}; o.click(e) */
+  function draw(svg,o){
+    const Y=o.Y, g=el('g',{}); svg.appendChild(g);
+    AG.forEach(function(a){
+      g.appendChild(el('line',{x1:X(0)-50, y1:Y[a], x2:X(15)+70, y2:Y[a], stroke:C.line, 'stroke-width':2}));
+      head(g, X(15)+72, Y[a], 1, 0, C.line);
+      text(g, X(0)-66, Y[a], a, {size:20, w:800}); });
+    Object.keys(MSG).forEach(function(m){
+      const s=SENDER[m], r=RECVR[m], st=(o.msg && o.msg(m)) || {};
+      const col=st.col||C.muted, w=st.w||1.6;
+      arrow(g, X(s.k), Y[s.ag], X(r.k), Y[r.ag], col, w, R, R);
+      /* the name sits a third of the way along, beside the arrow */
+      const x1=X(s.k), y1=Y[s.ag], x2=X(r.k), y2=Y[r.ag], L=Math.hypot(x2-x1,y2-y1);
+      const nx=-(y2-y1)/L, ny=(x2-x1)/L, sg=(nx>0)? 1 : -1;
+      text(g, x1+(x2-x1)*0.32+nx*sg*13, y1+(y2-y1)*0.32+ny*sg*13, m, {size:12.5, w:700, fill:col}); });
+    EV.forEach(function(e){
+      const x=X(e.k), y=Y[e.ag];
+      const c=el('circle',{cx:x, cy:y, r:R, fill:(o.fill&&o.fill[e.id])||'#fff',
+        stroke:(o.stroke&&o.stroke[e.id])||C.ink, 'stroke-width':(o.sw&&o.sw[e.id])||1.8});
+      if(o.click){ c.setAttribute('style','cursor:pointer'); c.addEventListener('click', function(){ o.click(e.id); }); }
+      g.appendChild(c);
+      if(o.inside){ const s=o.inside(e); if(s!=null) text(g, x, y+1, s, {size:14, w:800, fill:(o.txt&&o.txt[e.id])||C.ink}); }
+      if(o.above){ const s=o.above(e), dn=o.aboveBelow && o.aboveBelow(e); if(s!=null) text(g, x, dn? y+R+13 : y-R-11, s, {size:12.5, w:700, mono:true, fill:(o.abovecol&&o.abovecol(e))||C.blue}); }
+      if(o.below){ const s=o.below(e); if(s!=null) text(g, x, y+R+12, s, {size:12, w:600, fill:C.muted}); }
+    });
+    return g; }
+  return {C:C, AG:AG, EV:EV, BY:BY, MSG:MSG, SENDER:SENDER, RECVR:RECVR, PREV:PREV, EDGES:EDGES,
+          LT:LT, VT:VT, vle:vle, vlt:vlt, vshow:vshow, path:path, cutK:cutK, channels:channels,
+          el:el, clear:clear, text:text, head:head, arrow:arrow, draw:draw, X:X, R:R};
+})();
+</script>
+
+<script>
+/* Figure 1 — Lamport's algorithm, one event at a time, then a cut at T */
+(function(){
+  const PFX='lc_', $=function(id){ return document.getElementById(PFX+id); };
+  const svg=$('g'); if(!svg) return;
+  const G=window.LTG, C=G.C, EV=G.EV, LT=G.LT;
+  const Y={A:80, B:200, C:320};
+  const ORDER=EV.filter(function(e){ return e.k>0; });
+  let shown=0, T=null, timer=null;
+  function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+  function known(e){ return e.k===0 || ORDER.indexOf(e)<shown; }
+  function cutLine(){
+    const pts=[]; G.AG.forEach(function(a,i){ const x=G.X(G.cutK(a,T));
+      if(i===0) pts.push([x, Y[a]-42]); pts.push([x, Y[a]]); if(i===2) pts.push([x, Y[a]+42]); });
+    svg.appendChild(G.el('polyline',{points:pts.map(function(p){ return p.join(','); }).join(' '),
+      fill:'none', stroke:C.purple, 'stroke-width':3, 'stroke-dasharray':'8 6'}));
+    G.text(svg, pts[0][0], pts[0][1]-12, 'T = '+T, {size:14, w:800, fill:C.purple}); }
+  function draw(){
+    G.clear(svg);
+    const cur=(shown>0 && T==null)? ORDER[shown-1] : null;
+    const inputs={};
+    if(cur){ const p=G.PREV[cur.id]; if(p) inputs[p.id]=1; if(cur.recv) inputs[G.SENDER[cur.recv].id]=1; }
+    const fill={}, stroke={}, sw={}, txt={};
+    EV.forEach(function(e){
+      if(T!=null){ if(LT[e.id]<=T){ fill[e.id]=C.ink; txt[e.id]='#fff'; } else { fill[e.id]=C.green; stroke[e.id]=C.teal; } }
+      else if(known(e)){ fill[e.id]=C.green; stroke[e.id]=C.teal; }   /* has its timestamp */
+      if(inputs[e.id]){ stroke[e.id]=C.orange; sw[e.id]=4; }
+      if(cur && e===cur){ stroke[e.id]=C.blue; sw[e.id]=4; }
+    });
+    G.draw(svg, {Y:Y, fill:fill, stroke:stroke, sw:sw, txt:txt,
+      inside:function(e){ return known(e)? LT[e.id] : '?'; },
+      below:function(e){ return e.id; },
+      msg:function(m){
+        if(T!=null){ const s=LT[G.SENDER[m].id], r=LT[G.RECVR[m].id];
+          if(s<=T && r>T) return {col:C.blue, w:3}; return {col:C.muted}; }
+        if(cur && cur.recv===m) return {col:C.orange, w:3};
+        return {col:C.muted}; }});
+    if(T!=null) cutLine();
+    let msg;
+    if(T!=null){
+      const past=EV.filter(function(e){ return LT[e.id]<=T; }).map(function(e){ return e.id; });
+      const cross=Object.keys(G.MSG).filter(function(m){ return LT[G.SENDER[m].id]<=T && LT[G.RECVR[m].id]>T; });
+      const back=Object.keys(G.MSG).filter(function(m){ return LT[G.SENDER[m].id]>T && LT[G.RECVR[m].id]<=T; });
+      msg='past('+T+') has '+past.length+' events. Messages crossing the cut: '+(cross.length? cross.join(', ') : 'none')+
+          '. Messages from future to past: '+(back.length? back.join(', ') : 'none')+', so the cut is consistent.';
+      $('status').innerHTML='T = <b>'+T+'</b>';
+    } else if(cur){
+      const p=G.PREV[cur.id], tp=LT[p.id];
+      if(cur.recv){ const ts=LT[G.SENDER[cur.recv].id];
+        msg=cur.id+' receives '+cur.recv+', which carries t = '+ts+'. Its previous event '+p.id+' has t = '+tp+'. So t('+cur.id+') = max('+tp+', '+ts+') + 1 = '+LT[cur.id]+'.'; }
+      else msg=cur.id+(cur.send? ' sends '+cur.send : ' is an internal event')+'. Its previous event '+p.id+' has t = '+tp+
+          '. So t('+cur.id+') = '+tp+' + 1 = '+LT[cur.id]+(cur.send? ', and '+cur.send+' carries '+LT[cur.id] : '')+'.';
+      $('status').innerHTML='event <b>'+shown+'</b> of '+ORDER.length;
+    } else { msg='Initial events have timestamp 0. Press Next event.'; $('status').innerHTML='event <b>0</b> of '+ORDER.length; }
+    G.text(svg, 30, 400, msg, {anchor:'start', size:14.5, w:600, fill:T!=null? C.purple : C.ink});
+  }
+  $('step').addEventListener('click', function(){ T=null; if(shown<ORDER.length) shown++; draw(); });
+  $('reset').addEventListener('click', function(){ stop(); shown=0; T=null; draw(); });
+  $('play').addEventListener('click', function(){ stop(); shown=0; T=null; draw();
+    timer=setInterval(function(){ if(shown>=ORDER.length){ stop(); return; } shown++; draw(); }, 1600); });
+  function setT(d){ stop(); shown=ORDER.length; T=(T==null)? (d>0? 0 : 8) : Math.max(0, Math.min(8, T+d)); draw(); }
+  $('tm').addEventListener('click', function(){ setT(-1); });
+  $('tp').addEventListener('click', function(){ setT(1); });
+  draw();
+})();
+
+/* Figure 2 — local snapshots and channel states at logical time T */
+(function(){
+  const PFX='sn_', $=function(id){ return document.getElementById(PFX+id); };
+  const svg=$('g'); if(!svg) return;
+  const G=window.LTG, C=G.C, EV=G.EV, LT=G.LT;
+  const Y={A:70, B:180, C:290};
+  let T=3, keep=false;
+  function draw(){
+    G.clear(svg);
+    const fill={}, txt={}, stroke={};
+    EV.forEach(function(e){ if(LT[e.id]<=T){ fill[e.id]=C.ink; txt[e.id]='#fff'; } else { fill[e.id]=C.green; stroke[e.id]=C.teal; } });
+    G.draw(svg, {Y:Y, fill:fill, txt:txt, stroke:stroke,
+      inside:function(e){ return LT[e.id]; }, below:function(e){ return e.id; },
+      msg:function(m){ const s=LT[G.SENDER[m].id], r=LT[G.RECVR[m].id];
+        return (s<=T && r>T)? {col:C.blue, w:3} : {col:C.muted}; }});
+    G.AG.forEach(function(a){
+      svg.appendChild(G.el('circle',{cx:G.X(G.cutK(a,T)), cy:Y[a], r:9, fill:C.yellow, stroke:C.ink, 'stroke-width':1.5}));
+      if(keep) G.text(svg, G.X(15)+30, Y[a]-22, 'null messages →', {size:12, w:700, fill:C.teal, anchor:'middle'});
+    });
+    /* the table of channel states */
+    const ch=G.channels(T, keep), top=365, cols=[30, 170, 420, 640, 1010];
+    const heads=['channel','crosses the cut (true state)','recorded by the receiver','recording','correct?'];
+    heads.forEach(function(h,i){ G.text(svg, cols[i], top, h, {anchor:'start', size:12.5, w:700, fill:C.muted}); });
+    svg.appendChild(G.el('line',{x1:30, y1:top+13, x2:1210, y2:top+13, stroke:C.line}));
+    let waiting=0, wrong=0;
+    ch.forEach(function(c,i){
+      const y=top+40+i*34;
+      const list=function(L){ return L.length? L.join(', ') : 'empty'; };
+      G.text(svg, cols[0], y, '('+c.from+', '+c.to+')', {anchor:'start', size:15, w:800, mono:true});
+      G.text(svg, cols[1], y, list(c.cross), {anchor:'start', size:15, w:700, mono:true, fill:c.cross.length? C.blue : C.muted});
+      G.text(svg, cols[2], y, list(c.rec), {anchor:'start', size:15, w:700, mono:true, fill:c.rec.length? C.blue : C.muted});
+      let st, col;
+      if(c.stop){ st='stopped by '+c.stop+' (t = '+LT[G.SENDER[c.stop].id]+' > '+T+')'; col=C.teal; }
+      else if(c.nul){ st='stopped by a null message with t > '+T; col=C.teal; }
+      else { st='still recording: no message from '+c.from+' with t > '+T; col=C.orange; waiting++; }
+      G.text(svg, cols[3], y, st, {anchor:'start', size:14, w:700, fill:col});
+      const ok=c.cross.join()===c.rec.join(); if(!ok) wrong++;
+      const done=!!(c.stop||c.nul);
+      G.text(svg, cols[4], y, ok? (done? 'yes' : 'yes, but '+c.to+' cannot know') : 'NO', {anchor:'start', size:14, w:700, fill:ok? (done? C.teal : C.orange) : C.red});
+    });
+    const sum=wrong? wrong+' channel states are wrong.'
+      : (waiting? 'Every recorded state is right so far, but '+waiting+' receiver'+(waiting>1?'s are':' is')+' still waiting: the algorithm does not terminate.'
+                : 'Every channel state is recorded, and every receiver has stopped: the snapshot is complete.');
+    G.text(svg, 30, 622, sum, {anchor:'start', size:15, w:700, fill:wrong? C.red : (waiting? C.orange : C.teal)});
+    $('status').innerHTML='T = <b>'+T+'</b>';
+  }
+  $('tm').addEventListener('click', function(){ T=Math.max(0, T-1); draw(); });
+  $('tp').addEventListener('click', function(){ T=Math.min(8, T+1); draw(); });
+  $('null').addEventListener('click', function(){ keep=!keep; $('null').textContent='Agents keep sending: '+(keep?'on':'off'); $('null').className=keep?'primary':''; draw(); });
+  draw();
+})();
+
+/* Figure 3 — Lamport and vector timestamps against paths */
+(function(){
+  const PFX='vc_', $=function(id){ return document.getElementById(PFX+id); };
+  const svg=$('g'); if(!svg) return;
+  const G=window.LTG, C=G.C, EV=G.EV;
+  const Y={A:90, B:215, C:340};
+  let vec=true, e1=null, e2=null;
+  function lt(a,b){ return vec? G.vlt(G.VT[a],G.VT[b]) : G.LT[a]<G.LT[b]; }
+  function ts(a){ return vec? G.vshow(G.VT[a]) : String(G.LT[a]); }
+  function draw(){
+    G.clear(svg);
+    const p=(e1&&e2)? G.path(e1,e2) : null, onp={};
+    if(p) p.forEach(function(d){ onp[d[0]+'>'+d[1]]=1; });
+    const stroke={}, sw={};
+    if(e1){ stroke[e1]=C.orange; sw[e1]=4.5; }
+    if(e2){ stroke[e2]=C.blue; sw[e2]=4.5; }
+    G.draw(svg, {Y:Y, stroke:stroke, sw:sw,
+      inside:function(e){ return e.id; },
+      above:function(e){ return vec? '['+G.VT[e.id].join(',')+']' : String(G.LT[e.id]); },
+      /* when two events of an agent are side by side, the second label goes below */
+      aboveBelow:function(e){ const p=G.PREV[e.id]; return !!(p && p.k===e.k-1); },
+      abovecol:function(){ return vec? C.blue : C.teal; },
+      msg:function(m){ const s=G.SENDER[m].id, r=G.RECVR[m].id; return onp[s+'>'+r]? {col:C.orange, w:3.5} : {col:C.muted}; },
+      click:function(id){ if(!e1 || e2){ e1=id; e2=null; } else if(id!==e1) e2=id; draw(); }});
+    /* agent edges on the path */
+    if(p) p.forEach(function(d){ if(d[2]) return; const a=G.BY[d[0]], b=G.BY[d[1]];
+      svg.appendChild(G.el('line',{x1:G.X(a.k)+G.R, y1:Y[a.ag], x2:G.X(b.k)-G.R, y2:Y[b.ag], stroke:C.orange, 'stroke-width':5, 'stroke-linecap':'round', opacity:0.75})); });
+    /* the readout */
+    let line1;
+    if(!e1) line1='Click an event e.';
+    else if(!e2) line1='e = '+e1+', t(e) = '+ts(e1)+'. Now click an event e′.';
+    else { const a=lt(e1,e2), b=!!p;
+      line1='t('+e1+') = '+ts(e1)+', t('+e2+') = '+ts(e2)+'.  t(e) < t(e′): '+(a?'yes':'no')+'.  Path from '+e1+' to '+e2+': '+(b?'yes':'no')+'.  '+(a===b? 'They agree.' : 'They disagree.'); }
+    G.text(svg, 30, 430, line1, {anchor:'start', size:15, w:700, fill:(e1&&e2)? ((lt(e1,e2)===!!p)? C.teal : C.red) : C.ink});
+    let n=0, bad=0, ex=null;
+    EV.forEach(function(a){ EV.forEach(function(b){ if(a===b) return; n++;
+      if(lt(a.id,b.id)!==!!G.path(a.id,b.id)){ bad++; if(!ex) ex=[a.id,b.id]; } }); });
+    G.text(svg, 30, 466, (vec?'Vector':'Lamport')+' timestamps: of the '+n+' ordered pairs of events, '+bad+' disagree with the paths'+
+      (ex? ' (for example '+ex[0]+' and '+ex[1]+').' : '.'), {anchor:'start', size:15, w:700, fill:bad? C.red : C.teal});
+    $('status').innerHTML=vec? 'vector clocks' : 'Lamport clocks';
+  }
+  $('mode').addEventListener('click', function(){ vec=!vec; $('mode').textContent='Showing: '+(vec?'vector':'Lamport')+' clocks'; draw(); });
+  $('reset').addEventListener('click', function(){ e1=e2=null; draw(); });
+  draw();
+})();
+
+/* Figure 4 — termination detection by counting, with a timeline */
+window.TD=(function(){
+  /* the model, kept free of drawing so it can be checked on its own */
+  function init(){
+    return {A:{active:true, Cs:0, Dr:0}, B:{active:true, Cr:0, Ds:0},
+      chC:[], chD:[], repA:[], repB:[],
+      det:{Cs:0, Cr:-1, Ds:0, Dr:-1, terminated:false, heldA:null, heldB:null},
+      tl:[], arrows:[], nmsg:0}; }
+  function ev(s,ag,kind){ s.tl.push({ag:ag, kind:kind}); return s.tl.length-1; }
+  const ACTS={
+    'A sends on C':  {ok:function(s){ return s.A.active; },
+      run:function(s){ s.A.Cs++; const i=ev(s,'A','send'); const m={n:++s.nmsg, from:i, to:null, kind:'client'}; s.arrows.push(m); s.chC.push(m); }},
+    'B receives on C':{ok:function(s){ return s.chC.length>0; },
+      run:function(s){ const m=s.chC.shift(); s.B.Cr++; s.B.active=true; m.to=ev(s,'B','recv'); }},
+    'B sends on D':  {ok:function(s){ return s.B.active; },
+      run:function(s){ s.B.Ds++; const i=ev(s,'B','send'); const m={n:++s.nmsg, from:i, to:null, kind:'client'}; s.arrows.push(m); s.chD.push(m); }},
+    'A receives on D':{ok:function(s){ return s.chD.length>0; },
+      run:function(s){ const m=s.chD.shift(); s.A.Dr++; s.A.active=true; m.to=ev(s,'A','recv'); }},
+    'A becomes idle':{ok:function(s){ return s.A.active; },
+      run:function(s){ s.A.active=false; const i=ev(s,'A','idle'); const r={from:i, to:null, kind:'report', Cs:s.A.Cs, Dr:s.A.Dr}; s.arrows.push(r); s.repA.push(r); }},
+    'B becomes idle':{ok:function(s){ return s.B.active; },
+      run:function(s){ s.B.active=false; const i=ev(s,'B','idle'); const r={from:i, to:null, kind:'report', Cr:s.B.Cr, Ds:s.B.Ds}; s.arrows.push(r); s.repB.push(r); }},
+    'Detector receives from A':{ok:function(s){ return s.repA.length>0; },
+      run:function(s){ const r=s.repA.shift(); r.to=ev(s,'D','det'); s.det.Cs=r.Cs; s.det.Dr=r.Dr; s.det.heldA=r; check(s); }},
+    'Detector receives from B':{ok:function(s){ return s.repB.length>0; },
+      run:function(s){ const r=s.repB.shift(); r.to=ev(s,'D','det'); s.det.Cr=r.Cr; s.det.Ds=r.Ds; s.det.heldB=r; check(s); }}};
+  function check(s){ if(s.det.Cs===s.det.Cr && s.det.Ds===s.det.Dr) s.det.terminated=true; }
+  function truth(s){ return !s.A.active && !s.B.active && !s.chC.length && !s.chD.length; }
+  function naive(s){ return !!(s.det.heldA && s.det.heldB); }
+  return {init:init, ACTS:ACTS, truth:truth, naive:naive};
+})();
+
+(function(){
+  const PFX='td_', $=function(id){ return document.getElementById(PFX+id); };
+  const svg=$('g'); if(!svg) return;
+  const G=window.LTG, C=G.C, TD=window.TD;
+  const SCRIPT=[
+    ['A sends on C', 'A sends a message on C.'],
+    ['B receives on C', 'B receives it.'],
+    ['B sends on D', 'B sends a message on D.'],
+    ['B sends on D', 'B sends another on D.'],
+    ['A receives on D', 'A receives one.'],
+    ['A receives on D', 'A receives the other. Now Cₛ = 1, Dᵣ = 2.'],
+    ['A sends on C', 'A sends on C.'],
+    ['A sends on C', 'A sends on C again: Cₛ = 3, and two messages are in transit on C.'],
+    ['B becomes idle', 'B becomes idle and sends (Cᵣ, Dₛ) = (1, 2) to the detector.'],
+    ['Detector receives from B', 'The detector records C′ᵣ = 1, D′ₛ = 2.'],
+    ['A becomes idle', 'A becomes idle and sends (Cₛ, Dᵣ) = (3, 2).'],
+    ['Detector receives from A', 'Both agents have reported idle, but C′ₛ = 3 ≠ 1 = C′ᵣ: not terminated. The naive detector is wrong.'],
+    ['B receives on C', 'B receives a message on C and becomes active again.'],
+    ['B receives on C', 'B receives the other one.'],
+    ['B becomes idle', 'B becomes idle and sends (Cᵣ, Dₛ) = (3, 2). The computation has now terminated.'],
+    ['Detector receives from B', 'Now C′ₛ = C′ᵣ = 3 and D′ₛ = D′ᵣ = 2: the detector sets terminated.']];
+  let s, pos=0, note='', timer=null;
+  function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+  const acts=$('acts'), btn={};
+  Object.keys(TD.ACTS).forEach(function(k){
+    const b=document.createElement('button'); b.type='button'; b.textContent=k; acts.appendChild(b); btn[k]=b;
+    b.addEventListener('click', function(){ stop(); if(!TD.ACTS[k].ok(s)) return; TD.ACTS[k].run(s); pos=-1; note=''; draw(); }); });
+  function sub(p,x,y,a,b,o){ /* "C" with subscript "s", and an optional prime */
+    o=o||{}; const t=G.el('text',{x:x, y:y, 'font-family':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':o.size||22, 'font-weight':800, fill:o.fill||C.ink, 'text-anchor':o.anchor||'middle', 'dominant-baseline':'middle'});
+    t.appendChild(G.el('tspan',{}, a)); t.appendChild(G.el('tspan',{'baseline-shift':'sub', 'font-size':(o.size||22)*0.65}, b));
+    if(o.rest) t.appendChild(G.el('tspan',{}, o.rest)); p.appendChild(t); return t; }
+  function envelopes(n,x,y,col){ for(let i=0;i<n;i++){ const ex=x+i*30-(n-1)*15;
+    svg.appendChild(G.el('rect',{x:ex-11, y:y-8, width:22, height:16, rx:2, fill:'#fff', stroke:col, 'stroke-width':1.8}));
+    svg.appendChild(G.el('polyline',{points:(ex-11)+','+(y-8)+' '+ex+','+(y+1)+' '+(ex+11)+','+(y-8), fill:'none', stroke:col, 'stroke-width':1.5})); } }
+  function draw(){
+    G.clear(svg);
+    const AX=230, BX=1010, CY=180, RR=72;
+    /* the agents */
+    [['A',AX,s.A.active,['C','s',s.A.Cs],['D','r',s.A.Dr]],['B',BX,s.B.active,['C','r',s.B.Cr],['D','s',s.B.Ds]]].forEach(function(a){
+      svg.appendChild(G.el('circle',{cx:a[1], cy:CY, r:RR, fill:a[2]? '#fff' : '#f1efe9', stroke:'#4a6fb0', 'stroke-width':3}));
+      sub(svg, a[1], CY-36, a[3][0], a[3][1], {rest:' = '+a[3][2]});
+      G.text(svg, a[1], CY+2, a[0]+'  '+(a[2]? 'active' : 'idle'), {size:17, w:800, fill:a[2]? C.orange : C.teal});
+      sub(svg, a[1], CY+38, a[4][0], a[4][1], {rest:' = '+a[4][2]}); });
+    /* the channels */
+    G.arrow(svg, AX+RR, CY-30, BX-RR, CY-30, C.red, 3, 4, 4); G.text(svg, 620, CY-50, 'Channel C', {size:16, w:800});
+    G.arrow(svg, BX-RR, CY+30, AX+RR, CY+30, C.red, 3, 4, 4); G.text(svg, 620, CY+52, 'Channel D', {size:16, w:800});
+    envelopes(s.chC.length, 620, CY-30, C.red); envelopes(s.chD.length, 620, CY+30, C.red);
+    /* the detector */
+    const DX=440, DY=292, DW=360, DH=64;
+    svg.appendChild(G.el('rect',{x:DX, y:DY, width:DW, height:DH, rx:6, fill:'#fff', stroke:'#4a6fb0', 'stroke-width':3}));
+    G.text(svg, DX+DW/2, DY-12, 'The detector', {size:13, w:700, fill:C.muted});
+    const d=s.det;
+    sub(svg, DX+20, DY+22, 'C′', 's', {size:19, anchor:'start', rest:' = '+d.Cs+',  '});
+    sub(svg, DX+190, DY+22, 'C′', 'r', {size:19, anchor:'start', rest:' = '+d.Cr});
+    sub(svg, DX+20, DY+48, 'D′', 's', {size:19, anchor:'start', rest:' = '+d.Ds+',  '});
+    sub(svg, DX+190, DY+48, 'D′', 'r', {size:19, anchor:'start', rest:' = '+d.Dr});
+    G.arrow(svg, AX+40, CY+RR-12, DX+30, DY, C.teal, 2, 0, 2); G.arrow(svg, BX-40, CY+RR-12, DX+DW-30, DY, C.teal, 2, 0, 2);
+    function reps(q,x,y,f){ q.forEach(function(r,i){ G.text(svg, x, y+i*20, f(r), {size:13.5, w:700, fill:C.teal, mono:true}); }); }
+    reps(s.repA, AX+30, DY-22, function(r){ return '(Cₛ, Dᵣ) = ('+r.Cs+', '+r.Dr+')'; });
+    reps(s.repB, BX-30, DY-22, function(r){ return '(Cᵣ, Dₛ) = ('+r.Cr+', '+r.Ds+')'; });
+    /* verdicts */
+    const tr=TD.truth(s), nv=TD.naive(s);
+    G.text(svg, 620, 26, 'Truth: '+(tr? 'terminated' : 'not terminated'), {size:15, w:800, fill:tr? C.teal : C.ink});
+    G.text(svg, 620, 50, 'Detector: terminated = '+d.terminated+(d.terminated && !tr? '  — WRONG' : ''), {size:15, w:800, fill:(d.terminated&&!tr)? C.red : (d.terminated? C.teal : C.ink)});
+    G.text(svg, 620, 74, 'Naive: '+(nv? 'terminated' : 'not yet')+(nv && !tr? '  — WRONG' : ''), {size:14, w:700, fill:(nv&&!tr)? C.red : C.muted});
+    /* the timeline */
+    const TY={A:420, B:500, D:590}, n=Math.max(s.tl.length, 1), x0=90, dx=Math.min(56, 1080/(n+1));
+    const XX=function(i){ return x0+(i+1)*dx; };
+    [['A','A'],['B','B'],['D','detector']].forEach(function(a){
+      svg.appendChild(G.el('line',{x1:x0-10, y1:TY[a[0]], x2:1200, y2:TY[a[0]], stroke:C.line, 'stroke-width':2}));
+      G.text(svg, x0-18, TY[a[0]], a[1], {size:a[0]==='D'? 13 : 17, w:800, anchor:'end'}); });
+    s.arrows.forEach(function(m){
+      const f=s.tl[m.from], col=m.kind==='report'? C.teal : C.red;
+      const tx=(m.to==null)? XX(s.tl.length-1)+dx*0.8 : XX(m.to);
+      const ty=(m.to==null)? (TY[f.ag]+(TY[m.kind==='report'? 'D' : (f.ag==='A'? 'B' : 'A')]-TY[f.ag])*0.45) : TY[s.tl[m.to].ag];
+      G.arrow(svg, XX(m.from), TY[f.ag], tx, ty, col, 1.8, 6, m.to==null? 0 : 6, m.to==null? '5 4' : null); });
+    s.tl.forEach(function(e,i){
+      svg.appendChild(G.el('circle',{cx:XX(i), cy:TY[e.ag], r:6, fill:e.kind==='idle'? C.teal : (e.ag==='D'? C.ink : '#8fb0e0'), stroke:C.ink, 'stroke-width':1})); });
+    /* the cut of the counts the detector holds */
+    if(d.heldA && d.heldB){
+      const xa=XX(d.heldA.from), xb=XX(d.heldB.from);
+      svg.appendChild(G.el('polyline',{points:xa+','+(TY.A-28)+' '+xa+','+TY.A+' '+xb+','+TY.B+' '+xb+','+(TY.B+28), fill:'none', stroke:C.purple, 'stroke-width':3}));
+      const cons=d.Cs>=d.Cr && d.Ds>=d.Dr;
+      G.text(svg, 30, 630, 'Cut of the counts held: '+(cons? 'consistent (X′ₛ ≥ X′ᵣ for every X)' : 'not shown consistent')+
+        '; messages in channels at the cut: C '+(d.Cs-d.Cr)+', D '+(d.Ds-d.Dr)+'.', {anchor:'start', size:14, w:700, fill:C.purple});
+    }
+    Object.keys(btn).forEach(function(k){ btn[k].disabled=!TD.ACTS[k].ok(s); btn[k].style.opacity=btn[k].disabled? 0.4 : 1; });
+    $('status').innerHTML=note? note : (pos>=0? 'Press <b>Play the example</b> or <b>Step</b>, or drive the run with the buttons above.'
+                                              : 'Your own run. Watch <b>Detector</b> and <b>Naive</b> against <b>Truth</b>.');
+  }
+  function step(){
+    if(pos<0 || pos>=SCRIPT.length){ stop(); return false; }
+    const a=SCRIPT[pos]; if(!TD.ACTS[a[0]].ok(s)){ stop(); return false; }
+    TD.ACTS[a[0]].run(s); pos++; note='<b>'+pos+'.</b> '+a[1]; draw(); return true; }
+  $('step').addEventListener('click', function(){ stop(); if(pos<0){ s=TD.init(); pos=0; } step(); });
+  $('reset').addEventListener('click', function(){ stop(); s=TD.init(); pos=0; note=''; draw(); });
+  $('play').addEventListener('click', function(){ stop(); s=TD.init(); pos=0; note=''; draw();
+    timer=setInterval(function(){ if(!step()) stop(); }, 1500); });
+  s=TD.init(); draw();
+})();
+
+/* Check yourself boxes */
+(function(){
+  function norm(x){ return x.replace(/\s+/g,' ').trim(); }
+  document.querySelectorAll('.check').forEach(function(box){
+    const opts=[].slice.call(box.querySelectorAll('.opts button'));
+    /* data-answer: the right option; with data-multi, the right options separated by | */
+    const multi=box.hasAttribute('data-multi');
+    const right=(box.getAttribute('data-answer')||'').split(multi? '|' : '\u0000').map(norm);
+    const row=document.createElement('div'); row.className='row';
+    const cb=document.createElement('button'); cb.type='button'; cb.className='primary'; cb.textContent='Check';
+    const sb=document.createElement('button'); sb.type='button'; sb.textContent='Show answer';
+    row.appendChild(cb); row.appendChild(sb);
+    const verdict=document.createElement('div'); verdict.className='verdict';
+    const why=box.querySelector('.why');
+    box.insertBefore(row, why); box.insertBefore(verdict, why);
+    opts.forEach(function(b){ b.type='button'; b.addEventListener('click', function(){
+      if(multi) b.classList.toggle('on');
+      else opts.forEach(function(o){ o.classList.toggle('on', o===b); });
+      verdict.innerHTML=''; }); });
+    cb.addEventListener('click', function(){
+      const picked=opts.filter(function(b){ return b.classList.contains('on'); }).map(function(b){ return norm(b.textContent); });
+      if(!picked.length){ verdict.innerHTML='<span class="hint">Pick '+(multi? 'one or more' : 'one')+' first.</span>'; return; }
+      const extra=picked.filter(function(x){ return right.indexOf(x)<0; }).length;
+      const missed=right.filter(function(x){ return picked.indexOf(x)<0; }).length;
+      if(!extra && !missed){ verdict.innerHTML='<span class="ok">Right.</span>'; box.classList.add('shown'); return; }
+      let m='<span class="bad">Not quite.</span> ';
+      if(multi){
+        if(extra) m+=extra+' of your choices '+(extra>1? 'are' : 'is')+' not possible. ';
+        if(missed) m+=missed+' possible '+(missed>1? 'ones are' : 'one is')+' missing. ';
+      }
+      verdict.innerHTML=m+'<span class="hint">Try again, or show the answer.</span>'; });
+    sb.addEventListener('click', function(){
+      opts.forEach(function(b){ b.classList.toggle('on', right.indexOf(norm(b.textContent))>=0); });
+      verdict.innerHTML='Answer: <b>'+right.join(', ')+'</b>'; box.classList.add('shown'); });
+  });
+})();
+</script>
+
+<style>
+  .pslide{display:contents}
+  .presentbar{position:fixed; right:16px; bottom:14px; z-index:60;
+    display:flex; gap:8px; align-items:center}
+  .presentbar button{font:600 13px var(--sans,sans-serif); color:var(--ink,#1a1a2e);
+    background:#fff; border:1px solid var(--line,#ddd8cd); border-radius:8px;
+    padding:6px 12px; cursor:pointer; box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .presentbar button:hover{border-color:var(--muted,#6f7583)}
+  .presentbar .pnum{font:600 12px var(--mono,monospace); color:var(--muted,#6f7583)}
+
+  body.present{overflow:hidden}
+  body.present .wrap{max-width:none; padding:0; margin:0}
+  body.present .pslide{display:none}
+  body.present .pslide.on{
+    display:block; position:fixed; inset:0; overflow:auto;
+    padding:5vh 6vw 9vh; font-size:clamp(17px,1.55vw,25px);
+  }
+  /* Everything inside a shown chunk grows with it. */
+  body.present .pslide.on p,
+  body.present .pslide.on li{font-size:1em; line-height:1.5; max-width:34em}
+  body.present .pslide.on h1{font-size:2.5em}
+  body.present .pslide.on h2{font-size:1.9em; margin-top:0}
+  body.present .pslide.on h3{font-size:1.35em}
+  body.present .pslide.on h4{font-size:1.05em; margin:.8em 0 .3em}
+  body.present .pslide.on figure.fig{margin:1.4vh 0; padding:14px 16px 12px}
+  /* A figure already breaks out of the text column; in present mode the
+     column is the screen, so the trick has to be switched off or it
+     shifts the figure sideways. */
+  body.present .pslide.on figure.fig.wideout{
+    width:auto; max-width:none; position:static; left:auto; transform:none}
+  body.present .pslide.on figcaption{font-size:.62em; line-height:1.5}
+  body.present .pslide.on .task{font-size:.9em}
+  body.present .presentbar{background:rgba(250,248,243,.9); border-radius:10px;
+    padding:4px 6px}
+</style>
+
+<script>
+(function(){
+  const wrap=document.querySelector('.wrap');
+  if(!wrap) return;
+
+  // ── group the page's own children into chunks ──────────────────────
+  // A heading, a figure or a task starts a chunk; a run of prose longer
+  // than five blocks starts one too, so no chunk overflows the screen.
+  const STARTS=el=>{
+    const t=el.tagName;
+    return t==='HEADER'||t==='H1'||t==='H2'||t==='H3'||t==='FIGURE'||
+           el.classList.contains('task');
+  };
+  const ALONE=el=>el.tagName==='FIGURE'||el.classList.contains('task');
+
+  const kids=[...wrap.children];
+  const groups=[]; let cur=null;
+  for(const el of kids){
+    if(!cur || STARTS(el) || cur.length>=5 || (cur.length&&ALONE(cur[cur.length-1])))
+      groups.push(cur=[]);
+    cur.push(el);
+  }
+  const slides=groups.filter(g=>g.length).map(g=>{
+    const d=document.createElement('div');
+    d.className='pslide';
+    wrap.insertBefore(d,g[0]);
+    g.forEach(el=>d.appendChild(el));
+    return d;
+  });
+
+  // ── the bar ────────────────────────────────────────────────────────
+  const bar=document.createElement('div');
+  bar.className='presentbar';
+  bar.innerHTML='<span class="pnum" hidden></span>'+
+                '<button type="button">Present</button>';
+  document.body.appendChild(bar);
+  const num=bar.querySelector('.pnum'), btn=bar.querySelector('button');
+
+  let on=false, i=0;
+  function show(){
+    slides.forEach((s,n)=>s.classList.toggle('on', on && n===i));
+    num.hidden=!on;
+    num.textContent=(i+1)+' / '+slides.length;
+    btn.textContent=on?'Exit':'Present';
+    // A canvas that was hidden may need a nudge to repaint.
+    if(on) window.dispatchEvent(new Event('resize'));
+  }
+  function enter(){ on=true;  document.body.classList.add('present');    show(); }
+  function leave(){ on=false; document.body.classList.remove('present');
+                    show(); slides[i].scrollIntoView({block:'start'}); }
+  btn.onclick=()=>on?leave():enter();
+
+  addEventListener('keydown',e=>{
+    if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+    if(!on){ if(e.key==='p'||e.key==='P'){ e.preventDefault(); enter(); } return; }
+    if(e.key==='Escape'){ e.preventDefault(); leave(); }
+    else if(['ArrowRight',' ','PageDown','n'].includes(e.key)){
+      e.preventDefault(); i=Math.min(slides.length-1,i+1); show(); }
+    else if(['ArrowLeft','PageUp','b'].includes(e.key)){
+      e.preventDefault(); i=Math.max(0,i-1); show(); }
+    else if(e.key==='Home'){ e.preventDefault(); i=0; show(); }
+    else if(e.key==='End'){ e.preventDefault(); i=slides.length-1; show(); }
+  });
+
+  show();
+})();
+</script>
+
+</body>
+</html>

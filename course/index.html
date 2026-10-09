@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Multi-agent systems — course index</title>
+<title>Distributed Systems — course index</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
@@ -42,6 +42,10 @@
   .li-body{flex:1 1 auto; min-width:0}
   .li-body h3{margin:0 0 4px; font-size:19px; font-weight:700}
   .li-body p{margin:0 0 10px; font-size:15px; color:var(--body)}
+  .li-body ul.topics{margin:0 0 12px; padding-left:20px; font-size:15px;
+    line-height:1.55; color:var(--body)}
+  .li-body ul.topics li{margin:0 0 4px}
+  .li-body ul.topics b{color:var(--ink)}
   .links{display:flex; flex-wrap:wrap; gap:8px}
   .links a{font:600 13.5px var(--sans); text-decoration:none;
     color:var(--ink); background:var(--paper); border:1px solid var(--line);
@@ -78,10 +82,10 @@
     We use temporal logic to prove that our algorithms 
     do what they are specified to do, and we use systematic ways
     of testing multi-agent systems. We take particular care that the systems
-    we create do not modify the environment in unintendend ways.
+    we create do not modify the environment in unintended ways.
     </p>
   <div class="meta">
-    <span><b>Every page</b> is HTML — press <b>P</b> to present</span>
+    <span><b>Every page</b> is HTML; many can be presented with <b>P</b></span>
     <span><b>Graded</b> pass/fail</span>
   </div>
 
@@ -105,9 +109,15 @@
       <div class="li-body">
         <h3>Lab: An office representation of a distributed system</h3>
         <p>Grading, collaboration, safety, ombudsperson.</p>
-        <p>Examples of distributed systems using DisSysLab.
-          coordinators &mdash; <code>select</code>, <code>gate</code>,
-           <code>match</code>, <code>synchronizer</code> &mdash;
+        <p>Examples of distributed systems using DisSysLab.</p>
+        <ul class="topics">
+          <li>Agents, messages and offices in DisSysLab.</li>
+          <li>The coordinators <code>select</code>, <code>gate</code>,
+            <code>match</code> and <code>synchronizer</code>.</li>
+          <li>Running a small app and reading its trace as a dataflow graph.</li>
+          <li>Replacing a scripted agent with an LLM agent: what changes when
+            an agent is nondeterministic, slow and costly.</li>
+        </ul>
         <div class="links">
           <a class="primary" href="OfficeRepresentation.html">Open</a>
         </div>
@@ -117,8 +127,9 @@
     <li>
       <div class="li-body">
         <h3>Computations and Data Flow</h3>
+        <div class="links">
           <a class="primary" href="ComputationsAndDataFlow.html">Open</a>
-        
+        </div>
       </div>
     </li>
 
@@ -132,18 +143,22 @@
     </li>
 
 
-    <li class="soon">
+    <li>
       <div class="li-body">
         <h3>Logical time, termination and deadlock detection</h3>
-        <div class="links"><a href="#">Not written yet</a></div>
+        <p>Logical clocks, snapshots at a logical time, vector clocks, and
+           termination detection. Deadlock detection not written yet.</p>
+        <div class="links">
+          <a class="primary" href="LogicalTime.html">Open (draft)</a>
+        </div>
       </div>
     </li>
 
     <li>
       <div class="li-body">
         <h3>What Agents Know</h3>
-        <p>&ldquo;Agent X knows P&rdquo;, 
-          Formal definition of knowledge.
+        <p>&ldquo;Agent X knows P&rdquo;:
+          a formal definition of knowledge.
         </p>
         <div class="links">
           <a class="primary" href="WhatAgentsKnow.html">Open</a>
@@ -157,6 +172,22 @@
         <p>What can go wrong. Different types of agent coordination.
           LLM Skills. MCP connectors. Sub-agents and parallel agents.
         </p>
+        <ul class="topics">
+          <li><b>Skills:</b> packaged instructions that an agent loads when a
+            task matches.</li>
+          <li><b>MCP connectors:</b> how agents reach external tools and data,
+            and the trust boundary that creates.</li>
+          <li><b>Permissions and sandboxing:</b> what an agent may read, write,
+            run or fetch, and why the default should be &ldquo;no&rdquo;.</li>
+          <li><b>Hooks:</b> fixed code that runs before or after each tool call
+            to block, log or check actions &mdash; a rule the agent cannot be
+            argued out of.</li>
+          <li><b>Prompt injection:</b> a web page or file that tells the agent
+            what to do. Some inputs are adversarial, as in the Byzantine
+            generals problem.</li>
+          <li><b>Human approval:</b> which actions need a person to approve
+            them.</li>
+        </ul>
         <p>Not written yet</p>
       </div>
     </li>
@@ -197,6 +228,20 @@
     <li>
       <div class="li-body">
         <h3>Lab: Agent SDK, managed agents</h3>
+        <ul class="topics">
+          <li><b>The agent loop:</b> model, tools, results, repeat; building
+            one with the Agent SDK.</li>
+          <li><b>Subagents and parallel agents:</b> orchestrator and workers,
+            fan-out and fan-in.</li>
+          <li><b>Context isolation:</b> a subagent knows only what it is sent
+            &mdash; what agents know.</li>
+          <li><b>Termination:</b> when is a swarm of subagents done, and how
+            does the orchestrator know? Termination detection again.</li>
+          <li><b>Failures:</b> timeouts, retries, and actions that are safe to
+            repeat; checkpointing a long run and resuming it &mdash; global
+            snapshots and recovery.</li>
+          <li><b>Scheduled and long-running agents.</b></li>
+        </ul>
         <p>Not written yet</p>
       </div>
     </li>
@@ -259,6 +304,19 @@
     <li>
       <div class="li-body">
         <h3>Lab: Agent collaboration</h3>
+        <ul class="topics">
+          <li><b>Agreement among LLMs:</b> voting, debate, and a judge agent.
+            When does majority voting help, and when does it fail? &mdash; the
+            Byzantine generals.</li>
+          <li><b>Shared state:</b> a store that agents read and write, and the
+            races that follow &mdash; Paxos and serializability.</li>
+          <li><b>Message structure:</b> structured outputs as a fixed message
+            format between agents.</li>
+          <li><b>Evaluation:</b> testing nondeterministic agents with repeated
+            runs, scoring and regression checks.</li>
+          <li><b>Observability:</b> traces, costs and token budgets per
+            agent.</li>
+        </ul>
         <p>Not written yet</p>
       </div>
     </li>
@@ -278,8 +336,8 @@
       <div class="li-body">
         <h3>Computation tree logic (CTL) and Linear Temporal Logic</h3>
         <div class="links">
-          <a class="primary" href="TemporalLogic2.html">Open</a>
-          <a class="primary" href="TemporalLogic3.html">Open</a>
+          <a class="primary" href="TemporalLogic2.html">Open part 2</a>
+          <a class="primary" href="TemporalLogic3.html">Open part 3</a>
         </div>
       </div>
     </li>
@@ -292,11 +350,11 @@
     <li><a href="setup.html">setup.html</a>
         <span>Install it, run one office, read what you ran, and give your
         office a name.</span></li>
-        
+  </ul>
+
   <div class="note">
-    <b>Presenting.</b> The first class is already a deck: open it and use the
-    arrow keys, <b>B</b> to blank the screen. The rest are readings that
-    become talks — press <b>P</b> to show one piece at a time at projector
+    <b>Presenting.</b> Pages with a <b>Present</b> button at the bottom right
+    are readings that become talks — press <b>P</b> to show one piece at a time at projector
     size, arrow keys to move, <b>Esc</b> to go back to reading. The animations
     keep running either way. <b>P</b> never means "go back".
   </div>
