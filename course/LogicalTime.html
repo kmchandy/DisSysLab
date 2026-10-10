@@ -71,6 +71,14 @@
   p.key .lead-in{display:block; font:700 11.5px/1 var(--sans);
     letter-spacing:.14em; text-transform:uppercase; color:var(--orange);
     margin-bottom:8px}
+  /* the one paragraph on the page that matters most */
+  p.key.prime{margin:34px 0 32px; padding:24px 28px 24px 30px; color:#fff;
+    background:var(--ink); border:none; border-left:10px solid var(--orange);
+    border-radius:0 14px 14px 0; font-size:23px; line-height:1.5; font-weight:600;
+    box-shadow:0 6px 18px rgba(26,26,46,.18)}
+  p.key.prime b, p.key.prime strong{color:#fff; font-weight:800}
+  p.key.prime code{background:rgba(255,255,255,.14); color:#fff}
+  p.key.prime .lead-in{font-size:14px; color:#ffb38a; margin-bottom:12px}
   /* a claim: the theorem and the observations read the same way */
   .thm{margin:24px 0 22px; padding:16px 20px 15px; color:var(--ink);
     background:#fff; border:1px solid var(--line);
@@ -223,8 +231,8 @@
 <h2>1. The Problem: Why Logical Clocks?</h2>
 <p>
 The problem is to assign timestamps to events so that
-past(T), future(T) is a consistent cut where
-past(T) is the set of events with timestamps T or less,
+<code>[past(T), future(T)]</code> is a consistent cut, where
+past(T) is the set of events with timestamps T or less
 and future(T) is the set of events with timestamps greater than T.
 </p>
 
@@ -233,7 +241,7 @@ and future(T) is the set of events with timestamps greater than T.
   <div class="f">past(T) = {e | t(e) &le; T} &nbsp;&nbsp; future(T) = {e | t(e) &gt; T}</div>
   <p class="e">For a number <code>T</code>, the events with timestamps at most
     <code>T</code> are in the past at <code>T</code>, and the others are in
-    the future.
+    the future.</p>
 </div>
 <p>
   A simple solution, which is easily proved correct is:
@@ -254,8 +262,8 @@ and future(T) is the set of events with timestamps greater than T.
     the previous event e<sub>p</sub> at that agent and the timestamp
     t(e<sub>s</sub>) of the message (if any) that it receives
     in the event.
-    <div class="f">t(e) &gt; max(t(e<sub>p</sub>), t(e<sub>s</sub>))</div>
   </p>
+  <div class="calc">t(e) &gt; max(t(e<sub>p</sub>), t(e<sub>s</sub>))</div>
 
   <p>
     A common choice is 
@@ -310,8 +318,7 @@ and future(T) is the set of events with timestamps greater than T.
       local state, and stops when it receives on that channel a message with
       timestamp greater than <code>T</code>. That message is not recorded. The
       state of channel <code>(u, v)</code> is the sequence of messages
-      recorded. The algorithm requires every agent to send messages on all its
-      output channels to ensure that all channel state are recorded.</p>
+      recorded.</p>
   </div>
   <p>
     The message with timestamp greater than <code>T</code> plays the role of
@@ -320,101 +327,102 @@ and future(T) is the set of events with timestamps greater than T.
     received after <code>v</code>'s snapshot, and, because the channel is
     first-in-first-out, they are sent before the first message from
     <code>u</code> with a timestamp greater than <code>T</code>.
+    The algorithm requires every agent to send messages on all its output channels
+    with timestamps greater than <code>T</code>.
   </p>
 
-  <figure class="fig wideout">
-    <svg id="sn_g" viewBox="0 0 1240 640" role="img"
-         aria-label="The computation of figure 1 with the local snapshots at logical time T as yellow dots, and a table of recorded channel states"></svg>
-    <div class="ctrls">
-      <button id="sn_tm">T &minus;</button>
-      <button id="sn_tp" class="primary">T +</button>
-      <button id="sn_null">Agents keep sending: off</button>
-      <span class="status" id="sn_status"></span>
-    </div>
-    <figcaption>
-      <b>Figure 2. Recording channel states at logical time T.</b>
-      Yellow dots are the points at which agents record their local states.
-      The table lists the six channels. For each, it shows the messages that
-      cross the cut (the true state of the channel), what the receiver has
-      recorded, and whether the receiver has stopped recording. Try
-      <code>T = 3</code>: channel <code>(B, C)</code> holds <code>m3</code>, and
-      <code>C</code> records it correctly, but then <code>C</code> waits for a
-      message from <code>B</code> with a timestamp above 3, and none ever
-      comes. Then turn on <i>Agents keep sending</i>.
-    </figcaption>
-  </figure>
 
-  <div class="check" data-answer="It may never stop recording">
-    <span class="lead-in">Check yourself</span>
-    <p class="q">There is a bug in the algorithm. What happens to agent
-      <code>v</code> if agent <code>u</code> never sends <code>v</code> a
-      message with timestamp greater than <code>T</code>?</p>
-    <div class="opts"><button>It records a wrong channel state</button><button>It may never stop recording</button><button>Its local snapshot is inconsistent</button></div>
-    <div class="why">
-      Agent <code>v</code> stops recording channel <code>(u, v)</code> only
-      when a message with timestamp greater than <code>T</code> arrives on it.
-      If none is ever sent, <code>v</code> never knows that the state it has
-      recorded is complete, and the algorithm does not terminate. Compare the
-      marker algorithm, in which every agent sends a marker on every outgoing
-      channel. The fix is the same: the algorithm is correct if every agent
-      keeps sending messages with increasing timestamps on every outgoing
-      channel &mdash; null messages, if it has nothing else to send.
-    </div>
-  </div>
 
-<h2>3. Logical time does not capture dependence</h2>
+<h2>3. Vector clocks</h2>
 
-  <p>
-    Say that event <code>e&prime;</code> <b>depends on</b> event
-    <code>e</code> when there is a path from <code>e</code> to
-    <code>e&prime;</code> in the dataflow graph. A logical clock guarantees
-  </p>
-  <div class="calc">(path from e to e&prime;) <span class="imp">&#x27F9;</span> t(e) &lt; t(e&prime;)</div>
-  <p>
-    but not the converse. In Figure 1, <code>t(c2) = 2 &lt; 3 = t(a3)</code>,
-    yet there is no path from <code>c2</code> to <code>a3</code>: after
-    <code>c2</code>, the only message <code>C</code> sends is <code>m6</code>,
-    to <code>B</code>, and <code>B</code> sends nothing after receiving it.
-    From timestamps alone, an agent cannot tell whether one event could have
-    influenced another.
-  </p>
-
-<h2>4. Vector clocks</h2>
-
-  <p>
-    Can timestamps capture dependence exactly?
-  </p>
   <div class="defn">
     <span class="lead-in">Specification of a vector clock</span>
     <div class="f">t(e) &lt; t(e&prime;) &equiv; (path from e to e&prime;)</div>
     <p class="e">Assign timestamps to events so that <code>t(e)</code> is less
-      than <code>t(e&prime;)</code> exactly when <code>e&prime;</code> depends
-      on <code>e</code>.</p>
-  </div>
-  <p>
-    No numbers can do this, because any two numbers are ordered, while two
-    events may be independent, with no path either way. So the timestamps are
-    vectors, with one element per agent, ordered element by element:
-  </p>
-  <div class="defn">
-    <span class="lead-in">Order on vectors</span>
-    <div class="f">n &le; m &equiv; (&forall; j : n<sub>j</sub> &le; m<sub>j</sub>) &nbsp;&nbsp; n &lt; m &equiv; (n &le; m) &and; (n &ne; m)</div>
-    <p class="e">A vector <code>n</code> is at most <code>m</code> when it is
-      at most <code>m</code> in every element. Two vectors can be unordered:
-      neither <code>[1, 0] &le; [0, 1]</code> nor
-      <code>[0, 1] &le; [1, 0]</code>.</p>
+      than <code>t(e&prime;)</code> exactly when there is a path
+      from <code>e</code> to <code>e&prime;</code> in the dataflow graph.</p>
   </div>
 
+  
+
+
+  <h3>The vector clock algorithm</h3>
+  <p>
+    The algorithm is straightforward. 
+    Each agent <code>j</code> keeps a vector <code>t<sub>j</sub></code> of
+    length n where n is the number of agents. 
+  </p>
+
+  <div class="thm">
+    <span class="lead-in">Vector timestamps</span>
+    For an event e at an agent j,
+     <code>t(e) = [n<sub>0</sub>, n<sub>1</sub>, &hellip;]</code> exactly when
+     <ol>
+      <li>
+        for k different from j, <code>n<sub>k</sub></code> is the number of events 
+        at agent k with a path to e, and
+      </li>
+      <li>
+        <code>n<sub>j</sub></code> is the number of events at agent j 
+        with a path to e, counting e itself.
+      </li>
+     </ol>
+  </div>
+
+     <figure class="fig wideout">
+      <svg id="vc_g" viewBox="0 0 1240 500" role="img"
+           aria-label="The computation of figure 1 with vector timestamps; clicking two events compares their timestamps and shows whether there is a path between them"></svg>
+      <div class="ctrls">
+        <button id="vc_play" class="primary">Play</button>
+        <button id="vc_step">Next event</button>
+        <button id="vc_reset">Reset</button>
+        <span class="status" id="vc_status"></span>
+      </div>
+      <figcaption>
+        <b>Figure 2. Vector timestamps.</b>
+        <i>Next event</i> assigns vector timestamps in the order the events
+        happened, and the status line shows the rule at work: the event being
+        stamped has a blue ring, its inputs have orange rings, and an event
+        turns green once it has its timestamp. When every event has a
+        timestamp, click an event <code>e</code> (orange ring), then an event
+        <code>e&prime;</code> (blue ring). The figure draws a path from
+        <code>e</code> to <code>e&prime;</code> if there is one, and compares
+        the timestamps.
+      </figcaption>
+    </figure>
+  
+    <div class="check" data-answer="[5, 4, 2]">
+      <span class="lead-in">Check yourself</span>
+      <p class="q">With agents <code>A, B, C</code>, event <code>b3</code> of
+        Figure 2 sends <code>m5</code> with timestamp <code>[2, 4, 0]</code>.
+        Event <code>a3</code>, the previous event of <code>A</code>, has
+        timestamp <code>[4, 0, 2]</code>. What is the timestamp of
+        <code>a4</code>, which receives <code>m5</code>?</p>
+      <div class="opts"><button>[4, 4, 2]</button><button>[5, 4, 2]</button><button>[6, 4, 2]</button><button>[5, 5, 2]</button></div>
+      <div class="why">
+        <code>max([4, 0, 2], [2, 4, 0]) + [1, 0, 0] = [4, 4, 2] + [1, 0, 0] = [5, 4, 2]</code>.
+        Check it in Figure 2.
+      </div>
+    </div>
+
+    <div class="defn">
+      <span class="lead-in">Order on vectors</span>
+      <div class="f">n &le; m &equiv; (&forall; j : n<sub>j</sub> &le; m<sub>j</sub>) &nbsp;&nbsp; n &lt; m &equiv; (n &le; m) &and; (n &ne; m)</div>
+      <p class="e"> Two vectors can be unordered:
+        neither <code>[1, 0] &le; [0, 1]</code> nor
+        <code>[0, 1] &le; [1, 0]</code>.</p>
+    </div>
   <div class="defn">
     <span class="lead-in">Vector clock algorithm</span>
+    The algorithm is identical to the logical clock algorithm 
+    except that the timestamps are vectors.
     <div class="f">t(e) = max(t(e<sub>p</sub>), t(e<sub>s</sub>)) + u<sub>j</sub></div>
     <p class="e">For an event <code>e</code> of agent <code>j</code>,
       <code>t(e)</code> is the element-wise maximum of the timestamp of
       <code>j</code>'s previous event <code>e<sub>p</sub></code> and, if
       <code>e</code> receives a message, the timestamp <code>t(e<sub>s</sub>)</code>
-      carried by the message; plus <code>u<sub>j</sub></code>, the vector with 1
-      in element <code>j</code> and 0 elsewhere. The initial event of agent
-      <code>j</code> has timestamp <code>u<sub>j</sub></code>.</p>
+      carried by the message; plus <code>u<sub>j</sub></code>, the vector with a
+      positive value (usually assumed to be 1) in element <code>j</code> and 0 elsewhere.</p>
   </div>
   <p>
     For example, with four agents: if event <code>e</code> of agent 1 has
@@ -423,26 +431,6 @@ and future(T) is the set of events with timestamps greater than T.
     <code>t(e) = [10, 8, 3, 4] + [0, 1, 0, 0] = [10, 9, 3, 4]</code>.
   </p>
 
-  <div class="thm">
-    <span class="lead-in">What a vector timestamp says</span>
-    If <code>t(e) = [n<sub>0</sub>, n<sub>1</sub>, &hellip;]</code> then, for
-    every agent <code>j</code>, exactly <code>n<sub>j</sub></code> events of
-    agent <code>j</code> have a path to <code>e</code>, counting
-    <code>e</code> itself: the first <code>n<sub>j</sub></code> events on
-    <code>j</code>'s line.
-  </div>
-  <div class="proof">
-    <span class="lead-in">Proof sketch</span>
-    <p>
-      By induction over the events in the order they occur. The events with a
-      path to <code>e</code> are <code>e</code> itself and the events with a
-      path to <code>e<sub>p</sub></code> or to <code>e<sub>s</sub></code>. The
-      events of agent <code>j</code> with a path to any event form a prefix of
-      <code>j</code>'s line, so the union of two such sets is the longer
-      prefix: the maximum. Adding <code>u<sub>j</sub></code> counts
-      <code>e</code> itself.
-    </p>
-  </div>
 
   <div class="thm">
     <span class="lead-in">Theorem</span>
@@ -453,138 +441,202 @@ and future(T) is the set of events with timestamps greater than T.
   <div class="proof">
     <span class="lead-in">Proof</span>
     <p>
-      Let <code>e</code> be the <code>k</code>-th event of agent
-      <code>j</code>, so <code>t(e)<sub>j</sub> = k</code>. If there is a
-      path from <code>e</code> to <code>e&prime;</code>, every event with a
-      path to <code>e</code> has a path to <code>e&prime;</code>, so
-      <code>t(e) &le; t(e&prime;)</code>. Conversely, if
-      <code>t(e) &le; t(e&prime;)</code> then <code>t(e&prime;)<sub>j</sub> &ge; k</code>,
-      so the first <code>k</code> events of <code>j</code>, <code>e</code>
-      among them, have a path to <code>e&prime;</code>. Finally,
-      <code>t(e) = t(e&prime;)</code> is impossible for <code>e &ne; e&prime;</code>:
-      it would give paths both ways, and the dataflow graph has no cycles.
+      Induction on the sequence of events in the order of any computation.
     </p>
   </div>
 
+<h2>4. Detection algorithms</h2>
+
+  <p>
+    A <b>detection algorithm</b> is run by the operating system (OS) to
+    find out whether the client computation has some property -- for example, 
+    the client computation has terminated.
+    These are properties that continue to hold until the OS
+    takes action. 
+    For example, if a client computation is deadlocked then it remains 
+    deadlocked until the OS breaks the deadlock.
+    In this section we focus on how the OS detects the condition and not
+    about how the OS deals with the condition after it is detected.
+    So, we assume that the condition is <b>stable</b> - if the condition holds
+    in a state then it continues to hold for all succeeding states of
+    all computations.
+  </p>
+
+  <p>
+    Detection algorithms are like snapshot algorithms.
+    A detection algorithm takes time: its agents exchange messages while the
+    client computation keeps executing. An algorithm to detect a property P
+    has to deal with the possibility that <code>&not;P</code> holds when the
+    detection algorithm starts, and while the detection algorithm is running
+    the client computation makes P true. For example, the client computation
+    may not be deadlocked when the deadlock detection algorithm starts but
+    becomes deadlocked before the deadlock detection algorithm terminates.
+
+  </p>
+
   <figure class="fig wideout">
-    <svg id="vc_g" viewBox="0 0 1240 500" role="img"
-         aria-label="The computation of figure 1 with Lamport or vector timestamps; clicking two events compares their timestamps and shows whether there is a path between them"></svg>
+    <svg id="ds_g" viewBox="0 0 1240 340" role="img"
+         aria-label="Three states, START STATE, DETECT STATE and END STATE, joined by squiggly lines for computations, coloured green where not P holds and red where P holds"></svg>
     <div class="ctrls">
-      <button id="vc_mode" class="primary">Showing: vector clocks</button>
-      <button id="vc_reset">Clear</button>
-      <span class="status" id="vc_status"></span>
+      <button id="ds_play" class="primary">Play</button>
+      <button id="ds_c1">&not;P throughout</button>
+      <button id="ds_c2">P throughout</button>
+      <button id="ds_c3">P after the detect state</button>
+      <button id="ds_c4">P before the detect state</button>
+      <span class="status" id="ds_status"></span>
     </div>
     <figcaption>
-      <b>Figure 3. Lamport timestamps and vector timestamps compared.</b>
-      Click an event <code>e</code> (orange ring), then an event
-      <code>e&prime;</code> (blue ring). The figure draws a path from
-      <code>e</code> to <code>e&prime;</code> if there is one, and compares
-      the timestamps. The line below the graph counts, over all pairs of
-      events, those where the order of timestamps and the existence of a path
-      disagree. For Lamport timestamps there are many, such as
-      <code>c2</code> and <code>a3</code>. For vector timestamps there are
-      none.
+      <b>Figure 3. The detect state lies between the start state and the end state.</b>
+      Circles are states: the <b>start state</b>, when the detector starts; the
+      <b>detect state</b>, the global state the detector examines; and the
+      <b>end state</b>, when the detector ends. Squiggly lines are
+      the computations between them. Green means <code>&not;P</code> and red
+      means <code>P</code>. Because <code>P</code> is stable, a red state is
+      never followed by a green one, so there are only four cases. In the last
+      two, <code>P</code> becomes true while the detector runs; the detector
+      returns what the detect state shows, and either answer meets the
+      specification.
     </figcaption>
   </figure>
 
-  <div class="check" data-answer="[5, 4, 2]">
-    <span class="lead-in">Check yourself</span>
-    <p class="q">With agents <code>A, B, C</code>, event <code>b3</code> of
-      Figure 3 sends <code>m5</code> with timestamp <code>[2, 4, 0]</code>.
-      Event <code>a3</code>, the previous event of <code>A</code>, has
-      timestamp <code>[4, 0, 2]</code>. What is the timestamp of
-      <code>a4</code>, which receives <code>m5</code>?</p>
-    <div class="opts"><button>[4, 4, 2]</button><button>[5, 4, 2]</button><button>[6, 4, 2]</button><button>[5, 5, 2]</button></div>
-    <div class="why">
-      <code>max([4, 0, 2], [2, 4, 0]) + [1, 0, 0] = [4, 4, 2] + [1, 0, 0] = [5, 4, 2]</code>.
-      Check it in Figure 3.
-    </div>
-  </div>
-
-<h2>5. Detection algorithms</h2>
-
-  <p>
-    A <b>detection algorithm</b> is run by the operating system's agents to
-    find out whether the client computation they manage has some property. The
-    properties of interest are <b>stable</b>: once they hold, they hold for
-    ever. Termination is one: a computation that has ended stays ended.
-    Deadlock is another.
-  </p>
-
-  <div class="defn">
-    <span class="lead-in">stable</span>
-    <div class="f">stable(P) &equiv; [P <span class="imp">&#x27F9;</span> AX P]</div>
-    <p class="e">A predicate <code>P</code> on system states is <b>stable</b>
-      when every step from a state in which <code>P</code> holds goes to a
-      state in which <code>P</code> holds (see
-      <a href="TemporalLogic1.html">Temporal Logic, part 1</a>).</p>
-  </div>
-
-  <p>
-    A detection algorithm takes time: its agents exchange messages while the
-    client computation keeps moving. So its specification is asymmetric
-    between the state in which it starts and the state in which it ends.
-  </p>
   <div class="defn">
     <span class="lead-in">Specification of a detection algorithm for stable P</span>
-    <div class="f">returns &ldquo;P&rdquo; <span class="imp">&#x27F9;</span> P holds when it ends; &nbsp; returns &ldquo;&not;P&rdquo; <span class="imp">&#x27F9;</span> &not;P held when it started</div>
-    <p class="e">If <code>P</code> holds throughout the run, the algorithm
-      reports <code>P</code>. If <code>&not;P</code> holds throughout, it reports
-      <code>&not;P</code>. If <code>P</code> becomes true during the run, it may
-      report either.</p>
+    An algorithm to detect a property P must terminate and when it terminates it
+    returns either that P holds or <code>&not;P</code> holds, where
+    <ol>
+      <li>
+        If condition P holds while the detection algorithm executes -- from when
+        the detection algorithm starts to when it finishes  -- then the algorithm 
+        returns that P holds
+      </li>
+
+      <li>
+        If <code>&not;P</code> holds while the detection algorithm executes
+         then the algorithm returns that <code>&not;P</code> holds.
+      </li>
+
+      <li>
+        If <code>&not;P</code> holds when the detection algorithm starts
+        and P holds when the detection algorithm finishes then
+         then the algorithm returns either that P holds or 
+         that <code>&not;P</code> holds.
+      </li>
+    </ol>
   </div>
 
-  <p class="key">
+<p>
+  For example, to detect deadlock, the OS runs the deadlock detection algorithm
+  repeatedly. This is because the client computation may have deadlocked 
+  after the last run of the detection algorithm determined that it hadn't deadlocked.
+</p>
+
+  <p class="key prime">
     <span class="lead-in">The generic solution</span>
     Take a global snapshot. Each agent sends its local state and the states
     of its incoming channels to a <b>detector</b> agent. The detector puts them
-    together and checks <code>P</code> in the snapshot.
+    together and checks whether <code>P</code> holds in the snapshot.
   </p>
   <p>
-    This works because <code>P</code> is stable. The snapshot is a state the
-    system could have passed through between the start and the end of the
-    algorithm. If <code>P</code> holds in it, <code>P</code> holds from then
-    on, and so it holds at the end. If <code>P</code> does not hold in it,
-    <code>P</code> did not hold at the start. A snapshot is static, which makes
-    it much easier to analyze than the moving system. For particular
-    properties, the generic solution can be streamlined, as the next section
-    does for termination.
+    <b>Correctness proof</b>
+    If <code>P</code> holds in the detect state then <code>P</code> holds in
+    all states reachable from the detect state because <code>P</code> is stable.
+    There is a computation from the detect state to the end state and so
+    the end state is reachable from the detect state. Therefore <code>P</code> holds
+    in the end state.
   </p>
+    <p>
+      If <code>&not;P</code> holds in the detect state then <code>&not;P</code>
+      holds in all states that can reach the detect state because
+      <code>P</code> is stable. There is a computation from the start state
+      to the detect state and so the start state can reach the
+      detect state. Therefore <code>&not;P</code> holds
+      in the start state.
+    </p>
 
-<h2>6. Termination detection</h2>
 
+<h2>5. Termination detection</h2>
+
+<p>
+  Consider a distributed system D in which each agent waits to receive messages on <b>any</b>
+  of its incoming channels. (This type of system is different from the office used
+  in DisSysLab where an agent can wait to receive messages on only one of its inputs.)
+  Each agent in D is either <b>active</b> or <b>idle</b>. An
+  active agent may send messages, and may become idle at any time. An idle
+  agent sends no messages. An idle agent becomes active when it receives a message.
+  Initially every agent is active and every channel is empty. A
+  computation of D has <b>terminated</b> when every agent is idle and every
+  channel is empty. Termination is stable -- after the computation terminates
+  no idle agent can become active because all channels are empty, and messages
+  cannot be added to channels because all agents are idle.
+</p>
   <div class="defn">
-    <span class="lead-in">Active and idle agents</span>
     <div class="f">terminated &equiv; all agents idle &and; all channels empty</div>
-    <p class="e">Each client agent is either <b>active</b> or <b>idle</b>. An
-      active agent may send messages, and may become idle at any time. An idle
-      agent sends no messages, and becomes active when it receives a message.
-      Initially every agent is active and every channel is empty. The
-      computation has <b>terminated</b> when every agent is idle and every
-      channel is empty.</p>
+    
   </div>
   <p>
-    Termination is stable: no agent can become active again, because no
-    message is in transit and no idle agent sends one. The detector has a
-    variable <code>terminated</code>, initially false, and must satisfy:
+    <b>Specification</b> The detection algorithm is part of the OS. Its specification is
+    that the detection algorithm must finish, and the algorithm has a
+    variable <code>terminated</code>, which is initially false, and must satisfy:
   </p>
   <ol class="spec">
     <li class="req-v"><span class="rtag">Safety</span>
-      invariant(terminated <span class="imp">&#x27F9;</span> the computation has terminated)</li>
+      <code>terminated</code> <span class="imp">&#x27F9;</span> 
+      the client computation has terminated. The detector sets <code>terminated</code>
+      to true only if the computation has terminated.
+    </li>
     <li class="req-c"><span class="rtag">Progress</span>
-      if the computation terminates, then <code>terminated</code> eventually
-      becomes true</li>
+      If the client computation has terminated when the detection algorithm
+      starts then <code>terminated</code> is set to true when the
+      detection algorithm finishes.
+    </li>
   </ol>
+  <p>
+  If the client computation has not terminated when the detection algorithm
+  starts, but the client computation terminates before the detection algorithm
+  finishes, then the value of <code>terminated</code> is unspecified -- it may
+  be true or false.
+</p>
 
-<h3>Counting messages</h3>
+<h3>A termination detection algorithm</h3>
 
   <p>
-    For each channel <code>X</code>, the sender keeps a count
+    For each channel <code>X</code>, the sending agent keeps a count
     <code>X<sub>s</sub></code> of the messages it has sent on <code>X</code>,
-    and the receiver keeps a count <code>X<sub>r</sub></code> of those it has
-    received. The number of messages in transit on <code>X</code> is
-    <code>X<sub>s</sub> &minus; X<sub>r</sub></code>. But no agent knows both
-    numbers at the same moment.
+    and the receiving agent keeps a count <code>X<sub>r</sub></code> of the
+    number of messages it has received on the channel.
+    The number of messages in transit on <code>X</code> is
+    <code>X<sub>s</sub> &minus; X<sub>r</sub></code>. The problem is
+    that no agent has both numbers at the same instant. The sending agent
+    cannot read <code>X<sub>r</sub></code> and the receiving agent cannot read
+    <code>X<sub>s</sub></code>.
+  </p>
+  <p>
+    <b>Consistent cuts and global snapshots allow us to use <i>old</i>
+    values of <code>X<sub>s</sub></code> and <code>X<sub>r</sub></code>.</b>
+  </p>
+
+  <p>
+    When an agent A becomes idle it sends a message to an OS agent called the
+    detector. This message contains the value of <code>X<sub>s</sub></code> for
+    every output channel <code>X</code> of agent A, and the value of
+    <code>Y<sub>r</sub></code> for every input channel <code>Y</code> of A. The
+    message from A to the detector may be delayed by an arbitrary amount.
+  </p>
+
+  <p>
+    The detector has local variables
+    <code>X&prime;<sub>s</sub></code> and <code>X&prime;<sub>r</sub></code>
+    for every channel <code>X</code>. Let <code>X</code> be a channel from
+    agent A to agent B. The detector's variable <code>X&prime;<sub>s</sub></code>
+    is the value of <code>X<sub>s</sub></code> in the most recent message that the
+    detector has received from A. Likewise, the
+    detector's variable <code>X&prime;<sub>r</sub></code>
+    is the value of <code>X<sub>r</sub></code> in the most recent message that the
+    detector has received from B. Because message delays are arbitrary, it is
+    possible that <code>X&prime;<sub>s</sub> &ne; X<sub>s</sub></code>
+    and <code>X&prime;<sub>r</sub> &ne; X<sub>r</sub></code>.
+    Nevertheless, the algorithm claims that the computation has terminated when,
+    for all channels <code>X</code>, <code>X&prime;<sub>s</sub> = X&prime;<sub>r</sub></code>.
   </p>
 
   <div class="defn">
@@ -758,21 +810,6 @@ window.LTG=(function(){
     const firstFut=evs.find(function(e){ return LT[e.id]>T; });
     if(!firstFut) return lastPast.k+0.55;
     return (lastPast.k+firstFut.k)/2; }
-  /* channel states at logical time T: what crosses the cut, and what the receiver records */
-  function channels(T, keepSending){
-    const out=[];
-    const pairs=[['A','B'],['A','C'],['B','A'],['B','C'],['C','A'],['C','B']];
-    pairs.forEach(function(pr){
-      const ms=Object.keys(MSG).filter(function(m){ return MSG[m][0]===pr[0] && MSG[m][1]===pr[1]; })
-        .sort(function(x,y){ return RECVR[x].k-RECVR[y].k; });
-      const cross=ms.filter(function(m){ return LT[SENDER[m].id]<=T && LT[RECVR[m].id]>T; });
-      const rec=[]; let stop=null;
-      for(const m of ms){ if(LT[RECVR[m].id]<=T) continue;   /* received before the snapshot */
-        if(LT[SENDER[m].id]>T){ stop=m; break; }
-        rec.push(m); }
-      out.push({from:pr[0], to:pr[1], cross:cross, rec:rec, stop:stop, nul:(!stop && keepSending)});
-    });
-    return out; }
 
   function el(t,a,txt){ const e=document.createElementNS(NS,t); for(const k in a) e.setAttribute(k,a[k]); if(txt!=null) e.textContent=txt; return e; }
   function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
@@ -818,7 +855,7 @@ window.LTG=(function(){
     });
     return g; }
   return {C:C, AG:AG, EV:EV, BY:BY, MSG:MSG, SENDER:SENDER, RECVR:RECVR, PREV:PREV, EDGES:EDGES,
-          LT:LT, VT:VT, vle:vle, vlt:vlt, vshow:vshow, path:path, cutK:cutK, channels:channels,
+          LT:LT, VT:VT, vle:vle, vlt:vlt, vshow:vshow, path:path, cutK:cutK,
           el:el, clear:clear, text:text, head:head, arrow:arrow, draw:draw, X:X, R:R};
 })();
 </script>
@@ -889,101 +926,77 @@ window.LTG=(function(){
   draw();
 })();
 
-/* Figure 2 — local snapshots and channel states at logical time T */
-(function(){
-  const PFX='sn_', $=function(id){ return document.getElementById(PFX+id); };
-  const svg=$('g'); if(!svg) return;
-  const G=window.LTG, C=G.C, EV=G.EV, LT=G.LT;
-  const Y={A:70, B:180, C:290};
-  let T=3, keep=false;
-  function draw(){
-    G.clear(svg);
-    const fill={}, txt={}, stroke={};
-    EV.forEach(function(e){ if(LT[e.id]<=T){ fill[e.id]=C.ink; txt[e.id]='#fff'; } else { fill[e.id]=C.green; stroke[e.id]=C.teal; } });
-    G.draw(svg, {Y:Y, fill:fill, txt:txt, stroke:stroke,
-      inside:function(e){ return LT[e.id]; }, below:function(e){ return e.id; },
-      msg:function(m){ const s=LT[G.SENDER[m].id], r=LT[G.RECVR[m].id];
-        return (s<=T && r>T)? {col:C.blue, w:3} : {col:C.muted}; }});
-    G.AG.forEach(function(a){
-      svg.appendChild(G.el('circle',{cx:G.X(G.cutK(a,T)), cy:Y[a], r:9, fill:C.yellow, stroke:C.ink, 'stroke-width':1.5}));
-      if(keep) G.text(svg, G.X(15)+30, Y[a]-22, 'null messages →', {size:12, w:700, fill:C.teal, anchor:'middle'});
-    });
-    /* the table of channel states */
-    const ch=G.channels(T, keep), top=365, cols=[30, 170, 420, 640, 1010];
-    const heads=['channel','crosses the cut (true state)','recorded by the receiver','recording','correct?'];
-    heads.forEach(function(h,i){ G.text(svg, cols[i], top, h, {anchor:'start', size:12.5, w:700, fill:C.muted}); });
-    svg.appendChild(G.el('line',{x1:30, y1:top+13, x2:1210, y2:top+13, stroke:C.line}));
-    let waiting=0, wrong=0;
-    ch.forEach(function(c,i){
-      const y=top+40+i*34;
-      const list=function(L){ return L.length? L.join(', ') : 'empty'; };
-      G.text(svg, cols[0], y, '('+c.from+', '+c.to+')', {anchor:'start', size:15, w:800, mono:true});
-      G.text(svg, cols[1], y, list(c.cross), {anchor:'start', size:15, w:700, mono:true, fill:c.cross.length? C.blue : C.muted});
-      G.text(svg, cols[2], y, list(c.rec), {anchor:'start', size:15, w:700, mono:true, fill:c.rec.length? C.blue : C.muted});
-      let st, col;
-      if(c.stop){ st='stopped by '+c.stop+' (t = '+LT[G.SENDER[c.stop].id]+' > '+T+')'; col=C.teal; }
-      else if(c.nul){ st='stopped by a null message with t > '+T; col=C.teal; }
-      else { st='still recording: no message from '+c.from+' with t > '+T; col=C.orange; waiting++; }
-      G.text(svg, cols[3], y, st, {anchor:'start', size:14, w:700, fill:col});
-      const ok=c.cross.join()===c.rec.join(); if(!ok) wrong++;
-      const done=!!(c.stop||c.nul);
-      G.text(svg, cols[4], y, ok? (done? 'yes' : 'yes, but '+c.to+' cannot know') : 'NO', {anchor:'start', size:14, w:700, fill:ok? (done? C.teal : C.orange) : C.red});
-    });
-    const sum=wrong? wrong+' channel states are wrong.'
-      : (waiting? 'Every recorded state is right so far, but '+waiting+' receiver'+(waiting>1?'s are':' is')+' still waiting: the algorithm does not terminate.'
-                : 'Every channel state is recorded, and every receiver has stopped: the snapshot is complete.');
-    G.text(svg, 30, 622, sum, {anchor:'start', size:15, w:700, fill:wrong? C.red : (waiting? C.orange : C.teal)});
-    $('status').innerHTML='T = <b>'+T+'</b>';
-  }
-  $('tm').addEventListener('click', function(){ T=Math.max(0, T-1); draw(); });
-  $('tp').addEventListener('click', function(){ T=Math.min(8, T+1); draw(); });
-  $('null').addEventListener('click', function(){ keep=!keep; $('null').textContent='Agents keep sending: '+(keep?'on':'off'); $('null').className=keep?'primary':''; draw(); });
-  draw();
-})();
-
-/* Figure 3 — Lamport and vector timestamps against paths */
+/* Figure 2 — vector clocks, one event at a time, then compare two events */
 (function(){
   const PFX='vc_', $=function(id){ return document.getElementById(PFX+id); };
   const svg=$('g'); if(!svg) return;
-  const G=window.LTG, C=G.C, EV=G.EV;
+  const G=window.LTG, C=G.C, EV=G.EV, VT=G.VT;
   const Y={A:90, B:215, C:340};
-  let vec=true, e1=null, e2=null;
-  function lt(a,b){ return vec? G.vlt(G.VT[a],G.VT[b]) : G.LT[a]<G.LT[b]; }
-  function ts(a){ return vec? G.vshow(G.VT[a]) : String(G.LT[a]); }
+  const ORDER=EV.filter(function(e){ return e.k>0; });
+  let shown=0, e1=null, e2=null, timer=null;
+  function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+  function known(e){ return e.k===0 || ORDER.indexOf(e)<shown; }
+  function lt(a,b){ return G.vlt(VT[a],VT[b]); }
+  function ts(a){ return G.vshow(VT[a]); }
+  function unit(e){ const u=[0,0,0]; u[G.AG.indexOf(e.ag)]=1; return u; }
   function draw(){
     G.clear(svg);
+    const comparing=(shown>=ORDER.length && e1!=null);
+    const cur=(!comparing && shown>0)? ORDER[shown-1] : null;
+    const inputs={};
+    if(cur){ const p=G.PREV[cur.id]; if(p) inputs[p.id]=1; if(cur.recv) inputs[G.SENDER[cur.recv].id]=1; }
     const p=(e1&&e2)? G.path(e1,e2) : null, onp={};
     if(p) p.forEach(function(d){ onp[d[0]+'>'+d[1]]=1; });
-    const stroke={}, sw={};
+    const fill={}, stroke={}, sw={};
+    EV.forEach(function(e){
+      if(known(e)){ fill[e.id]=C.green; stroke[e.id]=C.teal; }   /* has its timestamp */
+      if(inputs[e.id]){ stroke[e.id]=C.orange; sw[e.id]=4; }
+      if(cur && e===cur){ stroke[e.id]=C.blue; sw[e.id]=4; }
+    });
     if(e1){ stroke[e1]=C.orange; sw[e1]=4.5; }
     if(e2){ stroke[e2]=C.blue; sw[e2]=4.5; }
-    G.draw(svg, {Y:Y, stroke:stroke, sw:sw,
+    G.draw(svg, {Y:Y, fill:fill, stroke:stroke, sw:sw,
       inside:function(e){ return e.id; },
-      above:function(e){ return vec? '['+G.VT[e.id].join(',')+']' : String(G.LT[e.id]); },
+      above:function(e){ return known(e)? '['+VT[e.id].join(',')+']' : '?'; },
       /* when two events of an agent are side by side, the second label goes below */
-      aboveBelow:function(e){ const p=G.PREV[e.id]; return !!(p && p.k===e.k-1); },
-      abovecol:function(){ return vec? C.blue : C.teal; },
-      msg:function(m){ const s=G.SENDER[m].id, r=G.RECVR[m].id; return onp[s+'>'+r]? {col:C.orange, w:3.5} : {col:C.muted}; },
-      click:function(id){ if(!e1 || e2){ e1=id; e2=null; } else if(id!==e1) e2=id; draw(); }});
+      aboveBelow:function(e){ const q=G.PREV[e.id]; return !!(q && q.k===e.k-1); },
+      abovecol:function(){ return C.blue; },
+      msg:function(m){
+        const s=G.SENDER[m].id, r=G.RECVR[m].id;
+        if(onp[s+'>'+r]) return {col:C.orange, w:3.5};
+        if(cur && cur.recv===m) return {col:C.orange, w:3};
+        return {col:C.muted}; },
+      click:function(id){ stop(); shown=ORDER.length;
+        if(!e1 || e2){ e1=id; e2=null; } else if(id!==e1) e2=id; draw(); }});
     /* agent edges on the path */
     if(p) p.forEach(function(d){ if(d[2]) return; const a=G.BY[d[0]], b=G.BY[d[1]];
       svg.appendChild(G.el('line',{x1:G.X(a.k)+G.R, y1:Y[a.ag], x2:G.X(b.k)-G.R, y2:Y[b.ag], stroke:C.orange, 'stroke-width':5, 'stroke-linecap':'round', opacity:0.75})); });
     /* the readout */
-    let line1;
-    if(!e1) line1='Click an event e.';
-    else if(!e2) line1='e = '+e1+', t(e) = '+ts(e1)+'. Now click an event e′.';
-    else { const a=lt(e1,e2), b=!!p;
-      line1='t('+e1+') = '+ts(e1)+', t('+e2+') = '+ts(e2)+'.  t(e) < t(e′): '+(a?'yes':'no')+'.  Path from '+e1+' to '+e2+': '+(b?'yes':'no')+'.  '+(a===b? 'They agree.' : 'They disagree.'); }
-    G.text(svg, 30, 430, line1, {anchor:'start', size:15, w:700, fill:(e1&&e2)? ((lt(e1,e2)===!!p)? C.teal : C.red) : C.ink});
-    let n=0, bad=0, ex=null;
-    EV.forEach(function(a){ EV.forEach(function(b){ if(a===b) return; n++;
-      if(lt(a.id,b.id)!==!!G.path(a.id,b.id)){ bad++; if(!ex) ex=[a.id,b.id]; } }); });
-    G.text(svg, 30, 466, (vec?'Vector':'Lamport')+' timestamps: of the '+n+' ordered pairs of events, '+bad+' disagree with the paths'+
-      (ex? ' (for example '+ex[0]+' and '+ex[1]+').' : '.'), {anchor:'start', size:15, w:700, fill:bad? C.red : C.teal});
-    $('status').innerHTML=vec? 'vector clocks' : 'Lamport clocks';
+    let line1, col=C.ink;
+    if(comparing){
+      if(!e2) line1='e = '+e1+', t(e) = '+ts(e1)+'. Now click an event e\u2032.';
+      else { const a=lt(e1,e2), b=!!p;
+        line1='t('+e1+') = '+ts(e1)+', t('+e2+') = '+ts(e2)+'.  t(e) < t(e\u2032): '+(a?'yes':'no')+'.  Path from '+e1+' to '+e2+': '+(b?'yes':'no')+'.  '+(a===b? 'They agree.' : 'They disagree.');
+        col=(a===b)? C.teal : C.red; }
+      $('status').innerHTML='comparing';
+    } else if(cur){
+      const q=G.PREV[cur.id], u=G.vshow(unit(cur));
+      if(cur.recv){ const sv=ts(G.SENDER[cur.recv].id);
+        line1=cur.id+' receives '+cur.recv+', which carries '+sv+'. Its previous event '+q.id+' has '+ts(q.id)+
+          '. So t('+cur.id+') = max('+ts(q.id)+', '+sv+') + '+u+' = '+ts(cur.id)+'.'; }
+      else line1=cur.id+(cur.send? ' sends '+cur.send : ' is an internal event')+'. Its previous event '+q.id+' has '+ts(q.id)+
+          '. So t('+cur.id+') = '+ts(q.id)+' + '+u+' = '+ts(cur.id)+(cur.send? ', and '+cur.send+' carries '+ts(cur.id) : '')+'.';
+      $('status').innerHTML='event <b>'+shown+'</b> of '+ORDER.length;
+    } else {
+      line1='The initial event of each agent has timestamp u\u2C7C: [1,0,0], [0,1,0], [0,0,1]. Press Next event.';
+      $('status').innerHTML='event <b>0</b> of '+ORDER.length;
+    }
+    G.text(svg, 30, 430, line1, {anchor:'start', size:14.5, w:600, fill:col});
   }
-  $('mode').addEventListener('click', function(){ vec=!vec; $('mode').textContent='Showing: '+(vec?'vector':'Lamport')+' clocks'; draw(); });
-  $('reset').addEventListener('click', function(){ e1=e2=null; draw(); });
+  $('step').addEventListener('click', function(){ e1=e2=null; if(shown<ORDER.length) shown++; draw(); });
+  $('reset').addEventListener('click', function(){ stop(); shown=0; e1=e2=null; draw(); });
+  $('play').addEventListener('click', function(){ stop(); shown=0; e1=e2=null; draw();
+    timer=setInterval(function(){ if(shown>=ORDER.length){ stop(); return; } shown++; draw(); }, 1600); });
   draw();
 })();
 
@@ -1156,6 +1169,68 @@ window.TD=(function(){
       opts.forEach(function(b){ b.classList.toggle('on', right.indexOf(norm(b.textContent))>=0); });
       verdict.innerHTML='Answer: <b>'+right.join(', ')+'</b>'; box.classList.add('shown'); });
   });
+})();
+</script>
+
+<script>
+/* Figure 3 — start state, detect state and end state, coloured by P */
+(function(){
+  const PFX='ds_', $=function(id){ return document.getElementById(PFX+id); };
+  const svg=$('g'); if(!svg) return;
+  const G=window.LTG, el=G.el, text=G.text;
+  const K={np:'#00947d', npFill:'#e3f3ee', p:'#e0301a', pFill:'#fde9e2', ink:'#1a1a2e', muted:'#6f7583'};
+  const N=false, Y=true;   /* does P hold? */
+  const CASES=[
+    {s:[N,N,N], a:'¬P holds throughout.', b:'The detect state shows ¬P, so the detector returns ¬P.'},
+    {s:[Y,Y,Y], a:'P holds throughout.', b:'The detect state shows P, so the detector returns P.'},
+    {s:[N,N,Y], a:'P becomes true after the detect state.', b:'The detector returns ¬P: true in the start state, though P holds in the end state. Allowed.'},
+    {s:[N,Y,Y], a:'P becomes true before the detect state.', b:'The detector returns P. P is stable, so P still holds in the end state.'}];
+  const NODES=[{x:170, l:'START'}, {x:620, l:'DETECT'}, {x:1070, l:'END'}], CY=150, R=62;
+  let ci=0, k=1, timer=null;
+  function stop(){ if(timer){ clearInterval(timer); clearTimeout(timer); timer=null; } }
+  function col(p){ return p? K.p : K.np; }
+  /* a squiggle from node i to node i+1, drawn up to fraction u; the colour changes halfway if P changes */
+  function squiggle(i,u,p0,p1){
+    const x0=NODES[i].x+R+6, x1=NODES[i+1].x-R-14, n=120, pts=[];
+    for(let j=0;j<=n;j++){ const x=x0+(x1-x0)*j/n; pts.push([x, CY+16*Math.sin(j/n*Math.PI*9)]); }
+    const m=Math.round(n*u); if(m<1) return;
+    const half=(p0===p1)? n+1 : Math.round(n/2);
+    function seg(a,b,c){ if(b<=a) return; svg.appendChild(el('polyline',{points:pts.slice(a,b+1).map(function(q){ return q.join(','); }).join(' '),
+      fill:'none', stroke:c, 'stroke-width':4, 'stroke-linecap':'round', 'stroke-linejoin':'round'})); }
+    seg(0, Math.min(m, half), col(p0)); if(m>half) seg(half, m, col(p1));
+    if(u>=1) G.head(svg, x1+12, CY, 1, 0, col(p1));
+    if(u>=0.5) text(svg, (x0+x1)/2, CY-44, 'computation', {size:13, w:700, fill:K.muted});
+  }
+  function node(i,p,show){
+    if(!show) return;
+    const n=NODES[i];
+    svg.appendChild(el('circle',{cx:n.x, cy:CY, r:R, fill:p? K.pFill : K.npFill, stroke:col(p), 'stroke-width':4}));
+    text(svg, n.x, CY-10, n.l, {size:15, w:800}); text(svg, n.x, CY+12, 'STATE', {size:15, w:800});
+    text(svg, n.x, CY+R+24, p? 'P' : '¬P', {size:18, w:800, fill:col(p)});
+  }
+  function draw(){
+    G.clear(svg);
+    const c=CASES[ci];
+    node(0, c.s[0], true);
+    squiggle(0, Math.min(1, k/0.45), c.s[0], c.s[1]);
+    node(1, c.s[1], k>=0.45);
+    squiggle(1, Math.max(0, Math.min(1, (k-0.5)/0.45)), c.s[1], c.s[2]);
+    node(2, c.s[2], k>=0.95);
+    /* legend */
+    [[K.np,'¬P'],[K.p,'P']].forEach(function(q,i){
+      svg.appendChild(el('circle',{cx:1060+i*80, cy:28, r:9, fill:q[0]})); text(svg, 1076+i*80, 29, q[1], {anchor:'start', size:15, w:800, fill:q[0]}); });
+    text(svg, 40, 28, 'Case '+(ci+1)+' of 4', {anchor:'start', size:15, w:800});
+    if(k>=0.95){ text(svg, 40, 290, c.a, {anchor:'start', size:16, w:800, fill:K.ink});
+                 text(svg, 40, 320, c.b, {anchor:'start', size:15, w:700, fill:col(c.s[1])}); }
+    ['c1','c2','c3','c4'].forEach(function(b,i){ $(b).className=(i===ci)? 'primary' : ''; });
+    $('status').innerHTML='case <b>'+(ci+1)+'</b> of 4';
+  }
+  function run(i, then){ stop(); ci=i; k=0; draw();
+    timer=setInterval(function(){ k+=0.02; if(k>=1){ k=1; draw(); clearInterval(timer); timer=null;
+        if(then) timer=setTimeout(function(){ timer=null; then(); }, 2200); return; } draw(); }, 40); }
+  $('play').addEventListener('click', function(){ run(0, function(){ run(1, function(){ run(2, function(){ run(3, null); }); }); }); });
+  ['c1','c2','c3','c4'].forEach(function(b,i){ $(b).addEventListener('click', function(){ run(i, null); }); });
+  draw();
 })();
 </script>
 
