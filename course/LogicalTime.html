@@ -611,12 +611,12 @@ and future(T) is the set of events with timestamps greater than T.
     <code>X<sub>s</sub></code>.
   </p>
   <p>
-    <b>Consistent cuts and global snapshots allow us to use <i>old</i>
+    <b>We will show that consistent cuts and global snapshots allow us to use <i>old</i>
     values of <code>X<sub>s</sub></code> and <code>X<sub>r</sub></code>.</b>
   </p>
 
   <p>
-    When an agent A becomes idle it sends a message to an OS agent called the
+    <b>Agent actions</b> When an agent A becomes idle it sends a message to an OS agent called the
     detector. This message contains the value of <code>X<sub>s</sub></code> for
     every output channel <code>X</code> of agent A, and the value of
     <code>Y<sub>r</sub></code> for every input channel <code>Y</code> of A. The
@@ -624,7 +624,7 @@ and future(T) is the set of events with timestamps greater than T.
   </p>
 
   <p>
-    The detector has local variables
+    <b>Detector actions</b> The detector has local variables
     <code>X&prime;<sub>s</sub></code> and <code>X&prime;<sub>r</sub></code>
     for every channel <code>X</code>. Let <code>X</code> be a channel from
     agent A to agent B. The detector's variable <code>X&prime;<sub>s</sub></code>
@@ -639,50 +639,45 @@ and future(T) is the set of events with timestamps greater than T.
     for all channels <code>X</code>, <code>X&prime;<sub>s</sub> = X&prime;<sub>r</sub></code>.
   </p>
 
-  <div class="defn">
-    <span class="lead-in">Termination detection by counting</span>
-    <div class="f">terminated := terminated &or; (&forall; X : X&prime;<sub>s</sub> = X&prime;<sub>r</sub>)</div>
-    <p class="e">When an agent becomes idle, it sends its counts for all its
-      channels to the detector. For each channel <code>X</code> the detector
-      keeps <code>X&prime;<sub>s</sub></code> and <code>X&prime;<sub>r</sub></code>,
-      the most recent counts it has received from the sender and from the
-      receiver of <code>X</code>, initially <code>0</code> and
-      <code>&minus;1</code>. Each time it receives counts, it sets
-      <code>terminated</code> to true if <code>X&prime;<sub>s</sub> = X&prime;<sub>r</sub></code>
-      for every channel <code>X</code>.</p>
-  </div>
   <p>
-    The values <code>X&prime;<sub>s</sub></code> and <code>X&prime;<sub>r</sub></code>
-    are <b>not</b> the current counts. They are values the agents sent in the
-    past, at different moments, and <code>X&prime;<sub>s</sub> &minus;
-    X&prime;<sub>r</sub></code> need not be the number of messages in transit
-    now. The initial values <code>0 &ne; &minus;1</code> make sure the
-    detector hears from both ends of every channel before it decides.
+    <b>Initially</b> Set <code>X&prime;<sub>s</sub>, X&prime;<sub>r</sub></code> to values
+    so that they are unequal and remain unequal until the detector gets a message
+    from each agent; this is to ensure that the detector doesn't claim
+    termination even before the computation starts. For example,
+    <code>X&prime;<sub>s</sub> = - 1, X&prime;<sub>r</sub> = - 2</code>.
   </p>
 
-  <div class="thm">
-    <span class="lead-in">Why it is safe</span>
-    <p>
-      Consider the points at which the agents sent the counts that the detector
-      holds. If <code>X&prime;<sub>s</sub> &ge; X&prime;<sub>r</sub></code> for every
-      channel <code>X</code>, those points form a consistent cut: the
-      receiver of <code>X</code> had received <code>X&prime;<sub>r</sub></code>
-      messages, and because the channel is first-in-first-out these are the
-      first <code>X&prime;<sub>r</sub></code> messages sent on <code>X</code>,
-      all sent before the sender's point. At that cut every agent is idle,
-      because agents send counts when they become idle, and every channel
-      <code>X</code> holds <code>X&prime;<sub>s</sub> &minus; X&prime;<sub>r</sub> = 0</code>
-      messages. So the computation had terminated at the cut, and termination
-      is stable.
-    </p>
+
+  <div class="defn">
+    <div class="f">terminated :=  (&forall; X : X&prime;<sub>s</sub> = X&prime;<sub>r</sub>)</div>
   </div>
+
+  <div class="thm">
+    <span class="lead-in">Proof of correctness</span>
+    <p>
+      <b>Safety</b> We will first prove that if for all channels, X,
+      X&prime;<sub>s</sub> = X&prime;<sub>r</sub> then
+      the computation has terminated.
+      Consider the point at each agent's computaton at which the 
+      agent sent the messages with the values in <code>X&prime;</code><div class=""></div>
+      For example, if agent A has an output channel X, then consider the 
+      point on A's timeline at which it sent the message containing 
+      <code>X&prime;<sub>s</sub></code>. Because
+      <code>X&prime;<sub>s</sub> &ge; X&prime;<sub>r</sub></code> for every
+      channel <code>X</code>, those points form a consistent cut.
+      At that cut every agent is idle because agents send counts when they 
+      become idle, and every channel is empty. 
+      So the computation had terminated at the cut.
+    </p>
   <p>
     <b>Progress.</b> Every agent is active initially, so it becomes idle at
     least once and sends counts. After the computation terminates, each
-    agent's last counts are its final counts, and in them every message sent
-    has been received. When the detector has them all,
+    agent's last message contains the final counts of the messages it
+    has sent and received. After the detector receives the
+    final message from all agents
     <code>X&prime;<sub>s</sub> = X&prime;<sub>r</sub></code> for every channel.
   </p>
+</div>
 
   <div class="check" data-answer="No">
     <span class="lead-in">Check yourself</span>
@@ -1006,7 +1001,7 @@ window.TD=(function(){
   function init(){
     return {A:{active:true, Cs:0, Dr:0}, B:{active:true, Cr:0, Ds:0},
       chC:[], chD:[], repA:[], repB:[],
-      det:{Cs:0, Cr:-1, Ds:0, Dr:-1, terminated:false, heldA:null, heldB:null},
+      det:{Cs:-1, Cr:-2, Ds:-1, Dr:-2, terminated:false, heldA:null, heldB:null},
       tl:[], arrows:[], nmsg:0}; }
   function ev(s,ag,kind){ s.tl.push({ag:ag, kind:kind}); return s.tl.length-1; }
   const ACTS={
