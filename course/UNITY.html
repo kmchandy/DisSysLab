@@ -86,194 +86,27 @@
 <div class="wrap">
   <header class="top">
     <div class="kicker">DisSysLab &middot; UNITY</div>
-    <h1>UNITY</h1>
-    <h2>Progress in CTL: the basis rule, transitivity, and fair execution</h2>
+    <h1>Example of a distributed program</h1>
+    <h2>Fair execution: the UNITY model</h2>
     <p>
-      UNITY is the programming notation and logic of Chandy and Misra. This
-      lecture describes its rules for progress in the CTL of the temporal
-      logic lectures. Safety needs nothing new: the safety properties of
-      UNITY are sets built from <code>AX</code> and <code>AG</code>.
-      Progress needs one operator, <code>A<sub>f</sub>F</code>, from part 2.
-      We start with two rules about <code>A<sub>f</sub>F</code>, on any
-      colored graph, and only then describe the model of computation of
-      UNITY.
+      This class describes mutual exclusion in distributed systems in terms
+      of the <b>Distributed Dining Philosophers problem</b>. The proof of
+      correctness of the program is based on UNITY. Proofs are based on
+      the concepts of safety <code>AG</code> and progress 
+      <code>A<sub>f</sub>F</code>, from part 2.
+      The two rules about <code>A<sub>f</sub>F</code> used in the proofs,
+      the basis rule and transitivity, are there too. This class starts
+      with the model of computation of UNITY.
     </p>
   </header>
 
-  <nav class="parts"><span>Builds on:</span><a href="TemporalLogic1.html">Temporal logic part 1</a><a href="TemporalLogic2.html">Part 2: until and fairness</a><a href="TemporalLogic3.html">Part 3: initial states, paths and LTL</a></nav>
+  <nav class="parts"><span>Builds on:</span><a href="TemporalLogic1.html">Temporal logic part 1</a><a href="TemporalLogic2.html">Part 2: colored graphs and fairness</a><a href="TemporalLogic3.html">Part 3: system properties</a></nav>
 
-<h2>1. Fair paths</h2>
-
-  <p>
-    We use the colored graphs of part 2. Every edge has a color, and every
-    vertex has an edge of every fair color. A <b>fair path</b> is an
-    infinite path in which every fair color appears infinitely often. In the
-    figures of this lecture every color is fair. As in part 3,
-    <code>&#x27E6;&phi;&#x27E7;</code> is the set of vertices at which the
-    formula <code>&phi;</code> holds, <code>V</code> is the set of all
-    vertices, and <code>&not;P = V &setminus; P</code>.
-  </p>
-
-  <div class="defn">
-    <span class="lead-in">A<sub>f</sub>F: on all fair paths, eventually</span>
-    <div class="f">&#x27E6;A<sub>f</sub>F Z&#x27E7; = {v | every fair path from v reaches Z}</div>
-    <p class="e">The first vertex of a path counts, so <code>Z &sube; &#x27E6;A<sub>f</sub>F Z&#x27E7;</code>.</p>
-  </div>
-
-  <p>Two facts about fair paths are used below.</p>
-  <ol class="facts">
-    <li><b>A suffix of a fair path is fair.</b> Drop the first
-      <code>k</code> vertices of a fair path from <code>v</code>: what is
-      left is a fair path from <code>v<sub>k</sub></code>, because finitely
-      many steps do not change which colors appear infinitely often.</li>
-    <li><b>Monotonicity</b> (part 2):
-      <code>Y &sube; Z <span class="imp">&#x27F9;</span> &#x27E6;A<sub>f</sub>F Y&#x27E7; &sube; &#x27E6;A<sub>f</sub>F Z&#x27E7;</code>.</li>
-  </ol>
-
-<h2>2. The basis rule</h2>
-
-  <div class="thm">
-    <span class="lead-in">Basis rule</span>
-    <div class="f">P &sube; &#x27E6;AX (P &cup; Q)&#x27E7; &and; V = &#x27E6;A<sub>f</sub>F &not;P&#x27E7; <span class="imp">&#x27F9;</span> P &sube; &#x27E6;A<sub>f</sub>F Q&#x27E7;</div>
-    <p class="e">If every edge from <code>P</code> ends in <code>P</code> or
-      <code>Q</code>, and every fair path reaches <code>&not;P</code>, then
-      every fair path from <code>P</code> reaches <code>Q</code>.</p>
-  </div>
+<h2>1. Fair execution: the UNITY model</h2>
 
   <p>
-    The second condition, <code>V = &#x27E6;A<sub>f</sub>F &not;P&#x27E7;</code>,
-    says that no fair path stays in <code>P</code> forever. It is the same as
-    <code>P &sube; &#x27E6;A<sub>f</sub>F &not;P&#x27E7;</code>, because every
-    vertex of <code>&not;P</code> is in
-    <code>&#x27E6;A<sub>f</sub>F &not;P&#x27E7;</code> already.
-  </p>
-
-  <div class="proof">
-    <span class="lead-in">Proof</span>
-    <p>
-      Let <code>v &isin; P</code>, and take a fair path from <code>v</code>.
-      By the second condition, the path reaches <code>&not;P</code>. Let
-      <code>w</code> be its first vertex outside <code>P</code>, and
-      <code>u</code> the vertex before <code>w</code>. Then
-      <code>u &isin; P</code>, so by the first condition
-      <code>w &isin; P &cup; Q</code>. Since <code>w &notin; P</code>,
-      <code>w &isin; Q</code>. So every fair path from <code>v</code> reaches
-      <code>Q</code>.
-    </p>
-  </div>
-
-  <p>
-    Both conditions are needed. Without fairness, a path could go round a
-    cycle inside <code>P</code> for ever. Without the first condition, a
-    path could leave <code>P</code> to a vertex outside
-    <code>P &cup; Q</code> and never come to <code>Q</code>. Figure 1 shows
-    both.
-  </p>
-
-  <figure class="fig wideout">
-    <svg id="ba_g" viewBox="0 0 1240 510" role="img"
-         aria-label="A colored graph with a region P of three vertices joined by a red cycle, and a region Q of two vertices; every blue edge from P goes to Q; a token walks a fair path from P and leaves P into Q"></svg>
-    <div class="ctrls">
-      <button id="ba_play" class="primary">Play</button>
-      <button id="ba_step">Step</button>
-      <button id="ba_reset">Reset</button>
-      <span class="sep"></span>
-      <button id="ba_fair" class="on">A fair path</button>
-      <button id="ba_red">Red forever</button>
-      <button id="ba_broken">Break the first condition</button>
-      <span class="status" id="ba_status"></span>
-    </div>
-    <figcaption>
-      <b>Figure 1. The basis rule.</b>
-      Red edges inside <code>P</code> form a cycle, and every blue edge from
-      <code>P</code> goes to <code>Q</code>. So every edge from
-      <code>P</code> ends in <code>P &cup; Q</code>, and a fair path, which
-      must take blue, cannot stay in <code>P</code>. <i>A fair path</i>
-      walks a random fair path from the start vertex (click a vertex of
-      <code>P</code> to change it); the edge on which it first leaves
-      <code>P</code> is drawn thick, and it always ends in <code>Q</code>.
-      <i>Red forever</i> stays in <code>P</code>, but it is not fair.
-      <i>Break the first condition</i> sends the blue edge from
-      <code>a</code> to <code>f</code>, outside <code>P &cup; Q</code>
-      (dashed), and shows a fair path that never reaches <code>Q</code>.
-    </figcaption>
-  </figure>
-
-<h2>3. Transitivity</h2>
-
-  <div class="thm">
-    <span class="lead-in">Transitivity</span>
-    <div class="f">P &sube; &#x27E6;A<sub>f</sub>F Q&#x27E7; &and; Q &sube; &#x27E6;A<sub>f</sub>F R&#x27E7; <span class="imp">&#x27F9;</span> P &sube; &#x27E6;A<sub>f</sub>F R&#x27E7;</div>
-    <p class="e">If every fair path from <code>P</code> reaches
-      <code>Q</code>, and every fair path from <code>Q</code> reaches
-      <code>R</code>, then every fair path from <code>P</code> reaches
-      <code>R</code>.</p>
-  </div>
-
-  <p>The rule follows from one law of <code>A<sub>f</sub>F</code>.</p>
-
-  <div class="thm">
-    <span class="lead-in">Law</span>
-    <div class="f">&#x27E6;A<sub>f</sub>F A<sub>f</sub>F R&#x27E7; = &#x27E6;A<sub>f</sub>F R&#x27E7;</div>
-    <p class="e">Reaching a vertex from which every fair path reaches
-      <code>R</code> is as good as reaching <code>R</code>.</p>
-  </div>
-
-  <div class="proof">
-    <span class="lead-in">Proof of the law</span>
-    <p>
-      <code>&supe;</code>: <code>Z &sube; &#x27E6;A<sub>f</sub>F Z&#x27E7;</code>
-      for every set <code>Z</code>; take
-      <code>Z = &#x27E6;A<sub>f</sub>F R&#x27E7;</code>.
-      <code>&sube;</code>: let <code>v &isin; &#x27E6;A<sub>f</sub>F A<sub>f</sub>F R&#x27E7;</code>.
-      A fair path from <code>v</code> reaches some
-      <code>w &isin; &#x27E6;A<sub>f</sub>F R&#x27E7;</code>. The rest of the
-      path, from <code>w</code> on, is a fair path from <code>w</code>
-      (fact 1), so it reaches <code>R</code>.
-    </p>
-  </div>
-
-  <div class="proof">
-    <span class="lead-in">Proof of transitivity</span>
-    <div class="calc">P &sube; &#x27E6;A<sub>f</sub>F Q&#x27E7; &sube; &#x27E6;A<sub>f</sub>F A<sub>f</sub>F R&#x27E7; = &#x27E6;A<sub>f</sub>F R&#x27E7;</div>
-    <p>
-      The first step is the first condition. The second is monotonicity
-      (fact 2) applied to the second condition,
-      <code>Q &sube; &#x27E6;A<sub>f</sub>F R&#x27E7;</code>. The third is
-      the law. All the reasoning about paths is in the law; the rule itself
-      is set algebra.
-    </p>
-  </div>
-
-  <figure class="fig wideout">
-    <svg id="tr_g" viewBox="0 0 1240 510" role="img"
-         aria-label="A colored graph with regions P, Q and R; a token walks a fair path from P, reaches a vertex w of Q, and the rest of the path from w, drawn bold, goes on to reach R"></svg>
-    <div class="ctrls">
-      <button id="tr_play" class="primary">Play</button>
-      <button id="tr_step">Step</button>
-      <button id="tr_reset">Reset</button>
-      <span class="status" id="tr_status"></span>
-    </div>
-    <figcaption>
-      <b>Figure 2. Transitivity.</b>
-      Red edges keep a path in <code>P</code> and blue edges take it to
-      <code>Q</code>, so <code>P &sube; &#x27E6;A<sub>f</sub>F Q&#x27E7;</code>.
-      Blue edges keep a path in <code>Q</code> and red edges take it to
-      <code>R</code>, so <code>Q &sube; &#x27E6;A<sub>f</sub>F R&#x27E7;</code>.
-      <i>Play</i> walks a random fair path from the start vertex (click
-      <code>a</code> or <code>b</code> to change it). When it first reaches
-      <code>Q</code>, at the vertex marked <code>w</code>, the steps before
-      <code>w</code> fade: the rest of the path is a fair path from
-      <code>w</code>, and the counts above show both colors still being
-      used. Since <code>w &isin; &#x27E6;A<sub>f</sub>F R&#x27E7;</code>, it
-      reaches <code>R</code>.
-    </figcaption>
-  </figure>
-
-<h2>4. Fair execution: the UNITY model</h2>
-
-  <p>
-    So far the graph was arbitrary. Now we describe the model of computation
+    Part 2 proved two rules about fair paths on any colored graph: the
+    basis rule and transitivity. Now we describe the model of computation
     of UNITY. A program has a set of states, a set of initial states, and a
     finite set of <b>actions</b>. Each action is a function from states to
     states: in every state it has exactly one next state. An action that
@@ -294,6 +127,12 @@
       <code>s(v)</code>. If <code>s</code> does nothing in <code>v</code>,
       the edge is a self-loop. Every color is fair.</p>
   </div>
+
+  <p>
+    Part 2 also allows grey edges, whose color is not fair. In a program
+    they are actions that may or may not be executed infinitely often. In
+    UNITY every action is fair.
+  </p>
 
   <p>
     So an execution is a fair path from an initial state, and
@@ -317,7 +156,7 @@
       <span class="status" id="ux_status"></span>
     </div>
     <figcaption>
-      <b>Figure 3. Fair execution.</b>
+      <b>Figure 1. Fair execution.</b>
       A program with states <code>0</code>&ndash;<code>3</code> and three
       actions. <i>Red</i> goes from an even state to the next state;
       <i>blue</i> goes from <code>1</code> to <code>2</code>; <i>green</i>
@@ -334,7 +173,9 @@
 <h3>The basis rule for a program</h3>
 
   <p>
-    In a program, the second condition of the basis rule holds when one
+    In a program, the second part of the condition of the basis rule
+    (part 2, section 3),
+    <code>P &sube; &#x27E6;&not;E<sub>f</sub>G P&#x27E7;</code>, holds when one
     action takes every state of <code>P</code> out of <code>P</code>. Write
     <code>&#x27E6;AX<sub>s</sub> Z&#x27E7;</code> for the set of vertices
     whose <code>s</code>-edge ends in <code>Z</code>.
@@ -342,7 +183,7 @@
 
   <div class="thm">
     <span class="lead-in">One action suffices</span>
-    <div class="f">P &sube; &#x27E6;AX<sub>s</sub> &not;P&#x27E7; for some action s <span class="imp">&#x27F9;</span> V = &#x27E6;A<sub>f</sub>F &not;P&#x27E7;</div>
+    <div class="f">P &sube; &#x27E6;AX<sub>s</sub> &not;P&#x27E7; for some action s <span class="imp">&#x27F9;</span> P &sube; &#x27E6;&not;E<sub>f</sub>G P&#x27E7;</div>
     <p class="e">A fair path takes an <code>s</code>-edge infinitely often.
       If it stayed in <code>P</code>, its next <code>s</code>-edge would
       leave <code>P</code>. So no fair path stays in <code>P</code> for
@@ -350,7 +191,7 @@
   </div>
 
   <p>
-    In Figure 3, take <code>P = {0}</code> and <code>Q = {1}</code>. Every
+    In Figure 1, take <code>P = {0}</code> and <code>Q = {1}</code>. Every
     edge from <code>0</code> ends in <code>0</code> or <code>1</code>, and
     red takes <code>0</code> out of <code>{0}</code>. So by the basis rule
     <code>{0} &sube; &#x27E6;A<sub>f</sub>F {1}&#x27E7;</code>: every
@@ -365,9 +206,10 @@
 
   <p>
     UNITY is described in K. M. Chandy and J. Misra, <i>Parallel Program
-    Design: A Foundation</i> (Addison-Wesley, 1988). There the basis rule is
-    stated with <code>P &and; &not;Q</code> in place of <code>P</code> in
-    its two conditions; the proof is the same.
+    Design: A Foundation</i> (Addison-Wesley, 1988). There the condition
+    of the basis rule is stated for <code>P &and; &not;Q</code>:
+    <code>P &and; &not;Q &sube; &#x27E6;AX (P &cup; Q) &and; &not;E<sub>f</sub>G (P &and; &not;Q)&#x27E7;</code>.
+    The conclusion and the proof are the same.
   </p>
 
 </div>
@@ -464,126 +306,7 @@ window.UG=(function(){
   return {C:C, el:el, clear:clear, text:text, draw:draw, out:out, fairPicker:fairPicker, player:player};
 })();
 
-/* Figure 1 — the basis rule */
-(function(){
-  const PFX='ba_', $=function(id){ return document.getElementById(PFX+id); };
-  const svg=$('g'); if(!svg) return;
-  const U=window.UG, C=U.C;
-  const POS={a:[380,260], b:[170,150], c:[170,370], d:[680,140], e:[680,380], f:[960,140], g:[960,380]};
-  const LOOPS={'e,R':90, 'f,B':-90, 'g,B':90};
-  const BASE=[['a','b','R'],['b','c','R'],['c','a','R'],['a','d','B'],['b','d','B'],['c','e','B'],
-              ['d','f','R'],['d','e','B'],['e','e','R'],['e','g','B'],['f','g','R'],['f','f','B'],['g','f','R'],['g','g','B']];
-  const P=new Set(['a','b','c']), Q=new Set(['d','e']);
-  const REGIONS=[{cx:265, cy:260, rx:175, ry:175, fill:C.pFill, stroke:C.pStroke, label:'P', lx:250, ly:262},
-                 {cx:680, cy:260, rx:80, ry:175, fill:C.qFill, stroke:C.qStroke, label:'Q', lx:735, ly:262}];
-  let mode='fair', start='a', path=[], at='a', exitAt=-1, picker=null;
-  function graph(){ return {POS:POS, COL:{R:C.red, B:C.blue}, loop:function(u,c){ return LOOPS[u+','+c]||-90; },
-    E:BASE.map(function(e){ return (mode==='broken' && e[0]==='a' && e[2]==='B')? ['a','f','B'] : e; })}; }
-  function cond1(G){ return G.E.every(function(e){ return !P.has(e[0]) || P.has(e[1]) || Q.has(e[1]); }); }
-  function reset(){ path=[]; at=start; exitAt=-1; picker=U.fairPicker(['R','B'],3); draw(); }
-  function step(){
-    const G=graph();
-    const limit=(mode==='red')? 9 : (exitAt>=0? exitAt+(mode==='broken'? 7 : 3) : 40);
-    if(path.length>=limit) return false;
-    let c;
-    if(mode==='red') c='R';
-    else if(mode==='broken') c=(exitAt<0)? (at==='a'? 'B' : 'R') : ['R','R','B'][(path.length-exitAt-1)%3];
-    else c=picker.pick(P.has(at)? function(){ return Math.random()<0.65? 'R' : 'B'; } : null);
-    const e=U.out(G, at, c);
-    path.push(e);
-    if(exitAt<0 && P.has(e[0]) && !P.has(e[1])) exitAt=path.length-1;
-    at=e[1]; draw(); return true;
-  }
-  function draw(){
-    U.clear(svg);
-    const G=graph(), hl={}, ecol={}, edash={};
-    path.forEach(function(e,i){ hl[e.join(',')]=(i===exitAt)? 'strong' : (hl[e.join(',')]||'on'); });
-    if(mode==='broken'){ ecol['a,f,B']=C.orange; edash['a,f,B']=1; }
-    U.draw(svg, G, {regions:REGIONS, hl:hl, dim:path.length>0, ecol:ecol, edash:edash, token:at,
-      stroke:{[start]:C.ink}, sw:{[start]:3.5},
-      click:function(v){ if(P.has(v)){ start=v; pl.stop(); reset(); } }});
-    const nR=path.filter(function(e){ return e[2]==='R'; }).length, nB=path.length-nR;
-    U.text(svg, 30, 28, 'start '+start+'   ·   steps '+path.length+'   ·   red '+nR+'   ·   blue '+nB, {anchor:'start', size:15, w:700});
-    const ok=cond1(G);
-    U.text(svg, 1210, 28, 'every edge from P ends in P ∪ Q: '+(ok? 'yes' : 'no (a → f)'), {anchor:'end', size:14, w:700, fill:ok? C.teal : C.orange});
-    let msg='', col=C.ink;
-    if(!path.length){
-      msg=(mode==='fair')? 'Press Play: a random fair path from '+start+'. Each color is taken at least once in every 4 steps.'
-        : (mode==='red')? 'Press Play: red forever from '+start+'.'
-        : 'a’s blue edge now goes to f, outside P ∪ Q. Press Play.';
-    } else if(mode==='red'){
-      msg='Red forever stays in P, but blue never appears. Not a fair path, so it does not count.'; col=C.red;
-    } else if(mode==='broken'){
-      if(exitAt<0) msg='The path goes to a, then takes a’s blue edge to f.';
-      else { msg='A fair path that never reaches Q: from f, red and blue for ever inside {f, g}. So P ⊆ ⟦A_fF Q⟧ fails.'; col=C.orange; }
-    } else if(exitAt<0){
-      msg='In P at '+at+': red stays in P, blue leaves it. A fair path must take blue.';
-    } else {
-      const e=path[exitAt];
-      msg='Left P at step '+(exitAt+1)+': '+e[0]+' → '+e[1]+'. '+e[1]+' ∉ P, and every edge from P ends in P ∪ Q, so '+e[1]+' ∈ Q.'; col=C.teal;
-    }
-    U.text(svg, 30, 492, msg, {anchor:'start', size:15, w:700, fill:col});
-    $('status').innerHTML='step <b>'+path.length+'</b>';
-  }
-  function setMode(m){ mode=m; ['fair','red','broken'].forEach(function(x){ $(x).className=(x===m)? 'on' : ''; }); pl.stop(); reset(); }
-  const pl=U.player(PFX, step, reset, 800);
-  $('fair').addEventListener('click', function(){ setMode('fair'); });
-  $('red').addEventListener('click', function(){ setMode('red'); });
-  $('broken').addEventListener('click', function(){ setMode('broken'); });
-  reset();
-})();
-
-/* Figure 2 — transitivity */
-(function(){
-  const PFX='tr_', $=function(id){ return document.getElementById(PFX+id); };
-  const svg=$('g'); if(!svg) return;
-  const U=window.UG, C=U.C;
-  const G={POS:{a:[170,160], b:[170,380], c:[560,160], d:[560,380], e:[900,270], f:[1130,270]},
-    COL:{R:C.red, B:C.blue}, loop:function(){ return -90; },
-    E:[['a','b','R'],['b','a','R'],['a','c','B'],['b','d','B'],['c','d','B'],['d','c','B'],
-       ['c','e','R'],['d','e','R'],['e','f','R'],['e','e','B'],['f','e','R'],['f','f','B']]};
-  const P=new Set(['a','b']), Q=new Set(['c','d']), R=new Set(['e']);
-  const REGIONS=[{cx:170, cy:270, rx:95, ry:170, fill:C.pFill, stroke:C.pStroke, label:'P', lx:110, ly:272},
-                 {cx:560, cy:270, rx:95, ry:170, fill:C.qFill, stroke:C.qStroke, label:'Q', lx:620, ly:272},
-                 {cx:900, cy:280, rx:80, ry:90, fill:C.rFill, stroke:C.rStroke, label:'R', lx:900, ly:338}];
-  let start='a', path=[], at='a', w=-1, r=-1, picker=null;
-  /* w: index in the vertex sequence of the first vertex in Q; r: of the first in R */
-  function reset(){ path=[]; at=start; w=-1; r=-1; picker=U.fairPicker(['R','B'],3); draw(); }
-  function step(){
-    if(path.length>=(r>=0? r+5 : 40)) return false;
-    const stay=P.has(at)? 'R' : (Q.has(at)? 'B' : null);
-    const c=picker.pick(stay? function(){ return Math.random()<0.6? stay : (stay==='R'? 'B' : 'R'); } : null);
-    const e=U.out(G, at, c); path.push(e); at=e[1];
-    if(w<0 && Q.has(at)) w=path.length;
-    if(w>=0 && r<0 && R.has(at)) r=path.length;
-    draw(); return true;
-  }
-  function vertexAt(i){ return i===0? start : path[i-1][1]; }
-  function draw(){
-    U.clear(svg);
-    const hl={};
-    path.forEach(function(e,i){ const k=e.join(','); hl[k]=(w>=0 && i>=w)? 'on' : (hl[k]==='on'? 'on' : 'old'); });
-    const marks={}; if(w>=0) marks[vertexAt(w)]='w';
-    U.draw(svg, G, {regions:REGIONS, hl:hl, dim:path.length>0, token:at, marks:marks,
-      stroke:{[start]:C.ink}, sw:{[start]:3.5},
-      click:function(v){ if(P.has(v)){ start=v; pl.stop(); reset(); } }});
-    let head='start '+start+'   ·   steps '+path.length;
-    if(w>=0){ const suf=path.slice(w), nR=suf.filter(function(e){ return e[2]==='R'; }).length;
-      head+='   ·   the path from w: red '+nR+', blue '+(suf.length-nR); }
-    U.text(svg, 30, 28, head, {anchor:'start', size:15, w:700});
-    let msg='', col=C.ink;
-    if(!path.length) msg='Press Play: a random fair path from '+start+'.';
-    else if(w<0) msg='In P: red stays in P, blue goes to Q. Every fair path from P reaches Q.';
-    else if(r<0) msg='Reached w = '+vertexAt(w)+' ∈ Q. The rest of the path (bold) is a fair path from w, and w ∈ Q ⊆ ⟦A_fF R⟧.';
-    else { msg='Reached '+vertexAt(r)+' ∈ R. From P to w ∈ Q, and from w to R: '+start+' ∈ ⟦A_fF R⟧.'; col=C.teal; }
-    U.text(svg, 30, 492, msg, {anchor:'start', size:15, w:700, fill:col});
-    $('status').innerHTML='step <b>'+path.length+'</b>';
-  }
-  const pl=U.player(PFX, step, reset, 800);
-  reset();
-})();
-
-/* Figure 3 — fair execution of a program with three actions */
+/* Figure 1 — fair execution of a program with three actions */
 (function(){
   const PFX='ux_', $=function(id){ return document.getElementById(PFX+id); };
   const svg=$('g'); if(!svg) return;

@@ -237,14 +237,14 @@
   <header class="top">
     <div class="kicker">DisSysLab &middot; Temporal logic, part 1 of 3</div>
     <h1>Concepts in Temporal Logic</h1>
-    <h2>Part 1. Sets of vertices: all paths and some path</h2>
+    <h2>Part 1. Sets of vertices: all paths, some path, and until</h2>
     <p>
       Temporal logic describes how a system can behave over time. The
       possible behaviors of a system are the paths in a <b>directed
       graph</b>: a vertex is a state, and an edge is a step. This lecture
       defines the operators of the temporal logic <b>CTL</b> as sets of
-      vertices of a graph, where they can be seen. Part 2 adds until and
-      fairness; part 3 brings in initial states, looks at single paths,
+      vertices of a graph, where they can be seen. Part 2 adds colored
+      edges and fairness; part 3 brings in initial states, looks at single paths,
       and explains the logic LTL.
     </p>
     <p>
@@ -259,7 +259,7 @@
     </p>
   </header>
 
-  <nav class="parts"><span class="here">Part 1: all paths and some path</span><a href="TemporalLogic2.html">Part 2: until and fairness</a><a href="TemporalLogic3.html">Part 3: initial states, paths and LTL</a></nav>
+  <nav class="parts"><span class="here">Part 1: all paths, some path, until</span><a href="TemporalLogic2.html">Part 2: colored graphs and fairness</a><a href="TemporalLogic3.html">Part 3: system properties</a></nav>
 
 <h2>1. Directed graphs</h2>
 
@@ -777,6 +777,79 @@
     </figcaption>
   </figure>
 
+<h2>4. Until</h2>
+
+  <p>
+    <code>EF Z</code> says that some path reaches <code>Z</code>, and
+    nothing about the vertices on the way. <b>Until</b> adds a condition on
+    them: the path stays in a set <code>Y</code> until it reaches
+    <code>Z</code>.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">E[Y U Z]: on some path, Y until Z</span>
+    <div class="f">E[Y U Z] = {v | exists path v = v<sub>0</sub> &rarr; &hellip; &rarr; v<sub>k</sub> where v<sub>k</sub> &isin; Z and v<sub>0</sub>, &hellip;, v<sub>(k&minus;1)</sub> &isin; Y}</div>
+    <p class="e">Some path from <code>v</code> reaches <code>Z</code>, and every vertex before it is in <code>Y</code>.</p>
+  </div>
+  <div class="defn">
+    <span class="lead-in">A[Y U Z]: on all paths, Y until Z</span>
+    <div class="f">A[Y U Z] = {v | for every infinite path v = v<sub>0</sub> &rarr; v<sub>1</sub> &rarr; v<sub>2</sub> &rarr; &hellip;, exists k where v<sub>k</sub> &isin; Z and v<sub>0</sub>, &hellip;, v<sub>(k&minus;1)</sub> &isin; Y}</div>
+    <p class="e">Every infinite path from <code>v</code> reaches <code>Z</code>, and every vertex before it is in <code>Y</code>.</p>
+  </div>
+
+  <p>
+    <code>k</code> may be 0, so <code>Z</code> is a subset of both. With
+    <code>Y = V</code> there is no condition on the way:
+  </p>
+  <div class="calc">EF Z = E[V U Z]<br>AF Z = A[V U Z]</div>
+
+  <p>
+    In the figure below, let <code>Y = {a, b, c, d}</code> and <code>Z = {f}</code>. Then
+    <code>E[Y U Z] = {a, b, d, f}</code>, because of
+    <code>a &rarr; b &rarr; d &rarr; f</code>; <code>c</code> is not in it,
+    because its only edge goes to <code>e</code>, which is in neither set.
+    And <code>A[Y U Z] = {f}</code>. Two kinds of path show it:
+  </p>
+  <ul>
+    <li>from <code>a</code>, the path <code>a &rarr; c &rarr; e</code>
+      leaves <code>Y</code> before it reaches <code>Z</code>;</li>
+    <li>from <code>d</code>, the infinite path
+      <code>d &rarr; b &rarr; d &rarr; b &rarr; &hellip;</code> stays in
+      <code>Y</code> and never reaches <code>Z</code>.</li>
+  </ul>
+  <p>
+    Every counterexample to <code>v &isin; A[Y U Z]</code> is one of these
+    two kinds: a path through <code>Y &setminus; Z</code> to a vertex
+    outside <code>Y &cup; Z</code>, or an infinite path that stays in
+    <code>Y &setminus; Z</code>. Both sets grow from <code>W = Z</code>:
+    add a vertex of <code>Y</code> with <i>some</i> edge into
+    <code>W</code> for <code>E[Y U Z]</code>, or with <i>all</i> its edges
+    into <code>W</code> for <code>A[Y U Z]</code>.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="un_g" viewBox="0 0 1240 470" role="img"
+         aria-label="The example graph with sets Y (dashed orange) and Z (green outline); E[Y U Z] or A[Y U Z] is shaded; clicking a start vertex shows a path that stays in Y until Z, or a counterexample"></svg>
+    <div class="ctrls">
+      <button id="un_E" class="primary">E[Y U Z]</button>
+      <button id="un_A">A[Y U Z]</button>
+      <button id="un_mode">Clicks choose a start vertex</button>
+      <button id="un_reset">Reset</button>
+      <span class="status" id="un_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 10. Until.</b>
+      <code>Y</code> has a dashed orange outline and <code>Z</code> a thick
+      green one; the chosen set, <code>E[Y U Z]</code> or
+      <code>A[Y U Z]</code>, is shaded blue. The clicks button cycles
+      through choosing a start vertex, editing <code>Y</code> and editing
+      <code>Z</code>. Start at <code>a</code> and at <code>d</code> with
+      <code>A[Y U Z]</code> to see the two kinds of counterexample.
+      <i>Reset</i> restores <code>Y = {a, b, c, d}</code> and
+      <code>Z = {f}</code>.
+    </figcaption>
+  </figure>
+
 <h2>Notes</h2>
 
   <div class="aside">
@@ -791,8 +864,19 @@
     </p>
   </div>
 
+  <div class="aside">
+    <span class="lead-in">Note: fixed points</span>
+    <p>
+      Every operator in this lecture is the largest or the smallest set
+      <code>W</code> that satisfies a condition. Model checkers compute
+      them this way: the largest by peeling from above, the smallest by
+      growing from below.
+    </p>
+    <div class="calc">AG Z: largest W with W &sube; Z &cap; AX W<br>EG Z: largest W with W &sube; Z &cap; EX W<br>AF Z: smallest W with Z &cup; AX W &sube; W<br>EF Z: smallest W with Z &cup; EX W &sube; W<br>A[Y U Z]: smallest W with Z &cup; (Y &cap; AX W) &sube; W<br>E[Y U Z]: smallest W with Z &cup; (Y &cap; EX W) &sube; W</div>
+  </div>
 
-  <nav class="parts"><span class="here">Part 1: all paths and some path</span><a href="TemporalLogic2.html">Part 2: until and fairness</a><a href="TemporalLogic3.html">Part 3: initial states, paths and LTL</a></nav>
+
+  <nav class="parts"><span class="here">Part 1: all paths, some path, until</span><a href="TemporalLogic2.html">Part 2: colored graphs and fairness</a><a href="TemporalLogic3.html">Part 3: system properties</a></nav>
 
 </div>
 <script>
@@ -1418,5 +1502,73 @@ window.TLG=(function(){
 })();
 </script>
 
+<script>
+/* Figure 10 — until: E[Y U Z] and A[Y U Z], with witnesses and the two kinds
+   of counterexample */
+(function(){
+  const PFX='un_', $=function(id){return document.getElementById(PFX+id);};
+  const svg=$('g'); if(!svg) return;
+  const G=window.TLG, C=G.C;
+  const Y0=['a','b','c','d'], Z0=['f'], MODES=['start','y','z'],
+        LABEL={start:'Clicks choose a start vertex', y:'Clicks edit Y', z:'Clicks edit Z'};
+  let Y, Z, which='E', mode='start', start=null, seq=[], k=0, mark=null, msg='', kind='', timer=null;
+  function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+  function clearPath(){ stop(); start=null; seq=[]; k=0; mark=null; msg=''; kind=''; }
+  function U(){ return which==='E'? G.EU(Y,Z) : G.AU(Y,Z); }
+  function draw(){
+    G.clear(svg);
+    const S=U(), fill={}, stroke={}, sw={}, dash={};
+    G.V.forEach(function(v){
+      if(S.has(v)) fill[v]=C.light;
+      if(Z.has(v)){ stroke[v]=C.teal; sw[v]=6; }
+      else if(Y.has(v)){ stroke[v]=C.orange; sw[v]=3.5; dash[v]=true; }
+    });
+    const on={}; let at=start;
+    for(let i=0;i<k && i<seq.length;i++){ on[seq[i].join(',')]=1; at=seq[i][1]; }
+    const good=(kind==='yes')? C.teal : C.red;
+    G.draw(svg, {fill:fill, stroke:stroke, sw:sw, dash:dash, token:start==null?null:at,
+      edge:function(u,v){ return on[u+','+v]? good : ((mark && mark.has(u))? good : null); },
+      click:function(v){
+        if(mode==='start') return go(v);
+        const T=(mode==='y')? Y : Z; if(T.has(v)) T.delete(v); else T.add(v); clearPath(); draw(); }});
+    G.text(svg, 30, 398, 'Y = '+G.show(Y)+'   ·   Z = '+G.show(Z), {anchor:'start', mono:true, size:15, w:700});
+    G.text(svg, 30, 424, 'E[Y U Z] = '+G.show(G.EU(Y,Z))+'   ·   A[Y U Z] = '+G.show(G.AU(Y,Z)),
+      {anchor:'start', mono:true, size:15, w:700, fill:C.blue});
+    if(msg) G.text(svg, 30, 450, msg, {anchor:'start', size:15, w:700, fill:good});
+    $('status').innerHTML='shaded: <b>'+which+'[Y U Z]</b>';
+  }
+  function go(v){
+    clearPath(); start=v;
+    const inS=U().has(v), YmZ=new Set([...Y].filter(function(x){ return !Z.has(x); }));
+    const name=which+'[Y U Z]', IN=v+' ∈ '+name+': ', OUT=v+' ∉ '+name+': ';
+    kind=inS? 'yes' : 'no';
+    if(inS && Z.has(v)){ msg=IN+v+' is in Z (a path of length 0)'; }
+    else if(!inS && !Y.has(v) && !Z.has(v)){ msg=OUT+v+' is in neither Y nor Z'; }
+    else if(which==='E'){
+      if(inS){ seq=G.pathTo(Y, v, Z); msg=IN+'this path stays in Y until it reaches Z'; }
+      else { /* everything reachable from v through Y ∖ Z */
+        const seen=new Set([v]), st=[v];
+        while(st.length){ const u=st.pop(); G.OUT[u].forEach(function(w){ if(YmZ.has(w) && !seen.has(w)){ seen.add(w); st.push(w); } }); }
+        mark=seen; msg=OUT+'every path from '+v+' leaves Y before it reaches Z, or stays in Y ∖ Z';
+      }
+    } else {
+      if(inS){ seq=G.randomPath(v, Z, 30); msg=IN+'this path stays in Y until it reaches Z, and so does every path. Click '+v+' again.'; }
+      else {
+        const out=G.minus(new Set([...Y, ...Z])), p=G.pathTo(YmZ, v, out);
+        if(p){ seq=p; msg=OUT+'this path reaches '+p[p.length-1][1]+', in neither Y nor Z, before it reaches Z'; }
+        else { seq=G.lassoSeq(G.stayIn(YmZ, v), 3); msg=OUT+'this infinite path stays in Y ∖ Z forever, and never reaches Z'; }
+      }
+    }
+    draw();
+    timer=setInterval(function(){ if(k<seq.length){ k++; draw(); } else stop(); }, 550);
+  }
+  function pick(w){ which=w; $('E').className=(w==='E')?'primary':''; $('A').className=(w==='A')?'primary':''; clearPath(); draw(); }
+  $('E').onclick=function(){ pick('E'); };
+  $('A').onclick=function(){ pick('A'); };
+  $('mode').onclick=function(){ mode=MODES[(MODES.indexOf(mode)+1)%3]; $('mode').textContent=LABEL[mode]; draw(); };
+  $('reset').onclick=function(){ Y=new Set(Y0); Z=new Set(Z0); clearPath(); draw(); };
+  Y=new Set(Y0); Z=new Set(Z0); draw();
+})();
+</script>
 </body>
 </html>
