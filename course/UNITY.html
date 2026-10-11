@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UNITY &mdash; progress in CTL</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  h2{font-family:var(--display); font-weight:600; font-size:25px;
+     letter-spacing:-.01em; margin:38px 0 12px}
+  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:34px 0 8px}
+  p{color:var(--body); margin:0 0 15px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  header.top h2{margin:-2px 0 20px; padding:0; border:0;
+    font-family:var(--display); font-weight:600; font-size:22px;
+    line-height:1.2; letter-spacing:-.01em; color:var(--muted)}
+  figure.fig{margin:32px 0 30px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  figure.fig figcaption i{color:var(--ink); font-style:normal; font-weight:600}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  button.on{border-color:var(--orange); color:var(--orange); box-shadow:inset 0 0 0 1px var(--orange)}
+  .sep{width:1px; align-self:stretch; background:var(--line)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em;
+       background:#f6f4ee; border-radius:5px; padding:1px 5px}
+  .calc{font-family:var(--mono); font-size:15px; color:var(--ink);
+    background:#fbf9f5; border:1px solid var(--line); border-radius:8px;
+    padding:11px 15px; margin:12px 0}
+  /* a definition: the formula first, the English below it */
+  .defn{margin:22px 0 20px; padding:14px 18px 14px 20px; background:#fff6ef;
+    border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0}
+  .defn .lead-in{display:block; font:700 11.5px/1 var(--sans); letter-spacing:.14em;
+    text-transform:uppercase; color:var(--orange); margin-bottom:9px}
+  .defn .f{font:600 18px/1.5 var(--mono); color:var(--ink); margin:0 0 8px}
+  .defn .e{font-size:16.5px; line-height:1.55; color:var(--ink); margin:0}
+  /* a rule or a law: same layout, in teal */
+  .thm{margin:24px 0 22px; padding:14px 18px 14px 20px; background:#fff;
+    border:1px solid var(--line); border-left:5px solid var(--teal);
+    border-radius:0 10px 10px 0}
+  .thm .lead-in{display:block; font:700 11.5px/1 var(--sans); letter-spacing:.14em;
+    text-transform:uppercase; color:var(--teal); margin-bottom:9px}
+  .thm .f{font:600 18px/1.5 var(--mono); color:var(--ink); margin:0 0 8px}
+  .thm .e{font-size:16.5px; line-height:1.55; color:var(--ink); margin:0}
+  .imp{font-size:1.25em; line-height:1}
+  .proof{margin:6px 0 24px; padding:2px 0 2px 22px; border-left:2px solid var(--line)}
+  .proof > p:last-child{margin-bottom:0}
+  .proof .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted); margin:0 0 9px}
+  ol.facts{margin:10px 0 18px; padding-left:24px; color:var(--body)}
+  ol.facts li{margin:0 0 8px}
+  nav.parts{display:flex; flex-wrap:wrap; gap:6px 18px; margin:0 0 26px; padding:10px 14px;
+    background:#fff; border:1px solid var(--line); border-radius:10px; font-size:14.5px}
+  nav.parts a{color:var(--ink); font-weight:600; text-decoration:none}
+  nav.parts a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab &middot; UNITY</div>
+    <h1>UNITY</h1>
+    <h2>Progress in CTL: the basis rule, transitivity, and fair execution</h2>
+    <p>
+      UNITY is the programming notation and logic of Chandy and Misra. This
+      lecture describes its rules for progress in the CTL of the temporal
+      logic lectures. Safety needs nothing new: the safety properties of
+      UNITY are sets built from <code>AX</code> and <code>AG</code>.
+      Progress needs one operator, <code>A<sub>f</sub>F</code>, from part 2.
+      We start with two rules about <code>A<sub>f</sub>F</code>, on any
+      colored graph, and only then describe the model of computation of
+      UNITY.
+    </p>
+  </header>
+
+  <nav class="parts"><span>Builds on:</span><a href="TemporalLogic1.html">Temporal logic part 1</a><a href="TemporalLogic2.html">Part 2: until and fairness</a><a href="TemporalLogic3.html">Part 3: initial states, paths and LTL</a></nav>
+
+<h2>1. Fair paths</h2>
+
+  <p>
+    We use the colored graphs of part 2. Every edge has a color, and every
+    vertex has an edge of every fair color. A <b>fair path</b> is an
+    infinite path in which every fair color appears infinitely often. In the
+    figures of this lecture every color is fair. As in part 3,
+    <code>&#x27E6;&phi;&#x27E7;</code> is the set of vertices at which the
+    formula <code>&phi;</code> holds, <code>V</code> is the set of all
+    vertices, and <code>&not;P = V &setminus; P</code>.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">A<sub>f</sub>F: on all fair paths, eventually</span>
+    <div class="f">&#x27E6;A<sub>f</sub>F Z&#x27E7; = {v | every fair path from v reaches Z}</div>
+    <p class="e">The first vertex of a path counts, so <code>Z &sube; &#x27E6;A<sub>f</sub>F Z&#x27E7;</code>.</p>
+  </div>
+
+  <p>Two facts about fair paths are used below.</p>
+  <ol class="facts">
+    <li><b>A suffix of a fair path is fair.</b> Drop the first
+      <code>k</code> vertices of a fair path from <code>v</code>: what is
+      left is a fair path from <code>v<sub>k</sub></code>, because finitely
+      many steps do not change which colors appear infinitely often.</li>
+    <li><b>Monotonicity</b> (part 2):
+      <code>Y &sube; Z <span class="imp">&#x27F9;</span> &#x27E6;A<sub>f</sub>F Y&#x27E7; &sube; &#x27E6;A<sub>f</sub>F Z&#x27E7;</code>.</li>
+  </ol>
+
+<h2>2. The basis rule</h2>
+
+  <div class="thm">
+    <span class="lead-in">Basis rule</span>
+    <div class="f">P &sube; &#x27E6;AX (P &cup; Q)&#x27E7; &and; V = &#x27E6;A<sub>f</sub>F &not;P&#x27E7; <span class="imp">&#x27F9;</span> P &sube; &#x27E6;A<sub>f</sub>F Q&#x27E7;</div>
+    <p class="e">If every edge from <code>P</code> ends in <code>P</code> or
+      <code>Q</code>, and every fair path reaches <code>&not;P</code>, then
+      every fair path from <code>P</code> reaches <code>Q</code>.</p>
+  </div>
+
+  <p>
+    The second condition, <code>V = &#x27E6;A<sub>f</sub>F &not;P&#x27E7;</code>,
+    says that no fair path stays in <code>P</code> forever. It is the same as
+    <code>P &sube; &#x27E6;A<sub>f</sub>F &not;P&#x27E7;</code>, because every
+    vertex of <code>&not;P</code> is in
+    <code>&#x27E6;A<sub>f</sub>F &not;P&#x27E7;</code> already.
+  </p>
+
+  <div class="proof">
+    <span class="lead-in">Proof</span>
+    <p>
+      Let <code>v &isin; P</code>, and take a fair path from <code>v</code>.
+      By the second condition, the path reaches <code>&not;P</code>. Let
+      <code>w</code> be its first vertex outside <code>P</code>, and
+      <code>u</code> the vertex before <code>w</code>. Then
+      <code>u &isin; P</code>, so by the first condition
+      <code>w &isin; P &cup; Q</code>. Since <code>w &notin; P</code>,
+      <code>w &isin; Q</code>. So every fair path from <code>v</code> reaches
+      <code>Q</code>.
+    </p>
+  </div>
+
+  <p>
+    Both conditions are needed. Without fairness, a path could go round a
+    cycle inside <code>P</code> for ever. Without the first condition, a
+    path could leave <code>P</code> to a vertex outside
+    <code>P &cup; Q</code> and never come to <code>Q</code>. Figure 1 shows
+    both.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="ba_g" viewBox="0 0 1240 510" role="img"
+         aria-label="A colored graph with a region P of three vertices joined by a red cycle, and a region Q of two vertices; every blue edge from P goes to Q; a token walks a fair path from P and leaves P into Q"></svg>
+    <div class="ctrls">
+      <button id="ba_play" class="primary">Play</button>
+      <button id="ba_step">Step</button>
+      <button id="ba_reset">Reset</button>
+      <span class="sep"></span>
+      <button id="ba_fair" class="on">A fair path</button>
+      <button id="ba_red">Red forever</button>
+      <button id="ba_broken">Break the first condition</button>
+      <span class="status" id="ba_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 1. The basis rule.</b>
+      Red edges inside <code>P</code> form a cycle, and every blue edge from
+      <code>P</code> goes to <code>Q</code>. So every edge from
+      <code>P</code> ends in <code>P &cup; Q</code>, and a fair path, which
+      must take blue, cannot stay in <code>P</code>. <i>A fair path</i>
+      walks a random fair path from the start vertex (click a vertex of
+      <code>P</code> to change it); the edge on which it first leaves
+      <code>P</code> is drawn thick, and it always ends in <code>Q</code>.
+      <i>Red forever</i> stays in <code>P</code>, but it is not fair.
+      <i>Break the first condition</i> sends the blue edge from
+      <code>a</code> to <code>f</code>, outside <code>P &cup; Q</code>
+      (dashed), and shows a fair path that never reaches <code>Q</code>.
+    </figcaption>
+  </figure>
+
+<h2>3. Transitivity</h2>
+
+  <div class="thm">
+    <span class="lead-in">Transitivity</span>
+    <div class="f">P &sube; &#x27E6;A<sub>f</sub>F Q&#x27E7; &and; Q &sube; &#x27E6;A<sub>f</sub>F R&#x27E7; <span class="imp">&#x27F9;</span> P &sube; &#x27E6;A<sub>f</sub>F R&#x27E7;</div>
+    <p class="e">If every fair path from <code>P</code> reaches
+      <code>Q</code>, and every fair path from <code>Q</code> reaches
+      <code>R</code>, then every fair path from <code>P</code> reaches
+      <code>R</code>.</p>
+  </div>
+
+  <p>The rule follows from one law of <code>A<sub>f</sub>F</code>.</p>
+
+  <div class="thm">
+    <span class="lead-in">Law</span>
+    <div class="f">&#x27E6;A<sub>f</sub>F A<sub>f</sub>F R&#x27E7; = &#x27E6;A<sub>f</sub>F R&#x27E7;</div>
+    <p class="e">Reaching a vertex from which every fair path reaches
+      <code>R</code> is as good as reaching <code>R</code>.</p>
+  </div>
+
+  <div class="proof">
+    <span class="lead-in">Proof of the law</span>
+    <p>
+      <code>&supe;</code>: <code>Z &sube; &#x27E6;A<sub>f</sub>F Z&#x27E7;</code>
+      for every set <code>Z</code>; take
+      <code>Z = &#x27E6;A<sub>f</sub>F R&#x27E7;</code>.
+      <code>&sube;</code>: let <code>v &isin; &#x27E6;A<sub>f</sub>F A<sub>f</sub>F R&#x27E7;</code>.
+      A fair path from <code>v</code> reaches some
+      <code>w &isin; &#x27E6;A<sub>f</sub>F R&#x27E7;</code>. The rest of the
+      path, from <code>w</code> on, is a fair path from <code>w</code>
+      (fact 1), so it reaches <code>R</code>.
+    </p>
+  </div>
+
+  <div class="proof">
+    <span class="lead-in">Proof of transitivity</span>
+    <div class="calc">P &sube; &#x27E6;A<sub>f</sub>F Q&#x27E7; &sube; &#x27E6;A<sub>f</sub>F A<sub>f</sub>F R&#x27E7; = &#x27E6;A<sub>f</sub>F R&#x27E7;</div>
+    <p>
+      The first step is the first condition. The second is monotonicity
+      (fact 2) applied to the second condition,
+      <code>Q &sube; &#x27E6;A<sub>f</sub>F R&#x27E7;</code>. The third is
+      the law. All the reasoning about paths is in the law; the rule itself
+      is set algebra.
+    </p>
+  </div>
+
+  <figure class="fig wideout">
+    <svg id="tr_g" viewBox="0 0 1240 510" role="img"
+         aria-label="A colored graph with regions P, Q and R; a token walks a fair path from P, reaches a vertex w of Q, and the rest of the path from w, drawn bold, goes on to reach R"></svg>
+    <div class="ctrls">
+      <button id="tr_play" class="primary">Play</button>
+      <button id="tr_step">Step</button>
+      <button id="tr_reset">Reset</button>
+      <span class="status" id="tr_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 2. Transitivity.</b>
+      Red edges keep a path in <code>P</code> and blue edges take it to
+      <code>Q</code>, so <code>P &sube; &#x27E6;A<sub>f</sub>F Q&#x27E7;</code>.
+      Blue edges keep a path in <code>Q</code> and red edges take it to
+      <code>R</code>, so <code>Q &sube; &#x27E6;A<sub>f</sub>F R&#x27E7;</code>.
+      <i>Play</i> walks a random fair path from the start vertex (click
+      <code>a</code> or <code>b</code> to change it). When it first reaches
+      <code>Q</code>, at the vertex marked <code>w</code>, the steps before
+      <code>w</code> fade: the rest of the path is a fair path from
+      <code>w</code>, and the counts above show both colors still being
+      used. Since <code>w &isin; &#x27E6;A<sub>f</sub>F R&#x27E7;</code>, it
+      reaches <code>R</code>.
+    </figcaption>
+  </figure>
+
+<h2>4. Fair execution: the UNITY model</h2>
+
+  <p>
+    So far the graph was arbitrary. Now we describe the model of computation
+    of UNITY. A program has a set of states, a set of initial states, and a
+    finite set of <b>actions</b>. Each action is a function from states to
+    states: in every state it has exactly one next state. An action that
+    does nothing in a state takes that state to itself. How actions are
+    written down comes later.
+  </p>
+  <p>
+    An <b>execution</b> starts in an initial state and runs for ever. At each
+    step one action is chosen and executed. The choice is arbitrary, with one
+    constraint, <b>fairness</b>: every action is chosen infinitely often.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">A program is a colored graph</span>
+    <div class="f">vertex = state &nbsp;&nbsp; color = action &nbsp;&nbsp; v &rarr;<sub>s</sub> s(v)</div>
+    <p class="e">Each action <code>s</code> gives every vertex
+      <code>v</code> exactly one edge of color <code>s</code>, to the state
+      <code>s(v)</code>. If <code>s</code> does nothing in <code>v</code>,
+      the edge is a self-loop. Every color is fair.</p>
+  </div>
+
+  <p>
+    So an execution is a fair path from an initial state, and
+    <code>&#x27E6;A<sub>f</sub>F Q&#x27E7;</code> is the set of states from
+    which every execution reaches <code>Q</code>. In UNITY,
+    <code>P &sube; &#x27E6;A<sub>f</sub>F Q&#x27E7;</code> is written
+    <code>P &#x21A6; Q</code> and read &ldquo;<code>P</code> leads to
+    <code>Q</code>&rdquo;.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="ux_g" viewBox="0 0 1240 640" role="img"
+         aria-label="A program with four states and three actions, red, blue and green, drawn as a colored graph with one edge of each color from every state; below, the schedule of actions executed so far; on the right, how many times each action has run and how long it has waited"></svg>
+    <div class="ctrls">
+      <button id="ux_play" class="primary">Play</button>
+      <button id="ux_step">Step</button>
+      <button id="ux_reset">Reset</button>
+      <span class="sep"></span>
+      <button id="ux_rr" class="on">Rounds in random order</button>
+      <button id="ux_adv">Adversary</button>
+      <span class="status" id="ux_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 3. Fair execution.</b>
+      A program with states <code>0</code>&ndash;<code>3</code> and three
+      actions. <i>Red</i> goes from an even state to the next state;
+      <i>blue</i> goes from <code>1</code> to <code>2</code>; <i>green</i>
+      goes from <code>3</code> to <code>0</code>. Everywhere else an action
+      does nothing: a self-loop. The schedule below the graph is the
+      execution so far. <i>Rounds in random order</i> runs every action once
+      in each round. The <i>adversary</i> runs an action that does nothing
+      in the current state whenever it can, but it may not make an action
+      wait for ever; here it may make an action wait at most 5 steps. Even
+      so, the state keeps moving round <code>0 &rarr; 1 &rarr; 2 &rarr; 3 &rarr; 0</code>.
+    </figcaption>
+  </figure>
+
+<h3>The basis rule for a program</h3>
+
+  <p>
+    In a program, the second condition of the basis rule holds when one
+    action takes every state of <code>P</code> out of <code>P</code>. Write
+    <code>&#x27E6;AX<sub>s</sub> Z&#x27E7;</code> for the set of vertices
+    whose <code>s</code>-edge ends in <code>Z</code>.
+  </p>
+
+  <div class="thm">
+    <span class="lead-in">One action suffices</span>
+    <div class="f">P &sube; &#x27E6;AX<sub>s</sub> &not;P&#x27E7; for some action s <span class="imp">&#x27F9;</span> V = &#x27E6;A<sub>f</sub>F &not;P&#x27E7;</div>
+    <p class="e">A fair path takes an <code>s</code>-edge infinitely often.
+      If it stayed in <code>P</code>, its next <code>s</code>-edge would
+      leave <code>P</code>. So no fair path stays in <code>P</code> for
+      ever.</p>
+  </div>
+
+  <p>
+    In Figure 3, take <code>P = {0}</code> and <code>Q = {1}</code>. Every
+    edge from <code>0</code> ends in <code>0</code> or <code>1</code>, and
+    red takes <code>0</code> out of <code>{0}</code>. So by the basis rule
+    <code>{0} &sube; &#x27E6;A<sub>f</sub>F {1}&#x27E7;</code>: every
+    execution from <code>0</code> reaches <code>1</code>. The adversary can
+    delay red, but not for ever. In the same way, blue gives
+    <code>{1} &sube; &#x27E6;A<sub>f</sub>F {2}&#x27E7;</code> and red gives
+    <code>{2} &sube; &#x27E6;A<sub>f</sub>F {3}&#x27E7;</code>, and
+    transitivity gives <code>{0} &sube; &#x27E6;A<sub>f</sub>F {3}&#x27E7;</code>.
+  </p>
+
+<h2>Notes</h2>
+
+  <p>
+    UNITY is described in K. M. Chandy and J. Misra, <i>Parallel Program
+    Design: A Foundation</i> (Addison-Wesley, 1988). There the basis rule is
+    stated with <code>P &and; &not;Q</code> in place of <code>P</code> in
+    its two conditions; the proof is the same.
+  </p>
+
+</div>
+
+<script>
+/* UG: drawing colored graphs, and a fair chooser of colors */
+window.UG=(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#cfc9bc', orange:'#d13d0e', teal:'#00947d',
+           red:'#d6301b', blue:'#1a5fd0', green:'#2f9e44', purple:'#7b3fa0',
+           pFill:'#fff4e8', pStroke:'#d13d0e', qFill:'#e3f3ee', qStroke:'#00947d', rFill:'#efe7f6', rStroke:'#7b3fa0'};
+  function el(t,a,txt){ const e=document.createElementNS(NS,t); for(const k in a) e.setAttribute(k,a[k]); if(txt!=null) e.textContent=txt; return e; }
+  function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
+  /* text; "_f" is drawn as a subscript f, so "A_fF" reads as the fair AF */
+  function text(p,x,y,s,o){ o=o||{};
+    const t=el('text',{x:x, y:y, 'font-family':o.mono?'ui-monospace,Menlo,Consolas,monospace':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':o.size||15, 'font-weight':o.w||600, fill:o.fill||C.ink, 'text-anchor':o.anchor||'middle', 'dominant-baseline':'middle'});
+    if(o.opacity!=null) t.setAttribute('opacity', o.opacity);
+    String(s).split('_f').forEach(function(seg,i){
+      if(i>0) t.appendChild(el('tspan',{'baseline-shift':'sub', 'font-size':(o.size||15)*0.7}, 'f'));
+      if(seg) t.appendChild(el('tspan',{}, seg));
+    });
+    p.appendChild(t); return t; }
+  function headAt(g,x,y,ux,uy,col,op){ const s=6.5, px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:x+','+y+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+(x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col, opacity:op})); }
+  /* G = {POS, E:[[u,v,color]], COL, loop(u,c) -> angle in degrees}.
+     o.regions, o.hl[key] = 'on' | 'strong' | 'old', o.dim, o.ecol, o.edash,
+     o.fill / o.stroke / o.sw by vertex, o.marks, o.token, o.click(v) */
+  function draw(svg,G,o){
+    o=o||{}; const g=el('g',{}); svg.appendChild(g);
+    (o.regions||[]).forEach(function(r){
+      g.appendChild(el('ellipse',{cx:r.cx, cy:r.cy, rx:r.rx, ry:r.ry, fill:r.fill, stroke:r.stroke, 'stroke-width':2}));
+      text(g, r.lx, r.ly, r.label, {size:26, w:800, fill:r.stroke});
+    });
+    G.E.forEach(function(e){
+      const u=e[0], v=e[1], c=e[2], key=u+','+v+','+c, st=o.hl? o.hl[key] : null;
+      const col=(o.ecol && o.ecol[key]) || G.COL[c];
+      let w=2.3, op=(o.dim && !st)? 0.3 : 1;
+      if(st==='on') w=5; else if(st==='strong') w=7.5; else if(st==='old'){ w=4; op=0.4; }
+      const dash=(o.edash && o.edash[key])? '10 7' : 'none';
+      const P1=G.POS[u], P2=G.POS[v];
+      if(u===v){
+        const a=G.loop(u,c)*Math.PI/180, r=27, bx=P1[0]+Math.cos(a)*r, by=P1[1]+Math.sin(a)*r;
+        const nx=Math.cos(a), ny=Math.sin(a), tx=-ny, ty=nx;
+        const p1=[bx+tx*10, by+ty*10], p2=[bx-tx*10, by-ty*10];
+        const c1=[p1[0]+nx*48+tx*22, p1[1]+ny*48+ty*22], c2=[p2[0]+nx*48-tx*22, p2[1]+ny*48-ty*22];
+        g.appendChild(el('path',{d:'M '+p1[0]+' '+p1[1]+' C '+c1[0]+' '+c1[1]+' '+c2[0]+' '+c2[1]+' '+p2[0]+' '+p2[1],
+          fill:'none', stroke:col, 'stroke-width':w, opacity:op, 'stroke-dasharray':dash}));
+        const dx=p2[0]-c2[0], dy=p2[1]-c2[1], L=Math.hypot(dx,dy);
+        headAt(g, p2[0], p2[1], dx/L, dy/L, col, op);
+        text(g, bx+nx*56, by+ny*56, c, {size:13, w:700, fill:col, opacity:op});
+        return;
+      }
+      const dx=P2[0]-P1[0], dy=P2[1]-P1[1], L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
+      const back=G.E.some(function(f){ return f[0]===v && f[1]===u; }), off=back?13:0, px=-uy*off, py=ux*off;
+      const sx=P1[0]+ux*27+px, sy=P1[1]+uy*27+py, ex=P2[0]-ux*29+px, ey=P2[1]-uy*29+py;
+      g.appendChild(el('line',{x1:sx, y1:sy, x2:ex-ux*11, y2:ey-uy*11, stroke:col, 'stroke-width':w, opacity:op, 'stroke-dasharray':dash}));
+      headAt(g, ex, ey, ux, uy, col, op);
+      const lx=(sx+ex)/2+(back? px*1.1 : -uy*14), ly=(sy+ey)/2+(back? py*1.1 : ux*14);
+      text(g, lx, ly, c, {size:13, w:700, fill:col, opacity:op});
+    });
+    Object.keys(G.POS).forEach(function(v){
+      const x=G.POS[v][0], y=G.POS[v][1];
+      const cir=el('circle',{cx:x, cy:y, r:26, fill:(o.fill&&o.fill[v])||'#fff',
+        stroke:(o.stroke&&o.stroke[v])||C.ink, 'stroke-width':(o.sw&&o.sw[v])||1.8});
+      if(o.click){ cir.setAttribute('style','cursor:pointer'); cir.addEventListener('click', function(){ o.click(v); }); }
+      g.appendChild(cir);
+      text(g, x, y+1, String(v), {size:18, w:700});
+      if(o.marks && o.marks[v]) text(g, x-34, y-30, o.marks[v], {size:18, w:800, fill:C.purple, mono:true});
+    });
+    if(o.token!=null){ const x=G.POS[o.token][0], y=G.POS[o.token][1];
+      g.appendChild(el('circle',{cx:x+20, cy:y-21, r:10, fill:C.ink, stroke:'#fff', 'stroke-width':2.5})); }
+    return g;
+  }
+  function out(G,u,c){ const e=G.E.find(function(x){ return x[0]===u && x[2]===c; }); return e; }
+  /* chooses a color each step; a color unused for K steps is forced */
+  function fairPicker(colors,K){
+    const since={}; colors.forEach(function(c){ since[c]=0; });
+    return {since:since, pick:function(pref){
+      const over=colors.filter(function(c){ return since[c]>=K; });
+      const c=over.length? over[0] : (pref? pref() : colors[Math.floor(Math.random()*colors.length)]);
+      colors.forEach(function(x){ since[x]++; }); since[c]=0; return c; }};
+  }
+  /* Play / Step / Reset; step() returns false when there is nothing more to do */
+  function player(pfx, step, reset, gap){
+    const $=function(id){ return document.getElementById(pfx+id); };
+    let timer=null;
+    function stop(){ if(timer){ clearInterval(timer); timer=null; } }
+    $('play').addEventListener('click', function(){ stop(); reset(); timer=setInterval(function(){ if(!step()) stop(); }, gap); });
+    $('step').addEventListener('click', function(){ stop(); step(); });
+    $('reset').addEventListener('click', function(){ stop(); reset(); });
+    return {stop:stop};
+  }
+  return {C:C, el:el, clear:clear, text:text, draw:draw, out:out, fairPicker:fairPicker, player:player};
+})();
+
+/* Figure 1 — the basis rule */
+(function(){
+  const PFX='ba_', $=function(id){ return document.getElementById(PFX+id); };
+  const svg=$('g'); if(!svg) return;
+  const U=window.UG, C=U.C;
+  const POS={a:[380,260], b:[170,150], c:[170,370], d:[680,140], e:[680,380], f:[960,140], g:[960,380]};
+  const LOOPS={'e,R':90, 'f,B':-90, 'g,B':90};
+  const BASE=[['a','b','R'],['b','c','R'],['c','a','R'],['a','d','B'],['b','d','B'],['c','e','B'],
+              ['d','f','R'],['d','e','B'],['e','e','R'],['e','g','B'],['f','g','R'],['f','f','B'],['g','f','R'],['g','g','B']];
+  const P=new Set(['a','b','c']), Q=new Set(['d','e']);
+  const REGIONS=[{cx:265, cy:260, rx:175, ry:175, fill:C.pFill, stroke:C.pStroke, label:'P', lx:250, ly:262},
+                 {cx:680, cy:260, rx:80, ry:175, fill:C.qFill, stroke:C.qStroke, label:'Q', lx:735, ly:262}];
+  let mode='fair', start='a', path=[], at='a', exitAt=-1, picker=null;
+  function graph(){ return {POS:POS, COL:{R:C.red, B:C.blue}, loop:function(u,c){ return LOOPS[u+','+c]||-90; },
+    E:BASE.map(function(e){ return (mode==='broken' && e[0]==='a' && e[2]==='B')? ['a','f','B'] : e; })}; }
+  function cond1(G){ return G.E.every(function(e){ return !P.has(e[0]) || P.has(e[1]) || Q.has(e[1]); }); }
+  function reset(){ path=[]; at=start; exitAt=-1; picker=U.fairPicker(['R','B'],3); draw(); }
+  function step(){
+    const G=graph();
+    const limit=(mode==='red')? 9 : (exitAt>=0? exitAt+(mode==='broken'? 7 : 3) : 40);
+    if(path.length>=limit) return false;
+    let c;
+    if(mode==='red') c='R';
+    else if(mode==='broken') c=(exitAt<0)? (at==='a'? 'B' : 'R') : ['R','R','B'][(path.length-exitAt-1)%3];
+    else c=picker.pick(P.has(at)? function(){ return Math.random()<0.65? 'R' : 'B'; } : null);
+    const e=U.out(G, at, c);
+    path.push(e);
+    if(exitAt<0 && P.has(e[0]) && !P.has(e[1])) exitAt=path.length-1;
+    at=e[1]; draw(); return true;
+  }
+  function draw(){
+    U.clear(svg);
+    const G=graph(), hl={}, ecol={}, edash={};
+    path.forEach(function(e,i){ hl[e.join(',')]=(i===exitAt)? 'strong' : (hl[e.join(',')]||'on'); });
+    if(mode==='broken'){ ecol['a,f,B']=C.orange; edash['a,f,B']=1; }
+    U.draw(svg, G, {regions:REGIONS, hl:hl, dim:path.length>0, ecol:ecol, edash:edash, token:at,
+      stroke:{[start]:C.ink}, sw:{[start]:3.5},
+      click:function(v){ if(P.has(v)){ start=v; pl.stop(); reset(); } }});
+    const nR=path.filter(function(e){ return e[2]==='R'; }).length, nB=path.length-nR;
+    U.text(svg, 30, 28, 'start '+start+'   ·   steps '+path.length+'   ·   red '+nR+'   ·   blue '+nB, {anchor:'start', size:15, w:700});
+    const ok=cond1(G);
+    U.text(svg, 1210, 28, 'every edge from P ends in P ∪ Q: '+(ok? 'yes' : 'no (a → f)'), {anchor:'end', size:14, w:700, fill:ok? C.teal : C.orange});
+    let msg='', col=C.ink;
+    if(!path.length){
+      msg=(mode==='fair')? 'Press Play: a random fair path from '+start+'. Each color is taken at least once in every 4 steps.'
+        : (mode==='red')? 'Press Play: red forever from '+start+'.'
+        : 'a’s blue edge now goes to f, outside P ∪ Q. Press Play.';
+    } else if(mode==='red'){
+      msg='Red forever stays in P, but blue never appears. Not a fair path, so it does not count.'; col=C.red;
+    } else if(mode==='broken'){
+      if(exitAt<0) msg='The path goes to a, then takes a’s blue edge to f.';
+      else { msg='A fair path that never reaches Q: from f, red and blue for ever inside {f, g}. So P ⊆ ⟦A_fF Q⟧ fails.'; col=C.orange; }
+    } else if(exitAt<0){
+      msg='In P at '+at+': red stays in P, blue leaves it. A fair path must take blue.';
+    } else {
+      const e=path[exitAt];
+      msg='Left P at step '+(exitAt+1)+': '+e[0]+' → '+e[1]+'. '+e[1]+' ∉ P, and every edge from P ends in P ∪ Q, so '+e[1]+' ∈ Q.'; col=C.teal;
+    }
+    U.text(svg, 30, 492, msg, {anchor:'start', size:15, w:700, fill:col});
+    $('status').innerHTML='step <b>'+path.length+'</b>';
+  }
+  function setMode(m){ mode=m; ['fair','red','broken'].forEach(function(x){ $(x).className=(x===m)? 'on' : ''; }); pl.stop(); reset(); }
+  const pl=U.player(PFX, step, reset, 800);
+  $('fair').addEventListener('click', function(){ setMode('fair'); });
+  $('red').addEventListener('click', function(){ setMode('red'); });
+  $('broken').addEventListener('click', function(){ setMode('broken'); });
+  reset();
+})();
+
+/* Figure 2 — transitivity */
+(function(){
+  const PFX='tr_', $=function(id){ return document.getElementById(PFX+id); };
+  const svg=$('g'); if(!svg) return;
+  const U=window.UG, C=U.C;
+  const G={POS:{a:[170,160], b:[170,380], c:[560,160], d:[560,380], e:[900,270], f:[1130,270]},
+    COL:{R:C.red, B:C.blue}, loop:function(){ return -90; },
+    E:[['a','b','R'],['b','a','R'],['a','c','B'],['b','d','B'],['c','d','B'],['d','c','B'],
+       ['c','e','R'],['d','e','R'],['e','f','R'],['e','e','B'],['f','e','R'],['f','f','B']]};
+  const P=new Set(['a','b']), Q=new Set(['c','d']), R=new Set(['e']);
+  const REGIONS=[{cx:170, cy:270, rx:95, ry:170, fill:C.pFill, stroke:C.pStroke, label:'P', lx:110, ly:272},
+                 {cx:560, cy:270, rx:95, ry:170, fill:C.qFill, stroke:C.qStroke, label:'Q', lx:620, ly:272},
+                 {cx:900, cy:280, rx:80, ry:90, fill:C.rFill, stroke:C.rStroke, label:'R', lx:900, ly:338}];
+  let start='a', path=[], at='a', w=-1, r=-1, picker=null;
+  /* w: index in the vertex sequence of the first vertex in Q; r: of the first in R */
+  function reset(){ path=[]; at=start; w=-1; r=-1; picker=U.fairPicker(['R','B'],3); draw(); }
+  function step(){
+    if(path.length>=(r>=0? r+5 : 40)) return false;
+    const stay=P.has(at)? 'R' : (Q.has(at)? 'B' : null);
+    const c=picker.pick(stay? function(){ return Math.random()<0.6? stay : (stay==='R'? 'B' : 'R'); } : null);
+    const e=U.out(G, at, c); path.push(e); at=e[1];
+    if(w<0 && Q.has(at)) w=path.length;
+    if(w>=0 && r<0 && R.has(at)) r=path.length;
+    draw(); return true;
+  }
+  function vertexAt(i){ return i===0? start : path[i-1][1]; }
+  function draw(){
+    U.clear(svg);
+    const hl={};
+    path.forEach(function(e,i){ const k=e.join(','); hl[k]=(w>=0 && i>=w)? 'on' : (hl[k]==='on'? 'on' : 'old'); });
+    const marks={}; if(w>=0) marks[vertexAt(w)]='w';
+    U.draw(svg, G, {regions:REGIONS, hl:hl, dim:path.length>0, token:at, marks:marks,
+      stroke:{[start]:C.ink}, sw:{[start]:3.5},
+      click:function(v){ if(P.has(v)){ start=v; pl.stop(); reset(); } }});
+    let head='start '+start+'   ·   steps '+path.length;
+    if(w>=0){ const suf=path.slice(w), nR=suf.filter(function(e){ return e[2]==='R'; }).length;
+      head+='   ·   the path from w: red '+nR+', blue '+(suf.length-nR); }
+    U.text(svg, 30, 28, head, {anchor:'start', size:15, w:700});
+    let msg='', col=C.ink;
+    if(!path.length) msg='Press Play: a random fair path from '+start+'.';
+    else if(w<0) msg='In P: red stays in P, blue goes to Q. Every fair path from P reaches Q.';
+    else if(r<0) msg='Reached w = '+vertexAt(w)+' ∈ Q. The rest of the path (bold) is a fair path from w, and w ∈ Q ⊆ ⟦A_fF R⟧.';
+    else { msg='Reached '+vertexAt(r)+' ∈ R. From P to w ∈ Q, and from w to R: '+start+' ∈ ⟦A_fF R⟧.'; col=C.teal; }
+    U.text(svg, 30, 492, msg, {anchor:'start', size:15, w:700, fill:col});
+    $('status').innerHTML='step <b>'+path.length+'</b>';
+  }
+  const pl=U.player(PFX, step, reset, 800);
+  reset();
+})();
+
+/* Figure 3 — fair execution of a program with three actions */
+(function(){
+  const PFX='ux_', $=function(id){ return document.getElementById(PFX+id); };
+  const svg=$('g'); if(!svg) return;
+  const U=window.UG, C=U.C;
+  const POS={0:[420,130], 1:[820,130], 2:[820,370], 3:[420,370]};
+  const DIAG={0:-135, 1:-45, 2:45, 3:135};
+  const E=[[0,1,'R'],[0,0,'B'],[0,0,'G'],
+           [1,1,'R'],[1,2,'B'],[1,1,'G'],
+           [2,3,'R'],[2,2,'B'],[2,2,'G'],
+           [3,3,'R'],[3,3,'B'],[3,0,'G']];
+  const ACTS=['R','B','G'], NAME={R:'red', B:'blue', G:'green'}, K=6;
+  /* two self-loops at each state, either side of the outward diagonal */
+  function loop(u,c){ const ls=E.filter(function(e){ return e[0]===u && e[1]===u; }).map(function(e){ return e[2]; });
+    return DIAG[u]+(ls.indexOf(c)===0? -32 : 32); }
+  const G={POS:POS, E:E, COL:{R:C.red, B:C.blue, G:C.green}, loop:loop};
+  let mode='rr', at=0, steps=[], since={}, count={}, queue=[];
+  function reset(){ at=0; steps=[]; queue=[]; ACTS.forEach(function(c){ since[c]=0; count[c]=0; }); draw(); }
+  function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
+  function step(){
+    if(steps.length>=60) return false;
+    let c, forced=false;
+    if(mode==='rr'){ if(!queue.length) queue=shuffle(ACTS.slice()); c=queue.shift(); }
+    else {
+      const over=ACTS.filter(function(x){ return since[x]>=K-1; });
+      if(over.length){ c=over.sort(function(x,y){ return since[y]-since[x]; })[0]; forced=true; }
+      else { const skips=ACTS.filter(function(x){ return U.out(G, at, x)[1]===at; });
+        c=(skips.length? skips : ACTS)[Math.floor(Math.random()*(skips.length? skips.length : ACTS.length))]; }
+    }
+    const from=at, to=U.out(G, at, c)[1];
+    ACTS.forEach(function(x){ since[x]++; }); since[c]=0; count[c]++;
+    steps.push({c:c, from:from, to:to, forced:forced}); at=to;
+    draw(); return true;
+  }
+  function draw(){
+    U.clear(svg);
+    const hl={}; if(steps.length){ const s=steps[steps.length-1]; hl[s.from+','+s.to+','+s.c]='strong'; }
+    U.draw(svg, G, {hl:hl, token:at, fill:{[at]:'#fff4e8'}});
+    U.text(svg, 30, 28, 'state '+at+'   ·   step '+steps.length, {anchor:'start', size:15, w:700});
+    /* each action: how often it has run, and how long it has waited */
+    U.text(svg, 990, 96, 'actions', {anchor:'start', size:13, w:700, fill:C.muted});
+    ACTS.forEach(function(c,i){
+      const y=135+i*72, col=G.COL[c];
+      svg.appendChild(U.el('rect',{x:990, y:y-14, width:28, height:28, rx:5, fill:col}));
+      U.text(svg, 1004, y+1, c, {size:14, w:800, fill:'#fff'});
+      U.text(svg, 1030, y-4, NAME[c]+': run '+count[c]+', waiting '+since[c], {anchor:'start', size:14, w:700});
+      svg.appendChild(U.el('rect',{x:1030, y:y+9, width:Math.min(since[c],8)*20, height:8, rx:3, fill:col, opacity:0.55}));
+      if(mode==='adv') svg.appendChild(U.el('line',{x1:1030+(K-1)*20, y1:y+5, x2:1030+(K-1)*20, y2:y+21, stroke:C.ink, 'stroke-width':2}));
+    });
+    if(mode==='adv') U.text(svg, 990, 352, 'the bar may not pass the black mark', {anchor:'start', size:12, w:600, fill:C.muted});
+    /* the schedule: the last 16 steps */
+    U.text(svg, 110, 464, 'schedule, latest on the right', {anchor:'start', size:13, w:700, fill:C.muted});
+    const first=Math.max(0, steps.length-16);
+    steps.slice(first).forEach(function(s,i){
+      const x=110+i*68, col=G.COL[s.c];
+      svg.appendChild(U.el('rect',{x:x, y:482, width:52, height:32, rx:6, fill:col, opacity:(s.from===s.to)? 0.45 : 1}));
+      U.text(svg, x+26, 499, s.c, {size:15, w:800, fill:'#fff'});
+      U.text(svg, x+26, 532, s.from===s.to? String(s.to) : s.from+'→'+s.to, {size:13, w:700, fill:s.from===s.to? C.muted : C.ink});
+    });
+    if(first>0) U.text(svg, 94, 499, '…', {size:16, w:700, fill:C.muted});
+    let msg='', col=C.ink;
+    if(!steps.length) msg=(mode==='rr')? 'Each round runs the three actions once, in a random order. Press Play.'
+      : 'The adversary runs an action that does nothing in the current state whenever it can. Press Play.';
+    else { const s=steps[steps.length-1];
+      if(mode==='rr') msg='Ran '+NAME[s.c]+': '+(s.from===s.to? 'it does nothing in state '+s.from+' (a self-loop).' : 'state '+s.from+' → '+s.to+'.');
+      else if(s.forced){ msg=NAME[s.c]+' had waited '+(K-1)+' steps, so the adversary must run it: '+(s.from===s.to? 'it does nothing in state '+s.from+'.' : 'state '+s.from+' → '+s.to+'.'); col=(s.from===s.to)? C.ink : C.teal; }
+      else msg='The adversary runs '+NAME[s.c]+', which does nothing in state '+s.from+'.';
+    }
+    U.text(svg, 30, 590, msg, {anchor:'start', size:15, w:700, fill:col});
+    $('status').innerHTML='step <b>'+steps.length+'</b>';
+  }
+  function setMode(m){ mode=m; $('rr').className=(m==='rr')? 'on' : ''; $('adv').className=(m==='adv')? 'on' : ''; pl.stop(); reset(); }
+  const pl=U.player(PFX, step, reset, 900);
+  $('rr').addEventListener('click', function(){ setMode('rr'); });
+  $('adv').addEventListener('click', function(){ setMode('adv'); });
+  reset();
+})();
+</script>
+</body>
+</html>
