@@ -262,6 +262,11 @@
     <span class="lead-in">Paths start in S</span>
     <div class="f">I &sube; S</div>
   </div>
+  <div class="defn">
+    <span class="lead-in">Formulas and their sets</span>
+    <div class="f">&#x27E6;&phi;&#x27E7; = {v | &phi; holds at v} &nbsp;&nbsp; I &#x22A8; &phi; &equiv; I &sube; &#x27E6;&phi;&#x27E7;</div>
+    <p class="e">From here on, <code>AG Z</code> is a formula and <code>&#x27E6;AG Z&#x27E7;</code> is its set; parts 1 and 2 wrote <code>AG Z</code> for this set. A graph with initial vertices <code>I</code> <b>satisfies</b> <code>&phi;</code>, written <code>I &#x22A8; &phi;</code>, when every initial vertex is in <code>&#x27E6;&phi;&#x27E7;</code>. A set <code>Z</code> of vertices is also a formula, with <code>&#x27E6;Z&#x27E7; = Z</code>. In Figure 1, <code>S = &#x27E6;&phi;&#x27E7;</code>.</p>
+  </div>
 
 
   <figure class="fig wideout">
@@ -332,7 +337,7 @@
   </div>
 
   <p class="e">
-    stable(Z) &equiv; (Z = AG Z). So, for any invariant Z, I &sube; AG Z </p>
+    stable(Z) &equiv; (Z = &#x27E6;AG Z&#x27E7;). So, for any invariant Z, I &sube; &#x27E6;AG Z&#x27E7;, that is, I &#x22A8; AG Z.</p>
 
   <figure class="fig wideout">
     <svg id="iv_g" viewBox="0 0 1240 530" role="img"
@@ -366,7 +371,7 @@
   <p>
     Parts 1 and 2 defined each operator as a set of vertices. Inside each
     definition is a statement about paths. For example,
-    <code>AF Z</code> is the set of vertices <code>v</code> such that every
+    <code>&#x27E6;AF Z&#x27E7;</code> is the set of vertices <code>v</code> such that every
     infinite path from <code>v</code> has the property &ldquo;visits
     <code>Z</code>&rdquo;. This part looks at that property of a single
     path on its own. Doing so leads to the temporal logic <b>LTL</b>.
@@ -390,22 +395,23 @@
 <h3>2.1 Examples of path properties</h3>
 
   <p>
-    Each example below is a CTL formula, so it gives a set <code>S</code> of
-    vertices, and the graph with initial vertices <code>I</code> has the
-    property when <code>I &sube; S</code>. Read in English, each one is a
+    Each example below is a CTL formula <code>&phi;</code>, so it gives a
+    set <code>&#x27E6;&phi;&#x27E7;</code> of vertices, and the graph with initial
+    vertices <code>I</code> has the property when <code>I &#x22A8; &phi;</code>,
+    that is, <code>I &sube; &#x27E6;&phi;&#x27E7;</code>. Read in English, each one is a
     statement about the paths that start in <code>I</code>. All the examples
     use the example graph of parts 1 and 2, with <code>I = {a}</code>.
     Recall from part 1 that <code>P <span class="imp">&#x27F9;</span> Q</code>
-    is a predicate whose truth set is <code>&not;P &cup; Q</code>.
+    is a predicate whose truth set is <code>&#x27E6;P <span class="imp">&#x27F9;</span> Q&#x27E7; = &not;P &cup; Q</code>.
   </p>
 
 <h4>Example 1. P &#x27F9; AG X</h4>
 
   <p>
     Take <code>P = {e}</code> and <code>X = {e, f, g, h}</code>. Then
-    <code>AG X = {f, g, h}</code>, and the truth set of
+    <code>&#x27E6;AG X&#x27E7; = {f, g, h}</code>, and the truth set of
     <code>P <span class="imp">&#x27F9;</span> AG X</code> is
-    <code>&not;P &cup; AG X = {a, b, c, d, f, g, h, i, j}</code>. It contains
+    <code>&#x27E6;P <span class="imp">&#x27F9;</span> AG X&#x27E7; = &not;P &cup; &#x27E6;AG X&#x27E7; = {a, b, c, d, f, g, h, i, j}</code>. It contains
     <code>a</code>, because <code>a</code> is not in <code>P</code>, so the
     graph has the property. But it has it only because the initial vertex
     is not in <code>P</code>. <code>P <span class="imp">&#x27F9;</span> AG X</code>
@@ -418,7 +424,7 @@
   <p>
     In English: if a path starts in <code>P</code>, then whenever it is in
     <code>P</code>, it stays in <code>X</code> from then on. The truth set is
-    <code>&not;P &cup; AG (&not;P &cup; AG X) = {a, b, c, d, f, g, h, i, j}</code>.
+    <code>&#x27E6;P <span class="imp">&#x27F9;</span> AG (P <span class="imp">&#x27F9;</span> AG X)&#x27E7; = {a, b, c, d, f, g, h, i, j}</code>.
     Again <code>a</code> is in it only because <code>a</code> is not in
     <code>P</code>: a <code>P <span class="imp">&#x27F9;</span></code> in
     front constrains only the paths that start in <code>P</code>. With
@@ -432,17 +438,17 @@
   <p>
     In English: whenever a path from <code>I</code> reaches
     <code>P</code>, it stays in <code>X</code> from then on. The truth set
-    is <code>{b, d, f, g, h, i, j}</code>, and <code>a</code> is not in it:
+    is <code>&#x27E6;AG (P <span class="imp">&#x27F9;</span> AG X)&#x27E7; = {b, d, f, g, h, i, j}</code>, and <code>a</code> is not in it:
     the path <code>a &rarr; c &rarr; e</code> reaches <code>e</code>, and
     from <code>e</code> the edge <code>e &rarr; j</code> leaves
     <code>X</code>. In general, the graph has this property exactly when
-    <code>R(I) &cap; P &sube; AG X</code>.
+    <code>R(I) &cap; P &sube; &#x27E6;AG X&#x27E7;</code>.
   </p>
 
 <h4>More examples</h4>
 
   <table class="cmp">
-    <tr><th>#</th><th>Formula</th><th>On the paths from <code>a</code></th><th>S</th><th>a &isin; S?</th></tr>
+    <tr><th>#</th><th>Formula</th><th>On the paths from <code>a</code></th><th>&#x27E6;&phi;&#x27E7;</th><th>a &isin; &#x27E6;&phi;&#x27E7;?</th></tr>
     <tr><td>4</td><td><code>EF {g, h}</code></td><td>some path reaches <code>g</code> or <code>h</code></td>
         <td><code>{a, b, c, d, e, f, g, h}</code></td><td>yes: <code>a &rarr; b &rarr; d &rarr; f &rarr; g</code></td></tr>
     <tr><td>5</td><td><code>AF {g, h}</code></td><td>every path reaches <code>g</code> or <code>h</code></td>
@@ -454,7 +460,7 @@
     <tr><td>8</td><td><code>AG EF {g, h}</code></td><td>wherever a path goes, it can still reach <code>g</code> or <code>h</code></td>
         <td><code>{b, d, f, g, h}</code></td><td>no: <code>a &rarr; c &rarr; e &rarr; j</code>, and from <code>j</code> no path reaches <code>{g, h}</code></td></tr>
     <tr><td>9</td><td><code>EF AG {g, h}</code></td><td>some path reaches a vertex from which no path leaves <code>{g, h}</code></td>
-        <td><code>{a, b, c, d, e, f, g, h}</code></td><td>yes: <code>a &rarr; b &rarr; d &rarr; f &rarr; g</code>, and <code>AG {g, h} = {g, h}</code></td></tr>
+        <td><code>{a, b, c, d, e, f, g, h}</code></td><td>yes: <code>a &rarr; b &rarr; d &rarr; f &rarr; g</code>, and <code>&#x27E6;AG {g, h}&#x27E7; = {g, h}</code></td></tr>
     <tr><td>10</td><td><code>AF (AG {g, h} &or; AG {i, j})</code></td><td>every path ends up trapped in one of the cycles <code>g &harr; h</code> and <code>i &harr; j</code></td>
         <td><code>{c, e, f, g, h, i, j}</code></td><td>no: <code>a &rarr; b &rarr; d &rarr; b &rarr; &hellip;</code> is trapped in neither. With <code>I = {c}</code>, the graph has it.</td></tr>
     <tr><td>11</td><td><code>E[&not;{e} U {g, h}]</code></td><td>some path reaches <code>g</code> or <code>h</code> without passing through <code>e</code></td>
@@ -566,7 +572,7 @@
   </p>
   <div class="defn">
     <span class="lead-in">A and E applied to a path property</span>
-    <div class="f">A &phi; = {v | &pi; &#x22A8; &phi; for every infinite path &pi; from v}<br>E &phi; = {v | &pi; &#x22A8; &phi; for some infinite path &pi; from v}</div>
+    <div class="f">&#x27E6;A &phi;&#x27E7; = {v | &pi; &#x22A8; &phi; for every infinite path &pi; from v}<br>&#x27E6;E &phi;&#x27E7; = {v | &pi; &#x22A8; &phi; for some infinite path &pi; from v}</div>
     <p class="e"><b>A</b> and <b>E</b> turn a property of paths into a set of vertices.</p>
   </div>
   <p>
@@ -574,6 +580,10 @@
     <b>E</b> in front of it:
   </p>
   <div class="calc">AX Z = A (X Z) &nbsp;&nbsp; AF Z = A (F Z) &nbsp;&nbsp; AG Z = A (G Z) &nbsp;&nbsp; A[Y U Z] = A (Y U Z)<br>EX Z = E (X Z) &nbsp;&nbsp; EF Z = E (F Z) &nbsp;&nbsp; EG Z = E (G Z) &nbsp;&nbsp; E[Y U Z] = E (Y U Z)</div>
+  <p>
+    These are identities between formulas: each CTL operator is an
+    abbreviation. So their sets are equal.
+  </p>
 
   <p class="key">
     <span class="lead-in">CTL and LTL</span>
@@ -582,7 +592,7 @@
     letters X, F, G and U are combined freely into a path property
     <code>&phi;</code>, and a single A is put in front of the whole
     formula: a vertex has the LTL property <code>&phi;</code> when it is in
-    <code>A &phi;</code>.
+    <code>&#x27E6;A &phi;&#x27E7;</code>.
   </p>
 
 <h3>Initial states</h3>
@@ -593,13 +603,13 @@
     <code>&phi;</code> when every infinite path from an initial vertex
     satisfies <code>&phi;</code>:
   </p>
-  <div class="calc">I &sube; A &phi;</div>
+  <div class="calc">I &#x22A8; A &phi; &equiv; I &sube; &#x27E6;A &phi;&#x27E7;</div>
   <p>
     So this says: <b>every infinite path that starts in <code>I</code> has
     the property <code>&phi;</code></b>. In CTL, the check is
-    <code>I &sube; S</code> for a set <code>S</code> built from A and E
-    operators; in LTL, it is <code>I &sube; A &phi;</code>, with the A
-    outside.
+    <code>I &sube; &#x27E6;&phi;&#x27E7;</code> for a CTL formula <code>&phi;</code>,
+    built from A and E operators; in LTL, it is
+    <code>I &sube; &#x27E6;A &phi;&#x27E7;</code>, with the A outside.
   </p>
 
 <h3>G F: infinitely often</h3>
@@ -607,15 +617,15 @@
   <p>
     For <code>G F Z</code>, the LTL property and a CTL formula agree:
   </p>
-  <div class="calc">A (G F Z) = AG AF Z</div>
+  <div class="calc">&#x27E6;A (G F Z)&#x27E7; = &#x27E6;AG AF Z&#x27E7;</div>
   <p>
-    A vertex <code>v</code> is not in <code>A (G F Z)</code> exactly when
+    A vertex <code>v</code> is not in <code>&#x27E6;A (G F Z)&#x27E7;</code> exactly when
     some path from <code>v</code> eventually stays in
     <code>&not;Z</code> forever: it reaches some vertex
     <code>w</code> and then follows an infinite path that avoids
-    <code>Z</code>. That says <code>w &notin; AF Z</code> for some
+    <code>Z</code>. That says <code>w &notin; &#x27E6;AF Z&#x27E7;</code> for some
     <code>w</code> reachable from <code>v</code>, which is exactly
-    <code>v &notin; AG AF Z</code>.
+    <code>v &notin; &#x27E6;AG AF Z&#x27E7;</code>.
   </p>
 
 <h2>5. Branching time and linear time</h2>
@@ -638,11 +648,11 @@
       either stays at <code>a</code> forever or goes
       <code>a &rarr; &hellip; &rarr; a &rarr; b &rarr; c &rarr; c &rarr; &hellip;</code>.
       Either way it ends up staying in <code>Z</code>, so
-      <code>a &isin; A (F G Z)</code>.</li>
-    <li><b>CTL, AF AG Z</b>: <code>AG Z = {c}</code>, because from
+      <code>a &isin; &#x27E6;A (F G Z)&#x27E7;</code>.</li>
+    <li><b>CTL, AF AG Z</b>: <code>&#x27E6;AG Z&#x27E7; = {c}</code>, because from
       <code>a</code> the edge <code>a &rarr; b</code> leaves
       <code>Z</code>. The path <code>a &rarr; a &rarr; a &rarr; &hellip;</code>
-      never reaches <code>c</code>, so <code>AF AG Z = {b, c}</code>, and
+      never reaches <code>c</code>, so <code>&#x27E6;AF AG Z&#x27E7; = {b, c}</code>, and
       <code>a</code> is not in it.</li>
   </ul>
   <p>
@@ -669,10 +679,10 @@
       <code>Z = {a, c}</code> have a thick green outline.
       <i>LTL</i> walks the branches one at a time: each one, from some step
       on, stays in <code>Z</code>. <i>CTL</i> first shades the nodes in
-      <code>AG Z</code>, the nodes whose whole subtree is in
+      <code>&#x27E6;AG Z&#x27E7;</code>, the nodes whose whole subtree is in
       <code>Z</code>; they are the <code>c</code> nodes. Then it walks the
       diagonal branch, which never reaches a shaded node. So <code>a</code> is
-      not in <code>AF AG Z</code>.
+      not in <code>&#x27E6;AF AG Z&#x27E7;</code>.
     </figcaption>
   </figure>
 
@@ -891,7 +901,7 @@ window.TLG=(function(){
       edge:function(u,v){ return (on[u+','+v] || (mark && mark.has(u)))? C.red : null; },
       click:function(v){ if(I.has(v)) I.delete(v); else I.add(v); check(); draw(); }});
     G.text(svg, 30, 398, 'I = '+G.show(I)+'   ·   R(I) = '+G.show(RI), {anchor:'start', mono:true, size:15, w:700, fill:C.orange});
-    G.text(svg, 30, 424, 'S = '+PROPS[prop].name+' = '+G.show(S)+'   (the same for every I)', {anchor:'start', mono:true, size:15, w:700, fill:C.blue});
+    G.text(svg, 30, 424, 'S = ⟦'+PROPS[prop].name+'⟧ = '+G.show(S)+'   (the same for every I)', {anchor:'start', mono:true, size:15, w:700, fill:C.blue});
     if(msg) G.text(svg, 30, 450, msg, {anchor:'start', size:15, w:700, fill:bad==null? C.teal : C.red});
     $('status').innerHTML='click vertices to edit <b>I</b>';
   }
@@ -1162,7 +1172,7 @@ window.TLG=(function(){
     }
     G.text(svg, X(ROWS-1)+26, Y(ROWS-1)+30, '⋱', {size:20, w:700, fill:C.muted});
     if(tok>=0) svg.appendChild(G.el('circle',{cx:X(tok)+15, cy:Y(tok)-17, r:8, fill:C.ink, stroke:'#fff', 'stroke-width':2.5}));
-    G.text(svg, 30, Y(ROWS-1)+40, 'Z = {a, c}   ·   AG Z = {c}   ·   AF AG Z = {b, c}', {size:14, w:700, anchor:'start', fill:C.ink});
+    G.text(svg, 30, Y(ROWS-1)+40, 'Z = {a, c}   ·   ⟦AG Z⟧ = {c}   ·   ⟦AF AG Z⟧ = {b, c}', {size:14, w:700, anchor:'start', fill:C.ink});
     if(msg) G.text(svg, 30, 505, msg, {anchor:'start', size:15, w:700, fill:ok===false? C.red : (ok? C.teal : C.ink)});
     $('status').innerHTML=mode==='ltl'? (branch>=0? 'branch <b>'+(branch+1)+'</b>' : '') : 'CTL';
   }
@@ -1180,12 +1190,12 @@ window.TLG=(function(){
   function ctl(){
     stop(); mode='ctl'; branch=-1; shade=true; tok=-1; ok=null;
     $('ctl').className='primary'; $('ltl').className='';
-    msg='AG Z = {c}: only a c node has its whole subtree in Z (shaded). Every a node has b below it.'; draw();
+    msg='⟦AG Z⟧ = {c}: only a c node has its whole subtree in Z (shaded). Every a node has b below it.'; draw();
     let k=-1;
     timer=setInterval(function(){
       k++;
-      if(k<ROWS){ tok=k; branch=0; msg='the branch a a a …, step '+k+': a, not in AG Z'; draw(); }
-      else { stop(); ok=false; msg='the branch a a a … never reaches a shaded node, so a ∉ AF AG Z   ✗'; draw(); }
+      if(k<ROWS){ tok=k; branch=0; msg='the branch a a a …, step '+k+': a, not in ⟦AG Z⟧'; draw(); }
+      else { stop(); ok=false; msg='the branch a a a … never reaches a shaded node, so a ∉ ⟦AF AG Z⟧   ✗'; draw(); }
     }, 750);
   }
   $('ltl').onclick=ltl;
