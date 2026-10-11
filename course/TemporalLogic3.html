@@ -235,16 +235,15 @@
 <body>
 <div class="wrap">
   <header class="top">
-    <div class="kicker">DisSysLab &middot; Linear Time logic</div>
-    <h1>Linear Time Logic</h1>
-    <h2>Part 3. System properties: initial states, paths, and LTL</h2>
+    <div class="kicker">DisSysLab &middot; Temporal logic, part 3 of 3</div>
+    <h1>System Properties</h1>
+    <h2>Part 3. Initial states and system properties, with a note on LTL</h2>
     <p>
-      Parts 1 and 2 defined temporal operators in terms of sets of vertices of a
-      directed graph. Now we extend the definitions to infinite
-      paths from a set of <b>initial vertices</b>.
-      Then we define the path operators X, F, G and U
-      in linear temporal logic <b>LTL</b> and finally show how LTL differs
-      from CTL.
+      Parts 1 and 2 defined temporal operators as sets of vertices of a
+      graph. This part adds a set of <b>initial vertices</b>, which turns a
+      set of vertices into a property of the system, and gives examples of
+      system properties. The last section describes the temporal logic
+      <b>LTL</b>, for completeness, and compares it with CTL.
     </p>
   </header>
 
@@ -366,33 +365,7 @@
   </figure>
 
 
-<h2>2. Properties of a path</h2>
-
-  <p>
-    Parts 1 and 2 defined each operator as a set of vertices. Inside each
-    definition is a statement about paths. For example,
-    <code>&#x27E6;AF Z&#x27E7;</code> is the set of vertices <code>v</code> such that every
-    infinite path from <code>v</code> has the property &ldquo;visits
-    <code>Z</code>&rdquo;. This part looks at that property of a single
-    path on its own. Doing so leads to the temporal logic <b>LTL</b>.
-  </p>
-
-  <div class="defn">
-    <span class="lead-in">Path and suffix</span>
-    <div class="f">&pi; = v<sub>0</sub> &rarr; v<sub>1</sub> &rarr; v<sub>2</sub> &rarr; &hellip; &nbsp;&nbsp; &pi;<sup>i</sup> = v<sub>i</sub> &rarr; v<sub>i+1</sub> &rarr; &hellip;</div>
-    <p class="e">&pi; is an infinite path. Its <b>suffix</b> &pi;<sup>i</sup> is the path that starts at position <code>i</code>: drop the first <code>i</code> vertices. &pi;<sup>0</sup> = &pi;.</p>
-  </div>
-
-  <p>
-    A <b>path property</b> holds or fails on each infinite path. We write
-    <code>&pi; &#x22A8; &phi;</code> for &ldquo;the path property
-    <code>&phi;</code> holds on <code>&pi;</code>&rdquo;. The simplest path
-    property is a set <code>Z</code> of vertices, which holds on a path
-    when the path <i>starts</i> in <code>Z</code>:
-  </p>
-  <div class="calc">&pi; &#x22A8; Z &equiv; v<sub>0</sub> &isin; Z</div>
-
-<h3>2.1 Examples of path properties</h3>
+<h2>2. Examples of system properties</h2>
 
   <p>
     Each example below is a CTL formula <code>&phi;</code>, so it gives a
@@ -475,7 +448,40 @@
   </p>
 
 
-<h2>3. X, F, G and U on a path</h2>
+<h2>3. LTL, for completeness</h2>
+
+  <p>
+    The course uses UNITY, with operators defined in terms of CTL. This
+    section describes LTL and compares LTL and CTL.
+  </p>
+
+<h3>3.1 Properties of a path</h3>
+
+  <p>
+    Parts 1 and 2 defined each operator as a set of vertices. Inside each
+    definition is a statement about paths. For example,
+    <code>&#x27E6;AF Z&#x27E7;</code> is the set of vertices <code>v</code> such that every
+    infinite path from <code>v</code> has the property &ldquo;visits
+    <code>Z</code>&rdquo;. This section looks at that property of a single
+    path on its own. Doing so leads to the temporal logic <b>LTL</b>.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">Path and suffix</span>
+    <div class="f">&pi; = v<sub>0</sub> &rarr; v<sub>1</sub> &rarr; v<sub>2</sub> &rarr; &hellip; &nbsp;&nbsp; &pi;<sup>i</sup> = v<sub>i</sub> &rarr; v<sub>i+1</sub> &rarr; &hellip;</div>
+    <p class="e">&pi; is an infinite path. Its <b>suffix</b> &pi;<sup>i</sup> is the path that starts at position <code>i</code>: drop the first <code>i</code> vertices. &pi;<sup>0</sup> = &pi;.</p>
+  </div>
+
+  <p>
+    A <b>path property</b> holds or fails on each infinite path. We write
+    <code>&pi; &#x22A8; &phi;</code> for &ldquo;the path property
+    <code>&phi;</code> holds on <code>&pi;</code>&rdquo;. The simplest path
+    property is a set <code>Z</code> of vertices, which holds on a path
+    when the path <i>starts</i> in <code>Z</code>:
+  </p>
+  <div class="calc">&pi; &#x22A8; Z &equiv; v<sub>0</sub> &isin; Z</div>
+
+<h3>3.2 X, F, G and U on a path</h3>
 
   <p>
     Each letter makes a new path property from old ones, by looking at
@@ -511,7 +517,7 @@
   </p>
   <div class="calc">&pi; &#x22A8; F Z &equiv; &not;(&pi; &#x22A8; G &not;Z)</div>
 
-<h3>Letters can be nested</h3>
+<h4>Letters can be nested</h4>
 
   <p>
     Because <code>F</code> and <code>G</code> take any path property, they
@@ -564,7 +570,7 @@
     </figcaption>
   </figure>
 
-<h2>4. From paths back to vertices: A and E</h2>
+<h3>3.3 From paths back to vertices: A and E</h3>
 
   <p>
     A path property becomes a set of vertices by asking about all the
@@ -595,7 +601,7 @@
     <code>&#x27E6;A &phi;&#x27E7;</code>.
   </p>
 
-<h3>Initial states</h3>
+<h4>Initial states</h4>
 
   <p>
     Initial states play the same part as in section 1. A graph with
@@ -612,7 +618,7 @@
     <code>I &sube; &#x27E6;A &phi;&#x27E7;</code>, with the A outside.
   </p>
 
-<h3>G F: infinitely often</h3>
+<h4>G F: infinitely often</h4>
 
   <p>
     For <code>G F Z</code>, the LTL property and a CTL formula agree:
@@ -628,7 +634,7 @@
     <code>v &notin; &#x27E6;AG AF Z&#x27E7;</code>.
   </p>
 
-<h2>5. Branching time and linear time</h2>
+<h3>3.4 Branching time and linear time</h3>
 
   <p>
     For <code>F G Z</code> the two logics differ. LTL is a
@@ -692,6 +698,11 @@
     to reach a vertex from which <i>no branch</i> leaves <code>Z</code>.
     <code>A (F G Z)</code> asks only that each path, on its own, stop
     leaving <code>Z</code>.
+  </p>
+  <p>
+    This is more than one candidate failing: no CTL formula has the same set
+    as <code>A (F G Z)</code> on every graph. So LTL can state properties
+    that CTL cannot.
   </p>
   <p>
     In the other direction, <code>AG EF Z</code> (from every reachable
