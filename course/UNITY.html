@@ -94,15 +94,16 @@
       correctness of the program is based on UNITY. Proofs are based on
       the concepts of safety <code>AG</code> and progress 
       <code>A<sub>f</sub>F</code>, from part 2.
-      The two rules about <code>A<sub>f</sub>F</code> used in the proofs,
-      the basis rule and transitivity, are there too. This class starts
-      with the model of computation of UNITY.
     </p>
   </header>
 
   <nav class="parts"><span>Builds on:</span><a href="TemporalLogic1.html">Temporal logic part 1</a><a href="TemporalLogic2.html">Part 2: colored graphs and fairness</a><a href="TemporalLogic3.html">Part 3: system properties</a></nav>
 
-<h2>1. Fair execution: the UNITY model</h2>
+<h2>1. Review</h2>
+
+From TemporalLogic2.html add colored graphs, fair path and figure 1.
+
+
 
   <p>
     Part 2 proved two rules about fair paths on any colored graph: the
@@ -170,46 +171,42 @@
     </figcaption>
   </figure>
 
-<h3>The basis rule for a program</h3>
+<h3>The rules for a program</h3>
 
   <p>
-    In a program, the second part of the condition of the basis rule
-    (part 2, section 3),
-    <code>P &sube; &#x27E6;&not;E<sub>f</sub>G P&#x27E7;</code>, holds when one
-    action takes every state of <code>P</code> out of <code>P</code>. Write
-    <code>&#x27E6;AX<sub>s</sub> Z&#x27E7;</code> for the set of vertices
-    whose <code>s</code>-edge ends in <code>Z</code>.
+    Part 2's relations read directly as statements about a program.
+    <code>P &#x25B7;<sup>s</sup> Q</code> says that executing action
+    <code>s</code> in any state of <code>P</code> gives a state of
+    <code>Q</code>: in the notation of program proofs, the Hoare triple
+    <code>{P} s {Q}</code>. <code>P &#x25B7; Q</code> says the same for every
+    action, and <code>P &#x21A6; Q</code> says that every execution from
+    <code>P</code> reaches <code>Q</code>. So the rules of part 2 are the
+    rules of UNITY. Ensures, for example, reads: if every action takes
+    <code>P</code> into <code>P &cup; Q</code>, and some action takes
+    <code>P</code> into <code>Q</code>, then <code>P &#x21A6; Q</code>.
   </p>
-
-  <div class="thm">
-    <span class="lead-in">One action suffices</span>
-    <div class="f">P &sube; &#x27E6;AX<sub>s</sub> &not;P&#x27E7; for some action s <span class="imp">&#x27F9;</span> P &sube; &#x27E6;&not;E<sub>f</sub>G P&#x27E7;</div>
-    <p class="e">A fair path takes an <code>s</code>-edge infinitely often.
-      If it stayed in <code>P</code>, its next <code>s</code>-edge would
-      leave <code>P</code>. So no fair path stays in <code>P</code> for
-      ever.</p>
-  </div>
-
   <p>
-    In Figure 1, take <code>P = {0}</code> and <code>Q = {1}</code>. Every
-    edge from <code>0</code> ends in <code>0</code> or <code>1</code>, and
-    red takes <code>0</code> out of <code>{0}</code>. So by the basis rule
-    <code>{0} &sube; &#x27E6;A<sub>f</sub>F {1}&#x27E7;</code>: every
-    execution from <code>0</code> reaches <code>1</code>. The adversary can
-    delay red, but not for ever. In the same way, blue gives
-    <code>{1} &sube; &#x27E6;A<sub>f</sub>F {2}&#x27E7;</code> and red gives
-    <code>{2} &sube; &#x27E6;A<sub>f</sub>F {3}&#x27E7;</code>, and
-    transitivity gives <code>{0} &sube; &#x27E6;A<sub>f</sub>F {3}&#x27E7;</code>.
+    In Figure 1, every edge from <code>0</code> ends in <code>0</code> or
+    <code>1</code>, and red takes <code>0</code> to <code>1</code>:
+    <code>{0} &#x25B7; {0, 1}</code> and <code>{0} &#x25B7;<sup>red</sup> {1}</code>.
+    So by ensures <code>{0} &#x21A6; {1}</code>: every execution from
+    <code>0</code> reaches <code>1</code>. The adversary can delay red, but
+    not for ever. In the same way, blue gives <code>{1} &#x21A6; {2}</code>
+    and red gives <code>{2} &#x21A6; {3}</code>. With levels
+    <code>{3} = 0</code>, <code>{2} = 1</code>, <code>{1} = 2</code>,
+    <code>{0} = 3</code>, induction gives <code>{0, 1, 2, 3} &#x21A6; {3}</code>:
+    from every state, every execution reaches <code>3</code>.
   </p>
 
 <h2>Notes</h2>
 
   <p>
     UNITY is described in K. M. Chandy and J. Misra, <i>Parallel Program
-    Design: A Foundation</i> (Addison-Wesley, 1988). There the condition
-    of the basis rule is stated for <code>P &and; &not;Q</code>:
-    <code>P &and; &not;Q &sube; &#x27E6;AX (P &cup; Q) &and; &not;E<sub>f</sub>G (P &and; &not;Q)&#x27E7;</code>.
-    The conclusion and the proof are the same.
+    Design: A Foundation</i> (Addison-Wesley, 1988). There
+    <code>P ensures Q</code> is stated with <code>P &and; &not;Q</code>:
+    <code>P &and; &not;Q &#x25B7; P &cup; Q</code>, and
+    <code>P &and; &not;Q &#x25B7;<sup>s</sup> Q</code> for some action
+    <code>s</code>. The conclusion and the proof are the same.
   </p>
 
 </div>

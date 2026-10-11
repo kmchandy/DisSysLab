@@ -251,8 +251,9 @@
       vertices of a directed graph <code>G = (V, E)</code> in which every
       vertex has an outgoing edge. This part uses the same example graph.
       It colors the edges and restricts attention to <b>fair</b>
-      paths. It ends with two rules for showing that every fair path from
-      one set reaches another: the basis rule and transitivity.
+      paths. It ends with the rules for showing that every fair path from
+      one set reaches another: the basis rule, transitivity, disjunction
+      and induction.
     </p>
     <p>
       <b>Notation.</b> As in part 1, we write <code>AG Z</code> for the set
@@ -398,32 +399,64 @@
     </figcaption>
   </figure>
 
-<h3>Leads-to</h3>
+<h3>Steps into, and leads-to</h3>
 
   <p>
-    We write <code>P &#x21A6; Q</code>, read &ldquo;<code>P</code> leads to
-    <code>Q</code>&rdquo;, for <code>P &sube; A<sub>f</sub>F Q</code>: every fair
-    path from a vertex of <code>P</code> reaches <code>Q</code>. The name,
-    and the rules for proving leads-to in this part, come from UNITY, a
-    notation for programs and their proofs.
+    Three relations between sets of vertices describe everything that
+    follows. The first two are about single edges; the third is about fair
+    paths. The names, and the rules for proving leads-to in this part, come
+    from UNITY, a notation for programs and their proofs.
   </p>
 
   <div class="defn">
-    <span class="lead-in">Leads-to</span>
-    <div class="f">P &#x21A6; Q &equiv; P &sube; A<sub>f</sub>F Q</div>
-    <p class="e">Every fair path from a vertex of <code>P</code> reaches <code>Q</code>.</p>
+    <span class="lead-in">Steps into, and leads-to</span>
+    <div class="f">P &#x25B7; Q &nbsp;&nbsp; P &#x25B7;<sup>c</sup> Q &nbsp;&nbsp; P &#x21A6; Q</div>
+    <p class="e"><code>P &#x25B7; Q</code>, read &ldquo;<code>P</code> steps
+      into <code>Q</code>&rdquo;: every edge from a vertex of <code>P</code>,
+      of every color, fair or grey, ends in <code>Q</code>.
+      <code>P &#x25B7;<sup>c</sup> Q</code>: every edge of color <code>c</code> from
+      a vertex of <code>P</code> ends in <code>Q</code>.
+      <code>P &#x21A6; Q</code>, read &ldquo;<code>P</code> leads to
+      <code>Q</code>&rdquo;: every fair path from a vertex of <code>P</code>
+      reaches <code>Q</code>.</p>
   </div>
+
+  <p>In terms of the operators:</p>
+  <div class="calc">P &#x25B7; Q &equiv; P &sube; AX Q &nbsp;&nbsp;&nbsp; P &#x25B7;<sup>c</sup> Q &equiv; P &sube; AX<sub>c</sub> Q &nbsp;&nbsp;&nbsp; P &#x21A6; Q &equiv; P &sube; A<sub>f</sub>F Q</div>
+  <p>
+    where <code>AX<sub>c</sub> Q</code> is the set of vertices all of whose
+    edges of color <code>c</code> end in <code>Q</code>. Note the quantifier.
+    <code>v &rarr; w</code> says that there is an edge from <code>v</code> to
+    <code>w</code>; <code>P &#x25B7; Q</code> says that every edge from
+    <code>P</code> ends in <code>Q</code>.
+  </p>
+  <p>
+    Safety properties are statements about <code>&#x25B7;</code>:
+  </p>
+  <table class="cmp">
+    <tr><th>Property</th><th>Definition</th><th>Meaning</th></tr>
+    <tr><td><code>stable P</code></td><td><code>P &#x25B7; P</code></td><td>no edge leaves <code>P</code> (part 1)</td></tr>
+    <tr><td><code>P unless Q</code></td><td><code>P &cap; &not;Q &#x25B7; P &cup; Q</code></td><td>a path in <code>P</code> stays in <code>P</code> until it reaches <code>Q</code>, if it ever does</td></tr>
+    <tr><td><code>invariant P</code></td><td><code>I &sube; P &and; P &#x25B7; P</code></td><td>with initial vertices <code>I</code> (part 3)</td></tr>
+  </table>
+
+  <p>Laws of <code>&#x25B7;</code>, each read straight off the definition:</p>
+  <ol class="facts">
+    <li><code>P &#x25B7; Q &and; Q &sube; Q&prime; <span class="imp">&#x27F9;</span> P &#x25B7; Q&prime;</code>: an edge that ends in <code>Q</code> ends in <code>Q&prime;</code>.</li>
+    <li><code>P &#x25B7; Q &and; P &#x25B7; R <span class="imp">&#x27F9;</span> P &#x25B7; Q &cap; R</code>: an edge that ends in both ends in the intersection.</li>
+    <li><code>P<sub>i</sub> &#x25B7; Q</code> for every <code>i</code> <span class="imp">&#x27F9;</span> <code>(&cup;<sub>i</sub> P<sub>i</sub>) &#x25B7; Q</code>, for any family of sets: an edge from the union starts in some <code>P<sub>i</sub></code>.</li>
+    <li><code>P &#x25B7; Q <span class="imp">&#x27F9;</span> P &#x25B7;<sup>c</sup> Q</code> for every color <code>c</code>: an edge of color <code>c</code> is an edge.</li>
+  </ol>
+  <p>Laws 1&ndash;3 hold for <code>&#x25B7;<sup>c</sup></code> too.</p>
 
   <p>
     The simplest way to show that every fair path leaves a set
-    <code>P</code> uses one fair color. Write <code>AX<sub>c</sub> Z</code>
-    for the set of vertices all of whose edges of color <code>c</code> end
-    in <code>Z</code>.
+    <code>P</code> uses one fair color.
   </p>
 
   <div class="thm">
     <span class="lead-in">One fair color suffices</span>
-    <div class="f">P &sube; AX<sub>c</sub> &not;P for some fair color c <span class="imp">&#x27F9;</span> P &#x21A6; &not;P</div>
+    <div class="f">P &#x25B7;<sup>c</sup> &not;P for some fair color c <span class="imp">&#x27F9;</span> P &#x21A6; &not;P</div>
     <p class="e">If every edge of a fair color <code>c</code> from a vertex
       of <code>P</code> ends outside <code>P</code>, then every fair path
       from <code>P</code> leaves <code>P</code>.</p>
@@ -443,6 +476,9 @@
 
   <p>
     The color must be fair: a fair path need not take a grey edge at all.
+    In the graph of Figure 2, <code>{3} &#x25B7;<sup>blue</sup> &not;{3}</code>,
+    <code>{4, 5} &#x25B7;<sup>red</sup> &not;{4, 5}</code> and
+    <code>{6} &#x25B7;<sup>blue</sup> &not;{6}</code>.
   </p>
 
   <figure class="fig wideout">
@@ -691,7 +727,7 @@
       path, from <code>w</code> on, is a fair path from <code>w</code>
       (fact 1), so it reaches <code>R</code>.</li>
     <li><b>Basis:</b>
-      <code>P &sube; AX (P &cup; Q) &cap; &not;E<sub>f</sub>G P <span class="imp">&#x27F9;</span> P &sube; A<sub>f</sub>F Q</code>.
+      <code>P &#x25B7; P &cup; Q &and; P &#x21A6; &not;P <span class="imp">&#x27F9;</span> P &#x21A6; Q</code>.
       Proved in section 3.</li>
   </ol>
 
@@ -699,31 +735,29 @@
 
   <div class="thm">
     <span class="lead-in">Basis rule (fact 4)</span>
-    <div class="f">P &sube; AX (P &cup; Q) &cap; &not;E<sub>f</sub>G P <span class="imp">&#x27F9;</span> P &sube; A<sub>f</sub>F Q</div>
-    <p class="e">If, from every vertex of <code>P</code>, every edge ends in
-      <code>P</code> or <code>Q</code> and no fair path stays in
-      <code>P</code> for ever, then every fair path from <code>P</code> reaches
-      <code>Q</code>.</p>
+    <div class="f">P &#x25B7; P &cup; Q &and; P &#x21A6; &not;P <span class="imp">&#x27F9;</span> P &#x21A6; Q</div>
+    <p class="e">If every edge from <code>P</code> ends in <code>P</code> or
+      <code>Q</code>, and no fair path stays in <code>P</code> for ever, then
+      every fair path from <code>P</code> reaches <code>Q</code>.</p>
   </div>
 
   <p>
-    The condition has two parts: <code>P &sube; AX (P &cup; Q)</code>
-    and <code>P &sube; &not;E<sub>f</sub>G P</code>. The second
-    part says that no fair path from <code>P</code> stays in <code>P</code>
-    for ever. A path from outside <code>P</code> does not stay in
-    <code>P</code> either, so the second part is the same as
-    <code>E<sub>f</sub>G P = &empty;</code>.
+    The second part, <code>P &#x21A6; &not;P</code>, is
+    <code>P &sube; A<sub>f</sub>F &not;P = &not;E<sub>f</sub>G P</code>: no fair path
+    from <code>P</code> stays in <code>P</code> for ever. A path from outside
+    <code>P</code> does not stay in <code>P</code> either, so it is the same
+    as <code>E<sub>f</sub>G P = &empty;</code>.
   </p>
 
   <div class="proof">
     <span class="lead-in">Proof</span>
     <p>
       Let <code>v &isin; P</code>, and take a fair path from <code>v</code>.
-      Since <code>v &isin; &not;E<sub>f</sub>G P</code>, the
-      path does not stay in <code>P</code> for ever. Let <code>w</code> be its first vertex
-      outside <code>P</code>, and <code>u</code> the vertex before
-      <code>w</code>. Then <code>u &isin; P &sube; AX (P &cup; Q)</code>,
-      so <code>w &isin; P &cup; Q</code>. Since <code>w &notin; P</code>,
+      Since <code>P &#x21A6; &not;P</code>, the path reaches
+      <code>&not;P</code>. Let <code>w</code> be its first vertex outside
+      <code>P</code>, and <code>u</code> the vertex before <code>w</code>.
+      Then <code>u &isin; P</code> and <code>P &#x25B7; P &cup; Q</code>, so
+      <code>w &isin; P &cup; Q</code>. Since <code>w &notin; P</code>,
       <code>w &isin; Q</code>. So every fair path from <code>v</code> reaches
       <code>Q</code>.
     </p>
@@ -766,42 +800,63 @@
     </figcaption>
   </figure>
 
-<h3>Using the basis rule</h3>
+<h3>Ensures: one fair color into Q</h3>
 
   <p>
-    The second part of the condition, <code>P &sube; &not;E<sub>f</sub>G P</code>,
-    is <code>P &#x21A6; &not;P</code>, because
-    <code>&not;E<sub>f</sub>G P = A<sub>f</sub>F &not;P</code>. So in leads-to
-    notation the basis rule reads:
+    Most uses of the basis rule have one fair color doing the work, as in
+    &ldquo;one fair color suffices&rdquo;. Then the rule takes this form:
   </p>
-  <div class="calc">P &sube; AX (P &cup; Q) &and; P &#x21A6; &not;P <span class="imp">&#x27F9;</span> P &#x21A6; Q</div>
-  <p>
-    Section 1 showed <code>P &#x21A6; &not;P</code> for three sets of the
-    graph of Figure 2, each with one fair color. Adding the first part
-    gives three uses of the basis rule:
-  </p>
+
+  <div class="thm">
+    <span class="lead-in">Ensures</span>
+    <div class="f">P &#x25B7; P &cup; Q &and; P &#x25B7;<sup>c</sup> Q for some fair color c <span class="imp">&#x27F9;</span> P &#x21A6; Q</div>
+    <p class="e">If every edge from <code>P</code> ends in <code>P</code> or
+      <code>Q</code>, and every edge of one fair color <code>c</code> from
+      <code>P</code> ends in <code>Q</code>, then <code>P</code> leads to
+      <code>Q</code>. In UNITY the condition is written
+      <code>P ensures Q</code>.</p>
+  </div>
+
+  <div class="proof">
+    <span class="lead-in">Proof</span>
+    <p>
+      Take a fair path from a vertex of <code>P</code>, and the first step at
+      which it takes an edge of color <code>c</code>; there is one, because
+      <code>c</code> is fair. If the path left <code>P</code> before that
+      step, its first vertex outside <code>P</code> is in <code>Q</code>,
+      because every edge from <code>P</code> ends in <code>P &cup; Q</code>.
+      Otherwise that edge starts in <code>P</code>, so it ends in
+      <code>Q</code>.
+    </p>
+  </div>
+
+  <p>Three uses of ensures in the graph of Figure 2:</p>
   <table class="cmp">
-    <tr><th>P</th><th>Q</th><th>Edges from P</th><th>P &sube; AX (P &cup; Q)</th><th>P &#x21A6; &not;P</th><th>Conclusion</th></tr>
+    <tr><th>P</th><th>Q</th><th>Edges from P</th><th>P &#x25B7; P &cup; Q</th><th>c with P &#x25B7;<sup>c</sup> Q</th><th>Conclusion</th></tr>
     <tr><td><code>{3}</code></td><td><code>{4}</code></td><td><code>3 &rarr; 3</code> red, <code>3 &rarr; 4</code> blue</td><td>yes</td><td>blue</td><td><code>{3} &#x21A6; {4}</code></td></tr>
     <tr><td><code>{4, 5}</code></td><td><code>{6, 7}</code></td><td><code>4 &rarr; 7</code>, <code>5 &rarr; 6</code> red; <code>4 &rarr; 5</code>, <code>5 &rarr; 4</code> blue</td><td>yes</td><td>red</td><td><code>{4, 5} &#x21A6; {6, 7}</code></td></tr>
     <tr><td><code>{6}</code></td><td><code>{7}</code></td><td><code>6 &rarr; 6</code> red, <code>6 &rarr; 7</code> blue</td><td>yes</td><td>blue</td><td><code>{6} &#x21A6; {7}</code></td></tr>
   </table>
+
   <p>
-    In each row every edge from <code>P</code> ends in <code>P</code> or
-    <code>Q</code>, and the color that takes a fair path out of
-    <code>P</code> takes it into <code>Q</code>.
+    <b>Grey edges count in <code>P &#x25B7; P &cup; Q</code>.</b> From
+    <code>2</code> the edges are <code>2 &rarr; 2</code> red,
+    <code>2 &rarr; 1</code> blue and <code>2 &rarr; 7</code> grey. So
+    <code>{2} &#x25B7;<sup>blue</sup> {1}</code>, but not
+    <code>{2} &#x25B7; {1, 2}</code>, because of the grey edge. And indeed
+    <code>{2} &#x21A6; {1}</code> is false: a fair path may take the grey
+    edge to <code>7</code> and then stay in <code>{6, 7}</code> for ever.
   </p>
 
 <h2>4. Transitivity</h2>
 
   <div class="thm">
     <span class="lead-in">Transitivity</span>
-    <div class="f">P &sube; A<sub>f</sub>F Q &and; Q &sube; A<sub>f</sub>F R <span class="imp">&#x27F9;</span> P &sube; A<sub>f</sub>F R</div>
+    <div class="f">P &#x21A6; Q &and; Q &#x21A6; R <span class="imp">&#x27F9;</span> P &#x21A6; R</div>
     <p class="e">If every fair path from <code>P</code> reaches
       <code>Q</code>, and every fair path from <code>Q</code> reaches
       <code>R</code>, then every fair path from <code>P</code> reaches
-      <code>R</code>. In leads-to notation:
-      <code>P &#x21A6; Q &and; Q &#x21A6; R <span class="imp">&#x27F9;</span> P &#x21A6; R</code>.</p>
+      <code>R</code>.</p>
   </div>
 
   <div class="proof">
@@ -838,6 +893,92 @@
       <code>w</code>, and the counts above show both colors still being
       used. Since <code>w &isin; A<sub>f</sub>F R</code>, it
       reaches <code>R</code>.
+    </figcaption>
+  </figure>
+<h2>5. Disjunction</h2>
+
+  <div class="thm">
+    <span class="lead-in">Disjunction</span>
+    <div class="f">P<sub>i</sub> &#x21A6; Q for every i <span class="imp">&#x27F9;</span> (&cup;<sub>i</sub> P<sub>i</sub>) &#x21A6; Q</div>
+    <p class="e">For any family of sets <code>P<sub>i</sub></code>, finite or
+      infinite: if each leads to <code>Q</code>, so does their union.</p>
+  </div>
+
+  <div class="proof">
+    <span class="lead-in">Proof</span>
+    <p>
+      Each <code>P<sub>i</sub> &sube; A<sub>f</sub>F Q</code>, so their union is a
+      subset of <code>A<sub>f</sub>F Q</code>. This is set algebra; no paths are
+      needed.
+    </p>
+  </div>
+
+  <p>Three more laws are just as short:</p>
+  <ol class="facts">
+    <li><code>Q &#x21A6; Q</code>, because <code>Q &sube; A<sub>f</sub>F Q</code>.</li>
+    <li><code>P&prime; &sube; P &and; P &#x21A6; Q <span class="imp">&#x27F9;</span> P&prime; &#x21A6; Q</code>: a smaller set on the left.</li>
+    <li><code>P &#x21A6; Q &and; Q &sube; Q&prime; <span class="imp">&#x27F9;</span> P &#x21A6; Q&prime;</code>: a larger set on the right (monotonicity, fact 2).</li>
+  </ol>
+  <p>
+    For example, <code>{6} &#x21A6; {7}</code> (ensures, above) and
+    <code>{7} &#x21A6; {7}</code> give <code>{6, 7} &#x21A6; {7}</code>.
+  </p>
+
+<h2>6. Induction on a measure</h2>
+
+  <p>
+    Progress proofs in UNITY usually go by induction. Give each vertex of
+    interest a <b>level</b>, a natural number, with the target
+    <code>Q</code> at level 0, and show that every level leads to the levels
+    below it.
+  </p>
+
+  <div class="thm">
+    <span class="lead-in">Induction</span>
+    <div class="f">L<sub>0</sub> = Q &and; (&forall;k &ge; 1 : L<sub>k</sub> &#x21A6; L<sub>0</sub> &cup; &hellip; &cup; L<sub>k&minus;1</sub>) <span class="imp">&#x27F9;</span> (&cup;<sub>k</sub> L<sub>k</sub>) &#x21A6; Q</div>
+    <p class="e">If every level leads to the lower levels, everything leads
+      to <code>Q</code>.</p>
+  </div>
+
+  <div class="proof">
+    <span class="lead-in">Proof</span>
+    <p>
+      We show <code>L<sub>k</sub> &#x21A6; Q</code> by induction on
+      <code>k</code>. <code>L<sub>0</sub> = Q &#x21A6; Q</code>. If
+      <code>L<sub>j</sub> &#x21A6; Q</code> for every <code>j &lt; k</code>,
+      then <code>L<sub>0</sub> &cup; &hellip; &cup; L<sub>k&minus;1</sub> &#x21A6; Q</code>
+      by disjunction, and <code>L<sub>k</sub> &#x21A6; Q</code> by
+      transitivity. Then disjunction over all <code>k</code> gives the
+      union. Only transitivity and disjunction are used.
+    </p>
+  </div>
+
+  <p>
+    In the graph of Figure 2, take <code>Q = {7}</code> and levels
+    <code>L<sub>1</sub> = {6}</code>, <code>L<sub>2</sub> = {4, 5}</code>,
+    <code>L<sub>3</sub> = {3}</code>. Ensures gives each step down, and the
+    rule gives <code>{3, 4, 5, 6, 7} &#x21A6; {7}</code>. That is all of
+    <code>A<sub>f</sub>F {7}</code>: vertices <code>0</code>, <code>1</code> and
+    <code>2</code> are not in it. Figure 8 goes through the proof.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="in_g" viewBox="0 0 1240 720" role="img"
+         aria-label="The colored graph of Figure 2 with levels: 7 at level 0, 6 at level 1, 4 and 5 at level 2, 3 at level 3; each step of the proof highlights the sets involved and adds a line to the proof"></svg>
+    <div class="ctrls">
+      <button id="in_play" class="primary">Play</button>
+      <button id="in_step">Step</button>
+      <button id="in_reset">Reset</button>
+      <span class="status" id="in_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 8. Induction on a measure.</b>
+      Each vertex of <code>{3, 4, 5, 6, 7}</code> is labelled with its level.
+      Each step of the proof is one rule: ensures, disjunction or
+      transitivity. The left side of the current step is shaded orange, the
+      right side has a thick green outline, and for ensures the edges of the
+      fair color that takes <code>P</code> into <code>Q</code> are drawn
+      thick. The lines of the proof collect below the graph.
     </figcaption>
   </figure>
 
@@ -1441,7 +1582,7 @@ window.UG=(function(){
     const nR=path.filter(function(e){ return e[2]==='R'; }).length, nB=path.length-nR;
     U.text(svg, 30, 28, 'start '+start+'   ·   steps '+path.length+'   ·   red '+nR+'   ·   blue '+nB, {anchor:'start', size:15, w:700});
     const ok=cond1(G);
-    U.text(svg, 1210, 28, 'P ⊆ AX (P ∪ Q): '+(ok? 'yes' : 'no (a → f)')+'   ·   P ⊆ ¬E_fG P: yes', {anchor:'end', size:14, w:700, fill:ok? C.teal : C.orange});
+    U.text(svg, 1210, 28, 'P ▷ P ∪ Q: '+(ok? 'yes' : 'no (a → f)')+'   ·   P ↦ ¬P: yes', {anchor:'end', size:14, w:700, fill:ok? C.teal : C.orange});
     let msg='', col=C.ink;
     if(!path.length){
       msg=(mode==='fair')? 'Press Play: a random fair path from '+start+'. Each color is taken at least once in every 4 steps.'
@@ -1578,6 +1719,51 @@ window.UG=(function(){
   function setMode(k){ mode=k; ['syn','3','45','6'].forEach(function(x){ $(x).className=(x===k)? 'on' : ''; }); pl.stop(); reset(); }
   const pl=U.player(PFX, step, reset, 800);
   ['syn','3','45','6'].forEach(function(k){ $(k).addEventListener('click', function(){ setMode(k); }); });
+  reset();
+})();
+
+/* Figure 8 — induction on a measure, on the colored graph of Figure 2 */
+(function(){
+  const PFX='in_', $=function(id){ return document.getElementById(PFX+id); };
+  const svg=$('g'); if(!svg) return;
+  const U=window.UG, C=U.C, T=window.TLC;
+  const POS={3:[330,410], 4:[580,410], 5:[830,440], 6:[1110,340], 7:[830,230]};
+  const LEVEL={7:0, 6:1, 4:2, 5:2, 3:3};
+  const OFF={3:[0,48], 4:[0,48], 5:[0,48], 6:[0,50], 7:[-74,2]};
+  const STEPS=[
+    {P:[7], Q:[7], hl:[], line:'Level 0:  {7} ↦ {7}, because Q ⊆ A_fF Q.'},
+    {P:[6], Q:[7], hl:['6,7,B'], line:'Level 1:  {6} ↦ {7} by ensures: {6} ▷ {6, 7}, and blue takes 6 to 7.'},
+    {P:[4,5], Q:[6,7], hl:['4,7,R','5,6,R'], line:'Level 2:  {4, 5} ↦ {6, 7} by ensures: {4, 5} ▷ {4, 5, 6, 7}, and red takes {4, 5} into {6, 7}.'},
+    {P:[6,7], Q:[7], hl:[], line:'Disjunction of levels 0 and 1:  {6, 7} ↦ {7}.'},
+    {P:[4,5], Q:[7], hl:[], line:'Transitivity:  {4, 5} ↦ {6, 7} ↦ {7}, so {4, 5} ↦ {7}.'},
+    {P:[3], Q:[4,5,6,7], hl:['3,4,B'], line:'Level 3:  {3} ↦ {4} by ensures (blue), so {3} ↦ {4, 5, 6, 7}  (a larger right side).'},
+    {P:[4,5,6,7], Q:[7], hl:[], line:'Disjunction of levels 0, 1 and 2:  {4, 5, 6, 7} ↦ {7}.'},
+    {P:[3], Q:[7], hl:[], line:'Transitivity:  {3} ↦ {4, 5, 6, 7} ↦ {7}, so {3} ↦ {7}.'},
+    {P:[3,4,5,6,7], Q:[7], hl:[], line:'Disjunction of all levels:  {3, 4, 5, 6, 7} ↦ {7}. This is all of A_fF {7}.'}];
+  let k=-1;
+  function reset(){ k=-1; draw(); }
+  function step(){ if(k>=STEPS.length-1) return false; k++; draw(); return true; }
+  function draw(){
+    U.clear(svg);
+    const cur=k>=0? STEPS[k] : null, fill={}, stroke={}, sw={}, hl={};
+    if(cur){
+      cur.P.forEach(function(v){ fill[v]=C.pFill; });
+      cur.Q.forEach(function(v){ stroke[v]=C.teal; sw[v]=6; });
+      cur.hl.forEach(function(e){ hl[e]=1; });
+    }
+    T.draw(svg, {hl:hl, dim:!!(cur && cur.hl.length), fill:fill, stroke:stroke, sw:sw});
+    Object.keys(LEVEL).forEach(function(v){
+      const x=POS[v][0]+OFF[v][0], y=POS[v][1]+OFF[v][1];
+      U.text(svg, x, y, 'level '+LEVEL[v], {size:13, w:800, fill:C.purple});
+    });
+    U.text(svg, 30, 28, 'Q = {7}   ·   levels: {6} = 1, {4, 5} = 2, {3} = 3   ·   step '+(k+1)+' of '+STEPS.length, {anchor:'start', size:15, w:700});
+    U.text(svg, 30, 530, k<0? 'Press Play or Step.' : 'The proof so far:', {anchor:'start', size:14, w:700, fill:C.muted});
+    for(let i=0;i<=k;i++){
+      U.text(svg, 30, 556+i*19, (i+1)+'.  '+STEPS[i].line, {anchor:'start', size:13.5, w:i===k? 700 : 500, fill:i===k? C.ink : C.muted});
+    }
+    $('status').innerHTML='step <b>'+(k+1)+'</b>';
+  }
+  U.player(PFX, step, reset, 1600);
   reset();
 })();
 </script>
