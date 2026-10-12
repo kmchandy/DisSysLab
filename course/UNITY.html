@@ -80,306 +80,161 @@
     background:#fff; border:1px solid var(--line); border-radius:10px; font-size:14.5px}
   nav.parts a{color:var(--ink); font-weight:600; text-decoration:none}
   nav.parts a:hover{text-decoration:underline}
+  table.cmp{width:100%; border-collapse:collapse; margin:16px 0 22px;
+    background:#fff; font-size:15px; color:var(--body)}
+  table.cmp th, table.cmp td{border:1px solid var(--line); padding:8px 12px;
+    text-align:left; vertical-align:top}
+  table.cmp th{background:#f6f4ee; color:var(--ink); font-weight:700}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <div class="kicker">DisSysLab &middot; UNITY</div>
-    <h1>Example of a distributed program</h1>
-    <h2>Fair execution: the UNITY model</h2>
+    <h1>The UNITY model</h1>
     <p>
-      This class describes mutual exclusion in distributed systems in terms
-      of the <b>Distributed Dining Philosophers problem</b>. The proof of
-      correctness of the program is based on UNITY. Proofs are based on
+      This class describes the computation model and logic used
+      in proving programs using UNITY which uses
       the concepts of safety <code>AG</code> and progress 
-      <code>A<sub>f</sub>F</code>, from part 2.
+      <code>A<sub>f</sub>F</code>, from parts 1 and 2.
     </p>
   </header>
 
   <nav class="parts"><span>Builds on:</span><a href="TemporalLogic1.html">Temporal logic part 1</a><a href="TemporalLogic2.html">Part 2: colored graphs and fairness</a><a href="TemporalLogic3.html">Part 3: system properties</a></nav>
 
-<h2>1. Review</h2>
+<h2>1. UNITY model</h2>
+<p>
+  A system is represented by a set <code>S</code> of states, a set
+  <code>I &sube; S</code> of initial states, and a set of actions. An
+  action <code>c</code> is represented by a binary relation
+  <code>&rarr;<sub>c</sub></code> on states, where <code>s &rarr;<sub>c</sub> s&prime;</code>
+  means that execution of action <code>c</code> in state <code>s</code>
+  causes a transition to state <code>s&prime;</code>. For every fair action
+  <code>c</code> and every state <code>s</code> there is a state
+  <code>s&prime;</code> with <code>s &rarr;<sub>c</sub> s&prime;</code>: every fair
+  action can be executed in every state.
+</p>
 
-From TemporalLogic2.html add colored graphs, fair path and figure 1.
+<p>
+  The set of actions is partitioned into a set of <b>fair</b> actions and a
+  set of <b>unfair</b> actions. A <b>computation</b> from a state
+  <code>s</code> is a sequence
+  <code>(s<sub>0</sub>, c<sub>0</sub>, s<sub>1</sub>, c<sub>1</sub>, &hellip;)</code>
+  with <code>s<sub>0</sub> = s</code> and
+  <code>s<sub>i</sub> &rarr;<sub>c<sub>i</sub></sub> s<sub>i+1</sub></code>
+  for every <code>i</code>. A computation may be infinite. In an infinite
+  computation, each fair action occurs infinitely often. An
+  <b>execution</b> is an infinite computation that starts from an initial
+  state.
+</p>
 
+<p>
+  A UNITY program is represented by a colored graph, as in
+  <a href="TemporalLogic2.html">part 2</a>. The vertices represent states
+  and the colored edges represent state transitions: action <code>c</code>
+  is represented by an edge with color <code>c</code>, unfair
+  actions are represented by edges colored grey. For convenience, the
+  proof rules for UNITY that were given in part 2 are repeated here.
+</p>
 
+<h2>2. Proof rules</h2>
 
-  <p>
-    Part 2 proved two rules about fair paths on any colored graph: the
-    basis rule and transitivity. Now we describe the model of computation
-    of UNITY. A program has a set of states, a set of initial states, and a
-    finite set of <b>actions</b>. Each action is a function from states to
-    states: in every state it has exactly one next state. An action that
-    does nothing in a state takes that state to itself. How actions are
-    written down comes later.
-  </p>
-  <p>
-    An <b>execution</b> starts in an initial state and runs for ever. At each
-    step one action is chosen and executed. The choice is arbitrary, with one
-    constraint, <b>fairness</b>: every action is chosen infinitely often.
-  </p>
+<h3>Steps into, and leads-to</h3>
 
   <div class="defn">
-    <span class="lead-in">A program is a colored graph</span>
-    <div class="f">vertex = state &nbsp;&nbsp; color = action &nbsp;&nbsp; v &rarr;<sub>s</sub> s(v)</div>
-    <p class="e">Each action <code>s</code> gives every vertex
-      <code>v</code> exactly one edge of color <code>s</code>, to the state
-      <code>s(v)</code>. If <code>s</code> does nothing in <code>v</code>,
-      the edge is a self-loop. Every color is fair.</p>
+    <span class="lead-in">Steps into, and leads-to</span>
+    <div class="f">P &#x25B7; Q &nbsp;&nbsp; P &#x25B7;<sup>c</sup> Q &nbsp;&nbsp; P &#x21A6; Q</div>
+    <p class="e"><code>P &#x25B7; Q</code>, &ldquo;<code>P</code> steps
+      into <code>Q</code>&rdquo;: every transition, by every action, fair or
+      unfair, from a state in <code>P</code> ends in <code>Q</code>.
+      <code>P &#x25B7;<sup>c</sup> Q</code>: every transition by action
+      <code>c</code> from a state in <code>P</code> ends in <code>Q</code>;
+      this is the Hoare triple <code>{P} c {Q}</code>.
+      <code>P &#x21A6; Q</code>, &ldquo;<code>P</code> leads to
+      <code>Q</code>&rdquo;: every infinite computation from a state in
+      <code>P</code> reaches <code>Q</code>, that is,
+      <code>[P &#x27F9; A<sub>f</sub>F Q]</code>.</p>
   </div>
 
-  <p>
-    Part 2 also allows grey edges, whose color is not fair. In a program
-    they are actions that may or may not be executed infinitely often. In
-    UNITY every action is fair.
-  </p>
+<h3>Safety</h3>
 
   <p>
-    So an execution is a fair path from an initial state, and
-    <code>&#x27E6;A<sub>f</sub>F Q&#x27E7;</code> is the set of states from
-    which every execution reaches <code>Q</code>. In UNITY,
-    <code>P &sube; &#x27E6;A<sub>f</sub>F Q&#x27E7;</code> is written
-    <code>P &#x21A6; Q</code> and read &ldquo;<code>P</code> leads to
-    <code>Q</code>&rdquo;.
+    <code>P</code>, <code>Q</code>, <code>R</code> and <code>W</code> are
+    predicates on states. As in part 1, <code>[X]</code> means that
+    <code>X</code> holds in every state.
   </p>
 
-  <figure class="fig wideout">
-    <svg id="ux_g" viewBox="0 0 1240 640" role="img"
-         aria-label="A program with four states and three actions, red, blue and green, drawn as a colored graph with one edge of each color from every state; below, the schedule of actions executed so far; on the right, how many times each action has run and how long it has waited"></svg>
-    <div class="ctrls">
-      <button id="ux_play" class="primary">Play</button>
-      <button id="ux_step">Step</button>
-      <button id="ux_reset">Reset</button>
-      <span class="sep"></span>
-      <button id="ux_rr" class="on">Rounds in random order</button>
-      <button id="ux_adv">Adversary</button>
-      <span class="status" id="ux_status"></span>
-    </div>
-    <figcaption>
-      <b>Figure 1. Fair execution.</b>
-      A program with states <code>0</code>&ndash;<code>3</code> and three
-      actions. <i>Red</i> goes from an even state to the next state;
-      <i>blue</i> goes from <code>1</code> to <code>2</code>; <i>green</i>
-      goes from <code>3</code> to <code>0</code>. Everywhere else an action
-      does nothing: a self-loop. The schedule below the graph is the
-      execution so far. <i>Rounds in random order</i> runs every action once
-      in each round. The <i>adversary</i> runs an action that does nothing
-      in the current state whenever it can, but it may not make an action
-      wait for ever; here it may make an action wait at most 5 steps. Even
-      so, the state keeps moving round <code>0 &rarr; 1 &rarr; 2 &rarr; 3 &rarr; 0</code>.
-    </figcaption>
-  </figure>
+  <table class="cmp">
+    <tr><th>Property</th><th>Definition</th><th>Meaning</th></tr>
+    <tr><td><code>stable P</code></td><td><code>P &#x25B7; P</code></td><td>no transition leaves <code>P</code></td></tr>
+    <tr><td><code>P unless Q</code></td><td><code>(P &and; &not;Q) &#x25B7; (P &or; Q)</code></td><td>a computation in <code>P</code> stays in <code>P</code> until it reaches <code>Q</code>, if it ever does</td></tr>
+    <tr><td><code>invariant P</code></td><td><code>[I &#x27F9; P] &and; (P &#x25B7; P)</code></td><td>every state of every execution satisfies <code>P</code></td></tr>
+  </table>
 
-<h3>The rules for a program</h3>
+<h3>Progress</h3>
 
-  <p>
-    Part 2's relations read directly as statements about a program.
-    <code>P &#x25B7;<sup>s</sup> Q</code> says that executing action
-    <code>s</code> in any state of <code>P</code> gives a state of
-    <code>Q</code>: in the notation of program proofs, the Hoare triple
-    <code>{P} s {Q}</code>. <code>P &#x25B7; Q</code> says the same for every
-    action, and <code>P &#x21A6; Q</code> says that every execution from
-    <code>P</code> reaches <code>Q</code>. So the rules of part 2 are the
-    rules of UNITY. Ensures, for example, reads: if every action takes
-    <code>P</code> into <code>P &cup; Q</code>, and some action takes
-    <code>P</code> into <code>Q</code>, then <code>P &#x21A6; Q</code>.
-  </p>
-  <p>
-    In Figure 1, every edge from <code>0</code> ends in <code>0</code> or
-    <code>1</code>, and red takes <code>0</code> to <code>1</code>:
-    <code>{0} &#x25B7; {0, 1}</code> and <code>{0} &#x25B7;<sup>red</sup> {1}</code>.
-    So by ensures <code>{0} &#x21A6; {1}</code>: every execution from
-    <code>0</code> reaches <code>1</code>. The adversary can delay red, but
-    not for ever. In the same way, blue gives <code>{1} &#x21A6; {2}</code>
-    and red gives <code>{2} &#x21A6; {3}</code>. With levels
-    <code>{3} = 0</code>, <code>{2} = 1</code>, <code>{1} = 2</code>,
-    <code>{0} = 3</code>, induction gives <code>{0, 1, 2, 3} &#x21A6; {3}</code>:
-    from every state, every execution reaches <code>3</code>.
-  </p>
+  <p>Each rule is proved in part 2; the line under it gives the idea.</p>
 
-<h2>Notes</h2>
+  <div class="thm">
+    <span class="lead-in">Ensures</span>
+    <div class="f">(&exist; fair action c : P &#x25B7;<sup>c</sup> &not;P) &and; (P &#x25B7; (P &or; Q)) <span class="imp">&#x27F9;</span> (P &#x21A6; Q)</div>
+    <p class="e">Every transition from <code>P</code> ends in <code>P</code>
+      or <code>Q</code>, and the fair action <code>c</code> takes every state
+      of <code>P</code> out of <code>P</code>. Since <code>c</code> is
+      executed eventually, every computation leaves <code>P</code>, and it
+      leaves into <code>Q</code>.</p>
+  </div>
 
-  <p>
-    UNITY is described in K. M. Chandy and J. Misra, <i>Parallel Program
-    Design: A Foundation</i> (Addison-Wesley, 1988). There
-    <code>P ensures Q</code> is stated with <code>P &and; &not;Q</code>:
-    <code>P &and; &not;Q &#x25B7; P &cup; Q</code>, and
-    <code>P &and; &not;Q &#x25B7;<sup>s</sup> Q</code> for some action
-    <code>s</code>. The conclusion and the proof are the same.
-  </p>
+  <div class="thm">
+    <span class="lead-in">Basis</span>
+    <div class="f">(P &#x25B7; (P &or; Q)) &and; (P &#x21A6; &not;P) <span class="imp">&#x27F9;</span> (P &#x21A6; Q)</div>
+    <p class="e">The general form of ensures: any proof that no computation
+      stays in <code>P</code> for ever will do.</p>
+  </div>
+
+  <div class="thm">
+    <span class="lead-in">Transitivity</span>
+    <div class="f">(P &#x21A6; Q) &and; (Q &#x21A6; R) <span class="imp">&#x27F9;</span> (P &#x21A6; R)</div>
+    <p class="e">A computation from <code>P</code> reaches <code>Q</code>;
+      from there it goes on to reach <code>R</code>.</p>
+  </div>
+
+  <div class="thm">
+    <span class="lead-in">Disjunction</span>
+    <div class="f">(&forall;i : P<sub>i</sub> &#x21A6; Q) <span class="imp">&#x27F9;</span> ((&exist;i : P<sub>i</sub>) &#x21A6; Q)</div>
+    <p class="e">For any family of predicates, finite or infinite: a
+      computation from a state that satisfies some <code>P<sub>i</sub></code>
+      reaches <code>Q</code>.</p>
+  </div>
+
+  <div class="thm">
+    <span class="lead-in">Substitution</span>
+    <div class="f">(P &#x21A6; (Q &or; R)) &and; (R &#x21A6; W) <span class="imp">&#x27F9;</span> (P &#x21A6; (Q &or; W))</div>
+    <p class="e">A computation from <code>P</code> reaches <code>Q</code> or
+      <code>R</code>; if it reaches <code>R</code>, it goes on to reach
+      <code>W</code>.</p>
+  </div>
+
+  <div class="thm">
+    <span class="lead-in">Induction on well-founded sets</span>
+    <div class="f">(&forall;k &isin; L : (P &and; &not;Q &and; M = k) &#x21A6; ((P &and; M &lt; k) &or; Q)) <span class="imp">&#x27F9;</span> (P &#x21A6; Q)</div>
+    <p class="e">Here <code>(L, &lt;)</code> is a well-founded set: every
+      decreasing chain <code>k<sub>0</sub> &gt; k<sub>1</sub> &gt; &hellip;</code>
+      in <code>L</code> is finite. <code>M</code> is a function from states
+      to <code>L</code>, the <b>measure</b>. If, from every state of
+      <code>P</code> outside <code>Q</code>, every computation either reaches
+      <code>Q</code> or reaches a state of <code>P</code> with a smaller
+      measure, then every computation from <code>P</code> reaches
+      <code>Q</code>: the measure cannot decrease for ever.</p>
+  </div>
+
+  <p>And three simple laws:</p>
+  <ol class="facts">
+    <li><code>Q &#x21A6; Q</code>.</li>
+    <li><code>[P&prime; &#x27F9; P] &and; (P &#x21A6; Q) <span class="imp">&#x27F9;</span> (P&prime; &#x21A6; Q)</code>: a stronger predicate on the left.</li>
+    <li><code>(P &#x21A6; Q) &and; [Q &#x27F9; Q&prime;] <span class="imp">&#x27F9;</span> (P &#x21A6; Q&prime;)</code>: a weaker predicate on the right.</li>
+  </ol>
 
 </div>
-
-<script>
-/* UG: drawing colored graphs, and a fair chooser of colors */
-window.UG=(function(){
-  const NS='http://www.w3.org/2000/svg';
-  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#cfc9bc', orange:'#d13d0e', teal:'#00947d',
-           red:'#d6301b', blue:'#1a5fd0', green:'#2f9e44', purple:'#7b3fa0',
-           pFill:'#fff4e8', pStroke:'#d13d0e', qFill:'#e3f3ee', qStroke:'#00947d', rFill:'#efe7f6', rStroke:'#7b3fa0'};
-  function el(t,a,txt){ const e=document.createElementNS(NS,t); for(const k in a) e.setAttribute(k,a[k]); if(txt!=null) e.textContent=txt; return e; }
-  function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
-  /* text; "_f" is drawn as a subscript f, so "A_fF" reads as the fair AF */
-  function text(p,x,y,s,o){ o=o||{};
-    const t=el('text',{x:x, y:y, 'font-family':o.mono?'ui-monospace,Menlo,Consolas,monospace':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
-      'font-size':o.size||15, 'font-weight':o.w||600, fill:o.fill||C.ink, 'text-anchor':o.anchor||'middle', 'dominant-baseline':'middle'});
-    if(o.opacity!=null) t.setAttribute('opacity', o.opacity);
-    String(s).split('_f').forEach(function(seg,i){
-      if(i>0) t.appendChild(el('tspan',{'baseline-shift':'sub', 'font-size':(o.size||15)*0.7}, 'f'));
-      if(seg) t.appendChild(el('tspan',{}, seg));
-    });
-    p.appendChild(t); return t; }
-  function headAt(g,x,y,ux,uy,col,op){ const s=6.5, px=-uy, py=ux;
-    g.appendChild(el('polygon',{points:x+','+y+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+(x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col, opacity:op})); }
-  /* G = {POS, E:[[u,v,color]], COL, loop(u,c) -> angle in degrees}.
-     o.regions, o.hl[key] = 'on' | 'strong' | 'old', o.dim, o.ecol, o.edash,
-     o.fill / o.stroke / o.sw by vertex, o.marks, o.token, o.click(v) */
-  function draw(svg,G,o){
-    o=o||{}; const g=el('g',{}); svg.appendChild(g);
-    (o.regions||[]).forEach(function(r){
-      g.appendChild(el('ellipse',{cx:r.cx, cy:r.cy, rx:r.rx, ry:r.ry, fill:r.fill, stroke:r.stroke, 'stroke-width':2}));
-      text(g, r.lx, r.ly, r.label, {size:26, w:800, fill:r.stroke});
-    });
-    G.E.forEach(function(e){
-      const u=e[0], v=e[1], c=e[2], key=u+','+v+','+c, st=o.hl? o.hl[key] : null;
-      const col=(o.ecol && o.ecol[key]) || G.COL[c];
-      let w=2.3, op=(o.dim && !st)? 0.3 : 1;
-      if(st==='on') w=5; else if(st==='strong') w=7.5; else if(st==='old'){ w=4; op=0.4; }
-      const dash=(o.edash && o.edash[key])? '10 7' : 'none';
-      const P1=G.POS[u], P2=G.POS[v];
-      if(u===v){
-        const a=G.loop(u,c)*Math.PI/180, r=27, bx=P1[0]+Math.cos(a)*r, by=P1[1]+Math.sin(a)*r;
-        const nx=Math.cos(a), ny=Math.sin(a), tx=-ny, ty=nx;
-        const p1=[bx+tx*10, by+ty*10], p2=[bx-tx*10, by-ty*10];
-        const c1=[p1[0]+nx*48+tx*22, p1[1]+ny*48+ty*22], c2=[p2[0]+nx*48-tx*22, p2[1]+ny*48-ty*22];
-        g.appendChild(el('path',{d:'M '+p1[0]+' '+p1[1]+' C '+c1[0]+' '+c1[1]+' '+c2[0]+' '+c2[1]+' '+p2[0]+' '+p2[1],
-          fill:'none', stroke:col, 'stroke-width':w, opacity:op, 'stroke-dasharray':dash}));
-        const dx=p2[0]-c2[0], dy=p2[1]-c2[1], L=Math.hypot(dx,dy);
-        headAt(g, p2[0], p2[1], dx/L, dy/L, col, op);
-        text(g, bx+nx*56, by+ny*56, c, {size:13, w:700, fill:col, opacity:op});
-        return;
-      }
-      const dx=P2[0]-P1[0], dy=P2[1]-P1[1], L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
-      const back=G.E.some(function(f){ return f[0]===v && f[1]===u; }), off=back?13:0, px=-uy*off, py=ux*off;
-      const sx=P1[0]+ux*27+px, sy=P1[1]+uy*27+py, ex=P2[0]-ux*29+px, ey=P2[1]-uy*29+py;
-      g.appendChild(el('line',{x1:sx, y1:sy, x2:ex-ux*11, y2:ey-uy*11, stroke:col, 'stroke-width':w, opacity:op, 'stroke-dasharray':dash}));
-      headAt(g, ex, ey, ux, uy, col, op);
-      const lx=(sx+ex)/2+(back? px*1.1 : -uy*14), ly=(sy+ey)/2+(back? py*1.1 : ux*14);
-      text(g, lx, ly, c, {size:13, w:700, fill:col, opacity:op});
-    });
-    Object.keys(G.POS).forEach(function(v){
-      const x=G.POS[v][0], y=G.POS[v][1];
-      const cir=el('circle',{cx:x, cy:y, r:26, fill:(o.fill&&o.fill[v])||'#fff',
-        stroke:(o.stroke&&o.stroke[v])||C.ink, 'stroke-width':(o.sw&&o.sw[v])||1.8});
-      if(o.click){ cir.setAttribute('style','cursor:pointer'); cir.addEventListener('click', function(){ o.click(v); }); }
-      g.appendChild(cir);
-      text(g, x, y+1, String(v), {size:18, w:700});
-      if(o.marks && o.marks[v]) text(g, x-34, y-30, o.marks[v], {size:18, w:800, fill:C.purple, mono:true});
-    });
-    if(o.token!=null){ const x=G.POS[o.token][0], y=G.POS[o.token][1];
-      g.appendChild(el('circle',{cx:x+20, cy:y-21, r:10, fill:C.ink, stroke:'#fff', 'stroke-width':2.5})); }
-    return g;
-  }
-  function out(G,u,c){ const e=G.E.find(function(x){ return x[0]===u && x[2]===c; }); return e; }
-  /* chooses a color each step; a color unused for K steps is forced */
-  function fairPicker(colors,K){
-    const since={}; colors.forEach(function(c){ since[c]=0; });
-    return {since:since, pick:function(pref){
-      const over=colors.filter(function(c){ return since[c]>=K; });
-      const c=over.length? over[0] : (pref? pref() : colors[Math.floor(Math.random()*colors.length)]);
-      colors.forEach(function(x){ since[x]++; }); since[c]=0; return c; }};
-  }
-  /* Play / Step / Reset; step() returns false when there is nothing more to do */
-  function player(pfx, step, reset, gap){
-    const $=function(id){ return document.getElementById(pfx+id); };
-    let timer=null;
-    function stop(){ if(timer){ clearInterval(timer); timer=null; } }
-    $('play').addEventListener('click', function(){ stop(); reset(); timer=setInterval(function(){ if(!step()) stop(); }, gap); });
-    $('step').addEventListener('click', function(){ stop(); step(); });
-    $('reset').addEventListener('click', function(){ stop(); reset(); });
-    return {stop:stop};
-  }
-  return {C:C, el:el, clear:clear, text:text, draw:draw, out:out, fairPicker:fairPicker, player:player};
-})();
-
-/* Figure 1 — fair execution of a program with three actions */
-(function(){
-  const PFX='ux_', $=function(id){ return document.getElementById(PFX+id); };
-  const svg=$('g'); if(!svg) return;
-  const U=window.UG, C=U.C;
-  const POS={0:[420,130], 1:[820,130], 2:[820,370], 3:[420,370]};
-  const DIAG={0:-135, 1:-45, 2:45, 3:135};
-  const E=[[0,1,'R'],[0,0,'B'],[0,0,'G'],
-           [1,1,'R'],[1,2,'B'],[1,1,'G'],
-           [2,3,'R'],[2,2,'B'],[2,2,'G'],
-           [3,3,'R'],[3,3,'B'],[3,0,'G']];
-  const ACTS=['R','B','G'], NAME={R:'red', B:'blue', G:'green'}, K=6;
-  /* two self-loops at each state, either side of the outward diagonal */
-  function loop(u,c){ const ls=E.filter(function(e){ return e[0]===u && e[1]===u; }).map(function(e){ return e[2]; });
-    return DIAG[u]+(ls.indexOf(c)===0? -32 : 32); }
-  const G={POS:POS, E:E, COL:{R:C.red, B:C.blue, G:C.green}, loop:loop};
-  let mode='rr', at=0, steps=[], since={}, count={}, queue=[];
-  function reset(){ at=0; steps=[]; queue=[]; ACTS.forEach(function(c){ since[c]=0; count[c]=0; }); draw(); }
-  function shuffle(a){ for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t; } return a; }
-  function step(){
-    if(steps.length>=60) return false;
-    let c, forced=false;
-    if(mode==='rr'){ if(!queue.length) queue=shuffle(ACTS.slice()); c=queue.shift(); }
-    else {
-      const over=ACTS.filter(function(x){ return since[x]>=K-1; });
-      if(over.length){ c=over.sort(function(x,y){ return since[y]-since[x]; })[0]; forced=true; }
-      else { const skips=ACTS.filter(function(x){ return U.out(G, at, x)[1]===at; });
-        c=(skips.length? skips : ACTS)[Math.floor(Math.random()*(skips.length? skips.length : ACTS.length))]; }
-    }
-    const from=at, to=U.out(G, at, c)[1];
-    ACTS.forEach(function(x){ since[x]++; }); since[c]=0; count[c]++;
-    steps.push({c:c, from:from, to:to, forced:forced}); at=to;
-    draw(); return true;
-  }
-  function draw(){
-    U.clear(svg);
-    const hl={}; if(steps.length){ const s=steps[steps.length-1]; hl[s.from+','+s.to+','+s.c]='strong'; }
-    U.draw(svg, G, {hl:hl, token:at, fill:{[at]:'#fff4e8'}});
-    U.text(svg, 30, 28, 'state '+at+'   ·   step '+steps.length, {anchor:'start', size:15, w:700});
-    /* each action: how often it has run, and how long it has waited */
-    U.text(svg, 990, 96, 'actions', {anchor:'start', size:13, w:700, fill:C.muted});
-    ACTS.forEach(function(c,i){
-      const y=135+i*72, col=G.COL[c];
-      svg.appendChild(U.el('rect',{x:990, y:y-14, width:28, height:28, rx:5, fill:col}));
-      U.text(svg, 1004, y+1, c, {size:14, w:800, fill:'#fff'});
-      U.text(svg, 1030, y-4, NAME[c]+': run '+count[c]+', waiting '+since[c], {anchor:'start', size:14, w:700});
-      svg.appendChild(U.el('rect',{x:1030, y:y+9, width:Math.min(since[c],8)*20, height:8, rx:3, fill:col, opacity:0.55}));
-      if(mode==='adv') svg.appendChild(U.el('line',{x1:1030+(K-1)*20, y1:y+5, x2:1030+(K-1)*20, y2:y+21, stroke:C.ink, 'stroke-width':2}));
-    });
-    if(mode==='adv') U.text(svg, 990, 352, 'the bar may not pass the black mark', {anchor:'start', size:12, w:600, fill:C.muted});
-    /* the schedule: the last 16 steps */
-    U.text(svg, 110, 464, 'schedule, latest on the right', {anchor:'start', size:13, w:700, fill:C.muted});
-    const first=Math.max(0, steps.length-16);
-    steps.slice(first).forEach(function(s,i){
-      const x=110+i*68, col=G.COL[s.c];
-      svg.appendChild(U.el('rect',{x:x, y:482, width:52, height:32, rx:6, fill:col, opacity:(s.from===s.to)? 0.45 : 1}));
-      U.text(svg, x+26, 499, s.c, {size:15, w:800, fill:'#fff'});
-      U.text(svg, x+26, 532, s.from===s.to? String(s.to) : s.from+'→'+s.to, {size:13, w:700, fill:s.from===s.to? C.muted : C.ink});
-    });
-    if(first>0) U.text(svg, 94, 499, '…', {size:16, w:700, fill:C.muted});
-    let msg='', col=C.ink;
-    if(!steps.length) msg=(mode==='rr')? 'Each round runs the three actions once, in a random order. Press Play.'
-      : 'The adversary runs an action that does nothing in the current state whenever it can. Press Play.';
-    else { const s=steps[steps.length-1];
-      if(mode==='rr') msg='Ran '+NAME[s.c]+': '+(s.from===s.to? 'it does nothing in state '+s.from+' (a self-loop).' : 'state '+s.from+' → '+s.to+'.');
-      else if(s.forced){ msg=NAME[s.c]+' had waited '+(K-1)+' steps, so the adversary must run it: '+(s.from===s.to? 'it does nothing in state '+s.from+'.' : 'state '+s.from+' → '+s.to+'.'); col=(s.from===s.to)? C.ink : C.teal; }
-      else msg='The adversary runs '+NAME[s.c]+', which does nothing in state '+s.from+'.';
-    }
-    U.text(svg, 30, 590, msg, {anchor:'start', size:15, w:700, fill:col});
-    $('status').innerHTML='step <b>'+steps.length+'</b>';
-  }
-  function setMode(m){ mode=m; $('rr').className=(m==='rr')? 'on' : ''; $('adv').className=(m==='adv')? 'on' : ''; pl.stop(); reset(); }
-  const pl=U.player(PFX, step, reset, 900);
-  $('rr').addEventListener('click', function(){ setMode('rr'); });
-  $('adv').addEventListener('click', function(){ setMode('adv'); });
-  reset();
-})();
-</script>
 </body>
 </html>
