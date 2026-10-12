@@ -944,6 +944,37 @@
     <code>{7} &#x21A6; {7}</code> give <code>{6, 7} &#x21A6; {7}</code>.
   </p>
 
+  <div class="thm">
+    <span class="lead-in">Substitution</span>
+    <div class="f">P &#x21A6; Q &cup; R &and; R &#x21A6; W <span class="imp">&#x27F9;</span> P &#x21A6; Q &cup; W</div>
+    <p class="e">Every fair path from <code>P</code> reaches <code>Q</code>
+      or <code>R</code>. If it reaches <code>R</code>, it goes on to reach
+      <code>W</code>. So it reaches <code>Q</code> or <code>W</code>.</p>
+  </div>
+  <p>
+    For example, with <code>Q = {7}</code>, <code>R = {6}</code> and
+    <code>W = {7}</code>: <code>{4, 5} &#x21A6; {6, 7}</code> and
+    <code>{6} &#x21A6; {7}</code> give <code>{4, 5} &#x21A6; {7}</code>:
+    <code>{6}</code> is replaced by what it leads to. The proof is in the
+    addendum.
+  </p>
+
+  <p>
+    Transitivity and substitution prove <code>{3} &#x21A6; {7}</code> in the
+    graph of Figure 2, using the three uses of ensures in section 3:
+  </p>
+  <ol class="facts">
+    <li><code>{3} &#x21A6; {4}</code>, by ensures (blue).</li>
+    <li><code>{3} &#x21A6; {4, 5}</code>, from 1 with a larger set on the right.</li>
+    <li><code>{4, 5} &#x21A6; {6, 7}</code>, by ensures (red).</li>
+    <li><code>{3} &#x21A6; {6, 7}</code>, by transitivity from 2 and 3.</li>
+    <li><code>{6} &#x21A6; {7}</code>, by ensures (blue).</li>
+    <li><code>{3} &#x21A6; {7}</code>, by substitution from 4 and 5, with
+      <code>Q = {7}</code>, <code>R = {6}</code> and <code>W = {7}</code>:
+      <code>{3} &#x21A6; {7} &cup; {6}</code> and <code>{6} &#x21A6; {7}</code>
+      give <code>{3} &#x21A6; {7} &cup; {7} = {7}</code>.</li>
+  </ol>
+
 <h2>6. Induction on a measure</h2>
 
   <p>
@@ -1001,6 +1032,33 @@
       thick. The lines of the proof collect below the graph.
     </figcaption>
   </figure>
+
+
+<h2>Addendum: proofs</h2>
+
+<h3>Substitution</h3>
+
+  <div class="proof">
+    <span class="lead-in">Proof from the rules</span>
+    <ol class="facts">
+      <li><code>Q &#x21A6; Q</code> (section 5, law 1).</li>
+      <li><code>Q &#x21A6; Q &cup; W</code>, from 1 with a larger set on the right (law 3).</li>
+      <li><code>R &#x21A6; Q &cup; W</code>, from <code>R &#x21A6; W</code> with a larger set on the right.</li>
+      <li><code>Q &cup; R &#x21A6; Q &cup; W</code>, by disjunction of 2 and 3.</li>
+      <li><code>P &#x21A6; Q &cup; W</code>, by transitivity from <code>P &#x21A6; Q &cup; R</code> and 4.</li>
+    </ol>
+  </div>
+
+  <div class="proof">
+    <span class="lead-in">The same proof in sets</span>
+    <p>
+      <code>Q &sube; A<sub>f</sub>F (Q &cup; W)</code> and
+      <code>R &sube; A<sub>f</sub>F W &sube; A<sub>f</sub>F (Q &cup; W)</code>, so
+      <code>Q &cup; R &sube; A<sub>f</sub>F (Q &cup; W)</code>. Then
+    </p>
+    <div class="calc">P &sube; A<sub>f</sub>F (Q &cup; R) &sube; A<sub>f</sub>F A<sub>f</sub>F (Q &cup; W) = A<sub>f</sub>F (Q &cup; W)</div>
+    <p>by monotonicity (fact 2) and idempotence (fact 3).</p>
+  </div>
 
 
   <nav class="parts"><a href="TemporalLogic1.html">Part 1: all paths, some path, until</a><span class="here">Part 2: colored graphs and fairness</span><a href="TemporalLogic3.html">Part 3: system properties</a></nav>
