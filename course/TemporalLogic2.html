@@ -149,7 +149,7 @@
   table.cmp th, table.cmp td{border:1px solid var(--line); padding:8px 12px;
     text-align:left; vertical-align:top}
   table.cmp th{background:#f6f4ee; color:var(--ink); font-weight:700}
-  /* figure 8: the sandbox */
+  /* figure 9: the sandbox */
   .sbx-row{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center;
     padding:8px 0; border-top:1px solid var(--line); font-size:14.5px}
   .sbx-row:first-child{border-top:0}
@@ -182,7 +182,7 @@
   .readout{margin-top:10px; padding:10px 12px; background:#fbf9f5;
     border:1px solid var(--line); border-radius:10px; font-size:14.5px}
   .readout b{color:var(--ink)}
-  /* figure 7: the block chain */
+  /* figure 8: the block chain */
   .chain{display:grid; grid-template-columns:repeat(auto-fit, minmax(160px, 1fr)); gap:10px; padding:6px 2px}
   .blk{ border:2px solid var(--line); border-radius:10px;
     padding:10px; background:#fbf9f5; transition:border-color .3s, background .3s}
@@ -474,49 +474,69 @@
     </p>
   </div>
 
-  <p>
-    The color must be fair: a fair path need not take a grey edge at all.
-    In the graph of Figure 2, <code>{3} &#x25B7;<sup>blue</sup> &not;{3}</code>,
-    <code>{4, 5} &#x25B7;<sup>red</sup> &not;{4, 5}</code> and
-    <code>{6} &#x25B7;<sup>blue</sup> &not;{6}</code>.
-  </p>
-
   <figure class="fig wideout">
     <svg id="lt_g" viewBox="0 0 1240 520" role="img"
-         aria-label="A set P of three vertices with blue and green edges inside it and red edges leaving it; a token walks a fair path that circles inside P until it takes a red edge and leaves; other buttons show the sets {3}, {4, 5} and {6} of the colored graph of Figure 2"></svg>
+         aria-label="A set P of three vertices with blue and green edges inside it and red edges leaving it; a token walks a fair path that circles inside P until it takes a red edge and leaves"></svg>
     <div class="ctrls">
       <button id="lt_play" class="primary">Play</button>
       <button id="lt_step">Step</button>
       <button id="lt_reset">Reset</button>
-      <span class="sep"></span>
-      <button id="lt_syn" class="on">Three vertices</button>
-      <button id="lt_3">P = {3}</button>
-      <button id="lt_45">P = {4, 5}</button>
-      <button id="lt_6">P = {6}</button>
       <span class="status" id="lt_status"></span>
     </div>
     <figcaption>
       <b>Figure 3. One fair color suffices.</b>
-      In the first graph, <code>P = {p, q, r}</code> and all three colors
-      are fair. Blue and green edges stay inside <code>P</code>; every red
-      edge from <code>P</code> leaves it. The edges of the color that leaves
-      <code>P</code> are drawn thick from the start. <i>Play</i> walks a
-      random fair path: it may go round inside <code>P</code> for a while,
-      but it must take red, and red leaves <code>P</code>. The other three
-      buttons use the graph of Figure 2: <code>{3} &#x21A6; &not;{3}</code>
-      because the blue edge from 3 goes to 4;
-      <code>{4, 5} &#x21A6; &not;{4, 5}</code> because the red edges from 4
-      and 5 go to 7 and 6; and <code>{6} &#x21A6; &not;{6}</code> because
-      the blue edge from 6 goes to 7.
+      <code>P = {p, q, r}</code>, and all three colors are fair. Blue and
+      green edges stay inside <code>P</code>; every red edge from
+      <code>P</code> leaves it, and these edges are drawn thick from the
+      start. <i>Play</i> walks a random fair path from <code>p</code>: it may
+      go round inside <code>P</code> for a while, but it must take red, and
+      red leaves <code>P</code>.
+    </figcaption>
+  </figure>
+
+  <p>
+    The color must be fair: a fair path need not take a grey edge at all.
+    In the graph of Figure 2, <code>{3} &#x25B7;<sup>blue</sup> &not;{3}</code>,
+    <code>{4, 5} &#x25B7;<sup>red</sup> &not;{4, 5}</code> and
+    <code>{6} &#x25B7;<sup>blue</sup> &not;{6}</code>. Figure 4 shows each
+    of them.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="lf_g" viewBox="0 0 1240 520" role="img"
+         aria-label="The colored graph of Figure 2 with a set P shaded: {3}, {4, 5} or {6}; the edges of the color that leaves P are thick, and a token walks a fair path from P until it leaves"></svg>
+    <div class="ctrls">
+      <button id="lf_play" class="primary">Play</button>
+      <button id="lf_step">Step</button>
+      <button id="lf_reset">Reset</button>
+      <span class="sep"></span>
+      <button id="lf_3" class="on">P = {3}</button>
+      <button id="lf_45">P = {4, 5}</button>
+      <button id="lf_6">P = {6}</button>
+      <span class="status" id="lf_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 4. One fair color, in the graph of Figure 2.</b>
+      The vertices of <code>P</code> are shaded, the vertices of
+      <code>Q</code> have a thick green outline, and the edges of the color
+      that leaves <code>P</code> are drawn thick.
+      <code>{3} &#x21A6; {4}</code>: every edge from 3 ends in
+      <code>{3, 4}</code>, and the blue edge goes to 4.
+      <code>{4, 5} &#x21A6; {6, 7}</code>: every edge from 4 and 5 ends in
+      <code>{4, 5, 6, 7}</code>, and the red edges go to 7 and 6.
+      <code>{6} &#x21A6; {7}</code>: every edge from 6 ends in
+      <code>{6, 7}</code>, and the blue edge goes to 7. <i>Play</i> walks a
+      random fair path from <code>P</code> until it leaves; it always
+      arrives in <code>Q</code>.
     </figcaption>
   </figure>
 
   <p class="key">
-    <span class="lead-in">Only F needs fairness</span>
-    Every finite path can be continued to a fair path: from any vertex,
-    take the fair colors in turn. So a vertex is reachable along some fair path
-    exactly when it is reachable. Counting only fair paths changes nothing
-    for <code>AX</code> and <code>AG</code>; it changes <code>AF</code>.
+    <code>AX</code> and <code>AG</code> are independent of fairness, because
+    every finite path can be continued to a fair path: from its last vertex,
+    take the fair colors in turn.
+    <code>AF</code> is a subset of <code>A<sub>f</sub>F</code>:
+    <code>AF Z &sube; A<sub>f</sub>F Z</code>.
   </p>
   <p>
     The dual of <code>A<sub>f</sub>F</code> is
@@ -561,7 +581,7 @@
       <span class="status" id="ae_status"></span>
     </div>
     <figcaption>
-      <b>Figure 4. Visiting Y forever, without staying in Y.</b>
+      <b>Figure 5. Visiting Y forever, without staying in Y.</b>
       The fair path <code>a &rarr;R b &rarr;B a &rarr;R b &rarr;B &hellip;</code>
       uses both colors forever. It returns to <code>a</code> again and
       again, so every vertex is in <code>AG A<sub>f</sub>F {a}</code>.
@@ -582,7 +602,7 @@
   <p>
     <b>Observation.</b>
     <code>A<sub>f</sub>F AG Y &sube; AG A<sub>f</sub>F Y</code>, and
-    figure 4 shows that the two sides can differ.
+    figure 5 shows that the two sides can differ.
   </p>
   <div class="proof">
     <span class="lead-in">Proof</span>
@@ -686,7 +706,7 @@
       <span class="status" id="cp_status"></span>
     </div>
     <figcaption>
-      <b>Figure 5. Composing AX, AG and A<sub>f</sub>F.</b>
+      <b>Figure 6. Composing AX, AG and A<sub>f</sub>F.</b>
       Click vertices to choose <code>Y</code> (thick outline). Each button
       applies one operator to the current set; the new set is shaded green,
       and its line is added to the list. The list reads the composition
@@ -767,7 +787,7 @@
     Both parts are needed. Without fairness, a path could go round a
     cycle inside <code>P</code> for ever. Without the first part, a
     path could leave <code>P</code> to a vertex outside
-    <code>P &cup; Q</code> and never come to <code>Q</code>. Figure 6 shows
+    <code>P &cup; Q</code> and never come to <code>Q</code>. Figure 7 shows
     both.
   </p>
 
@@ -785,7 +805,7 @@
       <span class="status" id="ba_status"></span>
     </div>
     <figcaption>
-      <b>Figure 6. The basis rule.</b>
+      <b>Figure 7. The basis rule.</b>
       Red edges inside <code>P</code> form a cycle, and every blue edge from
       <code>P</code> goes to <code>Q</code>. So every edge from
       <code>P</code> ends in <code>P &cup; Q</code>, and a fair path, which
@@ -881,7 +901,7 @@
       <span class="status" id="tr_status"></span>
     </div>
     <figcaption>
-      <b>Figure 7. Transitivity.</b>
+      <b>Figure 8. Transitivity.</b>
       Red edges keep a path in <code>P</code> and blue edges take it to
       <code>Q</code>, so <code>P &sube; A<sub>f</sub>F Q</code>.
       Blue edges keep a path in <code>Q</code> and red edges take it to
@@ -959,7 +979,7 @@
     <code>L<sub>3</sub> = {3}</code>. Ensures gives each step down, and the
     rule gives <code>{3, 4, 5, 6, 7} &#x21A6; {7}</code>. That is all of
     <code>A<sub>f</sub>F {7}</code>: vertices <code>0</code>, <code>1</code> and
-    <code>2</code> are not in it. Figure 8 goes through the proof.
+    <code>2</code> are not in it. Figure 9 goes through the proof.
   </p>
 
   <figure class="fig wideout">
@@ -972,7 +992,7 @@
       <span class="status" id="in_status"></span>
     </div>
     <figcaption>
-      <b>Figure 8. Induction on a measure.</b>
+      <b>Figure 9. Induction on a measure.</b>
       Each vertex of <code>{3, 4, 5, 6, 7}</code> is labelled with its level.
       Each step of the proof is one rule: ensures, disjunction or
       transitivity. The left side of the current step is shaded orange, the
@@ -1194,8 +1214,8 @@ window.TLC=(function(){
   function draw(svg,o){
     o=o||{};
     const g=G.el('g',{}); svg.appendChild(g);
-    function headAt(x,y,ux,uy,col){ const s=6.5, px=-uy, py=ux;
-      g.appendChild(G.el('polygon',{points:x+','+y+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+(x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col})); }
+    function headAt(x,y,ux,uy,col,op){ const s=6.5, px=-uy, py=ux;
+      g.appendChild(G.el('polygon',{points:x+','+y+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+(x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col, opacity:op==null? 1 : op})); }
     E.forEach(function(e){
       const [u,v,c]=e, key=u+','+v+','+c, hi=o.hl && o.hl[key];
       const col=COL[c], w=hi?5:2.4, op=(o.dim && !hi)?0.35:1;
@@ -1209,7 +1229,7 @@ window.TLC=(function(){
         g.appendChild(G.el('path',{d:'M '+p1[0]+' '+p1[1]+' C '+c1[0]+' '+c1[1]+' '+c2[0]+' '+c2[1]+' '+p2[0]+' '+p2[1],
           fill:'none', stroke:col, 'stroke-width':w, opacity:op}));
         const dx=p2[0]-c2[0], dy=p2[1]-c2[1], L=Math.hypot(dx,dy);
-        if(op===1) headAt(p2[0], p2[1], dx/L, dy/L, col);
+        headAt(p2[0], p2[1], dx/L, dy/L, col, op);
         G.text(g, bx+nx*58, by+ny*58, c, {size:13, w:700, fill:col});
         return;
       }
@@ -1218,7 +1238,7 @@ window.TLC=(function(){
       const sx=x1+ux*27+px, sy=y1+uy*27+py, ex=x2-ux*29+px, ey=y2-uy*29+py;
       g.appendChild(G.el('line',{x1:sx, y1:sy, x2:ex-ux*11, y2:ey-uy*11, stroke:col, 'stroke-width':w, opacity:op,
         'stroke-dasharray':c==='N'? '9 6' : 'none'}));
-      if(op===1) headAt(ex, ey, ux, uy, col);
+      headAt(ex, ey, ux, uy, col, op);
       const lo=back?1.6:0, nx2=-uy*13, ny2=ux*13;
       if(c!=='N') G.text(g, (sx+ex)/2+(back?px*lo:nx2), (sy+ey)/2+(back?py*lo:ny2), c, {size:13, w:700, fill:col});
     });
@@ -1352,7 +1372,7 @@ window.TLC=(function(){
 </script>
 
 <script>
-/* Figure 4 — AG A_fF {a} differs from A_fF AG {a}; the set is called Y in the text */
+/* Figure 5 — AG A_fF {a} differs from A_fF AG {a}; the set is called Y in the text */
 (function(){
   const PFX='ae_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
@@ -1408,7 +1428,7 @@ window.TLC=(function(){
 </script>
 
 <script>
-/* Figure 5 — composing AX, AG and A_fF on the colored graph */
+/* Figure 6 — composing AX, AG and A_fF on the colored graph */
 (function(){
   const PFX='cp_', $=function(id){return document.getElementById(PFX+id);};
   const svg=$('g'); if(!svg) return;
@@ -1541,7 +1561,7 @@ window.UG=(function(){
   return {C:C, el:el, clear:clear, text:text, draw:draw, out:out, fairPicker:fairPicker, player:player};
 })();
 
-/* Figure 6 — the basis rule */
+/* Figure 7 — the basis rule */
 (function(){
   const PFX='ba_', $=function(id){ return document.getElementById(PFX+id); };
   const svg=$('g'); if(!svg) return;
@@ -1610,7 +1630,7 @@ window.UG=(function(){
   reset();
 })();
 
-/* Figure 7 — transitivity */
+/* Figure 8 — transitivity */
 (function(){
   const PFX='tr_', $=function(id){ return document.getElementById(PFX+id); };
   const svg=$('g'); if(!svg) return;
@@ -1660,9 +1680,9 @@ window.UG=(function(){
   reset();
 })();
 
-/* Figure 3 — one fair color suffices: P leads to not P */
-(function(){
-  const PFX='lt_', $=function(id){ return document.getElementById(PFX+id); };
+/* Figures 3 and 4 — one fair color suffices: P leads to not P */
+function ltFigure(PFX, KEYS){
+  const $=function(id){ return document.getElementById(PFX+id); };
   const svg=$('g'); if(!svg) return;
   const U=window.UG, C=U.C, T=window.TLC;
   const SYN={POS:{p:[230,150], q:[230,370], r:[470,260], s:[860,150], t:[860,370]},
@@ -1672,11 +1692,11 @@ window.UG=(function(){
        ['p','s','R'],['q','t','R'],['r','s','R'],['s','t','R'],['t','s','R'],
        ['s','s','B'],['s','s','G'],['t','t','B'],['t','t','G']]};
   const MODES={syn:{P:['p','q','r'], c:'R', start:'p', fair:['R','B','G']},
-               '3':{P:[3], c:'B', start:3, fair:['R','B']},
-               '45':{P:[4,5], c:'R', start:4, fair:['R','B']},
-               '6':{P:[6], c:'B', start:6, fair:['R','B']}};
+               '3':{P:[3], Q:[4], c:'B', start:3, fair:['R','B']},
+               '45':{P:[4,5], Q:[6,7], c:'R', start:4, fair:['R','B']},
+               '6':{P:[6], Q:[7], c:'B', start:6, fair:['R','B']}};
   const NAME={R:'red', B:'blue', G:'green'};
-  let mode='syn', path=[], at=null, exitAt=-1, picker=null;
+  let mode=KEYS[0], path=[], at=null, exitAt=-1, picker=null;
   function M(){ return MODES[mode]; }
   function edges(){ return mode==='syn'? SYN.E : T.E; }
   function inP(v){ return M().P.indexOf(v)>=0; }
@@ -1703,6 +1723,7 @@ window.UG=(function(){
     } else {
       const fill={}, stroke={}, sw={};
       m.P.forEach(function(v){ fill[v]=C.pFill; stroke[v]=C.pStroke; sw[v]=4; });
+      (m.Q||[]).forEach(function(v){ stroke[v]=C.teal; sw[v]=6; });
       T.draw(svg, {hl:hl, dim:true, fill:fill, stroke:stroke, sw:sw, token:at});
     }
     const cnt={}; m.fair.forEach(function(c){ cnt[c]=0; }); path.forEach(function(e){ if(cnt[e[2]]!=null) cnt[e[2]]++; });
@@ -1712,17 +1733,19 @@ window.UG=(function(){
     if(!path.length) msg=(mode==='syn')? 'Blue and green edges stay in P; every red edge from P leaves P. Press Play: a random fair path from p.'
       : 'Every '+NAME[m.c]+' edge from P leaves P; the other edges from P stay in P. Press Play.';
     else if(exitAt<0) msg='In P at '+at+'. A fair path must take '+NAME[m.c]+' at some step, and a '+NAME[m.c]+' edge from P leaves P.';
-    else { const e=path[exitAt]; msg='Left P at step '+(exitAt+1)+' on a '+NAME[e[2]]+' edge, '+e[0]+' → '+e[1]+'. So P ↦ ¬P.'; col=C.teal; }
+    else { const e=path[exitAt]; msg='Left P at step '+(exitAt+1)+' on a '+NAME[e[2]]+' edge, '+e[0]+' → '+e[1]+'. '+(m.Q? e[1]+' ∈ Q = '+show(m.Q)+', so '+show(m.P)+' ↦ '+show(m.Q)+'.' : 'So P ↦ ¬P.'); col=C.teal; }
     U.text(svg, 30, 500, msg, {anchor:'start', size:15, w:700, fill:col});
     $('status').innerHTML='step <b>'+path.length+'</b>';
   }
-  function setMode(k){ mode=k; ['syn','3','45','6'].forEach(function(x){ $(x).className=(x===k)? 'on' : ''; }); pl.stop(); reset(); }
+  function setMode(k){ mode=k; KEYS.forEach(function(x){ if($(x)) $(x).className=(x===k)? 'on' : ''; }); pl.stop(); reset(); }
   const pl=U.player(PFX, step, reset, 800);
-  ['syn','3','45','6'].forEach(function(k){ $(k).addEventListener('click', function(){ setMode(k); }); });
+  KEYS.forEach(function(k){ if($(k)) $(k).addEventListener('click', function(){ setMode(k); }); });
   reset();
-})();
+}
+ltFigure('lt_', ['syn']);
+ltFigure('lf_', ['3', '45', '6']);
 
-/* Figure 8 — induction on a measure, on the colored graph of Figure 2 */
+/* Figure 9 — induction on a measure, on the colored graph of Figure 2 */
 (function(){
   const PFX='in_', $=function(id){ return document.getElementById(PFX+id); };
   const svg=$('g'); if(!svg) return;
