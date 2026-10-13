@@ -1,0 +1,897 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sharing Resources</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  h2{font-family:var(--display); font-weight:600; font-size:25px;
+     letter-spacing:-.01em; margin:38px 0 12px}
+  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:34px 0 8px}
+  p{color:var(--body); margin:0 0 15px}
+  ul, ol{color:var(--body)}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  header.top h2{margin:-2px 0 20px; padding:0; border:0;
+    font-family:var(--display); font-weight:600; font-size:22px;
+    line-height:1.2; letter-spacing:-.01em; color:var(--muted)}
+  figure.fig{margin:32px 0 30px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  figure.fig figcaption i{color:var(--ink); font-style:normal; font-weight:600}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  button.on{border-color:var(--orange); color:var(--orange); box-shadow:inset 0 0 0 1px var(--orange)}
+  .sep{width:1px; align-self:stretch; background:var(--line)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em;
+       background:#f6f4ee; border-radius:5px; padding:1px 5px}
+  .defn{margin:22px 0 20px; padding:14px 18px 14px 20px; background:#fff6ef;
+    border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0}
+  .defn .lead-in, .thm .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; margin-bottom:9px}
+  .defn .lead-in{color:var(--orange)}
+  .defn p, .thm p{color:var(--ink); margin:0 0 8px}
+  .defn p:last-child, .thm p:last-child{margin-bottom:0}
+  .thm{margin:24px 0 22px; padding:14px 18px 14px 20px; background:#fff;
+    border:1px solid var(--line); border-left:5px solid var(--teal);
+    border-radius:0 10px 10px 0}
+  .thm .lead-in{color:var(--teal)}
+  .thm ol{margin:4px 0 0; padding-left:22px; color:var(--ink)}
+  .thm ol li{margin:0 0 7px}
+  ol.facts{margin:10px 0 18px; padding-left:24px}
+  ol.facts li{margin:0 0 8px}
+  nav.parts{display:flex; flex-wrap:wrap; gap:6px 18px; margin:0 0 26px; padding:10px 14px;
+    background:#fff; border:1px solid var(--line); border-radius:10px; font-size:14.5px}
+  nav.parts a{color:var(--ink); font-weight:600; text-decoration:none}
+  nav.parts a:hover{text-decoration:underline}
+  table.cmp{width:100%; border-collapse:collapse; margin:16px 0 22px;
+    background:#fff; font-size:15px; color:var(--body)}
+  table.cmp th, table.cmp td{border:1px solid var(--line); padding:8px 12px;
+    text-align:left; vertical-align:top}
+  table.cmp th{background:#f6f4ee; color:var(--ink); font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab &middot; Distributed algorithms</div>
+    <h1>Sharing Resources</h1>
+    <h2>Priority by time, or by an order on resources</h2>
+    <p>
+      Agents often need exclusive use of several resources at once: a set of
+      files, a set of locks, a set of devices. This class gives two simple
+      ideas for sharing resources fairly. The first decides conflicts by
+      <b>time</b>: the agent that started waiting earliest wins. The second
+      puts the resources in <b>order</b> and makes every agent ask for them
+      in that order. As in the dining philosophers, the arguments are
+      informal, and the animations show why they hold.
+    </p>
+  </header>
+
+  <nav class="parts"><span>See also:</span><a href="DiningPhilosophers.html">Dining philosophers</a><a href="LogicalTime.html">Logical time</a></nav>
+
+<h2>1. The problem</h2>
+
+  <p>
+    Our example has three resources, which we call <b>tea</b>,
+    <b>milk</b> and <b>coffee</b>; think of them as three files. Each
+    resource has a <b>manager</b>, an agent that hands it out and keeps a
+    queue of requests for it. The other agents, here Maya and Liu, go round
+    a cycle of three states, which Chandy and Misra called
+  </p>
+  <ul>
+    <li><b>tranquil</b>: the agent holds no resources, and may stay
+      tranquil for ever;</li>
+    <li><b>thirsty</b>: the agent wants a set of resources, any nonempty
+      set, and waits for them;</li>
+    <li><b>drinking</b>: the agent holds all the resources it wanted and
+      uses them, for a finite time. Then it returns them to their managers
+      and becomes tranquil.</li>
+  </ul>
+  <p>
+    A thirsty agent sends a <b>request</b> to the manager of each resource
+    it wants; a manager sends a resource to an agent, and the agent later
+    sends it back. Messages take an arbitrary but finite time. Each
+    resource is a token: it is always in exactly one place.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">Specification</span>
+    <p><b>Safety.</b> A resource is held by at most one agent at a time.</p>
+    <p><b>Progress.</b> Every thirsty agent drinks eventually.</p>
+  </div>
+
+  <p>
+    The dining philosophers are the special case in which every agent
+    always wants the same resources, the forks it shares with its
+    neighbors.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="f1_g" viewBox="0 0 1240 580" role="img"
+         aria-label="Maya and Liu on the left, the managers of tea, milk and coffee on the right; Maya asks for tea and milk, gets them, drinks and returns them"></svg>
+    <div class="ctrls">
+      <button id="f1_play" class="primary">Play</button>
+      <button id="f1_step">Step</button>
+      <button id="f1_reset">Reset</button>
+      <span class="status" id="f1_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 1. One round, with no conflict.</b>
+      Agents are on the left, managers on the right, and a line joins each
+      agent to each manager. A dashed blue frame marks where the last event
+      happened. Messages to a manager travel above a line,
+      messages to an agent below it. Requests are white labels; resources
+      are colored cups: brown tea, white milk, dark coffee. Maya becomes
+      thirsty for tea and milk, gets them, drinks, and returns them.
+    </figcaption>
+  </figure>
+
+<h2>2. What can go wrong</h2>
+
+<h3>Deadlock</h3>
+
+  <p>
+    Suppose agents ask for their resources one at a time, in any order, and
+    managers serve requests first come, first served. Maya wants tea and
+    then milk; Liu wants milk and then tea.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="f2_g" viewBox="0 0 1240 580" role="img"
+         aria-label="Maya gets tea and asks for milk; Liu gets milk and asks for tea; each waits for the other for ever"></svg>
+    <div class="ctrls">
+      <button id="f2_play" class="primary">Play</button>
+      <button id="f2_step">Step</button>
+      <button id="f2_reset">Reset</button>
+      <span class="status" id="f2_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 2. Deadlock.</b>
+      Maya gets tea and asks for milk; Liu gets milk and asks for tea. Each
+      holds what the other needs, and nobody will give anything up: they
+      wait for ever.
+    </figcaption>
+  </figure>
+
+<h3>Starvation</h3>
+
+  <p>
+    Deadlock comes from waiting in a cycle. A priority breaks the cycle: a
+    manager can take a resource back from a lower-priority agent that is
+    still thirsty, and give it to a higher-priority one. Give each agent a
+    fixed number, its <b>id</b>, and let the higher id win. Will that work?
+    No: an agent with a high id can win every conflict, for ever.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="f3_g" viewBox="0 0 1240 580" role="img"
+         aria-label="Maya and Liu both want milk again and again; with priority by id Liu wins every time and Maya never drinks; with priority by time they take turns"></svg>
+    <div class="ctrls">
+      <button id="f3_play" class="primary">Play</button>
+      <button id="f3_step">Step</button>
+      <button id="f3_reset">Reset</button>
+      <span class="sep"></span>
+      <button id="f3_id" class="on">Priority by id</button>
+      <button id="f3_time">Priority by time</button>
+      <span class="status" id="f3_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 3. Fixed priorities starve.</b>
+      Maya (id 2) and Liu (id 5) both want milk, again and again. Liu becomes
+      thirsty again as soon as he finishes, and his messages are always
+      delivered quickly. With <i>Priority by id</i>, Liu wins every time: when
+      milk does reach Maya, Liu's next request takes it back before she can
+      drink. Maya never drinks. Section 3 explains <i>Priority by time</i>,
+      with which they take turns.
+    </figcaption>
+  </figure>
+
+  <p>
+    The priority of an agent that loses a conflict must rise relative to
+    the winner. The two ideas that follow do this in different ways.
+  </p>
+
+<h2>3. Idea 1: the agent that waited longest wins</h2>
+
+  <p>
+    Each agent has a local clock. The clocks need not agree; all we need is
+    that every clock ticks forward for ever, so that it eventually passes
+    any given time. When an agent becomes thirsty it reads its clock and
+    takes a <b>stamp</b> <code>(t, id)</code>. Stamps are compared first by
+    <code>t</code>, and when the clock readings are equal, by id: the
+    smaller id wins the tie. So any two stamps can be compared, and no two
+    are equal. The earlier stamp has the higher priority.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="f4_g" viewBox="0 0 1240 460" role="img"
+         aria-label="Three clocks ticking at different rates along time lines, with a marker at time T; stamps appear on the lines when agents become thirsty; eventually every clock passes T"></svg>
+    <div class="ctrls">
+      <button id="f4_play" class="primary">Play</button>
+      <button id="f4_step">Step</button>
+      <button id="f4_reset">Reset</button>
+      <span class="status" id="f4_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 4. Clocks and stamps.</b>
+      Each agent's clock moves right along its own line, at its own uneven
+      pace. A flag marks a stamp: the clock reading when the agent became
+      thirsty. The list on the right orders the stamps, earliest first, with
+      ties broken by id. The orange line is a fixed time <code>T</code>.
+      Sooner or later every clock passes <code>T</code>, and after that
+      every new stamp lies to the right of <code>T</code>.
+    </figcaption>
+  </figure>
+
+  <div class="thm">
+    <span class="lead-in">The algorithm with stamps</span>
+    <ol>
+      <li>A thirsty agent sends a request, carrying its stamp, to the manager
+        of every resource it wants, all at once.</li>
+      <li>A manager keeps its requests in order of stamp, and sends a free
+        resource to the earliest request.</li>
+      <li>If a request arrives that is earlier than the stamp of the agent
+        holding the resource, the manager asks that agent to return it.</li>
+      <li>An agent asked to return a resource returns it if it is thirsty;
+        its request goes back into the manager's queue. If it is drinking,
+        it keeps the resource until it finishes.</li>
+      <li>An agent that holds everything it wants drinks, and returns
+        everything when it finishes.</li>
+    </ol>
+  </div>
+
+  <figure class="fig wideout">
+    <svg id="f5_g" viewBox="0 0 1240 580" role="img"
+         aria-label="Maya asks for tea and milk with stamp (4, Maya); Liu asks for milk and coffee later, but with the earlier stamp (2, Liu); the milk manager asks Maya to return milk, Liu drinks first, then Maya"></svg>
+    <div class="ctrls">
+      <button id="f5_play" class="primary">Play</button>
+      <button id="f5_step">Step</button>
+      <button id="f5_reset">Reset</button>
+      <span class="status" id="f5_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 5. An earlier stamp takes a resource back.</b>
+      Maya's clock reads 4 and Liu's reads 2: the clocks do not agree.
+      Maya becomes thirsty first, for tea and milk, with stamp
+      <code>(4, Maya)</code>. Liu becomes thirsty a little later, for milk and
+      coffee, but his stamp <code>(2, Liu)</code> is earlier. When his
+      request reaches the milk manager, Maya has not started drinking, so
+      the manager asks her to return milk. Liu drinks; then milk goes back
+      to Maya, and she drinks.
+    </figcaption>
+  </figure>
+
+  <p>
+    Go back to Figure 3 and choose <i>Priority by time</i>. Each time Liu
+    becomes thirsty again, his new stamp is later than Maya's, so the
+    manager no longer takes milk away from her: she drinks, and they take
+    turns.
+  </p>
+
+  <div class="thm">
+    <span class="lead-in">Safety, informally</span>
+    <p>A resource is a token: managers and agents pass it on, but never copy
+      it. So at most one agent holds it.</p>
+  </div>
+
+  <div class="thm">
+    <span class="lead-in">Progress, informally</span>
+    <p>Take a thirsty agent with stamp <code>(T, id)</code>. The argument
+      has two parts.</p>
+    <p><b>Part 1: every clock passes T, and stays past it</b> (Figure 4).
+      Clocks tick forward and never go back. So after a while every new
+      request has a stamp later than <code>T</code>, and only finitely many
+      requests have stamps up to <code>T</code>.</p>
+    <p><b>Part 2: the requests with stamps up to T run out</b> (Figure 6).
+      Look at the earliest of them that is still waiting. Every manager it
+      asks puts it first, and takes the resource back from any later agent
+      that is only thirsty; an agent that is drinking gives the resource
+      back when it finishes. So the earliest request gets everything it
+      wants, and drinks. Then the next earliest does, and so on, until our
+      agent drinks.</p>
+  </div>
+
+  <figure class="fig wideout">
+    <svg id="f6_g" viewBox="0 0 1240 580" role="img"
+         aria-label="Three agents, Maya, Liu and Ana, run the algorithm with stamps; the panel on the right counts the requests with stamps up to T that are still waiting, and marks the earliest"></svg>
+    <div class="ctrls">
+      <button id="f6_play" class="primary">Play</button>
+      <button id="f6_step">Step</button>
+      <button id="f6_reset">Reset</button>
+      <span class="status" id="f6_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 6. The early requests run out.</b>
+      Three agents become thirsty with stamps <code>(3, Maya)</code>,
+      <code>(4, Ana)</code> and <code>(5, Liu)</code>, and they want
+      overlapping sets. Take <code>T = 5</code>, and start when every clock
+      has already passed <code>T</code>, so every later request has a later
+      stamp. Events then happen at random. The panel counts the requests
+      with stamps up to <code>T</code> that are still waiting, and marks
+      the earliest one, with a thick outline. That one is never kept waiting
+      for good, and the count falls to zero.
+    </figcaption>
+  </figure>
+
+<h2>4. Idea 2: an order on resources</h2>
+
+  <p>
+    The second idea needs no clocks. Give the resources a fixed order, here
+    <b>tea &gt; milk &gt; coffee</b>. An agent asks for the resources it
+    wants one at a time, highest first, and asks for the next only when it
+    holds all the higher ones. For example, an agent that wants coffee and
+    tea asks for tea, and asks for coffee only once it has tea. Managers
+    serve requests first come, first served, and never take a resource
+    back.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="f7_g" viewBox="0 0 1240 580" role="img"
+         aria-label="Maya wants tea and milk, Liu wants milk and tea; asking in any order leads to deadlock; asking in the fixed order, both ask for tea first, and both drink"></svg>
+    <div class="ctrls">
+      <button id="f7_play" class="primary">Play</button>
+      <button id="f7_step">Step</button>
+      <button id="f7_reset">Reset</button>
+      <span class="sep"></span>
+      <button id="f7_free">Any order</button>
+      <button id="f7_order" class="on">Highest first</button>
+      <span class="status" id="f7_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 7. Ordering removes the cycle.</b>
+      The same agents and wishes as in Figure 2, with the same timing of
+      messages. <i>Any order</i> deadlocks, as before. With <i>Highest
+      first</i>, both Maya and Liu ask for tea first. Liu waits for tea
+      without holding milk, so Maya gets milk, drinks, and returns both; then
+      Liu drinks.
+    </figcaption>
+  </figure>
+
+  <figure class="fig wideout">
+    <svg id="f8_g" viewBox="0 0 1240 580" role="img"
+         aria-label="Maya wants tea and milk, Liu wants milk and coffee; Maya gets tea and waits in the milk queue behind Liu; Liu gets milk then coffee, drinks, returns them, and milk goes to Maya"></svg>
+    <div class="ctrls">
+      <button id="f8_play" class="primary">Play</button>
+      <button id="f8_step">Step</button>
+      <button id="f8_reset">Reset</button>
+      <span class="status" id="f8_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 8. A round with ordered requests.</b>
+      Maya wants tea and milk; Liu wants milk and coffee. Maya asks for tea,
+      Liu for milk. Maya then asks for milk and waits in the queue behind
+      Liu. Liu holds milk and asks for coffee, which no one holds; he gets
+      it, drinks, and returns both. Milk goes to Maya, and she drinks.
+    </figcaption>
+  </figure>
+
+  <div class="thm">
+    <span class="lead-in">Why no one waits for ever, informally</span>
+    <p>A thirsty agent waiting for a resource <code>r</code> holds only
+      resources above <code>r</code>, because it asks highest first. So an
+      agent never waits for a resource higher than one it holds, and a cycle
+      of agents each waiting for the next is impossible.</p>
+    <p>Go up the order, starting from the lowest resource, coffee. An agent
+      holding coffee waits for nothing below it, so it has everything it
+      wants: it drinks and returns coffee, and since the queue is first come,
+      first served, everyone waiting for coffee gets it in turn. An agent
+      holding milk waits at most for coffee, which it gets; so it drinks and
+      returns milk, and everyone in the milk queue gets milk in turn. Then
+      the same for tea. So every thirsty agent drinks.</p>
+  </div>
+
+  <figure class="fig wideout">
+    <svg id="f9_g" viewBox="0 0 1240 580" role="img"
+         aria-label="Three agents run the ordered algorithm with random wishes and random timing; the panel lists what each thirsty agent holds and what it waits for, and checks that every agent waits only for resources below everything it holds"></svg>
+    <div class="ctrls">
+      <button id="f9_play" class="primary">Play</button>
+      <button id="f9_step">Step</button>
+      <button id="f9_reset">Reset</button>
+      <span class="status" id="f9_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 9. Ordered requests, at random.</b>
+      Maya, Liu and Ana become thirsty for random sets of resources, and
+      events happen in random order. The panel lists, for each thirsty
+      agent, what it holds and what it is waiting for. The check below the
+      list holds at every step: every agent waits only for a resource below
+      everything it holds. The drink counts keep growing for all three.
+    </figcaption>
+  </figure>
+
+<h2>5. Comparing the two ideas</h2>
+
+  <table class="cmp">
+    <tr><th></th><th>Priority by time</th><th>Order on resources</th></tr>
+    <tr><td>Needs</td><td>local clocks that tick forward for ever</td><td>a fixed order on the resources</td></tr>
+    <tr><td>Requests</td><td>all at once</td><td>one at a time, highest first</td></tr>
+    <tr><td>Queues</td><td>ordered by stamp</td><td>first come, first served</td></tr>
+    <tr><td>Taking back</td><td>a manager may recall a resource from a thirsty agent</td><td>never</td></tr>
+    <tr><td>Cost</td><td>resources may travel back and forth</td><td>an agent may hold resources while it waits for lower ones</td></tr>
+  </table>
+
+  <p>
+    The dining philosophers algorithm is a third way: there the priority
+    between two neighbors is stored in the fork they share, and changes
+    when one of them eats.
+  </p>
+
+<h2>6. Key ideas</h2>
+
+  <ol class="facts">
+    <li><b>Priority among agents in conflict.</b> Some agents win and others
+      lose. Winning must be fair: every agent that wants to win wins
+      eventually.</li>
+    <li><b>Tokens.</b> An agent that holds a token knows that no other agent
+      holds it. Resources are tokens.</li>
+    <li><b>Dynamic priorities.</b> Priorities can come from an order on
+      resources, from stamps made of clock readings and ids, or from an
+      acyclic graph of agents that changes as they act, as in the dining
+      philosophers.</li>
+  </ol>
+
+</div>
+
+<script>
+/* RSModel: agents share resources through managers.
+   policy 'time'  : request all resources at once, stamped (clock, id); a manager grants to the
+                    earliest stamp and recalls a resource from a thirsty holder when an earlier request arrives.
+   policy 'id'    : the same, but priority is a fixed agent id (a higher id wins).
+   policy 'order' : request one resource at a time, highest-ranked first; FIFO queues; no recalls.
+   policy 'free'  : request one at a time in the order given; FIFO queues; no recalls (can deadlock).
+   Messages travel on FIFO channels, one channel for each direction between an agent and a manager. */
+function RSModel(cfg){
+  const A=cfg.agents, RES=cfg.res, P=cfg.policy, ID=cfg.id||{};
+  const rank={}; RES.forEach(function(r,i){ rank[r]=RES.length-i; });      /* RES[0] has the highest rank */
+  function better(p,q){                                                     /* does priority p beat q? */
+    if(P==='id') return ID[p.a]>ID[q.a];
+    return p.t<q.t || (p.t===q.t && ID[p.a]<ID[q.a]);
+  }
+  function chan(from,to){ return from+'>'+to; }
+  function init(clocks){
+    const ag={}, mg={}, ch={};
+    A.forEach(function(a){ ag[a]={st:'T', need:[], hold:[], ts:null, clock:(clocks&&clocks[a])||0, next:0};
+      RES.forEach(function(r){ ch[chan(a,r)]=[]; ch[chan(r,a)]=[]; }); });
+    RES.forEach(function(r){ mg[r]={at:null, queue:[], recalled:false}; });
+    return {ag:ag, mg:mg, ch:ch};
+  }
+  function copy(s){ return JSON.parse(JSON.stringify(s)); }
+  function send(s,from,to,m){ s.ch[chan(from,to)].push(m); }
+  function sequential(){ return P==='order' || P==='free'; }
+  function askNext(s,a){ const g=s.ag[a];
+    while(g.next<g.need.length && g.hold.indexOf(g.need[g.next])>=0) g.next++;
+    if(g.next<g.need.length){ const r=g.need[g.next]; g.next++; send(s,a,r,{k:'req', a:a, r:r, t:g.ts? g.ts.t : 0}); } }
+  function manage(s,r){ const m=s.mg[r];
+    if(m.at===null && m.queue.length){
+      let i=0;
+      if(P==='time' || P==='id') m.queue.forEach(function(q,j){ if(better(q,m.queue[i])) i=j; });
+      const q=m.queue.splice(i,1)[0]; m.at={a:q.a, t:q.t}; m.recalled=false;
+      send(s,r,q.a,{k:'grant', a:q.a, r:r});
+    } else if(m.at!==null && !m.recalled && (P==='time' || P==='id') && m.queue.some(function(q){ return better(q,m.at); })){
+      m.recalled=true; send(s,r,m.at.a,{k:'recall', a:m.at.a, r:r});
+    }
+  }
+  function acts(s,opt){
+    opt=opt||{}; const L=[];
+    A.forEach(function(a){ const g=s.ag[a];
+      if(g.st==='T' && opt.thirst!==false) L.push({k:'thirsty', a:a});
+      if(g.st==='Th' && g.need.every(function(r){ return g.hold.indexOf(r)>=0; })) L.push({k:'drink', a:a});
+      if(g.st==='D') L.push({k:'done', a:a});
+      if(opt.tick) L.push({k:'tick', a:a});
+    });
+    Object.keys(s.ch).forEach(function(c){ if(s.ch[c].length) L.push({k:'deliver', c:c, m:s.ch[c][0]}); });
+    return L;
+  }
+  function apply(s0,x,need){
+    const s=copy(s0);
+    if(x.k==='tick') s.ag[x.a].clock++;
+    else if(x.k==='thirsty'){ const g=s.ag[x.a]; g.st='Th'; g.hold=[];
+      g.need=need.slice(); if(P==='order') g.need.sort(function(p,q){ return rank[q]-rank[p]; });
+      g.ts={t:g.clock, a:x.a}; g.next=0;
+      if(sequential()) askNext(s,x.a);
+      else g.need.forEach(function(r){ send(s,x.a,r,{k:'req', a:x.a, r:r, t:g.ts.t}); });
+    }
+    else if(x.k==='drink') s.ag[x.a].st='D';
+    else if(x.k==='done'){ const g=s.ag[x.a]; g.st='T';
+      g.hold.forEach(function(r){ send(s,x.a,r,{k:'ret', a:x.a, r:r}); }); g.hold=[]; g.need=[]; g.ts=null; }
+    else if(x.k==='deliver'){ const m=s.ch[x.c].shift();
+      if(m.k==='req'){ s.mg[m.r].queue.push({a:m.a, t:m.t}); manage(s,m.r); }
+      else if(m.k==='grant'){ const g=s.ag[m.a]; g.hold.push(m.r); if(sequential()) askNext(s,m.a); }
+      else if(m.k==='recall'){ const g=s.ag[m.a];
+        if(g.st==='Th' && g.hold.indexOf(m.r)>=0){ g.hold.splice(g.hold.indexOf(m.r),1); send(s,m.a,m.r,{k:'ret', a:m.a, r:m.r, back:true, t:g.ts.t}); } }
+      else if(m.k==='ret'){ const mg=s.mg[m.r]; mg.at=null; mg.recalled=false;
+        if(m.back) mg.queue.push({a:m.a, t:m.t});
+        manage(s,m.r); }
+    }
+    return s;
+  }
+  /* each resource is in exactly one place: free at its manager, held, or in a grant or return message */
+  function tokensOK(s){
+    return RES.every(function(r){ let n=0;
+      if(s.mg[r].at===null) n++;
+      A.forEach(function(a){ if(s.ag[a].hold.indexOf(r)>=0) n++; });
+      Object.keys(s.ch).forEach(function(c){ s.ch[c].forEach(function(m){ if(m.r===r && (m.k==='grant' || m.k==='ret')) n++; }); });
+      return n===1; });
+  }
+  function safe(s){ return RES.every(function(r){ return A.filter(function(a){ return s.ag[a].hold.indexOf(r)>=0 && s.ag[a].st==='D'; }).length<=1; }); }
+  function key(s){ return JSON.stringify(s); }
+  return {A:A, RES:RES, P:P, ID:ID, rank:rank, init:init, acts:acts, apply:apply, tokensOK:tokensOK, safe:safe, key:key, better:better};
+}
+
+/* RSV: drawing agents, managers and messages, and describing each event */
+window.RSV=(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#cfc9bc', red:'#d6301b', blue:'#1a5fd0', green:'#2f9e44',
+           orange:'#d13d0e', teal:'#00947d', purple:'#7b3fa0', amber:'#c98a00',
+           fill:{T:'#ffffff', Th:'#fde3b0', D:'#c9ecd0'}};
+  const CUP={tea:{fill:'#9a5b2a', txt:'#fff'}, milk:{fill:'#f4f0e4', txt:'#1a1a2e'}, coffee:{fill:'#3a2618', txt:'#fff'}};
+  const WORD={T:'tranquil', Th:'thirsty', D:'drinking'};
+  const AX=150, MX=640, BW=220, BH=128;
+  function el(t,a,txt){ const e=document.createElementNS(NS,t); for(const k in a) e.setAttribute(k,a[k]); if(txt!=null) e.textContent=txt; return e; }
+  function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
+  function text(p,x,y,s,o){ o=o||{};
+    const t=el('text',{x:x, y:y, 'font-family':o.mono?'ui-monospace,Menlo,Consolas,monospace':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':o.size||15, 'font-weight':o.w||600, fill:o.fill||C.ink, 'text-anchor':o.anchor||'middle', 'dominant-baseline':'middle'}, s);
+    p.appendChild(t); return t; }
+  function head(g,x,y,ux,uy,col,s){ s=s||6; const px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:x+','+y+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+(x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col})); }
+  function cup(g,x,y,r,o){ o=o||{};
+    g.appendChild(el('circle',{cx:x, cy:y, r:o.rad||11, fill:CUP[r].fill, stroke:o.stroke||C.ink, 'stroke-width':o.sw||1.5, 'stroke-dasharray':o.dash||'none'}));
+    text(g, x, y+1, r[0].toUpperCase(), {size:12, w:800, fill:CUP[r].txt}); }
+  function list(a){ return a.length<=1? a.join('') : a.slice(0,-1).join(', ')+' and '+a[a.length-1]; }
+  function ypos(n){ return n===2? [175,395] : [110,290,470]; }
+  /* o: {stamps:bool, ids:bool, ranks:bool, hl:{agent or resource:true}, outline:{agent:color}} */
+  function draw(svg,M,s,o){
+    o=o||{}; clear(svg);
+    const AY={}, MY={}; ypos(M.A.length).forEach(function(y,i){ AY[M.A[i]]=y; });
+    [110,290,470].forEach(function(y,i){ MY[M.RES[i]]=y; });
+    const g=el('g',{}); svg.appendChild(g);
+    /* lines and messages */
+    M.A.forEach(function(a){ M.RES.forEach(function(r){
+      const x1=AX+BW/2, y1=AY[a], x2=MX-BW/2, y2=MY[r];
+      g.appendChild(el('line',{x1:x1, y1:y1, x2:x2, y2:y2, stroke:C.line, 'stroke-width':1.6}));
+      [[a+'>'+r, -13, x1, y1, x2, y2], [r+'>'+a, 13, x2, y2, x1, y1]].forEach(function(c){
+        const msgs=s.ch[c[0]]; if(!msgs.length) return;
+        const dx=c[4]-c[2], dy=c[5]-c[3], L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L, off=c[1];
+        msgs.forEach(function(m,i){ const f=0.3+0.2*i, mx=c[2]+dx*f-uy*off*(c[1]<0? 1 : -1)*-1, my=c[3]+dy*f+ux*off*(c[1]<0? 1 : -1)*-1;
+          const px=c[2]+dx*f+(-uy)*(c[1]<0? -13 : 13)*(c[1]<0? 1 : -1), py=c[3]+dy*f+(ux)*(c[1]<0? -13 : 13)*(c[1]<0? 1 : -1);
+          const X=c[1]<0? c[2]+dx*f+uy*13 : c[2]+dx*f-uy*13, Y=c[1]<0? c[3]+dy*f-ux*13 : c[3]+dy*f+ux*13;
+          if(m.k==='req' || m.k==='recall'){
+            const lab=m.k==='req'? ('request'+((o.stamps)? ' ('+m.t+')' : '')) : 'return it';
+            const w=lab.length*7.2+14;
+            g.appendChild(el('rect',{x:X-w/2, y:Y-11, width:w, height:22, rx:6, fill:'#fff', stroke:m.k==='recall'? C.red : C.ink, 'stroke-width':1.4}));
+            text(g, X, Y+1, lab, {size:12, w:700, fill:m.k==='recall'? C.red : C.ink});
+          } else cup(g, X, Y, m.r, {dash:m.k==='ret'? '3 2' : 'none'});
+          head(g, X+ux*(m.k==='req'||m.k==='recall'? (lab_w(m,o)/2+12) : 22), Y+uy*(m.k==='req'||m.k==='recall'? (lab_w(m,o)/2+12) : 22), ux, uy, C.muted, 4); });
+      }); }); });
+    /* agents */
+    M.A.forEach(function(a){ const ag=s.ag[a], y=AY[a];
+      g.appendChild(el('rect',{x:AX-BW/2, y:y-BH/2, width:BW, height:BH, rx:12, fill:C.fill[ag.st], stroke:(o.outline&&o.outline[a])||C.ink, 'stroke-width':(o.outline&&o.outline[a])? 5 : (o.hl&&o.hl[a]? 3.5 : 1.8)}));
+      if(o.hl && o.hl[a]) g.appendChild(el('rect',{x:AX-BW/2-6, y:y-BH/2-6, width:BW+12, height:BH+12, rx:16, fill:'none', stroke:C.blue, 'stroke-width':3, 'stroke-dasharray':'7 4'}));
+      text(g, AX-BW/2+14, y-42, a, {anchor:'start', size:18, w:800});
+      text(g, AX+BW/2-14, y-42, WORD[ag.st], {anchor:'end', size:14, w:800, fill:ag.st==='T'? C.muted : (ag.st==='Th'? C.amber : C.green)});
+      text(g, AX-BW/2+14, y-16, ag.st==='T'? 'wants nothing' : 'wants '+list(ag.need), {anchor:'start', size:13.5, w:600});
+      text(g, AX-BW/2+14, y+12, 'holds', {anchor:'start', size:13.5, w:600, fill:C.muted});
+      ag.hold.forEach(function(r,i){ cup(g, AX-BW/2+70+i*28, y+12, r); });
+      if(o.stamps) text(g, AX-BW/2+14, y+42, 'clock '+ag.clock+(ag.ts? '   stamp ('+ag.ts.t+', '+a+')' : ''), {anchor:'start', size:13, w:600, fill:C.purple});
+      else if(o.ids) text(g, AX-BW/2+14, y+42, 'id '+M.ID[a], {anchor:'start', size:13, w:600, fill:C.purple});
+    });
+    /* managers */
+    M.RES.forEach(function(r){ const m=s.mg[r], y=MY[r];
+      g.appendChild(el('rect',{x:MX-BW/2, y:y-BH/2, width:BW, height:BH, rx:12, fill:'#fff', stroke:C.ink, 'stroke-width':o.hl&&o.hl[r]? 3.5 : 1.8}));
+      if(o.hl && o.hl[r]) g.appendChild(el('rect',{x:MX-BW/2-6, y:y-BH/2-6, width:BW+12, height:BH+12, rx:16, fill:'none', stroke:C.blue, 'stroke-width':3, 'stroke-dasharray':'7 4'}));
+      text(g, MX-BW/2+14, y-42, r+' manager'+(o.ranks? '  (rank '+M.rank[r]+')' : ''), {anchor:'start', size:15, w:800});
+      if(m.at===null){ cup(g, MX-BW/2+26, y-14, r); text(g, MX-BW/2+44, y-14, 'here, free', {anchor:'start', size:13.5, w:600}); }
+      else text(g, MX-BW/2+14, y-14, 'given to '+m.at.a, {anchor:'start', size:13.5, w:600});
+      if(m.recalled) text(g, MX-BW/2+14, y+10, 'asked '+m.at.a+' to return it', {anchor:'start', size:13, w:700, fill:C.red});
+      const q=m.queue.slice();
+      if(M.P==='time' || M.P==='id') q.sort(function(p,qq){ return M.better(p,qq)? -1 : (M.better(qq,p)? 1 : 0); });
+      text(g, MX-BW/2+14, y+36, 'queue: '+(q.length? q.map(function(e){ return e.a+((o.stamps)? ' ('+e.t+')' : ''); }).join(', ') : 'empty'), {anchor:'start', size:13, w:600, fill:C.muted});
+    });
+  }
+  function lab_w(m,o){ const lab=m.k==='req'? ('request'+((o.stamps)? ' ('+m.t+')' : '')) : 'return it'; return lab.length*7.2+14; }
+  function cap(r){ return r[0].toUpperCase()+r.slice(1); }
+  function narrate(M,s0,x,s1,o){
+    o=o||{}; const A=x.a;
+    if(x.k==='thirsty'){ const g=s1.ag[A]; let t=A+' becomes thirsty for '+list(g.need);
+      if(o.stamps) t+=', with stamp ('+g.ts.t+', '+A+')';
+      if(M.P==='order' || M.P==='free') t+=', and asks for '+g.need[0]+' first';
+      return t+'.'; }
+    if(x.k==='drink') return A+' holds '+list(s1.ag[A].need)+', and drinks.';
+    if(x.k==='done') return A+' finishes drinking, becomes tranquil, and returns '+list(s0.ag[A].hold)+'.';
+    if(x.k==='tick') return A+'’s clock ticks to '+s1.ag[A].clock+'.';
+    const m=x.m;
+    if(m.k==='req'){ const mg0=s0.mg[m.r], mg1=s1.mg[m.r]; let t=m.a+'’s request for '+m.r+' reaches the '+m.r+' manager';
+      if(mg1.at && (!mg0.at || mg0.at.a!==mg1.at.a)) t+=', which sends '+m.r+' to '+mg1.at.a;
+      else t+=', and waits in the queue';
+      if(mg1.recalled && !mg0.recalled) t+='. It beats '+mg1.at.a+'’s priority, so the manager asks '+mg1.at.a+' to return '+m.r;
+      return t+'.'; }
+    if(m.k==='grant'){ let t=cap(m.r)+' reaches '+m.a;
+      if((M.P==='order' || M.P==='free') && s1.ag[m.a].next>s0.ag[m.a].next) t+='; '+m.a+' now asks for '+s1.ag[m.a].need[s1.ag[m.a].next-1];
+      return t+'.'; }
+    if(m.k==='recall'){ const gave=s0.ag[m.a].hold.indexOf(m.r)>=0 && s1.ag[m.a].hold.indexOf(m.r)<0;
+      return 'The request to return '+m.r+' reaches '+m.a+(gave? ', who is still thirsty, and returns it.' : (s0.ag[m.a].st==='D'? ', who is drinking, and keeps it until done.' : '.')); }
+    if(m.k==='ret'){ let t=cap(m.r)+' is back at the '+m.r+' manager'; const mg1=s1.mg[m.r];
+      if(m.back) t+='; '+m.a+'’s request goes back in the queue';
+      if(mg1.at) t+='; the manager sends it to '+mg1.at.a;
+      return t+'.'; }
+    return '';
+  }
+  /* the agent or manager an event happens at */
+  function where(x){ if(x.k==='deliver'){ const p=x.c.split('>'); return p[1]; } return x.a; }
+  function wrap(s,n){ const w=s.split(' '), out=[]; let cur='';
+    w.forEach(function(x){ if((cur+' '+x).trim().length>n){ out.push(cur.trim()); cur=x; } else cur+=' '+x; }); if(cur.trim()) out.push(cur.trim()); return out; }
+  function caption(svg,lines,y,col){ lines.forEach(function(s,i){ text(svg, 30, y+i*22, s, {anchor:'start', size:15, w:700, fill:col||C.ink}); }); }
+  /* the narration, in the space to the right of the managers */
+  function side(svg,msg,last,col,y0){ wrap(msg,40).forEach(function(l,i){ text(svg, 800, (y0||90)+i*28, l, {anchor:'start', size:17, w:700, fill:col||(last? C.teal : C.ink)}); }); }
+  function panel(svg,lines){ lines.forEach(function(l,i){ text(svg, 800, 70+i*26, l[0], {anchor:'start', size:l[2]||14.5, w:l[3]||700, fill:l[1]||C.ink}); }); }
+  function player(pfx, step, reset, gap){
+    const $=function(id){ return document.getElementById(pfx+id); };
+    let timer=null;
+    function stop(){ if(timer){ clearInterval(timer); timer=null; } $('play').textContent='Play'; }
+    $('play').addEventListener('click', function(){ if(timer){ stop(); return; } $('play').textContent='Pause';
+      timer=setInterval(function(){ if(!step()) stop(); }, gap); });
+    $('step').addEventListener('click', function(){ stop(); step(); });
+    $('reset').addEventListener('click', function(){ stop(); reset(); });
+    return {stop:stop};
+  }
+  /* run a script: steps are ['d', channel] or [kind, agent, need] */
+  function find(M,s,st){ const L=M.acts(s,{thirst:true});
+    return st[0]==='d'? L.find(function(y){ return y.k==='deliver' && y.c===st[1]; }) : L.find(function(y){ return y.k===st[0] && y.a===st[1]; }); }
+  function scripted(pfx, M, init, steps, opts){
+    const svg=document.getElementById(pfx+'g'); if(!svg) return;
+    let s, k, msg, hl;
+    function reset(){ s=init(); k=0; msg=opts.start; hl={}; render(); }
+    function step(){
+      if(k>=steps.length) return false;
+      const st=steps[k], x=find(M,s,st);
+      if(!x){ console.error('script step not enabled', pfx, st); return false; }
+      const s1=M.apply(s,x,st[2]); msg=narrate(M,s,x,s1,opts); hl={}; hl[where(x)]=true; s=s1; k++;
+      if(k===steps.length && opts.end) msg+=' '+opts.end;
+      render(); return true; }
+    function render(){ draw(svg,M,s,{stamps:opts.stamps, ids:opts.ids, ranks:opts.ranks, hl:hl});
+      side(svg, msg, k===steps.length);
+      document.getElementById(pfx+'status').innerHTML='step <b>'+k+'</b> of '+steps.length; }
+    player(pfx, step, reset, opts.gap||1500);
+    reset();
+  }
+  return {C:C, CUP:CUP, WORD:WORD, el:el, clear:clear, text:text, head:head, cup:cup, list:list, draw:draw, narrate:narrate,
+          where:where, wrap:wrap, caption:caption, side:side, panel:panel, player:player, find:find, scripted:scripted};
+})();
+
+const RS3=['tea','milk','coffee'];
+
+/* Figure 1 — one round with no conflict */
+RSV.scripted('f1_', RSModel({agents:['Maya','Liu'], res:RS3, policy:'time', id:{Maya:2, Liu:5}}),
+  function(){ return RSModel({agents:['Maya','Liu'], res:RS3, policy:'time', id:{Maya:2, Liu:5}}).init(); },
+  [['thirsty','Maya',['tea','milk']],['d','Maya>tea'],['d','Maya>milk'],['d','tea>Maya'],['d','milk>Maya'],['drink','Maya'],['done','Maya'],['d','Maya>tea'],['d','Maya>milk']],
+  {start:'Press Play or Step. Maya and Liu are tranquil; every resource is at its manager.', end:'One round of Maya’s cycle is complete.'});
+
+/* Figures 2 and 7 — requests one at a time: any order deadlocks; highest first does not */
+function orderFigure(pfx, modes){
+  const svg=document.getElementById(pfx+'g'); if(!svg) return;
+  const $=function(id){ return document.getElementById(pfx+id); };
+  let mode=modes[0], M, s, k, msg, hl, over;
+  const PREF=[function(x){ return x.k==='deliver' && x.m.k==='req'; }, function(x){ return x.k==='deliver' && x.m.k==='grant'; },
+    function(x){ return x.k==='drink'; }, function(x){ return x.k==='done'; }, function(x){ return x.k==='deliver'; }];
+  function reset(){ M=RSModel({agents:['Maya','Liu'], res:RS3, policy:mode}); s=M.init(); k=0; hl={}; over=false;
+    s=M.apply(s,{k:'thirsty', a:'Maya'},['tea','milk']); s=M.apply(s,{k:'thirsty', a:'Liu'},['milk','tea']);
+    msg=mode==='free'? 'Maya wants tea, then milk; Liu wants milk, then tea. Each asks for its first resource.'
+      : 'Maya wants tea and milk; so does Liu. Both ask for tea first, the higher resource.';
+    render(); }
+  function step(){
+    if(over) return false;
+    const L=M.acts(s,{thirst:false}); let x=null;
+    for(const p of PREF){ x=L.find(p); if(x) break; }
+    if(!x){ over=true; msg=mode==='free'? 'Deadlock. Maya holds tea and waits for milk; Liu holds milk and waits for tea. Nothing more can happen.'
+      : 'Both have drunk, and every resource is back at its manager.'; render(); return false; }
+    const s1=M.apply(s,x); msg=RSV.narrate(M,s,x,s1); hl={}; hl[RSV.where(x)]=true; s=s1; k++; render(); return true; }
+  function render(){ RSV.draw(svg,M,s,{hl:hl, ranks:mode==='order'});
+    RSV.side(svg, msg, false, over? (mode==='free'? RSV.C.red : RSV.C.teal) : RSV.C.ink);
+    $('status').innerHTML='step <b>'+k+'</b>'; }
+  const pl=RSV.player(pfx, step, reset, 1300);
+  modes.forEach(function(m){ const b=$(m); if(b) b.addEventListener('click', function(){ mode=m; modes.forEach(function(z){ $(z).className=z===m? 'on' : ''; }); pl.stop(); reset(); }); });
+  reset();
+}
+orderFigure('f2_', ['free']);
+orderFigure('f7_', ['order','free']);
+
+/* Figure 3 — fixed priorities starve Maya; priorities by time do not */
+(function(){
+  const pfx='f3_', svg=document.getElementById(pfx+'g'); if(!svg) return;
+  const $=function(id){ return document.getElementById(pfx+id); };
+  let mode='id', M, s, k, msg, hl, drinks;
+  function reset(){ M=RSModel({agents:['Maya','Liu'], res:RS3, policy:mode, id:{Maya:2, Liu:5}}); s=M.init({Maya:3, Liu:5}); k=0; hl={}; drinks={Maya:0, Liu:0};
+    s=M.apply(s,{k:'thirsty', a:'Maya'},['milk']); s=M.apply(s,{k:'thirsty', a:'Liu'},['milk']);
+    msg='Maya and Liu are both thirsty for milk.'; render(); }
+  const PREF=[function(x){ return x.k==='deliver' && x.c==='Liu>milk'; }, function(x){ return x.k==='deliver' && x.c==='milk>Liu'; },
+    function(x){ return x.k==='deliver' && x.c==='milk>Maya'; }, function(x){ return x.k==='drink' && x.a==='Liu'; },
+    function(x){ return x.k==='deliver' && x.c==='Maya>milk'; }, function(x){ return x.k==='done' && x.a==='Liu'; },
+    function(x){ return x.k==='deliver'; }, function(x){ return x.k==='drink'; }, function(x){ return x.k==='done'; }];
+  function step(){
+    if(k>=60) return false;
+    let x, s1;
+    const who=['Liu','Maya'].find(function(a){ return s.ag[a].st==='T'; });
+    if(who){ s=M.apply(s,{k:'tick', a:who}); x={k:'thirsty', a:who}; s1=M.apply(s,x,['milk']);
+      msg=who+' is thirsty for milk again'+(mode==='time'? ', with stamp ('+s1.ag[who].ts.t+', '+who+')' : '')+'.'; }
+    else { const L=M.acts(s,{thirst:false}); for(const p of PREF){ x=L.find(p); if(x) break; }
+      if(!x) return false; s1=M.apply(s,x); msg=RSV.narrate(M,s,x,s1,{stamps:mode==='time'}); if(x.k==='drink') drinks[x.a]++; }
+    hl={}; hl[RSV.where(x)]=true; s=s1; k++; render(); return true; }
+  function render(){ RSV.draw(svg,M,s,{hl:hl, ids:mode==='id', stamps:mode==='time'});
+    RSV.side(svg, msg, false, null, 360);
+    RSV.panel(svg, [['Drinks so far','#6f7583',13,800], ['Maya: '+drinks.Maya, drinks.Maya? RSV.C.teal : RSV.C.red, 18, 800], ['Liu: '+drinks.Liu, RSV.C.ink, 18, 800],
+      ['',null], [mode==='id'? 'Priority: the higher id wins.' : 'Priority: the earlier stamp wins.', RSV.C.ink, 14.5, 700]]);
+    $('status').innerHTML='step <b>'+k+'</b>'; }
+  const pl=RSV.player(pfx, step, reset, 900);
+  ['id','time'].forEach(function(m){ $(m).addEventListener('click', function(){ mode=m; $('id').className=m==='id'? 'on' : ''; $('time').className=m==='time'? 'on' : ''; pl.stop(); reset(); }); });
+  reset();
+})();
+
+/* Figure 4 — clocks tick forward at their own pace; stamps; every clock passes T */
+(function(){
+  const pfx='f4_', svg=document.getElementById(pfx+'g'); if(!svg) return;
+  const $=function(id){ return document.getElementById(pfx+id); };
+  const R=RSV, C=R.C, AG=['Maya','Liu','Ana'], ID={Maya:2, Liu:5, Ana:3}, Y={Maya:110, Liu:210, Ana:310};
+  const X0=110, SC=20, T=10, MAX=30;
+  let clock, stamps, thirsty, k;
+  function reset(){ clock={Maya:2, Liu:5, Ana:1}; stamps=[]; thirsty={}; k=0; render(); }
+  function better(p,q){ return p.t<q.t || (p.t===q.t && ID[p.a]<ID[q.a]); }
+  function step(){
+    if(k>=70) return false;
+    const a=AG[Math.floor(Math.random()*3)];
+    if(Math.random()<(a==='Ana'? 0.45 : 0.7)){ if(clock[a]<MAX) clock[a]++; }
+    else if(!thirsty[a]){ thirsty[a]=true; stamps.push({t:clock[a], a:a, k:k}); }
+    else thirsty[a]=false;
+    k++; render(); return !AG.every(function(b){ return clock[b]>T+6; });
+  }
+  function render(){
+    R.clear(svg);
+    const all=AG.every(function(b){ return clock[b]>T; });
+    AG.forEach(function(a){ const y=Y[a];
+      svg.appendChild(R.el('line',{x1:X0, y1:y, x2:X0+SC*MAX, y2:y, stroke:C.line, 'stroke-width':2}));
+      R.text(svg, X0-16, y, a, {anchor:'end', size:16, w:800});
+      stamps.filter(function(s){ return s.a===a; }).forEach(function(s){ const x=X0+s.t*SC;
+        svg.appendChild(R.el('line',{x1:x, y1:y, x2:x, y2:y-30, stroke:C.purple, 'stroke-width':2}));
+        svg.appendChild(R.el('polygon',{points:x+','+(y-30)+' '+(x+20)+','+(y-24)+' '+x+','+(y-18), fill:C.purple})); });
+      const cx=X0+clock[a]*SC;
+      svg.appendChild(R.el('circle',{cx:cx, cy:y, r:12, fill:thirsty[a]? C.fill.Th : '#fff', stroke:C.ink, 'stroke-width':2}));
+      R.text(svg, cx, y+28, String(clock[a]), {size:13, w:700, fill:C.muted}); });
+    for(let t=0;t<=MAX;t+=2) R.text(svg, X0+t*SC, 360, String(t), {size:12, w:600, fill:C.muted});
+    const tx=X0+T*SC; svg.appendChild(R.el('line',{x1:tx, y1:70, x2:tx, y2:345, stroke:C.orange, 'stroke-width':3, 'stroke-dasharray':'8 5'}));
+    R.text(svg, tx, 56, 'T = '+T, {size:15, w:800, fill:C.orange});
+    const sorted=stamps.slice().sort(function(p,q){ return better(p,q)? -1 : 1; });
+    R.text(svg, 800, 70, 'Stamps, earliest first', {anchor:'start', size:13, w:800, fill:C.muted});
+    sorted.slice(0,11).forEach(function(s,i){ R.text(svg, 800, 98+i*24, '('+s.t+', '+s.a+')', {anchor:'start', size:15, w:700, mono:true, fill:s.t<=T? C.ink : C.purple}); });
+    if(sorted.length>11) R.text(svg, 800, 98+11*24, '…', {anchor:'start', size:15, w:700});
+    R.text(svg, 1000, 98, 'ids: Maya 2, Ana 3, Liu 5', {anchor:'start', size:13, w:600, fill:C.muted});
+    R.text(svg, 1000, 122, 'equal readings: smaller id first', {anchor:'start', size:13, w:600, fill:C.muted});
+    const msg=k===0? 'Press Play. Each clock ticks at its own pace; an agent sometimes becomes thirsty and makes a stamp.'
+      : all? 'Every clock has passed T. From now on, every new stamp is later than T: the early stamps are a finite list.'
+      : 'Clocks that are behind still make stamps up to T. But every clock keeps ticking, so each one will pass T.';
+    R.caption(svg, R.wrap(msg,120), 410, all? C.teal : C.ink);
+    $('status').innerHTML='clocks: '+AG.map(function(a){ return a+' <b>'+clock[a]+'</b>'; }).join(', ');
+  }
+  R.player(pfx, step, reset, 450);
+  reset();
+})();
+
+/* Figure 5 — an earlier stamp takes a resource back */
+RSV.scripted('f5_', RSModel({agents:['Maya','Liu'], res:RS3, policy:'time', id:{Maya:2, Liu:5}}),
+  function(){ return RSModel({agents:['Maya','Liu'], res:RS3, policy:'time', id:{Maya:2, Liu:5}}).init({Maya:4, Liu:2}); },
+  [['thirsty','Maya',['tea','milk']],['d','Maya>tea'],['d','Maya>milk'],['d','tea>Maya'],['thirsty','Liu',['milk','coffee']],['d','Liu>coffee'],['d','coffee>Liu'],
+   ['d','Liu>milk'],['d','milk>Maya'],['d','milk>Maya'],['d','Maya>milk'],['d','milk>Liu'],['drink','Liu'],['done','Liu'],['d','Liu>milk'],['d','Liu>coffee'],
+   ['d','milk>Maya'],['drink','Maya'],['done','Maya'],['d','Maya>tea'],['d','Maya>milk']],
+  {stamps:true, start:'Press Play or Step. Maya’s clock reads 4, Liu’s reads 2.', end:'Both have drunk; Liu first, because his stamp was earlier.', gap:1700});
+
+/* Figure 6 — after every clock passes T, the requests with stamps up to T run out */
+(function(){
+  const pfx='f6_', svg=document.getElementById(pfx+'g'); if(!svg) return;
+  const $=function(id){ return document.getElementById(pfx+id); };
+  const AG=['Maya','Liu','Ana'], ID={Maya:2, Liu:5, Ana:3}, T=5;
+  const M=RSModel({agents:AG, res:RS3, policy:'time', id:ID});
+  let s, k, msg, hl, drinks, after;
+  function early(){ return AG.filter(function(a){ const g=s.ag[a]; return g.st!=='T' && g.ts && g.ts.t<=T; }); }
+  function earliest(){ const E=early().filter(function(a){ return s.ag[a].st==='Th'; });
+    return E.sort(function(p,q){ return M.better(s.ag[p].ts, s.ag[q].ts)? -1 : 1; })[0]; }
+  function reset(){ s=M.init({Maya:3, Liu:5, Ana:4}); k=0; hl={}; drinks={Maya:0, Liu:0, Ana:0}; after=0;
+    s=M.apply(s,{k:'thirsty', a:'Maya'},['tea','milk']); s=M.apply(s,{k:'thirsty', a:'Ana'},['tea','coffee']); s=M.apply(s,{k:'thirsty', a:'Liu'},['milk','coffee']);
+    AG.forEach(function(a){ s.ag[a].clock=T+1; });
+    msg='Maya, Ana and Liu are thirsty, with stamps 3, 4 and 5. Every clock now reads 6, past T = 5.'; render(); }
+  function step(){
+    if(!early().length){ after++; if(after>3) return false; }
+    const L=M.acts(s,{tick:true}), W=L.map(function(x){ return x.k==='tick'? 0.4 : (x.k==='thirsty'? 0.3 : 1); });
+    let r=Math.random()*W.reduce(function(a,b){ return a+b; },0), x=L[0];
+    for(let i=0;i<L.length;i++){ r-=W[i]; if(r<=0){ x=L[i]; break; } }
+    const need=x.k==='thirsty'? RS3.filter(function(){ return Math.random()<0.5; }) : null;
+    const s1=M.apply(s,x, need&&need.length? need : ['milk']);
+    msg=RSV.narrate(M,s,x,s1,{stamps:true}); if(x.k==='drink') drinks[x.a]++;
+    hl={}; hl[RSV.where(x)]=true; s=s1; k++; render(); return true; }
+  function render(){
+    const e=earliest(), out={}; if(e) out[e]=RSV.C.orange;
+    RSV.draw(svg,M,s,{stamps:true, hl:hl, outline:out});
+    RSV.side(svg, msg, false, null, 360);
+    const E=early();
+    RSV.panel(svg, [['T = '+T, RSV.C.orange, 16, 800],
+      ['Requests with stamps up to T', RSV.C.muted, 13, 800],
+      ['still waiting or drinking: '+E.length, E.length? RSV.C.ink : RSV.C.teal, 17, 800],
+      [E.length? 'Earliest still thirsty: '+(e? e+' ('+s.ag[e].ts.t+')' : 'none') : 'All the early requests are done.', E.length? RSV.C.orange : RSV.C.teal, 14.5, 700],
+      ['',null], ['Drinks: Maya '+drinks.Maya+', Ana '+drinks.Ana+', Liu '+drinks.Liu, RSV.C.ink, 14.5, 700],
+      ['New stamps are all later than T.', RSV.C.muted, 13.5, 600]]);
+    $('status').innerHTML='early requests left: <b>'+E.length+'</b>'; }
+  RSV.player(pfx, step, reset, 800);
+  reset();
+})();
+
+/* Figure 8 — a round with ordered requests */
+RSV.scripted('f8_', RSModel({agents:['Maya','Liu'], res:RS3, policy:'order'}),
+  function(){ return RSModel({agents:['Maya','Liu'], res:RS3, policy:'order'}).init(); },
+  [['thirsty','Maya',['tea','milk']],['d','Maya>tea'],['thirsty','Liu',['milk','coffee']],['d','Liu>milk'],['d','tea>Maya'],['d','Maya>milk'],['d','milk>Liu'],
+   ['d','Liu>coffee'],['d','coffee>Liu'],['drink','Liu'],['done','Liu'],['d','Liu>milk'],['d','Liu>coffee'],['d','milk>Maya'],['drink','Maya'],['done','Maya'],['d','Maya>tea'],['d','Maya>milk']],
+  {ranks:true, start:'Press Play or Step. The order is tea > milk > coffee.', end:'Both have drunk.'});
+
+/* Figure 9 — ordered requests at random, with what each agent holds and waits for */
+(function(){
+  const pfx='f9_', svg=document.getElementById(pfx+'g'); if(!svg) return;
+  const $=function(id){ return document.getElementById(pfx+id); };
+  const AG=['Maya','Liu','Ana'], M=RSModel({agents:AG, res:RS3, policy:'order'});
+  let s, k, msg, hl, drinks, ok;
+  function waitsFor(a){ const g=s.ag[a]; if(g.st!=='Th') return null; return g.need.find(function(r){ return g.hold.indexOf(r)<0; }); }
+  function reset(){ s=M.init(); k=0; hl={}; drinks={Maya:0, Liu:0, Ana:0}; ok=true; msg='Press Play. Everyone starts tranquil.'; render(); }
+  function step(){
+    if(k>=400) return false;
+    const L=M.acts(s), W=L.map(function(x){ return x.k==='thirsty'? 0.5 : 1; });
+    let r=Math.random()*W.reduce(function(a,b){ return a+b; },0), x=L[0];
+    for(let i=0;i<L.length;i++){ r-=W[i]; if(r<=0){ x=L[i]; break; } }
+    let need=RS3.filter(function(){ return Math.random()<0.6; }); if(!need.length) need=[RS3[Math.floor(Math.random()*3)]];
+    const s1=M.apply(s,x,need); msg=RSV.narrate(M,s,x,s1); if(x.k==='drink') drinks[x.a]++;
+    hl={}; hl[RSV.where(x)]=true; s=s1; k++;
+    ok=ok && AG.every(function(a){ const w=waitsFor(a); return !w || s.ag[a].hold.every(function(h){ return M.rank[h]>M.rank[w]; }); });
+    render(); return true; }
+  function render(){
+    RSV.draw(svg,M,s,{hl:hl, ranks:true});
+    RSV.side(svg, msg, false, null, 360);
+    const lines=[['Thirsty agents', RSV.C.muted, 13, 800]];
+    AG.forEach(function(a){ const w=waitsFor(a); if(!w) return;
+      lines.push([a+': holds '+(s.ag[a].hold.length? RSV.list(s.ag[a].hold) : 'nothing')+'; waits for '+w, RSV.C.ink, 14.5, 700]); });
+    if(lines.length===1) lines.push(['none', RSV.C.muted, 14.5, 600]);
+    lines.push(['',null]);
+    lines.push([(ok? '✓ ' : '✗ ')+'Each waits only for a resource', ok? RSV.C.teal : RSV.C.red, 14.5, 800]);
+    lines.push(['   below everything it holds', ok? RSV.C.teal : RSV.C.red, 14.5, 800]);
+    lines.push(['',null]);
+    lines.push(['Drinks: Maya '+drinks.Maya+', Liu '+drinks.Liu+', Ana '+drinks.Ana, RSV.C.ink, 14.5, 700]);
+    RSV.panel(svg, lines);
+    $('status').innerHTML='step <b>'+k+'</b>'; }
+  RSV.player(pfx, step, reset, 700);
+  reset();
+})();
+</script>
+</body>
+</html>
