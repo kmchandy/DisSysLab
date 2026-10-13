@@ -1,0 +1,829 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Distributed Dining Philosophers</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  h2{font-family:var(--display); font-weight:600; font-size:25px;
+     letter-spacing:-.01em; margin:38px 0 12px}
+  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:34px 0 8px}
+  p{color:var(--body); margin:0 0 15px}
+  ul, ol{color:var(--body)}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  header.top h2{margin:-2px 0 20px; padding:0; border:0;
+    font-family:var(--display); font-weight:600; font-size:22px;
+    line-height:1.2; letter-spacing:-.01em; color:var(--muted)}
+  figure.fig{margin:32px 0 30px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  figure.fig figcaption i{color:var(--ink); font-style:normal; font-weight:600}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button:disabled{opacity:.4; cursor:default}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  button.on{border-color:var(--orange); color:var(--orange); box-shadow:inset 0 0 0 1px var(--orange)}
+  .sep{width:1px; align-self:stretch; background:var(--line)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em;
+       background:#f6f4ee; border-radius:5px; padding:1px 5px}
+  .defn{margin:22px 0 20px; padding:14px 18px 14px 20px; background:#fff6ef;
+    border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0}
+  .defn .lead-in, .thm .lead-in, .proof .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; margin-bottom:9px}
+  .defn .lead-in{color:var(--orange)}
+  .defn p, .thm p{color:var(--ink); margin:0 0 8px}
+  .defn p:last-child, .thm p:last-child{margin-bottom:0}
+  .thm{margin:24px 0 22px; padding:14px 18px 14px 20px; background:#fff;
+    border:1px solid var(--line); border-left:5px solid var(--teal);
+    border-radius:0 10px 10px 0}
+  .thm .lead-in{color:var(--teal)}
+  .thm ol{margin:4px 0 0; padding-left:22px; color:var(--ink)}
+  .thm ol li{margin:0 0 7px}
+  .proof{margin:6px 0 24px; padding:2px 0 2px 22px; border-left:2px solid var(--line)}
+  .proof > p:last-child{margin-bottom:0}
+  .proof .lead-in{color:var(--muted)}
+  ol.facts{margin:10px 0 18px; padding-left:24px}
+  ol.facts li{margin:0 0 8px}
+  nav.parts{display:flex; flex-wrap:wrap; gap:6px 18px; margin:0 0 26px; padding:10px 14px;
+    background:#fff; border:1px solid var(--line); border-radius:10px; font-size:14.5px}
+  nav.parts a{color:var(--ink); font-weight:600; text-decoration:none}
+  nav.parts a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab &middot; Distributed algorithms</div>
+    <h1>Distributed Dining Philosophers</h1>
+    <h2>Conflict resolution with forks and priorities</h2>
+    <p>
+      Agents that share resources must sometimes wait for each other. This
+      class builds, step by step, an algorithm by which agents that compete
+      for shared resources take turns fairly, with no central coordinator.
+      Each step is shown by an animation, and the arguments that the
+      algorithm is correct are informal: the animations show why each
+      claim holds.
+    </p>
+  </header>
+
+  <nav class="parts"><span>See also:</span><a href="UNITY.html">The UNITY model</a><a href="TemporalLogic2.html">Colored graphs and fairness</a></nav>
+
+<h2>1. The problem</h2>
+
+  <p>
+    The agents are the vertices of an undirected graph. Two agents joined
+    by an edge are <b>neighbors</b>: they share a resource that only one of
+    them can use at a time, such as a printer, a file or a lock. Each agent
+    goes round a cycle of three states. Following Dijkstra, we call them
+    <b>thinking</b>, <b>hungry</b> and <b>eating</b>, and we call the agents
+    philosophers.
+  </p>
+  <ul>
+    <li><b>Thinking</b>: the agent is working outside its critical section.
+      It may think for ever.</li>
+    <li><b>Hungry</b>: the agent wants to use the shared resources and waits
+      for the algorithm to let it.</li>
+    <li><b>Eating</b>: the agent uses the shared resources, in its critical
+      section. It eats for only a finite time, and then thinks again.</li>
+  </ul>
+  <p>
+    A philosopher decides by itself when to become hungry and when to stop
+    eating. The algorithm decides only when a hungry philosopher may start
+    eating.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">Specification</span>
+    <p><b>Safety.</b> Neighbors never eat at the same time.</p>
+    <p><b>Progress.</b> Every hungry philosopher eats eventually.</p>
+  </div>
+
+  <p>
+    Without an algorithm, safety fails as soon as two neighbors are hungry
+    at about the same time. Figure 1 lets every hungry philosopher eat
+    whenever it likes.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="d1_g" viewBox="0 0 1240 540" role="img"
+         aria-label="Five philosophers u, v, w, x, y on a graph, each thinking, hungry or eating; on the right the cycle thinking, hungry, eating; when two neighbors eat at once the edge between them turns red"></svg>
+    <div class="ctrls">
+      <button id="d1_play" class="primary">Play</button>
+      <button id="d1_step">Step</button>
+      <button id="d1_reset">Reset</button>
+      <span class="status" id="d1_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 1. Philosophers without an algorithm.</b>
+      The five philosophers <code>u</code>, <code>v</code>, <code>w</code>,
+      <code>x</code>, <code>y</code> are used throughout this class; an edge
+      joins neighbors. White is thinking, amber is hungry, green is eating.
+      At each step one philosopher moves to the next state of its cycle,
+      shown on the right. Nothing stops two neighbors from eating together:
+      the edge between them turns red.
+    </figcaption>
+  </figure>
+
+<h2>2. Forks make safety easy</h2>
+
+  <p>
+    Put one <b>fork</b> on each edge: an object that cannot be copied or
+    destroyed. The fork shared by <code>u</code> and <code>v</code> is
+    always at <code>u</code>, at <code>v</code>, or in a message on its way
+    from one to the other. A philosopher eats only while it holds all the
+    forks it shares with its neighbors.
+  </p>
+
+  <div class="thm">
+    <span class="lead-in">Safety, informally</span>
+    <p>If <code>u</code> is eating, it holds the fork it shares with
+      <code>v</code>. There is only one such fork, so <code>v</code> does not
+      hold it, and so <code>v</code> is not eating.</p>
+  </div>
+
+  <p>
+    Forks are an example of <b>tokens</b>: an agent that holds a token knows
+    that no other agent holds it. Forks settle safety, but not who should
+    get a fork when both neighbors want it. That is the real problem.
+  </p>
+
+<h2>3. Conflict resolution needs asymmetry</h2>
+
+  <p>
+    When several philosophers want the same forks, some must win and others
+    must lose. A simple rule, applied the same way by everyone, can fail.
+    Take three philosophers in a ring, each hungry and each holding one of
+    the two forks it needs.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="d2_g" viewBox="0 0 1240 440" role="img"
+         aria-label="Three hungry philosophers 0, 1, 2 in a ring, each holding one fork and requesting the other; if every hungry philosopher gives a requested fork the forks rotate for ever; if none gives, everyone waits for ever"></svg>
+    <div class="ctrls">
+      <button id="d2_play" class="primary">Play</button>
+      <button id="d2_step">Step</button>
+      <button id="d2_reset">Reset</button>
+      <span class="sep"></span>
+      <button id="d2_give" class="on">Hungry philosophers give</button>
+      <button id="d2_keep">Hungry philosophers keep</button>
+      <span class="status" id="d2_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 2. A symmetric state can last for ever.</b>
+      Each philosopher holds the fork it shares with one neighbor and asks
+      the other neighbor for the second fork. If every hungry philosopher
+      <i>gives</i> a requested fork, the forks rotate and the state is the
+      mirror image of the one before: nobody ever eats. If every hungry
+      philosopher <i>keeps</i> its fork, nobody ever eats either.
+    </figcaption>
+  </figure>
+
+  <p>
+    Whatever the rule, if every philosopher is in the same situation and
+    follows the same rule, the situation can stay symmetric for ever. So the
+    algorithm keeps an asymmetric structure: a <b>priority</b> between each
+    pair of neighbors.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">The priority graph</span>
+    <p>Direct each edge from the neighbor with higher priority to the
+      neighbor with lower priority. The algorithm keeps this directed graph
+      <b>acyclic</b>.</p>
+  </div>
+
+  <p>
+    In an acyclic graph, follow edges backwards, to higher and higher
+    priority: the walk must stop, at a philosopher that no neighbor
+    outranks. A cycle of priorities would be the ring of Figure 2 again,
+    with no one on top.
+  </p>
+
+<h2>4. Winners must yield</h2>
+
+  <p>
+    Fixed priorities are not fair: a philosopher at the bottom could lose
+    every conflict. So when a philosopher eats, its priority should drop.
+    How should the edges at <code>v</code> change when <code>v</code> eats?
+  </p>
+  <ul>
+    <li><b>Flip every edge at <code>v</code>?</b> This can create a cycle.</li>
+    <li><b>Point every edge at <code>v</code> towards <code>v</code></b>,
+      so that <code>v</code> has lower priority than all its neighbors.
+      This keeps the graph acyclic.</li>
+  </ul>
+
+  <figure class="fig wideout">
+    <svg id="d3_g" viewBox="0 0 1240 540" role="img"
+         aria-label="The priority graph of the five philosophers; clicking a philosopher lets it eat and changes the edges at it, either all towards it or all flipped; a cycle, if one appears, is drawn in red"></svg>
+    <div class="ctrls">
+      <button id="d3_toward" class="on">Edges point to the eater</button>
+      <button id="d3_flip">Flip the eater's edges</button>
+      <span class="sep"></span>
+      <button id="d3_reset">Reset</button>
+      <span class="status" id="d3_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 3. How priorities change when a philosopher eats.</b>
+      An arrow points from higher to lower priority. Click a philosopher to
+      let it eat. With <i>Edges point to the eater</i>, the graph stays
+      acyclic however you click. With <i>Flip the eater's edges</i>, click
+      <code>y</code> first: the cycle <code>u &rarr; w &rarr; y &rarr; u</code>
+      appears in red.
+    </figcaption>
+  </figure>
+
+  <div class="thm">
+    <span class="lead-in">Why the graph stays acyclic, informally</span>
+    <p>Only the edges at <code>v</code> change, so a new cycle would have to
+      pass through <code>v</code>. But after <code>v</code> eats, every edge
+      at <code>v</code> points into <code>v</code>: a path that reaches
+      <code>v</code> cannot leave it. So there is no new cycle.</p>
+  </div>
+
+<h2>5. Forks carry the priorities</h2>
+
+  <p>
+    No agent can see the whole priority graph. The algorithm stores each
+    edge's priority in its fork. A fork is <b>clean</b> or <b>dirty</b>.
+    Eating makes all of a philosopher's forks dirty. A fork is cleaned when
+    it is sent, so a fork in a message is clean.
+  </p>
+  <ul>
+    <li>A philosopher holding a <b>clean</b> fork, or one on its way to it,
+      has priority over the neighbor that shares the fork.</li>
+    <li>A philosopher holding a <b>dirty</b> fork has lower priority than
+      that neighbor.</li>
+  </ul>
+  <p>
+    Sending a fork does not change the priority: a dirty fork held by
+    <code>u</code> and the same fork, clean, on its way to <code>v</code>
+    both say that <code>v</code> is higher. Priority changes only when
+    clean forks become dirty, and that happens only when a philosopher eats:
+    all its edges then point towards it, which is the rule of section 4. So
+    the priority graph stays acyclic, although no one computes it.
+  </p>
+
+  <div class="thm">
+    <span class="lead-in">The algorithm</span>
+    <ol>
+      <li>A hungry philosopher asks for each fork it does not have, by
+        sending its neighbor a <b>request</b>.</li>
+      <li>A philosopher that holds a requested fork gives it, cleaned, if
+        the fork is dirty and the philosopher is not eating. So a
+        <i>thinking</i> philosopher always gives; a <i>hungry</i>
+        philosopher gives a dirty fork but keeps a clean one, because then
+        it has priority; an <i>eating</i> philosopher gives the fork when it
+        finishes.</li>
+      <li>A hungry philosopher that holds all its forks eats, unless it owes
+        a neighbor a dirty fork. Eating makes all its forks dirty.</li>
+    </ol>
+  </div>
+
+  <p>
+    Each edge carries one request, like a second token: the philosopher
+    without the fork can send it once, and the fork comes back in reply.
+    Figure 4 runs the algorithm with every event chosen at random, and
+    checks three properties after every step.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="d4_g" viewBox="0 0 1240 560" role="img"
+         aria-label="The five philosophers running the algorithm: forks drawn as blue (clean) or red (dirty) dots near the philosopher that holds them or halfway along an edge when in a message, requests as small grey squares, priority arrows on the edges; on the right, checks of safety, acyclicity and dirty forks, and the number of meals of each philosopher"></svg>
+    <div class="ctrls">
+      <button id="d4_play" class="primary">Play</button>
+      <button id="d4_step">Step</button>
+      <button id="d4_reset">Reset</button>
+      <span class="sep"></span>
+      <button id="d4_hungry">Everyone hungry</button>
+      <button id="d4_prio" class="on">Priority arrows</button>
+      <span class="status" id="d4_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 4. The algorithm.</b>
+      White is thinking, amber is hungry, green is eating.
+      Forks are dots on the edges: blue is clean, red is dirty. A fork next
+      to a philosopher is held by it; a fork halfway along an edge is in a
+      message, with a small arrow showing where it is going. Grey squares
+      are requests. The arrows on the edges are the priorities, read off
+      the forks. At each step one event happens, chosen at random; the
+      panel on the right says which. The three checks hold at every step,
+      and every philosopher keeps getting meals. Press <i>Everyone
+      hungry</i> to make the competition fierce.
+    </figcaption>
+  </figure>
+
+  <p>
+    The checks in Figure 4 are the facts behind the algorithm. Safety holds
+    because of the forks. The priority graph stays acyclic because only
+    eating changes it. And a thinking philosopher holds only dirty forks:
+    it can hold a clean fork only after asking for it while hungry, and it
+    stops being hungry only by eating, which dirties every fork it holds.
+    That is why a thinking philosopher always gives a fork when asked.
+  </p>
+
+<h2>6. Every hungry philosopher eats</h2>
+
+  <p>
+    Progress is harder. Could a group of philosophers take turns eating, one
+    after the other, so that some hungry neighbor never eats? Could hungry
+    philosophers hold some of their forks for ever, each waiting for the
+    others? The argument below shows that neither can happen.
+  </p>
+  <p>
+    Fix a hungry philosopher <code>v</code>. Look at the philosophers
+    <b>above</b> <code>v</code>: those with a path to <code>v</code> in the
+    priority graph. Count how many of them are thinking,
+    <code>nT</code>, and how many are hungry, <code>nH</code>. We show that
+    the pair <code>(nT, nH)</code> goes down, comparing first
+    <code>nT</code>, then <code>nH</code>, until <code>v</code> eats.
+  </p>
+
+  <ol class="facts">
+    <li><b>Nothing new gets above <code>v</code>.</b> The only change to
+      the priority graph points the edges of an eater towards it. That
+      creates no new path to <code>v</code> while <code>v</code> is hungry.
+      So <code>nT</code> never goes up, and <code>nH</code> goes up only
+      when a thinking philosopher above <code>v</code> becomes hungry, and
+      then <code>nT</code> goes down.</li>
+    <li><b>Someone is on top.</b> Follow edges backwards from
+      <code>v</code> through hungry philosophers: since the graph is acyclic,
+      this ends at a hungry philosopher <code>y</code> with no hungry
+      philosopher above it (perhaps <code>v</code> itself). A neighbor above
+      <code>y</code> is thinking: it is not hungry, by the choice of
+      <code>y</code>, and it is not eating, since an eater's forks are dirty
+      and so an eater is below its neighbors.</li>
+    <li><b>The one on top eats.</b> Thinking neighbors give <code>y</code>
+      their forks when asked. A neighbor below <code>y</code> holds a dirty
+      fork, which it gives up when asked, at the latest when it finishes
+      eating. So <code>y</code> gets all its forks and eats, unless, before
+      that, a thinking neighbor above it becomes hungry, which makes
+      <code>nT</code> go down.</li>
+    <li><b>The eater drops out.</b> When <code>y</code> eats, all its edges
+      point towards it, so it is no longer above <code>v</code>:
+      <code>nH</code> goes down and <code>nT</code> stays the same.</li>
+  </ol>
+  <p>
+    So <code>(nT, nH)</code> keeps going down. A pair of natural numbers
+    cannot go down for ever, so eventually no hungry philosopher is above
+    <code>v</code>; then <code>v</code> is on top, and by step 3 it eats.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="d5_g" viewBox="0 0 1240 540" role="img"
+         aria-label="The priority graph with v hungry; the philosophers above v are ringed in purple, the hungry philosopher on top is marked; the pair (nT, nH) and its history are shown on the right"></svg>
+    <div class="ctrls">
+      <button id="d5_next" class="primary">The one on top eats</button>
+      <button id="d5_wake">A thinker above v becomes hungry</button>
+      <button id="d5_reset">Reset</button>
+      <span class="status" id="d5_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 5. Why v eats.</b>
+      Philosophers above <code>v</code> are ringed in purple. The hungry
+      philosopher on top is marked <i>top</i>. <i>The one on top eats</i>:
+      it eats, its edges turn towards it, and it thinks again. <i>A thinker
+      above v becomes hungry</i>: the other way the pair can change. Watch
+      <code>(nT, nH)</code> on the right: it goes down at every step, in
+      either case. With <i>The one on top eats</i> alone, the pair goes
+      <code>(1, 3)</code>, <code>(1, 2)</code>, <code>(1, 1)</code>,
+      <code>(0, 0)</code>, and then <code>v</code> eats.
+    </figcaption>
+  </figure>
+
+<h2>7. Key ideas</h2>
+
+  <ol class="facts">
+    <li><b>Conflict resolution in distributed systems.</b> When agents want
+      the same resource at the same time, some win and some lose.</li>
+    <li><b>Priority among agents in conflict.</b> Winning must be fair:
+      every agent that wants to win wins eventually. A winner yields
+      priority to the losers.</li>
+    <li><b>Tokens.</b> An agent that holds a token knows that no other agent
+      holds it. Forks give safety; their cleanliness records priority.</li>
+    <li><b>Dynamic data structures.</b> The acyclic priority graph is
+      maintained by the actions of all the agents, and no agent ever sees
+      all of it.</li>
+  </ol>
+
+</div>
+
+<script>
+/* DPG: the five philosophers, and drawing helpers shared by the figures */
+window.DPG=(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#bdb6a8', red:'#d6301b', blue:'#1a5fd0',
+           green:'#2f9e44', orange:'#d13d0e', teal:'#00947d', purple:'#7b3fa0', amber:'#c98a00',
+           fill:{T:'#ffffff', H:'#fde3b0', E:'#c9ecd0'}};
+  const WORD={T:'thinking', H:'hungry', E:'eating'};
+  const V=['u','v','w','x','y'];
+  const E=[['u','y'],['u','w'],['y','w'],['y','x'],['y','v'],['x','v'],['w','v']];
+  const ORDER=['u','x','y','w','v'];       /* initial priorities, highest first */
+  const POS={u:[380,90], y:[200,250], w:[560,250], x:[110,440], v:[440,440]};
+  const R=30;
+  function el(t,a,txt){ const e=document.createElementNS(NS,t); for(const k in a) e.setAttribute(k,a[k]); if(txt!=null) e.textContent=txt; return e; }
+  function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
+  function text(p,x,y,s,o){ o=o||{};
+    const t=el('text',{x:x, y:y, 'font-family':o.mono?'ui-monospace,Menlo,Consolas,monospace':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':o.size||15, 'font-weight':o.w||600, fill:o.fill||C.ink, 'text-anchor':o.anchor||'middle', 'dominant-baseline':'middle'}, s);
+    p.appendChild(t); return t; }
+  function head(g,x,y,ux,uy,col,s){ s=s||7; const px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:x+','+y+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+(x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col})); }
+  /* a point a fraction t of the way from a to b, moved off the line by off */
+  function pt(a,b,t,off){ const A=POS[a]||a, B=POS[b]||b, dx=B[0]-A[0], dy=B[1]-A[1], L=Math.hypot(dx,dy);
+    return [A[0]+dx*t-dy/L*(off||0), A[1]+dy*t+dx/L*(off||0)]; }
+  function line(g,a,b,col,w,dash){ const A=POS[a], B=POS[b];
+    g.appendChild(el('line',{x1:A[0], y1:A[1], x2:B[0], y2:B[1], stroke:col, 'stroke-width':w||2, 'stroke-dasharray':dash||'none'})); }
+  /* a priority arrow on edge hi -> lo: a head near the middle of the edge */
+  function prioArrow(g,hi,lo,col,w){ const A=POS[hi], B=POS[lo], dx=B[0]-A[0], dy=B[1]-A[1], L=Math.hypot(dx,dy);
+    const m=pt(hi,lo,0.58); head(g, m[0], m[1], dx/L, dy/L, col||C.ink, w||7); }
+  /* a full arrow from a to b, stopping at the circles */
+  function arrow(g,a,b,col,w){ const A=POS[a], B=POS[b], dx=B[0]-A[0], dy=B[1]-A[1], L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
+    const sx=A[0]+ux*R, sy=A[1]+uy*R, ex=B[0]-ux*(R+3), ey=B[1]-uy*(R+3);
+    g.appendChild(el('line',{x1:sx, y1:sy, x2:ex-ux*12, y2:ey-uy*12, stroke:col, 'stroke-width':w||2.5}));
+    head(g, ex, ey, ux, uy, col, 7); }
+  function vertex(g,v,state,o){ o=o||{}; const P=POS[v];
+    if(o.ring) g.appendChild(el('circle',{cx:P[0], cy:P[1], r:R+9, fill:'none', stroke:o.ring, 'stroke-width':4}));
+    g.appendChild(el('circle',{cx:P[0], cy:P[1], r:R, fill:state? C.fill[state] : '#fff', stroke:o.stroke||C.ink, 'stroke-width':o.sw||2}));
+    text(g, P[0], P[1]+1, v, {size:20, w:800});
+    if(state && !o.noword) text(g, P[0], P[1]+R+16, WORD[state], {size:13, w:700, fill:state==='T'? C.muted : (state==='H'? C.amber : C.green)});
+    if(o.click){ const c=el('circle',{cx:P[0], cy:P[1], r:R, fill:'transparent', style:'cursor:pointer'}); c.addEventListener('click', function(){ o.click(v); }); g.appendChild(c); } }
+  function player(pfx, step, reset, gap){
+    const $=function(id){ return document.getElementById(pfx+id); };
+    let timer=null;
+    function stop(){ if(timer){ clearInterval(timer); timer=null; } $('play').textContent='Play'; }
+    $('play').addEventListener('click', function(){ if(timer){ stop(); return; } $('play').textContent='Pause';
+      timer=setInterval(function(){ if(!step()) stop(); }, gap); });
+    $('step').addEventListener('click', function(){ stop(); step(); });
+    $('reset').addEventListener('click', function(){ stop(); reset(); });
+    return {stop:stop};
+  }
+  return {C:C, WORD:WORD, V:V, E:E, ORDER:ORDER, POS:POS, R:R, el:el, clear:clear, text:text, head:head, pt:pt,
+          line:line, prioArrow:prioArrow, arrow:arrow, vertex:vertex, player:player};
+})();
+
+/* DPModel: the algorithm itself, kept apart from the drawing so it can be checked on its own.
+   Each edge has one fork (at a philosopher, or '>w' in a message to w; clean or dirty) and one
+   request token (at a philosopher, or '>w' in a message to w). */
+function DPModel(V, EDGES, ORDER){
+  const rank={}; ORDER.forEach(function(v,i){ rank[v]=i; });          /* smaller rank = higher priority */
+  const INC={}; V.forEach(function(v){ INC[v]=[]; });
+  EDGES.forEach(function(e,i){ INC[e[0]].push(i); INC[e[1]].push(i); });
+  function other(i,v){ return EDGES[i][0]===v? EDGES[i][1] : EDGES[i][0]; }
+  function init(){
+    const st={}; V.forEach(function(v){ st[v]='T'; });
+    const f=[], t=[];
+    EDGES.forEach(function(e){ const hi=rank[e[0]]<rank[e[1]]? e[0]:e[1], lo=hi===e[0]? e[1]:e[0];
+      f.push({at:lo, clean:false}); t.push({at:hi}); });
+    return {st:st, f:f, t:t};
+  }
+  function copy(s){ return {st:Object.assign({},s.st), f:s.f.map(function(x){ return {at:x.at, clean:x.clean}; }), t:s.t.map(function(x){ return {at:x.at}; })}; }
+  function transit(loc){ return loc.indexOf('>')===0; }
+  function dest(loc){ return loc.slice(1); }
+  function acts(s){
+    const A=[];
+    V.forEach(function(v){
+      if(s.st[v]==='T') A.push({k:'hungry', v:v});
+      if(s.st[v]==='E') A.push({k:'done', v:v});
+      if(s.st[v]==='H'){
+        INC[v].forEach(function(i){ if(s.t[i].at===v && s.f[i].at!==v && s.f[i].at!=='>'+v) A.push({k:'request', v:v, i:i}); });
+        const all=INC[v].every(function(i){ return s.f[i].at===v; });
+        const owe=INC[v].some(function(i){ return s.t[i].at===v && s.f[i].at===v && !s.f[i].clean; });
+        if(all && !owe) A.push({k:'eat', v:v});
+      }
+      INC[v].forEach(function(i){ if(s.f[i].at===v && s.t[i].at===v && !s.f[i].clean && s.st[v]!=='E') A.push({k:'send', v:v, i:i}); });
+    });
+    s.t.forEach(function(x,i){ if(transit(x.at)) A.push({k:'tokArrive', i:i, v:dest(x.at)}); });
+    s.f.forEach(function(x,i){ if(transit(x.at)) A.push({k:'forkArrive', i:i, v:dest(x.at)}); });
+    return A;
+  }
+  function apply(s,a){
+    const n=copy(s);
+    if(a.k==='hungry') n.st[a.v]='H';
+    else if(a.k==='done') n.st[a.v]='T';
+    else if(a.k==='request') n.t[a.i].at='>'+other(a.i,a.v);
+    else if(a.k==='eat'){ n.st[a.v]='E'; INC[a.v].forEach(function(i){ n.f[i].clean=false; }); }
+    else if(a.k==='send'){ n.f[a.i].at='>'+other(a.i,a.v); n.f[a.i].clean=true; }
+    else if(a.k==='tokArrive') n.t[a.i].at=a.v;
+    else if(a.k==='forkArrive'){ n.f[a.i].at=a.v; n.f[a.i].clean=true; }
+    return n;
+  }
+  /* priority: the edge points from the higher to the lower philosopher */
+  function prio(s){
+    return EDGES.map(function(e,i){ const f=s.f[i]; let hi;
+      if(transit(f.at)) hi=dest(f.at);
+      else hi=f.clean? f.at : other(i,f.at);
+      return [hi, other(i,hi)]; });
+  }
+  function acyclic(s){
+    const P=prio(s), indeg={}; V.forEach(function(v){ indeg[v]=0; }); P.forEach(function(p){ indeg[p[1]]++; });
+    const q=V.filter(function(v){ return indeg[v]===0; }); let seen=0;
+    while(q.length){ const u=q.pop(); seen++; P.forEach(function(p){ if(p[0]===u && --indeg[p[1]]===0) q.push(p[1]); }); }
+    return seen===V.length;
+  }
+  function safe(s){ return EDGES.every(function(e){ return !(s.st[e[0]]==='E' && s.st[e[1]]==='E'); }); }
+  function thinkDirty(s){ return EDGES.every(function(e,i){ const at=s.f[i].at; return transit(at) || s.st[at]!=='T' || !s.f[i].clean; }); }
+  function key(s){ return V.map(function(v){ return s.st[v]; }).join('')+'|'+s.f.map(function(x){ return x.at+(x.clean?'c':'d'); }).join(',')+'|'+s.t.map(function(x){ return x.at; }).join(','); }
+  return {V:V, EDGES:EDGES, INC:INC, other:other, init:init, acts:acts, apply:apply, prio:prio, acyclic:acyclic, safe:safe, thinkDirty:thinkDirty, key:key, transit:transit, dest:dest};
+}
+
+/* Figure 1 — philosophers without an algorithm */
+(function(){
+  const PFX='d1_', $=function(id){ return document.getElementById(PFX+id); };
+  const svg=$('g'); if(!svg) return;
+  const D=window.DPG, C=D.C, NEXT={T:'H', H:'E', E:'T'};
+  const LC={T:[760,250], H:[930,250], E:[1100,250]}, LR=58;
+  let st, viol, last, k;
+  function reset(){ st={}; D.V.forEach(function(v){ st[v]='T'; }); viol=0; last=null; k=0; draw(); }
+  function step(){
+    if(k>=120) return false;
+    const v=D.V[Math.floor(Math.random()*D.V.length)], from=st[v];
+    st[v]=NEXT[from]; last={v:v, from:from, to:st[v]}; k++;
+    if(st[v]==='E' && D.E.some(function(e){ return (e[0]===v || e[1]===v) && st[e[0]]==='E' && st[e[1]]==='E'; })) viol++;
+    draw(); return true;
+  }
+  function draw(){
+    D.clear(svg);
+    const bad=D.E.filter(function(e){ return st[e[0]]==='E' && st[e[1]]==='E'; });
+    D.E.forEach(function(e){ const b=bad.indexOf(e)>=0; D.line(svg, e[0], e[1], b? C.red : C.line, b? 7 : 2.5); });
+    bad.forEach(function(e){ const m=D.pt(e[0], e[1], 0.5, -18); D.text(svg, m[0], m[1], 'both eating', {size:13, w:800, fill:C.red}); });
+    D.V.forEach(function(v){ D.vertex(svg, v, st[v], {ring:(last && last.v===v)? C.orange : null}); });
+    /* the cycle of each philosopher */
+    D.text(svg, 930, 120, 'Each philosopher’s cycle', {size:15, w:800});
+    [['T','H'],['H','E']].forEach(function(p){ const a=LC[p[0]], b=LC[p[1]], on=last && last.from===p[0];
+      svg.appendChild(D.el('line',{x1:a[0]+LR, y1:a[1], x2:b[0]-LR-14, y2:b[1], stroke:on? C.orange : C.ink, 'stroke-width':on? 5 : 2.5}));
+      D.head(svg, b[0]-LR, b[1], 1, 0, on? C.orange : C.ink); });
+    const on=last && last.from==='E', col=on? C.orange : C.ink;
+    svg.appendChild(D.el('path',{d:'M '+(LC.E[0]-20)+' '+(LC.E[1]-LR+2)+' C 1060 130, 800 130, '+(LC.T[0]+24)+' '+(LC.T[1]-LR-8), fill:'none', stroke:col, 'stroke-width':on? 5 : 2.5}));
+    D.head(svg, LC.T[0]+20, LC.T[1]-LR+2, -0.35, 0.94, col);
+    ['T','H','E'].forEach(function(s){ const c=LC[s];
+      svg.appendChild(D.el('circle',{cx:c[0], cy:c[1], r:LR, fill:C.fill[s], stroke:C.ink, 'stroke-width':2}));
+      D.text(svg, c[0], c[1], D.WORD[s], {size:15, w:800});
+      D.text(svg, c[0], c[1]+LR+20, {T:'may last for ever', H:'waits for the algorithm', E:'finite'}[s], {size:13, w:600, fill:C.muted}); });
+    D.text(svg, 760, 410, 'Steps: '+k, {anchor:'start', size:15, w:700});
+    D.text(svg, 760, 438, 'Times neighbors ate together: '+viol, {anchor:'start', size:15, w:700, fill:viol? C.red : C.ink});
+    let msg;
+    if(!last) msg='Press Play. Every philosopher starts thinking.';
+    else msg=last.v+': '+D.WORD[last.from]+' → '+D.WORD[last.to]+'.';
+    if(bad.length) msg+='  Safety is violated: '+bad.map(function(e){ return e[0]+' and '+e[1]; }).join(', ')+' are eating at the same time.';
+    D.text(svg, 30, 520, msg, {anchor:'start', size:15, w:700, fill:bad.length? C.red : C.ink});
+    $('status').innerHTML='step <b>'+k+'</b>';
+  }
+  D.player(PFX, step, reset, 700);
+  reset();
+})();
+
+/* Figure 2 — three hungry philosophers in a ring: symmetry can last for ever */
+(function(){
+  const PFX='d2_', $=function(id){ return document.getElementById(PFX+id); };
+  const svg=$('g'); if(!svg) return;
+  const D=window.DPG, C=D.C;
+  const P={1:[230,110], 2:[530,110], 0:[380,330]}, R=34;
+  const FCOL={'0-1':'#1a1a2e', '1-2':'#d6301b', '0-2':'#2f9e44'};
+  function ek(a,b){ return Math.min(a,b)+'-'+Math.max(a,b); }
+  let mode='give', phase, stage, round;
+  /* phase 0: philosopher j holds the fork it shares with (j+1) mod 3; phase 1: with (j+2) mod 3 */
+  function holds(j){ return ek(j, (j+(phase===0? 1 : 2))%3); }
+  function lacks(j){ return ek(j, (j+(phase===0? 2 : 1))%3); }
+  function holderOf(key){ for(let j=0;j<3;j++) if(holds(j)===key) return j; }
+  function reset(){ phase=0; stage=0; round=1; draw(); }
+  function step(){
+    if(mode==='keep' && stage===2 && round>2) return false;
+    if(round>4 && stage===2) return false;
+    if(stage===0) stage=1;                         /* everyone asks */
+    else if(stage===1){ stage=2; if(mode==='give') phase=1-phase; }
+    else { stage=1; round++; }
+    draw(); return true;
+  }
+  function draw(){
+    D.clear(svg);
+    [[0,1],[1,2],[2,0]].forEach(function(e){ const a=P[e[0]], b=P[e[1]];
+      svg.appendChild(D.el('line',{x1:a[0], y1:a[1], x2:b[0], y2:b[1], stroke:C.line, 'stroke-width':2.5})); });
+    /* requests */
+    if(stage===1) for(let j=0;j<3;j++){ const key=lacks(j), h=holderOf(key), a=P[j], b=P[h];
+      const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L, ox=-uy*22, oy=ux*22;
+      svg.appendChild(D.el('line',{x1:a[0]+ux*(R+6)+ox, y1:a[1]+uy*(R+6)+oy, x2:b[0]-ux*(R+20)+ox, y2:b[1]-uy*(R+20)+oy, stroke:C.orange, 'stroke-width':3, 'stroke-dasharray':'7 5'}));
+      D.head(svg, b[0]-ux*(R+8)+ox, b[1]-uy*(R+8)+oy, ux, uy, C.orange); }
+    for(let j=0;j<3;j++){ const a=P[j];
+      svg.appendChild(D.el('circle',{cx:a[0], cy:a[1], r:R, fill:C.fill.H, stroke:C.ink, 'stroke-width':2}));
+      D.text(svg, a[0], a[1]+1, String(j), {size:22, w:800});
+      const key=holds(j), o=key==='0-1'? (j===0? 1 : 0) : key==='1-2'? (j===1? 2 : 1) : (j===0? 2 : 0), b=P[o];
+      const dx=b[0]-a[0], dy=b[1]-a[1], L=Math.hypot(dx,dy);
+      svg.appendChild(D.el('circle',{cx:a[0]+dx/L*(R+20), cy:a[1]+dy/L*(R+20), r:11, fill:FCOL[key], stroke:'#fff', 'stroke-width':2})); }
+    D.text(svg, 760, 120, mode==='give'? 'Rule: a hungry philosopher gives a requested fork' : 'Rule: a hungry philosopher keeps its fork', {anchor:'start', size:15, w:800});
+    D.text(svg, 760, 160, 'Round '+round+'.  Meals eaten: 0', {anchor:'start', size:15, w:700});
+    const lines=stage===0? ['Every philosopher is hungry and holds', 'one of the two forks it needs.']
+      : stage===1? ['Each asks its neighbor for the fork', 'it is missing (orange).']
+      : mode==='give'? ['Everyone gives its fork away. Each now', 'holds the other fork, and still lacks one:', 'the mirror image of the last state.']
+      : ['Nobody gives a fork. Everyone waits,', 'and will wait for ever.'];
+    lines.forEach(function(s,i){ D.text(svg, 760, 210+i*26, s, {anchor:'start', size:15, w:600, fill:C.ink}); });
+    if(stage===2) D.text(svg, 760, 310, mode==='give'? 'The same thing happens in every round.' : 'Deadlock.', {anchor:'start', size:15, w:800, fill:C.red});
+    D.text(svg, 30, 420, 'The forks: black is shared by 0 and 1, red by 1 and 2, green by 0 and 2.', {anchor:'start', size:13.5, w:600, fill:C.muted});
+    $('status').innerHTML='round <b>'+round+'</b>';
+  }
+  function setMode(m){ mode=m; $('give').className=m==='give'? 'on' : ''; $('keep').className=m==='keep'? 'on' : ''; pl.stop(); reset(); }
+  const pl=D.player(PFX, step, reset, 1300);
+  $('give').addEventListener('click', function(){ setMode('give'); });
+  $('keep').addEventListener('click', function(){ setMode('keep'); });
+  reset();
+})();
+
+/* Figure 3 — how priorities change when a philosopher eats */
+(function(){
+  const PFX='d3_', $=function(id){ return document.getElementById(PFX+id); };
+  const svg=$('g'); if(!svg) return;
+  const D=window.DPG, C=D.C;
+  let mode='toward', hi, last, cyc;
+  function key(e){ return e[0]+'-'+e[1]; }
+  function reset(){ hi={}; const r={}; D.ORDER.forEach(function(v,i){ r[v]=i; });
+    D.E.forEach(function(e){ hi[key(e)]=r[e[0]]<r[e[1]]? e[0] : e[1]; }); last=null; cyc=findCycle(); draw(); }
+  function dir(e){ const h=hi[key(e)]; return [h, h===e[0]? e[1] : e[0]]; }
+  function findCycle(){
+    const out={}; D.V.forEach(function(v){ out[v]=[]; }); D.E.forEach(function(e){ const d=dir(e); out[d[0]].push(d[1]); });
+    const color={}, stack=[]; let found=null;
+    function dfs(u){ color[u]=1; stack.push(u);
+      for(const w of out[u]){ if(found) return; if(color[w]===1){ found=stack.slice(stack.indexOf(w)).concat([w]); return; } if(!color[w]) dfs(w); }
+      stack.pop(); color[u]=2; }
+    D.V.forEach(function(v){ if(!found && !color[v]) dfs(v); });
+    return found;
+  }
+  function eat(v){
+    D.E.forEach(function(e){ if(e[0]!==v && e[1]!==v) return; const o=e[0]===v? e[1] : e[0], k=key(e);
+      hi[k]=(mode==='toward')? o : (hi[k]===v? o : v); });
+    last=v; cyc=findCycle(); draw();
+  }
+  function draw(){
+    D.clear(svg);
+    const onCyc={}; if(cyc) for(let i=0;i+1<cyc.length;i++) onCyc[cyc[i]+'>'+cyc[i+1]]=1;
+    D.E.forEach(function(e){ const d=dir(e), red=onCyc[d[0]+'>'+d[1]]; D.arrow(svg, d[0], d[1], red? C.red : C.ink, red? 5 : 2.5); });
+    D.V.forEach(function(v){ D.vertex(svg, v, null, {ring:last===v? C.green : null, click:eat}); });
+    D.text(svg, 760, 120, mode==='toward'? 'Rule: all edges at the eater point to it' : 'Rule: flip every edge at the eater', {anchor:'start', size:15, w:800});
+    D.text(svg, 760, 160, last? last+' ate (green ring).' : 'Click a philosopher to let it eat.', {anchor:'start', size:15, w:600});
+    if(cyc){ D.text(svg, 760, 210, 'Cycle: '+cyc.join(' → '), {anchor:'start', size:16, w:800, fill:C.red});
+      D.text(svg, 760, 238, 'No one in the cycle is on top: the', {anchor:'start', size:15, w:600, fill:C.red});
+      D.text(svg, 760, 262, 'symmetric waiting of Figure 2 is possible.', {anchor:'start', size:15, w:600, fill:C.red}); }
+    else D.text(svg, 760, 210, 'The priority graph is acyclic.', {anchor:'start', size:16, w:800, fill:C.teal});
+    D.text(svg, 760, 330, 'An arrow points from higher to lower priority.', {anchor:'start', size:13.5, w:600, fill:C.muted});
+    $('status').innerHTML=cyc? '<b>cycle</b>' : 'acyclic';
+  }
+  function setMode(m){ mode=m; $('toward').className=m==='toward'? 'on' : ''; $('flip').className=m==='flip'? 'on' : ''; reset(); }
+  $('toward').addEventListener('click', function(){ setMode('toward'); });
+  $('flip').addEventListener('click', function(){ setMode('flip'); });
+  $('reset').addEventListener('click', reset);
+  reset();
+})();
+
+/* Figure 4 — the algorithm, run with random events */
+(function(){
+  const PFX='d4_', $=function(id){ return document.getElementById(PFX+id); };
+  const svg=$('g'); if(!svg) return;
+  const D=window.DPG, C=D.C, M=DPModel(D.V, D.E, D.ORDER);
+  let s, k, meals, last, showPrio=true, ok;
+  function reset(){ s=M.init(); k=0; meals={}; D.V.forEach(function(v){ meals[v]=0; }); last=null; ok={safe:true, acyc:true, dirty:true}; draw(); }
+  function describe(a){ const e=a.i!=null? M.EDGES[a.i] : null, o=e? M.other(a.i, a.v) : null;
+    switch(a.k){
+      case 'hungry': return a.v+' becomes hungry.';
+      case 'done': return a.v+' finishes eating and thinks.';
+      case 'request': return a.v+' asks '+o+' for the fork they share.';
+      case 'tokArrive': return 'The request from '+o+' reaches '+a.v+'.';
+      case 'send': return a.v+' gives the dirty fork it shares with '+o+', cleaned.';
+      case 'forkArrive': return 'The clean fork from '+o+' reaches '+a.v+'.';
+      case 'eat': return a.v+' holds all its forks and eats. Its forks become dirty.';
+    } }
+  function step(){
+    const A=M.acts(s), W=A.map(function(a){ return a.k==='hungry'? 0.35 : 1; });
+    let r=Math.random()*W.reduce(function(x,y){ return x+y; }, 0), a=A[0];
+    for(let i=0;i<A.length;i++){ r-=W[i]; if(r<=0){ a=A[i]; break; } }
+    s=M.apply(s,a); k++; last=a; if(a.k==='eat') meals[a.v]++;
+    ok.safe=ok.safe && M.safe(s); ok.acyc=ok.acyc && M.acyclic(s); ok.dirty=ok.dirty && M.thinkDirty(s);
+    draw(); return true;
+  }
+  function draw(){
+    D.clear(svg);
+    D.E.forEach(function(e){ D.line(svg, e[0], e[1], C.line, 2.5); });
+    if(showPrio) M.prio(s).forEach(function(p){ D.prioArrow(svg, p[0], p[1], C.ink, 6); });
+    /* requests: small grey squares, off the edge */
+    s.t.forEach(function(t,i){ const e=M.EDGES[i]; let p;
+      if(M.transit(t.at)){ const d=M.dest(t.at), o=e[0]===d? e[1] : e[0]; p=D.pt(o, d, 0.5, 16); }
+      else { const o=e[0]===t.at? e[1] : e[0]; p=D.pt(t.at, o, 0.3, 16); }
+      svg.appendChild(D.el('rect',{x:p[0]-6, y:p[1]-6, width:12, height:12, rx:2, fill:C.muted, stroke:'#fff', 'stroke-width':1.5})); });
+    /* forks */
+    s.f.forEach(function(f,i){ const e=M.EDGES[i], col=f.clean? C.blue : C.red; let p;
+      if(M.transit(f.at)){ const d=M.dest(f.at), o=e[0]===d? e[1] : e[0]; p=D.pt(o, d, 0.45, -14);
+        const q=D.pt(o, d, 0.45+0.001, -14), ux=q[0]-p[0], uy=q[1]-p[1], L=Math.hypot(ux,uy);
+        D.head(svg, p[0]+ux/L*24, p[1]+uy/L*24, ux/L, uy/L, col, 5); }
+      else { const o=e[0]===f.at? e[1] : e[0]; p=D.pt(f.at, o, 0.24, -14); }
+      svg.appendChild(D.el('circle',{cx:p[0], cy:p[1], r:9, fill:col, stroke:'#fff', 'stroke-width':2})); });
+    D.V.forEach(function(v){ D.vertex(svg, v, s.st[v], {noword:true, ring:(last && last.v===v)? C.orange : null}); });
+    /* panel */
+    const X=730;
+    D.text(svg, X, 60, 'Step '+k, {anchor:'start', size:15, w:800});
+    D.text(svg, X, 90, last? describe(last) : 'Press Play. Everyone starts thinking.', {anchor:'start', size:15, w:600});
+    D.text(svg, X, 150, 'Checked after every step', {anchor:'start', size:13, w:800, fill:C.muted});
+    [['safe','Neighbors never eat together'],['acyc','The priority graph is acyclic'],['dirty','Thinking philosophers hold only dirty forks']].forEach(function(c,i){
+      D.text(svg, X, 180+i*28, (ok[c[0]]? '✓  ' : '✗  ')+c[1], {anchor:'start', size:15, w:700, fill:ok[c[0]]? C.teal : C.red}); });
+    D.text(svg, X, 290, 'Meals', {anchor:'start', size:13, w:800, fill:C.muted});
+    D.V.forEach(function(v,i){ D.text(svg, X+i*90, 318, v+': '+meals[v], {anchor:'start', size:15, w:700}); });
+    D.text(svg, X, 380, 'Legend', {anchor:'start', size:13, w:800, fill:C.muted});
+    svg.appendChild(D.el('circle',{cx:X+8, cy:410, r:9, fill:C.blue})); D.text(svg, X+26, 410, 'clean fork', {anchor:'start', size:14, w:600});
+    svg.appendChild(D.el('circle',{cx:X+148, cy:410, r:9, fill:C.red})); D.text(svg, X+166, 410, 'dirty fork', {anchor:'start', size:14, w:600});
+    svg.appendChild(D.el('rect',{x:X+282, y:404, width:12, height:12, rx:2, fill:C.muted})); D.text(svg, X+302, 410, 'request', {anchor:'start', size:14, w:600});
+    D.text(svg, X, 440, 'A fork in a message sits halfway along its edge, with', {anchor:'start', size:13.5, w:600, fill:C.muted});
+    D.text(svg, X, 460, 'a small arrow pointing to where it is going.', {anchor:'start', size:13.5, w:600, fill:C.muted});
+    [['T','thinking'],['H','hungry'],['E','eating']].forEach(function(q,i){ svg.appendChild(D.el('circle',{cx:X+10+i*140, cy:500, r:10, fill:C.fill[q[0]], stroke:C.ink, 'stroke-width':1.5}));
+      D.text(svg, X+28+i*140, 500, q[1], {anchor:'start', size:14, w:600}); });
+    $('status').innerHTML='step <b>'+k+'</b>';
+  }
+  const pl=D.player(PFX, step, reset, 650);
+  $('hungry').addEventListener('click', function(){ D.V.forEach(function(v){ if(s.st[v]==='T') s=M.apply(s, {k:'hungry', v:v}); });
+    last={k:'hungry', v:''}; draw(); D.text(svg, 730, 90, 'Every thinking philosopher becomes hungry.', {anchor:'start', size:15, w:600}); });
+  $('prio').addEventListener('click', function(){ showPrio=!showPrio; $('prio').className=showPrio? 'on' : ''; draw(); });
+  reset();
+})();
+
+/* Figure 5 — why v eats: the pair (nT, nH) goes down */
+(function(){
+  const PFX='d5_', $=function(id){ return document.getElementById(PFX+id); };
+  const svg=$('g'); if(!svg) return;
+  const D=window.DPG, C=D.C;
+  let hi, st, hist, msg, done;
+  function key(e){ return e[0]+'-'+e[1]; }
+  function dir(e){ const h=hi[key(e)]; return [h, h===e[0]? e[1] : e[0]]; }
+  function reset(){ hi={}; const r={}; D.ORDER.forEach(function(v,i){ r[v]=i; });
+    D.E.forEach(function(e){ hi[key(e)]=r[e[0]]<r[e[1]]? e[0] : e[1]; });
+    st={u:'T', x:'H', y:'H', w:'H', v:'H'}; done=false; hist=[pair()]; msg='v is hungry. x, y and w are hungry and above v; u is thinking and above v.'; draw(); }
+  function above(t){ const seen=new Set(), q=[t];
+    while(q.length){ const b=q.pop(); D.E.forEach(function(e){ const d=dir(e); if(d[1]===b && !seen.has(d[0])){ seen.add(d[0]); q.push(d[0]); } }); }
+    seen.delete(t); return seen; }
+  function pair(){ const A=above('v'); let nT=0, nH=0; A.forEach(function(a){ if(st[a]==='T') nT++; if(st[a]==='H') nH++; }); return [nT, nH]; }
+  function top(){ const cand=['v'].concat(D.ORDER.filter(function(a){ return above('v').has(a); }));
+    const H=cand.filter(function(a){ return st[a]==='H'; });
+    return H.find(function(a){ let ok=true; above(a).forEach(function(b){ if(st[b]==='H') ok=false; }); return ok; }); }
+  function next(){
+    if(done) return;
+    const y=top(); if(!y) return;
+    D.E.forEach(function(e){ if(e[0]===y || e[1]===y) hi[key(e)]=(e[0]===y? e[1] : e[0]); });
+    if(y==='v'){ st.v='E'; done=true; msg='Nobody hungry is above v: v is on top, gets its forks and eats.'; }
+    else { st[y]='T'; msg=y+' eats; its edges turn towards it, so it is no longer above v. It thinks again.'; }
+    hist.push(pair()); draw();
+  }
+  function wake(){
+    if(done) return;
+    const A=above('v'), t=D.ORDER.find(function(a){ return A.has(a) && st[a]==='T'; }); if(!t) return;
+    st[t]='H'; msg=t+', above v, becomes hungry: nT goes down by one and nH up by one.'; hist.push(pair()); draw();
+  }
+  function draw(){
+    D.clear(svg);
+    D.E.forEach(function(e){ const d=dir(e); D.arrow(svg, d[0], d[1], C.ink, 2.5); });
+    const A=above('v'), y=done? null : top();
+    D.V.forEach(function(v){ D.vertex(svg, v, st[v], {ring:A.has(v)? C.purple : null, stroke:v===y? C.orange : C.ink, sw:v===y? 5 : 2}); });
+    if(y){ const P=D.POS[y]; D.text(svg, P[0]-66, P[1], 'top', {size:15, w:800, fill:C.orange}); }
+    const p=pair(), X=730;
+    D.text(svg, X, 70, 'Above v: '+(A.size? Array.from(A).sort().join(', ') : 'nobody'), {anchor:'start', size:15, w:700});
+    D.text(svg, X, 110, '(nT, nH) = ('+p[0]+', '+p[1]+')', {anchor:'start', size:22, w:800, mono:true, fill:C.purple});
+    D.text(svg, X, 150, 'History, first nT, then nH:', {anchor:'start', size:13, w:800, fill:C.muted});
+    D.text(svg, X, 178, hist.map(function(h){ return '('+h[0]+', '+h[1]+')'; }).join('  →  '), {anchor:'start', size:15, w:700, mono:true});
+    const lines=wrap(msg, 52);
+    lines.forEach(function(s,i){ D.text(svg, X, 240+i*24, s, {anchor:'start', size:15, w:600, fill:done? C.teal : C.ink}); });
+    D.text(svg, X, 400, 'Purple ring: above v.  Thick orange outline: the', {anchor:'start', size:13.5, w:600, fill:C.muted});
+    D.text(svg, X, 420, 'hungry philosopher on top.  Arrows: higher to lower.', {anchor:'start', size:13.5, w:600, fill:C.muted});
+    $('next').disabled=done; $('wake').disabled=done || !D.ORDER.some(function(a){ return A.has(a) && st[a]==='T'; });
+    $('status').innerHTML='(nT, nH) = <b>('+p[0]+', '+p[1]+')</b>';
+  }
+  function wrap(s,n){ const w=s.split(' '), out=[]; let cur='';
+    w.forEach(function(x){ if((cur+' '+x).trim().length>n){ out.push(cur.trim()); cur=x; } else cur+=' '+x; }); if(cur.trim()) out.push(cur.trim()); return out; }
+  $('next').addEventListener('click', next);
+  $('wake').addEventListener('click', wake);
+  $('reset').addEventListener('click', reset);
+  reset();
+})();
+</script>
+</body>
+</html>
