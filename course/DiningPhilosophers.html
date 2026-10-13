@@ -418,7 +418,72 @@
     </figcaption>
   </figure>
 
-<h2>7. Key ideas</h2>
+<h2>7. A simpler idea: the one that waits longest wins</h2>
+
+  <p>
+    There is a simpler way to decide who gets a fork: <b>the philosopher
+    that started waiting earliest wins</b>. This needs clocks instead of
+    clean and dirty forks.
+  </p>
+  <p>
+    Each philosopher has a local clock. The clocks need not agree with each
+    other; all we need is that every clock ticks forward for ever, so that
+    it eventually passes any given time. Clocks kept roughly in step by a
+    time server, and the logical clocks of an earlier class, both qualify.
+    A <b>time</b> at philosopher <code>x</code> is a pair
+    <code>(t, x)</code>, where <code>t</code> is the reading of
+    <code>x</code>'s clock. Two times are compared first by
+    <code>t</code>, and if the readings are equal, by the names of the
+    philosophers. So no two philosophers ever have the same time, and any
+    two times can be compared.
+  </p>
+
+  <div class="thm">
+    <span class="lead-in">The algorithm with times</span>
+    <ol>
+      <li>When a philosopher becomes hungry, it records the time: its
+        <b>timestamp</b>. While it is hungry it asks for every fork it does
+        not have, and each request carries its timestamp.</li>
+      <li>A <i>thinking</i> philosopher that gets a request gives the
+        fork.</li>
+      <li>A <i>hungry</i> philosopher that gets a request compares
+        timestamps. If its own is earlier, it keeps the fork. If the
+        request's is earlier, it gives the fork, and asks for it back
+        later.</li>
+      <li>An <i>eating</i> philosopher gives the fork when it finishes
+        eating.</li>
+      <li>A hungry philosopher that holds all its forks eats.</li>
+    </ol>
+  </div>
+
+  <p>
+    Safety holds for the same reason as before: the forks. Priorities need
+    no special care, because times are totally ordered: the earlier
+    timestamp always wins, so there is no cycle of priorities and no
+    symmetric state as in Figure 2.
+  </p>
+
+  <div class="thm">
+    <span class="lead-in">Progress, informally</span>
+    <p>Among all hungry philosophers, take the one with the earliest
+      timestamp. Its thinking neighbors give it their forks, its hungry
+      neighbors have later timestamps and also give, and its eating
+      neighbors give when they finish. So it eats. Now fix a hungry
+      philosopher <code>v</code>. Its timestamp does not change while it
+      waits, and every clock eventually passes it, so after a while every
+      philosopher that becomes hungry has a later timestamp than
+      <code>v</code>. Only finitely many hungry philosophers are ahead of
+      <code>v</code>, each of them eats in turn, and then <code>v</code> has
+      the earliest timestamp and eats.</p>
+  </div>
+
+  <p>
+    The price is the clocks. The fork algorithm of sections 5 and 6 needs no
+    clocks at all: the priority between two neighbors is stored in the fork
+    they share.
+  </p>
+
+<h2>8. Key ideas</h2>
 
   <ol class="facts">
     <li><b>Conflict resolution in distributed systems.</b> When agents want
@@ -431,6 +496,9 @@
     <li><b>Dynamic data structures.</b> The acyclic priority graph is
       maintained by the actions of all the agents, and no agent ever sees
       all of it.</li>
+    <li><b>Time as priority.</b> With clocks that tick forward for ever,
+      &ldquo;the agent that started waiting earliest wins&rdquo; is a fair
+      priority.</li>
   </ol>
 
 </div>
