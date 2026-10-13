@@ -1,0 +1,593 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Diffusing Computations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  h2{font-family:var(--display); font-weight:600; font-size:25px;
+     letter-spacing:-.01em; margin:38px 0 12px}
+  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:34px 0 8px}
+  p{color:var(--body); margin:0 0 15px}
+  ul, ol{color:var(--body)}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  header.top h2{margin:-2px 0 20px; padding:0; border:0;
+    font-family:var(--display); font-weight:600; font-size:22px;
+    line-height:1.2; letter-spacing:-.01em; color:var(--muted)}
+  figure.fig{margin:32px 0 30px; padding:20px 20px 16px;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px}
+  figure.fig svg{display:block; width:100%; height:auto}
+  figure.fig.wideout{width:min(1240px, calc(100vw - 40px)); max-width:none;
+    position:relative; left:50%; transform:translateX(-50%)}
+  figure.fig figcaption{margin-top:14px; padding-top:13px; border-top:1px solid var(--line);
+    font-size:14.5px; line-height:1.55; color:var(--body)}
+  figure.fig figcaption b{color:var(--ink)}
+  figure.fig figcaption i{color:var(--ink); font-style:normal; font-weight:600}
+  .ctrls{display:flex; flex-wrap:wrap; gap:10px 14px; align-items:center;
+         margin-top:12px; padding-top:12px; border-top:1px solid var(--line)}
+  button{font:600 13.5px var(--sans); color:var(--ink); background:#fff;
+         border:1px solid var(--line); border-radius:8px; padding:7px 14px; cursor:pointer}
+  button:hover{border-color:var(--muted)}
+  button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  button.on{border-color:var(--orange); color:var(--orange); box-shadow:inset 0 0 0 1px var(--orange)}
+  .sep{width:1px; align-self:stretch; background:var(--line)}
+  .status{margin-left:auto; font:13px var(--mono); color:var(--muted); white-space:nowrap}
+  .status b{color:var(--ink); font-weight:600}
+  code{font-family:var(--mono); font-size:.88em;
+       background:#f6f4ee; border-radius:5px; padding:1px 5px}
+  .defn{margin:22px 0 20px; padding:14px 18px 14px 20px; background:#fff6ef;
+    border:1px solid #f3d3c0; border-left:5px solid var(--orange);
+    border-radius:0 10px 10px 0}
+  .defn .lead-in, .thm .lead-in{display:block; font:700 11.5px/1 var(--sans);
+    letter-spacing:.14em; text-transform:uppercase; margin-bottom:9px}
+  .defn .lead-in{color:var(--orange)}
+  .defn p, .thm p{color:var(--ink); margin:0 0 8px}
+  .defn p:last-child, .thm p:last-child{margin-bottom:0}
+  .defn ol, .thm ol{margin:4px 0 0; padding-left:22px; color:var(--ink)}
+  .defn ol li, .thm ol li{margin:0 0 7px}
+  .thm{margin:24px 0 22px; padding:14px 18px 14px 20px; background:#fff;
+    border:1px solid var(--line); border-left:5px solid var(--teal);
+    border-radius:0 10px 10px 0}
+  .thm .lead-in{color:var(--teal)}
+  ol.facts{margin:10px 0 18px; padding-left:24px}
+  ol.facts li{margin:0 0 8px}
+  nav.parts{display:flex; flex-wrap:wrap; gap:6px 18px; margin:0 0 26px; padding:10px 14px;
+    background:#fff; border:1px solid var(--line); border-radius:10px; font-size:14.5px}
+  nav.parts a{color:var(--ink); font-weight:600; text-decoration:none}
+  nav.parts a:hover{text-decoration:underline}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab &middot; Distributed algorithms</div>
+    <h1>Diffusing Computations</h1>
+    <h2>How the agent that started a computation learns that it is over</h2>
+    <p>
+      One agent starts a computation by sending messages. The agents that
+      receive them do some work and send more messages, and so on: the
+      computation spreads, or <b>diffuses</b>, through the system. How does
+      the agent that started it find out that it has ended? This class
+      develops the answer that Dijkstra and Scholten gave in 1980. As before,
+      the arguments are informal, and the animations show why they hold.
+    </p>
+  </header>
+
+  <nav class="parts"><span>See also:</span><a href="LogicalTime.html">Logical time and termination detection</a><a href="SharingResources.html">Sharing resources</a></nav>
+
+<h2>1. Diffusing computations</h2>
+
+  <p>
+    Agents send messages to each other along channels. Each agent is
+    <b>active</b> or <b>idle</b>.
+  </p>
+  <ul>
+    <li>Initially one agent, the <b>initiator</b>, is active; every other
+      agent is idle, and every channel is empty.</li>
+    <li>Only an active agent sends messages.</li>
+    <li>An active agent may become idle at any time.</li>
+    <li>An idle agent becomes active when it receives a message.</li>
+  </ul>
+
+  <div class="defn">
+    <span class="lead-in">Terminated</span>
+    <p>The computation has <b>terminated</b> when every agent, the initiator
+      included, is idle, and every channel is empty.</p>
+  </div>
+
+  <p>
+    Once terminated, the computation stays terminated: no agent is active to
+    send a message, and no message is left to wake an agent up. Note that
+    every agent idle is not enough.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="g1_g" viewBox="0 0 1240 580" role="img"
+         aria-label="Six agents; the initiator sends a message, agents become active and idle; at one point every agent is idle but a message is still in transit, so the computation has not terminated"></svg>
+    <div class="ctrls">
+      <button id="g1_play" class="primary">Play</button>
+      <button id="g1_step">Step</button>
+      <button id="g1_reset">Reset</button>
+      <span class="status" id="g1_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 1. A diffusing computation.</b>
+      Purple agents are active, green agents idle; the initiator has a double
+      ring. Purple dots are messages, travelling on the side of the line
+      that leads to their destination. Watch step 8: every agent is idle,
+      but a message is still on its way to <code>u</code>, so the
+      computation has not terminated. When the message arrives,
+      <code>u</code> becomes active again.
+    </figcaption>
+  </figure>
+
+<h2>2. The problem</h2>
+
+  <p>
+    The initiator has a variable <code>claim</code>, initially false. Devise
+    an algorithm, running alongside the computation, that sets
+    <code>claim</code> to true when the computation has terminated.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">Specification</span>
+    <p><b>Safety.</b> If <code>claim</code> is true, the computation has
+      terminated.</p>
+    <p><b>Progress.</b> If the computation terminates, <code>claim</code>
+      eventually becomes true.</p>
+  </div>
+
+<h2>3. The idea: a tree rooted at the initiator</h2>
+
+  <p>
+    Keep a structure that contains everything that could still keep the
+    computation going: every active agent, and every agent that has sent a
+    message still in transit. If the structure shrinks to just the initiator,
+    and the initiator is idle, nothing is left to keep the computation going.
+    Dijkstra and Scholten used a <b>tree rooted at the initiator</b>. Each
+    agent <code>v</code> has a variable <code>v.parent</code>: null if
+    <code>v</code> is not on the tree, and otherwise its parent on the tree.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">The invariant</span>
+    <ol>
+      <li>Following parent links from any agent on the tree leads to the
+        initiator.</li>
+      <li>Every active agent is on the tree.</li>
+      <li>If a message is in transit from <code>w</code>, then
+        <code>w</code> is on the tree.</li>
+    </ol>
+  </div>
+
+  <p>
+    An idle agent may stay on the tree, and an idle agent may have active
+    descendants. The tree changes in only two ways:
+  </p>
+  <ul>
+    <li><b>Joining, as a leaf.</b> An agent joins when it receives a message
+      while it is off the tree: it becomes active, and its parent is the
+      sender, which is on the tree because it sent the message.</li>
+    <li><b>Leaving, as a leaf.</b> An agent may leave only when it is idle,
+      has no children, and has no messages of its own still in transit.
+      Otherwise it would break part 1 or part 3 of the invariant.</li>
+  </ul>
+
+<h2>4. Acknowledgements</h2>
+
+  <p>
+    How does an agent know that it has no children and no messages in
+    transit? Every message is <b>acknowledged</b>: its receiver eventually
+    sends back an <b>ack</b>. Each agent counts its messages that have not
+    yet been acknowledged.
+  </p>
+
+  <div class="defn">
+    <span class="lead-in">The algorithm</span>
+    <ol>
+      <li><b>Receiving a message.</b> The receiver becomes active. If it is
+        not on the tree, it joins with the sender as its parent, and
+        <b>holds on to the ack</b> for that message. Otherwise it sends the
+        ack at once.</li>
+      <li><b>Leaving the tree.</b> When an agent off the root is idle and has
+        no unacknowledged messages, it sends the held ack to its parent and
+        sets its parent to null.</li>
+      <li><b>Claiming termination.</b> When the initiator is idle and has no
+        unacknowledged messages, it sets <code>claim</code> to true.</li>
+    </ol>
+  </div>
+
+  <p>
+    The held ack is what makes the counts tell the truth. While
+    <code>v</code> is a child of <code>w</code>, <code>v</code> has not acked
+    the message that made it join, so <code>w</code> has at least one
+    unacknowledged message. And a message in transit has not been acked
+    either. So when all of an agent's messages are acknowledged, it has no
+    children and no messages in transit.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="g2_g" viewBox="0 0 1240 580" role="img"
+         aria-label="The algorithm step by step: agents join the tree when they receive a message, holding the ack; an agent already on the tree acks at once; idle agents with all messages acked leave the tree, sending the held ack to their parent; the initiator finally claims termination"></svg>
+    <div class="ctrls">
+      <button id="g2_play" class="primary">Play</button>
+      <button id="g2_step">Step</button>
+      <button id="g2_reset">Reset</button>
+      <span class="status" id="g2_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 2. The algorithm, step by step.</b>
+      Thick orange arrows are parent links: the tree. Teal squares are acks.
+      Below each agent is its number of unacknowledged messages. The
+      checks on the right hold at every step. Watch <code>r</code> receive a
+      second message, from <code>s</code>: it is already on the tree, so it
+      acks at once. Then the tree shrinks from its leaves, each leaving agent
+      sending its held ack to its parent, until the initiator claims
+      termination.
+    </figcaption>
+  </figure>
+
+<h3>Why hold the ack?</h3>
+
+  <p>
+    Suppose an agent acked every message at once, including the one that
+    made it join. Then its parent's count could reach zero while it is still
+    a child, and the parent could leave the tree, or the initiator could
+    claim termination, while the child is still active.
+  </p>
+
+  <figure class="fig wideout">
+    <svg id="g3_g" viewBox="0 0 1240 580" role="img"
+         aria-label="With acks sent at once, p leaves the tree while its child r is active, and the initiator claims termination too early; with the ack held, the initiator waits"></svg>
+    <div class="ctrls">
+      <button id="g3_play" class="primary">Play</button>
+      <button id="g3_step">Step</button>
+      <button id="g3_reset">Reset</button>
+      <span class="sep"></span>
+      <button id="g3_immediate" class="on">Ack at once</button>
+      <button id="g3_hold">Hold the ack</button>
+      <span class="status" id="g3_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 3. Acking at once is wrong.</b>
+      The initiator sends a message to <code>p</code>, and <code>p</code> sends
+      one to <code>r</code>. With <i>Ack at once</i>, both acks come straight
+      back, so when <code>p</code> becomes idle it leaves the tree while its
+      child <code>r</code> is still active, and when the initiator becomes idle
+      it claims termination. The checks on the right turn red. With <i>Hold the
+      ack</i>, the initiator must wait until <code>r</code> and then
+      <code>p</code> have left the tree.
+    </figcaption>
+  </figure>
+
+<h2>5. Why it works</h2>
+
+  <div class="thm">
+    <span class="lead-in">Safety, informally</span>
+    <p>Each step keeps the invariant. A receiver becomes active and is on the
+      tree, either already or by joining under the sender, which is on the
+      tree. A sender is active, so it is on the tree. An agent that leaves is
+      idle and has no unacknowledged messages, so it has no children and no
+      messages in transit: removing it breaks nothing. Now, when the initiator
+      claims termination, it is idle and has no unacknowledged messages, so it
+      has no children: the tree is just the initiator. By the invariant, no
+      agent is active and no message is in transit. So the computation has
+      terminated.</p>
+  </div>
+
+  <div class="thm">
+    <span class="lead-in">Progress, informally</span>
+    <p>Suppose the computation has terminated. Then no agent sends another
+      message, and every message still in transit is an ack. Acks arrive.
+      Every leaf of the tree is idle and, once its acks have arrived, has no
+      unacknowledged messages, so it leaves, sending an ack to its parent.
+      The tree loses an agent each time, so it shrinks to the initiator, which
+      then claims termination.</p>
+  </div>
+
+  <figure class="fig wideout">
+    <svg id="g4_g" viewBox="0 0 1240 580" role="img"
+         aria-label="A tree of all six agents; the computation terminates as agents become idle; leaves leave the tree one by one, the tree size falls from 6 to 1, and the initiator claims termination"></svg>
+    <div class="ctrls">
+      <button id="g4_play" class="primary">Play</button>
+      <button id="g4_step">Step</button>
+      <button id="g4_reset">Reset</button>
+      <span class="status" id="g4_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 4. The tree shrinks.</b>
+      All six agents are on the tree, and no more messages will be sent. The
+      agents become idle; then the leaves leave the tree one at a time, each
+      sending its held ack up. The number of agents on the tree falls from 6
+      to 1, and the initiator claims termination.
+    </figcaption>
+  </figure>
+
+  <figure class="fig wideout">
+    <svg id="g5_g" viewBox="0 0 1240 580" role="img"
+         aria-label="The computation and the detection algorithm run together with random events; the checks on the right hold at every step, and once the computation terminates the initiator claims it"></svg>
+    <div class="ctrls">
+      <button id="g5_play" class="primary">Play</button>
+      <button id="g5_step">Step</button>
+      <button id="g5_reset">Reset</button>
+      <span class="status" id="g5_status"></span>
+    </div>
+    <figcaption>
+      <b>Figure 5. The whole algorithm, at random.</b>
+      Agents send messages, become idle and become active again, in random
+      order, until 30 messages have been sent; after that the computation can
+      only wind down. The checks on the right hold at every step, and
+      <code>claim</code> becomes true only after the computation has
+      terminated. Press <i>Reset</i> for a different run.
+    </figcaption>
+  </figure>
+
+<h2>6. Notes</h2>
+
+  <p>
+    The algorithm is due to E. W. Dijkstra and C. S. Scholten,
+    &ldquo;Termination detection for diffusing computations&rdquo;
+    (<i>Information Processing Letters</i>, 1980). They call an ack a
+    <b>signal</b>, and an agent's number of unacknowledged messages its
+    <b>deficit</b>. The cost is one ack for every message. The tree is another
+    example of a distributed data structure maintained by the actions of all
+    the agents, none of which sees all of it.
+  </p>
+
+</div>
+
+<script>
+/* DCModel: a diffusing computation with Dijkstra-Scholten termination detection.
+   ack 'hold'      : a process that joins the tree holds the ack of the message that made it join (correct).
+   ack 'immediate' : every message is acked at once (the mistake).
+   ack 'none'      : no detection at all, just the computation.
+   Channels are FIFO, one for each direction of each edge; budget bounds the number of messages sent. */
+function DCModel(cfg){
+  const V=cfg.procs, E=cfg.edges, ROOT=cfg.root, MODE=cfg.ack||'hold';
+  const NB={}; V.forEach(function(v){ NB[v]=[]; }); E.forEach(function(e){ NB[e[0]].push(e[1]); NB[e[1]].push(e[0]); });
+  function init(budget){
+    const s={act:{}, parent:{}, unacked:{}, ch:{}, claim:false, budget:budget==null? 1e9 : budget};
+    V.forEach(function(v){ s.act[v]=(v===ROOT); s.parent[v]=null; s.unacked[v]=0; NB[v].forEach(function(w){ s.ch[v+'>'+w]=[]; }); });
+    return s;
+  }
+  function copy(s){ return JSON.parse(JSON.stringify(s)); }
+  function onTree(s,v){ return v===ROOT || s.parent[v]!==null; }
+  /* an idle process with nothing unacknowledged leaves the tree, acking its parent */
+  function tryLeave(s,v){
+    if(MODE==='none') return;
+    if(v===ROOT){ if(!s.act[v] && s.unacked[v]===0) s.claim=true; return; }
+    if(!s.act[v] && s.parent[v]!==null && s.unacked[v]===0 && MODE==='hold'){
+      s.ch[v+'>'+s.parent[v]].push({k:'ack'}); s.parent[v]=null; }
+  }
+  function acts(s){
+    const L=[];
+    V.forEach(function(v){
+      if(s.act[v]){ if(s.budget>0) NB[v].forEach(function(w){ L.push({k:'send', v:v, w:w}); }); L.push({k:'idle', v:v}); }
+    });
+    Object.keys(s.ch).forEach(function(c){ if(s.ch[c].length){ const p=c.split('>'); L.push({k:'deliver', c:c, from:p[0], v:p[1], m:s.ch[c][0]}); } });
+    return L;
+  }
+  function apply(s0,x){
+    const s=copy(s0);
+    if(x.k==='send'){ s.ch[x.v+'>'+x.w].push({k:'msg'}); s.budget--; if(MODE!=='none') s.unacked[x.v]++; }
+    else if(x.k==='idle'){ s.act[x.v]=false; tryLeave(s,x.v); }
+    else if(x.k==='deliver'){ const m=s.ch[x.c].shift(), v=x.v, u=x.from;
+      if(m.k==='msg'){ s.act[v]=true;
+        if(MODE==='none'){}
+        else if(v!==ROOT && s.parent[v]===null){ s.parent[v]=u; if(MODE==='immediate') s.ch[v+'>'+u].push({k:'ack'}); }
+        else s.ch[v+'>'+u].push({k:'ack'}); }
+      else { s.unacked[v]--; tryLeave(s,v);
+        if(MODE==='immediate' && v!==ROOT && !s.act[v] && s.unacked[v]===0) s.parent[v]=null; }
+    }
+    if(MODE==='immediate' && x.k==='idle' && x.v!==ROOT && s.unacked[x.v]===0) s.parent[x.v]=null;
+    return s;
+  }
+  function terminated(s){ return V.every(function(v){ return !s.act[v]; }) && Object.keys(s.ch).every(function(c){ return !s.ch[c].some(function(m){ return m.k==='msg'; }); }); }
+  /* the invariant: the tree is rooted at the initiator and holds every active process and every sender of a message in transit */
+  function rooted(s,v){ let n=0; while(v!==ROOT){ if(s.parent[v]===null) return false; v=s.parent[v]; if(++n>V.length) return false; } return true; }
+  function inv(s){
+    return V.every(function(v){
+      if(s.parent[v]!==null && !rooted(s,v)) return false;
+      if(s.act[v] && !onTree(s,v)) return false;
+      return NB[v].every(function(w){ return !s.ch[v+'>'+w].some(function(m){ return m.k==='msg'; }) || onTree(s,v); }); });
+  }
+  function children(s,v){ return V.filter(function(w){ return s.parent[w]===v; }); }
+  function key(s){ return JSON.stringify(s); }
+  return {V:V, E:E, NB:NB, ROOT:ROOT, MODE:MODE, init:init, acts:acts, apply:apply, terminated:terminated, inv:inv, onTree:onTree, children:children, key:key, rooted:rooted};
+}
+
+/* DV: drawing the agents, channels, messages, acks and the tree, and describing each event */
+window.DV=(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const C={ink:'#1a1a2e', muted:'#6f7583', line:'#cfc9bc', red:'#d6301b', blue:'#1a5fd0', green:'#2f9e44',
+           orange:'#d13d0e', teal:'#00947d', purple:'#7b3fa0', idle:'#d8f0dc', act:'#e6d8f7'};
+  const V=['init','p','q','r','s','u'];
+  const E=[['init','p'],['init','q'],['p','q'],['p','r'],['q','s'],['r','s'],['r','u'],['s','u']];
+  const POS={init:[150,290], p:[350,140], q:[350,440], r:[580,140], s:[580,440], u:[780,290]};
+  const R=32;
+  function el(t,a,txt){ const e=document.createElementNS(NS,t); for(const k in a) e.setAttribute(k,a[k]); if(txt!=null) e.textContent=txt; return e; }
+  function clear(n){ while(n.firstChild) n.removeChild(n.firstChild); }
+  function text(p,x,y,s,o){ o=o||{};
+    const t=el('text',{x:x, y:y, 'font-family':o.mono?'ui-monospace,Menlo,Consolas,monospace':'-apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial,sans-serif',
+      'font-size':o.size||15, 'font-weight':o.w||600, fill:o.fill||C.ink, 'text-anchor':o.anchor||'middle', 'dominant-baseline':'middle'}, s);
+    p.appendChild(t); return t; }
+  function head(g,x,y,ux,uy,col,s){ s=s||7; const px=-uy, py=ux;
+    g.appendChild(el('polygon',{points:x+','+y+' '+(x-ux*s*2+px*s)+','+(y-uy*s*2+py*s)+' '+(x-ux*s*2-px*s)+','+(y-uy*s*2-py*s), fill:col})); }
+  function model(ack){ return DCModel({procs:V, edges:E, root:'init', ack:ack}); }
+  function draw(svg,M,s,o){
+    o=o||{}; clear(svg);
+    const g=el('g',{}); svg.appendChild(g);
+    E.forEach(function(e){ const A=POS[e[0]], B=POS[e[1]];
+      g.appendChild(el('line',{x1:A[0], y1:A[1], x2:B[0], y2:B[1], stroke:C.line, 'stroke-width':2})); });
+    /* the tree: an arrow from each child to its parent */
+    if(M.MODE!=='none') V.forEach(function(v){ const p=s.parent[v]; if(p===null) return;
+      const A=POS[v], B=POS[p], dx=B[0]-A[0], dy=B[1]-A[1], L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
+      const broken=!M.onTree(s,p);
+      g.appendChild(el('line',{x1:A[0]+ux*R, y1:A[1]+uy*R, x2:B[0]-ux*(R+14), y2:B[1]-uy*(R+14), stroke:broken? C.red : C.orange, 'stroke-width':6, 'stroke-dasharray':broken? '9 6' : 'none'}));
+      head(g, B[0]-ux*(R+2), B[1]-uy*(R+2), ux, uy, broken? C.red : C.orange, 8); });
+    /* messages and acks, on the side of the line leading to their destination */
+    Object.keys(s.ch).forEach(function(c){ const q=s.ch[c]; if(!q.length) return;
+      const p=c.split('>'), A=POS[p[0]], B=POS[p[1]], dx=B[0]-A[0], dy=B[1]-A[1], L=Math.hypot(dx,dy), ux=dx/L, uy=dy/L;
+      q.forEach(function(m,i){ const f=0.3+0.13*i, x=A[0]+dx*f-uy*15, y=A[1]+dy*f+ux*15;
+        if(m.k==='msg') g.appendChild(el('circle',{cx:x, cy:y, r:9, fill:C.purple, stroke:'#fff', 'stroke-width':2}));
+        else g.appendChild(el('rect',{x:x-8, y:y-8, width:16, height:16, rx:3, fill:C.teal, stroke:'#fff', 'stroke-width':2}));
+        head(g, x+ux*20, y+uy*20, ux, uy, m.k==='msg'? C.purple : C.teal, 4); }); });
+    V.forEach(function(v){ const P=POS[v], a=s.act[v];
+      if(o.hl===v) g.appendChild(el('circle',{cx:P[0], cy:P[1], r:R+7, fill:'none', stroke:C.blue, 'stroke-width':2.5, 'stroke-dasharray':'6 4'}));
+      if(v==='init') g.appendChild(el('circle',{cx:P[0], cy:P[1], r:R+6, fill:'none', stroke:C.ink, 'stroke-width':2}));
+      g.appendChild(el('circle',{cx:P[0], cy:P[1], r:R, fill:a? C.act : C.idle, stroke:a? C.purple : C.green, 'stroke-width':3}));
+      text(g, P[0], P[1]+1, v, {size:v==='init'? 14 : 19, w:800});
+      text(g, P[0], P[1]+R+(v==='init'? 24 : 18), a? 'active' : 'idle', {size:13, w:700, fill:a? C.purple : C.green});
+      if(M.MODE!=='none') text(g, P[0], P[1]+R+(v==='init'? 42 : 36), 'unacked '+s.unacked[v], {size:13, w:700, fill:C.muted}); });
+  }
+  function narrate(M,s0,x,s1){
+    if(x.k==='send') return x.v+' sends a message to '+x.w+'.'+(M.MODE!=='none'? ' It now has '+s1.unacked[x.v]+' unacknowledged.' : '');
+    if(x.k==='idle'){ let t=x.v+' becomes idle.';
+      if(M.MODE==='none') return t;
+      if(x.v==='init'){ if(s1.claim && !s0.claim) t+=' It has no unacknowledged messages, so it claims that the computation has terminated.';
+        else if(s1.unacked.init>0) t+=' It still has '+s1.unacked.init+' unacknowledged, so it cannot claim termination yet.'; return t; }
+      if(s0.parent[x.v]!==null && s1.parent[x.v]===null) t+=' It has no unacknowledged messages, so it leaves the tree'+(M.MODE==='hold'? ', sending the held ack to '+s0.parent[x.v] : '')+'.';
+      else if(s1.parent[x.v]!==null) t+=' It still has '+s1.unacked[x.v]+' unacknowledged, so it stays on the tree.';
+      return t; }
+    if(x.m.k==='msg'){ let t='The message from '+x.from+' reaches '+x.v+(s0.act[x.v]? '.' : ', which becomes active.');
+      if(M.MODE==='none') return t;
+      if(s0.parent[x.v]===null && s1.parent[x.v]!==null) t+=' '+x.v+' was off the tree: it joins with parent '+x.from+(M.MODE==='hold'? ', and holds the ack.' : ', and acks at once.');
+      else t+=' '+x.v+' is already on the tree, so it acks at once.';
+      return t; }
+    let t='The ack from '+x.from+' reaches '+x.v+'; '+x.v+' has '+s1.unacked[x.v]+' unacknowledged left.';
+    if(x.v==='init' && s1.claim && !s0.claim) t+=' The initiator is idle with nothing unacknowledged: it claims termination.';
+    else if(s0.parent[x.v]!==null && s1.parent[x.v]===null) t+=' It is idle, so it leaves the tree'+(M.MODE==='hold'? ', sending its held ack to '+s0.parent[x.v] : '')+'.';
+    return t;
+  }
+  function where(x){ return x.k==='deliver'? x.v : x.v; }
+  function wrap(s,n){ const w=s.split(' '), out=[]; let cur='';
+    w.forEach(function(x){ if((cur+' '+x).trim().length>n){ out.push(cur.trim()); cur=x; } else cur+=' '+x; }); if(cur.trim()) out.push(cur.trim()); return out; }
+  function side(svg,msg,col){ wrap(msg,36).forEach(function(l,i){ text(svg, 900, 60+i*26, l, {anchor:'start', size:16, w:700, fill:col||C.ink}); }); }
+  /* the three parts of the invariant, and the claim */
+  function checks(svg,M,s,y){
+    const V0=M.V, part1=V0.every(function(v){ return s.parent[v]===null || M.rooted(s,v); }),
+      part2=V0.every(function(v){ return !s.act[v] || M.onTree(s,v); }),
+      part3=V0.every(function(v){ return M.NB[v].every(function(w){ return !s.ch[v+'>'+w].some(function(m){ return m.k==='msg'; }) || M.onTree(s,v); }); }),
+      term=M.terminated(s), claimOK=!s.claim || term;
+    const L=[['Parent links lead to the initiator', part1], ['Every active agent is on the tree', part2], ['Every sender of a message in transit is on the tree', part3]];
+    text(svg, 900, y, 'The invariant', {anchor:'start', size:13, w:800, fill:C.muted});
+    L.forEach(function(l,i){ wrap(l[0],34).forEach(function(t,j){ text(svg, 900+(j? 18 : 0), y+26+i*44+j*18, (j? '' : (l[1]? '✓ ' : '✗ '))+t, {anchor:'start', size:14, w:700, fill:l[1]? C.teal : C.red}); }); });
+    text(svg, 900, y+170, 'claim = '+s.claim, {anchor:'start', size:17, w:800, fill:claimOK? (s.claim? C.teal : C.ink) : C.red});
+    text(svg, 900, y+196, term? 'The computation has terminated.' : 'The computation has not terminated.', {anchor:'start', size:14, w:700, fill:C.muted});
+    if(!claimOK) text(svg, 900, y+222, 'The claim is false!', {anchor:'start', size:15, w:800, fill:C.red});
+  }
+  function player(pfx, step, reset, gap){
+    const $=function(id){ return document.getElementById(pfx+id); };
+    let timer=null;
+    function stop(){ if(timer){ clearInterval(timer); timer=null; } $('play').textContent='Play'; }
+    $('play').addEventListener('click', function(){ if(timer){ stop(); return; } $('play').textContent='Pause';
+      timer=setInterval(function(){ if(!step()) stop(); }, gap); });
+    $('step').addEventListener('click', function(){ stop(); step(); });
+    $('reset').addEventListener('click', function(){ stop(); reset(); });
+    return {stop:stop};
+  }
+  function find(M,s,st){ const L=M.acts(s);
+    if(st[0]==='send') return L.find(function(y){ return y.k==='send' && y.v===st[1] && y.w===st[2]; });
+    if(st[0]==='idle') return L.find(function(y){ return y.k==='idle' && y.v===st[1]; });
+    return L.find(function(y){ return y.k==='deliver' && y.c===st[1]; }); }
+  return {C:C, V:V, E:E, POS:POS, el:el, clear:clear, text:text, model:model, draw:draw, narrate:narrate, where:where,
+          wrap:wrap, side:side, checks:checks, player:player, find:find};
+})();
+
+/* a figure that plays a script; scripts[mode] is a list of steps */
+function dcScripted(pfx, scripts, opts){
+  const svg=document.getElementById(pfx+'g'); if(!svg) return;
+  const $=function(id){ return document.getElementById(pfx+id); };
+  const modes=Object.keys(scripts);
+  let mode=modes[0], M, s, k, msg, hl;
+  function reset(){ M=DV.model(mode); s=M.init(opts.budget==null? 99 : opts.budget);
+    if(opts.prefix) opts.prefix.forEach(function(st){ s=M.apply(s, DV.find(M,s,st)); });
+    k=0; hl=null; msg=opts.start[mode]||opts.start; render(); }
+  function step(){
+    const steps=scripts[mode]; if(k>=steps.length) return false;
+    let x;
+    if(steps[k]==='auto'){ const L=M.acts(s); if(!L.length) return false; x=L.find(function(y){ return y.k==='idle'; })||L[0]; }
+    else x=DV.find(M,s,steps[k]);
+    if(!x){ console.error('script step not enabled', pfx, steps[k]); return false; }
+    const s1=M.apply(s,x); msg=DV.narrate(M,s,x,s1); hl=DV.where(x); s=s1; k++; render(); return true; }
+  function render(){
+    DV.draw(svg,M,s,{hl:hl});
+    DV.side(svg,msg);
+    if(opts.panel) opts.panel(svg,M,s,k,mode);
+    $('status').innerHTML='step <b>'+k+'</b> of '+scripts[mode].length; }
+  const pl=DV.player(pfx, step, reset, opts.gap||1500);
+  if(modes.length>1) modes.forEach(function(m){ $(m).addEventListener('click', function(){ mode=m; modes.forEach(function(z){ $(z).className=z===m? 'on' : ''; }); pl.stop(); reset(); }); });
+  reset();
+}
+
+/* Figure 1 — the computation, and a state that only looks terminated */
+dcScripted('g1_', {none:[['send','init','p'],['d','init>p'],['send','p','r'],['idle','init'],['d','p>r'],['send','r','u'],['idle','p'],['idle','r'],['d','r>u'],['idle','u']]},
+  {start:'Press Play or Step. The initiator is active; every other agent is idle, and every channel is empty.',
+   panel:function(svg,M,s){ const allIdle=M.V.every(function(v){ return !s.act[v]; }),
+       empty=Object.keys(s.ch).every(function(c){ return !s.ch[c].length; }), T=allIdle && empty;
+     [['Every agent idle?', allIdle], ['Every channel empty?', empty], ['Terminated?', T]].forEach(function(l,i){
+       DV.text(svg, 900, 330+i*32, l[0]+'  '+(l[1]? 'yes' : 'no'), {anchor:'start', size:16, w:800, fill:l[1]? DV.C.teal : DV.C.ink}); });
+     if(allIdle && !empty) DV.text(svg, 900, 440, 'Every agent is idle, but a message', {anchor:'start', size:15, w:700, fill:DV.C.red});
+     if(allIdle && !empty) DV.text(svg, 900, 462, 'is in transit: not terminated.', {anchor:'start', size:15, w:700, fill:DV.C.red}); }});
+
+/* Figure 2 — the algorithm, step by step */
+dcScripted('g2_', {hold:[['send','init','p'],['send','init','q'],['d','init>p'],['d','init>q'],['send','p','r'],['d','p>r'],['send','q','s'],['d','q>s'],
+  ['send','s','r'],['d','s>r'],['d','r>s'],['idle','init'],['idle','p'],['idle','r'],['d','r>p'],['d','p>init'],['idle','s'],['d','s>q'],['idle','q'],['d','q>init']]},
+  {start:'Press Play or Step. Only the initiator is on the tree.', gap:1700, panel:function(svg,M,s){ DV.checks(svg,M,s,300); }});
+
+/* Figure 3 — acking at once is wrong */
+dcScripted('g3_', {
+  immediate:[['send','init','p'],['d','init>p'],['d','p>init'],['send','p','r'],['d','p>r'],['d','r>p'],['idle','p'],['idle','init']],
+  hold:[['send','init','p'],['d','init>p'],['send','p','r'],['d','p>r'],['idle','p'],['idle','init'],['idle','r'],['d','r>p'],['d','p>init']]},
+  {start:{immediate:'Press Play or Step. Every message will be acked at once.', hold:'Press Play or Step. An agent that joins the tree holds the ack.'},
+   gap:1600, panel:function(svg,M,s){ DV.checks(svg,M,s,300); }});
+
+/* Figure 4 — after the computation terminates, the tree shrinks to the initiator */
+dcScripted('g4_', {hold:Array(11).fill('auto')},
+  {budget:5, prefix:[['send','init','p'],['send','init','q'],['d','init>p'],['d','init>q'],['send','p','r'],['d','p>r'],['send','q','s'],['d','q>s'],['send','r','u'],['d','r>u']],
+   start:'Every agent is on the tree and active, and no more messages will be sent.', gap:1300,
+   panel:function(svg,M,s){ const n=M.V.filter(function(v){ return M.onTree(s,v); }).length;
+     DV.text(svg, 900, 330, 'Agents on the tree: '+n, {anchor:'start', size:22, w:800, fill:n===1? DV.C.teal : DV.C.ink});
+     DV.text(svg, 900, 370, 'claim = '+s.claim, {anchor:'start', size:17, w:800, fill:s.claim? DV.C.teal : DV.C.ink});
+     DV.text(svg, 900, 400, M.terminated(s)? 'The computation has terminated.' : 'The computation has not terminated.', {anchor:'start', size:14, w:700, fill:DV.C.muted}); }});
+
+/* Figure 5 — the whole algorithm with random events */
+(function(){
+  const pfx='g5_', svg=document.getElementById(pfx+'g'); if(!svg) return;
+  const $=function(id){ return document.getElementById(pfx+id); };
+  const M=DV.model('hold');
+  let s, k, msg, hl, after;
+  function reset(){ s=M.init(30); k=0; hl=null; after=0; msg='Press Play. The initiator is active; 30 messages may be sent.'; render(); }
+  function step(){
+    if(s.claim){ after++; if(after>1) return false; }
+    const L=M.acts(s); if(!L.length) return false;
+    const W=L.map(function(x){ return x.k==='send'? 1 : (x.k==='idle'? 0.6 : 1.5); });
+    let r=Math.random()*W.reduce(function(a,b){ return a+b; },0), x=L[0];
+    for(let i=0;i<L.length;i++){ r-=W[i]; if(r<=0){ x=L[i]; break; } }
+    const s1=M.apply(s,x); msg=DV.narrate(M,s,x,s1); hl=DV.where(x); s=s1; k++; render(); return true; }
+  function render(){
+    DV.draw(svg,M,s,{hl:hl}); DV.side(svg,msg); DV.checks(svg,M,s,300);
+    DV.text(svg, 900, 550, 'Messages left to send: '+s.budget, {anchor:'start', size:14, w:700, fill:DV.C.muted});
+    $('status').innerHTML='step <b>'+k+'</b>'; }
+  DV.player(pfx, step, reset, 700);
+  reset();
+})();
+</script>
+</body>
+</html>
