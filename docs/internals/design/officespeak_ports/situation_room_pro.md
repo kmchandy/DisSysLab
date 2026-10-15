@@ -48,37 +48,38 @@ Riley's out is intelligence_display, jsonl_recorder_briefing.
 `office.md`
 
 ```
-# Office: situation_room_pro
+sources:
+    bbc_world(max_articles=3)
+    npr_news(max_articles=3)
+    al_jazeera(max_articles=3)
 
-Sources: bbc_world(max_articles=3), npr_news(max_articles=3), al_jazeera(max_articles=3)
-Sinks: intelligence_display, jsonl_recorder(path="briefings.jsonl")
+sinks:
+    intelligence_display(title="headline", text="summary", color="severity")
+    jsonl_recorder(path="briefings.jsonl")
 
-Agents:
-Sasha is a deduplicator(by="url").
-Eve is an entity_extractor.
-Sam is a severity_classifier.
-Tom is a topic_tagger.
-Greta is a geolocator.
-Sync is a synchronizer(inboxes=["entities", "severity", "topic", "location"], on="url").
-Riley is a writer.
-Riley's AI is anthropic.
+agents:
+    Sasha: deduplicator(by="url")
+    Eve: entity_extractor
+    Sam: severity_classifier
+    Tom: topic_tagger
+    Greta: geolocator
+    Sync: synchronizer(on="url")
+    Riley: writer(ai="anthropic")
 
-Connections:
-bbc_world's out is Sasha.
-npr_news's out is Sasha.
-al_jazeera's out is Sasha.
-Sasha's out is Eve, Sam, Tom, Greta.
-Eve's out is Sync's entities.
-Sam's out is Sync's severity.
-Tom's out is Sync's topic.
-Greta's out is Sync's location.
-Sync's out is Riley.
-Riley's out is intelligence_display, jsonl_recorder.
+connections:
+    bbc_world, npr_news, al_jazeera -> Sasha -> Eve, Sam, Tom, Greta
+    Eve -> Sync.entities
+    Sam -> Sync.severity
+    Tom -> Sync.topic
+    Greta -> Sync.location
+    Sync -> Riley -> intelligence_display, jsonl_recorder
 ```
 
-`roles/` is empty and is deleted. "Pro" is now one visible line,
-`Riley's AI is anthropic.`, which the spec already has (3.2). `on="url"` on
-Sync is a proposal (finding 2).
+(Written in the line form of spec §3.0, settled 16 October, and with the
+display arguments of finding 4, since settled.)
+
+`roles/` is empty and is deleted. "Pro" is now one visible argument,
+`ai="anthropic"` on Riley. `on="url"` on Sync was finding 2, since settled.
 
 ### Built-in roles, new front matter
 
@@ -159,7 +160,7 @@ current one keeps a `set`, which is not serializable. This one keeps a list.)
 
 ## Findings for the spec
 
-1. **Per-role backend is already settled.** `Riley's AI is anthropic.`
+1. **Per-role backend is already settled.** `Riley's AI is anthropic.` (now `ai="anthropic"`, spec §3.0)
    replaces a 70-line override file that imported `dissyslab` and shadowed a
    built-in, both now errors. Good test of the spec: the "pro" idea becomes
    one visible line. *No change.*
@@ -211,7 +212,7 @@ current one keeps a `set`, which is not serializable. This one keeps a list.)
    only so one office can have two `jsonl_recorder`s (likewise
    `slack_sink_alerts`, `gmail_sink_match`, …, about fifteen aliases).
    **Proposal:** sources and sinks may be named like agents:
-   `Sinks: briefings is a jsonl_recorder(path="briefings.jsonl").`; an unnamed
+   `briefings: jsonl_recorder(path="briefings.jsonl")` under `sinks:`; an unnamed
    one is called by its component name. The aliases retire. Not needed here,
    since this office has one recorder.
 

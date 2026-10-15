@@ -45,24 +45,29 @@ All three roles are Python, generated, and import `dissyslab`:
 ## Port A: faithful, with `select`
 
 ```
-Sources: tickets is a file_source(filepath="tickets.jsonl")
-Sinks: jsonl_recorder(path="outcomes.jsonl"), console_printer
+sources:
+    tickets: file_source(path="tickets.jsonl")
 
-Agents:
-Sel is a select(inboxes=["ticket", "reply"]).
-Clerk is a clerk.
-Manager is a manager.
-Rex is a router(on="msg_type").
+sinks:
+    jsonl_recorder(path="outcomes.jsonl")
+    console_printer
 
-Connections:
-tickets's out is Sel's ticket.
-Sel's out is Clerk.
-Clerk's out is Rex.
-Rex's log is jsonl_recorder, console_printer.
-Rex's ask is Manager.
-Rex's command is Sel's command.
-Manager's out is Sel's reply.
+agents:
+    Sel: select
+    Clerk: clerk
+    Manager: manager
+    Rex: router(on="msg_type")
+
+connections:
+    tickets -> Sel.ticket
+    Manager -> Sel.reply
+    Sel -> Clerk -> Rex
+    Rex.log -> jsonl_recorder, console_printer
+    Rex.ask -> Manager
+    Rex.command -> Sel.command
 ```
+
+(Not adopted: `select` was removed from the spec after this port.)
 
 Clerk becomes a stateful author returning two messages per step, with
 `out: msg_type (log | ask | command)` and three conditional `out if` lines.
@@ -86,29 +91,30 @@ The desk's real rule is: **one ticket at a time, finished before the next.**
 That is exactly the built-in gate.
 
 ```
-# Office: returns_desk
+sources:
+    tickets: file_source(path="tickets.jsonl")
 
-Sources: tickets is a file_source(filepath="tickets.jsonl")
-Sinks: jsonl_recorder(path="outcomes.jsonl"), console_printer
+sinks:
+    jsonl_recorder(path="outcomes.jsonl")
+    console_printer
 
-Agents:
-Gate is a gate.
-Clerk is a clerk(limit=50).
-Rex is a router(on="clerk_decision").
-Manager is a manager.
+agents:
+    Gate: gate
+    Clerk: clerk(limit=50)
+    Rex: router(on="clerk_decision")
+    Manager: manager
 
-Connections:
-tickets's out is Gate.
-Gate's out is Clerk.
-Clerk's out is Rex.
-Rex's approve is jsonl_recorder, console_printer, Gate's done.
-Rex's escalate is Manager.
-Manager's out is jsonl_recorder, console_printer, Gate's done.
+connections:
+    tickets -> Gate -> Clerk -> Rex
+    Rex.approve -> jsonl_recorder, console_printer, Gate.done
+    Rex.escalate -> Manager -> jsonl_recorder, console_printer, Gate.done
 ```
 
+(Written in the line form of spec §3.0, settled 16 October.)
+
 ```
-tickets → Gate → Clerk → Rex ─ approve ──→ log, Gate's done
-           ↑               └─ escalate → Manager → log, Gate's done
+tickets → Gate → Clerk → Rex ─ approve ──→ log, Gate.done
+           ↑               └─ escalate → Manager → log, Gate.done
            └────────────────────────────────────────────┘
 ```
 

@@ -55,44 +55,42 @@ Riley's finish is jsonl_recorder, Sasha, debate_display.
 ## After
 
 ```
-# Office: debate
+sources:
+    problems: file_source(path="problems.jsonl")
 
-Sources: problems is a file_source(filepath="problems.jsonl")
-Sinks: answers is a jsonl_recorder(path="debate_answers.jsonl"),
-       transcript is a jsonl_recorder(path="debate_transcript.jsonl"),
-       debate_display
+sinks:
+    answers: jsonl_recorder(path="debate_answers.jsonl")
+    transcript: jsonl_recorder(path="debate_transcript.jsonl")
+    debate_display
 
-Agents:
-Gate is a gate.
-Qwen is a qwen.
-Qwen's AI is openrouter.
-GPT is a gpt.
-GPT's AI is openai.
-Claude is a claude.
-Claude's AI is anthropic.
-Sync is a synchronizer(inboxes=["qwen", "gpt", "claude"], on="problem_id").
-Riley is a moderator.
-Ref is a referee(max_rounds=2).
-Rex is a router(on="next").
+agents:
+    Gate: gate
+    Qwen: qwen(ai="openrouter")
+    GPT: gpt(ai="openai")
+    Claude: claude(ai="anthropic")
+    Sync: synchronizer(on="problem_id")
+    Riley: moderator
+    Ref: referee(max_rounds=2)
+    Rex: router(on="next")
 
-Connections:
-problems's out is Gate.
-Gate's out is Qwen, GPT, Claude.
-Qwen's out is Sync's qwen.
-GPT's out is Sync's gpt.
-Claude's out is Sync's claude.
-Sync's out is Riley, transcript.
-Riley's out is Ref.
-Ref's out is Rex, debate_display.
-Rex's continue is Qwen, GPT, Claude.
-Rex's finish is answers, Gate's done.
+connections:
+    problems -> Gate -> Qwen, GPT, Claude
+    Qwen -> Sync.qwen
+    GPT -> Sync.gpt
+    Claude -> Sync.claude
+    Sync -> Riley -> Ref -> Rex, debate_display
+    Sync -> transcript
+    Rex.continue -> Qwen, GPT, Claude
+    Rex.finish -> answers, Gate.done
 ```
+
+(Written in the line form of spec §3.0, settled 16 October.)
 
 ```
 problems → Gate → Qwen ┐
             ↑     GPT  ┼→ Sync → Riley → Ref → Rex ─ continue → Qwen, GPT, Claude
             │     Claude┘   └→ transcript   └→ debate_display
-            └────────────────────────────────────── finish → Gate's done, answers
+            └────────────────────────────────────── finish → Gate.done, answers
 ```
 
 **Who does what.** The models judge; Python keeps the rules.

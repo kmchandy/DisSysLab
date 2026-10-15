@@ -42,25 +42,28 @@ CHECKER's out is console_printer.
 ## After
 
 ```
-# Office: room_climate_monitor
+sources:
+    temp_sensor: file_source(path="temp.jsonl")
+    humidity_sensor: file_source(path="humidity.jsonl")
 
-Sources: temp_sensor is a file_source(filepath="temp.jsonl"),
-         humidity_sensor is a file_source(filepath="humidity.jsonl")
-Sinks: console_printer, discard
+sinks:
+    console_printer
+    discard
 
-Agents:
-Join is a synchronizer(inboxes=["temp", "humidity"], on="slot").
-Checker is a checker(max_temp=80, max_humidity=60).
-Rex is a router(on="alert").
+agents:
+    Join: synchronizer(on="slot")
+    Checker: checker(max_temp=80, max_humidity=60)
+    Rex: router(on="alert")
 
-Connections:
-temp_sensor's out is Join's temp.
-humidity_sensor's out is Join's humidity.
-Join's out is Checker.
-Checker's out is Rex.
-Rex's yes is console_printer.
-Rex's no is discard.
+connections:
+    temp_sensor -> Join.temp
+    humidity_sensor -> Join.humidity
+    Join -> Checker -> Rex
+    Rex.yes -> console_printer
+    Rex.no -> discard
 ```
+
+(Written in the line form of spec §3.0, settled 16 October.)
 
 ```
 temp_sensor ─────→ Join's temp     ┐

@@ -44,22 +44,25 @@ Otherwise send to discard.
 `office.md`
 
 ```
-# Office: news_filter
+sources:
+    al_jazeera(max_articles=2)
+    bbc_world(max_articles=2)
 
-Sources: al_jazeera(max_articles=2), bbc_world(max_articles=2)
-Sinks: console_printer, jsonl_recorder(path="filtered_output.jsonl")
+sinks:
+    console_printer
+    jsonl_recorder(path="filtered_output.jsonl")
 
-Agents:
-Felix is a topic_filter.
-Rex is a router(on="on_topic").
+agents:
+    Felix: topic_filter
+    Rex: router(on="on_topic")
 
-Connections:
-al_jazeera's out is Felix.
-bbc_world's out is Felix.
-Felix's out is Rex.
-Rex's yes is console_printer.
-Rex's no is jsonl_recorder.
+connections:
+    al_jazeera, bbc_world -> Felix -> Rex
+    Rex.yes -> console_printer
+    Rex.no -> jsonl_recorder
 ```
+
+(Written in the line form of spec §3.0, settled 16 October.)
 
 `roles/topic_filter.md`
 

@@ -43,37 +43,234 @@ kinds: **annotator** and **author**.
 
 ## 3. The office file
 
-Sections, agent forms and the possessive connection form are unchanged from
-today's grammar except where stated.
+### 3.0 Syntax (Settled, 16 October: replaces the English sentence form)
 
-### 3.1 Sections (Settled: unchanged)
+The students know Python. The office file therefore drops the English
+sentences (`Rex is a router(…)`, `Eve's out is Rex.`) for a format with two
+kinds of line, and borrows Python's syntax for arguments. It is a data file,
+not a Python file: it cannot run anything, so `dsl check` can reason about it
+statically and its errors talk about agents and ports. (YAML was considered
+and rejected: connections do not fit it, and it reads `yes`/`no`/`on` as
+booleans.)
 
-`# Office: <name>`, `Sources:`, `Sinks:`, `Agents:`, `Connections:`, and, for
-an office meant to sit inside another, `Inputs:` and `Outputs:`.
+**Example** (`room_climate_monitor`):
+
+```
+# room_climate_monitor: alert when the room is both hot and humid
+
+sources:
+    temp_sensor: file_source(path="temp.jsonl")
+    humidity_sensor: file_source(path="humidity.jsonl")
+
+sinks:
+    console_printer
+    discard
+
+agents:
+    Join: synchronizer(on="slot")
+    Checker: checker(max_temp=80, max_humidity=60)
+    Rex: router(on="alert")
+
+connections:
+    temp_sensor -> Join.temp
+    humidity_sensor -> Join.humidity
+    Join -> Checker -> Rex
+    Rex.yes -> console_printer
+    Rex.no -> discard
+```
+
+**Sections.** `sources:`, `sinks:`, `agents:`, `connections:`, and for an office
+meant to sit inside another, `inputs:` and `outputs:`. The office's name is its
+folder's name; there is no title line. `#` starts a comment, outside quotes.
+
+**Declarations:** one per line, in `sources:`, `sinks:` and `agents:`.
+
+| Line | Means |
+|---|---|
+| `name: kind(arg=value, …)` | a `kind` called `name`, built with these arguments |
+| `name: kind` | the same with no arguments |
+| `kind(arg=value, …)` or `kind` | a `kind` whose name is the kind itself (`console_printer`, `bbc_world(max_articles=3)`) |
+| `Jay: unassigned` | a draft agent (3.5) |
+| `monitor: office(path="../news_monitor")` | a nested office (3.4) |
+
+- Names are Python identifiers and are case-sensitive. Every name used in a
+  connection must be declared; nothing is created implicitly.
+- Arguments are named, as in a Python call: strings in either quote style,
+  numbers, lists, `true`/`false` (or `True`/`False`). They are read with
+  Python's `ast.literal_eval`, never executed.
+- An English role takes one argument, `ai="<backend>"`: the model behind that
+  agent (`Riley: writer(ai="anthropic")`). It is about the agent, not the
+  prompt, so 4.2's "no parameters" still holds for the text. This replaces
+  `Riley's AI is anthropic.`
+- A kind declared in the wrong section (`file_source` under `sinks:`) is an
+  error.
+
+**Connections:** one or more per line, in `connections:`.
+
+| Line | Means |
+|---|---|
+| `a -> b` | `a.out -> b.in` |
+| `Rex.yes -> console_printer` | a named outbox (a router's value) |
+| `temp_sensor -> Join.temp` | a named inbox (a coordinator's, or an inner office's input) |
+| `Join -> Checker -> Rex` | a chain: `Join -> Checker` and `Checker -> Rex` |
+| `Gate -> Qwen, GPT, Claude` | fan-out: one connection to each |
+| `bbc_world, npr_news -> Sasha` | fan-in: one connection from each |
+
+- A port is written only when it is not the default `out` or `in`, with a dot,
+  as for a Python attribute. This is the notation of the lecture figures
+  (`A.out_0 -> B.in_0`).
+- A list (`a, b`) may stand only at either end of a chain.
+- **A synchronizer's inboxes are the names used in its connections.**
+  `temp_sensor -> Join.temp` creates the inbox `temp`; there is no
+  `inboxes=[…]` argument, so each name is written once. `dsl check` lists the
+  inboxes it found. A gate's inboxes are always `in` and `done`.
+- **A router's outboxes are its values** (section 5), so a value used for
+  routing must be a name: letters, digits and `_`, not starting with a digit,
+  or `true`/`false`. A role whose decision is a number routes on a field it
+  names instead. (This narrows 5's "numbers by their written form".)
+
+**Forgiving of:** spacing and indentation, blank lines, comments, either quote
+style, `true` or `True`, a trailing comma or period, `->` or `→`, `kind` or
+`kind()`, the case of section headings.
+
+**Not forgiving of:** an unknown kind, name or argument, or a port the
+component does not have. Each is an error naming the line and suggesting the
+nearest word. The parser never guesses.
+
+**Migration.** The English form is not accepted after the release. Only the
+examples kept for the first release (section 12) are rewritten, by hand; the
+rest of the gallery and apps is archived as it stands, not converted. There is
+no `dsl convert`. `dsl check` on an old file says it is in the old form and
+points to this section.
+
+| Old | New |
+|---|---|
+| `Sinks: briefings is a jsonl_recorder(path=…)` | `briefings: jsonl_recorder(path=…)` under `sinks:` |
+| `Rex is a router(on="verdict").` | `Rex: router(on="verdict")` |
+| `Sync is a synchronizer(inboxes=["a", "b"], on="url").` | `Sync: synchronizer(on="url")`, inboxes from the connections |
+| `Riley's AI is anthropic.` | `Riley: writer(ai="anthropic")` |
+| `news_monitor is an office at ../news_monitor.` | `news_monitor: office(path="../news_monitor")` |
+| `Eve's out is Rex.` | `Eve -> Rex` |
+| `Rex's publish is Editor.` | `Rex.publish -> Editor` |
+| `Eve's out is Sync's entities.` | `Eve -> Sync.entities` |
+| `Sasha's out is Eve, Sam.` | `Sasha -> Eve, Sam` |
+
+The rest of this document uses this form. The meanings settled in 3.1–3.5
+before 16 October are unchanged; only the spelling changed.
+
+**Tests of the syntax.** A throwaway parser (about 100 lines) read the three
+files below and produced the expected declarations and connections: 6, 17 and
+14 connections, with the synchronizer inboxes derived correctly.
+
+`situation_room_pro`:
+
+```
+sources:
+    bbc_world(max_articles=3)
+    npr_news(max_articles=3)
+    al_jazeera(max_articles=3)
+
+sinks:
+    intelligence_display(title="headline", text="summary", color="severity")
+    jsonl_recorder(path="briefings.jsonl")
+
+agents:
+    Sasha: deduplicator(by="url")
+    Eve: entity_extractor
+    Sam: severity_classifier
+    Tom: topic_tagger
+    Greta: geolocator
+    Sync: synchronizer(on="url")
+    Riley: writer(ai="anthropic")
+
+connections:
+    bbc_world, npr_news, al_jazeera -> Sasha -> Eve, Sam, Tom, Greta
+    Eve -> Sync.entities
+    Sam -> Sync.severity
+    Tom -> Sync.topic
+    Greta -> Sync.location
+    Sync -> Riley -> intelligence_display, jsonl_recorder
+```
+
+`debate`:
+
+```
+sources:
+    problems: file_source(path="problems.jsonl")
+
+sinks:
+    answers: jsonl_recorder(path="debate_answers.jsonl")
+    transcript: jsonl_recorder(path="debate_transcript.jsonl")
+    debate_display
+
+agents:
+    Gate: gate
+    Qwen: qwen(ai="openrouter")
+    GPT: gpt(ai="openai")
+    Claude: claude(ai="anthropic")
+    Sync: synchronizer(on="problem_id")
+    Riley: moderator
+    Ref: referee(max_rounds=2)
+    Rex: router(on="next")
+
+connections:
+    problems -> Gate -> Qwen, GPT, Claude
+    Qwen -> Sync.qwen
+    GPT -> Sync.gpt
+    Claude -> Sync.claude
+    Sync -> Riley -> Ref -> Rex, debate_display
+    Sync -> transcript
+    Rex.continue -> Qwen, GPT, Claude
+    Rex.finish -> answers, Gate.done
+```
+
+What the tests showed:
+
+- The connections section shrinks from 10 sentences to 8 lines in `debate`,
+  and from 10 to 6 in `situation_room_pro` (fan-in on one line); the loop in
+  `debate` reads in two lines
+  (`Rex.continue -> …`, `Rex.finish -> …, Gate.done`).
+- `file_source` takes `filepath=` today and `jsonl_recorder` takes `path=`.
+  **To fix:** one name, `path`, for every component that reads or writes a
+  file.
+- `#` inside a quoted argument (`path="notes#1.txt"`) must not start a
+  comment; the parser must strip comments outside quotes only.
+
+### 3.1 Sections (Settled)
+
+`sources:`, `sinks:`, `agents:`, `connections:`, and, for an office meant to
+sit inside another, `inputs:` and `outputs:` (3.0).
 
 **Settled (port 2):** a source or sink may be named like an agent, so one
 office can hold two of the same kind:
-`Sinks: briefings is a jsonl_recorder(path="briefings.jsonl"), console_printer`.
+
+```
+sinks:
+    briefings: jsonl_recorder(path="briefings.jsonl")
+    archive: jsonl_recorder(path="archive.jsonl")
+    console_printer
+```
+
 An unnamed one is called by its component name. The aliases that exist only to
 give a second copy a name (`jsonl_recorder_briefing`, `slack_sink_alerts`,
 `gmail_sink_match`, …, about fifteen) retire.
 
-### 3.2 Agent lines
+### 3.2 Agent lines (Settled)
 
-| Form | Means | Status |
-|---|---|---|
-| `<Name> is a[n] <role>.` | an English or Python role | Settled |
-| `<Name> is a[n] <role>(k=v, …).` | a Python role constructed with these keyword arguments | Settled |
-| `<Name> is a router(on="<field>").` | a router (section 5) | Settled |
-| `<Name> is a synchronizer(inboxes=[…], on="<field>").` and the other coordinators | section 6 | Settled |
-| `<Name> is an office at <path>.` | a nested office (section 3.4) | Settled: the only form of composition |
-| `<Name> is unassigned.` | a draft agent (section 3.5) | Settled: kept |
-| `<Name>'s AI is <backend>.` | the model behind an English role | Settled: unchanged |
+| Form | Means |
+|---|---|
+| `Name: role` | an English or Python role |
+| `Name: role(k=v, …)` | a Python role constructed with these keyword arguments |
+| `Name: role(ai="<backend>")` | an English role with the model behind it named |
+| `Name: router(on="<field>")` | a router (section 5) |
+| `Name: synchronizer(on="<field>")`, `Name: gate`, `Name: record(…)` | coordinators (section 6) |
+| `Name: office(path="<path>")` | a nested office (3.4): the only form of composition |
+| `Name: unassigned` | a draft agent (3.5) |
 
-English roles take **no** arguments (section 4.2).
+English roles take no arguments except `ai` (3.0, 4.2).
 
-**Settled (port 3): how the word after "is a" is found.** `router`,
-`synchronizer`, `gate`, `record` and `unassigned` are reserved
+**Settled (port 3): how the kind after the colon is found.** `router`,
+`synchronizer`, `gate`, `record`, `office` and `unassigned` are reserved
 words, built in. A nested office is found by its path. Every other name (a
 role, source or sink) is searched for first in the office's own folder
 (`roles/`, `sources/`, `sinks/`), then in the built-ins. A local file may not
@@ -83,12 +280,10 @@ no DisSysLab import.
 
 ### 3.3 Connections
 
-- Form unchanged: `<Name>'s <port> is <recipient(s)>.` Fan-out by listing
-  several recipients. Into a named inbox: `<Recipient>'s <port>`.
-  **Settled (port 5):** one form is taught and generated, `is` with commas;
-  `are … and …` is still accepted, since it hides nothing.
-- **A role has one outbox, always called `out`:** `Eve's out is Rex.` (Settled)
-- **A router's outboxes are named by values:** `Rex's publish is Editor.`
+- Form: `a -> b`, with chains, fan-out and fan-in (3.0). A named port is
+  written with a dot: `Rex.publish -> Editor`, `Eve -> Sync.entities`.
+- **A role has one outbox, always called `out`:** `Eve -> Rex`. (Settled)
+- **A router's outboxes are named by values:** `Rex.publish -> Editor`.
   (Settled)
 - A role and a sink each have one unnamed inbox. Coordinators have named
   inboxes. (Settled)
@@ -99,26 +294,25 @@ no DisSysLab import.
 ### 3.4 Nested offices (Settled)
 
 - **One form of composition:** an agent line,
-  `news_monitor is an office at ../news_monitor.` The separate `network.md`
+  `news_monitor: office(path="../news_monitor")`. The separate `network.md`
   file with its own `Offices:` section is retired.
 - **An office's boundary ports always have explicit names,** declared in its
-  `Inputs:` and `Outputs:` sections (for example `Inputs: articles`,
-  `Outputs: briefings`). They are the office's interface, like a function's
-  parameter names. The `in`/`out` convention is for the single ports of
-  agents, sources and sinks only.
+  `inputs:` and `outputs:` sections (for example `articles` under `inputs:`,
+  `briefings` under `outputs:`). They are the office's interface, like a
+  function's parameter names. The `in`/`out` convention is for the single
+  ports of agents, sources and sinks only.
 - **Inside the office, an input behaves like a source with one outbox, `out`:**
-  `articles's out is Alex.` An output behaves like a sink:
-  `Morgan's out is briefings.`
+  `articles -> Alex`. An output behaves like a sink: `Morgan -> briefings`.
 - **From outside,** the office's ports are named like any agent's:
-  `bbc_world's out is news_monitor's articles.`
-  `news_monitor's briefings is news_editor's articles.`
+  `bbc_world -> news_monitor.articles` and
+  `news_monitor.briefings -> news_editor.articles`.
 - **Fields across the boundary:** `dsl check` derives which fields enter and
   leave through each boundary port from the inner office's own sources, roles
   and sinks, statically, and shows them in its report. No new declaration.
 
 ### 3.5 Drafts (Settled: kept)
 
-`Jay is unassigned.` marks an agent whose role is not decided yet. An office
+`Jay: unassigned` marks an agent whose role is not decided yet. An office
 holding one is a **draft**: `dsl check` and `dsl draw` work on it and list
 what is still to do; `dsl run` refuses it. This supports top-down design,
 writing and checking the topology before any role exists, and conversational
@@ -164,7 +358,9 @@ annotator returns a dict; a Python author returns a list and says
   - annotator: "Return only a JSON object with the fields `a` and `b`."
   - author: "Return only a JSON list of objects, each with the fields …"
 - No wiring words in the text: no "send to", no outbox names.
-- **No parameters.** To adapt a built-in role, copy it into the office's
+- **No parameters** in the text. (The one argument an English role takes,
+  `ai=`, chooses the model and never reaches the prompt; 3.0.) To adapt a
+  built-in role, copy it into the office's
   `roles/` folder **under a new name** and edit it.
 - A local role may not reuse a built-in role's name: that is an error, not an
   override.
@@ -258,11 +454,14 @@ Removed: `outboxes:`, `inboxes:`, `contract:`, `adds:`.
 ## 5. Routers (Settled)
 
 ```
-Rex is a router(on="verdict").
-Eve's out is Rex.
-Rex's publish is Editor.
-Rex's revise is Writer.
-Rex's otherwise is Archive.     # optional
+agents:
+    Rex: router(on="verdict")
+
+connections:
+    Eve -> Rex
+    Rex.publish -> Editor
+    Rex.revise -> Writer
+    Rex.otherwise -> Archive     # optional
 ```
 
 - Every router names its field. There is no default field.
@@ -290,9 +489,9 @@ thing to redesign.
 
 | Coordinator | Line | Behaviour |
 |---|---|---|
-| synchronizer | `Sync is a synchronizer(inboxes=["a", "b"], on="url").` | for each value of its key field, waits until a message with that value has arrived on every inbox, merges them into one, sends it |
-| gate | `G is a gate.` | inboxes `in` and `done`: admits one item from `in`, then waits for a message on `done` (which it discards) before admitting the next |
-| record | `R is a record(…).` | keeps shared data; agents read and write it by request |
+| synchronizer | `Sync: synchronizer(on="url")` | inboxes are the names used in its connections (`Eve -> Sync.entities`); for each value of its key field, waits until a message with that value has arrived on every inbox, merges them into one, sends it |
+| gate | `G: gate` | inboxes `in` and `done`: admits one item from `in`, then waits for a message on `done` (which it discards) before admitting the next |
+| record | `R: record(…)` | keeps shared data; agents read and write it by request |
 
 **Settled:** the synchronizer merges its inputs. A field carried by two inputs
 with the **same** value is not a conflict (the usual case: parallel
@@ -333,7 +532,7 @@ share, such as the minute slot a reading belongs to.
   boundary fields (3.4).
 - **Settled (port 5):** a stand-in source (`file_source`) and a real one
   (`sources/temp_sensor.py` declaring `out: slot, temp`) are interchangeable:
-  only the `Sources:` line changes.
+  only its line under `sources:` changes.
 - **Settled (port 5):** `starter` is retired if the four gallery offices not
   yet checked use it, as the three ports did, only to wake a role standing in
   for a source.
@@ -435,7 +634,8 @@ specification: `org_news_filter`, `situation_room_pro`, `debate`,
 | `merge_synch` | `synchronizer` |
 | `router_role` | retired |
 | a source's or input's `destination` outbox | `out` |
-| `network.md` with an `Offices:` section | `<Name> is an office at <path>.` in an ordinary `office.md` |
+| `network.md` with an `Offices:` section | `Name: office(path="<path>")` in an ordinary `office.md` |
+| the English sentence form (`X is a Y.`, `X's out is Y.`) | the line form of 3.0; kept examples rewritten by hand, the rest archived unconverted |
 | local roles overriding built-in names | renamed |
 | `select` with commands `{"next": …}` (`returns_desk`, `trading_room`) | a gate, with a router and annotators (port 4) |
 | roles standing in for sources, woken by `starter` | a local source in `sources/`, or `file_source` with a data file (port 5) |
