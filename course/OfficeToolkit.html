@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Building offices &mdash; tools and resources</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px; margin:0 auto; padding:44px 20px 80px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(30px,4.6vw,44px);
+     line-height:1.08; letter-spacing:-.02em; margin:0 0 14px}
+  h2{font-family:var(--display); font-weight:600; font-size:25px;
+     letter-spacing:-.01em; margin:42px 0 10px}
+  h3{font-family:var(--sans); font-weight:700; font-size:17px; margin:26px 0 8px}
+  p{color:var(--body); margin:0 0 14px}
+  ul{color:var(--body); margin:0 0 14px; padding-left:22px}
+  li{margin:0 0 6px}
+  a{color:var(--ink); text-decoration-color:#bdb6a8; text-underline-offset:3px}
+  a:hover{text-decoration-color:var(--orange)}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em; text-transform:uppercase;
+          color:var(--orange); margin-bottom:14px}
+  header.top h2{margin:-2px 0 20px; font-size:22px; color:var(--muted)}
+  code{font-family:var(--mono); font-size:.88em; background:#f6f4ee; border-radius:5px; padding:1px 5px}
+  table{width:100%; border-collapse:collapse; margin:10px 0 20px; background:#fff; font-size:15px; color:var(--body)}
+  th, td{border:1px solid var(--line); padding:7px 11px; text-align:left; vertical-align:top}
+  th{background:#f6f4ee; color:var(--ink); font-weight:700}
+  td:first-child{white-space:nowrap}
+  .toc{display:flex; flex-wrap:wrap; gap:6px 16px; margin:0 0 26px; padding:10px 14px;
+    background:#fff; border:1px solid var(--line); border-radius:10px; font-size:14.5px}
+  .toc a{font-weight:600; text-decoration:none}
+  .toc a:hover{text-decoration:underline}
+  .note{margin:14px 0 18px; padding:12px 16px; background:#fff; border:1px solid var(--line);
+    border-left:4px solid var(--teal); border-radius:0 10px 10px 0; font-size:15px; color:var(--body)}
+  .tag{display:inline-block; font:700 11px var(--sans); letter-spacing:.06em; text-transform:uppercase;
+    color:var(--teal); border:1px solid var(--teal); border-radius:999px; padding:0 7px; margin-left:6px; vertical-align:1px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="kicker">DisSysLab &middot; Reference</div>
+    <h1>Building offices</h1>
+    <h2>Every tool, document and library for building an office, in one place</h2>
+    <p>
+      An <b>office</b> is a distributed system written in English: agents,
+      the roles they play, and the connections between them, in a file
+      called <code>office.md</code>. The material for building offices is
+      spread over the course pages, the documentation and the code. This page
+      is an index to all of it. The lists of commands, roles, sources and sinks
+      were read from DisSysLab 1.10.2; your own installation can always tell
+      you its current lists (see each section).
+    </p>
+  </header>
+
+  <nav class="toc">
+    <a href="#start">Start here</a><a href="#dsl">The dsl command</a><a href="#officemd">Writing office.md</a>
+    <a href="#roles">Roles</a><a href="#coordinators">Coordinators</a><a href="#io">Sources and sinks</a>
+    <a href="#gallery">Offices to learn from</a><a href="#models">Models</a><a href="#ai">AI help</a>
+    <a href="#recipes">Recipes</a><a href="#broken">When it breaks</a><a href="#deeper">Going deeper</a>
+  </nav>
+
+<h2 id="start">Start here</h2>
+
+  <table>
+    <tr><th>Resource</th><th>What it is</th></tr>
+    <tr><td><a href="../office_microcourse.html">Office microcourse</a></td><td>Twenty-five short screens: what an office is, roles, connections, a model per agent, loops, snapshots, then install, run and change your first office. Read this first.</td></tr>
+    <tr><td><a href="setup.html">Setting up</a></td><td>Install with your assistant, watch an office run, read it, give your assistant the skill, build your own, check the wiring, and the three usual problems.</td></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/GETTING_STARTED.md">Getting started</a></td><td>Twenty minutes from install to a running office that watches Hacker News, then a richer one you modify and re-run.</td></tr>
+    <tr><td><a href="OfficeRepresentation.html">Introduction to distributed systems</a></td><td>Class 1: offices as a representation of distributed systems.</td></tr>
+    <tr><td><a href="DistributedSystemModel.html">Model of a distributed system</a></td><td>Agents, inboxes, outboxes and messages: the model behind an office.</td></tr>
+    <tr><td><a href="lecture_build.html">Lab: building distributed systems</a></td><td>The agent zoo, cost as a design choice, loops and gates, <code>dsl check</code> as a safety tool, sources and sinks, offices inside offices.</td></tr>
+  </table>
+
+<h2 id="dsl">The <code>dsl</code> command</h2>
+
+  <p>Everything is done with one command, <code>dsl</code>. <code>dsl &lt;command&gt; --help</code> explains any of them.</p>
+
+  <table>
+    <tr><th>Command</th><th>What it does</th></tr>
+    <tr><th colspan="2">Find things</th></tr>
+    <tr><td><code>dsl list</code></td><td>List the offices that ship with DisSysLab.</td></tr>
+    <tr><td><code>dsl roles</code></td><td>List the built-in roles and what each one adds to a message.</td></tr>
+    <tr><td><code>dsl show &lt;name&gt;</code></td><td>Show the implementation of a built-in role or component.</td></tr>
+    <tr><td><code>dsl grammar</code></td><td>Print the office reference: how <code>office.md</code> is written.</td></tr>
+    <tr><td><code>dsl skills</code></td><td>List the skills DisSysLab ships, and which are installed.</td></tr>
+    <tr><th colspan="2">Make an office</th></tr>
+    <tr><td><code>dsl init &lt;office&gt; &lt;folder&gt;</code></td><td>Copy a gallery office into a new folder of your own.</td></tr>
+    <tr><td><code>dsl new</code></td><td>Create a new office by chatting with Claude.</td></tr>
+    <tr><td><code>dsl edit</code></td><td>Modify an existing office by chatting with Claude.</td></tr>
+    <tr><th colspan="2">Check it</th></tr>
+    <tr><td><code>dsl check</code></td><td>Check an office's wiring without running it.</td></tr>
+    <tr><td><code>dsl checks &lt;code&gt;</code></td><td>Say what a check code such as <code>W4</code> or <code>G1</code> means.</td></tr>
+    <tr><td><code>dsl draw</code></td><td>Show an office's network, edge by edge.</td></tr>
+    <tr><th colspan="2">Run it</th></tr>
+    <tr><td><code>dsl run</code></td><td>Run an office: a gallery office by name, or your own folder.</td></tr>
+    <tr><td><code>dsl build</code></td><td>Generate <code>build/run.py</code> for an office, without running it: the Python your English compiles to.</td></tr>
+    <tr><th colspan="2">Look inside a run</th></tr>
+    <tr><td><code>dsl explain-trace</code></td><td>Merge a <code>--trace</code> run's per-agent logs into one ordered record.</td></tr>
+    <tr><td><code>dsl show-checkpoint</code></td><td>Show one checkpoint's saved state as readable JSON.</td></tr>
+    <tr><th colspan="2">Other</th></tr>
+    <tr><td><code>dsl fetch-prices</code></td><td>Download your own daily price history, for the market offices.</td></tr>
+    <tr><td><code>dsl doctor</code></td><td>Check your setup when something breaks.</td></tr>
+  </table>
+
+<h2 id="officemd">Writing <code>office.md</code></h2>
+
+  <table>
+    <tr><th>Resource</th><th>What it is</th></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/dissyslab/reference/grammar.md">The grammar</a> &nbsp;(<code>dsl grammar</code>)</td><td>The complete reference: sources and sinks, agents, connections, port names, cycles, comments, and the check codes.</td></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/dissyslab/reference/worked_examples.md">Four worked examples</a></td><td>Complete offices, explained line by line.</td></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/BUILD_APPS.md">Building apps</a></td><td>From an idea to a running office.</td></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/PATTERN_sense_think_respond.md">Sense &rarr; Think &rarr; Respond</a></td><td>The pattern most offices follow: sources sense, agents think, sinks respond.</td></tr>
+  </table>
+
+<h2 id="roles">Roles</h2>
+
+  <p>
+    A <b>role</b> is a job description: what an agent does to each message.
+    In <code>office.md</code> you write, for example,
+    <code>Jay is a summarizer.</code> DisSysLab looks for the role first in
+    the office's own <code>roles/</code> folder, then in the built-in
+    library. Most roles are written in English (<code>.md</code> files, run
+    by a language model); a role that must be exact is written in Python
+    (<code>.py</code>).
+  </p>
+
+  <h3>Built-in roles</h3>
+  <p>In <a href="https://github.com/kmchandy/DisSysLab/tree/main/dissyslab/roles"><code>dissyslab/roles/</code></a>. <code>dsl roles</code> lists them; <code>dsl show &lt;role&gt;</code> prints one in full.</p>
+  <table>
+    <tr><th>Role</th><th>What it adds or does</th></tr>
+    <tr><td><code>category_classifier</code></td><td>One of a fixed list of categories you set. Adds <code>category</code>.</td></tr>
+    <tr><td><code>confidence_filter</code></td><td>Passes on only the messages whose confidence clears a threshold you set. Python; costs nothing to run.</td></tr>
+    <tr><td><code>entity_extractor</code></td><td>The people, organisations, places and events named in the item. Adds <code>entities</code>.</td></tr>
+    <tr><td><code>evaluator</code></td><td>Whether a written briefing is good enough to publish, and why not. Adds <code>verdict</code>, <code>feedback</code>; sends to <code>publish</code> or <code>revise</code>.</td></tr>
+    <tr><td><code>geolocator</code></td><td>Where in the world the item is about: country and region. Adds <code>location</code>.</td></tr>
+    <tr><td><code>relevance_filter</code></td><td>Decides whether an item is worth passing on. Sends to <code>keep</code> or <code>discard</code>.</td></tr>
+    <tr><td><code>sentiment_classifier</code></td><td>Positive, negative or neutral, with a score from &minus;1.0 to +1.0. Adds <code>sentiment</code>, <code>sentiment_score</code>.</td></tr>
+    <tr><td><code>severity_classifier</code></td><td>How significant the item is: CRITICAL, HIGH, MEDIUM or LOW. Adds <code>severity</code>.</td></tr>
+    <tr><td><code>summarizer</code></td><td>One plain-English sentence saying what the item is about. Adds <code>summary</code>.</td></tr>
+    <tr><td><code>summary_writer</code></td><td>A short paragraph a busy reader can scan. Adds <code>brief</code>.</td></tr>
+    <tr><td><code>topic_tagger</code></td><td>One of eight topics, from politics to entertainment. Adds <code>topic</code>.</td></tr>
+    <tr><td><code>urgency_classifier</code></td><td>How time-sensitive the item is for the reader: HIGH, MEDIUM or LOW. Adds <code>urgency</code>.</td></tr>
+    <tr><td><code>writer</code></td><td>The item rewritten for a reader: a headline and a short briefing. Adds <code>headline</code>, <code>summary</code>.</td></tr>
+  </table>
+
+  <h3>More about roles</h3>
+  <ul>
+    <li><a href="https://github.com/kmchandy/DisSysLab/blob/main/dissyslab/reference/roles.md">Roles you already have</a>: the reference page, with how each role is used.</li>
+    <li><a href="https://github.com/kmchandy/DisSysLab/blob/main/dissyslab/roles/README.md">The role library's README</a>: how DisSysLab finds a role, how to override one, and how to add one.</li>
+    <li><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/write-a-custom-role.md">How to write a custom role</a>: a recipe.</li>
+    <li>Every gallery office has its own <code>roles/</code> folder: a good source of examples, such as the clerk and manager in <code>returns_desk</code>.</li>
+  </ul>
+
+<h2 id="coordinators">Coordinators</h2>
+
+  <p>
+    A coordinator is an agent that holds messages still until a condition is
+    met. It has no role file: its settings go on its own line, for example
+    <code>Sync is a synchronizer(inboxes=["a", "b"]).</code>
+  </p>
+  <table>
+    <tr><th>Coordinator</th><th>What it does</th><th>See it in</th></tr>
+    <tr><td><code>synchronizer</code></td><td>Waits until it has one message on each of its inboxes, merges them into one message, and sends it on.</td><td><code>room_climate_monitor</code>, <code>debate</code>, <code>periodic_brief_pro</code></td></tr>
+    <tr><td><code>select</code></td><td>Feeds one worker one message at a time. A message on its command inbox says which inbox to read next, so a worker waiting for a reply can hold the other queue still.</td><td><code>returns_desk</code></td></tr>
+    <tr><td><code>gate</code></td><td>Admits one item at a time: it passes on a message, then waits for a message on its control inbox before admitting the next.</td><td><code>debate</code></td></tr>
+    <tr><td><code>router</code></td><td>Sends a copy of each message to every outbox whose rule it matches; a message that matches no rule is dropped.</td><td>not yet in the gallery; see the grammar</td></tr>
+    <tr><td><code>record</code></td><td>Keeps shared data. Other agents read and update it by sending requests, so no agent needs shared memory. Used with a gate.</td><td><code>investment_club</code> (a test office)</td></tr>
+  </table>
+  <p>The grammar describes each one. <code>shipment_release</code> shows a related idea built from an ordinary role: nothing is released until a scan and a manifest agree.</p>
+
+<h2 id="io">Sources and sinks</h2>
+
+  <p>
+    Sources bring messages in; sinks take them out. DisSysLab 1.10.2 has 46
+    sources and 26 sinks. <code>dsl show &lt;name&gt;</code> prints one in
+    full, and the <a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/SOURCES_AND_SINKS.md">sources and sinks reference</a>
+    gives each one's arguments and the messages it produces.
+  </p>
+  <table>
+    <tr><th>Kind</th><th>Names</th></tr>
+    <tr><th colspan="2">Sources</th></tr>
+    <tr><td>News and feeds</td><td><code>bbc_world</code>, <code>bbc_tech</code>, <code>npr_news</code>, <code>al_jazeera</code>, <code>techcrunch</code>, <code>mit_tech_review</code>, <code>venturebeat_ai</code>, <code>nasa_news</code>, <code>hacker_news</code>, <code>bluesky</code>, <code>rss</code> (any feed)</td></tr>
+    <tr><td>Research</td><td><code>arxiv_cs_ai</code>, <code>arxiv_cs_cl</code>, <code>arxiv_cs_cv</code>, <code>arxiv_cs_lg</code>, <code>arxiv_cs_ro</code></td></tr>
+    <tr><td>Jobs</td><td><code>python_jobs</code>, <code>remoteok</code>, <code>we_work_remotely</code></td></tr>
+    <tr><td>Markets and weather</td><td><code>stocks</code> (and <code>stocks_2</code> to <code>stocks_5</code>), <code>csv_stock_history</code>, <code>kalshi</code>, <code>weather</code>, <code>weatherapi</code></td></tr>
+    <tr><td>Media and sensors</td><td><code>image_folder</code>, <code>audio_folder</code>, <code>audio_clip</code>, <code>audio_mic</code></td></tr>
+    <tr><td>Files and the web</td><td><code>file_source</code>, <code>csv_points_source</code>, <code>web</code>, <code>web_scraper</code>, <code>search</code></td></tr>
+    <tr><td>Personal</td><td><code>gmail</code>, <code>calendar</code></td></tr>
+    <tr><td>Plumbing</td><td><code>webhook</code>, <code>console_input</code>, <code>starter</code>, <code>session_starter</code> (and <code>_2</code>, <code>_3</code>), <code>mcp_source</code> (any MCP server)</td></tr>
+    <tr><th colspan="2">Sinks</th></tr>
+    <tr><td>Display</td><td><code>console_printer</code>, <code>intelligence_display</code>, <code>debate_display</code>, <code>tutor_session_display</code></td></tr>
+    <tr><td>Files and pages</td><td><code>jsonl_recorder</code> (and <code>_archive</code>, <code>_briefing</code>, <code>_discard</code>, <code>_raw</code>), <code>markdown_digest</code>, <code>periodic_brief_sink</code>, <code>periodic_brief_html_sink</code>, <code>job_html_sink</code>, <code>report_html</code></td></tr>
+    <tr><td>Messaging</td><td><code>slack_sink</code> (and <code>_alerts</code>, <code>_archive</code>, <code>_briefing</code>), <code>gmail_sink</code> (and <code>_match</code>, <code>_research</code>, <code>_tailor</code>, <code>_cover_letter</code>), <code>webhook_sink</code></td></tr>
+    <tr><td>Other</td><td><code>mcp_sink</code> (any MCP server), <code>discard</code></td></tr>
+  </table>
+  <div class="note">
+    Your installation's own list is always current. In Python:
+    <code>from dissyslab.office import utils</code>, then
+    <code>sorted(utils.SOURCE_REGISTRY)</code> and
+    <code>sorted(utils.SINK_REGISTRY)</code>.
+  </div>
+
+<h2 id="gallery">Offices to learn from</h2>
+
+  <p>
+    <code>dsl list</code> lists them all. <code>dsl run &lt;name&gt;</code>
+    runs one where it is; <code>dsl init &lt;name&gt; &lt;folder&gt;</code>
+    copies it into a folder of your own to change. Each has a README in
+    <a href="https://github.com/kmchandy/DisSysLab/tree/main/dissyslab/gallery">dissyslab/gallery</a>.
+  </p>
+
+  <h3>Examples: small patterns to copy</h3>
+  <table>
+    <tr><th>Office</th><th>What it shows</th></tr>
+    <tr><td><code>my_first_office</code></td><td>The starter office: watches Hacker News and writes a one-sentence briefing.</td></tr>
+    <tr><td><code>org_news_filter</code></td><td>The simplest possible office: one agent sorting incoming articles.</td></tr>
+    <tr><td><code>org_intelligence_briefing</code></td><td>Two agents; work flows from one to the next.</td></tr>
+    <tr><td><code>org_news_editorial</code></td><td>Two agents in a feedback loop.</td></tr>
+    <tr><td><code>org_situation_room</code></td><td>Two agents on a live, streaming social-media source.</td></tr>
+    <tr><td><code>org_two_office_news</code></td><td>An office that contains other offices.</td></tr>
+    <tr><td><code>web_monitor</code></td><td>Watches a web page and summarizes anything newsworthy.</td></tr>
+    <tr><td><code>webhook_listener</code></td><td>Listens for incoming HTTP POSTs and summarizes each.</td></tr>
+    <tr><td><code>gmail_monitor</code></td><td>Watches your Gmail inbox and summarizes what needs attention.</td></tr>
+  </table>
+
+  <h3>Apps, grouped by what they teach</h3>
+  <table>
+    <tr><th>Office</th><th>What it does</th></tr>
+    <tr><th colspan="2">Many sources into one result</th></tr>
+    <tr><td><code>periodic_brief</code></td><td>One HTML page combining news, weather and more: the simplest demonstration of what DisSysLab does.</td></tr>
+    <tr><td><code>periodic_brief_pro</code></td><td>The grown-up version, with a synchronizer joining several analyses of each article.</td></tr>
+    <tr><td><code>caltech_radar</code></td><td>Campus talks and events, arXiv cs.AI and the Pasadena weather, watched at once.</td></tr>
+    <tr><td><code>wardrobe_assistant</code></td><td>Calendar, weather forecast and your wardrobe: what to wear to each event.</td></tr>
+    <tr><th colspan="2">Coordinators and loops</th></tr>
+    <tr><td><code>room_climate_monitor</code></td><td>Two sensors, one reading: a synchronizer waits for both.</td></tr>
+    <tr><td><code>returns_desk</code></td><td>A clerk escalates to a manager; a select holds the queue until the manager answers.</td></tr>
+    <tr><td><code>shipment_release</code></td><td>Nothing is released until a scan and a manifest agree.</td></tr>
+    <tr><td><code>debate</code></td><td>Three agents argue until they agree, in a loop stopped by a gate.</td></tr>
+    <tr><th colspan="2">Sense &rarr; think &rarr; respond</th></tr>
+    <tr><td><code>situation_room</code></td><td>World-news feeds turned into a briefing. Variants: <code>situation_room_pro</code> (a model per agent), <code>situation_room_requests</code> (parallel extractors).</td></tr>
+    <tr><td><code>arxiv_radar</code></td><td>New papers on three arXiv feeds, classified and rated.</td></tr>
+    <tr><td><code>competitor_watch</code></td><td>Tech-news feeds watched for mentions of competitors.</td></tr>
+    <tr><td><code>job_hunter</code></td><td>Job feeds, with four agents working on each posting in parallel.</td></tr>
+    <tr><td><code>new_grad_jobs</code></td><td>Hacker News "Who's Hiring" screened for new-graduate jobs.</td></tr>
+    <tr><td><code>inbox_triage</code></td><td>Your Gmail inbox, rated and summarized.</td></tr>
+    <tr><td><code>lead_qualifier</code>, <code>ticket_router</code></td><td>Form submissions and support tickets arriving on a webhook.</td></tr>
+    <tr><td><code>weather_monitor</code></td><td>A practical weather briefing for your city.</td></tr>
+    <tr><td><code>stocks_monitor</code></td><td>A plain-English read of a stock ticker every few minutes.</td></tr>
+    <tr><td><code>kalshi_market_watch</code></td><td>Updates from the Kalshi prediction markets.</td></tr>
+    <tr><th colspan="2">Sensors: audio and images</th></tr>
+    <tr><td><code>backyard_birds</code></td><td>Identifies the birds in a folder of audio recordings.</td></tr>
+    <tr><td><code>wildlife_watcher</code></td><td>Identifies the animals in a folder of camera-trap photos.</td></tr>
+    <tr><td><code>loudness_monitor</code></td><td>Watches an audio stream and reports when the room gets loud.</td></tr>
+    <tr><th colspan="2">Distributed algorithms</th></tr>
+    <tr><td><code>paxos</code></td><td>Paxos with three proposers, five acceptors and two learners.</td></tr>
+    <tr><td><code>recovery_demo</code></td><td>Checkpoint and recovery with the Chandy&ndash;Lamport snapshot algorithm.</td></tr>
+    <tr><th colspan="2">Markets and tutoring</th></tr>
+    <tr><td><code>mac_speed_suite</code></td><td>Backtests a suite of trading strategies and writes a ranked report.</td></tr>
+    <tr><td><code>paper_trader</code></td><td>A daily paper-trading office.</td></tr>
+    <tr><td><code>adaptive_tutor</code></td><td>A tutor that drills a subject and adapts to the student.</td></tr>
+  </table>
+
+<h2 id="models">Models</h2>
+
+  <table>
+    <tr><th>Resource</th><th>What it is</th></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/API_KEY_SETUP.md">API key setup</a></td><td>Getting and installing a key.</td></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/LANGUAGE_MODELS.md">Language models</a></td><td>Which models DisSysLab can use, including free local ones.</td></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/dissyslab/reference/grammar.md">Per-agent backends</a></td><td>A different model behind each agent: the grammar's section on per-agent model backends.</td></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/tree/main/docs/recipes/add-a-backend">Add a backend</a></td><td>A recipe, with an example local backend and a mock backend for testing.</td></tr>
+  </table>
+
+<h2 id="ai">AI help</h2>
+
+  <table>
+    <tr><th>Tool</th><th>What it is</th></tr>
+    <tr><td><code>office-builder</code> skill</td><td>Teaches your assistant (Claude) to build, check and run offices. In <a href="https://github.com/kmchandy/DisSysLab/tree/main/skills">skills/</a>; <code>dsl skills</code> shows whether it is installed.</td></tr>
+    <tr><td><code>sensor-office-builder</code> skill</td><td>For offices that classify audio, images or sensor signals.</td></tr>
+    <tr><td><code>dsl new</code>, <code>dsl edit</code></td><td>Create or change an office by chatting with Claude.</td></tr>
+  </table>
+
+<h2 id="recipes">Recipes</h2>
+
+  <p>Short how-tos, in <a href="https://github.com/kmchandy/DisSysLab/tree/main/docs/recipes">docs/recipes</a>.</p>
+  <ul>
+    <li><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/filter-for-a-topic.md">Filter for a topic</a></li>
+    <li><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/add-an-rss-source.md">Add a new RSS source</a></li>
+    <li><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/write-a-custom-role.md">Write a custom role</a></li>
+    <li><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/send-messages-outside.md">Send messages to the outside world</a></li>
+    <li><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/chain-offices.md">Chain offices</a></li>
+    <li><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/monitor-your-inbox.md">Monitor your inbox</a></li>
+    <li><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/receive-webhooks.md">Receive webhooks</a></li>
+    <li><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/recipes/deploy-with-docker.md">Deploy an office for continuous operation</a></li>
+  </ul>
+
+<h2 id="broken">When it breaks</h2>
+
+  <table>
+    <tr><th>Resource</th><th>What it is</th></tr>
+    <tr><td><code>dsl doctor</code></td><td>Checks your setup.</td></tr>
+    <tr><td><code>dsl check</code>, <code>dsl checks &lt;code&gt;</code></td><td>Find wiring mistakes before running, and look up what each code means.</td></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/TROUBLESHOOTING.md">Troubleshooting</a></td><td>Fixes for the common errors.</td></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/WINDOWS.md">Windows</a></td><td>Running DisSysLab on Windows.</td></tr>
+  </table>
+
+<h2 id="deeper">Going deeper</h2>
+
+  <table>
+    <tr><th>Resource</th><th>What it is</th></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/EXTENDING.md">Extending DisSysLab</a></td><td>Writing your own sources, sinks and components.</td></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/README.md">The user guide</a></td><td>The documentation's own index.</td></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/tree/main/docs/algorithms">Algorithms</a></td><td>Drafts on checkpoint-and-resume and on logical clocks and traces, as implemented in DisSysLab.</td></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/internals/reference/architecture.md">Architecture</a></td><td>How DisSysLab is built, for those who want to change it.</td></tr>
+  </table>
+
+</div>
+</body>
+</html>
