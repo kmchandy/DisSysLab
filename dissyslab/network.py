@@ -309,8 +309,8 @@ class Network:
         > 1). Counted on (block, port) coordinates which are already
         path-prefixed by the flatten step.
         """
-        from dissyslab.blocks.fanout import Broadcast
-        from dissyslab.blocks.fanin import MergeAsynch
+        from dissyslab.runtime.plumbing import Broadcast
+        from dissyslab.runtime.plumbing import MergeAsynch
 
         # ── Fanout pass: out-degree > 1 ───────────────────────────
         out_degree: Dict[Tuple[str, str], int] = {}
@@ -1166,8 +1166,8 @@ class Network:
                 print("  (none)")
 
             if verbose:
-                from dissyslab.blocks.fanout import Broadcast
-                from dissyslab.blocks.fanin import MergeAsynch
+                from dissyslab.runtime.plumbing import Broadcast
+                from dissyslab.runtime.plumbing import MergeAsynch
                 auto_inserted = {
                     name: agent for name, agent in self.blocks.items()
                     if isinstance(agent, (Broadcast, MergeAsynch))
