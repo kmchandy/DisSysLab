@@ -463,19 +463,10 @@ def _explain_failure_message(command: str, exc: BaseException) -> str:
             f"       See docs/API_KEY_SETUP.md for the full walkthrough."
         )
 
-    # A target dir with no office.md/network.md yet -- almost always means
-    # the Stage 1 draft was never run through assemble.py, not a build/run
-    # problem. Check this before the generic FileNotFoundError case below,
-    # since this message has no .filename set and would otherwise fall
-    # through to the wrong ("build/run.py missing") guidance.
+    # A folder with no office.md: say so plainly, before the generic
+    # FileNotFoundError case below (this message has no .filename set).
     if isinstance(exc, FileNotFoundError) and "office.md or network.md" in msg:
-        return (
-            f"{command} failed: {msg}\n"
-            f"  Fix: if this is a Stage 1 hand-off file that hasn't been\n"
-            f"       generated yet, run\n"
-            f"         python -m dissyslab.office.assemble <draft.py> <target_dir>\n"
-            f"       first (phase3_al_howto.md, step 5), then retry {command}."
-        )
+        return f"{command} failed: {msg}"
 
     # Common file-not-found during artifact startup (e.g. missing run.py).
     if isinstance(exc, FileNotFoundError):

@@ -4,8 +4,7 @@ What this is for
 ----------------
 The existing validation is **local**: the parser reports syntax errors with
 file and line, ``Network.check()`` verifies name uniqueness and that ports
-named in connections exist, and ``from_officespeak`` raises ``GeneratorError``
-for kind-specific constraints. Each of those looks at one statement or one
+named in connections exist. Each of those looks at one statement or one
 agent.
 
 This module looks at the **whole graph**: agents nothing can reach, work that

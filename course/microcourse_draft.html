@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DisSysLab micro-course (draft)</title>
+<style>
+:root {
+  --ink: #1a1a2e; --paper: #faf8f3;
+  --orange: #ff6b35; --teal: #00c9a7; --yellow: #ffd166; --purple: #7b5ea7;
+  --teal-deep: #00947d; --orange-deep: #d13d0e; --purple-deep: #5b3f87;
+  --text-body: rgba(26,26,46,0.80); --text-muted: rgba(26,26,46,0.55);
+  --surface-tint: rgba(26,26,46,0.04); --surface-border: rgba(26,26,46,0.12);
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-body: 'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SF Mono', Menlo, Consolas, 'Courier New', monospace;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--paper); color: var(--ink); font-family: var(--font-body); }
+.draft { position: fixed; top: 0; left: 0; right: 0; background: var(--yellow); color: var(--ink); font-size: 13px; text-align: center; padding: 5px 10px; z-index: 10; }
+.deck { position: relative; height: 100%; }
+.slide { position: absolute; inset: 0; padding: 56px 6vw 90px; overflow-y: auto; opacity: 0; pointer-events: none; transition: opacity .35s ease; }
+.slide.active { opacity: 1; pointer-events: auto; }
+.inner { max-width: 1060px; margin: 0 auto; }
+.kicker { font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--orange-deep); font-weight: 600; margin: 8px 0 6px; }
+h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(28px, 4.4vw, 52px); line-height: 1.08; margin: 0 0 18px; }
+h1 .soft { color: var(--text-muted); }
+p, li { font-size: 18px; line-height: 1.5; color: var(--text-body); }
+p { margin: 0 0 12px; }
+ul { margin: 0 0 12px; padding-left: 22px; }
+code { font-family: var(--font-mono); font-size: .92em; background: var(--surface-tint); padding: 1px 5px; border-radius: 4px; }
+pre { font-family: var(--font-mono); font-size: 14.5px; line-height: 1.5; background: #fff; border: 1px solid var(--surface-border); border-radius: 10px; padding: 14px 16px; margin: 0 0 12px; overflow-x: auto; white-space: pre; }
+.file { font-size: 12px; font-family: var(--font-mono); color: var(--text-muted); margin: 0 0 4px; }
+.k { color: var(--purple-deep); font-weight: 700; }      /* section headings, keywords */
+.n { color: var(--teal-deep); font-weight: 700; }        /* names */
+.s { color: var(--orange-deep); }                         /* strings */
+.c { color: var(--text-muted); }                          /* comments */
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+.cols3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 820px) { .cols, .cols3 { grid-template-columns: 1fr; } }
+.card { background: #fff; border: 1px solid var(--surface-border); border-radius: 12px; padding: 14px 16px; }
+.card h3 { margin: 0 0 6px; font-size: 17px; }
+.card p { font-size: 16px; margin: 0; }
+.note { border-left: 4px solid var(--teal); background: rgba(0,201,167,.07); padding: 10px 14px; border-radius: 0 8px 8px 0; margin: 10px 0 12px; }
+.note p { margin: 0; font-size: 16.5px; }
+.warn { border-left-color: var(--orange); background: rgba(255,107,53,.07); }
+table { border-collapse: collapse; width: 100%; margin: 0 0 12px; font-size: 16px; }
+th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--surface-border); vertical-align: top; }
+th { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-muted); }
+svg text { font-family: var(--font-body); }
+.nav { position: fixed; bottom: 0; left: 0; right: 0; display: flex; justify-content: space-between; align-items: center; padding: 12px 6vw; background: linear-gradient(transparent, var(--paper) 40%); }
+.nav button { font: 600 15px var(--font-body); padding: 9px 18px; border-radius: 22px; border: 1px solid var(--ink); background: var(--paper); color: var(--ink); cursor: pointer; }
+.nav button.primary { background: var(--ink); color: var(--paper); }
+.dots { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; max-width: 60%; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--surface-border); cursor: pointer; }
+.dot.on { background: var(--orange); }
+.count { font-size: 13px; color: var(--text-muted); min-width: 52px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="draft">Draft for testing. It describes the redesigned language (specification of 16 October 2026), which is not yet released. Command output is illustrative.</div>
+<div class="deck">
+
+<!-- 1 -->
+<section class="slide active"><div class="inner">
+  <div class="kicker">DisSysLab · micro-course</div>
+  <h1>Build a network of agents.<br><span class="soft">Each agent does one job.</span></h1>
+  <p>An <b>office</b> is a network of agents that pass messages to each other. Messages are JSON objects. Some agents use a large language model (LLM); others are Python.</p>
+  <p>You write two things: <b>what each agent does</b>, and <b>the network - who sends to whom</b>. DisSysLab runs it, checks it before it runs, and shows you every message.</p>
+  <div class="note"><p>You need: Python, a terminal, and less than an hour. Use the arrow keys or the buttons below.</p></div>
+</div></section>
+
+<!-- 2 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">What you will build first</div>
+  <h1>Two news feeds. One decision.<br><span class="soft">Messages flow; nobody waits for you to ask.</span></h1>
+  <svg id="flow" viewBox="0 0 900 300" width="100%" style="max-width:900px;display:block;margin:0 auto 10px">
+    <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#1a1a2e"/></marker></defs>
+    <g stroke="#1a1a2e" stroke-width="1.6" fill="none" marker-end="url(#ah)">
+      <path id="p1" d="M150,80 C220,80 240,150 300,150"/>
+      <path id="p2" d="M150,220 C220,220 240,150 300,150"/>
+      <path id="p3" d="M410,150 L500,150"/>
+      <path id="p4" d="M600,150 C660,150 680,80 740,80"/>
+      <path id="p5" d="M600,150 C660,150 680,220 740,220"/>
+    </g>
+    <g font-size="15">
+      <rect x="20" y="58" width="130" height="44" rx="10" fill="#fff" stroke="#1a1a2e"/><text x="85" y="85" text-anchor="middle">bbc_world</text>
+      <rect x="20" y="198" width="130" height="44" rx="10" fill="#fff" stroke="#1a1a2e"/><text x="85" y="225" text-anchor="middle">al_jazeera</text>
+      <rect x="300" y="122" width="110" height="56" rx="12" fill="#00c9a7" fill-opacity=".18" stroke="#00947d"/><text x="355" y="146" text-anchor="middle" font-weight="700">Felix</text><text x="355" y="166" text-anchor="middle" font-size="12">topic_filter</text>
+      <rect x="500" y="122" width="100" height="56" rx="28" fill="#ffd166" fill-opacity=".35" stroke="#b8860b"/><text x="550" y="146" text-anchor="middle" font-weight="700">Rex</text><text x="550" y="166" text-anchor="middle" font-size="12">router</text>
+      <rect x="740" y="58" width="150" height="44" rx="10" fill="#fff" stroke="#1a1a2e"/><text x="815" y="85" text-anchor="middle">console_printer</text>
+      <rect x="740" y="198" width="150" height="44" rx="10" fill="#fff" stroke="#1a1a2e"/><text x="815" y="225" text-anchor="middle">jsonl_recorder</text>
+      <text x="672" y="96" font-size="13" fill="#00947d" font-weight="700">yes</text>
+      <text x="672" y="214" font-size="13" fill="#d13d0e" font-weight="700">no</text>
+    </g>
+    <g id="msgs"></g>
+  </svg>
+  <p><b>Felix</b> reads each article and decides whether it is about a topic you chose. <b>Rex</b> is a router: it sends <code>yes</code> articles to the screen and <code>no</code> articles to a file. The office runs until you stop it.</p>
+</div></section>
+
+<!-- 3 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Messages</div>
+  <h1>Every message is a JSON object.</h1>
+  <div class="cols">
+    <div>
+      <div class="file">one message from bbc_world</div>
+<pre>{
+  <span class="s">"source"</span>: "bbc_world",
+  <span class="s">"title"</span>: "Brazil's central bank holds rates",
+  <span class="s">"text"</span>: "The bank kept its benchmark rate ...",
+  <span class="s">"url"</span>: "https://www.bbc.com/news/...",
+  <span class="s">"timestamp"</span>: "2026-10-16T08:30:00Z"
+}</pre>
+    </div>
+    <div>
+      <ul>
+        <li>A message is a <code>dict</code>. Never a bare string, number or list.</li>
+        <li>News sources use the same five fields: <code>source</code>, <code>title</code>, <code>text</code>, <code>url</code>, <code>timestamp</code>.</li>
+        <li>Each agent gets <b>its own copy</b> of a message.</li>
+        <li>Each connection delivers messages in the order they were sent (FIFO).</li>
+      </ul>
+    </div>
+  </div>
+</div></section>
+
+<!-- 4 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Roles</div>
+  <h1>A role is a function:<br><span class="soft">one JSON object in, JSON out.</span></h1>
+  <div class="cols">
+    <div>
+      <div class="file">roles/topic_filter.md</div>
+<pre><span class="c">---
+emits: whether a news article is on the topic
+in: title, text
+out: on_topic (yes | no)
+---</span>
+You read one news article, given as a JSON
+object. Its "title" and "text" fields are the
+headline and the body.
+
+The topic is the Americas: North, Central and
+South America and the Caribbean.
+
+Decide whether the article is mainly about
+the topic.
+
+Return only a JSON object with one field,
+"on_topic", whose value is "yes" or "no".</pre>
+    </div>
+    <div>
+      <p>This role is written in English, so a language model carries it out.</p>
+      <div class="note"><p><b>The prompt the model receives is exactly this text, followed by the message as JSON.</b> DisSysLab adds nothing. <code>dsl show topic_filter --prompt</code> prints it.</p></div>
+      <p>The block between the <code>---</code> lines is for Python, not the model:</p>
+      <ul>
+        <li><code>in:</code> the fields the role reads;</li>
+        <li><code>out:</code> the fields it returns, and their allowed values.</li>
+      </ul>
+      <p>The role knows nothing about DisSysLab: no "send to", no other agents. You can test it on its own.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- 5 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Annotators</div>
+  <h1>Most roles add fields.<br><span class="soft">They are called annotators.</span></h1>
+  <div class="cols">
+    <div>
+      <div class="file">Felix receives</div>
+<pre>{"source": "bbc_world",
+ "title": "Brazil's central bank holds rates",
+ "text": "...", "url": "...", "timestamp": "..."}</pre>
+      <div class="file">the model replies</div>
+<pre>{"on_topic": "yes"}</pre>
+      <div class="file">Felix sends</div>
+<pre>{"source": "bbc_world",
+ "title": "Brazil's central bank holds rates",
+ "text": "...", "url": "...", "timestamp": "...",
+ <b>"on_topic": "yes"</b>}</pre>
+    </div>
+    <div>
+      <p>An annotator returns <b>only its new fields</b>. DisSysLab adds them to the message.</p>
+      <ul>
+        <li>The reply is checked against <code>out:</code>. A missing field, or a value not in <code>(yes | no)</code>, is a failure: that message is dropped, counted and reported.</li>
+        <li>An annotator only adds. It may not change a field that is already there.</li>
+        <li>Extra fields the model invents are dropped and reported.</li>
+      </ul>
+    </div>
+  </div>
+</div></section>
+
+<!-- 6 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">English or Python</div>
+  <h1>English when judgement is needed.<br><span class="soft">Python when it must be exact.</span></h1>
+  <div class="cols">
+    <div>
+      <div class="file">roles/clerk.py</div>
+<pre><span class="c">"""
+---
+emits: approves small refunds; escalates the rest
+in: amount
+out: clerk_decision (approve | escalate)
+---
+"""</span>
+
+<span class="k">def</span> <span class="n">step</span>(item, settings):
+    <span class="k">if</span> item["amount"] &lt; settings["limit"]:
+        <span class="k">return</span> {"clerk_decision": "approve"}
+    <span class="k">return</span> {"clerk_decision": "escalate"}
+
+
+<span class="k">class</span> <span class="n">Clerk</span>:
+    <span class="k">def</span> __init__(self, limit=50):
+        self.settings = {"limit": limit}
+
+    <span class="k">def</span> __call__(self, item):
+        <span class="k">return</span> step(item, self.settings)</pre>
+    </div>
+    <div>
+      <p>A Python role is a file with <b>one class</b>. No base class, no DisSysLab import.</p>
+      <ul>
+        <li><code>__init__</code> receives the arguments written in the office file, here <code>limit</code>.</li>
+        <li><code>__call__</code> receives one message and returns a dict, exactly like the English role's reply.</li>
+        <li>The logic lives in a pure function, <code>step</code>, which you can test and reason about without running anything.</li>
+      </ul>
+      <div class="note"><p>Use a model only where judgement is needed. Comparing a number with 50 is not judgement.</p></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- 7 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">The office file</div>
+  <h1>Topology is data.<br><span class="soft">Two kinds of line.</span></h1>
+  <div class="cols">
+    <div>
+      <div class="file">org_news_filter/office.md</div>
+<pre><span class="k">sources:</span>
+    al_jazeera(max_articles=2)
+    bbc_world(max_articles=2)
+
+<span class="k">sinks:</span>
+    console_printer
+    jsonl_recorder(path=<span class="s">"filtered.jsonl"</span>)
+
+<span class="k">agents:</span>
+    <span class="n">Felix</span>: topic_filter
+    <span class="n">Rex</span>: router(on=<span class="s">"on_topic"</span>)
+
+<span class="k">connections:</span>
+    al_jazeera, bbc_world -&gt; Felix -&gt; Rex
+    Rex.yes -&gt; console_printer
+    Rex.no -&gt; jsonl_recorder</pre>
+    </div>
+    <div>
+      <table>
+        <tr><th>Line</th><th>Means</th></tr>
+        <tr><td><code>name: kind(args)</code></td><td>declares a source, sink or agent; arguments as in a Python call</td></tr>
+        <tr><td><code>a -&gt; b</code></td><td>a's outbox <code>out</code> to b's inbox <code>in</code></td></tr>
+        <tr><td><code>a -&gt; b -&gt; c</code></td><td>a chain</td></tr>
+        <tr><td><code>a, b -&gt; c</code></td><td>fan-in; <code>a -&gt; b, c</code> is fan-out</td></tr>
+        <tr><td><code>Rex.yes</code></td><td>a named port, written with a dot</td></tr>
+      </table>
+      <p>Sources and sinks come from a library (<code>dsl list</code>). Every name is declared before it is used, and nothing is created behind your back.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- 8 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Routers</div>
+  <h1>Compute in roles.<br><span class="soft">Route in routers.</span></h1>
+  <div class="cols">
+    <div>
+<pre><span class="k">agents:</span>
+    <span class="n">Rex</span>: router(on=<span class="s">"on_topic"</span>)
+
+<span class="k">connections:</span>
+    Felix -&gt; Rex
+    Rex.yes -&gt; console_printer
+    Rex.no -&gt; jsonl_recorder</pre>
+      <p>A role decides and writes its decision in a field. A router reads that one field and sends the message out of the outbox named by its value.</p>
+    </div>
+    <div>
+      <ul>
+        <li>Every router names its field: <code>on="on_topic"</code>.</li>
+        <li>Its outboxes are the values: <code>Rex.yes</code>, <code>Rex.no</code>.</li>
+        <li><code>Rex.otherwise</code> catches any other value.</li>
+        <li>A message is thrown away only by sending it to the <code>discard</code> sink, so you can always see where it went.</li>
+      </ul>
+      <div class="note"><p>Because <code>out: on_topic (yes | no)</code> lists the values, <code>dsl check</code> can tell you if a value has nowhere to go, before you run anything.</p></div>
+    </div>
+  </div>
+</div></section>
+
+<!-- 9 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Pipelines</div>
+  <h1>Roles in a row.</h1>
+  <div class="file">arxiv_radar/office.md</div>
+<pre><span class="k">sources:</span>
+    arxiv_cs_ai(max_articles=3)
+    arxiv_cs_lg(max_articles=3)
+    arxiv_cs_cl(max_articles=3)
+
+<span class="k">sinks:</span>
+    intelligence_display(title=<span class="s">"title"</span>, text=<span class="s">"abstract"</span>, color=<span class="s">"relevance"</span>)
+
+<span class="k">agents:</span>
+    <span class="n">Carla</span>: paper_classifier       <span class="c"># adds paper_type</span>
+    <span class="n">Iris</span>: relevance_rater         <span class="c"># adds relevance and reason</span>
+
+<span class="k">connections:</span>
+    arxiv_cs_ai, arxiv_cs_lg, arxiv_cs_cl -&gt; Carla -&gt; Iris -&gt; intelligence_display</pre>
+  <p>Each paper gains one field at Carla and two at Iris. The display is told which fields to show; it never guesses.</p>
+  <div class="note"><p><b>Question.</b> Iris does not read Carla's field. Could they run side by side instead? What would you need to add? (Two slides on.)</p></div>
+</div></section>
+
+<!-- 10 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Fan-out and synchronize</div>
+  <h1>Four agents at once.<br><span class="soft">Then wait for all four.</span></h1>
+  <div class="cols">
+    <div>
+      <div class="file">situation_room_pro/office.md (connections)</div>
+<pre>bbc_world, npr_news, al_jazeera -&gt; Sasha -&gt; Eve, Sam, Tom, Greta
+Eve -&gt; Sync.entities
+Sam -&gt; Sync.severity
+Tom -&gt; Sync.topic
+Greta -&gt; Sync.location
+Sync -&gt; Riley -&gt; intelligence_display, jsonl_recorder</pre>
+      <div class="file">agents (part)</div>
+<pre><span class="n">Sasha</span>: deduplicator(by=<span class="s">"url"</span>)
+<span class="n">Sync</span>: synchronizer(on=<span class="s">"url"</span>)
+<span class="n">Riley</span>: writer</pre>
+    </div>
+    <div>
+      <p>Sasha sends each article to four annotators. Each adds one field. <b>Sync</b> is a coordinator with four inboxes, named in the connections.</p>
+      <ul>
+        <li>For each value of its key, <code>url</code>, it waits until that article has arrived on <b>every</b> inbox, merges the four copies into one message, and sends it to Riley.</li>
+        <li>The copies agree on the original fields; each adds a different one. Two different values for the same field is an error, reported, never resolved silently.</li>
+        <li>The key is a design decision. Here the deduplicator makes <code>url</code> unique.</li>
+      </ul>
+    </div>
+  </div>
+</div></section>
+
+<!-- 11 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Models</div>
+  <h1>Pick the model per agent.</h1>
+<pre><span class="k">agents:</span>
+    <span class="n">Eve</span>: entity_extractor                  <span class="c"># the default model</span>
+    <span class="n">Sam</span>: severity_classifier(ai=<span class="s">"ollama"</span>)    <span class="c"># free, local</span>
+    <span class="n">Riley</span>: writer(ai=<span class="s">"anthropic"</span>)           <span class="c"># best writing</span></pre>
+  <p>Cheap or local models for closed-list classification; a strong model where the writing matters. <code>ai=</code> is the only argument an English role takes. It chooses the model and never reaches the prompt.</p>
+  <p>To change what an English role does, copy it into your office's <code>roles/</code> folder under a new name and edit the text. Roles have no parameters, so what you read is what the model reads.</p>
+</div></section>
+
+<!-- 12 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">One at a time</div>
+  <h1>A gate admits one item,<br><span class="soft">then waits until it is done.</span></h1>
+  <div class="cols">
+    <div>
+      <div class="file">returns_desk/office.md</div>
+<pre><span class="k">sources:</span>
+    tickets: file_source(path=<span class="s">"tickets.jsonl"</span>)
+<span class="k">sinks:</span>
+    jsonl_recorder(path=<span class="s">"outcomes.jsonl"</span>)
+    console_printer
+<span class="k">agents:</span>
+    <span class="n">Gate</span>: gate
+    <span class="n">Clerk</span>: clerk(limit=50)
+    <span class="n">Rex</span>: router(on=<span class="s">"clerk_decision"</span>)
+    <span class="n">Manager</span>: manager
+<span class="k">connections:</span>
+    tickets -&gt; Gate -&gt; Clerk -&gt; Rex
+    Rex.approve -&gt; jsonl_recorder, console_printer, Gate.done
+    Rex.escalate -&gt; Manager -&gt; jsonl_recorder, console_printer, Gate.done</pre>
+    </div>
+    <div>
+      <p>The clerk approves small refunds; the manager decides the rest. The desk finishes one ticket before taking the next.</p>
+      <ul>
+        <li>A gate has two inboxes, <code>in</code> and <code>done</code>. It passes one item from <code>in</code>, then waits for any message on <code>done</code>.</li>
+        <li>Both ends of the work send to <code>Gate.done</code>, so exactly one "done" arrives per ticket.</li>
+        <li>The log holds each ticket with <code>clerk_decision</code>, and for escalated ones <code>manager_decision</code> too: an audit trail for free.</li>
+      </ul>
+    </div>
+  </div>
+</div></section>
+
+<!-- 13 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Loops</div>
+  <h1>A network, not a pipeline.</h1>
+  <div class="cols">
+    <div>
+      <div class="file">debate/office.md (connections)</div>
+<pre>problems -&gt; Gate -&gt; Qwen, GPT, Claude
+Qwen -&gt; Sync.qwen
+GPT -&gt; Sync.gpt
+Claude -&gt; Sync.claude
+Sync -&gt; Riley -&gt; Ref -&gt; Rex, debate_display
+Sync -&gt; transcript
+Rex.continue -&gt; Qwen, GPT, Claude
+Rex.finish -&gt; answers, Gate.done</pre>
+    </div>
+    <div>
+      <p>Three models answer a question. Riley, the moderator, judges how far they agree and writes a note. Ref, a few lines of Python, applies the round limit and builds the next message. Rex sends it back to the panel or finishes.</p>
+      <div class="note"><p>The model judges; Python keeps the rules. The round limit is not in any prompt.</p></div>
+      <p>The gate keeps one question in the loop at a time, so the synchronizer's key, <code>problem_id</code>, is never shared by two questions in progress.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- 14 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Authors</div>
+  <h1>Some roles write new messages.<br><span class="soft">They are called authors.</span></h1>
+  <table>
+    <tr><th></th><th>Annotator</th><th>Author (<code>kind: author</code>)</th></tr>
+    <tr><td>returns</td><td>one object</td><td>a list of objects, always</td></tr>
+    <tr><td>effect</td><td>its fields are added to the message</td><td>each object is sent as a new message</td></tr>
+    <tr><td>none / many</td><td>exactly one message out</td><td><code>[]</code> sends nothing; three objects send three</td></tr>
+    <tr><td>in dataflow terms</td><td>a <i>map</i></td><td>a <i>flat-map</i></td></tr>
+  </table>
+  <div class="file">the logic of deduplicator (stateful)</div>
+<pre><span class="k">def</span> <span class="n">step</span>(item, state, settings):
+    key = item[settings["by"]]
+    <span class="k">if</span> key <span class="k">in</span> state["seen"]:
+        <span class="k">return</span> [], state                              <span class="c"># send nothing</span>
+    <span class="k">return</span> [item], {"seen": state["seen"] + [key]}  <span class="c"># send it on</span></pre>
+  <p>Authors appear later in the course, with protocols: a role that answers one request with several messages, or starts the next round of a loop.</p>
+</div></section>
+
+<!-- 15 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Before you run</div>
+  <h1>Check the office<br><span class="soft">without running it.</span></h1>
+  <div class="cols">
+    <div>
+<pre>$ dsl check my_filter
+my_filter/office.md -- 2 problems
+
+  error  W22  Felix reads "body", and nothing
+              upstream produces it. bbc_world and
+              al_jazeera produce: source, title,
+              text, url, timestamp.
+
+  note   W26  Felix's out: lists on_topic value
+              "maybe", and Rex has no outbox
+              "maybe" and no "otherwise".
+
+dsl checks W22 explains any code.</pre>
+    </div>
+    <div>
+      <p>Because sources, roles and sinks say what they read (<code>in:</code>) and write (<code>out:</code>), DisSysLab can follow every field through the network before anything runs.</p>
+      <ul>
+        <li>a field a role needs that nothing produces;</li>
+        <li>a router value with nowhere to go;</li>
+        <li>a name used but never declared;</li>
+        <li>an inbox nothing writes to, an agent nothing can reach.</li>
+      </ul>
+      <p>The check is about structure. A correctly drawn office can still wait for ever. Finding out why is part of the course.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- 16 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Nothing out of sight</div>
+  <h1>Everything DisSysLab does,<br><span class="soft">on one slide.</span></h1>
+  <table>
+    <tr><th>DisSysLab…</th><th>you see it with</th></tr>
+    <tr><td>finds each role, source and sink by name: your office's folders first, then the library</td><td><code>dsl check</code></td></tr>
+    <tr><td>when the run starts, builds each Python role with the arguments in the office file</td><td><code>dsl check</code> (checks the arguments)</td></tr>
+    <tr><td>gives each agent its own copy of a message</td><td></td></tr>
+    <tr><td>sends an English role's text, then the message as JSON</td><td><code>dsl show &lt;role&gt; --prompt</code></td></tr>
+    <tr><td>reads the reply as JSON and checks it against <code>out:</code></td><td><code>dsl run --trace</code></td></tr>
+    <tr><td>adds an annotator's fields; sends each of an author's objects</td><td><code>dsl run --trace</code></td></tr>
+    <tr><td>saves and restores the state of stateful Python roles</td><td><code>dsl show-checkpoint</code></td></tr>
+    <tr><td>drops, counts and reports a failed message</td><td>run summary</td></tr>
+    <tr><td>when the office goes quiet, reports who is still waiting, and on what</td><td>run summary</td></tr>
+  </table>
+  <p>Everything else in an office is written by you.</p>
+</div></section>
+
+<!-- 17 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Composition</div>
+  <h1>An office can be one agent<br><span class="soft">of a bigger office.</span></h1>
+  <div class="cols">
+    <div>
+      <div class="file">org_two_office_news/office.md</div>
+<pre><span class="k">sources:</span>
+    al_jazeera(max_articles=5)
+    bbc_world(max_articles=5)
+<span class="k">sinks:</span>
+    intelligence_display(title=<span class="s">"title"</span>, text=<span class="s">"summary"</span>)
+<span class="k">agents:</span>
+    <span class="n">monitor</span>: office(path=<span class="s">"news_monitor"</span>)
+    <span class="n">editor</span>: office(path=<span class="s">"news_editor"</span>)
+<span class="k">connections:</span>
+    al_jazeera, bbc_world -&gt; monitor.articles
+    monitor.kept -&gt; editor.articles
+    editor.briefings -&gt; intelligence_display</pre>
+    </div>
+    <div>
+      <div class="file">news_monitor/office.md</div>
+<pre><span class="k">inputs:</span>
+    articles
+<span class="k">outputs:</span>
+    kept
+<span class="k">sinks:</span>
+    discard
+<span class="k">agents:</span>
+    <span class="n">Felix</span>: topic_filter
+    <span class="n">Rex</span>: router(on=<span class="s">"on_topic"</span>)
+<span class="k">connections:</span>
+    articles -&gt; Felix -&gt; Rex
+    Rex.yes -&gt; kept
+    Rex.no -&gt; discard</pre>
+      <p>Inside, an input behaves like a source and an output like a sink. Outside, they are ports, like a function's parameters.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- 18 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">State</div>
+  <h1>State that survives a restart.</h1>
+  <div class="cols">
+    <div>
+<pre><span class="k">class</span> <span class="n">Deduplicator</span>:
+    <span class="k">def</span> __init__(self, by="url"):
+        self.settings = {"by": by}
+        self.state = {"seen": []}
+
+    <span class="k">def</span> __call__(self, item):
+        out, self.state = step(item, self.state,
+                               self.settings)
+        <span class="k">return</span> out
+
+    <span class="k">def</span> checkpoint(self):
+        <span class="k">return</span> self.state
+
+    <span class="k">def</span> restore(self, saved):
+        self.state = saved</pre>
+    </div>
+    <div>
+      <ul>
+        <li><b>Settings</b> are fixed for the run (<code>by</code>).</li>
+        <li><b>Resources</b> (a model, a connection) are rebuilt at start and never saved.</li>
+        <li><b>State</b> is everything that changes between messages. Keep it in one dict of plain data, and give the class <code>checkpoint</code> and <code>restore</code>.</li>
+      </ul>
+      <p>Then DisSysLab can snapshot a running office and resume it after a crash: <code>dsl run --resume latest</code>. What a consistent snapshot of a distributed system is comes later in the course.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- 19 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Your turn</div>
+  <h1>Install, copy, check, run.</h1>
+<pre>$ python -m venv venv &amp;&amp; source venv/bin/activate
+$ pip install --upgrade dissyslab
+$ dsl list                                  <span class="c"># the examples you can copy</span>
+$ dsl init org_news_filter my_filter        <span class="c"># a folder that is yours</span>
+$ cd my_filter
+$ dsl draw .                                <span class="c"># every connection</span>
+$ dsl check .                               <span class="c"># the faults, before running</span>
+$ dsl run .                                 <span class="c"># Ctrl+C to stop</span>
+$ dsl run . --trace                         <span class="c"># and every message</span></pre>
+  <p>English roles need a model: put <code>ANTHROPIC_API_KEY=…</code> in a <code>.env</code> file in the folder, or use a local model with <code>ai="ollama"</code>.</p>
+  <div class="note warn"><p>Until the new release is out, <code>dsl init</code> copies offices in the old form. This deck is for reviewing the new design.</p></div>
+</div></section>
+
+<!-- 20 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Make it yours</div>
+  <h1>Change one paragraph.<br><span class="soft">Run it again.</span></h1>
+  <div class="cols">
+    <div>
+      <div class="file">roles/topic_filter.md, before</div>
+<pre>The topic is the Americas: North, Central and
+South America and the Caribbean.</pre>
+      <div class="file">after</div>
+<pre>The topic is climate change and renewable
+energy.</pre>
+    </div>
+    <div>
+      <p>The field is called <code>on_topic</code>, not <code>about_americas</code>, so changing the topic is this one edit. The office file and the router stay as they are.</p>
+      <p>Then change a source (<code>dsl list</code> shows them), add a summarizer after Rex's <code>yes</code>, or send the <code>no</code> articles to <code>discard</code>. Run <code>dsl check</code> after each change.</p>
+    </div>
+  </div>
+</div></section>
+
+<!-- 21 -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Summary</div>
+  <h1>Six words.</h1>
+  <div class="cols3">
+    <div class="card"><h3>role</h3><p>what an agent does: JSON in, JSON out. An <b>annotator</b> adds fields; an <b>author</b> writes new messages.</p></div>
+    <div class="card"><h3>agent</h3><p>a named worker playing a role: <code>Felix: topic_filter</code>.</p></div>
+    <div class="card"><h3>router</h3><p>sends a message on by the value of one field.</p></div>
+    <div class="card"><h3>coordinator</h3><p>more than one inbox: <b>synchronizer</b>, <b>gate</b>, <b>record</b>.</p></div>
+    <div class="card"><h3>source</h3><p>where messages come from: feeds, files, sensors.</p></div>
+    <div class="card"><h3>sink</h3><p>where they end: the screen, a file, <code>discard</code>.</p></div>
+  </div>
+  <p style="margin-top:16px">You write the roles and the office file. DisSysLab runs the network, checks it before it runs, and hides nothing.</p>
+</div></section>
+
+</div>
+
+<div class="nav">
+  <button id="prev" onclick="go(-1)">← Back</button>
+  <div style="display:flex;align-items:center;gap:12px"><div class="dots" id="dots"></div><div class="count" id="count"></div></div>
+  <button id="next" class="primary" onclick="go(1)">Next →</button>
+</div>
+
+<script>
+const slides = Array.from(document.querySelectorAll('.slide'));
+let cur = 0;
+const dots = document.getElementById('dots');
+slides.forEach((_, i) => {
+  const d = document.createElement('div');
+  d.className = 'dot' + (i === 0 ? ' on' : '');
+  d.onclick = () => show(i);
+  dots.appendChild(d);
+});
+function show(i) {
+  if (i < 0 || i >= slides.length) return;
+  slides[cur].classList.remove('active');
+  cur = i;
+  slides[cur].classList.add('active');
+  slides[cur].scrollTop = 0;
+  document.querySelectorAll('.dot').forEach((d, j) => d.classList.toggle('on', j === cur));
+  document.getElementById('prev').style.visibility = cur === 0 ? 'hidden' : 'visible';
+  document.getElementById('next').style.visibility = cur === slides.length - 1 ? 'hidden' : 'visible';
+  document.getElementById('count').textContent = (cur + 1) + ' / ' + slides.length;
+}
+function go(d) { show(cur + d); }
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'PageDown') go(1);
+  if (e.key === 'ArrowLeft' || e.key === 'PageUp') go(-1);
+});
+show(0);
+
+// Messages flowing through org_news_filter (slide 2).
+const SVGNS = 'http://www.w3.org/2000/svg';
+const layer = document.getElementById('msgs');
+function travel(pathId, color, ms) {
+  return new Promise(done => {
+    const path = document.getElementById(pathId);
+    const len = path.getTotalLength();
+    const c = document.createElementNS(SVGNS, 'circle');
+    c.setAttribute('r', 7); c.setAttribute('fill', color);
+    layer.appendChild(c);
+    const t0 = performance.now();
+    function frame(now) {
+      const t = Math.min((now - t0) / ms, 1);
+      const p = path.getPointAtLength(t * len);
+      c.setAttribute('cx', p.x); c.setAttribute('cy', p.y);
+      if (t < 1) requestAnimationFrame(frame); else { c.remove(); done(); }
+    }
+    requestAnimationFrame(frame);
+  });
+}
+let k = 0;
+async function oneArticle() {
+  const from = (k % 2 === 0) ? 'p1' : 'p2';
+  const yes = [true, false, false, true, false][k % 5];
+  k++;
+  await travel(from, '#1a1a2e', 900);
+  await travel('p3', '#1a1a2e', 600);
+  await travel(yes ? 'p4' : 'p5', yes ? '#00947d' : '#d13d0e', 900);
+}
+(async function loop() {
+  while (true) {
+    if (cur === 1) { await oneArticle(); }
+    await new Promise(r => setTimeout(r, 350));
+  }
+})();
+</script>
+</body>
+</html>

@@ -56,11 +56,8 @@ _BRACE_RE = re.compile(r"\{.*\}", re.DOTALL)
 
 def _parse_json_tolerant(raw: str) -> Dict[str, Any]:
     """Tolerant JSON extractor: strips code fences, falls back to the
-    first {...} blob in the text. Same spirit as the old phase2_demo/
-    llm_worker.py's _parse_send, rewritten here since the current
-    framework has no standalone equivalent to import (confirmed by
-    checking dissyslab/components/transformers/ai_agent.py, whose own
-    inline fence-stripper doesn't handle prose-wrapped JSON)."""
+    first {...} blob in the text. The framework has no standalone
+    equivalent to import that handles prose-wrapped JSON."""
     text = raw.strip()
     fence = _FENCE_RE.search(text)
     if fence:

@@ -1,6 +1,6 @@
 # OfficeSpeak, revised: specification
 
-Status: **settled, 16 October 2026,** except the one item in section 16.
+Status: **settled, 16 October 2026.**
 Nothing here is implemented yet. The paper ports that tested it, and the
 reasons behind many decisions, are in `officespeak_ports/`.
 
@@ -27,6 +27,10 @@ Audience: students who know Python, or write it with Claude.
 4. **Topology is data, behaviour is code.** `office.md` is declarative and can
    be checked and drawn without running anything. Behaviour lives in roles.
 5. **Use a model only where judgement is needed;** use Python everywhere else.
+6. **Guardrails are recommended, never required.** Declarations that enable
+   checks (`in:`, `out:`, value lists, `needs:`, `emits:`) are optional. The
+   requirements on a student are kept to an absolute minimum; the examples
+   and the role-writing guide use the guardrails and say why.
 
 ## 1. Vocabulary
 
@@ -99,6 +103,8 @@ comment, outside quotes.
   numbers, lists, `true`/`false` (or `True`/`False`). They are read with
   Python's `ast.literal_eval`, never executed.
 - Every component that reads or writes a file takes it as `path=`.
+- As in Python, a declaration continues onto the next line while a
+  parenthesis or bracket is open, so a long argument list can be split.
 - A kind declared in the wrong section (`file_source` under `sinks:`) is an
   error.
 
@@ -154,6 +160,11 @@ reuse a built-in name or a reserved word: that is an error, not an override.
 
 Local sources and sinks follow the rules for Python roles (4.3): one class per
 file, no DisSysLab import.
+
+A file in `roles/`, `sources/` or `sinks/` whose name starts with `_` is a
+**helper module**, not a role or component. The framework puts these folders
+on the import path, so a role writes `from _signal_common import …` with no
+path trick.
 
 ### 3.3 Ports
 
@@ -231,20 +242,27 @@ undecided is said explicitly, with `unassigned`.
 
 ### 4.3 Python roles
 
-- A role is a `.py` file defining **exactly one class**. No base class, no
-  DisSysLab import.
+- A role is a `.py` file defining **exactly one class**. No DisSysLab base
+  class and no DisSysLab import. It may inherit from a class in the office's
+  own helper modules (3.2).
 - `__init__(self, **kwargs)` receives the arguments from `office.md`. It builds
   **settings** (fixed for the run) and **resources** (models, connections;
-  rebuilt at start, never saved).
+  rebuilt at start, never saved). Only `dsl run` and `dsl try` construct a
+  role; `dsl check` reads the constructor's signature and never constructs.
 - `__call__(self, item)` returns a dict (annotator) or a list of dicts
-  (author).
+  (author). An exception raised here is a failure of that one message (4.5).
 - A role that keeps **state** provides `checkpoint(self)`, returning plain
   data, and `restore(self, saved)`. A class without them is stateless.
+- A package a role imports is imported inside the method that needs it and
+  listed in `needs:` (4.4).
 - Examples are always written with the logic in a pure function, which is what
   students test and prove:
   - stateless: `step(item, settings) -> out`;
   - stateful: all state in one serializable dict, `self.state`, and
-    `step(item, state, settings) -> (out, new_state)`.
+    `step(item, state, settings) -> (out, new_state)`;
+  - calling a model or outside service: the resource is called in
+    `__call__` and its result passed in, `step(item, result, …)`, so `step`
+    is tested without the service.
 
 ```python
 """
@@ -280,6 +298,7 @@ docstring.
 |---|---|
 | `emits:` | one line, shown by `dsl roles` |
 | `kind:` | `author`; absent means annotator |
+| `needs:` | Python only: the packages it imports (`needs: birdnetlib, librosa`). `dsl check` reports any not installed, with the `pip install` line, without importing them; `dsl run` stops before starting if one is missing |
 | `in:` | the fields the role uses from its input |
 | `out:` | annotator: the fields it adds; author: the fields of each object it returns |
 
@@ -303,8 +322,10 @@ docstring.
   not need stays outside it.
 - `in:` and `out:` are statements about the role's own input and output, like
   a function's signature. They say nothing about routers, outboxes or
-  DisSysLab. They are optional: without them the role runs, and only the
-  checks that use them are lost.
+  DisSysLab. They are optional (Principle 6): without them the role runs, and
+  only the checks that use them are lost. A check that needs a declaration
+  that is absent is skipped, not failed: a router fed by a role with no `out:`
+  is not reported by W21.
 - `in:` is for checking only; it does not trim the prompt. An English role
   always receives the whole incoming message. A role with no `in:` accepts any
   object, and the end-to-end check skips it.
@@ -330,7 +351,15 @@ Removed: `outboxes:`, `inboxes:`, `contract:`, `adds:`.
    message continues, and the run summary shows the count as a note naming
    the fields. (Not applied to `out: same as in`.)
 5. A failure drops that one message, is counted, and the office continues.
-   `dsl run` exits non-zero, and the summary quotes the first failure.
+   `dsl run` exits non-zero, and the summary quotes the first failure. An
+   exception raised by a Python role's `__call__` is a failure in the same
+   way, quoted with the exception.
+6. **A stalled office is reported.** A dropped message can leave a loop
+   waiting for ever (a gate whose `done` never comes, a synchronizer group
+   that never completes). When the office goes quiet, the run summary lists
+   every agent still waiting and on which inbox, and every incomplete
+   synchronizer group, next to the first failure. Nothing is retried or
+   invented.
 
 ## 5. Routers
 
@@ -380,6 +409,11 @@ record**.
   so its original fields are identical). The same field with **different**
   values is a reported error naming the field and the two inboxes; the
   framework never chooses.
+- **The collected form,** `synchronizer(on="span", collect="results")`, for
+  many identical workers: the message sent is the key plus one field,
+  `results`, mapping each inbox name to the message that arrived on it.
+  Nothing is merged, so nothing can conflict. (Port 9: 11 backtesters, each
+  saying which variant it is in its own `variant` field.)
 
 `select` was removed (port 4): its gallery uses were "one item at a time,
 perhaps with one round trip", which a gate and a router express with
@@ -403,7 +437,10 @@ role's code. If it returns, that is the first thing to redesign.
 - A sink that shows particular fields takes them as arguments, with defaults
   in its docstring, and never guesses field names:
   `intelligence_display(title="headline", text="summary", color="severity")`.
-  Its `in:` is whatever those arguments name.
+  Its `in:` is whatever those arguments name. `intelligence_display` also
+  takes `lines=[…]`, fields printed on their own labelled lines:
+  `intelligence_display(title="title", text="abstract", color="relevance",
+  lines=["authors", "paper_type", "reason"])`.
 - A stand-in source (`file_source`) and a real one (`sources/temp_sensor.py`
   declaring `out: slot, temp`) are interchangeable: only the declaration
   changes.
@@ -418,13 +455,14 @@ role's code. If it returns, that is the first thing to redesign.
 | # | The framework… | Seen with |
 |---|---|---|
 | 1 | finds a role, source or sink by name: the office's `roles/`, `sources/` or `sinks/`, else the built-ins (3.2) | `dsl check` shows the file each one uses |
-| 2 | finds the one class in a Python file and constructs it with the `office.md` arguments | `dsl check` |
+| 2 | finds the one class in a Python file; at `dsl run`, constructs it with the `office.md` arguments | `dsl check` (signature only) |
 | 3 | gives each agent its own copy of the message | documentation |
 | 4 | sends an English role's text unchanged, followed by the message as JSON | `dsl show <role> --prompt` |
 | 5 | reads the reply as JSON, unwrapping one code fence, and checks it against the front matter | run summary, `--trace` |
 | 6 | annotator: adds the reply's fields; author: sends each object | `--trace` |
 | 7 | calls `checkpoint` and `restore` on stateful Python roles | `dsl show-checkpoint` |
-| 8 | on a failed message: drops and counts it, continues, exits non-zero | run summary |
+| 8 | on a failed message (bad reply or exception): drops and counts it, continues, exits non-zero | run summary |
+| 9 | when the office goes quiet: reports the agents still waiting and the incomplete groups (4.5) | run summary |
 
 Everything else in an office is written by the student.
 
@@ -468,6 +506,7 @@ longer declare ports.
 | W29 | note | a declared field or value never appears in the role's text |
 | W30 | note | a role adds a field and, on some path from it to a sink that declares `in:`, no step lists the field in its `in:` (a sink with no `in:` uses every field) |
 | W31 | note | two inputs of a synchronizer can carry the same field |
+| W32 | error | a package in a Python file's `needs:` is not installed (the `pip install` line given) |
 
 ## 10. Tools
 
@@ -491,7 +530,10 @@ release:
 - several repetitions each; measure valid replies, declared fields present,
   listed values valid, and code fences;
 - tune the standard closing sentences until the new form is at least as
-  reliable as the old.
+  reliable as the old;
+- check every example inside a role against that role's own front matter:
+  its output has exactly the fields of `out:`, with listed values (port 6
+  found a MEDIUM example returning HIGH).
 
 ## 12. Examples
 
@@ -502,18 +544,24 @@ and `recovery_demo` wait until everything else is done.
 
 | Idea | Example |
 |---|---|
-| a pipeline of roles | to decide |
+| a pipeline of roles | `arxiv_radar` |
 | a router (keep/discard) | `org_news_filter` |
 | fan-out and a synchronizer | `situation_room_pro` |
 | a loop stopped by a gate | `debate` |
 | one item at a time with escalation | `returns_desk` |
 | a sensing Python role with a resource | `backyard_birds` |
-| composing offices | to decide |
+| composing offices | `org_two_office_news`, rebuilt from `org_news_filter`'s filter and the built-in `summarizer` |
 | a larger application | `mac_speed_suite` |
 
-Four have been ported on paper (`officespeak_ports/`), together with
+Six have been ported on paper (`officespeak_ports/`), together with
 `room_climate_monitor`; their new office files and roles are the starting
-point.
+point. `backyard_birds` and `mac_speed_suite` are not yet ported.
+
+`arxiv_radar` needs its sources fixed first: the arXiv listing scraper
+produces no abstract (port 6). The arXiv sources will read arXiv's RSS feed
+(`rss.arxiv.org/rss/<category>`), which carries the abstract in each item's
+description and the authors in `dc:creator` (checked 16 October), and emit
+`out: source, title, authors, abstract, url, timestamp`.
 
 ## 13. Migration (one release)
 
@@ -588,7 +636,9 @@ author is a *flat-map*.
 
 ## 16. Open
 
-1. Two examples in section 12: the pipeline, and composition.
+Nothing. All nine paper ports are done, and their proposals were accepted on
+16 October. The clean-up of `mac_speed_suite`'s code and its skill (port 9,
+findings 6–9) belongs to the code restructuring, not this spec.
 
 ## Appendix: two ported offices
 

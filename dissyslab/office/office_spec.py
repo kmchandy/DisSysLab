@@ -97,7 +97,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Optional, Tuple
 
-from dissyslab.office.agent_spec import AgentSpec
 from dissyslab.office.office_spec_constants import EXTERNAL
 
 
@@ -477,8 +476,7 @@ class OfficeSpec:
       share one namespace).
     * ``inputs`` and ``outputs`` contain non-empty strings and have
       no duplicates.
-    * Every ``agents`` entry is either an ``AgentSpec`` or an
-      ``AgentRef`` (frozen-dataclass type check).
+    * Every ``agents`` entry is a ``RoleRef``.
 
     Validation NOT performed
     ------------------------

@@ -23,7 +23,6 @@ Pipeline stages (each implemented in its own module):
 The runtime that executes the produced Network lives in
 ``dissyslab.network`` (``run_network()`` / ``process_network()``).
 """
-from dissyslab.office.agent_spec import AgentSpec
 from dissyslab.office.office_spec_constants import EXTERNAL
 from dissyslab.office.office_spec import (
     ConnectionStmt,
@@ -64,7 +63,6 @@ from dissyslab.office.make_office import make_office
 
 __all__ = [
     "AgentRoleEntry",
-    "AgentSpec",
     "CompileError",
     "CompileWarning",
     "ConnectionStmt",
