@@ -177,7 +177,9 @@ def test_a_failing_message_makes_the_exit_code_non_zero(tmp_path):
      "    articles -> Rex -> Felix\n", "outboxes are named by values"),
     ("    G: gate(size=2)\n", "    articles -> G\n", "a gate takes no arguments"),
     ("    G: gate\n", "    articles -> G.ready\n", "G has inboxes in and done; it has no 'ready'"),
-    ("    S: synchronizer(on=\"url\")\n", "    articles -> S.a\n", "synchronizer is not built yet"),
+    ("    S: synchronizer\n", "    articles -> S.a\n", "every synchronizer names its key"),
+    ("    S: synchronizer(on=\"url\")\n", "    articles -> S\n", "inboxes are named by its connections"),
+    ("    S: synchronizer(on=\"url\")\n", "    articles -> S.a\n", "needs at least two inboxes"),
     ("    Jay: unassigned\n", "    articles -> Jay\n", "Jay is unassigned"),
     ("    Felix: topic_filter(focus=\"x\")\n", "    articles -> Felix\n",
      "an English role takes only ai=, not focus"),
@@ -319,3 +321,92 @@ def test_returns_desk_one_ticket_at_a_time(tmp_path):
     assert [o["ticket_id"] for o in outcomes] == ["T1", "T2", "T3", "T4"]
     assert [(o["clerk_decision"], o.get("manager_decision")) for o in outcomes] == [
         ("approve", None), ("escalate", "approve"), ("approve", None), ("escalate", "approve")]
+
+
+# ── The keyed synchronizer (spec section 6) ────────────────────────────────
+
+ENTITIES = '''"""
+---
+in: text
+out: entities
+---
+"""
+
+
+class Entities:
+    def __call__(self, item):
+        return {"entities": [w for w in item["text"].split() if w[:1].isupper()]}
+'''
+
+SEVERITY = '''"""
+---
+in: text
+out: severity (HIGH | LOW)
+---
+"""
+
+
+class Severity:
+    def __call__(self, item):
+        if "fail" in item["text"]:
+            return {"severity": "SEVERE"}      # not in out: -- rejected
+        return {"severity": "HIGH" if "war" in item["text"] else "LOW"}
+'''
+
+STORIES = [
+    {"url": "u1", "text": "Peace talks in Geneva"},
+    {"url": "u2", "text": "this one will fail"},
+    {"url": "u3", "text": "war in Europe"},
+]
+
+
+def _fan_out_office(tmp_path: Path, sync_line: str, *, topic_twice: bool = False) -> Path:
+    return write(tmp_path / "situation", {
+        "office.md": (
+            "sources:\n    stories: file_source(path=\"stories.jsonl\")\n"
+            "sinks:\n    jsonl_recorder(path=\"out.jsonl\")\n"
+            "agents:\n    Eve: entities\n    Sam: severity\n"
+            f"    Sync: {sync_line}\n"
+            "connections:\n"
+            "    stories -> Eve, Sam\n"
+            "    Eve -> Sync.entities\n"
+            "    Sam -> Sync.severity\n"
+            "    Sync -> jsonl_recorder\n"),
+        "roles/entities.py": ENTITIES,
+        "roles/severity.py": SEVERITY,
+        "stories.jsonl": jsonl(STORIES),
+    })
+
+
+def test_a_dropped_message_costs_only_its_own_group(tmp_path, capsys):
+    office = _fan_out_office(tmp_path, 'synchronizer(on="url")')
+    assert run_office(office) == 1
+    out = {m["url"]: m for m in read_jsonl(office / "out.jsonl")}
+    # u1 and u3 are complete and correctly merged; u2 lost only itself.
+    assert sorted(out) == ["u1", "u3"]
+    assert out["u1"] == {"url": "u1", "text": "Peace talks in Geneva",
+                         "entities": ["Peace", "Geneva"], "severity": "LOW"}
+    assert out["u3"]["severity"] == "HIGH" and out["u3"]["entities"] == ["Europe"]
+    err = capsys.readouterr().err
+    assert "group url=u2 is missing severity" in err
+
+
+def test_the_collected_form(tmp_path):
+    office = _fan_out_office(tmp_path, 'synchronizer(on="url", collect="results")')
+    assert run_office(office) == 1  # u2 still fails at Sam
+    out = {m["url"]: m for m in read_jsonl(office / "out.jsonl")}
+    assert set(out["u1"]) == {"url", "results"}
+    assert set(out["u1"]["results"]) == {"entities", "severity"}
+    assert out["u1"]["results"]["severity"]["severity"] == "LOW"
+
+
+def test_a_conflict_is_reported_never_resolved(tmp_path, capsys):
+    office = _fan_out_office(tmp_path, 'synchronizer(on="url")')
+    # Both branches add "entities", with different values.
+    (office / "roles" / "severity.py").write_text(SEVERITY.replace(
+        'out: severity (HIGH | LOW)', 'out: severity (HIGH | LOW), entities').replace(
+        'return {"severity": "HIGH" if "war" in item["text"] else "LOW"}',
+        'return {"severity": "LOW", "entities": []}'))
+    assert run_office(office) == 1
+    assert not (office / "out.jsonl").read_text().strip()
+    assert "'entities' differs between entities and severity" in capsys.readouterr().err

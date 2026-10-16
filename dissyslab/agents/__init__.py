@@ -12,6 +12,10 @@ Being built in Phase 3 of ``docs/internals/design/restructure_plan.md``:
   checked, one class loaded and constructed with its arguments.
 - :mod:`dissyslab.agents.router` -- a router: one field, outboxes named
   by its values, ``otherwise``.
+- :mod:`dissyslab.agents.synchronizer` -- the keyed synchronizer: one
+  group per key, sent when every inbox has contributed; merged, or
+  collected with ``collect=``; incomplete groups reported at the end.
 
-Next: the gate and the keyed synchronizer.
+The gate is the runtime's existing ``Gate`` (``dissyslab.blocks.gate``),
+built by ``dissyslab.office.build``.
 """

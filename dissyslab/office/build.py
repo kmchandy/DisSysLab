@@ -19,8 +19,8 @@ and nothing else:
 that relative paths in the office file mean what they say, and returns
 the exit code: 0 when every message was handled, 1 otherwise.
 
-**Being built (Phase 3).** Coordinators, nested offices and drafts are
-not built yet; an office that uses one gets a clear "not built
+**Being built (Phase 3).** The record coordinator, nested offices and
+drafts are not built yet; an office that uses one gets a clear "not built
 yet" error naming the line, never a guess.
 """
 
@@ -35,6 +35,7 @@ from dissyslab.agents.english import english_call
 from dissyslab.agents.python_role import python_instance
 from dissyslab.agents.role_agent import role_agent
 from dissyslab.agents.router import RouterAgent
+from dissyslab.agents.synchronizer import SynchronizerAgent
 from dissyslab.office.frontmatter import read_front_matter
 from dissyslab.office.model import Connection, Declaration, OfficeFile
 from dissyslab.office.resolve import Found, resolve_office
@@ -150,12 +151,45 @@ def _gate(decl: Declaration) -> Agent:
     return gate
 
 
+def _synchronizer(decl: Declaration, office: OfficeFile) -> Agent:
+    """A keyed synchronizer (spec 6); its inboxes are the names its connections use."""
+    args = dict(decl.args)
+    on = args.pop("on", None)
+    collect = args.pop("collect", None)
+    if not isinstance(on, str) or not on:
+        raise BuildError(
+            f"line {decl.line}: every synchronizer names its key: "
+            f"{decl.name}: synchronizer(on=\"...\")."
+        )
+    if collect is not None and not isinstance(collect, str):
+        raise BuildError(f"line {decl.line}: collect= is the name of a field, in quotes.")
+    if args:
+        raise BuildError(
+            f"line {decl.line}: a synchronizer takes on= and collect=, not {', '.join(args)}."
+        )
+    for c in office.connections:
+        if c.receiver.name == decl.name and c.receiver.port is None:
+            raise BuildError(
+                f"line {c.line}: a synchronizer's inboxes are named by its connections: "
+                f"write {c.sender} -> {decl.name}.<inbox>."
+            )
+    inboxes = office.inboxes_of(decl.name)
+    if len(inboxes) < 2:
+        raise BuildError(
+            f"line {decl.line}: synchronizer {decl.name} needs at least two inboxes; "
+            f"it has {', '.join(inboxes) or 'none'}."
+        )
+    return SynchronizerAgent(name=decl.name, on=on, inboxes=inboxes, collect=collect)
+
+
 def _agent(decl: Declaration, found: Found, office: OfficeFile) -> Agent:
     if found.origin == "reserved":
         if found.kind == "router":
             return _router(decl, office)
         if found.kind == "gate":
             return _gate(decl)
+        if found.kind == "synchronizer":
+            return _synchronizer(decl, office)
         if found.kind == "unassigned":
             raise BuildError(
                 f"line {decl.line}: {decl.name} is unassigned; a draft office can be "
@@ -193,9 +227,11 @@ def _runtime_connection(c: Connection, found: dict[str, Found]) -> tuple[str, st
             f"line {c.line}: {c.sender.name} has one outbox, out; it has no "
             f"{c.sender.port!r} (spec 3.3)."
         )
+    written_in = c.receiver.port or "in"
+    if receiver.kind == "synchronizer":
+        return (c.sender.name, out_port, c.receiver.name, written_in)
     inboxes = INBOXES.get(receiver.kind, {"in": RUNTIME_IN}) if receiver.origin == "reserved" \
         else {"in": RUNTIME_IN}
-    written_in = c.receiver.port or "in"
     if written_in not in inboxes:
         names = " and ".join(inboxes)
         raise BuildError(
