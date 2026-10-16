@@ -240,7 +240,6 @@ module = [
   "dissyslab.blocks.source",
   "dissyslab.builder",
   "dissyslab.cli",
-  "dissyslab.components",
   "dissyslab.components.sinks.gmail_sink",
   "dissyslab.components.sinks.intelligence_display",
   "dissyslab.components.sinks.slack_sink",

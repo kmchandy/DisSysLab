@@ -1,24 +1,15 @@
 # dissyslab/components/__init__.py
 
 """
-Components: Reusable building blocks for distributed networks.
+Components: the sources and sinks an office is built from.
 
-This library provides sources, transformers, and sinks that can be
-composed into distributed systems using the DSL.
+- sources/: where messages come from (RSS feeds, files, sensors, APIs)
+- sinks/: where they end (console, files, email, Slack)
 
-Organized by type:
-- sources/: Data stream origins (RSS, mocks, lists)
-- transformers/: Processing nodes (AI agents, filters)
-- sinks/: Output destinations (console, email, files)
-
-Each component comes in two versions:
-- Real: Production-ready (Module 9)
-- Mock: Test/teaching version (Module 2)
+Each is looked up by name through the registry in
+``dissyslab/office/utils.py``.
 """
 
-# Make subpackages easily accessible
-from . import sources
-from . import transformers
-from . import sinks
+from . import sinks, sources
 
-__all__ = ['sources', 'transformers', 'sinks']
+__all__ = ["sources", "sinks"]
