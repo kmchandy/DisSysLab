@@ -170,11 +170,18 @@ def test_a_failing_message_makes_the_exit_code_non_zero(tmp_path):
 
 
 @pytest.mark.parametrize("agents, connections, message", [
-    ("    Rex: router(on=\"on_topic\")\n", "    articles -> Rex\n", "router is not built yet"),
+    ("    Rex: router(on=\"on_topic\")\n", "    articles -> Rex\n", "Rex sends nowhere"),
+    ("    Rex: router\n    Felix: topic_filter\n", "    articles -> Rex\n    Rex.yes -> Felix\n",
+     "every router names its field"),
+    ("    Rex: router(on=\"x\")\n    Felix: topic_filter\n",
+     "    articles -> Rex -> Felix\n", "outboxes are named by values"),
+    ("    G: gate(size=2)\n", "    articles -> G\n", "a gate takes no arguments"),
+    ("    G: gate\n", "    articles -> G.ready\n", "G has inboxes in and done; it has no 'ready'"),
+    ("    S: synchronizer(on=\"url\")\n", "    articles -> S.a\n", "synchronizer is not built yet"),
     ("    Jay: unassigned\n", "    articles -> Jay\n", "Jay is unassigned"),
     ("    Felix: topic_filter(focus=\"x\")\n", "    articles -> Felix\n",
      "an English role takes only ai=, not focus"),
-    ("    Felix: topic_filter\n", "    articles -> Felix.left\n", "named ports"),
+    ("    Felix: topic_filter\n", "    articles -> Felix.left\n", "Felix has inbox in; it has no 'left'"),
     ("    Felix: topic_fliter\n", "    articles -> Felix\n",
      "line 4: no agent called 'topic_fliter'.*Did you mean 'topic_filter'"),
 ])
@@ -187,3 +194,128 @@ def test_build_errors(tmp_path, agents, connections, message):
     })
     with pytest.raises(BuildError, match=message):
         build_office(office)
+
+
+# ── Routers (spec section 5) ───────────────────────────────────────────────
+
+
+def _news_filter(tmp_path: Path, routes: str, model: str) -> Path:
+    return write(tmp_path / "news_filter", {
+        "office.md": (
+            "# org_news_filter, as ported (officespeak_ports/org_news_filter.md)\n"
+            "sources:\n    articles: file_source(path=\"articles.jsonl\")\n"
+            "sinks:\n"
+            "    kept: jsonl_recorder(path=\"kept.jsonl\")\n"
+            "    other: jsonl_recorder(path=\"other.jsonl\")\n"
+            "    discard\n"
+            f"agents:\n    Felix: topic_filter(ai=\"{model}\")\n"
+            "    Rex: router(on=\"on_topic\")\n"
+            "connections:\n    articles -> Felix -> Rex\n" + routes),
+        "roles/topic_filter.md": TOPIC_FILTER,
+        "articles.jsonl": jsonl(ARTICLES),
+    })
+
+
+def test_a_router_sends_by_value(tmp_path, americas_model):
+    office = _news_filter(tmp_path, "    Rex.yes -> kept\n    Rex.no -> discard\n",
+                          "americas_test")
+    assert run_office(office) == 0
+    kept = read_jsonl(office / "kept.jsonl")
+    assert [m["title"] for m in kept] == ["Brazil votes", "Ottawa budget"]
+    assert all(m["on_topic"] == "yes" for m in kept)  # the field stays
+
+
+def test_otherwise_takes_the_values_with_no_outbox(tmp_path):
+    register_backend("three_way_test", lambda: Scripted(
+        lambda system, m: json.dumps({"on_topic": {"Brazil votes": "yes", "Tokyo rains": "no"}
+                                      .get(m["title"], "unsure")})))
+    office = _news_filter(tmp_path, "    Rex.yes -> kept\n    Rex.otherwise -> other\n",
+                          "three_way_test")
+    # "unsure" is not in out: (yes | no), so the role's reply is rejected
+    # before it reaches Rex; "no" has no outbox and goes to otherwise.
+    assert run_office(office) == 1
+    assert [m["title"] for m in read_jsonl(office / "kept.jsonl")] == ["Brazil votes"]
+    assert [m["title"] for m in read_jsonl(office / "other.jsonl")] == ["Tokyo rains"]
+
+
+def test_a_value_with_no_outbox_and_no_otherwise_is_a_failure(tmp_path, americas_model, capsys):
+    office = _news_filter(tmp_path, "    Rex.yes -> kept\n", "americas_test")
+    assert run_office(office) == 1
+    assert [m["title"] for m in read_jsonl(office / "kept.jsonl")] == [
+        "Brazil votes", "Ottawa budget"]
+    err = capsys.readouterr().err
+    assert "'on_topic' is 'no', which has no outbox here and there is no otherwise" in err
+
+
+# ── The gate (spec section 6): returns_desk, as ported ─────────────────────
+
+CLERK_ROLE = '''"""
+---
+emits: approves small refunds; escalates the rest
+in: amount
+out: clerk_decision (approve | escalate)
+---
+"""
+
+
+def step(item, settings):
+    if item["amount"] < settings["limit"]:
+        return {"clerk_decision": "approve"}
+    return {"clerk_decision": "escalate"}
+
+
+class Clerk:
+    def __init__(self, limit=50):
+        self.settings = {"limit": limit}
+
+    def __call__(self, item):
+        return step(item, self.settings)
+'''
+
+MANAGER_ROLE = '''"""
+---
+emits: the manager's decision on an escalated refund
+in: amount
+out: manager_decision (approve | refuse)
+---
+"""
+
+
+class Manager:
+    def __call__(self, item):
+        return {"manager_decision": "approve"}
+'''
+
+TICKETS = [
+    {"ticket_id": "T1", "customer": "Ana", "amount": 20},
+    {"ticket_id": "T2", "customer": "Ben", "amount": 120},
+    {"ticket_id": "T3", "customer": "Cy", "amount": 35},
+    {"ticket_id": "T4", "customer": "Dee", "amount": 80},
+]
+
+
+def test_returns_desk_one_ticket_at_a_time(tmp_path):
+    office = write(tmp_path / "returns_desk", {
+        "office.md": (
+            "sources:\n    tickets: file_source(path=\"tickets.jsonl\")\n"
+            "sinks:\n    jsonl_recorder(path=\"outcomes.jsonl\")\n"
+            "agents:\n"
+            "    Gate: gate\n"
+            "    Clerk: clerk(limit=50)\n"
+            "    Rex: router(on=\"clerk_decision\")\n"
+            "    Manager: manager\n"
+            "connections:\n"
+            "    tickets -> Gate -> Clerk -> Rex\n"
+            "    Rex.approve -> jsonl_recorder, Gate.done\n"
+            "    Rex.escalate -> Manager -> jsonl_recorder, Gate.done\n"),
+        "roles/clerk.py": CLERK_ROLE,
+        "roles/manager.py": MANAGER_ROLE,
+        "tickets.jsonl": jsonl(TICKETS),
+    })
+    assert run_office(office) == 0
+    outcomes = read_jsonl(office / "outcomes.jsonl")
+    # One ticket finished before the next is admitted, so the log is in
+    # ticket order even though escalated tickets take a longer path.
+    assert [o["ticket_id"] for o in outcomes] == ["T1", "T2", "T3", "T4"]
+    assert [(o["clerk_decision"], o.get("manager_decision")) for o in outcomes] == [
+        ("approve", None), ("escalate", "approve"), ("approve", None), ("escalate", "approve")]

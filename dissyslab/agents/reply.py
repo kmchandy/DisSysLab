@@ -70,7 +70,7 @@ def parse_reply(reply: Any) -> Any:
     return json.loads(text)
 
 
-def _written(value: Any) -> str:
+def written(value: Any) -> str:
     """A value as written in front matter: true, false, 3, or the string."""
     if isinstance(value, bool):
         return "true" if value else "false"
@@ -84,8 +84,8 @@ def _check_fields(obj: Message, fields: tuple[Field, ...]) -> str | None:
     for f in fields:
         if f.name not in obj:
             return f"the reply has no field {f.name!r}."
-        if f.values and _written(obj[f.name]) not in f.values:
-            got = _written(obj[f.name])
+        if f.values and written(obj[f.name]) not in f.values:
+            got = written(obj[f.name])
             near = difflib.get_close_matches(got, f.values, n=1)
             hint = f" (closest: {near[0]!r})" if near else ""
             return (
@@ -144,7 +144,7 @@ def _fields_for(obj: Message, fm: FrontMatter) -> tuple[Field, ...]:
     """The ``out:`` fields plus those of every ``out if`` line ``obj`` meets."""
     fields = fm.outputs or ()
     for c in fm.conditionals:
-        if c.field in obj and _written(obj[c.field]) == c.value:
+        if c.field in obj and written(obj[c.field]) == c.value:
             fields = fields + c.fields
     return fields
 

@@ -80,16 +80,25 @@ class RoleAgent(Agent):
             self.dropped_fields[field] = self.dropped_fields.get(field, 0) + 1
 
     def _reject(self, reason: str) -> None:
-        """Count a message the role could not handle; print the first one."""
-        first = self.first_failure is None
-        self.record_failure(reason)
-        if first:
-            sys.stderr.write(
-                f"\n[{self.name}] {reason}\n"
-                f"This message was not processed. The office carries on; "
-                f"the run summary counts the rest.\n\n"
-            )
-            sys.stderr.flush()
+        reject(self, reason)
+
+
+def reject(agent: Agent, reason: str) -> None:
+    """Count a message an agent could not handle; print only the first one.
+
+    The same rule as ``Agent.report_failure``, for a failure that is a
+    sentence rather than an exception: counted, the first printed to
+    stderr as one write, the rest left to the run summary.
+    """
+    first = agent.first_failure is None
+    agent.record_failure(reason)
+    if first:
+        sys.stderr.write(
+            f"\n[{agent.name}] {reason}\n"
+            f"This message was not processed. The office carries on; "
+            f"the run summary counts the rest.\n\n"
+        )
+        sys.stderr.flush()
 
 
 class AnnotatorAgent(RoleAgent):

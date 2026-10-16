@@ -10,6 +10,8 @@ Being built in Phase 3 of ``docs/internals/design/restructure_plan.md``:
   message, sent to a model, nothing appended.
 - :mod:`dissyslab.agents.python_role` -- a Python role: ``needs:``
   checked, one class loaded and constructed with its arguments.
+- :mod:`dissyslab.agents.router` -- a router: one field, outboxes named
+  by its values, ``otherwise``.
 
-Next: routers and coordinators.
+Next: the gate and the keyed synchronizer.
 """

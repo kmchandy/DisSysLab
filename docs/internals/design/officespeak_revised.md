@@ -444,6 +444,10 @@ role's code. If it returns, that is the first thing to redesign.
 - A stand-in source (`file_source`) and a real one (`sources/temp_sensor.py`
   declaring `out: slot, temp`) are interchangeable: only the declaration
   changes.
+- A local source or sink is one class, built with its arguments like a
+  Python role. A source's instance is called with no arguments and returns
+  the next message, or `None` when it has no more; a sink's instance is
+  called with each message.
 - `starter` is retired. In all seven offices that use it, it only wakes a role
   standing in for a source.
 - The sink aliases that exist only to give a second copy a name

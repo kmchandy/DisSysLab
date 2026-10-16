@@ -19,8 +19,8 @@ and nothing else:
 that relative paths in the office file mean what they say, and returns
 the exit code: 0 when every message was handled, 1 otherwise.
 
-**Being built (Phase 3).** Routers, coordinators, nested offices and
-drafts are not built yet; an office that uses one gets a clear "not built
+**Being built (Phase 3).** Coordinators, nested offices and drafts are
+not built yet; an office that uses one gets a clear "not built
 yet" error naming the line, never a guess.
 """
 
@@ -34,6 +34,7 @@ from typing import Any, Iterator
 from dissyslab.agents.english import english_call
 from dissyslab.agents.python_role import python_instance
 from dissyslab.agents.role_agent import role_agent
+from dissyslab.agents.router import RouterAgent
 from dissyslab.office.frontmatter import read_front_matter
 from dissyslab.office.model import Connection, Declaration, OfficeFile
 from dissyslab.office.resolve import Found, resolve_office
@@ -109,8 +110,52 @@ def _role(decl: Declaration, found: Found) -> Agent:
     return role_agent(decl.name, instance, fm)
 
 
-def _agent(decl: Declaration, found: Found) -> Agent:
+def _router(decl: Declaration, office: OfficeFile) -> Agent:
+    """A router; its outboxes are the values its connections name (spec 5)."""
+    args = dict(decl.args)
+    on = args.pop("on", None)
+    if not isinstance(on, str) or not on:
+        raise BuildError(
+            f"line {decl.line}: every router names its field: {decl.name}: router(on=\"...\")."
+        )
+    if args:
+        raise BuildError(f"line {decl.line}: a router takes only on=, not {', '.join(args)}.")
+    outboxes: list[str] = []
+    for c in office.connections:
+        if c.sender.name != decl.name:
+            continue
+        if c.sender.port is None:
+            raise BuildError(
+                f"line {c.line}: a router's outboxes are named by values: write "
+                f"{decl.name}.<value> -> {c.receiver}."
+            )
+        if c.sender.port not in outboxes:
+            outboxes.append(c.sender.port)
+    if not outboxes:
+        raise BuildError(f"line {decl.line}: router {decl.name} sends nowhere.")
+    return RouterAgent(name=decl.name, on=on, outboxes=outboxes)
+
+
+def _gate(decl: Declaration) -> Agent:
+    """A gate (spec 6): admits one item from ``in``, then waits for ``done``.
+
+    The runtime's existing ``Gate`` coordinator, unchanged; it already
+    tells the termination detector which inbox it is waiting on.
+    """
+    from dissyslab.blocks.gate import Gate
+
+    if decl.args:
+        raise BuildError(f"line {decl.line}: a gate takes no arguments.")
+    gate: Agent = Gate(name=decl.name)
+    return gate
+
+
+def _agent(decl: Declaration, found: Found, office: OfficeFile) -> Agent:
     if found.origin == "reserved":
+        if found.kind == "router":
+            return _router(decl, office)
+        if found.kind == "gate":
+            return _gate(decl)
         if found.kind == "unassigned":
             raise BuildError(
                 f"line {decl.line}: {decl.name} is unassigned; a draft office can be "
@@ -123,13 +168,41 @@ def _agent(decl: Declaration, found: Found) -> Agent:
 # ── Connections ────────────────────────────────────────────────────────────
 
 
-def _runtime_connection(c: Connection) -> tuple[str, str, str, str]:
-    for end in (c.sender, c.receiver):
-        if end.port is not None:
-            raise BuildError(
-                f"line {c.line}: named ports ({end}) are not built yet (Phase 3)."
-            )
-    return (c.sender.name, RUNTIME_OUT, c.receiver.name, RUNTIME_IN)
+#: Inboxes by kind, as written in the office file -> the runtime's name.
+#: Anything not listed has the one inbox ``in``.
+INBOXES: dict[str, dict[str, str]] = {
+    "gate": {"in": RUNTIME_IN, "done": "done"},
+}
+
+
+def _runtime_connection(c: Connection, found: dict[str, Found]) -> tuple[str, str, str, str]:
+    """One arrow as the runtime's (sender, outbox, receiver, inbox).
+
+    A router's outbox is the value after the dot. Every other sender has
+    one outbox, ``out``. A receiver's inboxes are ``in``, or for a gate
+    ``in`` and ``done``. A port that does not exist is an error naming the
+    arrow (spec 3.3).
+    """
+    sender, receiver = found[c.sender.name], found[c.receiver.name]
+    if sender.kind == "router":
+        out_port = c.sender.port or ""  # _router has already required a value
+    elif c.sender.port in (None, "out"):
+        out_port = RUNTIME_OUT
+    else:
+        raise BuildError(
+            f"line {c.line}: {c.sender.name} has one outbox, out; it has no "
+            f"{c.sender.port!r} (spec 3.3)."
+        )
+    inboxes = INBOXES.get(receiver.kind, {"in": RUNTIME_IN}) if receiver.origin == "reserved" \
+        else {"in": RUNTIME_IN}
+    written_in = c.receiver.port or "in"
+    if written_in not in inboxes:
+        names = " and ".join(inboxes)
+        raise BuildError(
+            f"line {c.line}: {c.receiver.name} has inbox{'es' if len(inboxes) > 1 else ''} "
+            f"{names}; it has no {written_in!r} (spec 3.3)."
+        )
+    return (c.sender.name, out_port, c.receiver.name, inboxes[written_in])
 
 
 # ── The office ─────────────────────────────────────────────────────────────
@@ -151,9 +224,9 @@ def build_network(office: OfficeFile, office_dir: Path) -> Network:
             _local_component(decl, f) if f.origin == "local" else _builtin_component(decl)
         )
     for decl in office.agents:
-        blocks[decl.name] = _agent(decl, found[decl.name])
+        blocks[decl.name] = _agent(decl, found[decl.name], office)
 
-    connections = [_runtime_connection(c) for c in office.connections]
+    connections = [_runtime_connection(c, found) for c in office.connections]
     return Network(name=office_dir.name, blocks=blocks, connections=connections)
 
 
