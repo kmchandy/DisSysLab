@@ -1,0 +1,189 @@
+"""Offices in the new line syntax, built and run end to end (Phase 3.3).
+
+Each test writes an office folder -- office.md in the line form, its
+roles, its data -- and runs it with ``run_office``. English roles use a
+scripted model registered for the test.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from dissyslab.backends import register_backend
+from dissyslab.office.build import BuildError, build_office, run_office
+
+
+def write(folder: Path, files: dict[str, str]) -> Path:
+    for rel, text in files.items():
+        path = folder / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+    return folder
+
+
+def jsonl(items: list[dict]) -> str:
+    return "".join(json.dumps(i) + "\n" for i in items)
+
+
+def read_jsonl(path: Path) -> list[dict]:
+    return [json.loads(x) for x in path.read_text().splitlines() if x.strip()]
+
+
+class Scripted:
+    def __init__(self, answer):
+        self.answer = answer
+
+    def complete(self, *, system, user, max_tokens=1024, temperature=1.0, model=None):
+        return self.answer(system, json.loads(user))
+
+
+TOPIC_FILTER = """\
+---
+emits: whether a news article is on the topic
+in: title, text
+out: on_topic (yes | no)
+---
+You read one news article. Decide whether it is about the Americas.
+Return only a JSON object with one field, "on_topic", "yes" or "no".
+"""
+
+WORD_COUNT = '''"""
+---
+emits: how many words the article has
+in: text
+out: words
+---
+"""
+
+
+class WordCount:
+    def __call__(self, item):
+        return {"words": len(item["text"].split())}
+'''
+
+ARTICLES = [
+    {"title": "Brazil votes", "text": "Brazil votes today"},
+    {"title": "Tokyo rains", "text": "Rain in Tokyo"},
+    {"title": "Ottawa budget", "text": "The Ottawa budget passes"},
+]
+
+
+@pytest.fixture
+def americas_model():
+    register_backend("americas_test", lambda: Scripted(
+        lambda system, m: json.dumps(
+            {"on_topic": "no" if "Tokyo" in m["title"] else "yes"})))
+
+
+def test_a_pipeline_of_an_english_and_a_python_role(tmp_path, americas_model):
+    office = write(tmp_path / "pipeline", {
+        "office.md": (
+            "# a pipeline: an English role, then a Python role\n"
+            "sources:\n"
+            "    articles: file_source(path=\"articles.jsonl\")\n"
+            "sinks:\n"
+            "    jsonl_recorder(path=\"out.jsonl\")\n"
+            "agents:\n"
+            "    Felix: topic_filter(ai=\"americas_test\")\n"
+            "    Wendy: word_count\n"
+            "connections:\n"
+            "    articles -> Felix -> Wendy -> jsonl_recorder\n"),
+        "roles/topic_filter.md": TOPIC_FILTER,
+        "roles/word_count.py": WORD_COUNT,
+        "articles.jsonl": jsonl(ARTICLES),
+    })
+    assert run_office(office) == 0
+    out = read_jsonl(office / "out.jsonl")
+    assert [(m["title"], m["on_topic"], m["words"]) for m in out] == [
+        ("Brazil votes", "yes", 3), ("Tokyo rains", "no", 3), ("Ottawa budget", "yes", 4)]
+
+
+def test_fan_in_and_fan_out_with_named_sinks(tmp_path, americas_model):
+    office = write(tmp_path / "fan", {
+        "office.md": (
+            "sources:\n"
+            "    first: file_source(path=\"a.jsonl\")\n"
+            "    second: file_source(path=\"b.jsonl\")\n"
+            "sinks:\n"
+            "    left: jsonl_recorder(path=\"left.jsonl\")\n"
+            "    right: jsonl_recorder(path=\"right.jsonl\")\n"
+            "agents:\n"
+            "    Felix: topic_filter(ai=\"americas_test\")\n"
+            "connections:\n"
+            "    first, second -> Felix -> left, right\n"),
+        "roles/topic_filter.md": TOPIC_FILTER,
+        "a.jsonl": jsonl(ARTICLES[:2]),
+        "b.jsonl": jsonl(ARTICLES[2:]),
+    })
+    assert run_office(office) == 0
+    for sink in ("left.jsonl", "right.jsonl"):
+        assert sorted(m["title"] for m in read_jsonl(office / sink)) == sorted(
+            a["title"] for a in ARTICLES)
+
+
+def test_a_local_source_and_sink(tmp_path):
+    office = write(tmp_path / "local", {
+        "office.md": (
+            "sources:\n    numbers: counter(upto=3)\n"
+            "sinks:\n    keep: keeper(path=\"kept.txt\")\n"
+            "connections:\n    numbers -> keep\n"),
+        "sources/counter.py": (
+            "class Counter:\n"
+            "    def __init__(self, upto):\n"
+            "        self.n, self.upto = 0, upto\n"
+            "    def __call__(self):\n"
+            "        self.n += 1\n"
+            "        return {'n': self.n} if self.n <= self.upto else None\n"),
+        "sinks/keeper.py": (
+            "class Keeper:\n"
+            "    def __init__(self, path):\n"
+            "        self.path = path\n"
+            "    def __call__(self, msg):\n"
+            "        with open(self.path, 'a') as f:\n"
+            "            f.write(str(msg['n']) + '\\n')\n"),
+    })
+    assert run_office(office) == 0
+    assert (office / "kept.txt").read_text().split() == ["1", "2", "3"]
+
+
+def test_a_failing_message_makes_the_exit_code_non_zero(tmp_path):
+    register_backend("half_test", lambda: Scripted(
+        lambda system, m: '{"on_topic": "maybe"}' if "Tokyo" in m["title"]
+        else '{"on_topic": "yes"}'))
+    office = write(tmp_path / "half", {
+        "office.md": (
+            "sources:\n    articles: file_source(path=\"articles.jsonl\")\n"
+            "sinks:\n    jsonl_recorder(path=\"out.jsonl\")\n"
+            "agents:\n    Felix: topic_filter(ai=\"half_test\")\n"
+            "connections:\n    articles -> Felix -> jsonl_recorder\n"),
+        "roles/topic_filter.md": TOPIC_FILTER,
+        "articles.jsonl": jsonl(ARTICLES),
+    })
+    assert run_office(office) == 1
+    assert len(read_jsonl(office / "out.jsonl")) == 2
+
+
+# ── Clear errors for what is not built yet, or not right ───────────────────
+
+
+@pytest.mark.parametrize("agents, connections, message", [
+    ("    Rex: router(on=\"on_topic\")\n", "    articles -> Rex\n", "router is not built yet"),
+    ("    Jay: unassigned\n", "    articles -> Jay\n", "Jay is unassigned"),
+    ("    Felix: topic_filter(focus=\"x\")\n", "    articles -> Felix\n",
+     "an English role takes only ai=, not focus"),
+    ("    Felix: topic_filter\n", "    articles -> Felix.left\n", "named ports"),
+    ("    Felix: topic_fliter\n", "    articles -> Felix\n",
+     "line 4: no agent called 'topic_fliter'.*Did you mean 'topic_filter'"),
+])
+def test_build_errors(tmp_path, agents, connections, message):
+    office = write(tmp_path / "bad", {
+        "office.md": ("sources:\n    articles: file_source(path=\"a.jsonl\")\n"
+                      f"agents:\n{agents}connections:\n{connections}"),
+        "roles/topic_filter.md": TOPIC_FILTER,
+        "a.jsonl": jsonl(ARTICLES),
+    })
+    with pytest.raises(BuildError, match=message):
+        build_office(office)

@@ -38,15 +38,20 @@ class FileSource:
         ...     print(customer["name"])
     """
     
-    def __init__(self, filepath, format=None, encoding="utf-8"):
+    def __init__(self, path=None, format=None, encoding="utf-8", *, filepath=None):
         """
         Initialize file source.
         
         Args:
-            filepath: Path to file
+            path: Path to file. Every component that reads or writes a
+                file takes it as ``path=`` (spec 3.1).
+            filepath: The older name for ``path``, still accepted.
             format: "csv" | "json" | "jsonl" (auto-detected from extension if None)
             encoding: File encoding (default: "utf-8")
         """
+        filepath = path if path is not None else filepath
+        if filepath is None:
+            raise TypeError("FileSource needs path=, the file to read.")
         self.filepath = filepath
         self.encoding = encoding
         self.n = 0

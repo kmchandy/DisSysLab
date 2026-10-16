@@ -372,11 +372,15 @@ class TestComponentArguments:
         _write_role(tmp_path, "analyst", "You analyse. Send to brief.")
         return tmp_path
 
+    # Since 2.0 `path` is the real argument (spec 3.1: every component
+    # that reads or writes a file takes `path=`), so the typo used here
+    # is `pth`.
+
     def test_an_argument_that_does_not_exist_is_refused(self, tmp_path):
         from dissyslab.office._internals import CompileError
 
-        d = self._office(tmp_path, 'file_source(path="items.jsonl")')
-        with pytest.raises(CompileError, match="no argument 'path'"):
+        d = self._office(tmp_path, 'file_source(pth="items.jsonl")')
+        with pytest.raises(CompileError, match="no argument 'pth'"):
             render_run_py(d)
 
     def test_it_suggests_the_real_name(self, tmp_path):
@@ -384,8 +388,8 @@ class TestComponentArguments:
         one character away."""
         from dissyslab.office._internals import CompileError
 
-        d = self._office(tmp_path, 'file_source(path="items.jsonl")')
-        with pytest.raises(CompileError, match="filepath"):
+        d = self._office(tmp_path, 'file_source(pth="items.jsonl")')
+        with pytest.raises(CompileError, match="'path'"):
             render_run_py(d)
 
     def test_the_right_argument_is_accepted(self, tmp_path):
