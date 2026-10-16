@@ -140,19 +140,16 @@ def _packaged_gallery() -> Path:
     return Path(str(trav))
 
 
-# The gallery split (#115) put Pat-facing offices under gallery/apps/
-# and Builder demos under gallery/examples/. Older gallery offices
-# (pre-split) lived at gallery/<name>/ directly. Both styles need to
-# resolve so `dsl init` / `dsl run <name>` keep working.
-_GALLERY_SUBSECTIONS = ("apps", "examples", "")
+# The 2.0 gallery is flat: gallery/<name>/office.md. (The version 1
+# gallery had apps/ and examples/ sections; it is on the v1 branch.)
+# Kept as a tuple of sections so a later split needs no new code.
+_GALLERY_SUBSECTIONS = ("",)
 
 
 def _find_packaged_office(name: str) -> Path | None:
     """Locate a packaged office by name across the gallery split.
 
-    Searches in priority order: gallery/apps/<name>, gallery/examples/<name>,
-    gallery/<name>. Returns the first directory that contains office.md
-    (or the legacy network.md). Returns None if nothing matches.
+    Looks for gallery/<name>/office.md. Returns the directory, or None.
     """
     gallery = _packaged_gallery()
     for sub in _GALLERY_SUBSECTIONS:
@@ -602,7 +599,7 @@ def _refuse_if_draft(office_dir, command: str) -> bool:
 def _is_new_syntax(office_dir: Path) -> bool:
     """True if the office is written in the 2.0 line form (spec section 3).
 
-    Until the old gallery is archived, ``dsl run``, ``dsl check`` and
+    Until the old path is removed (Phase 6b), ``dsl run``, ``dsl check`` and
     ``dsl build`` take an office down the new path or the old one by the
     form of its ``office.md``; nothing else differs.
     """
@@ -619,6 +616,21 @@ def _run_new(office_dir: Path, args: argparse.Namespace) -> int:
         if getattr(args, attr, None) not in (None, False):
             _eprint(f"dsl run: {flag} is not available yet for an office in the new syntax.")
             return 2
+    from dissyslab.office.cli_helpers import is_packaged_office
+
+    if is_packaged_office(Path(office_dir)):
+        # A run writes its output next to office.md. Inside the installed
+        # package that is a folder an upgrade replaces and a system-wide
+        # install may not let anyone write; nothing put there is the
+        # student's. Copying is one command, and it is said, not done.
+        name = Path(office_dir).resolve().name
+        _eprint(f"dsl run: {name} is a gallery office inside the installed package, "
+                "and a run writes its output next to it. Run a copy of your own:")
+        _eprint(f"  dsl init {name} my_{name}")
+        _eprint(f"  cd my_{name}")
+        _eprint("  dsl run .")
+        return 2
+
     if not getattr(args, "quiet", False):
         os.environ["DSL_RUN_SUMMARY"] = "1"
 
@@ -1188,19 +1200,15 @@ def cmd_show_checkpoint(args: argparse.Namespace) -> int:
 #: `dsl list` has never met Pat, and a heading that names someone they
 #: cannot ask about is the same defect as an unexplained `W11`.
 _SECTION_HEADINGS = {
-    "apps": "Apps — ready to run",
-    "examples": "Examples — patterns to copy from",
-    "": "Other",
+    "": "The gallery (dissyslab/gallery/README.md says what each one teaches)",
 }
 
 
 def cmd_list(args: argparse.Namespace) -> int:
     """List the gallery offices that ship with the installed dissyslab.
 
-    Output is grouped by gallery section (apps vs. examples) so Pat
-    can immediately see which offices are intended as ready-to-run
-    AI assistants and which are smaller demos for Builders. Within
-    each section, offices are sorted alphabetically.
+    One line each, alphabetically, with the first sentence of its
+    README.
     """
     gallery = _packaged_gallery()
     if not gallery.is_dir():
@@ -1236,11 +1244,10 @@ def cmd_list(args: argparse.Namespace) -> int:
             print(line1.rstrip())
         print()
 
-    print("To copy an office into your own folder:")
+    print("To run one, copy it into a folder of your own and run it there:")
     print("  dsl init <office_name> <folder>")
-    print()
-    print("Or run a packaged office in place by name:")
-    print("  dsl run <office_name>")
+    print("  cd <folder>")
+    print("  dsl run .")
     return 0
 
 
@@ -1258,6 +1265,17 @@ def _office_uses_llm_roles(office_dir: Path) -> bool:
     Errs toward ``True`` (assume a key is needed) when the office cannot be
     parsed, so a genuine key requirement is never silently hidden.
     """
+    if _is_new_syntax(Path(office_dir)):
+        try:
+            from dissyslab.office.resolve import resolve_office
+            from dissyslab.office.syntax import parse_office_file
+
+            office = parse_office_file(Path(office_dir) / "office.md")
+            found, _ = resolve_office(office, Path(office_dir))
+        except Exception:
+            return True
+        return any(f.language == "english" for f in found.values()) or any(
+            f.kind == "office" for f in found.values())
     try:
         from dissyslab.office.parser import parse_office_dir
         from dissyslab.office._internals import _builtin_roles_dir

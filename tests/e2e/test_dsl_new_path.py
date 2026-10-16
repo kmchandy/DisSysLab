@@ -1,10 +1,10 @@
 """``dsl run``, ``dsl check`` and ``dsl build`` on offices in the new syntax.
 
 Each test runs the command in a separate Python process, the way a
-student runs it from a terminal. Until the old gallery is archived, the
-command takes an office down the new path or the old one by the form of
-its ``office.md`` (``syntax.is_old_form``); the last two tests pin that
-choice for every office in the package.
+student runs it from a terminal. Until the old path is removed (Phase
+6b), the command takes an office down the new path or the old one by the
+form of its ``office.md`` (``syntax.is_old_form``); the last test pins
+that choice for every office in the gallery.
 
 Language models are replaced by ``tests/e2e/fake_model.py``.
 """
@@ -24,8 +24,7 @@ import pytest
 from dissyslab.office.syntax import is_old_form
 
 REPO = Path(__file__).resolve().parents[2]
-EXAMPLES = REPO / "dissyslab" / "office_examples"
-GALLERY = REPO / "dissyslab" / "gallery"
+EXAMPLES = REPO / "dissyslab" / "gallery"
 
 
 def dsl(*args: str, cwd: Path, script: list[dict] | None = None) -> tuple[int, str]:
@@ -156,6 +155,21 @@ def test_a_loop_that_ends_normally_is_not_a_stall(tmp_path):
     assert "Stalled:" not in out
 
 
+def test_run_by_name_points_to_a_copy(tmp_path):
+    """A gallery office is not run inside the installed package: a run
+    writes its output next to office.md."""
+    code, out = dsl("run", "returns_desk", cwd=tmp_path)
+    assert code == 2
+    assert "dsl init returns_desk my_returns_desk" in out
+    assert not (EXAMPLES / "returns_desk" / "outcomes.jsonl").exists()
+
+
+def test_check_by_name_reads_the_gallery_office(tmp_path):
+    code, out = dsl("check", "debate", cwd=tmp_path)
+    assert code == 0, out
+    assert "no problems found" in out
+
+
 # ── dsl check ──────────────────────────────────────────────────────────────
 
 BROKEN = """\
@@ -253,9 +267,3 @@ def test_check_every_example(name, tmp_path):
 @pytest.mark.parametrize("md", sorted(EXAMPLES.rglob("office.md")), ids=lambda p: p.parent.name)
 def test_every_example_is_new_form(md):
     assert not is_old_form(md.read_text(encoding="utf-8"))
-
-
-@pytest.mark.parametrize("md", sorted(GALLERY.rglob("office.md")),
-                         ids=lambda p: str(p.parent.relative_to(GALLERY)))
-def test_every_gallery_office_is_old_form(md):
-    assert is_old_form(md.read_text(encoding="utf-8"))

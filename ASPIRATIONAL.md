@@ -178,8 +178,8 @@ tomorrow's close is brilliant on history and loses money live. Nothing
 about an AI assistant makes it immune to writing one. The harness is
 what catches it.
 
-See [dissyslab/gallery/apps/mac_speed_suite/](dissyslab/gallery/apps/mac_speed_suite/)
-and [dissyslab/gallery/apps/paper_trader/](dissyslab/gallery/apps/paper_trader/).
+See [dissyslab/gallery/apps/mac_speed_suite/](https://github.com/kmchandy/DisSysLab/tree/v1.10.2/dissyslab/gallery/apps/mac_speed_suite/)
+and [dissyslab/gallery/apps/paper_trader/](https://github.com/kmchandy/DisSysLab/tree/v1.10.2/dissyslab/gallery/apps/paper_trader/).
 
 ---
 
@@ -477,7 +477,7 @@ care about, and then finds out what was holding it up.
   system? It does this every time it exits cleanly.
 - **Global snapshots.** The Chandy–Lamport distributed snapshot is
   implemented;
-  [dissyslab/gallery/apps/recovery_demo/](dissyslab/gallery/apps/recovery_demo/)
+  [dissyslab/gallery/apps/recovery_demo/](https://github.com/kmchandy/DisSysLab/tree/v1.10.2/dissyslab/gallery/apps/recovery_demo/)
   interrupts an office mid-run and resumes it.
 - **Causal order.** `dsl run --trace` records what every agent did,
   and `dsl explain-trace` merges the per-agent logs into one sequence

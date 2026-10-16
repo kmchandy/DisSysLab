@@ -2,7 +2,7 @@
 
 Each test copies an office into a temporary folder and runs ``dsl run``
 on it in a separate Python process -- the same path a student takes:
-``cli.main`` -> generated ``build/run.py`` -> the runtime. Language
+``cli.main`` -> ``office.build`` -> the runtime. Language
 models are replaced by ``tests/e2e/fake_model.py``, which answers from a
 script, so the runs need no network and no API key and always give the
 same replies.
@@ -21,8 +21,8 @@ here:
    interface is caught and counted, not passed on;
 4. a loop that stalls is reported as stalled (test_dsl_new_path.py).
 
-These use today's office language. When the spec's language replaces it,
-the offices here are rewritten; the four properties stay.
+Rewritten for the 2.0 office language and gallery in Phase 6a; the four
+properties are the ones the version 1 tests checked.
 """
 
 from __future__ import annotations
@@ -67,58 +67,51 @@ def run_office(office: Path, script: list[dict] | None = None, timeout: int = 60
     )
     calls = []
     if log_path.exists():
-        calls = [json.loads(line) for line in log_path.read_text().splitlines()]
+        calls = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()]
     return proc.returncode, proc.stdout + proc.stderr, calls
 
 
-def copy_office(src: Path, tmp_path: Path) -> Path:
-    """Copy a gallery office without its build output or earlier results."""
-    dst = tmp_path / src.name
-    shutil.copytree(
-        src, dst,
-        ignore=shutil.ignore_patterns("build", "__pycache__", "*.jsonl", "trace", "snapshots"),
-    )
-    # Keep input data files that are .jsonl (e.g. debate's problem bank).
-    for data in src.glob("problems.jsonl"):
-        shutil.copy(data, dst / data.name)
+def copy_office(name: str, tmp_path: Path) -> Path:
+    """Copy a gallery office into a temporary folder (a run writes beside it)."""
+    dst = tmp_path / name
+    shutil.copytree(GALLERY / name, dst, ignore=shutil.ignore_patterns("__pycache__"))
     return dst
 
 
 def lines_of(path: Path) -> list[dict]:
     """The JSON objects in a .jsonl file, skipping blank and # lines."""
     return [
-        json.loads(x) for x in path.read_text().splitlines()
+        json.loads(x) for x in path.read_text(encoding="utf-8").splitlines()
         if x.strip() and not x.lstrip().startswith("#")
     ]
+
+
+def write_office(folder: Path, files: dict[str, str]) -> Path:
+    for rel, text in files.items():
+        (folder / rel).parent.mkdir(parents=True, exist_ok=True)
+        (folder / rel).write_text(text, encoding="utf-8")
+    return folder
 
 
 # ── Scripts for the debate office ────────────────────────────────────────────
 
 def _panel(answer: str = "A") -> list[dict]:
-    reply = '{"%s": {"answer": "' + answer + '", "reasoning": "r", "confidence": 0.9}}'
-    return [
-        {"when": "You are an agent named **Qwen**", "reply": reply % "qwen"},
-        {"when": "You are an agent named **GPT**", "reply": reply % "gpt"},
-        {"when": "You are an agent named **Claude**", "reply": reply % "claude"},
-    ]
+    return [{"when": f"You are {who},",
+             "reply": json.dumps({key: {"answer": answer, "reasoning": "r",
+                                        "confidence": 0.9}})}
+            for who, key in (("Qwen", "qwen"), ("GPT", "gpt"), ("Claude", "claude"))]
 
 
-FINISH = {
-    "when": "You are Riley",
-    "reply": json.dumps({
-        "send_to": "finish", "problem_id": "$problem_id", "final_answer": "A",
-        "final_reasoning": "all agree", "agreement": "unanimous",
-        "rounds_used": 1, "text": "done",
-    }),
-}
+AGREE = {"when": "You moderate a panel",
+         "reply": json.dumps({"agreement": "unanimous", "final_answer": "A", "note": ""})}
 
 
 # ── 1. A finite office stops by itself ───────────────────────────────────────
 
 
 def test_python_office_stops_by_itself(tmp_path):
-    """returns_desk: four tickets, a select loop, no model."""
-    office = copy_office(GALLERY / "apps" / "returns_desk", tmp_path)
+    """returns_desk: four tickets, a gate, no model."""
+    office = copy_office("returns_desk", tmp_path)
     code, out, _ = run_office(office)
     assert code == 0, out
     assert "Run summary" in out
@@ -126,137 +119,101 @@ def test_python_office_stops_by_itself(tmp_path):
     # ticket in parallel. Compare by ticket.
     outcomes = sorted(lines_of(office / "outcomes.jsonl"), key=lambda o: o["ticket_id"])
     assert [o["ticket_id"] for o in outcomes] == ["T1", "T2", "T3", "T4"]
-    assert [o["decided_by"] for o in outcomes] == ["clerk", "manager", "clerk", "manager"]
+    assert [o.get("manager_decision") for o in outcomes] == [None, "approve", None, "approve"]
 
 
 def test_synchronizer_office_stops_by_itself(tmp_path):
     """room_climate_monitor: two sensors joined by a synchronizer."""
-    office = copy_office(GALLERY / "apps" / "room_climate_monitor", tmp_path)
+    office = copy_office("room_climate_monitor", tmp_path)
     code, out, _ = run_office(office)
     assert code == 0, out
-    assert out.count("'alert': True") == 2, out
+    assert out.count("'alert': 'yes'") == 2, out
 
 
 def test_llm_debate_stops_after_the_last_problem(tmp_path):
     """debate: three models and a moderator, one problem at a time."""
-    office = copy_office(GALLERY / "apps" / "debate", tmp_path)
+    office = copy_office("debate", tmp_path)
     n_problems = len(lines_of(office / "problems.jsonl"))
-    code, out, calls = run_office(office, _panel() + [FINISH])
+    code, out, calls = run_office(office, _panel() + [AGREE])
     assert code == 0, out
-    answers = lines_of(office / "debate_answers.jsonl")
-    assert len(answers) == n_problems
+    assert len(lines_of(office / "debate_answers.jsonl")) == n_problems
     assert len(calls) == 4 * n_problems  # three panellists and Riley, once each
 
 
 def test_llm_debate_loop_takes_a_second_round(tmp_path):
-    """debate: the moderator sends the first problem back for one more round."""
-    office = copy_office(GALLERY / "apps" / "debate", tmp_path)
-    n_problems = len(lines_of(office / "problems.jsonl"))
-    first_id = lines_of(office / "problems.jsonl")[0]["id"]
-    again = {
-        "when": "You are Riley",
-        # Round 0 of the first problem only.
-        "user_contains": [f'"{first_id}"', '"history": []'],
-        "reply": json.dumps({
-            "send_to": "continue", "problem_id": "$problem_id", "problem": "?",
-            "round": 1, "history": [{"round": 0}], "text": "again",
-        }),
-    }
-    code, out, calls = run_office(office, _panel() + [again, FINISH])
+    """debate: the moderator finds no agreement on round 0 of the first problem."""
+    office = copy_office("debate", tmp_path)
+    problems = lines_of(office / "problems.jsonl")
+    first_id = problems[0]["problem_id"]
+    split = {"when": "You moderate a panel",
+             "user_contains": [f'"{first_id}"', '"round": 0'],
+             "reply": json.dumps({"agreement": "none", "final_answer": "A",
+                                  "note": "check again"})}
+    code, out, calls = run_office(office, _panel() + [split, AGREE])
     assert code == 0, out
-    assert len(lines_of(office / "debate_answers.jsonl")) == n_problems
-    assert len(calls) == 4 * n_problems + 4  # one extra round of four calls
+    answers = {a["problem_id"]: a for a in lines_of(office / "debate_answers.jsonl")}
+    assert len(answers) == len(problems)
+    assert answers[first_id]["rounds_used"] == 2
+    assert len(calls) == 4 * len(problems) + 4  # one extra round of four calls
 
 
 # ── 2. A failing role costs one message ──────────────────────────────────────
 
-FAILING_OFFICE = """\
-# Office: failing
-
-Sources: file_source(filepath="items.jsonl")
-Sinks: jsonl_recorder(path="done.jsonl")
-
-Agents:
-Pat is a picky.
-
-Connections:
-file_source's destination is Pat.
-Pat's out is jsonl_recorder.
-"""
-
-PICKY_ROLE = '''\
-from dissyslab.blocks.role import Role
-from dissyslab.office.library import AgentRoleEntry
-
-
-def picky(msg):
-    if msg["n"] == 2:
-        raise ValueError("I do not like two")
-    return [(msg, "out")]
-
-
-role = AgentRoleEntry(
-    name="picky", in_ports=("in_",), out_ports=("out",),
-    factory=lambda: Role(fn=picky, statuses=["out"]),
-)
-'''
+FAILING = {
+    "office.md": (
+        "sources:\n    items: file_source(path=\"items.jsonl\")\n"
+        "sinks:\n    jsonl_recorder(path=\"done.jsonl\")\n"
+        "agents:\n    Pat: picky\n"
+        "connections:\n    items -> Pat -> jsonl_recorder\n"),
+    "roles/picky.py": (
+        '"""\n---\nin: n\n---\n"""\n\n\n'
+        "class Picky:\n"
+        "    def __call__(self, item):\n"
+        "        if item[\"n\"] == 2:\n"
+        "            raise ValueError(\"I do not like two\")\n"
+        "        return {}\n"),
+    "items.jsonl": "".join(json.dumps({"n": n}) + "\n" for n in (1, 2, 3)),
+}
 
 
 def test_a_failing_role_costs_one_message(tmp_path):
-    office = tmp_path / "failing"
-    (office / "roles").mkdir(parents=True)
-    (office / "office.md").write_text(FAILING_OFFICE)
-    (office / "roles" / "picky.py").write_text(PICKY_ROLE)
-    (office / "items.jsonl").write_text("".join(json.dumps({"n": n}) + "\n" for n in (1, 2, 3)))
+    office = write_office(tmp_path / "failing", FAILING)
     code, out, _ = run_office(office)
     assert code != 0, out
     assert "I do not like two" in out
-    assert [m["n"] for m in lines_of(office / "done.jsonl")] == [1, 3]
+    assert sorted(m["n"] for m in lines_of(office / "done.jsonl")) == [1, 3]
 
 
 # ── 3. A guardrail fires ─────────────────────────────────────────────────────
 
-FILTER_OFFICE = """\
-# Office: guarded
-
-Sources: file_source(filepath="articles.jsonl")
-Sinks: jsonl_recorder(path="kept.jsonl"), jsonl_recorder_discard(path="dropped.jsonl")
-
-Agents:
-Felix is a filter.
-
-Connections:
-file_source's destination is Felix.
-Felix's keeper is jsonl_recorder.
-Felix's discard is jsonl_recorder_discard.
-"""
-
-FILTER_ROLE = textwrap.dedent("""\
-    ---
-    outboxes: keeper, discard
-    adds: text
-    ---
-    You are a content filter. Decide if each article is about the
-    Americas. If it is, send to keeper. Otherwise send to discard.
-""")
+GUARDED = {
+    "office.md": (
+        "sources:\n    articles: file_source(path=\"articles.jsonl\")\n"
+        "sinks:\n    kept: jsonl_recorder(path=\"kept.jsonl\")\n"
+        "    dropped: jsonl_recorder(path=\"dropped.jsonl\")\n"
+        "agents:\n    Felix: americas\n    Rex: router(on=\"on_topic\")\n"
+        "connections:\n    articles -> Felix -> Rex\n"
+        "    Rex.yes -> kept\n    Rex.no -> dropped\n"),
+    "roles/americas.md": textwrap.dedent("""\
+        ---
+        in: title
+        out: on_topic (yes | no)
+        ---
+        You are a content filter. Decide whether the article is about the
+        Americas.
+        """),
+    "articles.jsonl": "".join(json.dumps({"title": t}) + "\n"
+                              for t in ("Brazil votes", "Tokyo rains", "Ottawa budget")),
+}
 
 
 def test_a_reply_outside_the_declared_interface_is_caught(tmp_path):
-    """The model names an outbox the role does not have: counted, not passed on."""
-    office = tmp_path / "guarded"
-    (office / "roles").mkdir(parents=True)
-    (office / "office.md").write_text(FILTER_OFFICE)
-    (office / "roles" / "filter.md").write_text(FILTER_ROLE)
-    titles = ["Brazil votes", "Tokyo rains", "Ottawa budget"]
-    (office / "articles.jsonl").write_text(
-        "".join(json.dumps({"title": t, "text": t}) + "\n" for t in titles))
+    """The model answers a value the role does not declare: counted, not passed on."""
+    office = write_office(tmp_path / "guarded", GUARDED)
     script = [
-        {"when": "content filter", "user_contains": "Brazil",
-         "reply": '{"send_to": "keeper", "text": "Brazil votes"}'},
-        {"when": "content filter", "user_contains": "Tokyo",
-         "reply": '{"send_to": "discard", "text": "Tokyo rains"}'},
-        {"when": "content filter", "user_contains": "Ottawa",
-         "reply": '{"send_to": "maybe", "text": "Ottawa budget"}'},
+        {"when": "content filter", "user_contains": "Brazil", "reply": '{"on_topic": "yes"}'},
+        {"when": "content filter", "user_contains": "Tokyo", "reply": '{"on_topic": "no"}'},
+        {"when": "content filter", "user_contains": "Ottawa", "reply": '{"on_topic": "maybe"}'},
     ]
     code, out, calls = run_office(office, script)
     assert len(calls) == 3
@@ -267,4 +224,4 @@ def test_a_reply_outside_the_declared_interface_is_caught(tmp_path):
 
 
 # 4. A stalled loop is reported: tests/e2e/test_dsl_new_path.py
-#    (test_a_stalled_loop_is_reported), on the 2.0 debate example.
+#    (test_a_stalled_loop_is_reported), on the debate office.

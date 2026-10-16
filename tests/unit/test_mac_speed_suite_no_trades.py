@@ -20,9 +20,11 @@ mac_speed_suite invariant tests (backtester_core, evaluator).
 
 from __future__ import annotations
 
-from dissyslab.gallery.apps.mac_speed_suite.roles._backtester_core import make_backtester
-from dissyslab.gallery.apps.mac_speed_suite.roles.evaluator import make_evaluator
-from dissyslab.gallery.apps.mac_speed_suite.sinks.report_html_sink import ReportHtmlSink
+import tests.mac_speed_suite_roles  # noqa: F401  (puts the office's roles/ on the path)
+
+from _backtester_core import make_backtester
+from _evaluation import make_evaluator
+from _report_html import ReportHtmlSink
 
 
 def _backtest(speed_name: str, series: dict) -> dict:

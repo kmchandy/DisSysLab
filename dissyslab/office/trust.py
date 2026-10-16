@@ -138,20 +138,14 @@ ACTING_SINKS: Set[str] = {
 #: Sinks that write to this machine or this screen.
 INERT_SINKS: Set[str] = {
     "console_printer",
-    "debate_display",
     "discard",
     "intelligence_display",
-    "job_html_sink",
     "jsonl_recorder",
     "jsonl_recorder_archive",
     "jsonl_recorder_briefing",
     "jsonl_recorder_discard",
     "jsonl_recorder_raw",
     "markdown_digest",
-    "periodic_brief_html_sink",
-    "periodic_brief_sink",
-    "report_html",
-    "tutor_session_display",
 }
 
 #: What each acting sink actually does, for a message a person can act

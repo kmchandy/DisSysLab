@@ -1,4 +1,4 @@
-"""The 2.0 examples (dissyslab/office_examples/), run end to end.
+"""The gallery offices (dissyslab/gallery/), run end to end.
 
 Each test copies an example into a temporary folder (running it writes
 output files) and runs it with ``run_office``, the new path. Where an
@@ -21,7 +21,7 @@ import pytest
 from dissyslab.backends import register_backend
 from dissyslab.office.build import run_office
 
-EXAMPLES = Path(__file__).resolve().parents[2] / "dissyslab" / "office_examples"
+EXAMPLES = Path(__file__).resolve().parents[2] / "dissyslab" / "gallery"
 
 
 def copy_example(name: str, tmp_path: Path) -> Path:

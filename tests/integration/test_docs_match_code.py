@@ -354,43 +354,29 @@ def _catalogue_names() -> set[str]:
     """Office names the gallery README advertises.
 
     An entry is a *link into the office's own directory* --
-    ``[returns_desk](apps/returns_desk/)`` -- and nothing else counts.
+    ``[returns_desk](returns_desk/)`` -- and nothing else counts.
     That rule needs no section boundary to keep it honest, which the
     backtick rule it replaces did: a backtick around `backyard_birds`
     is an entry, but the `birdnetlib` in its description is a PyPI
     package, and only position told them apart. A link to
-    ``apps/<name>/`` cannot be anything but a pointer at that office.
+    ``<name>/`` cannot be anything but a pointer at that office.
     """
     text = CATALOGUE.read_text(encoding="utf-8")
     return {
         m.group(1)
-        for m in re.finditer(r"\]\((?:apps|examples)/([a-z][a-z0-9_]+)/", text)
+        for m in re.finditer(r"\]\(([a-z][a-z0-9_]+)/\)", text)
     }
 
 
 def _shipped_offices() -> set[str]:
-    """Every office a student can reach, by the same rule the CLI uses.
-
-    `network.md` counts as well as `office.md`. A multi-office app --
-    `org_two_office_news` is the one that exists -- has a `network.md`
-    at its root and the individual `office.md` files one level further
-    down, so a check that looks only for `office.md` does not see it at
-    all. `dissyslab/cli.py`'s `_find_packaged_office` accepts both, so
-    a rule here that accepts only one is narrower than the thing it is
-    checking, and would report the app as uncatalogued the moment
-    anyone added it to the catalogue.
+    """Every office a student can reach, by the same rule the CLI uses:
+    a folder directly under ``dissyslab/gallery/`` with an ``office.md``
+    (``cli._find_packaged_office``). The offices nested inside
+    ``org_two_office_news`` are parts of it, not offices of the gallery.
     """
     import dissyslab.gallery as gallery
     root = Path(gallery.__file__).parent
-    names = set()
-    for sub in ("apps", "examples"):
-        d = root / sub
-        if d.is_dir():
-            names |= {
-                c.name for c in d.iterdir()
-                if (c / "office.md").exists() or (c / "network.md").exists()
-            }
-    return names
+    return {c.name for c in root.iterdir() if (c / "office.md").is_file()}
 
 
 def test_catalogue_matches_the_gallery():
@@ -407,6 +393,11 @@ def test_catalogue_matches_the_gallery():
         f"catalogue is wrong; against a wheel it may instead mean the "
         f"office did not ship — check "
         f"tests/integration/test_wheel_contents.py."
+    )
+    uncatalogued = sorted(shipped - catalogued)
+    assert not uncatalogued, (
+        f"these offices ship but the gallery README does not list them: "
+        f"{uncatalogued}. Add a row, linked as [name](name/)."
     )
 
 

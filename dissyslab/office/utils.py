@@ -435,31 +435,6 @@ SINK_REGISTRY = {
         "args":   "named",
         "call":   "run",
     },
-    # ── App-specific sinks (live with their gallery app) ──
-    # periodic_brief_sink and periodic_brief_html_sink hardcode the
-    # bucket taxonomy (weather, stocks, calendar, gmail, news), the
-    # field schema (temp_f, ticker, price, change_pct, ...), and the
-    # visual layout of the periodic_brief office. That knowledge
-    # belongs to the app, not to the framework — moving the files
-    # into gallery/apps/periodic_brief/sinks/ lets components/sinks/
-    # stay genuinely generic, and gives Pat a clear model: when she
-    # writes her own app-specific renderer, it lives next to the
-    # office.md that uses it. The registry still owns name resolution
-    # so office.md doesn't need to change.
-    # Shared by periodic_brief and periodic_brief_pro (the pro variant
-    # uses the same renderer with extra sources).
-    "periodic_brief_sink": {
-        "import": "from dissyslab.gallery.apps.periodic_brief.sinks.periodic_brief_sink import PeriodicBriefSink",
-        "class":  "PeriodicBriefSink",
-        "args":   "named",
-        "call":   "run",
-    },
-    "periodic_brief_html_sink": {
-        "import": "from dissyslab.gallery.apps.periodic_brief.sinks.periodic_brief_html_sink import PeriodicBriefHtmlSink",
-        "class":  "PeriodicBriefHtmlSink",
-        "args":   "named",
-        "call":   "run",
-    },
     "mcp_sink": {
         "import": "from dissyslab.components.sinks.mcp_sink import MCPSink",
         "class":  "MCPSink",
@@ -501,40 +476,6 @@ SINK_REGISTRY = {
     "gmail_sink_research": {
         "import": "from dissyslab.components.sinks.gmail_sink import GmailSink",
         "class":  "GmailSink",
-        "args":   "named",
-        "call":   "run",
-    },
-    "job_html_sink": {
-        "import": "from dissyslab.gallery.apps.job_hunter.sinks.job_html_sink import JobHtmlSink",
-        "class":  "JobHtmlSink",
-        "args":   "named",
-        "call":   "run",
-    },
-    # mac_speed_suite: backtest report, rendered from the evaluator's real
-    # message so report.html can never disagree with `dsl run` about which
-    # strategies exist.
-    "report_html": {
-        "import": "from dissyslab.gallery.apps.mac_speed_suite.sinks.report_html_sink import ReportHtmlSink",
-        "class":  "ReportHtmlSink",
-        "args":   "named",
-        "call":   "run",
-    },
-    # Debate office: situation_room-style console display of each
-    # round's panellist + moderator output. Receives messages from
-    # Sync's out AND Riley's continue/finish; discriminates by
-    # inspecting fields on the inbound dict.
-    "debate_display": {
-        "import": "from dissyslab.gallery.apps.debate.sinks.debate_display import DebateDisplay",
-        "class":  "DebateDisplay",
-        "args":   "named",
-        "call":   "run",
-    },
-    # adaptive_tutor: renders tutor_session_report messages as a
-    # readable per-session card (subject/variant/score + per-item
-    # checkmarks), instead of a raw dict via console_printer.
-    "tutor_session_display": {
-        "import": "from dissyslab.gallery.apps.adaptive_tutor.sinks.tutor_session_display import TutorSessionDisplay",
-        "class":  "TutorSessionDisplay",
         "args":   "named",
         "call":   "run",
     },

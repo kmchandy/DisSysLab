@@ -17,7 +17,6 @@ from pathlib import Path
 
 import pytest
 
-from tests.gallery_support import gallery_params
 
 from dissyslab.backends import register_backend
 from dissyslab.network import Network
@@ -771,9 +770,6 @@ class TestPatFriendlyErrors:
 # ── Gallery snapshot ──────────────────────────────────────────────────
 
 
-GALLERY = Path(__file__).resolve().parents[3] / "dissyslab" / "gallery"
-
-
 # Gallery offices whose sources need live credentials or optional
 # packages we do not require in CI. Skipped — the compiler still
 # parses them; we just cannot instantiate the source classes.
@@ -786,74 +782,6 @@ _NEEDS_LIVE_CREDS = {
     "periodic_brief_pro",  # calendar + gmail credentials
     "org_situation_room",  # bluesky_jetstream needs websocket-client
 }
-
-
-def _gallery_office_dirs():
-    """Yield every office directory anywhere under gallery/.
-
-    Walks top-level *and* the ``apps/`` / ``examples/`` split that v1
-    introduced. An "office directory" is one containing ``office.md``
-    or the legacy ``network.md``.
-    """
-    out = []
-    def _walk(root: Path) -> None:
-        for d in sorted(root.iterdir()):
-            if not d.is_dir():
-                continue
-            if d.name in _NEEDS_LIVE_CREDS:
-                continue
-            if (d / "office.md").exists() or (d / "network.md").exists():
-                out.append(d)
-            elif d.name in {"apps", "examples"}:
-                _walk(d)
-    _walk(GALLERY)
-    return out
-
-
-class TestGalleryCompiles:
-    """Every gallery office must compile to a valid runtime Network.
-
-    We override every ``analyst``, ``editor``, ``writer``, etc. role
-    with a stub-backed ``nl_role`` so no API key or LLM call is
-    needed; the structural wiring is what we are testing.
-    """
-
-    def _stub_library(self, prompts: dict) -> dict:
-        """Build a library that maps each role name to a stub-backed nl_role."""
-        _register_stub("stub-gallery", _stub_default_send_to("brief"))
-        return {
-            role_name: nl_role(prompt, AI="stub-gallery")
-            for role_name, prompt in prompts.items()
-        }
-
-    @pytest.mark.parametrize(
-        "office_dir",
-        gallery_params(_gallery_office_dirs()),
-    )
-    def test_compiles(self, office_dir, monkeypatch, tmp_path):
-        # Constructing an office constructs its sinks, and some sinks
-        # create their output file (brief.html, radar.html, ...) as soon
-        # as they exist, relative to the current directory. Run from a
-        # temporary directory so the sweep never writes into the
-        # repository.
-        monkeypatch.chdir(tmp_path)
-        # Test wiring, not the developer's shell DSL_BACKEND. If the
-        # user has DSL_BACKEND=ollama (or any other backend not
-        # registered in pytest), nl_role's factory would try to
-        # resolve that backend at agent-instantiation time and fail.
-        # Force the default backend (anthropic) for this test —
-        # compile_office never actually calls the backend (we don't
-        # run the network), so no API key is needed.
-        monkeypatch.delenv("DSL_BACKEND", raising=False)
-
-        net, warnings = compile_office(office_dir)
-        assert isinstance(net, Network)
-        # Empty or sugar-only warnings are acceptable; structural
-        # warnings would be a regression worth flagging.
-        for w in warnings:
-            assert "inline" in w.message or "sugar" in w.message, (
-                f"unexpected warning compiling {office_dir.name}: {w}"
-            )
 
 
 # ── CompileWarning surface ────────────────────────────────────────────

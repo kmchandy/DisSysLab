@@ -1,4 +1,0 @@
-{"ticket_id": "T1", "customer": "Ana", "amount": 20, "item": "book", "reason": "wrong item"}
-{"ticket_id": "T2", "customer": "Ben", "amount": 120, "item": "chair", "reason": "damaged"}
-{"ticket_id": "T3", "customer": "Cy", "amount": 35, "item": "lamp", "reason": "changed mind"}
-{"ticket_id": "T4", "customer": "Dee", "amount": 80, "item": "monitor", "reason": "defective"}

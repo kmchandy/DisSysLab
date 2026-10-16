@@ -20,14 +20,16 @@ These lock in the three things that make that safe and correct:
 
 from __future__ import annotations
 
-from dissyslab.gallery.apps.mac_speed_suite.roles._signal_common import (
+import tests.mac_speed_suite_roles  # noqa: F401  (puts the office's roles/ on the path)
+
+from _signal_common import (
     _accepts_context,
     make_signal_computer,
 )
-from dissyslab.gallery.apps.mac_speed_suite.roles.market_context import (
+from _market import (
     make_market_context,
 )
-from dissyslab.gallery.apps.mac_speed_suite.roles.rs_trend import (
+from rs_trend import (
     _rs_trend_compute_variant_signal,
 )
 

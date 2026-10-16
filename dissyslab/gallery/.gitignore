@@ -1,0 +1,13 @@
+# What running an example writes. Run a copy (`dsl init <name> <folder>`);
+# if you run one in place, git ignores what it writes. The same names are
+# kept out of the wheel by [tool.setuptools.exclude-package-data] in
+# pyproject.toml, which reads the working tree, not git.
+returns_desk/outcomes.jsonl
+debate/debate_answers.jsonl
+debate/debate_transcript.jsonl
+situation_room_pro/briefings.jsonl
+backyard_birds/bird_detections.jsonl
+backyard_birds/samples/*
+!backyard_birds/samples/.gitkeep
+mac_speed_suite/report.html
+mac_speed_suite/*.csv

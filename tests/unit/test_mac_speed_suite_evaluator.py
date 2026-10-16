@@ -18,9 +18,11 @@ per strategy" contract depends on actually holding.
 
 from __future__ import annotations
 
+import tests.mac_speed_suite_roles  # noqa: F401  (puts the office's roles/ on the path)
+
 import math
 
-from dissyslab.gallery.apps.mac_speed_suite.roles.evaluator import (
+from _evaluation import (
     _equal_blend,
     _inverse_volatility_weights,
     _scale_to_target_volatility,

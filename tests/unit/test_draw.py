@@ -17,7 +17,6 @@ from dissyslab.office.draw import draw_office_dir, draw_spec, fenced
 from dissyslab.office.parser import parse_office_dir
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-GALLERY = REPO_ROOT / "dissyslab" / "gallery"
 
 
 def _write(tmp_path: Path, body: str) -> Path:
@@ -147,25 +146,3 @@ def test_fenced_wraps_for_markdown():
     assert fenced("flowchart LR").splitlines()[0] == "```mermaid"
 
 
-def _gallery_offices() -> list[Path]:
-    return sorted(p.parent for p in GALLERY.glob("*/*/office.md"))
-
-
-@pytest.mark.parametrize(
-    "office_dir", _gallery_offices(), ids=lambda p: p.name
-)
-def test_every_shipped_office_draws(office_dir):
-    """Forty offices, and any one of them may be the first a student
-    asks to see."""
-    diagram = draw_office_dir(office_dir)
-    assert diagram.startswith("flowchart LR")
-
-    spec = parse_office_dir(office_dir)
-    declared = (
-        {s.name for s in spec.sources}
-        | {k.name for k in spec.sinks}
-        | {a.agent_name for a in spec.agents}
-    )
-    drawn = _node_ids(diagram)
-    missing = declared - drawn
-    assert not missing, f"{office_dir.name}: not drawn: {sorted(missing)}"

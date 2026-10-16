@@ -14,10 +14,8 @@ step methods (the live threaded loop itself is exercised by `dsl run`).
 
 from __future__ import annotations
 
-from dissyslab.gallery.apps.mac_speed_suite.roles._walkforward import (
-    _Comparator,
-    _MonteCarloGate,
-    _WindowGate,
+from tests.mac_speed_suite_roles import NEXT, Comparator, Plan, accept, next_span
+from _validation import (
     aggregate_distribution,
     aggregate_scorecard,
     build_schedule,
@@ -88,33 +86,33 @@ def test_scorecard_ranks_by_out_of_sample_not_in_sample():
 def test_gate_emits_full_then_folds_then_nothing_when_exhausted():
     dates = [f"d{i:02d}" for i in range(9)]
     full = {"type": "stock_history", "tickers": ["A"], "history": _hist(dates)}
-    gate = _WindowGate(n_folds=2)
-    first = gate.next_span(full)
+    gate = Plan(n_folds=2, monte_carlo=False)
+    first = next_span(gate, full)
     assert first["_wf_tag"]["role"] == "full"
     assert first["_wf_tag"]["total_spans"] == 5     # 1 full + 2*2 folds
     seq = [first["_wf_tag"]["role"]]
     for _ in range(4):
-        seq.append(gate.next_span({"walkforward_next": True})["_wf_tag"]["role"])
+        seq.append(next_span(gate, NEXT)["_wf_tag"]["role"])
     assert seq == ["full", "train", "test", "train", "test"]
     # exhausted -> returns None (and run() just keeps looping, so the office
     # can terminate cleanly)
-    assert gate.next_span({"walkforward_next": True}) is None
+    assert next_span(gate, NEXT) is None
 
 
 # ── comparator step logic ─────────────────────────────────────────────
 
 
 def test_comparator_loops_until_schedule_done_then_scorecards():
-    comp = _Comparator()
+    comp = Comparator()
 
     def ev(role):
         return {"_wf_tag": {"role": role, "total_spans": 3},
                 "portfolio_stats": {"x": {"sharpe_ratio": 1.0, "annualized_return": 0.1}},
                 "table": {"A": {}}, "correlation": {}}
 
-    assert comp.accept(ev("full"))[0] == "next"
-    assert comp.accept(ev("train"))[0] == "next"
-    kind, out = comp.accept(ev("test"))          # 3rd of 3 -> done
+    assert accept(comp, ev("full"))[0] == "next"
+    assert accept(comp, ev("train"))[0] == "next"
+    kind, out = accept(comp, ev("test"))          # 3rd of 3 -> done
     assert kind == "scorecard"
     assert out["walk_forward"]["ranked_by_oos"] == ["x"]
     # the scorecard also carries the full-window fields so the detailed report
@@ -156,16 +154,16 @@ def test_monte_carlo_gate_emits_full_then_samples_then_none():
     hist = {"A": [{"date": f"d{i:02d}", "open": 1, "high": 1, "low": 1,
                    "close": 1 + i, "volume": 0} for i in range(10)]}
     full = {"type": "stock_history", "tickers": ["A"], "history": hist}
-    g = _MonteCarloGate(n_samples=3, seed=1, block_size=3)
-    roles = [g.next_span(full)["_wf_tag"]["role"]]
+    g = Plan(n_samples=3, seed=1, block_size=3, walk_forward=False)
+    roles = [next_span(g, full)["_wf_tag"]["role"]]
     for _ in range(3):
-        roles.append(g.next_span({"walkforward_next": True})["_wf_tag"]["role"])
+        roles.append(next_span(g, NEXT)["_wf_tag"]["role"])
     assert roles == ["full", "mc", "mc", "mc"]
-    assert g.next_span({"walkforward_next": True}) is None
+    assert next_span(g, NEXT) is None
 
 
 def test_comparator_builds_a_distribution_from_mc_spans():
-    comp = _Comparator()
+    comp = Comparator()
 
     def ev(role, r):
         return {"_wf_tag": {"role": role, "total_spans": 3},
@@ -173,9 +171,9 @@ def test_comparator_builds_a_distribution_from_mc_spans():
                                           "max_drawdown": -0.1}},
                 "table": {}, "correlation": {}}
 
-    assert comp.accept(ev("full", 0.1))[0] == "next"
-    assert comp.accept(ev("mc", 0.2))[0] == "next"
-    kind, out = comp.accept(ev("mc", 0.0))
+    assert accept(comp, ev("full", 0.1))[0] == "next"
+    assert accept(comp, ev("mc", 0.2))[0] == "next"
+    kind, out = accept(comp, ev("mc", 0.0))
     assert kind == "scorecard"
     assert "monte_carlo" in out and out["monte_carlo"]["n_samples"] == 2
     assert out["monte_carlo"]["ranked_by_median"] == ["x"]

@@ -18,7 +18,9 @@ signal function, never at BACKTESTER.
 
 from __future__ import annotations
 
-from dissyslab.gallery.apps.mac_speed_suite.roles._backtester_core import make_backtester
+import tests.mac_speed_suite_roles  # noqa: F401  (puts the office's roles/ on the path)
+
+from _backtester_core import make_backtester
 
 
 def _run(speed_name: str, series: dict, ticker_volatility: dict | None = None) -> dict:

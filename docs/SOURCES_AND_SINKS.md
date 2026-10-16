@@ -802,12 +802,6 @@ Sinks: markdown_digest(path="competitors.md",
                        title="Competitor watch")
 ```
 
-### `report_html` — a single styled HTML report
-
-**Arguments:** `path` *(str, default `"report.html"`)*, `title` *(str,
-default `"Backtest Report"`)*. Built for `salton_sea_dashboard` and the
-backtesting apps; usable anywhere you want one self-contained page.
-
 ### `gmail_sink` — send emails via Gmail (credentialed)
 
 Sends each incoming message as an email via SMTP, using the same

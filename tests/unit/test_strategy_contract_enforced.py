@@ -29,7 +29,7 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-ROLES = REPO_ROOT / "dissyslab" / "gallery" / "apps" / "mac_speed_suite" / "roles"
+ROLES = REPO_ROOT / "dissyslab" / "gallery" / "mac_speed_suite" / "roles"
 sys.path.insert(0, str(ROLES))
 
 from _contract_checks import (  # noqa: E402

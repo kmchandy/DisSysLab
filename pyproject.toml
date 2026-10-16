@@ -150,17 +150,18 @@ exclude = [
   "**/*.yaml",
   "**/*.yml",
   "**/*.txt",
+  # The gallery: office files, roles, sinks, and the small data files
+  # that stand in for sources. A run writes its output next to the
+  # office, so run a copy (`dsl init`), never the package; the outputs
+  # are excluded below in case someone does.
   "gallery/**/*.md",
   "gallery/**/*.py",
+  "gallery/**/*.jsonl",
+  "gallery/*/samples/.gitkeep",
   "roles/**/*.md",
-  # The 2.0 examples (dissyslab/office_examples/): office files, roles, and the
-  # small data files that stand in for sources. A run writes its output
-  # next to the office, so run a copy (`dsl init`), never the package.
+  # The built-in roles in the 2.0 form (becomes roles/ in Phase 6b).
   "office_roles/*.md",
   "office_roles/*.py",
-  "office_examples/**/*.md",
-  "office_examples/**/*.py",
-  "office_examples/**/*.jsonl",
   # The office.md reference, printed by `dsl grammar`. It lives in the
   # package rather than inside the skill so that the language and the
   # description of the language ship together and cannot disagree --
@@ -169,25 +170,18 @@ exclude = [
   "reference/*.md",
 ]
 
-# Generated and runtime output that lives inside gallery app folders.
-# These are gitignored, but package-data globs read the working tree,
-# so a build on a machine that has ever *run* an office would ship them
-# without this. Each entry names something a run produces:
-#
-# - build/     — `dsl build` / `dsl run` codegen output (run.py). Stale
-#                copies trigger cli.py's "old import path" failure.
-# - snapshots/ — checkpoint-recovery output. Shipping these means a
-#                student's `dsl run recovery_demo --resume latest`
-#                silently resumes someone else's June checkpoint
-#                instead of reporting that no snapshot exists.
-# - book/      — paper_trader's persistent ledger (cash, positions,
-#                realized P&L). Not ours to ship.
+# Output a run writes inside a gallery office's folder. Gitignored, but
+# package-data globs read the working tree, so a build on a machine that
+# has ever run an example in place would ship it without this. (v1.7.0
+# shipped 71 such files.)
 [tool.setuptools.exclude-package-data]
 "dissyslab" = [
-  "gallery/*/*/build/*",
-  "gallery/*/*/snapshots/*",
-  "gallery/*/*/snapshots/**/*",
-  "gallery/*/*/book/*",
+  # The outputs listed in dissyslab/gallery/.gitignore.
+  "gallery/returns_desk/outcomes.jsonl",
+  "gallery/debate/debate_answers.jsonl",
+  "gallery/debate/debate_transcript.jsonl",
+  "gallery/situation_room_pro/briefings.jsonl",
+  "gallery/backyard_birds/bird_detections.jsonl",
 ]
 
 [tool.pytest.ini_options]
@@ -226,8 +220,8 @@ target-version = ["py310"]
 [tool.mypy]
 python_version = "3.10"
 ignore_missing_imports = true
-# The examples are student-facing code, like the gallery: not type-checked.
-exclude = '^(dissyslab/gallery/|dissyslab/office_examples/|dissyslab/\.venv/|build/)'
+# The gallery is student-facing code: not type-checked.
+exclude = '^(dissyslab/gallery/|dissyslab/\.venv/|build/)'
 
 [[tool.mypy.overrides]]
 module = [

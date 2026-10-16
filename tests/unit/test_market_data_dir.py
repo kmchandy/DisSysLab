@@ -13,7 +13,6 @@ about that agreement.
 """
 from __future__ import annotations
 
-import importlib.util
 import os
 from pathlib import Path
 
@@ -26,18 +25,6 @@ from dissyslab.market_data import (
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-DOWNLOADER = (
-    REPO_ROOT / "dissyslab" / "gallery" / "apps" / "mac_speed_suite"
-    / "download_stock_history_from_yf.py"
-)
-BACKTEST_OFFICE = REPO_ROOT / "dissyslab" / "gallery" / "apps" / "mac_speed_suite"
-
-
-def _load_downloader():
-    spec = importlib.util.spec_from_file_location("_dl", DOWNLOADER)
-    module = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(module)
-    return module
 
 
 def test_the_default_does_not_depend_on_where_you_are(tmp_path, monkeypatch):
@@ -65,7 +52,7 @@ def test_an_existing_clone_keeps_working(tmp_path, monkeypatch):
     monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
     repo = tmp_path / "DisSysLab"
     (repo / "sp100_data").mkdir(parents=True)
-    office = repo / "dissyslab" / "gallery" / "apps" / "mac_speed_suite"
+    office = repo / "dissyslab" / "gallery" / "mac_speed_suite"
     office.mkdir(parents=True)
 
     assert repo / "sp100_data" in legacy_dirs(office)
@@ -122,34 +109,11 @@ def test_the_source_reads_the_default_directory(tmp_path, monkeypatch):
 # ── the two sides must agree ──────────────────────────────────────────
 
 
-def test_the_downloader_writes_where_the_office_reads(tmp_path, monkeypatch):
-    """The bug was that these two agreed only by arithmetic."""
-    monkeypatch.setenv(ENV_VAR, str(tmp_path / "prices"))
-    dl = _load_downloader()
-    assert Path(dl.data_dir(None)) == market_data_dir()
-
-
-def test_the_downloaders_standalone_fallback_agrees_too(tmp_path, monkeypatch):
-    """The script is run directly, sometimes where `dissyslab` is not
-    importable, so it repeats the rule. Two expressions of one rule is
-    exactly the shape that drifts, so pin them together."""
-    monkeypatch.delenv(ENV_VAR, raising=False)
-    monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
-    monkeypatch.setattr(os.path, "expanduser",
-                        lambda p: p.replace("~", str(tmp_path / "home"), 1))
-
-    dl = _load_downloader()
-    monkeypatch.setitem(
-        __import__("sys").modules, "dissyslab.market_data", None
-    )  # force the ImportError branch
-    assert Path(dl.data_dir(None)) == market_data_dir()
-
-
 def test_the_shipped_offices_name_no_data_directory():
     """An office that names a directory is an office that breaks when
     it is copied somewhere else."""
     offending = []
-    for office_md in (REPO_ROOT / "dissyslab" / "gallery").glob("*/*/office.md"):
+    for office_md in (REPO_ROOT / "dissyslab" / "gallery").glob("*/office.md"):
         text = office_md.read_text(encoding="utf-8")
         if "csv_stock_history(" in text and "directory=" in text:
             offending.append(str(office_md.relative_to(REPO_ROOT)))
@@ -162,58 +126,3 @@ def test_the_shipped_offices_name_no_data_directory():
 
 def test_describe_lists_directories_for_a_human():
     assert describe([Path("/a"), Path("/b")]) == "/a, /b"
-
-
-def test_the_explainer_looks_where_the_downloader_writes(tmp_path, monkeypatch):
-    """The third copy of the rule, and the one that hid the bug.
-
-    `explain_strategy.py` had its own `_HERE/../../../../sp100_data`
-    and a graceful fallback to synthetic prices. After `dsl init` it
-    found nothing, invented a price series, produced a workbook that
-    looked entirely right, and said so only on the Read me sheet. A
-    graceful fallback is very good at concealing the path everyone
-    actually takes.
-    """
-    spec = importlib.util.spec_from_file_location(
-        "_explain", BACKTEST_OFFICE / "explain_strategy.py"
-    )
-    explain = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(explain)
-
-    monkeypatch.setenv(ENV_VAR, str(tmp_path / "prices"))
-    (tmp_path / "prices").mkdir()
-    assert str(market_data_dir()) in explain._data_dirs(None)
-
-    csv = tmp_path / "prices" / "NVDA_10_year.csv"
-    csv.write_text(
-        "Date,Open,High,Low,Close,Volume\n"
-        + "".join(
-            f"2026-01-{d:02d},10,11,9,10.{d},100\n" for d in range(1, 29)
-        ),
-        encoding="utf-8",
-    )
-    _bars, provenance = explain.load_bars("NVDA")
-    assert "SYNTHETIC" not in provenance, (
-        "fell back to invented prices with a real CSV in the standard "
-        "directory — the exact failure this test exists for"
-    )
-    assert str(csv) in provenance
-
-
-def test_the_explainer_says_where_it_looked_when_it_invents_prices(tmp_path, monkeypatch):
-    spec = importlib.util.spec_from_file_location(
-        "_explain2", BACKTEST_OFFICE / "explain_strategy.py"
-    )
-    explain = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(explain)
-
-    monkeypatch.setenv(ENV_VAR, str(tmp_path / "empty"))
-    # A source checkout has its own sp100_data above the office folder,
-    # and the legacy walk-up would find it. That fallback is wanted in
-    # real use and only in the way here.
-    import dissyslab.market_data as md
-    monkeypatch.setattr(md, "legacy_dirs", lambda start=None: [])
-
-    _bars, provenance = explain.load_bars("NVDA")
-    assert "SYNTHETIC" in provenance
-    assert str(tmp_path / "empty") in provenance

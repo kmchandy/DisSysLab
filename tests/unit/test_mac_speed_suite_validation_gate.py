@@ -8,10 +8,7 @@ live threaded loop is exercised by `dsl run`.
 
 from __future__ import annotations
 
-from dissyslab.gallery.apps.mac_speed_suite.roles._walkforward import (
-    _Comparator,
-    _ValidationGate,
-)
+from tests.mac_speed_suite_roles import NEXT, Comparator, Plan, accept, next_span
 
 
 def _full(dates):
@@ -24,15 +21,15 @@ def _drain(gate):
     """Roles emitted, in order, driving the gate as the office would."""
     dates = [f"2020-{(i // 20) + 1:02d}-{(i % 20) + 1:02d}" for i in range(60)]
     roles = []
-    span = gate.next_span(_full(dates))
+    span = next_span(gate, _full(dates))
     while span is not None:
         roles.append(span["_wf_tag"]["role"])
-        span = gate.next_span({"walkforward_next": True})
+        span = next_span(gate, NEXT)
     return roles, dates
 
 
 def test_default_gate_runs_walk_forward_then_monte_carlo():
-    gate = _ValidationGate(n_folds=2, n_samples=3)
+    gate = Plan(n_folds=2, n_samples=3)
     roles, _ = _drain(gate)
     # one full, then 2 folds (train/test each), then 3 mc resamples
     assert roles[0] == "full"
@@ -43,13 +40,13 @@ def test_default_gate_runs_walk_forward_then_monte_carlo():
 
 
 def test_total_spans_is_constant_and_matches_plan_length():
-    gate = _ValidationGate(n_folds=2, n_samples=3)
+    gate = Plan(n_folds=2, n_samples=3)
     dates = [f"2020-{(i // 20) + 1:02d}-{(i % 20) + 1:02d}" for i in range(60)]
-    span = gate.next_span(_full(dates))
+    span = next_span(gate, _full(dates))
     total = span["_wf_tag"]["total_spans"]
     seen = 1
     while True:
-        span = gate.next_span({"walkforward_next": True})
+        span = next_span(gate, NEXT)
         if span is None:
             break
         assert span["_wf_tag"]["total_spans"] == total  # never drifts
@@ -58,7 +55,7 @@ def test_total_spans_is_constant_and_matches_plan_length():
 
 
 def test_monte_carlo_only_still_emits_one_full_span_for_the_report():
-    gate = _ValidationGate(n_samples=3, walk_forward=False)
+    gate = Plan(n_samples=3, walk_forward=False)
     roles, _ = _drain(gate)
     assert roles[0] == "full"
     assert "train" not in roles and "test" not in roles
@@ -66,7 +63,7 @@ def test_monte_carlo_only_still_emits_one_full_span_for_the_report():
 
 
 def test_walk_forward_only_runs_no_resamples():
-    gate = _ValidationGate(n_folds=2, monte_carlo=False)
+    gate = Plan(n_folds=2, monte_carlo=False)
     roles, _ = _drain(gate)
     assert "mc" not in roles
     assert roles[0] == "full" and roles.count("test") == 2
@@ -75,9 +72,9 @@ def test_walk_forward_only_runs_no_resamples():
 def test_comparator_builds_both_sections_from_one_pass():
     """Drive the real comparator with the gate's tags and confirm the final
     scorecard carries BOTH a walk_forward and a monte_carlo section."""
-    gate = _ValidationGate(n_folds=2, n_samples=3)
+    gate = Plan(n_folds=2, n_samples=3)
     dates = [f"2020-{(i // 20) + 1:02d}-{(i % 20) + 1:02d}" for i in range(60)]
-    comp = _Comparator()
+    comp = Comparator()
 
     def ev(tag):
         return {"_wf_tag": tag,
@@ -86,13 +83,13 @@ def test_comparator_builds_both_sections_from_one_pass():
                                           "max_drawdown": -0.2}},
                 "table": {"A": {}}, "correlation": {}}
 
-    span = gate.next_span(_full(dates))
+    span = next_span(gate, _full(dates))
     result = None
     while span is not None:
-        kind, out = comp.accept(ev(span["_wf_tag"]))
+        kind, out = accept(comp, ev(span["_wf_tag"]))
         if kind == "scorecard":
             result = out
-        span = gate.next_span({"walkforward_next": True})
+        span = next_span(gate, NEXT)
 
     assert result is not None
     assert "walk_forward" in result and "monte_carlo" in result
@@ -105,9 +102,9 @@ def test_comparator_builds_both_sections_from_one_pass():
 
 
 def test_full_span_carries_a_run_config_receipt():
-    gate = _ValidationGate(n_folds=3, n_samples=4)
+    gate = Plan(n_folds=3, n_samples=4)
     dates = [f"2016-{(i % 12) + 1:02d}-{(i // 12) + 1:02d}" for i in range(48)]
-    full_span = gate.next_span(_full(dates))
+    full_span = next_span(gate, _full(dates))
     rc = full_span["_wf_tag"].get("run_config")
     assert rc is not None
     assert rc["n_folds"] == 3 and rc["n_samples"] == 4
@@ -115,14 +112,14 @@ def test_full_span_carries_a_run_config_receipt():
     assert rc["n_bars"] == 48
     assert rc["walk_forward"] and rc["monte_carlo"]
     # the receipt rides only on the full span, not every later span
-    nxt = gate.next_span({"walkforward_next": True})
+    nxt = next_span(gate, NEXT)
     assert "run_config" not in nxt["_wf_tag"]
 
 
 def test_comparator_surfaces_run_settings_with_cost():
-    gate = _ValidationGate(n_folds=2, n_samples=3)
+    gate = Plan(n_folds=2, n_samples=3)
     dates = [f"2016-{(i % 12) + 1:02d}-{(i // 12) + 1:02d}" for i in range(40)]
-    comp = _Comparator()
+    comp = Comparator()
 
     def ev(tag):
         return {"_wf_tag": tag, "n_days": len(dates), "cost_bps": 7.5,
@@ -131,13 +128,13 @@ def test_comparator_surfaces_run_settings_with_cost():
                                           "max_drawdown": -0.2}},
                 "table": {"A": {}}, "correlation": {}}
 
-    span = gate.next_span(_full(dates))
+    span = next_span(gate, _full(dates))
     result = None
     while span is not None:
-        kind, out = comp.accept(ev(span["_wf_tag"]))
+        kind, out = accept(comp, ev(span["_wf_tag"]))
         if kind == "scorecard":
             result = out
-        span = gate.next_span({"walkforward_next": True})
+        span = next_span(gate, NEXT)
 
     rs = result.get("run_settings")
     assert rs is not None

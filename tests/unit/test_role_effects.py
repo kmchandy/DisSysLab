@@ -28,7 +28,6 @@ from dissyslab.office.check_wiring import check_office_dir
 from dissyslab.office.role_effects import scan_file, scan_office
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-GALLERY = REPO_ROOT / "dissyslab" / "gallery"
 
 
 def _role(tmp_path: Path, body: str, name: str = "r.py") -> Path:
@@ -189,21 +188,5 @@ A's out is console_printer.
     assert "cannot see what the code does" in w12.hint
 
 
-# ── the shipped offices ───────────────────────────────────────────────
 
 
-def test_only_the_office_we_expect_trips_it():
-    """Pinned, because a check that fires on things people meant is one
-    they learn to skim.
-
-    `periodic_brief` is a true positive and worth keeping: its sink
-    shells out to `open` / `xdg-open` to show the brief in a browser.
-    Deliberate, documented in that file — and it is the very first
-    office the README tells a new user to run, so "this launches a
-    program on your machine" is worth saying out loud once.
-    """
-    firing = set()
-    for office_md in sorted(GALLERY.rglob("office.md")):
-        if scan_office(office_md.parent):
-            firing.add(office_md.parent.name)
-    assert firing == {"periodic_brief", "caltech_radar"}

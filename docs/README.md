@@ -17,7 +17,7 @@ matches whether you already have an LLM API key.
 
 **No key yet — explore the gallery first:**
 
-1. Run [periodic_brief](../dissyslab/gallery/apps/periodic_brief/).
+1. Run [periodic_brief](https://github.com/kmchandy/DisSysLab/tree/v1.10.2/dissyslab/gallery/apps/periodic_brief/).
    It produces a styled morning HTML brief with zero LLM calls
    — news headlines, weather, stock tickers — in about ten
    seconds. This shows the framework running without any setup.

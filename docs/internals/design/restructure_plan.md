@@ -194,7 +194,28 @@ registries cleaned (declarations, `path=` everywhere, aliases gone).
 **Phase 6: examples and docs**: the eight kept examples rewritten; the rest
 of the gallery archived; skills (`office-builder`,
 `backtest-strategy-builder`) and the reference rewritten; microcourse
-finalised.
+finalised. Split into steps (Mani, 17 October):
+
+- **6a, done 17 October.** The version 1 gallery left `main` (it is on the
+  `v1` branch and the `v1.10.2` tag; links in the docs point there). The
+  nine 2.0 offices are `dissyslab/gallery/`, flat. `dsl list`, `dsl init`
+  and `dsl check <name>` use it; `dsl run <name>` on a gallery office
+  says to copy it first (a run writes beside `office.md`). Tests that
+  swept the old gallery with the old tools were removed; the
+  mac_speed_suite strategy tests now test the 2.0 office's code
+  (`tests/mac_speed_suite_roles.py`).
+- **6b.** Remove the old build path (parser, compiler, codegen, library,
+  check_wiring, the old `dsl check`/`draw`/`show`/`roles`) and its tests;
+  `office_roles/` becomes `roles/` (the v1 roles go). Ported from the old
+  `dsl check` into the new one before it goes, because they are
+  guardrails: W11 (an untrusted source reaching an acting sink) and the
+  role-effects scan (a role that launches a program). `dsl draw` for the
+  new syntax.
+- **6c.** Docs: README, GETTING_STARTED, SOURCES_AND_SINKS and the rest
+  still teach version 1 offices and the sentence form. Skills
+  (`office-builder`, `backtest-strategy-builder` -- its bundled
+  `check_no_lookahead.py` still names the v1 roles path, pinned identical
+  to the office's `_contract_checks.py`), the reference, the microcourse.
 
 **Phase 7: release**: reliability evaluation (§11), rehearsed install.
 

@@ -58,59 +58,37 @@ REQUIRED_FILE_GLOBS = [
     "dissyslab/fn_lib/__init__.py",
     "dissyslab/fn_lib/dedup.py",
 
-    # --- Gallery: representative offices from both tiers ------------------
-    # Tier 1 (no-key, the ten-second demo).
-    "dissyslab/gallery/apps/periodic_brief/office.md",
-    "dissyslab/gallery/apps/periodic_brief/README.md",
-    # periodic_brief's HTML sink lives alongside the office, not under
-    # dissyslab/components/sinks/ (it used to, before the move in
-    # "v1.4.x: app-specific sinks live in gallery app folders").
-    "dissyslab/gallery/apps/periodic_brief/sinks/periodic_brief_html_sink.py",
-    "dissyslab/gallery/apps/weather_monitor/office.md",
-    "dissyslab/gallery/apps/stocks_monitor/office.md",
-
-    # Tier 2 (the headline office).
-    "dissyslab/gallery/apps/situation_room/office.md",
-    "dissyslab/gallery/apps/situation_room/README.md",
-
-    # Tier 2 (the per-role-override demo with a .py role file).
-    "dissyslab/gallery/apps/situation_room_pro/office.md",
-    "dissyslab/gallery/apps/situation_room_pro/roles/writer.py",
+    # --- Built-in roles in the 2.0 form (become roles/ in Phase 6b) -------
+    "dissyslab/office_roles/writer.md",
+    "dissyslab/office_roles/deduplicator.py",
 
     # --- Gallery: every shipped office ------------------------------------
-    # Generated 2026-08-17. A wheel that omits an office breaks `dsl init`
-    # for it and makes the course catalogue a lie -- 10 offices were absent
-    # from 1.6.1 this way. One line per office so a regression names which.
-    "dissyslab/gallery/apps/adaptive_tutor/office.md",
-    "dissyslab/gallery/apps/arxiv_radar/office.md",
-    "dissyslab/gallery/apps/backyard_birds/office.md",
-    "dissyslab/gallery/apps/competitor_watch/office.md",
-    "dissyslab/gallery/apps/debate/office.md",
-    "dissyslab/gallery/apps/inbox_triage/office.md",
-    "dissyslab/gallery/apps/investment_club/office.md",
-    "dissyslab/gallery/apps/job_hunter/office.md",
-    "dissyslab/gallery/apps/kalshi_market_watch/office.md",
-    "dissyslab/gallery/apps/lead_qualifier/office.md",
-    "dissyslab/gallery/apps/loudness_monitor/office.md",
-    "dissyslab/gallery/apps/mac_speed_suite/office.md",
-    "dissyslab/gallery/apps/new_grad_jobs/office.md",
-    "dissyslab/gallery/apps/paper_trader/office.md",
-    "dissyslab/gallery/apps/periodic_brief/office.md",
-    "dissyslab/gallery/apps/periodic_brief_pro/office.md",
-    "dissyslab/gallery/apps/recovery_demo/office.md",
-    "dissyslab/gallery/apps/returns_desk/office.md",
-    "dissyslab/gallery/apps/room_climate_monitor/office.md",
-    "dissyslab/gallery/apps/salton_sea_dashboard/office.md",
-    "dissyslab/gallery/apps/shipment_release/office.md",
-    "dissyslab/gallery/apps/situation_room/office.md",
-    "dissyslab/gallery/apps/situation_room_pro/office.md",
-    "dissyslab/gallery/apps/situation_room_requests/office.md",
-    "dissyslab/gallery/apps/stocks_monitor/office.md",
-    "dissyslab/gallery/apps/ticket_router/office.md",
-    "dissyslab/gallery/apps/trading_room/office.md",
-    "dissyslab/gallery/apps/wardrobe_assistant/office.md",
-    "dissyslab/gallery/apps/weather_monitor/office.md",
-    "dissyslab/gallery/apps/wildlife_watcher/office.md",
+    # A wheel that omits an office breaks `dsl init` for it and makes the
+    # gallery README a lie -- 10 offices were absent from 1.6.1 this way.
+    # One line per office so a regression names which.
+    "dissyslab/gallery/README.md",
+    "dissyslab/gallery/arxiv_radar/office.md",
+    "dissyslab/gallery/backyard_birds/office.md",
+    "dissyslab/gallery/backyard_birds/samples/.gitkeep",
+    "dissyslab/gallery/debate/office.md",
+    "dissyslab/gallery/mac_speed_suite/office.md",
+    "dissyslab/gallery/org_news_filter/office.md",
+    "dissyslab/gallery/org_two_office_news/office.md",
+    "dissyslab/gallery/org_two_office_news/news_monitor/office.md",
+    "dissyslab/gallery/returns_desk/office.md",
+    "dissyslab/gallery/room_climate_monitor/office.md",
+    "dissyslab/gallery/situation_room_pro/office.md",
+    # What the offices need besides office.md: roles in both languages,
+    # helper modules, a local sink, and the data files standing in for
+    # sources (.jsonl, which the generic globs above do not cover).
+    "dissyslab/gallery/debate/roles/moderator.md",
+    "dissyslab/gallery/debate/roles/referee.py",
+    "dissyslab/gallery/debate/sinks/panel_display.py",
+    "dissyslab/gallery/debate/problems.jsonl",
+    "dissyslab/gallery/mac_speed_suite/roles/_signal_common.py",
+    "dissyslab/gallery/mac_speed_suite/sinks/_report_html.py",
+    "dissyslab/gallery/returns_desk/tickets.jsonl",
+    "dissyslab/gallery/room_climate_monitor/temp.jsonl",
 
     # --- Components shipped as Python modules (not data) ------------------
     "dissyslab/components/sources/__init__.py",
@@ -150,7 +128,7 @@ FORBIDDEN_PATH_FRAGMENTS = [
     ".ruff_cache/",
     ".mypy_cache/",
 
-    # --- Generated / runtime output inside gallery apps -------------------
+    # --- Generated / runtime output inside gallery offices ----------------
     # Added after v1.7.0 shipped 71 of these. They are gitignored, but
     # package-data globs read the working tree, so any machine that has
     # run an office had them sitting in the package tree at build time.
@@ -158,7 +136,11 @@ FORBIDDEN_PATH_FRAGMENTS = [
     "/build/run.py",
     "/build/__init__.py",
     "/snapshots/",
-    "/book/book.json",
+    "outcomes.jsonl",
+    "debate_answers.jsonl",
+    "debate_transcript.jsonl",
+    "briefings.jsonl",
+    "bird_detections.jsonl",
 ]
 
 
@@ -169,27 +151,13 @@ FORBIDDEN_PATH_FRAGMENTS = [
 # v1.7.0 leak — rather than against a clean checkout, where every such
 # assertion passes vacuously.
 GENERATED_ARTIFACTS = [
-    ("dissyslab/gallery/apps/recovery_demo/build/run.py", "# generated\n"),
-    ("dissyslab/gallery/apps/recovery_demo/build/__init__.py", ""),
-    (
-        "dissyslab/gallery/apps/recovery_demo/snapshots/checkpoints"
-        "/000000/manifest.json",
-        '{"office": "recovery_demo", "N": 0}\n',
-    ),
-    (
-        "dissyslab/gallery/apps/paper_trader/book/book.json",
-        '{"cash": 1.0, "positions": {}}\n',
-    ),
-    ("dissyslab/gallery/apps/situation_room/build/run.py", "# generated\n"),
-    # Under examples/, not apps/. The exclusion rule this fixture
-    # guards covered only gallery/apps/, because gallery/apps/ is where
-    # the v1.7.0 leak was seen -- and a fixture that plants only under
-    # apps/ cannot tell you the rule is narrower than the invariant.
-    # gallery/examples/ holds offices too, so a machine that had ever
-    # run `my_first_office` shipped its codegen. These two lines are
-    # what keep that found.
-    ("dissyslab/gallery/examples/my_first_office/build/run.py", "# generated\n"),
-    ("dissyslab/gallery/examples/my_first_office/build/__init__.py", ""),
+    # What running each gallery office in place writes
+    # (dissyslab/gallery/.gitignore lists the same files).
+    ("dissyslab/gallery/returns_desk/outcomes.jsonl", '{"ticket_id": "T1"}\n'),
+    ("dissyslab/gallery/debate/debate_answers.jsonl", '{"problem_id": "x"}\n'),
+    ("dissyslab/gallery/debate/debate_transcript.jsonl", '{"problem_id": "x"}\n'),
+    ("dissyslab/gallery/situation_room_pro/briefings.jsonl", '{"url": "u"}\n'),
+    ("dissyslab/gallery/backyard_birds/bird_detections.jsonl", '{"file": "a.mp3"}\n'),
 ]
 
 
@@ -381,17 +349,17 @@ def test_wheel_has_minimum_role_count(built_wheel):
 
 @pytest.mark.slow
 def test_wheel_has_minimum_gallery_office_count(built_wheel):
-    """Defence in depth: at least 12 gallery offices should ship (the
-    gallery currently has more, but 12 is the floor we don't want to
-    drop below silently). Each office has an office.md."""
+    """Defence in depth: at least 9 gallery offices should ship (the nine
+    in the gallery README; org_two_office_news adds two nested ones). Each
+    office has an office.md."""
     office_files = [
         n for n in built_wheel["names"]
         if n.startswith("dissyslab/gallery/")
         and n.endswith("/office.md")
     ]
-    assert len(office_files) >= 12, (
+    assert len(office_files) >= 9, (
         f"Wheel ships only {len(office_files)} gallery offices; "
-        f"expected at least 12. Names found: {office_files}"
+        f"expected at least 9. Names found: {office_files}"
     )
 
 
@@ -410,8 +378,7 @@ def dirty_tree_wheel(tmp_path_factory):
     """Build a wheel from a tree that contains generated output.
 
     Plants the files a developer machine accumulates from running the
-    gallery — ``build/run.py``, ``snapshots/``, ``book/book.json`` — and
-    builds. They are all gitignored, which is precisely why they were
+    gallery in place -- each office's output -- and builds. They are all gitignored, which is precisely why they were
     invisible: setuptools' package-data globs read the working tree and
     have never consulted git.
     """
@@ -478,8 +445,8 @@ def test_generated_output_does_not_ship(dirty_tree_wheel, planted_path):
 def test_dirty_tree_wheel_still_complete(dirty_tree_wheel):
     """The exclusions must not overshoot.
 
-    ``gallery/apps/*/build/*`` and friends sit next to files we very
-    much do ship. A too-greedy exclusion that also dropped office.md
+    The outputs sit next to files we very much do ship -- an office's
+    own .jsonl data. A too-greedy exclusion that also dropped those
     would pass every test above (they run on the clean build) while
     breaking `dsl init` for real users.
     """
@@ -487,14 +454,15 @@ def test_dirty_tree_wheel_still_complete(dirty_tree_wheel):
         n for n in dirty_tree_wheel["names"]
         if n.startswith("dissyslab/gallery/") and n.endswith("/office.md")
     ]
-    assert len(offices) >= 12, (
+    assert len(offices) >= 9, (
         f"Exclusions overshot: dirty-tree wheel ships only "
         f"{len(offices)} offices."
     )
     for required in (
-        "dissyslab/gallery/apps/recovery_demo/office.md",
-        "dissyslab/gallery/apps/paper_trader/office.md",
-        "dissyslab/gallery/apps/wardrobe_assistant/wardrobe_inventory.json",
+        "dissyslab/gallery/returns_desk/office.md",
+        "dissyslab/gallery/returns_desk/tickets.jsonl",
+        "dissyslab/gallery/debate/problems.jsonl",
+        "dissyslab/gallery/debate/answer_keys.jsonl",
     ):
         assert required in dirty_tree_wheel["names"], (
             f"Exclusions dropped a file we ship: {required!r}"

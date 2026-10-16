@@ -478,7 +478,7 @@ about, and then finds out what was holding it up.
   system? It does this every time it exits cleanly.
 - **Global snapshots.** The Chandy–Lamport distributed snapshot is
   implemented;
-  [dissyslab/gallery/apps/recovery_demo/](dissyslab/gallery/apps/recovery_demo/)
+  [dissyslab/gallery/apps/recovery_demo/](https://github.com/kmchandy/DisSysLab/tree/v1.10.2/dissyslab/gallery/apps/recovery_demo/)
   interrupts an office mid-run and resumes it.
 - **Causal order.** `dsl run --trace` records what every agent did,
   and `dsl explain-trace` merges the per-agent logs into one sequence

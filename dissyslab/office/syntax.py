@@ -314,7 +314,8 @@ def is_old_form(text: str) -> bool:
     ...``) or a section heading with items on the same line
     (``Sources: bbc_world``). The new form has neither, so one such line
     decides it. ``dsl run`` and ``dsl check`` use this to send an office
-    down the old path or the new one until the old gallery is archived.
+    down the old path or the new one until the old path is removed
+    (Phase 6b).
     """
     for _line, joined in _logical_lines(text):
         code = _strip_end(joined)

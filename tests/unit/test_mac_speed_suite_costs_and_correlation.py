@@ -15,11 +15,13 @@ report shades it.
 
 from __future__ import annotations
 
-from dissyslab.gallery.apps.mac_speed_suite.roles._backtester_core import (
+import tests.mac_speed_suite_roles  # noqa: F401  (puts the office's roles/ on the path)
+
+from _backtester_core import (
     DEFAULT_COST_BPS,
     make_backtester,
 )
-from dissyslab.gallery.apps.mac_speed_suite.roles.evaluator import (
+from _evaluation import (
     _correlation_matrix,
     _pearson,
     make_evaluator,

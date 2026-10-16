@@ -28,7 +28,6 @@ from dissyslab.office.check_wiring import check_office_dir
 from dissyslab.office.utils import SINK_REGISTRY, SOURCE_REGISTRY
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-GALLERY = REPO_ROOT / "dissyslab" / "gallery"
 
 
 def _write(tmp_path: Path, body: str) -> Path:
@@ -235,32 +234,5 @@ Cara's out is slack_sink.
     assert "W11" in _codes(check_office_dir(d))
 
 
-# ── the shipped offices ───────────────────────────────────────────────
 
 
-def test_the_shipped_offices_that_fire_are_the_ones_we_expect():
-    """Pinned, so that adding a sink to a gallery office is a decision
-    rather than a surprise -- and so that a change to the tables shows
-    up here as a diff rather than as silence.
-
-    All five are real: each genuinely carries other people's words to
-    something that leaves the machine. They are shipped as they are
-    because that is what those offices are *for*; the note is the
-    office saying so out loud.
-    """
-    firing = set()
-    for office_md in sorted(GALLERY.rglob("office.md")):
-        try:
-            report = check_office_dir(office_md.parent)
-        except Exception:  # noqa: BLE001 - a broken office is another test's problem
-            continue
-        if any(f.code == "W11" for f in report.findings):
-            firing.add(office_md.parent.name)
-
-    assert firing == {
-        "inbox_triage",
-        "job_hunter",
-        "lead_qualifier",
-        "situation_room_requests",
-        "ticket_router",
-    }
