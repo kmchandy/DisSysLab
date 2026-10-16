@@ -226,6 +226,7 @@ module = [
   "dissyslab.agents.*",
   "dissyslab.office.frontmatter",
   "dissyslab.office.model",
+  "dissyslab.office.resolve",
   "dissyslab.office.syntax",
 ]
 disallow_untyped_defs = true
