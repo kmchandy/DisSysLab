@@ -152,7 +152,10 @@ Return only a JSON object with one field,
     <div>
       <p>This role is written in English, so a language model carries it out.</p>
       <div class="note"><p><b>The prompt the model receives is exactly this text, followed by the message as JSON.</b> DisSysLab adds nothing. <code>dsl show topic_filter --prompt</code> prints it.</p></div>
-      <p>The block between the <code>---</code> lines is for Python, not the model:</p>
+      <p>The block between the <code>---</code> lines is optional metadata, not the model:</p>
+      <p>The metadata is helpful for checking your network and for debugging. You
+        are strongly encouraged to use metadata, but you don't have to.
+      </p>
       <ul>
         <li><code>in:</code> the fields the role reads;</li>
         <li><code>out:</code> the fields it returns, and their allowed values.</li>

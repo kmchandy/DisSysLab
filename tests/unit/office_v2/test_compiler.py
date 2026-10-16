@@ -830,7 +830,13 @@ class TestGalleryCompiles:
         "office_dir",
         gallery_params(_gallery_office_dirs()),
     )
-    def test_compiles(self, office_dir, monkeypatch):
+    def test_compiles(self, office_dir, monkeypatch, tmp_path):
+        # Constructing an office constructs its sinks, and some sinks
+        # create their output file (brief.html, radar.html, ...) as soon
+        # as they exist, relative to the current directory. Run from a
+        # temporary directory so the sweep never writes into the
+        # repository.
+        monkeypatch.chdir(tmp_path)
         # Test wiring, not the developer's shell DSL_BACKEND. If the
         # user has DSL_BACKEND=ollama (or any other backend not
         # registered in pytest), nl_role's factory would try to
