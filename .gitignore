@@ -132,15 +132,11 @@ for_instructors/
 examples/**/output/
 examples/**/results/
 
-# Office runtime output. Gallery offices write JSONL via jsonl_recorder
-# sinks; this output should never be committed even if a developer runs
-# `dsl run` from inside the source tree.
-dissyslab/gallery/**/*.jsonl
-# ...except problems.jsonl in the debate office. That file is fixture
-# *input*, not runtime output — the gate role reads it at construction
-# time, so it must ship with the package or the office fails to import
-# (and the test_compiles[debate] test fails in CI).
-!dissyslab/gallery/apps/debate/problems.jsonl
+# Office runtime output inside the gallery is listed, file by file, in
+# dissyslab/gallery/.gitignore. Not a blanket `*.jsonl` here: gallery
+# offices also *read* .jsonl files (tickets, sensor readings, debate
+# problems), and a blanket rule silently kept those out of the Phase 6a
+# commit (tests/e2e/test_examples.py checks they are tracked).
 
 # periodic_brief and similar offices write a markdown artifact to the
 # directory dsl was run from. If that happens to be the source tree,

@@ -204,13 +204,18 @@ finalised. Split into steps (Mani, 17 October):
   swept the old gallery with the old tools were removed; the
   mac_speed_suite strategy tests now test the 2.0 office's code
   (`tests/mac_speed_suite_roles.py`).
-- **6b.** Remove the old build path (parser, compiler, codegen, library,
-  check_wiring, the old `dsl check`/`draw`/`show`/`roles`) and its tests;
-  `office_roles/` becomes `roles/` (the v1 roles go). Ported from the old
-  `dsl check` into the new one before it goes, because they are
-  guardrails: W11 (an untrusted source reaching an acting sink) and the
-  role-effects scan (a role that launches a program). `dsl draw` for the
-  new syntax.
+- **6b, done 17 October.** The old build path is gone (parser, compiler,
+  codegen, library, check_wiring and nine smaller modules, `fn_lib`,
+  `start_gallery`, `dsl build`, `dsl checks`) with its tests. Built-in
+  sources and sinks are built by `office/components.py`. `office_roles/`
+  is `roles/`. The new `dsl check` gives the two guardrail notes (an
+  untrusted source reaching an acting sink; Python reaching past the
+  sinks); `dsl draw`, `dsl roles` and `dsl show` read the 2.0 form.
+  `dsl run --trace/--resume/--snapshot-interval` are refused: the
+  runtime has them, the 2.0 build does not wire them yet. Found on the
+  way: a root `.gitignore` rule (`gallery/**/*.jsonl`) had kept the
+  gallery's input files out of the 6a commit; replaced, with a test that
+  every file a gallery office reads is tracked.
 - **6c.** Docs: README, GETTING_STARTED, SOURCES_AND_SINKS and the rest
   still teach version 1 offices and the sentence form. Skills
   (`office-builder`, `backtest-strategy-builder` -- its bundled

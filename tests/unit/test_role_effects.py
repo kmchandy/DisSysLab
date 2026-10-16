@@ -24,7 +24,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from dissyslab.office.check_wiring import check_office_dir
 from dissyslab.office.role_effects import scan_file, scan_office
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -93,100 +92,5 @@ def test_a_role_that_will_not_parse_is_not_a_lint_failure(tmp_path):
 
 
 # ── what it does to a whole office ────────────────────────────────────
-
-
-def test_the_check_reports_it_and_does_not_fail_the_office(tmp_path):
-    """A note. The office is not wrong — the reader is being told
-    something the graph cannot show them."""
-    d = tmp_path / "office"
-    d.mkdir()
-    (d / "office.md").write_text("""# Office: linkcheck
-
-Sources: rss(url="https://example.com/feed", name="rss")
-Sinks: console_printer
-
-Agents:
-Casey is a link_checker.
-
-Connections:
-rss's destination is Casey.
-Casey's out is console_printer.
-""", encoding="utf-8")
-    # A real role, not a bare function: it declares its ports, so the
-    # only thing this office can be reported for is the lint. Before
-    # W15 existed a stub was enough here, and the assertion below passed
-    # partly because the port checks had quietly stood down.
-    _role(d, (
-        "import requests\n\n"
-        "from dissyslab.blocks.role import Role\n"
-        "from dissyslab.office.library import AgentRoleEntry\n\n"
-        "def f(m):\n"
-        "    return [(m, 'out')]\n\n"
-        "role = AgentRoleEntry(\n"
-        "    name='link_checker', in_ports=('in_',), out_ports=('out',),\n"
-        "    factory=lambda: Role(fn=f, statuses=['out']),\n"
-        ")\n"
-    ), "link_checker.py")
-
-    report = check_office_dir(d)
-    w12 = [f for f in report.findings if f.code == "W12"]
-    assert w12, "a role importing requests was not reported"
-    assert report.ok, "W12 is a note; it must not fail the office"
-
-    # And the point of the whole thing: the graph check sees nothing
-    # here. console_printer is inert, so W11 is silent, and without
-    # W12 the office reads as clean.
-    assert not [f for f in report.findings if f.code == "W11"]
-
-
-def test_one_file_is_one_finding(tmp_path):
-    """A file that imports subprocess and calls subprocess.run is one
-    thing to look at, not two — the same reason W4 reports a frontier."""
-    d = tmp_path / "office"
-    d.mkdir()
-    (d / "office.md").write_text("""# Office: x
-
-Sources: starter
-Sinks: console_printer
-
-Agents:
-A is a shell_out.
-
-Connections:
-starter's destination is A.
-A's out is console_printer.
-""", encoding="utf-8")
-    _role(d, "import subprocess\nsubprocess.run(['ls'])\n", "shell_out.py")
-
-    w12 = [f for f in check_office_dir(d).findings if f.code == "W12"]
-    assert len(w12) == 1
-    assert "subprocess" in w12[0].message
-
-
-def test_the_hint_says_what_the_check_cannot_do(tmp_path):
-    """A lint described as a guarantee is worse than no lint. The
-    sentence saying so has to be in the output, not only in a
-    docstring nobody reads."""
-    d = tmp_path / "office"
-    d.mkdir()
-    (d / "office.md").write_text("""# Office: x
-
-Sources: starter
-Sinks: console_printer
-
-Agents:
-A is a reacher.
-
-Connections:
-starter's destination is A.
-A's out is console_printer.
-""", encoding="utf-8")
-    _role(d, "import socket\n", "reacher.py")
-
-    w12 = [f for f in check_office_dir(d).findings if f.code == "W12"][0]
-    assert "only reads imports" in w12.hint
-    assert "cannot see what the code does" in w12.hint
-
-
 
 

@@ -158,10 +158,9 @@ exclude = [
   "gallery/**/*.py",
   "gallery/**/*.jsonl",
   "gallery/*/samples/.gitkeep",
-  "roles/**/*.md",
-  # The built-in roles in the 2.0 form (becomes roles/ in Phase 6b).
-  "office_roles/*.md",
-  "office_roles/*.py",
+  # The built-in roles, English (.md) and Python (.py).
+  "roles/*.md",
+  "roles/*.py",
   # The office.md reference, printed by `dsl grammar`. It lives in the
   # package rather than inside the skill so that the language and the
   # description of the language ship together and cannot disagree --
@@ -229,10 +228,13 @@ module = [
   "dissyslab.agents.*",
   "dissyslab.office.build",
   "dissyslab.office.check",
+  "dissyslab.office.components",
+  "dissyslab.office.draw",
   "dissyslab.office.frontmatter",
   "dissyslab.office.model",
   "dissyslab.office.resolve",
   "dissyslab.office.syntax",
+  "dissyslab.roles_catalogue",
 ]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
@@ -270,12 +272,6 @@ module = [
   "dissyslab.components.sources.web_scraper",
   "dissyslab.components.sources.webhook_source",
   "dissyslab.runtime.network",
-  "dissyslab.office.check_wiring",
-  "dissyslab.office.cli_helpers",
-  "dissyslab.office.codegen",
-  "dissyslab.office.library",
-  "dissyslab.office.office_run_context",
-  "dissyslab.office.office_spec",
   "dissyslab.office.utils",
   "dissyslab.runtime.os_hooks",
   "dissyslab.runtime.snapshot",

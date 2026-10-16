@@ -19,5 +19,5 @@ synchronizer needs. If one annotator's reply for an article does not fit
 its `out:`, that article alone is held back and reported; the others are
 unaffected.
 
-All roles here are built in (`dissyslab/office_roles/`); this folder has
+All roles here are built in (`dissyslab/roles/`); this folder has
 no `roles/`.

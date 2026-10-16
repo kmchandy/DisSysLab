@@ -40,27 +40,15 @@ import pytest
 # any number. Each entry must match at least one zip member.
 REQUIRED_FILE_GLOBS = [
     # --- Built-in role library ---------------------------------------------
-    # The v1.3.4 bug: these were the files that went missing.
+    # The v1.3.4 bug: a wheel with no roles/, so every office naming a
+    # built-in role failed. One line per role so a regression names which.
+    "dissyslab/roles/deduplicator.py",
     "dissyslab/roles/entity_extractor.md",
-    "dissyslab/roles/severity_classifier.md",
-    "dissyslab/roles/urgency_classifier.md",
-    "dissyslab/roles/sentiment_classifier.md",
-    "dissyslab/roles/topic_tagger.md",
     "dissyslab/roles/geolocator.md",
+    "dissyslab/roles/severity_classifier.md",
     "dissyslab/roles/summarizer.md",
-    "dissyslab/roles/summary_writer.md",
-    "dissyslab/roles/relevance_filter.md",
-    "dissyslab/roles/category_classifier.md",
-    "dissyslab/roles/evaluator.md",
+    "dissyslab/roles/topic_tagger.md",
     "dissyslab/roles/writer.md",
-
-    # --- fn_lib (Python module — ships via setuptools.find) ---------------
-    "dissyslab/fn_lib/__init__.py",
-    "dissyslab/fn_lib/dedup.py",
-
-    # --- Built-in roles in the 2.0 form (become roles/ in Phase 6b) -------
-    "dissyslab/office_roles/writer.md",
-    "dissyslab/office_roles/deduplicator.py",
 
     # --- Gallery: every shipped office ------------------------------------
     # A wheel that omits an office breaks `dsl init` for it and makes the
@@ -97,7 +85,7 @@ REQUIRED_FILE_GLOBS = [
     "dissyslab/__init__.py",
     "dissyslab/cli.py",
     "dissyslab/office/__init__.py",
-    "dissyslab/office/library.py",
+    "dissyslab/office/build.py",
     "dissyslab/backends/openrouter_backend.py",
     "dissyslab/backends/ollama_backend.py",
     "dissyslab/backends/anthropic_backend.py",
@@ -333,17 +321,18 @@ def test_wheel_excludes_dev_paths(built_wheel, forbidden):
 @pytest.mark.slow
 def test_wheel_has_minimum_role_count(built_wheel):
     """Defence in depth: regardless of which specific roles are listed
-    above, we expect at least ten role files. If this count drops it
+    above, we expect at least seven role files. If this count drops it
     indicates a glob regression even when the named files happen to
     still match.
     """
-    role_md_files = [
+    role_files = [
         n for n in built_wheel["names"]
-        if n.startswith("dissyslab/roles/") and n.endswith(".md")
+        if n.startswith("dissyslab/roles/") and n.endswith((".md", ".py"))
+        and not n.endswith(("README.md", "__init__.py"))
     ]
-    assert len(role_md_files) >= 10, (
-        f"Wheel ships only {len(role_md_files)} role files; "
-        f"expected at least 10. Names found: {role_md_files}"
+    assert len(role_files) >= 7, (
+        f"Wheel ships only {len(role_files)} role files; "
+        f"expected at least 7. Names found: {role_files}"
     )
 
 

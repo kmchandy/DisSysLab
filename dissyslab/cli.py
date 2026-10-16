@@ -384,27 +384,20 @@ def _explain_failure_message(command: str, exc: BaseException) -> str:
             f"{command}: the office ran but produced nothing.\n\n{msg}"
         )
 
-    # ParseError is the same case as OfficeRunError: it already names
-    # the file, the line, the snippet and the three forms an agent line
-    # may take. A traceback underneath it is forty lines of framework
-    # internals wrapped around a message about a missing article, and
-    # the reader's eye goes to the traceback. (DSL_DEBUG still appends
-    # it.)
-    from dissyslab.office.parser_errors import ParseError
-    if isinstance(exc, ParseError):
+    # The same case as OfficeRunError: these name the line and what is
+    # wrong with it, and a traceback underneath buries that. (DSL_DEBUG
+    # still appends it.)
+    from dissyslab.agents.python_role import RoleLoadError
+    from dissyslab.office.build import BuildError
+    from dissyslab.office.frontmatter import FrontMatterError
+    from dissyslab.office.syntax import OfficeSyntaxError
+    if isinstance(exc, (OfficeSyntaxError, BuildError, FrontMatterError, RoleLoadError)):
         return f"{command}: {msg}"
 
-    # Missing Python module — almost always a stale build/run.py or
-    # a package the user forgot to install in this venv.
+    # Missing Python module -- a package the user forgot to install in
+    # this venv.
     if isinstance(exc, ModuleNotFoundError):
         name = exc.name or ""
-        if name in {"components", "dsl"}:
-            return (
-                f"{command} failed: the office's build/run.py uses an "
-                f"old '{name}' import path.\n"
-                f"  Fix: regenerate with  dsl build <office_dir>\n"
-                f"       or `dsl init` a fresh copy from the gallery."
-            )
         if name in {
             "anthropic", "dotenv", "feedparser", "requests",
             "websocket", "bs4", "PIL", "numpy", "scipy",
@@ -572,53 +565,36 @@ def _resolve_office_arg(arg: str, label: str) -> Path | None:
     return None
 
 
-def _refuse_if_draft(office_dir, command: str) -> bool:
-    """True if the office is still being described, and we said so.
+def _is_packaged_office(office_dir: Path) -> bool:
+    """Is this office part of the installed dissyslab, not the user's own folder?
 
-    The check belongs here as well as in the compiler because only here
-    can it name *every* agent whose job is undecided. The compiler meets
-    them one at a time and stops at the first, which is right for a
-    library caller and wrong for a person who wants the whole list.
-
-    Silent on anything it cannot parse: a syntax error has its own,
-    better message a few lines further on.
+    ``dsl check debate`` resolves a name against the gallery, which lives
+    inside site-packages: a place an upgrade replaces, a system-wide
+    install may not let anyone write, and where nothing is the student's.
     """
     try:
-        from dissyslab.office.office_spec import draft_refusal, unassigned_agents
-        from dissyslab.office.parser import parse_office_dir
+        import dissyslab
 
-        pending = unassigned_agents(parse_office_dir(Path(office_dir)))
-    except Exception:  # noqa: BLE001
+        pkg = Path(dissyslab.__file__).resolve().parent
+    except Exception:  # noqa: BLE001 - unknown is not packaged
         return False
-    if not pending:
-        return False
-    _eprint(f"{command}: {draft_refusal(pending)}")
-    return True
+    office = Path(office_dir).resolve()
+    return pkg == office or pkg in office.parents
 
 
-def _is_new_syntax(office_dir: Path) -> bool:
-    """True if the office is written in the 2.0 line form (spec section 3).
+def cmd_run(args: argparse.Namespace) -> int:
+    """Build the office in memory and run it (dissyslab.office.build)."""
+    office_dir = _resolve_office_arg(args.office_dir, "office_dir")
+    if office_dir is None:
+        return 2
 
-    Until the old path is removed (Phase 6b), ``dsl run``, ``dsl check`` and
-    ``dsl build`` take an office down the new path or the old one by the
-    form of its ``office.md``; nothing else differs.
-    """
-    from dissyslab.office.syntax import is_old_form
-
-    md = Path(office_dir) / "office.md"
-    return md.is_file() and not is_old_form(md.read_text(encoding="utf-8"))
-
-
-def _run_new(office_dir: Path, args: argparse.Namespace) -> int:
-    """``dsl run`` for an office in the new syntax: build in memory and run."""
     for flag, attr in (("--snapshot-interval", "snapshot_interval"),
                        ("--resume", "resume"), ("--trace", "trace")):
         if getattr(args, attr, None) not in (None, False):
-            _eprint(f"dsl run: {flag} is not available yet for an office in the new syntax.")
+            _eprint(f"dsl run: {flag} is not available in this version.")
             return 2
-    from dissyslab.office.cli_helpers import is_packaged_office
 
-    if is_packaged_office(Path(office_dir)):
+    if _is_packaged_office(Path(office_dir)):
         # A run writes its output next to office.md. Inside the installed
         # package that is a folder an upgrade replaces and a system-wide
         # install may not let anyone write; nothing put there is the
@@ -631,6 +607,9 @@ def _run_new(office_dir: Path, args: argparse.Namespace) -> int:
         _eprint("  dsl run .")
         return 2
 
+    # Per-agent message counts when the run finishes. On by default: an
+    # office that produced nothing used to look exactly like one that
+    # worked, and the counts make that visible.
     if not getattr(args, "quiet", False):
         os.environ["DSL_RUN_SUMMARY"] = "1"
 
@@ -647,103 +626,23 @@ def _run_new(office_dir: Path, args: argparse.Namespace) -> int:
             _eprint(f"  {line}")
         _eprint(f"(`dsl check {args.office_dir}` lists every problem at once.)")
         return 1
-
-
-def cmd_run(args: argparse.Namespace) -> int:
-    """Build (if stale) and run a closed office via office."""
-    office_dir = _resolve_office_arg(args.office_dir, "office_dir")
-    if office_dir is None:
-        return 2
-
-    if _is_new_syntax(office_dir):
-        return _run_new(office_dir, args)
-
-    if _refuse_if_draft(office_dir, "dsl run"):
-        return 1
-
-    # v1.6: propagate checkpoint-resume flags to the generated build/run.py
-    # via environment variables that the artifact's __main__ block reads.
-    if getattr(args, "snapshot_interval", None) is not None:
-        os.environ["DSL_SNAPSHOT_INTERVAL"] = str(args.snapshot_interval)
-    if getattr(args, "resume", None) is not None:
-        os.environ["DSL_RESUME"] = str(args.resume)
-
-    # v1.7: opt-in per-agent activity-log trace. Off by default (no env
-    # var set, no cost). See docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md.
-    if getattr(args, "trace", False):
-        os.environ["DSL_TRACE"] = "1"
-
-    # Print per-agent message counts when the run finishes. On by
-    # default: an office that produced nothing used to look exactly
-    # like one that worked, and the counts make that visible without
-    # the reader having to know what to expect.
-    if not getattr(args, "quiet", False):
-        os.environ["DSL_RUN_SUMMARY"] = "1"
-
-    from dissyslab.office.cli_helpers import cli_run
-
-    try:
-        return cli_run(office_dir)
-    except SystemExit as e:
-        # The artifact's __main__ block may sys.exit for clean errors.
-        return int(e.code or 0)
     except Exception as exc:  # noqa: BLE001
         _eprint(_explain_failure("dsl run", exc))
-        return 1
-
-
-# ── Subcommand: build ─────────────────────────────────────────────────────────
-
-def cmd_build(args: argparse.Namespace) -> int:
-    """Generate build/run.py for an office via office codegen."""
-    office_dir = _resolve_office_arg(args.office_dir, "office_dir")
-    if office_dir is None:
-        return 2
-
-    if _is_new_syntax(office_dir):
-        print("dsl build: nothing to do. An office in the new syntax is built in "
-              "memory each time you `dsl run` it; there is no build/ folder.")
-        return 0
-
-    if _refuse_if_draft(office_dir, "dsl build"):
-        return 1
-
-    from dissyslab.office.cli_helpers import cli_build
-
-    try:
-        return cli_build(office_dir)
-    except SystemExit as e:
-        return int(e.code or 0)
-    except Exception as exc:  # noqa: BLE001
-        _eprint(_explain_failure("dsl build", exc))
         return 1
 
 
 # ── Subcommand: check ─────────────────────────────────────────────────────────
 
 def cmd_check(args: argparse.Namespace) -> int:
-    """Report structural faults in an office's wiring without running it."""
+    """Every problem in an office, without running it (dissyslab.office.check)."""
     office_dir = _resolve_office_arg(args.office_dir, "office_dir")
     if office_dir is None:
         return 2
 
-    if _is_new_syntax(office_dir):
-        from dissyslab.office.check import check_office
-        from dissyslab.office.check import format_report as format_new
+    from dissyslab.office.check import check_office, format_report
 
-        new_report = check_office(Path(office_dir))
-        print(format_new(Path(office_dir).resolve().name, new_report), end="")
-        return 0 if new_report.ok else 1
-
-    from dissyslab.office.check_wiring import check_office_dir, format_report
-
-    try:
-        report = check_office_dir(office_dir)
-    except Exception as exc:  # noqa: BLE001
-        _eprint(_explain_failure("dsl check", exc))
-        return 1
-
-    print(format_report(report), end="")
+    report = check_office(Path(office_dir))
+    print(format_report(Path(office_dir).resolve().name, report), end="")
     return 0 if report.ok else 1
 
 
@@ -859,24 +758,6 @@ def cmd_grammar(args: argparse.Namespace) -> int:
         )
         return 2
     return 0
-
-
-def cmd_checks(args: argparse.Namespace) -> int:
-    """Say what a check code means.
-
-    `dsl check` prints `W11` beside a finding. Codes are worth having --
-    stable across rewordings, and a way for two people to refer to the
-    same finding without quoting a sentence at each other -- but they
-    are opaque, and until this existed a reader who did not already
-    know had nowhere to go. The meanings lived in the code that raises
-    them and in CHANGELOG entries filed by release.
-    """
-    from dissyslab.office.check_catalogue import catalogue_lines, get
-
-    code = getattr(args, "code", None)
-    for line in catalogue_lines(code):
-        print(line)
-    return 0 if code is None or get(code) is not None else 1
 
 
 def cmd_skills(_args: argparse.Namespace) -> int:
@@ -1254,48 +1135,22 @@ def cmd_list(args: argparse.Namespace) -> int:
 # ── Subcommand: init ──────────────────────────────────────────────────────────
 
 def _office_uses_llm_roles(office_dir: Path) -> bool:
-    """Whether an office references any natural-language (LLM-backed) role.
+    """Whether an office uses an English role, which needs a model and a key.
 
-    Natural-language roles come from ``.md`` role files (``nl_role``); ``.py``
-    role files are deterministic and need no model backend. A role name
-    resolves against the office's own ``roles/`` directory first, then the
-    framework's built-in ``dissyslab/roles/`` library, so a local ``.py`` role
-    shadowing a built-in ``.md`` counts as deterministic.
-
-    Errs toward ``True`` (assume a key is needed) when the office cannot be
-    parsed, so a genuine key requirement is never silently hidden.
+    Kinds resolve as ``dsl run`` resolves them: a ``.md`` role is English,
+    a ``.py`` role is Python and needs no model. A nested office may hide
+    English roles, so it counts. Errs toward True when the office cannot
+    be read, so a genuine key requirement is never silently hidden.
     """
-    if _is_new_syntax(Path(office_dir)):
-        try:
-            from dissyslab.office.resolve import resolve_office
-            from dissyslab.office.syntax import parse_office_file
-
-            office = parse_office_file(Path(office_dir) / "office.md")
-            found, _ = resolve_office(office, Path(office_dir))
-        except Exception:
-            return True
-        return any(f.language == "english" for f in found.values()) or any(
-            f.kind == "office" for f in found.values())
     try:
-        from dissyslab.office.parser import parse_office_dir
-        from dissyslab.office._internals import _builtin_roles_dir
-        spec = parse_office_dir(Path(office_dir))
-    except Exception:
+        from dissyslab.office.resolve import resolve_office
+        from dissyslab.office.syntax import parse_office_file
+
+        office = parse_office_file(Path(office_dir) / "office.md")
+        found, _ = resolve_office(office, Path(office_dir))
+    except Exception:  # noqa: BLE001
         return True
-    local = Path(office_dir) / "roles"
-    builtin = _builtin_roles_dir()
-    for ref in spec.agents:
-        # A sub-office may hide LLM roles we cannot cheaply inspect here.
-        if getattr(ref, "path", None):
-            return True
-        name = ref.role_name
-        if (local / f"{name}.py").exists():
-            continue  # deterministic local role
-        if (local / f"{name}.md").exists():
-            return True  # local natural-language role
-        if (builtin / f"{name}.md").exists():
-            return True  # built-in natural-language role
-    return False
+    return any(f.language == "english" or f.kind == "office" for f in found.values())
 
 
 def cmd_init(args: argparse.Namespace) -> int:
@@ -1358,20 +1213,19 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 
 def _resolve_builtin_role_path(name: str) -> Path | None:
-    """Locate <name>.md in the framework's built-in roles directory.
+    """The built-in role ``<name>.md`` or ``<name>.py``, or None.
 
-    Returns the absolute Path if found, None otherwise. Local roles
-    (in an office's roles/ folder) are NOT considered here — Pat can
-    open those directly in her own folder. ``dsl show`` is for
-    components the framework ships.
+    Local roles (in an office's roles/ folder) are not considered: they
+    are in the person's own folder already. ``dsl show`` is for what the
+    framework ships.
     """
-    try:
-        from importlib.resources import files
-        builtin_dir = Path(str(files("dissyslab") / "roles"))
-    except Exception:
-        return None
-    candidate = builtin_dir / f"{name}.md"
-    return candidate if candidate.is_file() else None
+    from dissyslab.office.resolve import BUILTIN_ROLES
+
+    for suffix in (".md", ".py"):
+        candidate = BUILTIN_ROLES / f"{name}{suffix}"
+        if candidate.is_file():
+            return candidate
+    return None
 
 
 def _resolve_component_path(entry: dict) -> Path | None:
@@ -1401,45 +1255,18 @@ def _resolve_component_path(entry: dict) -> Path | None:
     return None
 
 
-def _resolve_python_object_path(obj) -> Path | None:
-    """Find the source file of a Python callable or class via inspect."""
-    import inspect
-    try:
-        return Path(inspect.getfile(obj))
-    except (TypeError, OSError):
-        return None
-
-
 def cmd_show(args: argparse.Namespace) -> int:
-    """Show the implementation of a built-in component or LLM role.
+    """Show a built-in role, or where a built-in source or sink is.
 
-    Asymmetric output, calibrated to medium:
-
-    * For an LLM role (``<name>.md`` in ``dissyslab/roles/``): print
-      the file's full contents prefixed with a comment naming the
-      file path. The prompt is short and reading it is what Pat
-      wants.
-    * For a Python implementation (in ``COMPONENT_REGISTRY``,
-      ``FN_LIB``, or ``PARAMETERIZED_LIBRARY``): print only the
-      absolute file path on a single line. The source is long;
-      printing it would overwhelm the terminal. Pat opens the file
-      in her editor if she wants to inspect.
-
-    To modify a built-in role, Pat copies the printed content into
-    a file in her office's ``roles/`` folder and edits there. The
-    framework's name resolution prefers local files over built-ins.
-
-    Resolution order (matches the compiler's own lookup):
-
-    1. ``dissyslab/roles/<name>.md`` (built-in LLM prompt).
-    2. ``COMPONENT_REGISTRY[name]`` (Python source/sink/agent class).
-    3. ``PARAMETERIZED_LIBRARY[name]`` (parameterized factory like
-       ``synchronizer``).
-    4. ``dissyslab.fn_lib.FN_LIB[name]`` (Python function entry).
+    A built-in role (``dissyslab/roles/<name>.md`` or ``.py``) is printed
+    whole, prefixed with its path: it is short, and reading it is the
+    point. To change one, copy it into the office's ``roles/`` folder under
+    a new name (spec 4.2). A source or sink prints only its file's path;
+    the source is long and belongs in an editor.
     """
     name = args.name
 
-    # 1. Built-in LLM role (.md file).
+    # A built-in role.
     role_path = _resolve_builtin_role_path(name)
     if role_path is not None:
         print(f"# {role_path}")
@@ -1447,7 +1274,7 @@ def cmd_show(args: argparse.Namespace) -> int:
         print(role_path.read_text(encoding="utf-8"), end="")
         return 0
 
-    # 2. Python component in COMPONENT_REGISTRY.
+    # A source or sink in the component registry.
     from dissyslab.office.utils import lookup_component
     entry = lookup_component(name)
     if entry is not None:
@@ -1461,38 +1288,10 @@ def cmd_show(args: argparse.Namespace) -> int:
         print(py_path)
         return 0
 
-    # 3. PARAMETERIZED_LIBRARY (e.g. `synchronizer` -> synchronizer_role).
-    try:
-        from dissyslab.office.library import PARAMETERIZED_LIBRARY
-        if name in PARAMETERIZED_LIBRARY:
-            factory = PARAMETERIZED_LIBRARY[name]
-            py_path = _resolve_python_object_path(factory)
-            if py_path is not None:
-                print(py_path)
-                return 0
-    except ImportError:
-        pass
-
-    # 4. fn_lib (Python function-library entries).
-    try:
-        from dissyslab.fn_lib import FN_LIB
-        if name in FN_LIB:
-            fn_entry = FN_LIB[name]
-            # FnEntry typically wraps a fn; try common attribute names.
-            fn = getattr(fn_entry, "fn", None) or fn_entry
-            py_path = _resolve_python_object_path(fn)
-            if py_path is not None:
-                print(py_path)
-                return 0
-    except ImportError:
-        pass
-
-    # Not found in any surface.
     _eprint(
-        f"Unknown component or role {name!r}. Looked in the role "
-        f"library (dissyslab/roles/), the component registry, the "
-        f"parameterized library, and the function library. None of "
-        f"them have an entry named {name!r}."
+        f"Unknown component or role {name!r}. Looked in the built-in "
+        f"roles (dissyslab/roles/, see `dsl roles`) and the sources and "
+        f"sinks (see `dsl grammar sources`)."
     )
     return 1
 
@@ -2208,50 +2007,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p_run.add_argument("office_dir", help="path to an office directory")
     # v1.6: checkpoint-resume opt-in flags.
-    p_run.add_argument(
-        "--snapshot-interval",
-        type=float,
-        metavar="SECONDS",
-        help=(
-            "Enable periodic distributed snapshots every SECONDS "
-            "of execution. Snapshots are written under "
-            "<office_dir>/snapshots/checkpoints/<N>/. Only "
-            "checkpoint-aware sources (those that call _poll_os "
-            "from their run loop) participate. See "
-            "docs/algorithms/CHECKPOINT_RESUME.md."
-        ),
-    )
+    # Snapshots, resume and tracing are in the runtime but not wired into
+    # the 2.0 build yet. The flags are kept, hidden, so `dsl run` can say
+    # so rather than "unrecognized arguments".
+    for flag, extra in (("--snapshot-interval", {"type": float}), ("--resume", {}),
+                        ("--trace", {"action": "store_true"})):
+        p_run.add_argument(flag, help=argparse.SUPPRESS, **extra)
     p_run.add_argument(
         "--quiet",
         action="store_true",
         help=(
             "Suppress the per-agent message-count summary printed when "
             "the run finishes."
-        ),
-    )
-    p_run.add_argument(
-        "--resume",
-        metavar="N|latest",
-        help=(
-            "Resume execution from snapshot N (an integer) or "
-            "from the most recent snapshot ('latest'). Requires "
-            "that the office's sources are checkpoint-aware."
-        ),
-    )
-    # v1.7: opt-in per-agent activity-log trace, for the "explain a
-    # debug trace to Pat" feature.
-    p_run.add_argument(
-        "--trace",
-        action="store_true",
-        help=(
-            "Record every message each agent sends and receives to "
-            "<office_dir>/trace/<agent_name>.jsonl, ordered by a "
-            "physical-time-grounded logical clock. Off by default — "
-            "logging has a real cost (a disk write per message). "
-            "Stop the run manually (Ctrl-C or natural completion), "
-            "then run `dsl explain-trace <office_dir>/trace/` to get "
-            "one merged, ordered record. See "
-            "docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md."
         ),
     )
     p_run.set_defaults(handler=cmd_run)
@@ -2327,25 +2094,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="write the merged JSON to FILE instead of stdout",
     )
     p_show_checkpoint.set_defaults(handler=cmd_show_checkpoint)
-
-    # `dsl build` emits the readable Python artifact at
-    # <office_dir>/build/run.py. `dsl run` calls it automatically when
-    # the artifact is missing or stale, but students often want to
-    # inspect the generated file to see exactly what was wired up.
-    p_build = sub.add_parser(
-        "build",
-        help="generate build/run.py for an office (without running)",
-        description=(
-            "Generate <office_dir>/build/run.py for an office without "
-            "running it. The generated file is plain Python you can read "
-            "and run directly with `python <office_dir>/build/run.py`. "
-            "`dsl run` calls this automatically when the artifact is "
-            "missing or stale."
-        ),
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    p_build.add_argument("office_dir", help="path to an office directory")
-    p_build.set_defaults(handler=cmd_build)
 
     p_check = sub.add_parser(
         "check",
@@ -2456,28 +2204,6 @@ def build_parser() -> argparse.ArgumentParser:
         help="office (default), roles, sources, or examples",
     )
     p_grammar.set_defaults(handler=cmd_grammar)
-
-    p_checks = sub.add_parser(
-        "checks",
-        help="say what a check code like W4 or G1 means",
-        description=(
-            "`dsl check` prints a code beside every finding. This says "
-            "what one means.\n\n"
-            "    dsl checks        every code, one line each\n"
-            "    dsl checks W11    what that one means\n\n"
-            "A *problem* means the office is wrong and will not run "
-            "correctly. A *note* means read it and decide -- the office "
-            "is not wrong, but it is doing something worth knowing "
-            "about."
-        ),
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    p_checks.add_argument(
-        "code",
-        nargs="?",
-        help="a code such as W4, W11 or G1. Omit it to list them all.",
-    )
-    p_checks.set_defaults(handler=cmd_checks)
 
     p_skills = sub.add_parser(
         "skills",

@@ -21,6 +21,19 @@ An ``unassigned`` agent makes the office a draft (spec 3.5): it is
 reported as a note, not a problem, because an unfinished office is not a
 broken one.
 
+Two notes are about what the office can *do* rather than whether it
+runs. Guardrails are recommended, never required (spec, principle 6), so
+both are notes:
+
+- **Text from the open web can reach a sink that acts** (W11 in version
+  1): a source that carries other people's words (:mod:`trust`) has a
+  path to a sink that sends mail, posts, or calls out. Whoever writes
+  those words is writing to a model, and through it to that sink.
+- **A Python file reaches past the office's declared power**
+  (:mod:`role_effects`, W12 in version 1): it imports a network or
+  process module, or calls ``eval`` and the like. It reads imports; it
+  cannot see what the code does.
+
 Not here yet: the whole-network checks (an agent nothing reaches, work
 that reaches no sink, a sink nothing feeds), spec section 9, W16-W32.
 """
@@ -29,6 +42,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable
 
 from dissyslab.agents.python_role import missing_packages
 from dissyslab.office.build import (
@@ -43,7 +57,9 @@ from dissyslab.office.build import (
 from dissyslab.office.frontmatter import FrontMatterError, read_front_matter
 from dissyslab.office.model import Declaration, OfficeFile
 from dissyslab.office.resolve import Found, resolve_office
+from dissyslab.office.role_effects import scan_office
 from dissyslab.office.syntax import OfficeSyntaxError, parse_office_file
+from dissyslab.office.trust import is_acting_sink, is_untrusted_source, what_it_does
 
 
 @dataclass
@@ -171,7 +187,67 @@ def _check(office_dir: Path, stack: tuple[Path, ...]) -> tuple[Report, OfficeFil
             _runtime_connection(c, ports)
         except BuildError as exc:
             report.problems.append(str(exc))
+
+    report.notes.extend(_untrusted_reaches_acting(office, found))
+    report.notes.extend(_python_reach(office, found, office_dir))
     return report, office
+
+
+def _untrusted_reaches_acting(office: OfficeFile, found: dict[str, Found]) -> list[str]:
+    """A note for each acting sink that text from an untrusted source can reach.
+
+    Reachability over the arrows of this office; a nested office passes
+    everything through (its own sinks are checked when it is).
+    """
+    def builtin(decls: tuple[Declaration, ...], test: Callable[[str], bool]) -> list[Declaration]:
+        return [d for d in decls if d.name in found and found[d.name].origin == "builtin"
+                and test(d.kind)]
+
+    untrusted = {d.name: d for d in builtin(office.sources, is_untrusted_source)}
+    acting = builtin(office.sinks, is_acting_sink)
+    if not untrusted or not acting:
+        return []
+    feeds: dict[str, set[str]] = {}
+    for c in office.connections:
+        feeds.setdefault(c.receiver.name, set()).add(c.sender.name)
+    notes: list[str] = []
+    for sink in acting:
+        seen: set[str] = set()
+        stack = [sink.name]
+        while stack:
+            name = stack.pop()
+            for sender in feeds.get(name, ()):
+                if sender not in seen:
+                    seen.add(sender)
+                    stack.append(sender)
+        upstream = sorted(n for n in untrusted if n in seen)
+        if upstream:
+            notes.append(
+                f"line {sink.line}: text from {', '.join(upstream)} can reach {sink.name}, "
+                f"which {what_it_does(sink.kind)}. Whoever writes what those sources carry "
+                "is writing to a model, and through it to this sink. If that is not what "
+                "you meant, send on only fields you chose -- a label, a score, a URL -- "
+                "declared in out:, so nothing else gets through."
+            )
+    return notes
+
+
+def _python_reach(office: OfficeFile, found: dict[str, Found], office_dir: Path) -> list[str]:
+    """A note for each Python file in the office that reaches past its sinks."""
+    lines = {f.path: office.names[name] for name, f in found.items() if f.path is not None}
+    by_file: dict[Path, list[str]] = {}
+    for effect in scan_office(office_dir):
+        by_file.setdefault(effect.path, []).append(effect.detail)
+    notes: list[str] = []
+    for path, details in sorted(by_file.items()):
+        where = f"line {lines[path]}: " if path in lines else ""
+        notes.append(
+            f"{where}{path.parent.name}/{path.name} {'; '.join(details)}. An office's "
+            "declared power is its sources and sinks; Python inside a role can act "
+            "outside them, and this check only reads imports. If you did not write "
+            "this file, read it."
+        )
+    return notes
 
 
 def check_office(office_dir: Path) -> Report:

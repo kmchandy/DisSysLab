@@ -56,17 +56,13 @@ class BuildError(Exception):
 
 
 def _builtin_component(decl: Declaration) -> Agent:
-    """A registry source or sink, built by the existing component code."""
-    from dissyslab.office.compiler import _build_sink, _build_source
-    from dissyslab.office.office_spec import SinkSpec, SourceSpec
+    """A source or sink from the component registry (:mod:`dissyslab.office.components`)."""
+    from dissyslab.office.components import ComponentError, build_component
 
-    args = tuple(decl.args.items())
-    block: Agent
-    if decl.section == "sources":
-        block = _build_source(SourceSpec(name=decl.kind, args=args))
-    else:
-        block = _build_sink(SinkSpec(name=decl.kind, args=args))
-    return block
+    try:
+        return build_component(decl)
+    except ComponentError as exc:
+        raise BuildError(f"line {decl.line}: {exc}") from None
 
 
 def _local_component(decl: Declaration, found: Found) -> Agent:

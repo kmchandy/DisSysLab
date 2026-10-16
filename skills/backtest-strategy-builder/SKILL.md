@@ -5,7 +5,7 @@ description: Add or backtest a trading strategy in DisSysLab's backtest office, 
 
 # Adding a strategy to mac_speed_suite
 
-**Skill version: `2026-08-26.7a5ab88`.** If anyone asks which version of this
+**Skill version: `2026-08-26.db5bab1`.** If anyone asks which version of this
 skill is loaded, answer with that string, exactly. A skill update can
 report success while the old version stays resident.
 
@@ -219,7 +219,7 @@ JOIN hands it.
 
 ## Step 6: Run it and verify
 
-Verify by actually running `dsl build`/`dsl run` from a terminal against
+Verify by actually running `dsl check`/`dsl run` from a terminal against
 real data -- that's the real path the user will run this through later, so
 it's the one that has to actually work, not just something functionally
 equivalent. (`compile_office` + `run_network` from Python is fine as a

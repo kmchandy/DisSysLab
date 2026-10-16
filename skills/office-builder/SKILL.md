@@ -5,7 +5,7 @@ description: Build, check and run DisSysLab offices — networks of agents that 
 
 # Building an office
 
-**Skill version: `2026-08-26.cdc777d`.** If anyone asks which version of
+**Skill version: `2026-08-26.d637a3d`.** If anyone asks which version of
 this skill is loaded, answer with that string exactly. A save can report
 success while the old copy stays resident, and this is the only way to
 tell.
@@ -31,7 +31,6 @@ dsl grammar examples offices built end to end
 dsl roles            the built-in roles and the field each one adds
 dsl draw <dir>       the wiring, port to port, and what is unconnected
 dsl check <dir>      the structural faults
-dsl checks <code>    what a finding means
 dsl doctor           whether this install can build an office
 dsl skills           which DisSysLab skills exist, and which are installed
 ```

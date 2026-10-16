@@ -629,3 +629,18 @@ def test_a_busy_gate_is_not_a_stall(tmp_path, capfd):
     })
     assert run_office(office) == 0
     assert "Stalled:" not in capfd.readouterr().err
+
+
+def test_a_bad_argument_to_a_built_in_component_names_the_good_ones(tmp_path):
+    office = write(tmp_path / "typo", {
+        "office.md": (
+            "sources:\n    items: file_source(path=\"items.jsonl\")\n"
+            "sinks:\n    jsonl_recorder(pth=\"out.jsonl\")\n"
+            "connections:\n    items -> jsonl_recorder\n"),
+        "items.jsonl": jsonl([{"n": 1}]),
+    })
+    with pytest.raises(BuildError) as err:
+        build_office(office)
+    message = str(err.value)
+    assert message.startswith("line 4: sink 'jsonl_recorder' takes no argument 'pth'.")
+    assert "Did you mean 'path'?" in message

@@ -369,3 +369,31 @@ def test_backyard_birds_without_birdnet_stops_before_starting(tmp_path):
     office = copy_example("backyard_birds", tmp_path)
     with pytest.raises(Exception, match="pip install"):
         run_office(office)
+
+
+# ── Every data file an office reads is in the repository ───────────────────
+
+
+def test_every_file_a_gallery_office_reads_is_tracked_by_git():
+    """A file on this disk but not in git passes every other test here and
+    fails in CI and for every student. It happened: a blanket `*.jsonl`
+    ignore rule kept the gallery's input files out of the Phase 6a commit.
+    """
+    import subprocess
+
+    repo = EXAMPLES.parents[1]
+    if not (repo / ".git").exists():
+        pytest.skip("not a git checkout")
+    tracked = set(subprocess.run(
+        ["git", "ls-files", "dissyslab/gallery"], cwd=repo,
+        capture_output=True, text=True, check=True).stdout.split())
+    read = []
+    for md in EXAMPLES.rglob("office.md"):
+        for path in re.findall(r'file_source\(path="([^"]+)"\)', md.read_text(encoding="utf-8")):
+            read.append((md.parent / path).relative_to(repo).as_posix())
+    assert read, "found no file_source in the gallery: is this test still looking?"
+    untracked = sorted(p for p in read if p not in tracked)
+    assert not untracked, (
+        f"gallery offices read files that are not in git: {untracked}. "
+        "Check .gitignore (`git check-ignore -v <file>`), then `git add` them."
+    )

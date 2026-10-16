@@ -1,95 +1,16 @@
+"""dissyslab.office -- from an office folder to a running network.
+
+Each step is its own module (spec section 8):
+
+- ``syntax``      office.md text -> ``model.OfficeFile``
+- ``frontmatter`` a role's or component's front matter
+- ``resolve``     what each declaration's kind refers to
+- ``components``  built-in sources and sinks, from ``utils``'s registry
+- ``build``       the runtime network, and ``run_office``
+- ``check``       ``dsl check``: every problem, nothing run
+- ``draw``        ``dsl draw``
+- ``trust`` and ``role_effects`` the guardrail notes ``check`` gives
+
+Most people use these through the ``dsl`` command. Nothing is
+re-exported here, so importing one step does not import the rest.
 """
-dissyslab.office — the office compile pipeline.
-
-Reads ``office.md`` plus role files; produces a runtime Network or
-emits a ``build/run.py`` Python file. Most users do not import from
-this subpackage; they use the ``dsl`` command-line tool
-(``dsl build <office_dir>`` or ``dsl run <office_dir>``).
-
-Pipeline stages (each implemented in its own module):
-
-    1. parser            — office.md text → OfficeSpec
-    2. office_spec       — OfficeSpec dataclass and related types
-    3. library           — AgentRoleEntry / OfficeRoleEntry, named
-                           role helpers (``nl_role``,
-                           ``synchronizer_role``, ``specialist_role``),
-                           and ``load_roles_dir``
-    4. compiler          — OfficeSpec + Library → dissyslab.network.Network
-    5. codegen           — emit <office>/build/run.py from a compiled
-                           Network
-    6. office_run_context — runtime environment injected into
-                           ``nl_role`` system prompts
-
-The runtime that executes the produced Network lives in
-``dissyslab.network`` (``run_network()``).
-"""
-from dissyslab.office.office_spec_constants import EXTERNAL
-from dissyslab.office.office_spec import (
-    ConnectionStmt,
-    Endpoint,
-    OfficeSpec,
-    RoleRef,
-    SinkSpec,
-    SourceSpec,
-)
-from dissyslab.office.parser import IMPLICIT_INPORT, parse_office_dir
-from dissyslab.office.parser_errors import ParseError
-from dissyslab.office.library import (
-    AgentRoleEntry,
-    DEFAULT_AI,
-    Library,
-    OfficeRoleEntry,
-    PARAMETERIZED_LIBRARY,
-    RoleEntry,
-    gate_role,
-    load_roles_dir,
-    nl_role,
-    record_role,
-    router_role,
-    select_role,
-    specialist_role,
-    synchronizer_role,
-)
-from dissyslab.office.compiler import (
-    CompileError,
-    CompileWarning,
-    compile_office,
-)
-from dissyslab.office.codegen import (
-    emit_run_py,
-    render_run_py,
-)
-from dissyslab.office.make_office import make_office
-
-__all__ = [
-    "AgentRoleEntry",
-    "CompileError",
-    "CompileWarning",
-    "ConnectionStmt",
-    "DEFAULT_AI",
-    "Endpoint",
-    "EXTERNAL",
-    "IMPLICIT_INPORT",
-    "Library",
-    "OfficeRoleEntry",
-    "PARAMETERIZED_LIBRARY",
-    "OfficeSpec",
-    "ParseError",
-    "RoleEntry",
-    "RoleRef",
-    "SinkSpec",
-    "SourceSpec",
-    "compile_office",
-    "emit_run_py",
-    "gate_role",
-    "load_roles_dir",
-    "make_office",
-    "nl_role",
-    "parse_office_dir",
-    "record_role",
-    "render_run_py",
-    "select_role",
-    "specialist_role",
-    "router_role",
-    "synchronizer_role",
-]

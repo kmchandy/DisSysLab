@@ -1,36 +1,13 @@
 # dissyslab/office/utils.py
 """
-Source and sink registries — the catalogue of built-in components.
+Source and sink registries -- the catalogue of built-in components.
 
-Used by ``dissyslab.office.compiler`` and
-``dissyslab.office.codegen`` to materialise sources and sinks
-declared in ``office.md`` (``Sources: hacker_news``,
-``Sinks: discard``, …). The registries also auto-load any
-user-generated component files dropped into
-``components/sources/generated/`` or ``components/sinks/generated/``,
-so a previously-generated source persists across sessions.
-
-Why this module persists in v2
-==============================
-
-The v2 cutover replaced the LLM-driven parser, validator, and
-codegen — those all moved into ``dissyslab.office``. What
-remained worth keeping is the *catalogue itself*: the table that
-maps a name like ``hacker_news`` to "an RSS source called
-``HackerNewsSource`` whose factory takes ``max_articles`` and
-``poll_interval``". Migrating every entry into the role library
-would be a larger project; until then, ``office`` reaches into
-this module to instantiate registry-backed sources and sinks.
-
-Long-run direction
-==================
-
-The contents of these registries should eventually become regular
-``AgentRoleEntry`` entries in a built-in role library. When that
-happens, ``office.compiler._build_source`` /
-``_build_sink`` go away and this module shrinks to just
-``expand_shortcut`` for MCP plus the
-``_load_generated_components`` hook.
+Maps a name an office file may use (``bbc_world``, ``jsonl_recorder``)
+to how to make it: the class or factory to import, and how it is
+called. :mod:`dissyslab.office.resolve` reads it to tell a built-in
+source or sink from a mistake, and :mod:`dissyslab.office.components`
+to construct one. It also loads any component files dropped into
+``components/sources/generated/`` or ``components/sinks/generated/``.
 """
 from __future__ import annotations
 
@@ -644,10 +621,8 @@ def lookup_component(name: str):
     """Resolve a component name from the unified COMPONENT_REGISTRY.
 
     Returns the registry entry as a dict (with at least a ``kind``
-    field) or ``None`` if the name is not registered. LLM-prompt
-    roles are not in this registry — they are resolved separately
-    by the role library
-    (``dissyslab.office.library.load_roles_dir``).
+    field) or ``None`` if the name is not registered. Roles are not in
+    this registry; they are files (``dissyslab.office.resolve``).
 
     Callers should typically validate ``kind`` after lookup:
 

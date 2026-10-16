@@ -31,9 +31,8 @@ RESERVED = ("router", "synchronizer", "gate", "office", "unassigned")
 #: The office subfolder searched for each section's kinds.
 LOCAL_FOLDER = {"agents": "roles", "sources": "sources", "sinks": "sinks"}
 
-#: The built-in roles in the 2.0 form (spec 4). Until the release,
-#: dissyslab/roles/ still holds the version 1 roles the old path uses.
-BUILTIN_ROLES = Path(__file__).resolve().parent.parent / "office_roles"
+#: The built-in roles (spec 4).
+BUILTIN_ROLES = Path(__file__).resolve().parent.parent / "roles"
 
 
 @dataclass(frozen=True)

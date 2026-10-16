@@ -105,15 +105,57 @@ def test_run_refuses_version_1_flags(tmp_path, flag):
     office = copy_example("returns_desk", tmp_path)
     code, out = dsl("run", ".", *flag, cwd=office)
     assert code == 2
-    assert "not available yet" in out
+    assert "not available in this version" in out
 
 
-def test_build_is_not_needed(tmp_path):
+def test_there_is_no_build_step(tmp_path):
+    """The office is built in memory by every run; nothing is generated."""
     office = copy_example("returns_desk", tmp_path)
     code, out = dsl("build", ".", cwd=office)
-    assert code == 0
-    assert "built in memory" in out
+    assert code == 2 and "invalid choice: 'build'" in out
+    assert dsl("run", ".", "--quiet", cwd=office)[0] == 0
     assert not (office / "build").exists()
+
+
+def test_draw_lists_kinds_and_arrows(tmp_path):
+    office = copy_example("returns_desk", tmp_path)
+    code, out = dsl("draw", ".", cwd=office)
+    assert code == 0, out
+    assert "Rex              router" in out
+    assert "Rex.escalate -> Manager" in out and "Manager -> Gate.done" in out
+
+
+def test_draw_mermaid_names_the_ports(tmp_path):
+    office = copy_example("returns_desk", tmp_path)
+    code, out = dsl("draw", ".", "--mermaid", "--raw", cwd=office)
+    assert code == 0, out
+    assert out.startswith("flowchart LR")
+    assert "Rex -->|approve / done| Gate" in out
+    assert 'Rex{{"Rex<br/><i>router</i>"}}' in out
+
+
+def test_draw_shows_what_is_connected_to_nothing(tmp_path):
+    office = copy_example("returns_desk", tmp_path)
+    md = office / "office.md"
+    md.write_text(md.read_text(encoding="utf-8").replace(
+        "Rex.escalate -> Manager -> ", "Manager -> "), encoding="utf-8")
+    code, out = dsl("draw", ".", cwd=office)
+    assert "Manager (manager) receives nothing" in out, out
+
+
+def test_roles_lists_the_built_in_roles(tmp_path):
+    code, out = dsl("roles", cwd=tmp_path)
+    assert code == 0, out
+    assert "summarizer" in out and "(adds summary)" in out
+    assert "deduplicator" in out and "Python, no model" in out
+
+
+def test_show_prints_a_built_in_role(tmp_path):
+    code, out = dsl("show", "summarizer", cwd=tmp_path)
+    assert code == 0, out
+    assert out.startswith("# ") and "out: summary" in out
+    code, out = dsl("show", "jsonl_recorder", cwd=tmp_path)
+    assert code == 0 and out.strip().endswith(".py")
 
 
 def _debate_script(fail_on: str | None = None) -> list[dict]:

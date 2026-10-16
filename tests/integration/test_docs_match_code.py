@@ -1008,13 +1008,18 @@ _PLAIN_BLOCK = re.compile(r"^```\n(.*?)^```", re.M | re.S)
 def _diagram_office_pairs(text: str):
     """Each mermaid block paired with the next office.md shown after it.
 
-    A fenced block counts as an office if it has the two sections no
-    other code sample in these documents has.
+    A fenced block counts as an office if it has a ``connections:``
+    section and is in the current office language. Version 1 offices
+    (the sentence form) are still shown in documents that have not been
+    rewritten yet (Phase 6c); ``dsl draw`` cannot read them, and they are
+    not counted.
     """
+    from dissyslab.office.syntax import is_old_form
+
     for m in _MERMAID_BLOCK.finditer(text):
         for after in _PLAIN_BLOCK.finditer(text, m.end()):
             body = after.group(1)
-            if "Agents:" in body and "Connections:" in body:
+            if re.search(r"^connections:\s*$", body, re.M) and not is_old_form(body):
                 yield m.group(1).rstrip("\n"), body
             break
 
