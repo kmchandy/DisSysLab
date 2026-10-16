@@ -307,6 +307,25 @@ def parse_office_text(text: str) -> OfficeFile:
     )
 
 
+def is_old_form(text: str) -> bool:
+    """True if ``text`` is an office in the version 1 sentence form.
+
+    The old form has sentences (``Alex is a writer.``, ``Alex's out is
+    ...``) or a section heading with items on the same line
+    (``Sources: bbc_world``). The new form has neither, so one such line
+    decides it. ``dsl run`` and ``dsl check`` use this to send an office
+    down the old path or the new one until the old gallery is archived.
+    """
+    for _line, joined in _logical_lines(text):
+        code = _strip_end(joined)
+        if _OLD_FORM.match(code):
+            return True
+        head, colon, rest = code.partition(":")
+        if colon and head.strip().lower() in ("sources", "sinks") and rest.strip():
+            return True
+    return False
+
+
 def parse_office_file(path: Path) -> OfficeFile:
     """Parse ``path`` (an ``office.md``). Raises ``OfficeSyntaxError``."""
     return parse_office_text(path.read_text(encoding="utf-8"))

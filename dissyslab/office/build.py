@@ -93,18 +93,26 @@ def _local_component(decl: Declaration, found: Found) -> Agent:
 # ── Agents ─────────────────────────────────────────────────────────────────
 
 
+def english_args_problem(decl: Declaration) -> str | None:
+    """The problem with an English role's arguments, or None: it takes only ``ai=``."""
+    others = [k for k in decl.args if k != "ai"]
+    if others:
+        return (
+            f"line {decl.line}: an English role takes only ai=, not "
+            f"{', '.join(others)} (spec 4.2)."
+        )
+    return None
+
+
 def _role(decl: Declaration, found: Found) -> Agent:
     assert found.path is not None
     fm = read_front_matter(found.path)
     args: dict[str, Any] = dict(decl.args)
     if found.language == "english":
-        ai = args.pop("ai", None)
-        if args:
-            raise BuildError(
-                f"line {decl.line}: an English role takes only ai=, not "
-                f"{', '.join(args)} (spec 4.2)."
-            )
-        return role_agent(decl.name, english_call(fm, ai=ai), fm)
+        problem = english_args_problem(decl)
+        if problem:
+            raise BuildError(problem)
+        return role_agent(decl.name, english_call(fm, ai=args.get("ai")), fm)
     instance = python_instance(found.path, fm, args)
     if not callable(instance):
         raise BuildError(f"line {decl.line}: {found.path.name}'s class has no __call__.")

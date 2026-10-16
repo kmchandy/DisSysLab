@@ -599,11 +599,52 @@ def _refuse_if_draft(office_dir, command: str) -> bool:
     return True
 
 
+def _is_new_syntax(office_dir: Path) -> bool:
+    """True if the office is written in the 2.0 line form (spec section 3).
+
+    Until the old gallery is archived, ``dsl run``, ``dsl check`` and
+    ``dsl build`` take an office down the new path or the old one by the
+    form of its ``office.md``; nothing else differs.
+    """
+    from dissyslab.office.syntax import is_old_form
+
+    md = Path(office_dir) / "office.md"
+    return md.is_file() and not is_old_form(md.read_text(encoding="utf-8"))
+
+
+def _run_new(office_dir: Path, args: argparse.Namespace) -> int:
+    """``dsl run`` for an office in the new syntax: build in memory and run."""
+    for flag, attr in (("--snapshot-interval", "snapshot_interval"),
+                       ("--resume", "resume"), ("--trace", "trace")):
+        if getattr(args, attr, None) not in (None, False):
+            _eprint(f"dsl run: {flag} is not available yet for an office in the new syntax.")
+            return 2
+    if not getattr(args, "quiet", False):
+        os.environ["DSL_RUN_SUMMARY"] = "1"
+
+    from dissyslab.agents.python_role import RoleLoadError
+    from dissyslab.office.build import BuildError, run_office
+    from dissyslab.office.frontmatter import FrontMatterError
+    from dissyslab.office.syntax import OfficeSyntaxError
+
+    try:
+        return run_office(Path(office_dir))
+    except (OfficeSyntaxError, BuildError, FrontMatterError, RoleLoadError) as exc:
+        _eprint(f"dsl run: {Path(office_dir).resolve().name} cannot start.")
+        for line in str(exc).splitlines():
+            _eprint(f"  {line}")
+        _eprint(f"(`dsl check {args.office_dir}` lists every problem at once.)")
+        return 1
+
+
 def cmd_run(args: argparse.Namespace) -> int:
     """Build (if stale) and run a closed office via office."""
     office_dir = _resolve_office_arg(args.office_dir, "office_dir")
     if office_dir is None:
         return 2
+
+    if _is_new_syntax(office_dir):
+        return _run_new(office_dir, args)
 
     if _refuse_if_draft(office_dir, "dsl run"):
         return 1
@@ -647,6 +688,11 @@ def cmd_build(args: argparse.Namespace) -> int:
     if office_dir is None:
         return 2
 
+    if _is_new_syntax(office_dir):
+        print("dsl build: nothing to do. An office in the new syntax is built in "
+              "memory each time you `dsl run` it; there is no build/ folder.")
+        return 0
+
     if _refuse_if_draft(office_dir, "dsl build"):
         return 1
 
@@ -668,6 +714,14 @@ def cmd_check(args: argparse.Namespace) -> int:
     office_dir = _resolve_office_arg(args.office_dir, "office_dir")
     if office_dir is None:
         return 2
+
+    if _is_new_syntax(office_dir):
+        from dissyslab.office.check import check_office
+        from dissyslab.office.check import format_report as format_new
+
+        new_report = check_office(Path(office_dir))
+        print(format_new(Path(office_dir).resolve().name, new_report), end="")
+        return 0 if new_report.ok else 1
 
     from dissyslab.office.check_wiring import check_office_dir, format_report
 
