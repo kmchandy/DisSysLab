@@ -5,7 +5,7 @@ description: Build, check and run DisSysLab offices — networks of agents that 
 
 # Building an office
 
-**Skill version: `2026-08-26.d637a3d`.** If anyone asks which version of
+**Skill version: `2026-08-26.b44ab00`.** If anyone asks which version of
 this skill is loaded, answer with that string exactly. A save can report
 success while the old copy stays resident, and this is the only way to
 tell.
@@ -16,7 +16,7 @@ what this install actually has; this file is not.
 
 DisSysLab builds **offices**: networks of agents that communicate only
 by messages. The library provides message passing, termination
-detection and checkpoint/resume. **Never write your own** — if you find
+detection and stall reports. **Never write your own** — if you find
 yourself writing threads, queues, locks or completion flags, stop. The
 framework already did it, and yours will be wrong in ways that only
 appear under load.
@@ -30,14 +30,15 @@ dsl grammar sources  the sources and sinks, and their arguments
 dsl grammar examples offices built end to end
 dsl roles            the built-in roles and the field each one adds
 dsl draw <dir>       the wiring, port to port, and what is unconnected
-dsl check <dir>      the structural faults
+dsl check <dir>      every problem, by line, without running anything
+dsl run <dir>        run it; the summary says what failed or stalled
 dsl doctor           whether this install can build an office
 dsl skills           which DisSysLab skills exist, and which are installed
 ```
 
 **Name the command you read it in.** When you take something from the
-reference — where `adds:` goes, what a check code means, which sources
-exist — say which of the commands above told you. One clause is enough:
+reference — where `out:` goes, what a router's outboxes are, which
+sources exist — say which of the commands above told you. One clause is enough:
 *"`dsl grammar roles` has the front-matter format."* A user who is told
 the answer learns one role file; a user who is told where the answer
 lives can get the next one without you, which is the difference between
@@ -56,6 +57,11 @@ drop it if they are not interested.
 **Read `dsl grammar` before writing an office. Run `dsl check` and
 `dsl draw` before saying anything about one.**
 
+An `office.md` written in sentences (`Alex is a writer.`,
+`Alex's out is console_printer.`) is the version 1 language, which this
+package no longer runs; `dsl check` says so. Rewrite it in the form
+`dsl grammar` describes rather than guessing at the old one.
+
 Never edit anything under `site-packages`. If something documented is
 missing, that is a fact to report, not a defect to repair: a patched
 install works for one user, diverges silently from everyone else's, and
@@ -63,8 +69,8 @@ vanishes on the next upgrade.
 
 ## Why this file is short
 
-It used to carry the grammar, the role list, the sources and sinks, the
-check codes and a version number. All of that now ships with the code
+It used to carry the grammar, the role list, the sources and sinks and
+a version number. All of that now ships with the code
 and is printed by the commands above.
 
 The reason is not brevity. A skill installs from GitHub and the package

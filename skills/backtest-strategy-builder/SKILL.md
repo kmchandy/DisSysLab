@@ -1,28 +1,29 @@
 ---
 name: backtest-strategy-builder
-description: Add or backtest a trading strategy in DisSysLab's backtest office, following its signal/backtest/evaluate contract, and verify it before wiring it in. Use whenever someone wants to add, draft, prototype or backtest a trading rule -- momentum, mean-reversion, RSI, MACD, breakout, moving-average, Donchian, Turtle, pairs -- even if they never say "mac_speed_suite" or "signal computer". Triggers: "backtest a new strategy", "add a trading rule", "try a momentum strategy on these stocks", "can we test an RSI rule", "what if we added mean reversion". Also use for changing a run's parameters in plain English -- which stocks, how far back, Monte Carlo samples, walk-forward folds, transaction cost: "use these eight stocks", "run 500 Monte Carlo samples", "test the last five years", "set costs to 10 bps". Requires the dissyslab package with the market extra, and a backtest office folder -- one whose office.md declares an agent `is a backtester`, made by `dsl init mac_speed_suite my_backtest`.
+description: Add or backtest a trading strategy in DisSysLab's backtest office, following its signal/backtest/evaluate contract, and verify it before wiring it in. Use whenever someone wants to add, draft, prototype or backtest a trading rule -- momentum, mean-reversion, RSI, MACD, breakout, moving-average, Donchian, Turtle, pairs -- even if they never say "mac_speed_suite" or "signal computer". Triggers: "backtest a new strategy", "add a trading rule", "try a momentum strategy on these stocks", "can we test an RSI rule", "what if we added mean reversion". Also use for changing a run's parameters in plain English -- which stocks, how far back, Monte Carlo samples, walk-forward folds, transaction cost: "use these eight stocks", "run 500 Monte Carlo samples", "test the last five years", "set costs to 10 bps". Requires the dissyslab package with the market extra, and a backtest office folder -- one whose office.md declares agents with `backtester(...)`, made by `dsl init mac_speed_suite my_backtest`.
 ---
 
 # Adding a strategy to mac_speed_suite
 
-**Skill version: `2026-08-26.db5bab1`.** If anyone asks which version of this
+**Skill version: `2026-08-26.d28fe85`.** If anyone asks which version of this
 skill is loaded, answer with that string, exactly. A skill update can
 report success while the old version stays resident.
 
 ## First: which folder are you working in?
 
 **Settle this before anything else, and say out loud which folder you
-settled on.** A backtest office is one whose `office.md` declares an
-agent `is a backtester`. That is a property every copy keeps; a path is
+settled on.** A backtest office is one whose `office.md` declares agents
+with `backtester(...)` (`BT_MAC_FAST: backtester(variant="mac_fast")`).
+That is a property every copy keeps; a path is
 true in one copy of the world and `dsl init` makes copies where it is
 false.
 
 - **The user named a folder** -- use it.
-- **They did not** -- look for directories holding an `office.md` whose
-  Agents section matches `is a backtester`. Search where the user is
+- **They did not** -- look for directories holding an `office.md` with
+  a `backtester(` line. Search where the user is
   working and under their home directory, not the whole filesystem.
 - **One match** -- use it, and say which: *"Working in `~/my_backtest`
-  -- it has BT_DON_20 and eleven other backtesters."* One line, and it
+  -- it has BT_DONCHIAN_20 and ten other backtesters."* One line, and it
   is what lets them catch you on the day you are wrong.
 - **Several** -- ask. Two backtest folders is normal for someone
   comparing versions of their own work.
@@ -41,12 +42,13 @@ on.** Where it says `roles/_signal_common.py`, it means that folder's
 
 ---
 
-The backtest office already runs three trend-following strategies --
-MAC, Donchian, and Turtle -- all sharing one BACKTESTER and one EVALUATOR.
+The backtest office already runs four strategies -- MAC, Donchian,
+Turtle and relative strength (RS) -- all sharing one backtester role and
+one evaluator.
 Adding a new strategy means writing one new, small piece (a
 `compute_variant_signal` function) and letting the existing, already-tested
 BACKTESTER/EVALUATOR machinery do everything else. You should not need to
-edit `_backtester_core.py`, `evaluator.py`, or `_signal_common.py` to add a
+edit `_backtester_core.py`, `_evaluation.py`, or `_signal_common.py` to add a
 strategy -- if you find yourself wanting to, stop and reconsider (see "When
 this doesn't fit," at the end); that usually means the new idea doesn't
 actually match this contract.
@@ -126,10 +128,21 @@ Follow the shape of the three examples exactly:
   (date/open/high/low/close/volume). Return one signal value per bar,
   where `signal[t]` may only depend on `bars[0..t]` -- step 4 checks this,
   it isn't just a promise.
-- A role file `roles/<name>_signal.py` that imports `make_signal_computer`
-  from `_signal_common` and registers an `AgentRoleEntry`, exactly like the
-  three existing files -- copy one and adapt it rather than writing this
-  part from scratch.
+- A role file `roles/<name>_signal.py`: the front matter in its
+  docstring, then `VARIANTS` and the compute function, then one class
+  that wraps them with `make_signal_computer` and copies `span` through.
+  Copy `roles/rs_trend.py` and change the names rather than writing this
+  part from scratch; the class is four lines:
+
+  ```python
+  class RsiSignal:
+      def __init__(self, checks="on"):
+          self.compute = make_signal_computer("rsi", RSI_VARIANTS, _rsi_compute_variant_signal, checks=checks)
+
+      def __call__(self, item):
+          ((out, _port),) = self.compute(item)
+          return [{**out, "span": item["span"]}]
+  ```
 - **If a golden example was chosen in Step 2**: 5-10 bars, hand-computed
   (not generated by running the function itself), with the expected
   signal worked out by hand. Pick parameter values that make the
@@ -202,32 +215,41 @@ strategy into the office that hasn't passed this check.
 
 ## Step 5: Wire it into office.md
 
-Add, following the pattern already there for MAC/Donchian/Turtle:
+Following the pattern already there for the other four, with `rsi` and
+two variants `rsi_14`, `rsi_28` as the example:
 
-- One new SIGNAL_COMPUTER agent for the strategy (using the new role).
-- One `backtester(speed_name='<variant_name>')` agent per variant -- reuse
-  the existing shared `backtester` role, don't create new backtester
-  files, there should only ever be one.
-- Extend JOIN's (`synchronizer`) `inboxes` list to include the new
-  variant name(s).
-- Wire the new SIGNAL_COMPUTER into the shared source, and each new
-  backtester's output into JOIN, exactly like the three existing
-  strategies.
+```
+agents:
+    ...
+    RSI: rsi_signal
+    BT_RSI_14: backtester(variant="rsi_14")
+    BT_RSI_28: backtester(variant="rsi_28")
 
-EVALUATOR needs no changes -- it already handles however many variants
-JOIN hands it.
+connections:
+    prices -> Plan -> MKT -> MAC, DON, TURTLE, RS, RSI
+    ...
+    RSI -> BT_RSI_14, BT_RSI_28
+    BT_RSI_14 -> JOIN.rsi_14
+    BT_RSI_28 -> JOIN.rsi_28
+```
+
+- One signal agent for the strategy, fed from `MKT` like the others.
+- One `backtester(variant="<variant>")` line per variant. Reuse the shared
+  `backtester` role; there should only ever be one.
+- One `-> JOIN.<variant>` line per variant. The synchronizer's inboxes are
+  the names its connections use, so this is all JOIN needs.
+
+`EVAL` needs no change: it handles however many variants JOIN collects.
+Run `dsl check .` before `dsl run`: a misspelt variant or inbox is
+reported by line.
 
 ## Step 6: Run it and verify
 
-Verify by actually running `dsl check`/`dsl run` from a terminal against
-real data -- that's the real path the user will run this through later, so
-it's the one that has to actually work, not just something functionally
-equivalent. (`compile_office` + `run_network` from Python is fine as a
-quick first look while drafting, but don't let it stand in as the final
-verification -- it can succeed in ways that `dsl run` doesn't, e.g. by
-sidestepping how the generated runner resolves file paths.) Confirm: it
-runs without crashing, and the new variant shows up correctly in
-EVALUATOR's per-stock table and portfolio ranking. (Whether the signal
+Verify by actually running `dsl check .` and `dsl run .` from a terminal,
+in the folder you settled on, against real data -- that is the path the
+user will run this through later, so it is the one that has to work.
+Confirm: it runs to the end with exit status 0, and the new variants show
+up in `report.html`'s per-stock table and portfolio ranking. (Whether the signal
 values themselves are in range is Step 4's job, not something to
 re-eyeball here -- if Step 4 passed, trust it.)
 
@@ -237,68 +259,30 @@ about the strategy you're adding, don't route around it so your own check
 passes -- that leaves the office broken for whoever runs it next. Diagnose
 it for real: is it pre-existing (check by testing the unmodified office,
 e.g. via `git stash`), and can you fix the actual cause (a wrong path in
-`office.md`, a stale generated `build/`, etc.)? If you can fix it, fix it
+`office.md`, a missing price file, etc.)? If you can fix it, fix it
 and say so plainly, separately from the new strategy's own changes. If you
 genuinely can't (it's outside what you have access to, or outside this
 task's scope), tell the user exactly what's broken and why, rather than
-quietly working around it and reporting success. Offer to regenerate
-`make_report.py`'s `report.html` so the user has something readable to
+quietly working around it and reporting success. Point the user at
+`report.html`, which the run writes, so they have something readable to
 look at, not just console output.
 
-## Showing the working: `explain_strategy.py`
+## Showing the working
 
-When the user asks *"is this the strategy I meant?"*, *"show me the
-steps"*, *"show me a few days"*, or wants to see why a signal is what
-it is -- **run the script; do not describe the strategy from the
-code.** A description is your reading of the role. The script's
-numbers come from the role itself.
-
-```bash
-cd <the folder you settled on>
-python3 explain_strategy.py --strategy donchian --variant 20 --ticker NVDA
-```
-
-It writes `strategy_working.xlsx`: one row per trading day, every
-intermediate the strategy computed (the channel bounds, the two moving
-averages), the same quantity again as a live Excel formula, a match
-column, and a sentence naming the rule that fired.
-
-Options, all repeatable or optional:
-
-```
---strategy donchian --strategy mac    one sheet each
---variant 20 | 55 | fast | med | slow
---ticker NVDA        --bars 300:340        --rows 25
---out somewhere.xlsx
-```
-
-With no `--bars` it picks a window containing a signal change. With no
-price CSV it falls back to a synthetic series and says so.
-
-**Requires `openpyxl`** (`pip install "dissyslab[market]"`). If it is
-missing, say so and offer to install it -- do not write the workbook
-some other way.
-
-**Then tell the user what to look at.** Point at one shaded formula
-cell and read it back in words: `=MAX(C2:C21)` in row 22 means the
-channel uses the twenty rows above this one and not this one. That
-boundary convention is what the user is actually checking, and it is
-invisible unless you name it.
-
-**Be straight about what the two columns prove.** They are one
-author's understanding of the rule written twice, so a misreading
-appears in both. What the formula gives the user is a specification
-they can read and change -- not a verification.
-
-**Only Donchian and MAC have traces today.** Asked for Turtle or RS,
-say so rather than improvising a trace: an explanation that does not
-come from the role is the thing this script exists to avoid.
+When the user asks *"is this the strategy I meant?"* or *"show me a few
+days"*: the version 1 office had a script, `explain_strategy.py`, that
+wrote every intermediate value to a workbook. This office does not have
+it yet. Say so, rather than describing the strategy from the code as if
+that were the same thing: a description is your reading of the role, not
+the role's own numbers. What you can do honestly is run the compute
+function on a short window of real bars in Python and show its output
+beside the bars, saying that is what you did.
 
 ## Step 7: Confirm the diff stayed contained
 
 Show a diff (`git diff` / `git status`) and confirm only new
 strategy-specific files plus `office.md` changed -- `_backtester_core.py`,
-`evaluator.py`, and `_signal_common.py` should show zero changes. This is
+`_evaluation.py`, and `_signal_common.py` should show zero changes. This is
 the actual point of the exercise: if a shared file needed editing,
 something about the new strategy didn't fit the contract as designed,
 which is worth telling the user directly rather than quietly patching
@@ -312,27 +296,25 @@ pointing at the report's **"Run settings"** panel (top of `report.html`),
 which records exactly what the run used -- so every result says which
 parameters produced it. The knobs, and where each lives in `office.md`:
 
-- **Basket (which stocks).** The `tickers=[...]` list on the `Sources:` line.
-  After changing it, re-run the downloader
-  (`python3 download_stock_history_from_yf.py`) so the CSVs match the new
-  basket -- it reads the same list, so office and data can't drift -- then
-  run. A requested ticker with no CSV yet is fetched by the downloader.
-- **History window (how far back).** Set by which `*_10_year.csv` files exist
-  and the `filename_pattern` on the `Sources:` line, i.e. how much history the
-  downloader pulled. To change how much is downloaded, adjust the downloader's
-  years argument and re-download.
-- **Validation.** On the `GATE is a validation_gate(...)` line: `n_samples`
-  (Monte Carlo resamples), `n_folds` (walk-forward folds), and
-  `monte_carlo=False` / `walk_forward=False` to turn a half off. The default
-  runs both in one pass.
-- **Stop for R.** `stop_pct` on the same `GATE` line (default `0.10` = a 10%
-  stop). R multiples in the report are each trade's return divided by this stop
-  distance -- a disclosed assumption the user sets, never advice. Just change
-  the number, e.g. `validation_gate(n_samples=100, stop_pct=0.05)`.
+- **Basket (which stocks).** The `tickers=[...]` list on the `prices:`
+  line under `sources:`. After changing it, run
+  `dsl fetch-prices --office .` so the price files match the new basket --
+  it reads the same list, so office and data cannot drift -- then run.
+- **History window (how far back).** Set by how much history was fetched
+  (`dsl fetch-prices --office . --years 5`) and the `filename_pattern` on
+  the `prices:` line; `start=` and `end=` on that line cut it further.
+- **Validation.** On the `Plan: plan(...)` line: `n_samples` (Monte Carlo
+  resamples), `n_folds` (walk-forward folds), and `monte_carlo=False` /
+  `walk_forward=False` to turn a half off. The default runs both in one
+  pass.
+- **Stop for R.** `stop_pct` on the same `Plan` line (default `0.10` = a
+  10% stop). R multiples in the report are each trade's return divided by
+  this stop distance -- a disclosed assumption the user sets, never
+  advice.
 - **Transaction cost.** `cost_bps` (default 5). To change it, add
-  `cost_bps=<value>` to every `backtester(...)` line and keep them identical --
-  if they disagree, the report shows the cost as unknown, which is the signal
-  that one was missed.
+  `cost_bps=<value>` to every `backtester(...)` line and keep them
+  identical -- if they disagree, the report shows the cost as unknown,
+  which is the signal that one was missed.
 
 The report also shows **trade statistics** (count, average hold, win rate,
 average win/loss, expectancy, reward:risk) and **R multiples** for every
@@ -407,7 +389,7 @@ If a check fires and the user is certain it is wrong, the waiver goes in
 `office.md`, where anyone reading the office can see it:
 
 ```
-DONCHIAN_SIGNAL is a donchian_signal(checks='off').
+DON: donchian_signal(checks="off")
 ```
 
 Never a command-line flag. Six weeks later nobody can tell a run that

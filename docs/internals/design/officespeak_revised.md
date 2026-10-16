@@ -1,8 +1,12 @@
 # OfficeSpeak, revised: specification
 
-Status: **settled, 16 October 2026.**
-Nothing here is implemented yet. The paper ports that tested it, and the
-reasons behind many decisions, are in `officespeak_ports/`.
+Status: **settled 16 October 2026; implemented 17 October** (Phases 2-6b
+of `restructure_plan.md`). Not built yet: `dsl try` and `dsl show --prompt`
+(section 10), `checkpoint`/`restore` for Python roles (4.3, 8), and the
+whole-network checks W1-W4, W7, W8 and W16-W31 (section 9); `dsl check`
+reports syntax, kinds, front matter, `needs:`, arguments and ports, by
+line, and the two guardrail notes (W11, W12). The paper ports that tested
+the spec, and the reasons behind many decisions, are in `officespeak_ports/`.
 
 Written in today's vocabulary (office, `office.md`). The renaming to *a network
 of agents* is deferred and will be a mechanical pass over this document.

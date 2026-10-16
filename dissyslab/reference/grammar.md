@@ -1,376 +1,309 @@
-# office.md — the grammar
+# office.md -- the grammar
 
-Up to seven sections, in any order. Section headers are case-insensitive.
+An office is a folder. Its `office.md` says which sources, sinks and agents
+exist and how they are connected. The roles the agents play are files in
+`roles/` (section [Roles](#roles) below, and `dsl grammar roles`).
 
-| Section | Required | What goes there |
-|---|---|---|
-| `# Office: <name>` | yes | The office's identifier |
-| `Sources:` | usually | One declaration per world-facing input |
-| `Sinks:` | usually | One declaration per world-facing output |
-| `Agents:` | no | One line per worker |
-| `Connections:` | yes | One line per connection statement |
-| `Inputs:` | no | External inboxes — only for an office meant to sit inside another |
-| `Outputs:` | no | External outboxes — same |
-
-An office with no `Agents:` section is legal. `periodic_brief` is six sources
-fanning straight into one sink.
-
-## Sources and Sinks
-
-**One per line, under the heading.** This is the form to write and the form
-to produce when you write an office for someone else:
+`office.md` is a data file, not a program: it cannot run anything, so
+`dsl check` can find every problem in it before anything runs, and its
+errors talk about agents and ports.
 
 ```
-Sources:
-  bbc_world(max_articles=5)
-  npr_news(max_articles=5)
-  weather(city="Pasadena", max_readings=1)
+# room_climate_monitor: alert when the room is both hot and humid
 
-Sinks:
-  intelligence_display
-  jsonl_recorder_briefing(path="briefings.jsonl")
+sources:
+    temp_sensor: file_source(path="temp.jsonl")
+    humidity_sensor: file_source(path="humidity.jsonl")
+
+sinks:
+    console_printer
+    discard
+
+agents:
+    Join: synchronizer(on="slot")
+    Checker: checker(max_temp=80, max_humidity=60)
+    Rex: router(on="alert")
+
+connections:
+    temp_sensor -> Join.temp
+    humidity_sensor -> Join.humidity
+    Join -> Checker -> Rex
+    Rex.yes -> console_printer
+    Rex.no -> discard
 ```
 
-A student scanning that can see how many sources there are without reading
-a sentence, and adding or removing one is a whole line rather than a comma
-in the middle of a run of text. The same goes for `Agents:` and
-`Connections:`, which have always been one per line.
+The office's name is its folder's name; there is no title line. `#` starts
+a comment, outside quotes.
 
-The comma-separated form still parses and is not deprecated —
+## Sections
 
-```
-Sources: bbc_world(max_articles=5), npr_news(max_articles=5)
-```
+`sources:`, `sinks:`, `agents:`, `connections:`, and, for an office meant to
+sit inside another, `inputs:` and `outputs:` ([Nested offices](#nested-offices)).
+Each heading stands alone on its line; the items go on the lines below it.
 
-— so no existing office is wrong. Prefer one per line for anything new,
-and especially for anything with more than two entries.
+## Declarations
 
-Names must come from the registries — see `dsl grammar sources`. Arguments
-are forwarded to the component's constructor, and `dsl build` refuses an
-argument the component does not have, suggesting the nearest real one.
+One per line, under `sources:`, `sinks:` and `agents:`.
 
-**Keep `max_articles=N` and `max_readings=N` in place.** They are what stops a
-shipped office from running forever and billing a student's API key. Remove
-only when the user asks for continuous operation.
-
-## Agents
-
-```
-Agents:
-Felix is a filter.
-Alex is an analyst.
-Eve is summarizer.
-Sasha is a deduplicator(by="url").
-Sync is a synchronizer(inboxes=["entities", "severity", "topic"]).
-news_monitor is an office at ../news_monitor.
-Jay is unassigned.
-```
-
-**Exactly three forms, and nothing else parses:**
-
-| Form | Means |
+| Line | Means |
 |---|---|
-| `<Name> is a[n] <role>.` | a library role, `roles/<role>.md`, or `roles/<role>.py` |
-| `<Name> is an office at <path>.` | a nested office |
-| `<Name> is unassigned.` | the job is not decided yet |
+| `name: kind(arg=value, ...)` | a `kind` called `name`, built with these arguments |
+| `name: kind` | the same with no arguments |
+| `kind(arg=value, ...)` or `kind` | a `kind` whose name is the kind itself: `console_printer`, `bbc_world(max_articles=3)` |
 
-- **The article is optional.** `Eve is summarizer.` and `Eve is a
-  summarizer.` are the same line. It used to be the only thing separating a
-  role from a sub-office, which is not a distinction anyone means to draw
-  with one character; `office at` is what marks a sub-office now, two words
-  that say what they mean.
-- A line matching none of the three is a **parse error naming all three**,
-  rather than a silent reinterpretation. Three outcomes for one dropped
-  article, chosen by which library the name happened to belong to, is what
-  this replaced.
-- Arguments in parentheses, same as sources.
-- Plural agreement is accepted: `Susan and Anna are editors.`
-- `<Name>` is the agent's local identity; `<role>` is the job.
+- Names are Python identifiers and are case-sensitive. **Every name used in
+  a connection must be declared**, including `discard`. Nothing is created
+  implicitly.
+- Two of the same kind need two names:
+  `briefings: jsonl_recorder(path="briefings.jsonl")` and
+  `archive: jsonl_recorder(path="archive.jsonl")`.
+- Arguments are named, as in a Python call: strings in either quote style,
+  numbers, lists, `true`/`false` (or `True`/`False`). They are read with
+  Python's `ast.literal_eval`, never executed.
+- Every component that reads or writes a file takes it as `path=`. A path is
+  relative to the office's folder.
+- A declaration continues onto the next line while a parenthesis or bracket
+  is open, as in Python.
 
-### An office you have not finished
+The agent declarations:
 
-`Jay is unassigned.` is how you write down an agent whose job the user has
-not said yet. An office holding one is a **draft**, and that changes what
-the report means rather than what it says: the incompleteness findings are
-listed as *"still to do"*, and `dsl check` exits 0.
+| Line | Means |
+|---|---|
+| `Name: role` | an English or Python role ([Roles](#roles)) |
+| `Name: role(k=v, ...)` | a Python role, constructed with these keyword arguments |
+| `Name: role(ai="openai")` | an English role, naming the model behind this agent |
+| `Name: router(on="field")` | a router ([Routers](#routers)) |
+| `Name: synchronizer(on="field")`, `Name: gate` | coordinators ([Coordinators](#coordinators)) |
+| `Name: office(path="../other")` | a nested office |
+| `Name: unassigned` | an agent whose role is not decided yet ([Drafts](#drafts)) |
 
-```
-check_wiring: office.md -- draft, 2 things still to do
+An English role takes one argument only, `ai=`. It chooses the model for
+that agent and never reaches the prompt. Without it, the agent uses the
+default model (`DSL_BACKEND`, normally Anthropic's).
 
-  still to do   nothing reaches Jay yet.
-  still to do   'Jay' has no role yet.
-```
+## How a kind is found
 
-`dsl run` and `dsl build` refuse a draft, naming the agents whose job is
-undecided.
+`router`, `synchronizer`, `gate`, `office` and `unassigned` are reserved
+words. Every other kind -- a role, source or sink -- is looked for first in
+the office's own folder (`roles/`, `sources/`, `sinks/`), then among the
+built-ins (`dsl roles`, `dsl grammar sources`).
 
-**Use this rather than inventing a job.** When someone says *"give me an
-office with Dan and Jay"* they have told you two names and nothing else.
-Write the two names down and wait. An unfinished office is not a broken
-one, and reporting it as broken teaches a beginner that building is a
-sequence of errors.
-
-**Say back what you wrote, then invite the next sentence.** Two lines:
-
-> The office has an agent called Dan with an unassigned role, and an agent
-> called Jay with an unassigned role. Tell me more about the office.
-
-Not a list of everything missing. The gaps are real and `dsl check` prints
-them on request, but reciting them here turns a first sentence into a
-report card, and a beginner reads a five-item list of what is absent as
-five things they got wrong. One sentence of what exists, one invitation to
-continue.
-
-Also not a menu. A model asked something underspecified will offer options
-unless it is told not to — *"would you like Dan to be a filter, a router, a
-summarizer…"* is the default behaviour, and it is wrong here. The user
-knows what she is building; she has not said it yet.
-
-### Per-agent model backend
-
-```
-Eve is an entity_extractor.
-Eve's AI is ollama.          # local, free — fine for extraction
-Riley is a writer.
-Riley's AI is claude.        # high quality for the final synthesis
-```
-
-Backends: `anthropic` (alias `claude`), `openai` (alias `gpt`), `gemini`,
-`openrouter`, `ollama`, each with `_creative` and `_precise` variants. Those
-lines are the whole difference between a uniformly expensive office and a
-tiered one. Only English roles use a backend; Python roles ignore it.
+- A local file may not reuse a built-in name or a reserved word. That is an
+  error, not an override: to change a built-in role, copy it under a new
+  name.
+- A file whose name starts with `_` is a **helper module**, not a role or
+  component. The folders are on the import path, so a role can say
+  `from _signal_common import make_signal`.
 
 ## Connections
 
-The form is `<Name>'s <port> is <recipient(s)>.` — `is` and `are` both parse.
+One or more per line, under `connections:`.
+
+| Line | Means |
+|---|---|
+| `a -> b` | `a.out -> b.in` |
+| `Rex.yes -> console_printer` | from a named outbox (a router's value) |
+| `temp_sensor -> Join.temp` | into a named inbox (a coordinator's, or a nested office's input) |
+| `Join -> Checker -> Rex` | a chain: `Join -> Checker` and `Checker -> Rex` |
+| `Gate -> Qwen, GPT, Claude` | fan-out: one connection to each |
+| `bbc_world, npr_news -> Sasha` | fan-in: one connection from each |
+
+A port is written only when it is not the default, `out` or `in`, after a
+dot. A list (`a, b`) may stand only at either end of a chain.
+
+**Ports:**
+
+- A role has one inbox, `in`, and one outbox, `out`.
+- A source has one outbox, `out`; a sink has one inbox, `in`.
+- A router's outboxes are named by values.
+- A synchronizer's inboxes are the names its connections use:
+  `temp_sensor -> Join.temp` creates the inbox `temp`.
+- A gate's inboxes are `in` and `done`.
+- A nested office's ports are its `inputs:` and `outputs:`.
+
+Each agent receives its own copy of every message. Messages on one
+connection arrive in the order sent; between different connections there is
+no order.
+
+## Routers
 
 ```
-Connections:
-hacker_news's destination is Felix.
-Felix's keep is Alex.
-Felix's discard is discard.
-Alex's briefing is console_printer.
+agents:
+    Rex: router(on="verdict")
+
+connections:
+    Eve -> Rex
+    Rex.publish -> Editor
+    Rex.revise -> Writer
+    Rex.otherwise -> Archive     # optional
 ```
 
-**Fan-out** — one statement, several recipients, commas and/or `and`:
+A router tests one field for equality and sends the message on. It decides
+nothing: a role decides, by adding the field, and the router routes.
+
+- Every router names its field; there is no default.
+- Its outboxes are named by values; several values to one place are
+  several lines. A value is a name (letters, digits, `_`) or `true`/`false`.
+- `otherwise` takes the values with no outbox of their own.
+- A missing field, or a value with no outbox and no `otherwise`, is a
+  reported failure. To drop messages on purpose, route them to `discard`.
+- The field stays in the message.
+
+## Coordinators
+
+**`synchronizer(on="key")`** joins messages that belong together. For each
+value of the key field it waits until a message with that value has arrived
+on **every** inbox, merges them into one, and sends it.
 
 ```
-Felix's keep is Alex, Morgan and discard.
+agents:
+    Sync: synchronizer(on="url")
+connections:
+    stories -> Eve, Sam
+    Eve -> Sync.entities
+    Sam -> Sync.severity
+    Sync -> Riley
 ```
 
-**Into a named inbox** — `<Recipient>'s <port>`:
+- The key is a design decision: a value both sides share. Two sensors never
+  stamp exactly the same time, so `room_climate_monitor` joins on the
+  minute a reading belongs to (`slot`).
+- A field carried by two inputs with the **same** value is fine (parallel
+  roles each get a copy of the same item). The same field with **different**
+  values is a reported failure naming both inboxes; the framework never
+  chooses.
+- If one branch drops a message, only that key's group stays incomplete.
+  Incomplete groups are reported when the run ends.
+- **The collected form,** `synchronizer(on="span", collect="results")`, for
+  many identical workers: the message sent is the key plus one field,
+  `results`, mapping each inbox name to its message. Nothing is merged.
+
+**`gate`** keeps one item in progress at a time. It admits one message from
+`in`, then waits for a message on `done` (which it throws away) before
+admitting the next.
 
 ```
-Eve's out is Sync's entities.
-Sam's out is Sync's severity.
+connections:
+    tickets -> Gate -> Clerk -> Rex
+    Rex.approve -> jsonl_recorder, Gate.done
+    Rex.escalate -> Manager -> jsonl_recorder, Gate.done
 ```
 
-**Between sub-offices** — the recipient names a port on the sub-office:
+## Nested offices
 
-```
-hacker_news's destination is news_monitor's article_in.
-news_monitor's article_out is news_editor's article_in.
-```
+An office can be one agent of a bigger office:
+`news_monitor: office(path="news_monitor")`.
 
-### Port-name rules worth memorising
+- The inner office names its boundary under `inputs:` and `outputs:`.
+  Inside it, an input behaves as a source (`articles -> Felix`) and an
+  output as a sink (`Rex.yes -> kept`).
+- From outside, those are its ports:
+  `bbc_world -> news_monitor.articles`,
+  `news_monitor.kept -> news_editor.articles`.
 
-- A source's outbox may be written `destination` **or** `out`. Both legal;
-  the compiler maps either to the same runtime port.
-- A sink has exactly one inbox and it is always `in_`. You never name it.
-- **An agent's ports are whatever its role declares, and every role
-  declares them.** A prose role says so in its front matter:
+`dissyslab/gallery/org_two_office_news` is built this way.
 
-  ```
-  ---
-  emits: whether an item is worth passing on
-  inboxes: in_
-  outboxes: keep, discard
-  adds: summary
-  ---
-  ```
+## Drafts
 
-  `inboxes:` may be left out and defaults to `in_`, which is what almost
-  every role has. `adds:` is the fields the role puts on the message, and
-  is left out by a role that only routes. A Python role declares its ports
-  in the `AgentRoleEntry` it builds — `in_ports=`, `out_ports=` — and its
-  fields in the module docstring's front matter.
+`Jay: unassigned` marks an agent whose role is not decided yet. An office
+with one is a **draft**: `dsl check` and `dsl draw` work on it, and say what
+is still to do; `dsl run` refuses it. A role name with no file behind it is
+an error, never a silent draft.
 
-  **`adds:` is what the output contract is generated from**, which makes it
-  the only statement of the reply shape anywhere. `dsl grammar roles` has
-  the detail.
+## Forgiving, and not
 
-  So `Felix's keep` and `Felix's discard` are legal because
-  `relevance_filter` says `outboxes: keep, discard`, and `dsl draw` can show
-  you an agent's ports without running anything.
-- **Order is meaning.** `outboxes: keep, discard` and `outboxes: discard,
-  keep` are different roles: the first name is where a message goes when the
-  model does not choose one.
-- **Wire every declared port, both ways.** A declared inbox nothing writes to
-  is an agent that blocks forever (`W1`); a declared outbox wired to nothing
-  raises the first time it is used (`W2`); and a connection naming an inbox
-  the role does not declare is a message that reaches nothing (`W13`).
-- A coordinator has no role file, so it declares on its own agent line:
-  `synchronizer(inboxes=["a","b"])`, `select(inboxes=[...],
-  command="command")`.
+Forgiving of: spacing and indentation, blank lines, comments, either quote
+style, `true` or `True`, a trailing comma, `->` or `→`, `kind` or `kind()`,
+the case of section headings.
 
-## Cycles
+Not forgiving of: an unknown kind, name or argument, or a port that does not
+exist. Each is an error naming the line, with the nearest word suggested.
+Nothing is guessed. The version 1 sentence form (`Alex is a writer.`) is
+reported as such, with the line it was found on.
 
-The network **may contain cycles**, and this is a feature, not an oversight —
-it is why end-of-stream sentinels are not enough and real termination
-detection is needed. A loop should contain a `gate`, which is what decides
-when to stop. `debate` loops three panellists through a moderator and back
-until they agree, gated by `Sasha`.
+## Roles
 
-## Blank lines and comments
+What an agent does is a role: a file in the office's `roles/` folder, or a
+built-in (`dsl roles`). `dsl grammar roles` has the whole story; in short:
 
-Blank lines inside a section are ignored — use them to group related
-connections, as the gallery offices do. `#` outside the header line is not a
-comment; put explanation in the office's `README.md` instead.
+- An **English role** is a `.md` file: front matter, then the instruction the
+  model receives, word for word, followed by the message as JSON.
+- A **Python role** is a `.py` file with exactly one class: built with the
+  arguments from `office.md`, called with each message.
+- An **annotator** (the default) returns one object whose fields are added
+  to the message. An **author** (`kind: author`) returns a list of complete
+  new messages.
 
 ## Checking it
 
 ```
-dsl check <office_dir>
+dsl check .
 ```
 
-Reports every structural fault at once. Run it before every `dsl run`. It
-cannot see faults that depend on what happens at run time — an office whose
-diagram is correct can still deadlock, because whether a message is ever
-readable can depend on execution history rather than on the graph.
-
-### The codes, and how to look one up
-
-Every finding carries a code. **You do not need to memorise them, and
-neither does the user — `dsl checks W11` says what one means, and
-`dsl checks` lists them all.** Use it rather than explaining a code from
-memory; the descriptions are pinned to the code that raises them by a test,
-and yours are not.
-
-| | | |
-|---|---|---|
-| `W1` | problem | an inbox nothing writes to — the usual reason an office hangs |
-| `W2` | problem | an outbox the role declares and nothing is wired to |
-| `W3` | problem | an unreachable agent: no path from any source |
-| `W4` | problem | a dead end: output that reaches no sink |
-| `W5` | problem | no such source or sink (with the nearest real name) |
-| `W6` | problem | no file behind a role |
-| `W7` | **note** | a feedback loop, and whether anything gates it |
-| `W8` | problem | a source with no destination, or a sink nothing feeds |
-| `W9` | problem | a name in Connections that is nothing at all |
-| `W10` | problem | a sub-office that is not there |
-| `W11` | **note** | text from the open web reaching something that acts |
-| `W12` | **note** | a role's own Python reaching outside |
-| `W13` | problem | a connection writing to an inbox the agent does not have |
-| `G1` | problem | an agent with no role yet |
-| `G2` | problem | nothing leaves this office |
-
-A **problem** means the office is wrong. A **note** means read it and
-decide: the office is not wrong, and `dsl check` still passes. In a draft
-office the incompleteness findings are reported as *"still to do"* with no
-code at all, which is the right register for an office someone is halfway
-through writing.
-
-A code means one thing for ever, so `dsl checks W4` on an old report still
-says what it said.
-
-### W11 — free text reaching something that acts
-
-One finding is not about structure but about consequence, and it is a
-**note**, so the check still passes:
+reports every problem at once, by line, without running anything or
+loading any model:
 
 ```
-W11  note:text from web_scraper can reach gmail_sink -- which sends email.
+broken/office.md:
+  problem: line 6: a gate takes no arguments.
+  problem: line 7: no agent called 'clerck' in roles/ or the built-ins. Did you mean 'clerk'?
+  problem: line 9: roles/manager.py: front matter line 3: 'decision (yes | no' is not a field, or a field with values like 'verdict (yes | no)'.
+  problem: line 11: an English role takes only ai=, not style (spec 4.2).
+  problem: line 14: Gate has inboxes in and done; it has no 'finished' (spec 3.3).
+  problem: line 16: Manager has one outbox, out; it has no 'yes' (spec 3.3).
+  note: line 10: Jay is unassigned, so this office is a draft: it can be checked, not run.
 ```
 
-An agent whose job is English is run by a language model, and a model that
-can be instructed can be instructed by its input. When that input was
-fetched from the open web, a stranger chose the words. No wording of the
-role file closes that; what bounds it is the other end, because an office
-affects the world only through its sinks.
+It checks the syntax, that every kind exists, every role's front matter,
+the packages a Python role `needs:`, the arguments of routers,
+synchronizers, gates and English roles, nested offices, and every port.
 
-So when this fires, **say what it means and let the user decide** — do not
-quietly rewire, and do not treat it as an error:
+Two **notes** are about what an office can do rather than whether it runs.
+Guardrails are recommended, never required, so they never fail the check:
 
-> *This office can send whatever a scraped page says out by email. If that
-> is what you want, nothing to do. If not, I can have the last agent send
-> only a score and a link rather than text it wrote.*
+- **Text from the open web can reach something that acts.** A source that
+  carries other people's words (a news feed, an inbox) has a path to a sink
+  that sends mail, posts to Slack, or calls out. Whoever writes those words
+  is writing to a model, and through it to that sink. If that is not what
+  you meant, have the role declare `out:` with only the fields you chose --
+  a label, a score, a URL -- so nothing else gets through.
+- **A Python file reaches past the office's sinks.** It imports a network or
+  process module, or calls `eval` and the like. The check reads imports; it
+  cannot see what the code does. If you did not write the file, read it.
 
-An office whose sinks all print or write a local file never fires it.
-
-### W12 — a role's own Python reaches outside
-
-Also a **note**, and read it beside W11: W11 asks what the *office* can do,
-and answers by reading its sinks. W12 asks what a *role* can do, and reads
-its imports.
+## Running it
 
 ```
-W12  note:roles/link_checker.py imports `requests`.
-          An office's declared power is its Sources and Sinks.
-          Python inside a role can act outside that, and this check
-          only reads imports -- it cannot see what the code does.
-          If you did not write this file, read it.
+dsl run .
 ```
 
-It fires on reaching the network, starting another program, or running code
-built at run time (`eval`, `os.system`). `import os` on its own does not
-fire it — most roles use it for file paths.
-
-Two things to say when it fires, and the second matters more:
-
-1. **What the code reaches for**, in a sentence. Usually there is a good
-   reason — a role that checks whether a link is still live has to fetch
-   the link — and then the answer is "yes, that is what it does".
-2. **That the check is a lint, not a guarantee.** It reads imports. It
-   cannot see what code does, cannot follow a renamed import, and anyone
-   trying to hide reach from it can. Silence from W12 is not a clean bill
-   of health, and describing it as one is worse than not running it.
-
-The general lesson is worth one sentence to a student, because it is not
-about DisSysLab: code you did not write can do things you did not ask for,
-and that is true of any Python an assistant hands you.
-
-## The other subcommands worth knowing
+builds the office in memory and runs it until every source has finished and
+every message has been dealt with, then prints a summary:
 
 ```
-dsl draw <office_dir>          every connection, port to port
-dsl checks [CODE]              what a check code means
-dsl roles                      every built-in role and the field it adds
-dsl skills                     which DisSysLab skills are installed
-dsl fetch-prices --office DIR  download your own price history
+Run summary (messages):
+  returns_desk::Clerk             sent      4   received      4
+  returns_desk::Gate              sent      4   received      8
+  ...
 ```
 
-**`dsl draw` answers the question `office.md` cannot.** An agent line
-says `Screen is a relevance_filter.` and nothing there says Screen has an
-outbox called `discard`. The listing names both ports on every edge, and
-puts every port connected to nothing in a block of its own:
+- A role whose reply does not fit its front matter, or whose Python raises,
+  costs that one message: it is reported, the office carries on, and
+  `dsl run` exits non-zero.
+- An agent left holding work it can never finish -- a gate whose `done`
+  never comes, a synchronizer group that never completes -- is reported as
+  **Stalled**, with the path of empty connections and idle agents that
+  proves nothing can release it.
+- `dsl run --quiet` leaves out the summary.
+
+## The other commands
 
 ```
-starter  destination ──▶ in_  Screen
-Screen   keep        ──▶ in_  Write
-
-Not connected:
-  Screen's discard  ──▶  nothing
+dsl draw .              every declaration and arrow, and what is connected to nothing
+dsl draw . --mermaid    the same as a Mermaid diagram (paste into GitHub)
+dsl roles               the built-in roles and the fields each one adds
+dsl show summarizer     a built-in role, whole
+dsl list                the gallery
+dsl init debate my_debate    copy a gallery office into a folder of your own
+dsl doctor              whether this install can run an office
 ```
-
-**Run it when the user shows you an office**, before saying anything
-about the wiring — it is the fastest way to see what she has, and the
-"Not connected" block is the list of gaps in the form she can act on.
-
-`--mermaid` gives a flowchart instead, for pasting somewhere that
-renders it; use it when she asks to *see* the network rather than read
-it. That form is on request and never automatic: a diagram redrawn after
-every edit has to stay stable under change, or adding one agent moves
-the ones the reader had already understood. Both forms draw an office
-that does not compile, since that is when a picture is worth most.
-`--out FILE` writes to a file; `--raw` omits the ```mermaid fence.
-
-**`dsl skills` before telling anyone what is installed.** A skill that never
-loaded is one you cannot see, and you will answer anyway.
-
-**`dsl fetch-prices` for any office with a `csv_stock_history` source.** It
-takes the basket from the office's own source line, skips files already
-downloaded, and finishes by loading each ticker back through the office to
-confirm it can read what was just written. Nothing in this project ships
-market data — the vendor's terms do not permit redistributing it — so this
-is a deliberate act by each user, and `yfinance` lives in the `[market]`
-extra for the same reason.

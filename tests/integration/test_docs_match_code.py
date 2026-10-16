@@ -1336,3 +1336,28 @@ def test_the_skill_only_names_commands_that_exist():
         f"office-builder tells an assistant to run {missing}, which "
         "this package has no subcommand for."
     )
+
+
+# ── §11. A gallery office quoted in the reference is the gallery's file ───────
+#
+# `dsl grammar examples` pastes four gallery offices in full. A pasted copy
+# is the kind of thing that drifts: the office is edited, the reference is
+# not, and a reader copies the old one. So each quoted office.md must be the
+# file it names, byte for byte.
+
+_QUOTED_OFFICE = re.compile(
+    r"`(dissyslab/gallery/[a-z_]+/office\.md)`:\n\n```\n(.*?)\n```", re.S
+)
+
+
+def test_quoted_gallery_offices_match_the_gallery():
+    text = (REPO_ROOT / "dissyslab" / "reference" / "worked_examples.md").read_text(
+        encoding="utf-8")
+    quoted = _QUOTED_OFFICE.findall(text)
+    assert len(quoted) >= 4, "found fewer quoted offices than the reference shows"
+    for rel, body in quoted:
+        actual = (REPO_ROOT / rel).read_text(encoding="utf-8").rstrip()
+        assert body == actual, (
+            f"worked_examples.md quotes {rel} and it has changed since. "
+            "Paste the current file in."
+        )
