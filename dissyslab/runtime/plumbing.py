@@ -29,7 +29,8 @@ from __future__ import annotations
 import copy
 import threading
 
-from dissyslab.core import Agent, _ShutdownSignal
+from dissyslab.runtime.agent import Agent
+from dissyslab.runtime.messages import _ShutdownSignal
 
 
 class Broadcast(Agent):

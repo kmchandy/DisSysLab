@@ -8,11 +8,17 @@ nothing about it, and nothing in it travels inside a message.
 It is being assembled from older modules during the restructuring
 (``docs/internals/design/restructure_plan.md``, Phase 1). So far:
 
+- :mod:`dissyslab.runtime.agent` -- ``Agent``: ports, ``send``, ``recv``,
+  failure reporting, state for snapshots.
+- :mod:`dissyslab.runtime.os_hooks` -- what the operating system does on
+  each agent's thread: termination replies, snapshots and recovery,
+  tracing. ``Agent`` inherits it; ``send`` and ``recv`` show where it
+  steps in.
+- :mod:`dissyslab.runtime.messages` -- the operating system's messages.
 - :mod:`dissyslab.runtime.plumbing` -- the two agents the framework
   inserts by itself: ``Broadcast`` (one sender, several receivers) and
   ``MergeAsynch`` (several senders, one receiver).
 
-The agent base class, the network and the operating-system algorithms
-(termination detection, snapshots, tracing) still live in
-``dissyslab.core``, ``dissyslab.network`` and ``dissyslab.os_agent``.
+The network and the termination detector still live in
+``dissyslab.network`` and ``dissyslab.os_agent``.
 """
