@@ -224,6 +224,7 @@ exclude = '^(dissyslab/gallery/|dissyslab/\.venv/|build/)'
 module = [
   "dissyslab.runtime.*",
   "dissyslab.agents.*",
+  "dissyslab.office.frontmatter",
   "dissyslab.office.model",
   "dissyslab.office.syntax",
 ]
