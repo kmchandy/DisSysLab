@@ -410,3 +410,78 @@ def test_a_conflict_is_reported_never_resolved(tmp_path, capsys):
     assert run_office(office) == 1
     assert not (office / "out.jsonl").read_text().strip()
     assert "'entities' differs between entities and severity" in capsys.readouterr().err
+
+
+# ── Nested offices (spec section 3.4): org_two_office_news, as ported ──────
+
+SUMMARIZE = '''"""
+---
+in: text
+out: summary
+---
+"""
+
+
+class Summarize:
+    def __call__(self, item):
+        return {"summary": item["text"].split()[0] + "..."}
+'''
+
+
+def _two_office_news(tmp_path: Path) -> Path:
+    return write(tmp_path / "two_office_news", {
+        "office.md": (
+            "sources:\n    articles: file_source(path=\"articles.jsonl\")\n"
+            "sinks:\n    jsonl_recorder(path=\"briefings.jsonl\")\n"
+            "agents:\n"
+            "    monitor: office(path=\"news_monitor\")\n"
+            "    editor: office(path=\"news_editor\")\n"
+            "connections:\n"
+            "    articles -> monitor.articles\n"
+            "    monitor.kept -> editor.articles\n"
+            "    editor.briefings -> jsonl_recorder\n"),
+        "articles.jsonl": jsonl(ARTICLES),
+        "news_monitor/office.md": (
+            "inputs:\n    articles\noutputs:\n    kept\n"
+            "sinks:\n    discard\n"
+            "agents:\n    Felix: topic_filter(ai=\"americas_test\")\n"
+            "    Rex: router(on=\"on_topic\")\n"
+            "connections:\n    articles -> Felix -> Rex\n"
+            "    Rex.yes -> kept\n    Rex.no -> discard\n"),
+        "news_monitor/roles/topic_filter.md": TOPIC_FILTER,
+        "news_editor/office.md": (
+            "inputs:\n    articles\noutputs:\n    briefings\n"
+            "agents:\n    Sue: summarize\n"
+            "connections:\n    articles -> Sue -> briefings\n"),
+        "news_editor/roles/summarize.py": SUMMARIZE,
+    })
+
+
+def test_an_office_can_be_an_agent_of_a_bigger_office(tmp_path, americas_model):
+    office = _two_office_news(tmp_path)
+    assert run_office(office) == 0
+    out = read_jsonl(office / "briefings.jsonl")
+    assert [(m["title"], m["summary"]) for m in out] == [
+        ("Brazil votes", "Brazil..."), ("Ottawa budget", "The...")]
+
+
+def test_a_nested_office_cannot_be_run_on_its_own(tmp_path):
+    office = _two_office_news(tmp_path)
+    with pytest.raises(BuildError, match="meant to sit inside another office"):
+        build_office(office / "news_monitor")
+
+
+@pytest.mark.parametrize("old, new, message", [
+    ("articles -> monitor.articles", "articles -> monitor",
+     "office monitor's inputs are articles; write articles -> monitor.<input>"),
+    ("monitor.kept -> editor.articles", "monitor.kpt -> editor.articles",
+     "office monitor's outputs are kept"),
+    ("monitor: office(path=\"news_monitor\")", "monitor: office(path=\"nowhere\")",
+     "there is no office.md in"),
+])
+def test_nested_office_errors(tmp_path, americas_model, old, new, message):
+    office = _two_office_news(tmp_path)
+    md = office / "office.md"
+    md.write_text(md.read_text().replace(old, new))
+    with pytest.raises(BuildError, match=message):
+        build_office(office)

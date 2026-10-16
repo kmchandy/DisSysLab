@@ -19,8 +19,8 @@ and nothing else:
 that relative paths in the office file mean what they say, and returns
 the exit code: 0 when every message was handled, 1 otherwise.
 
-**Being built (Phase 3).** The record coordinator, nested offices and
-drafts are not built yet; an office that uses one gets a clear "not built
+**Being built (Phase 3).** The record coordinator and drafts are not
+built; an office that uses one gets a clear "not built
 yet" error naming the line, never a guess.
 """
 
@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import os
 from contextlib import contextmanager
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -209,50 +210,127 @@ INBOXES: dict[str, dict[str, str]] = {
 }
 
 
-def _runtime_connection(c: Connection, found: dict[str, Found]) -> tuple[str, str, str, str]:
-    """One arrow as the runtime's (sender, outbox, receiver, inbox).
+#: The runtime's name for the outside of a network, in a nested office.
+EXTERNAL = "external"
 
-    A router's outbox is the value after the dot. Every other sender has
-    one outbox, ``out``. A receiver's inboxes are ``in``, or for a gate
-    ``in`` and ``done``. A port that does not exist is an error naming the
-    arrow (spec 3.3).
-    """
-    sender, receiver = found[c.sender.name], found[c.receiver.name]
-    if sender.kind == "router":
-        out_port = c.sender.port or ""  # _router has already required a value
-    elif c.sender.port in (None, "out"):
-        out_port = RUNTIME_OUT
-    else:
-        raise BuildError(
-            f"line {c.line}: {c.sender.name} has one outbox, out; it has no "
-            f"{c.sender.port!r} (spec 3.3)."
-        )
-    written_in = c.receiver.port or "in"
-    if receiver.kind == "synchronizer":
-        return (c.sender.name, out_port, c.receiver.name, written_in)
-    inboxes = INBOXES.get(receiver.kind, {"in": RUNTIME_IN}) if receiver.origin == "reserved" \
+
+@dataclass
+class _Ports:
+    """What the connections of one office may name, beyond ``in`` and ``out``."""
+
+    found: dict[str, Found]
+    inputs: tuple[str, ...]
+    outputs: tuple[str, ...]
+    #: For each nested office used as an agent: (its inputs, its outputs).
+    nested: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = field(default_factory=dict)
+
+
+def _sender(c: Connection, p: _Ports) -> tuple[str, str]:
+    name, port = c.sender.name, c.sender.port
+    if name in p.inputs:  # inside a nested office, an input acts as a source (spec 3.4)
+        if port not in (None, "out"):
+            raise BuildError(f"line {c.line}: input {name} has one outbox, out.")
+        return EXTERNAL, name
+    if name in p.nested:
+        outs = p.nested[name][1]
+        if port not in outs:
+            raise BuildError(
+                f"line {c.line}: office {name}'s outputs are {', '.join(outs) or 'none'}; "
+                f"write {name}.<output> -> {c.receiver} (spec 3.4)."
+            )
+        return name, port
+    if p.found[name].kind == "router":
+        return name, port or ""  # _router has already required a value
+    if port in (None, "out"):
+        return name, RUNTIME_OUT
+    raise BuildError(
+        f"line {c.line}: {name} has one outbox, out; it has no {port!r} (spec 3.3)."
+    )
+
+
+def _receiver(c: Connection, p: _Ports) -> tuple[str, str]:
+    name, port = c.receiver.name, c.receiver.port
+    if name in p.outputs:  # inside a nested office, an output acts as a sink (spec 3.4)
+        if port not in (None, "in"):
+            raise BuildError(f"line {c.line}: output {name} has one inbox, in.")
+        return EXTERNAL, name
+    if name in p.nested:
+        ins = p.nested[name][0]
+        if port not in ins:
+            raise BuildError(
+                f"line {c.line}: office {name}'s inputs are {', '.join(ins) or 'none'}; "
+                f"write {c.sender} -> {name}.<input> (spec 3.4)."
+            )
+        return name, port
+    found = p.found[name]
+    written_in = port or "in"
+    if found.kind == "synchronizer":
+        return name, written_in
+    inboxes = INBOXES.get(found.kind, {"in": RUNTIME_IN}) if found.origin == "reserved" \
         else {"in": RUNTIME_IN}
     if written_in not in inboxes:
         names = " and ".join(inboxes)
         raise BuildError(
-            f"line {c.line}: {c.receiver.name} has inbox{'es' if len(inboxes) > 1 else ''} "
+            f"line {c.line}: {name} has inbox{'es' if len(inboxes) > 1 else ''} "
             f"{names}; it has no {written_in!r} (spec 3.3)."
         )
-    return (c.sender.name, out_port, c.receiver.name, inboxes[written_in])
+    return name, inboxes[written_in]
+
+
+def _runtime_connection(c: Connection, p: _Ports) -> tuple[str, str, str, str]:
+    """One arrow as the runtime's (sender, outbox, receiver, inbox).
+
+    A router's outbox is the value after the dot; every other agent has
+    one outbox, ``out``. A receiver's inboxes are ``in``, or for a gate
+    ``in`` and ``done``, or for a synchronizer the names its connections
+    use. A nested office's ports are its declared inputs and outputs, and
+    inside it those act as a source and a sink. A port that does not
+    exist is an error naming the arrow (spec 3.3, 3.4).
+    """
+    return _sender(c, p) + _receiver(c, p)
 
 
 # ── The office ─────────────────────────────────────────────────────────────
 
 
-def build_network(office: OfficeFile, office_dir: Path) -> Network:
-    """Build the runtime network for a parsed office."""
-    if office.inputs or office.outputs:
-        raise BuildError("nested offices (inputs:, outputs:) are not built yet (Phase 3).")
+def _nested_office(
+    decl: Declaration, office_dir: Path, stack: tuple[Path, ...]
+) -> Network:
+    """``name: office(path="...")``: build the office in that folder (spec 3.4)."""
+    args = dict(decl.args)
+    rel = args.pop("path", None)
+    if not isinstance(rel, str) or args:
+        raise BuildError(
+            f"line {decl.line}: a nested office is {decl.name}: office(path=\"<folder>\")."
+        )
+    sub_dir = (office_dir / rel).resolve()
+    if not (sub_dir / "office.md").is_file():
+        raise BuildError(f"line {decl.line}: there is no office.md in {sub_dir}.")
+    if sub_dir in stack:
+        raise BuildError(f"line {decl.line}: {sub_dir.name} contains itself.")
+    with inside(sub_dir):
+        sub = parse_office_file(sub_dir / "office.md")
+        if not sub.inputs and not sub.outputs:
+            raise BuildError(
+                f"line {decl.line}: {sub_dir.name} has no inputs: or outputs:, so it "
+                "cannot be part of another office."
+            )
+        return build_network(sub, sub_dir, name=decl.name, stack=stack + (sub_dir,))
 
+
+def build_network(
+    office: OfficeFile,
+    office_dir: Path,
+    *,
+    name: str | None = None,
+    stack: tuple[Path, ...] = (),
+) -> Network:
+    """Build the runtime network for a parsed office (and the offices it nests)."""
     found, problems = resolve_office(office, office_dir)
     if problems:
         raise BuildError("\n".join(f"line {p.line}: {p.message}" for p in problems))
 
+    ports = _Ports(found=found, inputs=office.inputs, outputs=office.outputs)
     blocks: dict[str, Agent | Network] = {}
     for decl in office.sources + office.sinks:
         f = found[decl.name]
@@ -260,10 +338,21 @@ def build_network(office: OfficeFile, office_dir: Path) -> Network:
             _local_component(decl, f) if f.origin == "local" else _builtin_component(decl)
         )
     for decl in office.agents:
-        blocks[decl.name] = _agent(decl, found[decl.name], office)
+        if found[decl.name].kind == "office":
+            sub = _nested_office(decl, office_dir, stack or (office_dir.resolve(),))
+            ports.nested[decl.name] = (tuple(sub.inports), tuple(sub.outports))
+            blocks[decl.name] = sub
+        else:
+            blocks[decl.name] = _agent(decl, found[decl.name], office)
 
-    connections = [_runtime_connection(c, found) for c in office.connections]
-    return Network(name=office_dir.name, blocks=blocks, connections=connections)
+    connections = [_runtime_connection(c, ports) for c in office.connections]
+    return Network(
+        name=name or office_dir.name,
+        blocks=blocks,
+        connections=connections,
+        inports=list(office.inputs),
+        outports=list(office.outputs),
+    )
 
 
 @contextmanager
@@ -286,6 +375,11 @@ def build_office(office_dir: Path) -> Network:
     office_dir = office_dir.resolve()
     with inside(office_dir):
         office = parse_office_file(office_dir / "office.md")
+        if office.inputs or office.outputs:
+            raise BuildError(
+                f"{office_dir.name} has inputs: or outputs:, so it is meant to sit inside "
+                "another office (name: office(path=...)); run that office instead."
+            )
         return build_network(office, office_dir)
 
 
