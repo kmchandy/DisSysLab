@@ -1,6 +1,6 @@
 [project]
 name = "dissyslab"
-version = "1.10.2"
+version = "2.0.0.dev0"
 description = "DisSysLab — build continuous offices of specialist agents in plain English."
 readme = "README.pypi.md"
 requires-python = ">=3.10"
