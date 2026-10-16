@@ -95,6 +95,9 @@ class MergeAsynch(Agent):
         # ``self._snapshot_lock``; every other agent has one thread and
         # keeps Agent's no-op lock. Here it must be a real lock.
         self._snapshot_lock = threading.Lock()
+        #: Messages received and already forwarded (see is_idle).
+        self._forwarded = 0
+        self._count_lock = threading.Lock()
 
     @property
     def default_inport(self) -> str | None:
@@ -111,9 +114,26 @@ class MergeAsynch(Agent):
         try:
             while True:
                 msg = self.recv(port)
-                self.send(msg, "out_")
+                try:
+                    self.send(msg, "out_")
+                finally:
+                    with self._count_lock:
+                        self._forwarded += 1
         except _ShutdownSignal:
             pass  # the termination detector has ended the run
+
+    def is_idle(self) -> bool:
+        """Idle only when every message received has been forwarded.
+
+        One thread can answer the termination detector's poll while
+        another holds a message it has received but not yet sent. If that
+        answer were "idle", every channel would look balanced and the
+        detector could end the run with the message lost (found 16 Oct
+        2026 by slowing a worker down; it lost one message in three).
+        ``recv`` counts a message before returning it and ``_forwarded``
+        counts it after ``send``, so a message in between makes this False.
+        """
+        return self._forwarded >= sum(self.received.values())
 
     def run(self) -> None:
         """Start one forwarding thread per inbox and wait for all of them."""

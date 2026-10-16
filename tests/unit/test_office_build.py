@@ -485,3 +485,53 @@ def test_nested_office_errors(tmp_path, americas_model, old, new, message):
     md.write_text(md.read_text().replace(old, new))
     with pytest.raises(BuildError, match=message):
         build_office(office)
+
+
+# ── Multi-threaded agents must not be declared finished mid-message ────────
+#
+# A synchronizer (and the framework's fan-in agent) has one thread per
+# inbox. While one thread holds a message it has received but not yet
+# sent, another can answer the termination detector; answering "idle"
+# then ends the run with the message lost. CI hit this on two of seven
+# jobs (16 Oct 2026). These tests widen the window so it always shows.
+
+
+def test_the_synchronizer_is_not_finished_while_a_group_is_in_hand(tmp_path, monkeypatch):
+    import time
+
+    from dissyslab.agents.synchronizer import SynchronizerAgent
+
+    arrive = SynchronizerAgent._arrive
+
+    def slow_arrive(self, inbox, msg):
+        time.sleep(0.2)
+        arrive(self, inbox, msg)
+
+    monkeypatch.setattr(SynchronizerAgent, "_arrive", slow_arrive)
+    office = _fan_out_office(tmp_path, 'synchronizer(on="url")')
+    assert run_office(office) == 1  # u2 fails at Sam, as before
+    assert sorted(m["url"] for m in read_jsonl(office / "out.jsonl")) == ["u1", "u3"]
+
+
+def test_fan_in_is_not_finished_while_a_message_is_in_hand(monkeypatch):
+    import time
+
+    from dissyslab.blocks import Sink, Source
+    from dissyslab.network import Network
+    from dissyslab.runtime.plumbing import MergeAsynch
+
+    send = MergeAsynch.send
+
+    def slow_send(self, msg, port):
+        time.sleep(0.2)
+        send(self, msg, port)
+
+    monkeypatch.setattr(MergeAsynch, "send", slow_send)
+    a, b = iter([1, 2]), iter([3])
+    out: list = []
+    net = Network(blocks={"a": Source(fn=lambda: next(a, None), name="a"),
+                          "b": Source(fn=lambda: next(b, None), name="b"),
+                          "s": Sink(fn=out.append, name="s")},
+                  connections=[("a", "out_", "s", "in_"), ("b", "out_", "s", "in_")])
+    net.run_network()
+    assert sorted(out) == [1, 2, 3]

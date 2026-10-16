@@ -37,7 +37,9 @@ same time.
 **How it runs.** Like the framework's fan-in agent (``MergeAsynch``), it
 has one thread per inbox, so it takes each message as soon as it
 arrives, from whichever inbox; the threads share the group table under
-one lock.
+one lock. Because one thread can answer the termination detector while
+another is still working, it reports itself idle only when every message
+it has received has been completely dealt with (``is_idle``).
 """
 
 from __future__ import annotations
@@ -64,6 +66,8 @@ class SynchronizerAgent(Agent):
         #: key -> {inbox: message}, for groups still waiting for an inbox.
         self.groups: dict[str, dict[str, Message]] = {}
         self._lock = threading.Lock()
+        #: Messages received and completely dealt with (see is_idle).
+        self._handled = 0
         # Several threads share the operating system's bookkeeping too, as
         # in MergeAsynch, so its no-op lock must be a real one here.
         self._snapshot_lock = threading.Lock()
@@ -83,9 +87,29 @@ class SynchronizerAgent(Agent):
     def _worker(self, inbox: str) -> None:
         try:
             while True:
-                self._arrive(inbox, self.recv(inbox))
+                msg = self.recv(inbox)
+                try:
+                    self._arrive(inbox, msg)
+                finally:
+                    with self._lock:
+                        self._handled += 1
         except _ShutdownSignal:
             pass  # the termination detector has ended the run
+
+    def is_idle(self) -> bool:
+        """Idle only when every message received has been completely dealt with.
+
+        With one thread per inbox, one thread can answer the termination
+        detector's poll while another is between receiving a message and
+        sending the group it completed. Answering "idle" then would let the
+        detector end the run with that group unsent: every channel looks
+        balanced, because the group has not been sent yet. So the answer
+        is computed, not assumed (see ``Agent.is_idle``: report active
+        unless you can prove you owe nothing). ``recv`` counts a message
+        before returning it, and ``_handled`` counts it after the work, so
+        a message in between always makes this False.
+        """
+        return self._handled >= sum(self.received.values())
 
     def _arrive(self, inbox: str, msg: Any) -> None:
         if not isinstance(msg, dict) or self.on not in msg:
