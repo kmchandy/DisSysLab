@@ -390,6 +390,12 @@ def test_a_dropped_message_costs_only_its_own_group(tmp_path, capsys):
     assert out["u3"]["severity"] == "HIGH" and out["u3"]["entities"] == ["Europe"]
     err = capsys.readouterr().err
     assert "group url=u2 is missing severity" in err
+    # The walk back from the inbox the group lacks ends at the finished source.
+    assert ("Stalled: situation::Sync holds an incomplete group: url=u2 "
+            "(has entities; missing severity)") in err
+    assert "situation::Sync.severity <- situation::Sam.out: empty; " \
+           "situation::Sam is idle, waiting on in" in err
+    assert "situation::stories has finished" in err
 
 
 def test_the_collected_form(tmp_path):
@@ -536,3 +542,90 @@ def test_fan_in_is_not_finished_while_a_message_is_in_hand(monkeypatch):
                   connections=[("a", "out_", "s", "in_"), ("b", "out_", "s", "in_")])
     net.run_network()
     assert sorted(out) == [1, 2, 3]
+
+
+# ── Stalls (spec 4.5, item 6) ──────────────────────────────────────────────
+
+TICKER = '''"""
+---
+out: tick
+---
+A source that never finishes: one tick every 50 ms.
+"""
+import time
+
+
+class Ticker:
+    def __init__(self):
+        self.n = 0
+
+    def __call__(self):
+        time.sleep(0.05)
+        self.n += 1
+        return {"tick": self.n}
+'''
+
+SWALLOWER = '''"""
+---
+kind: author
+in: id
+out: id
+---
+Sends nothing, ever: so the gate is never released.
+"""
+
+
+class Swallower:
+    def __call__(self, item):
+        return []
+'''
+
+
+def test_a_stall_is_found_while_the_rest_of_the_office_runs(tmp_path, capfd):
+    """The ticker never finishes, so the office never terminates; the stall
+    on the gate is still found and reported while it runs."""
+    office = write(tmp_path / "stuck", {
+        "office.md": (
+            "sources:\n"
+            "    items: file_source(path=\"items.jsonl\")\n"
+            "    ticks: ticker\n"
+            "sinks:\n"
+            "    log: jsonl_recorder(path=\"ticks.jsonl\")\n"
+            "agents:\n"
+            "    Gate: gate\n"
+            "    W: swallower\n"
+            "connections:\n"
+            "    items -> Gate -> W -> Gate.done\n"
+            "    ticks -> log\n"),
+        "sources/ticker.py": TICKER,
+        "roles/swallower.py": SWALLOWER,
+        "items.jsonl": jsonl([{"id": 1}, {"id": 2}]),
+    })
+    net = build_office(office)
+    with pytest.raises(TimeoutError):
+        net.run_network(timeout=3)
+    err = capfd.readouterr().err
+    assert "Stalled: stuck::Gate holds an item it admitted" in err, err
+    assert "stuck::Gate.done <- stuck::W.out: empty; stuck::W is idle, waiting on in" in err
+    assert "stuck::W.in <- stuck::Gate.out: empty; stuck::Gate is already on this path" in err
+    assert "1 message(s) wait unread on stuck::Gate.in." in err
+    assert err.count("Stalled:") == 1  # reported once, not every round
+    assert len((office / "ticks.jsonl").read_text().splitlines()) > 5  # the rest ran on
+
+
+def test_a_busy_gate_is_not_a_stall(tmp_path, capfd):
+    """A gate waiting on done while the work is still going is not stalled."""
+    office = write(tmp_path / "slow", {
+        "office.md": (
+            "sources:\n    items: file_source(path=\"items.jsonl\")\n"
+            "sinks:\n    jsonl_recorder(path=\"out.jsonl\")\n"
+            "agents:\n    Gate: gate\n    W: slow\n"
+            "connections:\n    items -> Gate -> W -> jsonl_recorder, Gate.done\n"),
+        "roles/slow.py": (
+            '"""\n---\nin: id\nout: done\n---\n"""\nimport time\n\n\n'
+            "class Slow:\n    def __call__(self, item):\n"
+            "        time.sleep(0.4)\n        return {\"done\": \"yes\"}\n"),
+        "items.jsonl": jsonl([{"id": i} for i in range(3)]),
+    })
+    assert run_office(office) == 0
+    assert "Stalled:" not in capfd.readouterr().err

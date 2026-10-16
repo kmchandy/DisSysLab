@@ -117,6 +117,45 @@ def test_build_is_not_needed(tmp_path):
     assert not (office / "build").exists()
 
 
+def _debate_script(fail_on: str | None = None) -> list[dict]:
+    """Three panellists who agree; a moderator who fails on ``fail_on``."""
+    panel = [{"when": f"You are {who},",
+              "reply": json.dumps({key: {"answer": "A", "reasoning": "r", "confidence": 0.9}})}
+             for who, key in (("Qwen", "qwen"), ("GPT", "gpt"), ("Claude", "claude"))]
+    bad = ([{"when": "You moderate a panel", "user_contains": fail_on,
+             "reply": json.dumps({"agreement": "total", "final_answer": "A", "note": ""})}]
+           if fail_on else [])
+    good = {"when": "You moderate a panel",
+            "reply": json.dumps({"agreement": "unanimous", "final_answer": "A", "note": ""})}
+    return panel + bad + [good]
+
+
+def test_a_stalled_loop_is_reported(tmp_path):
+    """The moderator fails on the second problem, so the gate is never released.
+
+    The gate holds that problem and waits on done; done comes only from
+    the end of the loop, and everything on the way back is idle with
+    nothing in transit. The third problem is never admitted.
+    """
+    office = copy_example("debate", tmp_path)
+    code, out = dsl("run", ".", cwd=office, script=_debate_script(fail_on="fact-01"))
+    assert code != 0, out
+    report = out[out.index("Stalled:"):].splitlines()
+    assert report[0].startswith("Stalled: debate::Gate holds an item it admitted"), report
+    walked = "\n".join(report)
+    assert "debate::Gate.done <- debate::Rex.finish: empty" in walked
+    assert "1 message(s) wait unread on debate::Gate.in." in walked
+    answers = (office / "debate_answers.jsonl").read_text(encoding="utf-8").splitlines()
+    assert len(answers) == 1  # only the first problem was finished
+
+
+def test_a_loop_that_ends_normally_is_not_a_stall(tmp_path):
+    office = copy_example("debate", tmp_path)
+    code, out = dsl("run", ".", cwd=office, script=_debate_script())
+    assert code == 0, out
+    assert "Stalled:" not in out
+
+
 # ── dsl check ──────────────────────────────────────────────────────────────
 
 BROKEN = """\

@@ -24,7 +24,7 @@ Behaviour, each cycle:
 """
 
 from __future__ import annotations
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 
 from dissyslab.blocks.coordinator import Coordinator, Sends
 
@@ -72,6 +72,19 @@ class Gate(Coordinator):
         # inport == self._done
         state["busy"] = False                 # released; admit the next
         return None
+
+    def _termination_info(self) -> Dict[str, Any]:
+        """Besides ``waiting_on``: while busy, the gate holds an admitted item.
+
+        The termination detector starts its stall walk from agents that
+        hold work (``OsAgent._find_stalls``): a gate waiting on ``done``
+        that can never arrive has stalled everything behind it.
+        """
+        info = super()._termination_info()
+        if self._state.get("busy"):
+            info["holding"] = {"what": "an item it admitted, until done arrives",
+                               "needs": [self._done]}
+        return info
 
     def __str__(self) -> str:
         return "Gate"

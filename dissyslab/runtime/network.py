@@ -856,7 +856,8 @@ class Network:
         # `python build/run.py` and `dsl run` agree, and so a script
         # that runs an office nightly can tell a partial run from a
         # whole one without reading the summary.
-        return 1 if self.run_report()["failed_agents"] else 0
+        report = self.run_report()
+        return 1 if report["failed_agents"] or report["stalls"] else 0
 
 
 
@@ -913,7 +914,12 @@ class Network:
                 elif errors:
                     some_errors.append((name, errors, sent))
 
-        return {"agents": agents, "failed_sources": failed,
+        # Agents holding work that can never be finished (spec 4.5, item
+        # 6), found by the termination detector, which printed each report
+        # when it found it. holder -> report lines.
+        stalls = dict(getattr(self._os_agent, "stalls", {}) or {})
+
+        return {"agents": agents, "failed_sources": failed, "stalls": stalls,
                 "empty_sources": empty,
                 "all_error_sources": all_errors,
                 "some_error_sources": some_errors,

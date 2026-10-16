@@ -134,6 +134,26 @@ class OsAgent:
         # have *every* inport empty to be considered done.
         self.waiting_on: Dict[str, str] = {}
 
+        # ── Stalls (spec 4.5, item 6) ─────────────────────────────────
+        # What each agent holds, from its reply's "holding": work it has
+        # taken in and cannot finish until something arrives on the
+        # inboxes in "needs" (a gate's admitted item, a synchronizer's
+        # incomplete group). The stall walk starts from these.
+        self.holding: Dict[str, Dict[str, Any]] = {}
+        # holder -> the report, once a stall is declared (never retracted:
+        # a stall is stable, like termination).
+        self.stalls: Dict[str, List[str]] = {}
+        # holder -> what the walk found last round; a stall found while the
+        # office is still running is declared only when two consecutive
+        # rounds agree (see _find_stalls).
+        self._stall_last: Dict[str, Any] = {}
+        # (agent, inbox) -> (agent, outbox) of the one connection into it.
+        # The network keeps one connection per inbox (fan-in goes through
+        # an inserted merge agent), so the walk back is unambiguous.
+        self._feeds: Dict[Tuple[str, str], Tuple[str, str]] = {
+            (ta, tp): (fa, fp) for (fa, fp, ta, tp) in graph_connections
+        }
+
         # Edge counts — latest known values from any received messages
         # Keyed by (agent_name, port_name)
         self.edge_sent:     Dict[Tuple[str, str], int] = {}
@@ -220,8 +240,12 @@ class OsAgent:
                 )
 
             if self._terminated():
+                # Quiescence is proven, so every holder is stuck for good:
+                # no second round is needed to confirm it.
+                self._find_stalls(confirm=False)
                 self._shutdown_all()
                 return
+            self._find_stalls(confirm=True)
 
     # ── Polling ───────────────────────────────────────────────────────────────
 
@@ -296,6 +320,12 @@ class OsAgent:
         self.idle[agent_name] = bool(response.get("idle", False))
         if response.get("final"):
             self.final.add(agent_name)      # sticky
+
+        # Held work, if any (gate, synchronizer); absent means none.
+        if "holding" in response:
+            self.holding[agent_name] = response["holding"]
+        else:
+            self.holding.pop(agent_name, None)
 
         # Coordinators report the inport they will read next.
         if "waiting_on" in response:
@@ -376,6 +406,136 @@ class OsAgent:
             return False                       # a reachable channel is nonempty
 
         return True
+
+    # ── Stalls ────────────────────────────────────────────────────────────────
+
+    def _current_idle(self, name: str) -> bool:
+        """Idle, and said so in answer to this round's poll."""
+        return self._round_responded.get(name) == self._round and self.idle.get(name, False)
+
+    def _waits_on(self, name: str) -> List[str]:
+        """The inboxes ``name`` is reading: its ``waiting_on``, or all of them."""
+        if name in self.waiting_on:
+            return [self.waiting_on[name]]
+        return list(self.all_agents[name].inports)
+
+    def _stall_walk(self, holder: str) -> Optional[Tuple[Any, List[Tuple[str, ...]]]]:
+        """Walk back from what ``holder`` needs. The stall it proves, or None.
+
+        From each inbox the holder needs, follow the one connection into
+        it to the agent and outbox that feed it. If the connection is
+        empty and that agent is idle, follow every inbox *it* is reading,
+        and so on. A branch ends at an agent already on the walk (a
+        cycle) or at a finished source. The walk fails -- the holder may
+        yet be released -- at a connection that holds a message, or at an
+        agent that is busy or has not answered this round (which includes
+        a source that is still producing).
+
+        If no branch fails, the agents visited form a closed set S: each
+        idle, every connection into S empty, and every connection into S
+        from S itself or from a finished source. Nothing in S can be
+        woken except by a message sent from S, and nothing in S can send:
+        the termination condition, applied to S instead of the whole
+        office. The holder never gets what it needs.
+
+        Returns (a signature of what was observed, the edges walked), or
+        None.
+        """
+        info = self.holding.get(holder)
+        if not info or not self._current_idle(holder):
+            return None
+        visited = {holder}
+        edges: List[Tuple[str, ...]] = []
+        observed: List[Tuple[str, str, int]] = []
+        frontier = [(holder, inbox) for inbox in info.get("needs", [])]
+        while frontier:
+            to, inbox = frontier.pop(0)
+            feed = self._feeds.get((to, inbox))
+            if feed is None:
+                edges.append((to, inbox, "", "", "nothing is connected to it"))
+                continue
+            frm, outbox = feed
+            sent = self.edge_sent.get((frm, outbox), 0)
+            if sent != self.edge_received.get((to, inbox), 0):
+                return None                    # a message is on its way
+            observed.append((frm, outbox, sent))
+            if frm in self.final:
+                edges.append((to, inbox, frm, outbox, f"{frm} has finished"))
+            elif frm in visited:
+                edges.append((to, inbox, frm, outbox, f"{frm} is already on this path"))
+            elif not self._current_idle(frm):
+                return None                    # busy, or has not answered
+            else:
+                visited.add(frm)
+                waits = self._waits_on(frm)
+                edges.append((to, inbox, frm, outbox,
+                              f"{frm} is idle, waiting on {', '.join(map(_port, waits))}"))
+                frontier.extend((frm, w) for w in waits)
+        return (frozenset(visited), tuple(observed)), edges
+
+    def _find_stalls(self, confirm: bool) -> None:
+        """Declare every holder whose walk proves it stuck (``_stall_walk``).
+
+        While the office is running (``confirm``), a stall is declared only
+        when the walk finds the same agents and the same counts in two
+        consecutive rounds. Each round's replies arrive at slightly
+        different times; agreement across two rounds rules out a reading
+        taken while a message was passing between two agents. At
+        termination, quiescence is already proven, so one walk suffices.
+        """
+        seen: Dict[str, Any] = {}
+        for holder in list(self.holding):
+            if holder in self.stalls:
+                continue
+            found = self._stall_walk(holder)
+            if found is None:
+                continue
+            signature, edges = found
+            if confirm and self._stall_last.get(holder) != signature:
+                seen[holder] = signature
+                continue
+            self.stalls[holder] = self._stall_report(holder, edges)
+            sys.stderr.write("\n" + "\n".join(self.stalls[holder]) + "\n")
+            sys.stderr.flush()
+        self._stall_last = seen
+
+    def _stall_report(self, holder: str, edges: List[Tuple[str, ...]]) -> List[str]:
+        """The report: what is held, then each connection walked back.
+
+        Agents the framework inserted (``broadcast_N``, ``merge_N``) are
+        walked through but not named: a reader cannot find them in the
+        office file. Each connection is shown from the agent the person
+        wrote to the agent the person wrote.
+        """
+        def inserted(name: str) -> bool:
+            return bool(getattr(self.all_agents.get(name), "framework_inserted", False))
+
+        # For an inserted agent, the inbox (written by the person) it feeds.
+        target: Dict[str, Tuple[str, str]] = {}
+        for to, inbox, frm, _outbox, _state in edges:
+            if frm and inserted(frm):
+                target[frm] = target.get(to, (to, inbox)) if inserted(to) else (to, inbox)
+
+        info = self.holding[holder]
+        lines = [f"Stalled: {holder} holds {info.get('what', 'work')}; it will never arrive."]
+        for to, inbox, frm, outbox, state in edges:
+            if frm and inserted(frm):
+                continue
+            shown_to, shown_in = target.get(to, (to, inbox)) if inserted(to) else (to, inbox)
+            if not frm:
+                lines.append(f"  {shown_to}.{_port(shown_in)}: {state}")
+            else:
+                lines.append(f"  {shown_to}.{_port(shown_in)} <- {frm}.{_port(outbox)}: "
+                             f"empty; {state}")
+        # Work queued behind the holder, on inboxes it is not reading.
+        for inbox in self.all_agents[holder].inports:
+            feed = self._feeds.get((holder, inbox))
+            if feed is None or inbox in info.get("needs", []):
+                continue
+            waiting = self.edge_sent.get(feed, 0) - self.edge_received.get((holder, inbox), 0)
+            if waiting > 0:
+                lines.append(f"  {waiting} message(s) wait unread on {holder}.{_port(inbox)}.")
+        return lines
 
     # ── Shutdown ──────────────────────────────────────────────────────────────
 
@@ -517,3 +677,8 @@ class OsAgent:
 
 # Module-level helpers (filename sanitization, etc.) live in
 # dissyslab.snapshot now.
+
+
+def _port(name: str) -> str:
+    """A runtime port name as the office file writes it (``in_`` is ``in``)."""
+    return name[:-1] if name in ("in_", "out_") else name

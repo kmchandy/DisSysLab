@@ -154,6 +154,25 @@ class SynchronizerAgent(Agent):
                 source.setdefault(field, inbox)
         return merged
 
+    # ── For the termination detector ───────────────────────────────────────
+
+    def _termination_info(self) -> dict[str, Any]:
+        """Incomplete groups are held work: report them, and the inboxes they lack.
+
+        The detector walks back from those inboxes to find whether anything
+        can still arrive on them (``OsAgent._find_stalls``).
+        """
+        with self._lock:
+            if not self.groups:
+                return {}
+            what = "; ".join(
+                f"{self.on}={key} (has {', '.join(g)}; missing "
+                f"{', '.join(i for i in self.inports if i not in g)})"
+                for key, g in self.groups.items()
+            )
+            needs = [i for i in self.inports if any(i not in g for g in self.groups.values())]
+        return {"holding": {"what": f"an incomplete group: {what}", "needs": needs}}
+
     # ── At the end of the run ──────────────────────────────────────────────
 
     def incomplete(self) -> list[str]:

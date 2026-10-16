@@ -116,6 +116,26 @@ cleanly with a clear summary, not to be small or teachable.
   implement the spec (Phases 2-4); the stall report on top of the existing
   detector; then the labs.
 
+**Exceptions to the freeze, each approved by Mani:**
+
+1. The run summary notes fields a role's replies carried without
+   declaring them (`network.print_run_summary`).
+2. **The stall report** (spec 4.5, item 6; built 17 October). An agent
+   that holds work -- a gate's admitted item, a synchronizer's
+   incomplete group -- reports it (`holding`, beside `waiting_on`). The
+   detector walks back from the inboxes the holder needs: the one
+   connection into each inbox, then the agent and outbox feeding it; if
+   the connection is empty and that agent idle, every inbox *it* reads,
+   until each branch ends in a cycle or at a finished source (Mani's
+   design). Success means a closed set of idle agents with every
+   connection into it empty and coming from inside it or from a
+   finished source -- the termination condition applied to part of the
+   office -- so the holder never gets what it needs. While the office is
+   still running (a source that never finishes) a stall is declared only
+   when two consecutive rounds agree; at termination one walk suffices.
+   Each stall is printed once, when found, and makes `dsl run` exit
+   non-zero. `runtime/termination.py` (`_stall_walk`, `_find_stalls`).
+
 The options as first proposed:
 
 1. **One build path.** I recommend the in-process builder only: `dsl run`

@@ -19,7 +19,7 @@ here:
    code non-zero;
 3. a guardrail fires: a model's reply that breaks the role's declared
    interface is caught and counted, not passed on;
-4. a loop that stalls is reported as stalled (not yet built: xfail).
+4. a loop that stalls is reported as stalled (test_dsl_new_path.py).
 
 These use today's office language. When the spec's language replaces it,
 the offices here are rewritten; the four properties stay.
@@ -266,23 +266,5 @@ def test_a_reply_outside_the_declared_interface_is_caught(tmp_path):
     assert [a["title"] for a in lines_of(office / "dropped.jsonl")] == ["Tokyo rains"]
 
 
-# ── 4. A stalled loop is reported ────────────────────────────────────────────
-
-
-@pytest.mark.xfail(strict=True, reason="stall report not built yet (spec section 4.5, item 6)")
-def test_a_stalled_loop_is_reported(tmp_path):
-    """The moderator fails on one problem, so the gate never releases the rest.
-
-    Today the office stops, exits non-zero and reports Riley's failure, but
-    does not say that the remaining problems were never attempted.
-    """
-    office = copy_office(GALLERY / "apps" / "debate", tmp_path)
-    second_id = lines_of(office / "problems.jsonl")[1]["id"]
-    bad = {"when": "You are Riley", "user_contains": second_id,
-           "reply": '{"send_to": "maybe", "text": "?"}'}
-    code, out, _ = run_office(office, _panel() + [bad, FINISH])
-    assert code != 0, out
-    # The report's exact wording is decided when it is built; it will
-    # start with "Stalled:". (Not "stalled" in any case: pytest's
-    # temporary folder for this test is named after it.)
-    assert "Stalled:" in out
+# 4. A stalled loop is reported: tests/e2e/test_dsl_new_path.py
+#    (test_a_stalled_loop_is_reported), on the 2.0 debate example.
