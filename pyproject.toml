@@ -221,7 +221,12 @@ ignore_missing_imports = true
 exclude = '^(dissyslab/gallery/|dissyslab/\.venv/|build/)'
 
 [[tool.mypy.overrides]]
-module = ["dissyslab.runtime.*", "dissyslab.agents.*"]
+module = [
+  "dissyslab.runtime.*",
+  "dissyslab.agents.*",
+  "dissyslab.office.model",
+  "dissyslab.office.syntax",
+]
 disallow_untyped_defs = true
 disallow_incomplete_defs = true
 disallow_any_generics = true
