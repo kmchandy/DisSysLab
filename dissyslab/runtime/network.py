@@ -970,6 +970,17 @@ class Network:
                       f"{sent} message(s). The office ran; that feed was "
                       f"partly unavailable.")
 
+        # Fields a role's replies carried without declaring them in out:
+        # (spec 4.5): dropped, so a note, not a failure. Only role agents
+        # (dissyslab.agents.role_agent) keep this count.
+        for name, _ in rows:
+            dropped = getattr(self.agents.get(name), "dropped_fields", None)
+            if dropped:
+                fields = ", ".join(f"{f} ({n})" for f, n in sorted(dropped.items()))
+                print()
+                print(f"  note: {name}'s replies had fields its out: does not "
+                      f"declare; they were dropped: {fields}.")
+
         # Agents that could not do their job. This is the loudest thing
         # the summary says, because it is the only one that means some
         # of the work simply did not happen -- and because the office
