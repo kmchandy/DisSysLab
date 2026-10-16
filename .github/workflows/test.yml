@@ -60,3 +60,10 @@ jobs:
 
       - name: Run the test suite
         run: pytest tests/ -q
+
+      # Type check once, not per platform: the result does not depend on
+      # the OS, and pyproject.toml pins python_version. The debt list
+      # in [tool.mypy] may only shrink; new modules are strict.
+      - name: Type check (mypy)
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        run: mypy dissyslab

@@ -76,6 +76,7 @@ dev = [
   "pytest-cov>=4.0.0",
   "pytest-timeout>=2.1.0",
   "ruff>=0.6.9",
+  "mypy>=1.10",
   "black>=24.8.0",
   "build>=1.2.1",
   "twine>=5.1.1",
@@ -203,3 +204,70 @@ lint.select = ["E", "F", "I", "UP", "B"]
 [tool.black]
 line-length = 100
 target-version = ["py310"]
+
+# ── Type checking ─────────────────────────────────────────────────────────
+# Run: mypy dissyslab
+#
+# Two levels (restructure_plan.md, decision 5):
+#   * new packages written to the spec are strict;
+#   * existing modules are checked at mypy's default level, and the modules
+#     that had errors in the baseline (16 October 2026: 102 errors in 33
+#     files) are listed below with ignore_errors. That list is a record of
+#     debt, not a permanent exemption: a module leaves it when it is
+#     rewritten, retired, or fixed.
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+exclude = '^(dissyslab/gallery/|dissyslab/\.venv/|build/)'
+
+[[tool.mypy.overrides]]
+module = ["dissyslab.runtime.*", "dissyslab.agents.*"]
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_any_generics = true
+check_untyped_defs = true
+warn_return_any = true
+warn_unused_ignores = true
+no_implicit_reexport = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+  "dissyslab.backends.anthropic_backend",
+  "dissyslab.blocks.gate",
+  "dissyslab.blocks.merge_synch",
+  "dissyslab.blocks.select",
+  "dissyslab.blocks.source",
+  "dissyslab.builder",
+  "dissyslab.cli",
+  "dissyslab.components",
+  "dissyslab.components.sinks.gmail_sink",
+  "dissyslab.components.sinks.intelligence_display",
+  "dissyslab.components.sinks.slack_sink",
+  "dissyslab.components.sinks.webhook_sink",
+  "dissyslab.components.sources.audio_clip_source",
+  "dissyslab.components.sources.audio_mic_source",
+  "dissyslab.components.sources.calendar_source",
+  "dissyslab.components.sources.csv_points_source",
+  "dissyslab.components.sources.csv_stock_history_source",
+  "dissyslab.components.sources.image_folder_source",
+  "dissyslab.components.sources.jpl_saltonsea_buoy_source",
+  "dissyslab.components.sources.rss_normalizer",
+  "dissyslab.components.sources.rss_source",
+  "dissyslab.components.sources.synthetic_salton_h2s_source",
+  "dissyslab.components.sources.weather_source",
+  "dissyslab.components.sources.web_scraper",
+  "dissyslab.components.sources.webhook_source",
+  "dissyslab.core",
+  "dissyslab.network",
+  "dissyslab.office.check_wiring",
+  "dissyslab.office.cli_helpers",
+  "dissyslab.office.codegen",
+  "dissyslab.office.library",
+  "dissyslab.office.office_run_context",
+  "dissyslab.office.office_spec",
+  "dissyslab.office.utils",
+  "dissyslab.os_agent",
+  "dissyslab.skills_installed",
+]
+ignore_errors = true
