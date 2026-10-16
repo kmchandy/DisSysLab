@@ -19,7 +19,6 @@ from pathlib import Path
 import sys
 import time
 import json
-import multiprocessing
 
 
 # ============================================================================
@@ -294,46 +293,6 @@ class ExceptionThread(Thread):
         except Exception as e:
             self.exception = e
             self.exc_info = sys.exc_info()
-
-
-# ============================================================================
-# Exception-Capturing Process
-# ============================================================================
-
-def _process_worker(target, exc_queue):
-    """
-    Top-level worker function for ExceptionProcess.
-    Must be module-level so multiprocessing can pickle it.
-    """
-    try:
-        target()
-    except Exception as e:
-        import traceback
-        exc_queue.put((e, traceback.format_exc()))
-
-
-class ExceptionProcess(multiprocessing.Process):
-    """
-    Process that captures exceptions from target function for debugging.
-    Mirrors ExceptionThread but for multiprocessing.Process.
-    """
-
-    def __init__(self, target, name=None, daemon=False):
-        self._exc_queue = multiprocessing.Queue()
-        super().__init__(
-            target=_process_worker,
-            args=(target, self._exc_queue),
-            name=name,
-            daemon=daemon
-        )
-        self.exception = None
-        self.traceback_str = None
-
-    def join(self, timeout=None):
-        """Join process and retrieve any exception from the child."""
-        super().join(timeout=timeout)
-        if not self._exc_queue.empty():
-            self.exception, self.traceback_str = self._exc_queue.get_nowait()
 
 
 # ============================================================================

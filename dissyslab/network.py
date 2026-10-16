@@ -15,9 +15,8 @@ from typing import Optional, List, Dict, Tuple, Any, Union
 from queue import SimpleQueue
 from collections import deque
 from pathlib import Path
-import multiprocessing
 import os
-from dissyslab.core import Agent, ExceptionThread, ExceptionProcess
+from dissyslab.core import Agent, ExceptionThread
 
 
 class OfficeRunError(RuntimeError):
@@ -127,11 +126,6 @@ class Network:
         # exactly the pre-v1.7 code path. See
         # docs/algorithms/TRACE_AND_LOGICAL_CLOCK.md.
         self.trace_dir: Optional[Path] = None
-
-        # Process compilation state (populated by compile_for_processes())
-        self.compiled_for_processes: bool = False
-        self.mp_queues: List[multiprocessing.Queue] = []
-        self.processes: List[ExceptionProcess] = []
 
     # ========== Validation ==========
 
@@ -1117,98 +1111,6 @@ class Network:
         print("        feed is ordinary; a feed that is empty every run is "
               "pointed at")
         print("        something that is not there.")
-
-    # ========== Process-based Execution ==========
-
-    def _wire_mp_queues(self) -> None:
-        """Wire multiprocessing.Queue objects between agents."""
-        for agent in self.agents.values():
-            for port in agent.inports:
-                q = multiprocessing.Queue()
-                agent.in_q[port] = q
-                self.mp_queues.append(q)
-
-        for (fb, fp, tb, tp) in self.graph_connections:
-            sender = self.agents[fb]
-            receiver = self.agents[tb]
-            sender.out_q[fp] = receiver.in_q[tp]
-
-    def _create_processes(self) -> None:
-        """Create one ExceptionProcess per agent."""
-        for full_name, agent in self.agents.items():
-            p = ExceptionProcess(
-                target=agent.run,
-                name=f"{full_name}_process",
-                daemon=False
-            )
-            self.processes.append(p)
-
-    def compile_for_processes(self) -> None:
-        """Compile network for process-based execution."""
-        if self.compiled_for_processes:
-            return
-        if not self.compiled:
-            self.compile()
-        self._wire_mp_queues()
-        self._create_processes()
-        self.compiled_for_processes = True
-
-    def process_network(self, timeout: Optional[float] = 30.0) -> None:
-        """Compile (if needed) and run the network using OS processes."""
-        if not self.compiled_for_processes:
-            self.compile_for_processes()
-
-        try:
-            self.startup()
-            self._run_processes(timeout=timeout)
-        finally:
-            try:
-                self.shutdown()
-            except Exception:
-                pass
-
-    def _run_processes(self, timeout: Optional[float] = 30.0) -> None:
-        """Start all agent processes and wait for completion."""
-        import time
-        start_time = time.time()
-
-        for p in self.processes:
-            p.start()
-
-        failed = []
-        hung = []
-
-        for p in self.processes:
-            if timeout is not None:
-                elapsed = time.time() - start_time
-                remaining = max(0.1, timeout - elapsed)
-                p.join(timeout=remaining)
-                if p.is_alive():
-                    hung.append(p)
-                    p.terminate()
-            else:
-                p.join()
-
-            if p.exception:
-                failed.append(p)
-
-        if hung:
-            raise TimeoutError(
-                f"Network timed out after {timeout}s. "
-                f"Agents still running: {[p.name for p in hung]}"
-            )
-
-        if failed:
-            print("\n" + "="*70)
-            print("AGENT FAILURES DETECTED (processes):")
-            print("="*70)
-            for p in failed:
-                print(f"\nProcess: {p.name}")
-                print(p.traceback_str)
-            print("="*70)
-            raise RuntimeError(
-                f"{len(failed)} agent(s) failed. See traceback above."
-            )
 
     # ========== Debug Output Formatting ==========
 

@@ -643,12 +643,7 @@ def _is_packaged(office_dir: Path) -> bool:
 def _emit_main(root: _OfficeNode) -> str:
     """If the root office is closed, emit the ``__main__`` runner block.
 
-    The runner picks between ``run_network()`` (threads, the default —
-    correct for I/O-bound work) and ``process_network()`` (OS
-    processes, true CPU parallelism) based on the ``DSL_PROCESS_MODE``
-    environment variable. Pat does not see this choice; ``dsl run``
-    exposes ``--processes`` as a power-user flag that sets the env
-    var before invoking the artifact.
+    The runner calls ``run_network()``: every agent is a thread.
 
     **The working directory is decided here, not by the artifact.** It
     used to test ``_pkg not in _HERE.parents`` at run time -- asking
@@ -718,15 +713,12 @@ def _emit_main(root: _OfficeNode) -> str:
         "    # stays None and send()/recv() are byte-identical to before.\n"
         "    if os.environ.get(\"DSL_TRACE\"):\n"
         "        _office.trace_dir = _HERE.parent / \"trace\"\n"
-        "    if os.environ.get(\"DSL_PROCESS_MODE\") == \"process\":\n"
-        "        _office.process_network()\n"
-        "    else:\n"
-        "        # Exit non-zero when an agent failed on any message.\n"
-        "        # The office ran and its output is real, but some of\n"
-        "        # the work did not happen, and a run that limped must\n"
-        "        # not be mistaken for one that worked -- by a person\n"
-        "        # or by a script that runs this every morning.\n"
-        "        raise SystemExit(_office.run_network())\n"
+        "    # Exit non-zero when an agent failed on any message.\n"
+        "    # The office ran and its output is real, but some of\n"
+        "    # the work did not happen, and a run that limped must\n"
+        "    # not be mistaken for one that worked -- by a person\n"
+        "    # or by a script that runs this every morning.\n"
+        "    raise SystemExit(_office.run_network())\n"
     )
 
 

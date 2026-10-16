@@ -608,17 +608,6 @@ def cmd_run(args: argparse.Namespace) -> int:
     if _refuse_if_draft(office_dir, "dsl run"):
         return 1
 
-    # Power-user override: --processes flag asks the runtime to use
-    # ``process_network()`` (one OS process per agent — true CPU
-    # parallelism) instead of the default ``run_network()`` (threads).
-    # Implemented via an environment variable so the generated artifact
-    # picks up the choice without needing a code change for every run.
-    # Pat does not see this flag in normal use; the help text mentions
-    # it for the curious. See examples/module_08 for the canonical
-    # CPU-parallelism demo.
-    if getattr(args, "processes", False):
-        os.environ["DSL_PROCESS_MODE"] = "process"
-
     # v1.6: propagate checkpoint-resume flags to the generated build/run.py
     # via environment variables that the artifact's __main__ block reads.
     if getattr(args, "snapshot_interval", None) is not None:
@@ -2146,17 +2135,6 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p_run.add_argument("office_dir", help="path to an office directory")
-    p_run.add_argument(
-        "--processes",
-        action="store_true",
-        help=(
-            "Run each agent in its own OS process for true CPU "
-            "parallelism (advanced; default is threads, which is "
-            "correct for I/O-bound work). Equivalent to setting "
-            "DSL_PROCESS_MODE=process. See examples/module_08 for "
-            "when this matters."
-        ),
-    )
     # v1.6: checkpoint-resume opt-in flags.
     p_run.add_argument(
         "--snapshot-interval",

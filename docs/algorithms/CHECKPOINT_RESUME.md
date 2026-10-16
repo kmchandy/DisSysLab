@@ -121,10 +121,9 @@ below.
   queue stops working a reply will not arrive and the OS agent
   will wait indefinitely. The user may then `Ctrl-C` to abort.
   Failure detection and snapshot timeouts are future work.
-- Execution is single-process for v1.6 (`dsl run`). The
-  multi-process mode (`dsl run --processes`) is supported by the
-  framework today, but extending the snapshot protocol across
-  process boundaries is future work.
+- Execution is single-process (`dsl run`): each agent is a thread.
+  The per-agent process mode was removed in 2.0 (it never worked;
+  see docs/internals/decisions/process_parallelism_decision.md).
 
 ## OS Agent Algorithm
 
@@ -606,10 +605,9 @@ later releases:
   operational. A failed queue prevents reply(N) from being
   delivered. Adding a snapshot timeout, failure detection, or
   recovery from a partial snapshot is future work.
-- **Multi-process snapshots.** `dsl run --processes` runs each
-  agent in its own OS process. Extending the marker protocol and
-  the reply path across process boundaries requires additional
-  IPC plumbing. Future work.
+- **Multi-process snapshots.** Offices run in one process. If
+  process-per-office parallelism is built, the marker protocol and
+  the reply path must cross process boundaries. Future work.
 - **Multi-machine snapshots.** Out of scope.
 - **Schema evolution.** Resuming a snapshot taken by an earlier
   version of the office's code is not supported in v1.6. The

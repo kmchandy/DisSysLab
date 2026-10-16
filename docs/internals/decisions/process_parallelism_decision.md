@@ -100,8 +100,8 @@ two efforts.
 
 ## Until then
 
-`--processes` is still advertised in the README ("How it runs", and in
-the "Current limitations" section) and in the paper's limitations
-section, all of which state that it works. That claim needs pulling or
-the flag needs to fail immediately with a clear message. **Not yet
-decided.**
+**Decided 16 October 2026 (version 2.0):** per-agent process mode is
+removed: the `--processes` flag, `DSL_PROCESS_MODE`,
+`Network.process_network`, `compile_for_processes` and
+`core.ExceptionProcess`. Every agent is a thread. Per-office processes,
+as designed here, remain postponed.

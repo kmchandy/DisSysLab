@@ -324,7 +324,7 @@ computational and LLM workers, exactly as intended.
 
 Logging every send/receive has a real cost (a disk write per message).
 Follow the existing pattern of `--snapshot-interval` being opt-in: add a
-`--trace` flag to `dsl run` (alongside `--processes`, `--snapshot-interval`,
+`--trace` flag to `dsl run` (alongside `--snapshot-interval`,
 `--resume` in `cli.py`'s `p_run` parser). Normal runs pay zero overhead,
 exactly the "normal mode: nothing extra logged, cheap" principle already
 established for debug-mode replay, applied here for the same reason.

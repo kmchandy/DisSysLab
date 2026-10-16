@@ -21,7 +21,7 @@ Pipeline stages (each implemented in its own module):
                            ``nl_role`` system prompts
 
 The runtime that executes the produced Network lives in
-``dissyslab.network`` (``run_network()`` / ``process_network()``).
+``dissyslab.network`` (``run_network()``).
 """
 from dissyslab.office.office_spec_constants import EXTERNAL
 from dissyslab.office.office_spec import (
