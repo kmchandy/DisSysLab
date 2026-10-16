@@ -96,8 +96,27 @@ class IntelligenceDisplay:
                    (Situation Room mode). If None, scrolls continuously.
     """
 
-    def __init__(self, max_items=None):
+    def __init__(self, max_items=None, title=None, text=None, color=None, lines=None):
+        """
+        Args:
+            max_items: show only the last N items, refreshed in place.
+            title, text: the fields shown as the headline and the body
+                (default "title" and "text").
+            color: the field whose value colours the bar (CRITICAL,
+                HIGH, MEDIUM, LOW, ...). Spec section 7: a sink that
+                shows fields is told which, and never guesses.
+            lines: further fields, each shown on its own labelled line.
+
+        When none of title, text, color or lines is given, the display
+        behaves as in version 1 (it looks for a verdict among several
+        field names); offices in the 2.0 syntax always name them.
+        """
         self.max_items = max_items
+        self.title_field = title
+        self.text_field = text
+        self.color_field = color
+        self.line_fields = list(lines or [])
+        self._named = any(x is not None for x in (title, text, color, lines))
         self.items = []   # rolling buffer
         self.count = 0
 
@@ -272,14 +291,26 @@ class IntelligenceDisplay:
         # Normalise envelope shape (Nyasha — handles custom-app message
         # variants where the payload is wrapped under "data" / etc.).
         item = coerce_sink_message(item)
-        # Multi-field verdict lookup so any rater role works without
-        # coordinated field naming.
-        significance = "LOW"
-        for _field in self._VERDICT_FIELDS:
-            v = item.get(_field)
-            if v:
-                significance = str(v).upper()
-                break
+        extra = []
+        if self._named:
+            # The fields the office named, and nothing guessed.
+            original = item
+            item = {k: original.get(k, "") for k in ("source", "url", "timestamp")}
+            item["title"] = original.get(self.title_field or "title", "")
+            item["text"] = original.get(self.text_field or "text", "")
+            significance = (
+                str(original.get(self.color_field, "")).upper() if self.color_field else "LOW"
+            )
+            extra = [(f, original.get(f, "")) for f in self.line_fields]
+        else:
+            # Version 1: multi-field verdict lookup so any rater role
+            # works without coordinated field naming.
+            significance = "LOW"
+            for _field in self._VERDICT_FIELDS:
+                v = item.get(_field)
+                if v:
+                    significance = str(v).upper()
+                    break
         # All displayed fields are coerced to strings here so the
         # rendering code below can rely on ``str`` semantics. Upstream
         # agents occasionally hand us nested dicts (e.g. an LLM
@@ -357,6 +388,9 @@ class IntelligenceDisplay:
             )
             for rline in reason_lines[1:]:
                 out.append(f"{GREY}║{RESET}          {color}{rline}{RESET}")
+        for field, value in extra:
+            shown = value if isinstance(value, str) else json.dumps(value)
+            out.append(f"{GREY}║{RESET}  {field}: {shown}"[: WIDTH + 12])
         # Skip the trailing URL row if the body already includes it
         # (matcher-style outputs put it inline on an "Apply:" line).
         # Cyan + underline reads as a hyperlink in every modern

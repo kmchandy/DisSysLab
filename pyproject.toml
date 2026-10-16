@@ -156,6 +156,8 @@ exclude = [
   # The 2.0 examples (dissyslab/office_examples/): office files, roles, and the
   # small data files that stand in for sources. A run writes its output
   # next to the office, so run a copy (`dsl init`), never the package.
+  "office_roles/*.md",
+  "office_roles/*.py",
   "office_examples/**/*.md",
   "office_examples/**/*.py",
   "office_examples/**/*.jsonl",
@@ -224,7 +226,8 @@ target-version = ["py310"]
 [tool.mypy]
 python_version = "3.10"
 ignore_missing_imports = true
-exclude = '^(dissyslab/gallery/|dissyslab/\.venv/|build/)'
+# The examples are student-facing code, like the gallery: not type-checked.
+exclude = '^(dissyslab/gallery/|dissyslab/office_examples/|dissyslab/\.venv/|build/)'
 
 [[tool.mypy.overrides]]
 module = [

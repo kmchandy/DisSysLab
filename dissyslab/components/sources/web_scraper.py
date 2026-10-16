@@ -401,63 +401,16 @@ class ArxivScraper:
         return papers
 
 
-# ── ArxivScraper convenience factory functions ────────────────────────────────
+# ── arXiv sources ─────────────────────────────────────────────────────────────
+# Since 2.0 the arxiv_cs_* sources read arXiv's RSS feed, which carries the
+# abstract and the authors (the listing pages scraped by ArxivScraper carry
+# no abstract). The names are kept here because the component registry
+# finds them in this module. ArxivScraper remains for other uses.
 
-def arxiv_cs_ai(
-    max_articles: int = 20, poll_interval: Optional[int] = None
-) -> ArxivScraper:
-    """Artificial Intelligence — https://arxiv.org/list/cs.AI/recent"""
-    return ArxivScraper(
-        subject="cs.AI",
-        source_name="arxiv_cs_ai",
-        max_articles=max_articles,
-        poll_interval=poll_interval,
-    )
-
-
-def arxiv_cs_lg(
-    max_articles: int = 20, poll_interval: Optional[int] = None
-) -> ArxivScraper:
-    """Machine Learning — https://arxiv.org/list/cs.LG/recent"""
-    return ArxivScraper(
-        subject="cs.LG",
-        source_name="arxiv_cs_lg",
-        max_articles=max_articles,
-        poll_interval=poll_interval,
-    )
-
-
-def arxiv_cs_cl(
-    max_articles: int = 20, poll_interval: Optional[int] = None
-) -> ArxivScraper:
-    """Computation and Language — https://arxiv.org/list/cs.CL/recent"""
-    return ArxivScraper(
-        subject="cs.CL",
-        source_name="arxiv_cs_cl",
-        max_articles=max_articles,
-        poll_interval=poll_interval,
-    )
-
-
-def arxiv_cs_cv(
-    max_articles: int = 20, poll_interval: Optional[int] = None
-) -> ArxivScraper:
-    """Computer Vision — https://arxiv.org/list/cs.CV/recent"""
-    return ArxivScraper(
-        subject="cs.CV",
-        source_name="arxiv_cs_cv",
-        max_articles=max_articles,
-        poll_interval=poll_interval,
-    )
-
-
-def arxiv_cs_ro(
-    max_articles: int = 20, poll_interval: Optional[int] = None
-) -> ArxivScraper:
-    """Robotics — https://arxiv.org/list/cs.RO/recent"""
-    return ArxivScraper(
-        subject="cs.RO",
-        source_name="arxiv_cs_ro",
-        max_articles=max_articles,
-        poll_interval=poll_interval,
-    )
+from dissyslab.components.sources.arxiv_rss import (  # noqa: E402,F401
+    arxiv_cs_ai,
+    arxiv_cs_cl,
+    arxiv_cs_cv,
+    arxiv_cs_lg,
+    arxiv_cs_ro,
+)

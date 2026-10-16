@@ -315,9 +315,10 @@ def test_returns_desk_one_ticket_at_a_time(tmp_path):
         "tickets.jsonl": jsonl(TICKETS),
     })
     assert run_office(office) == 0
-    outcomes = read_jsonl(office / "outcomes.jsonl")
-    # One ticket finished before the next is admitted, so the log is in
-    # ticket order even though escalated tickets take a longer path.
+    # The gate admits one ticket at a time, but a decision goes to the
+    # recorder and to Gate.done in parallel, so the next ticket can reach
+    # the recorder first: the log is not in ticket order. Compare by ticket.
+    outcomes = sorted(read_jsonl(office / "outcomes.jsonl"), key=lambda o: o["ticket_id"])
     assert [o["ticket_id"] for o in outcomes] == ["T1", "T2", "T3", "T4"]
     assert [(o["clerk_decision"], o.get("manager_decision")) for o in outcomes] == [
         ("approve", None), ("escalate", "approve"), ("approve", None), ("escalate", "approve")]

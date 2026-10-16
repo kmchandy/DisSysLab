@@ -122,7 +122,9 @@ def test_python_office_stops_by_itself(tmp_path):
     code, out, _ = run_office(office)
     assert code == 0, out
     assert "Run summary" in out
-    outcomes = lines_of(office / "outcomes.jsonl")
+    # Not in ticket order: a decision reaches the log and releases the next
+    # ticket in parallel. Compare by ticket.
+    outcomes = sorted(lines_of(office / "outcomes.jsonl"), key=lambda o: o["ticket_id"])
     assert [o["ticket_id"] for o in outcomes] == ["T1", "T2", "T3", "T4"]
     assert [o["decided_by"] for o in outcomes] == ["clerk", "manager", "clerk", "manager"]
 
