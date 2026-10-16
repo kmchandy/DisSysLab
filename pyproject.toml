@@ -153,6 +153,12 @@ exclude = [
   "gallery/**/*.md",
   "gallery/**/*.py",
   "roles/**/*.md",
+  # The 2.0 examples (dissyslab/office_examples/): office files, roles, and the
+  # small data files that stand in for sources. A run writes its output
+  # next to the office, so run a copy (`dsl init`), never the package.
+  "office_examples/**/*.md",
+  "office_examples/**/*.py",
+  "office_examples/**/*.jsonl",
   # The office.md reference, printed by `dsl grammar`. It lives in the
   # package rather than inside the skill so that the language and the
   # description of the language ship together and cannot disagree --

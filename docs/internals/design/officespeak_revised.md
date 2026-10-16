@@ -116,7 +116,7 @@ The agent declarations:
 | `Name: role(k=v, …)` | a Python role constructed with these keyword arguments |
 | `Name: role(ai="<backend>")` | an English role, naming the model behind this agent |
 | `Name: router(on="<field>")` | a router (section 5) |
-| `Name: synchronizer(on="<field>")`, `Name: gate`, `Name: record(…)` | coordinators (section 6) |
+| `Name: synchronizer(on="<field>")`, `Name: gate` | coordinators (section 6) |
 | `Name: office(path="<path>")` | a nested office (3.4) |
 | `Name: unassigned` | a draft agent (3.5) |
 
@@ -152,7 +152,7 @@ YAML was considered and rejected: connections do not fit it, and it reads
 
 ### 3.2 How a kind is found
 
-`router`, `synchronizer`, `gate`, `record`, `office` and `unassigned` are
+`router`, `synchronizer`, `gate`, `office` and `unassigned` are
 reserved words, built in. A nested office is found by its path. Every other
 kind (a role, source or sink) is searched for first in the office's own folder
 (`roles/`, `sources/`, `sinks/`), then in the built-ins. A local file may not
@@ -387,14 +387,12 @@ connections:
 
 ## 6. Coordinators
 
-Three, as named recipes on one general coordinator: **synchronizer, gate,
-record**.
+Two: **synchronizer** and **gate**.
 
 | Coordinator | Line | Behaviour |
 |---|---|---|
 | synchronizer | `Sync: synchronizer(on="url")` | inboxes are the names used in its connections (`Eve -> Sync.entities`); for each value of its key field, waits until a message with that value has arrived on every inbox, merges them into one, sends it |
 | gate | `G: gate` | inboxes `in` and `done`: admits one item from `in`, then waits for a message on `done` (which it discards) before admitting the next |
-| record | `R: record(…)` | keeps shared data; agents read and write it by request (unchanged from today) |
 
 **The synchronizer:**
 
@@ -419,6 +417,10 @@ record**.
 perhaps with one round trip", which a gate and a router express with
 annotators only, and its commands put another agent's inbox name inside a
 role's code. If it returns, that is the first thing to redesign.
+
+`record` was removed (17 October): no kept example uses it. Shared state
+lives in a Python role and travels in the messages (as the debate's
+`history` does).
 
 ## 7. Sources and sinks
 

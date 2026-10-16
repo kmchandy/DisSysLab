@@ -19,9 +19,8 @@ and nothing else:
 that relative paths in the office file mean what they say, and returns
 the exit code: 0 when every message was handled, 1 otherwise.
 
-**Being built (Phase 3).** The record coordinator and drafts are not
-built; an office that uses one gets a clear "not built
-yet" error naming the line, never a guess.
+A draft (an ``unassigned`` agent) is not run: it gets a clear error
+naming the line (spec 3.5).
 """
 
 from __future__ import annotations

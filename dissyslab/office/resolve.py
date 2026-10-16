@@ -3,7 +3,7 @@
 For each declaration in an office file, this says what its kind refers
 to, or why it refers to nothing:
 
-1. ``router``, ``synchronizer``, ``gate``, ``record``, ``office`` and
+1. ``router``, ``synchronizer``, ``gate``, ``office`` and
    ``unassigned`` are reserved words, built in. They are agents.
 2. Any other kind is searched for first in the office's own folder --
    ``roles/`` for an agent, ``sources/`` for a source, ``sinks/`` for a
@@ -26,7 +26,7 @@ from pathlib import Path
 from dissyslab.office.model import Declaration, OfficeFile
 
 #: Kinds built into the language; they are always agents.
-RESERVED = ("router", "synchronizer", "gate", "record", "office", "unassigned")
+RESERVED = ("router", "synchronizer", "gate", "office", "unassigned")
 
 #: The office subfolder searched for each section's kinds.
 LOCAL_FOLDER = {"agents": "roles", "sources": "sources", "sinks": "sinks"}
