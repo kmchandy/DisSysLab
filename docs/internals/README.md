@@ -30,11 +30,15 @@ the code:
 
 | Module | Overview | Implementation |
 |---|---|---|
-| `dissyslab/core.py` | [core_overview.md](reference/core_overview.md) | [core_implementation.md](reference/core_implementation.md) |
-| `dissyslab/network.py` | [network_overview.md](reference/network_overview.md) | [network_implementation.md](reference/network_implementation.md) |
+| `dissyslab/runtime/agent.py`, `runtime/os_hooks.py`, `runtime/messages.py` (were `dissyslab/core.py`, now an alias) | [core_overview.md](reference/core_overview.md) | [core_implementation.md](reference/core_implementation.md) |
+| `dissyslab/runtime/network.py` (`dissyslab/network.py` is an alias) | [network_overview.md](reference/network_overview.md) | [network_implementation.md](reference/network_implementation.md) |
 | `dissyslab/builder.py` | [builder_overview.md](reference/builder_overview.md) | [builder_implementation.md](reference/builder_implementation.md) |
-| `dissyslab/os_agent.py` | [os_agent_overview.md](reference/os_agent_overview.md) | [os_agent_implementation.md](reference/os_agent_implementation.md) |
+| `dissyslab/runtime/termination.py` (`dissyslab/os_agent.py` is an alias) | [os_agent_overview.md](reference/os_agent_overview.md) | [os_agent_implementation.md](reference/os_agent_implementation.md) |
 | `dissyslab/blocks/` | (see overviews above) | [blocks_implementation.md](reference/blocks_implementation.md) |
+
+The implementation notes predate the move into `dissyslab/runtime/`
+(October 2026) and still name the old files; the code itself moved
+unchanged.
 
 This table is checked: `tests/integration/test_docs_match_code.py`
 fails if a substantial module is missing from it, or if it links to a

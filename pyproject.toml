@@ -258,7 +258,7 @@ module = [
   "dissyslab.components.sources.weather_source",
   "dissyslab.components.sources.web_scraper",
   "dissyslab.components.sources.webhook_source",
-  "dissyslab.network",
+  "dissyslab.runtime.network",
   "dissyslab.office.check_wiring",
   "dissyslab.office.cli_helpers",
   "dissyslab.office.codegen",
@@ -266,8 +266,9 @@ module = [
   "dissyslab.office.office_run_context",
   "dissyslab.office.office_spec",
   "dissyslab.office.utils",
-  "dissyslab.os_agent",
   "dissyslab.runtime.os_hooks",
+  "dissyslab.runtime.snapshot",
+  "dissyslab.runtime.termination",
   "dissyslab.skills_installed",
 ]
 ignore_errors = true

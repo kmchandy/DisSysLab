@@ -198,7 +198,7 @@ class OsHooks:
         # contain "::" (DSL's nested-network path separator), which is
         # invalid in Windows filenames. Same convention as checkpoint
         # files, for the same reason.
-        from dissyslab.snapshot import safe_filename
+        from dissyslab.runtime.snapshot import safe_filename
 
         with self._snapshot_lock:
             self._trace_dir.mkdir(parents=True, exist_ok=True)
@@ -585,7 +585,7 @@ class OsHooks:
         """
         if self._snapshot_dir is None:
             return
-        from dissyslab.snapshot import load_agent_state, load_channel_state
+        from dissyslab.runtime.snapshot import load_agent_state, load_channel_state
         state = load_agent_state(self._snapshot_dir, N, self.name)
         if state is not None:
             # v1.6: snapshot envelope is

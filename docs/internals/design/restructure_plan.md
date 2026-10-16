@@ -93,6 +93,29 @@ the sink aliases.
   are for now. Phase 1 below shrinks to moving and documenting the runtime
   without changing those algorithms.
 
+### Change of direction (Mani, 17 October)
+
+**The course goal changed:** students run distributed systems of several
+LLM agents, learn to impose guardrails, and learn ways LLM agents
+collaborate. The runtime's job is therefore to be reliable and to stop
+cleanly with a clear summary, not to be small or teachable.
+
+- **The runtime is frozen.** Phase 1 ended by moving the runtime into
+  `dissyslab/runtime/` (agent, os_hooks, messages, network, termination,
+  snapshot, plumbing); the old module names remain as aliases. No further
+  restructuring of it. Snapshots and tracing stay (opt-in, unseen by
+  students).
+- **Not done, recorded for later:** replacing the termination detector by
+  a single-process stop rule ("option B": every thread finished or
+  waiting on empty channels, checked under one lock). Smaller and
+  provable, but new code in the most failure-sensitive place and tied to
+  one process. A fallback if the detector misbehaves in the labs.
+- **Next:** end-to-end tests of the lab paths (each kept example through
+  the real `dsl run` path with a scripted fake model: stops by itself on a
+  finite input, a failing role, a guardrail firing, a stalled loop); then
+  implement the spec (Phases 2-4); the stall report on top of the existing
+  detector; then the labs.
+
 The options as first proposed:
 
 1. **One build path.** I recommend the in-process builder only: `dsl run`
