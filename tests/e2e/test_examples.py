@@ -32,16 +32,17 @@ def copy_example(name: str, tmp_path: Path) -> Path:
 
 def record_source(office: Path, name: str, items: list[dict]) -> None:
     """Replace source ``name`` by a file of recorded items, keeping its name."""
-    (office / f"{name}.jsonl").write_text("".join(json.dumps(i) + "\n" for i in items))
+    (office / f"{name}.jsonl").write_text("".join(json.dumps(i) + "\n" for i in items),
+                                            encoding="utf-8")
     md = office / "office.md"
     text, n = re.subn(rf"^(\s+){name}\b.*$", rf'\g<1>{name}: file_source(path="{name}.jsonl")',
-                      md.read_text(), count=1, flags=re.M)
+                      md.read_text(encoding="utf-8"), count=1, flags=re.M)
     assert n == 1, f"no source line for {name}"
-    md.write_text(text)
+    md.write_text(text, encoding="utf-8")
 
 
 def read_jsonl(path: Path) -> list[dict]:
-    return [json.loads(x) for x in path.read_text().splitlines() if x.strip()]
+    return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
 
 
 class Scripted:
@@ -307,10 +308,11 @@ def test_mac_speed_suite(tmp_path, capsys):
     office = copy_example("mac_speed_suite", tmp_path)
     record_source(office, "prices", [_price_history()])
     md = office / "office.md"
-    md.write_text(md.read_text().replace("n_folds=4, n_samples=100", "n_folds=2, n_samples=3"))
+    md.write_text(md.read_text(encoding="utf-8").replace("n_folds=4, n_samples=100", "n_folds=2, n_samples=3"),
+                  encoding="utf-8")
     assert run_office(office) == 0
     assert "Scorecard written to report.html" in capsys.readouterr().out
-    report = (office / "report.html").read_text()
+    report = (office / "report.html").read_text(encoding="utf-8")
     for variant in ("MAC · fast", "MAC · slow", "DONCHIAN · 20", "TURTLE · s1", "RS · slow"):
         assert variant in report
     assert "walk-forward: 2 folds" in report and "Monte Carlo: 3 samples" in report
@@ -323,7 +325,7 @@ def _fake_birdnetlib(folder: Path) -> None:
     """A stand-in BirdNET with the same two names: Analyzer and Recording."""
     pkg = folder / "birdnetlib"
     pkg.mkdir()
-    (pkg / "analyzer.py").write_text("class Analyzer:\n    pass\n")
+    (pkg / "analyzer.py").write_text("class Analyzer:\n    pass\n", encoding="utf-8")
     (pkg / "__init__.py").write_text(
         "HEARD = {'wren.mp3': [{'common_name': 'Carolina Wren',\n"
         "    'scientific_name': 'Thryothorus ludovicianus', 'confidence': 0.87,\n"
@@ -333,9 +335,10 @@ def _fake_birdnetlib(folder: Path) -> None:
         "        self.path = path\n"
         "    def analyze(self):\n"
         "        import os\n"
-        "        self.detections = HEARD.get(os.path.basename(self.path), [])\n")
+        "        self.detections = HEARD.get(os.path.basename(self.path), [])\n",
+        encoding="utf-8")
     for name in ("librosa", "resampy"):
-        (folder / f"{name}.py").write_text("")
+        (folder / f"{name}.py").write_text("", encoding="utf-8")
 
 
 def test_backyard_birds(tmp_path, monkeypatch, capsys):
