@@ -1,47 +1,28 @@
 # Recipes
 
-Short, copy-pasteable how-tos for building offices in DisSysLab.
-Each recipe shows the smallest example that demonstrates a
-pattern, with a working gallery example you can run.
+Short, step-by-step how-tos. Each one starts from an office you already
+have (usually one from the gallery, or the inbox sorter you build in the
+[Getting Started guide](../GETTING_STARTED.md)), makes one change, and
+says what `dsl check` and `dsl run` should show.
 
-If you're brand new, start with the
-[Getting Started guide](../GETTING_STARTED.md) first. The
-recipes assume you've installed DisSysLab and have run at least
-one office.
+Do the Getting Started guide first; the recipes assume it.
 
-## Available recipes
+| Recipe | You will |
+|---|---|
+| [Filter news for a topic](filter-for-a-topic.md) | change what an English role decides, and keep the rejects where you can read them |
+| [Write a role in Python](write-a-python-role.md) | replace a model with a rule, test it, and write a role that remembers (no key needed) |
+| [Read any RSS feed](add-an-rss-source.md) | bring a feed DisSysLab does not name into an office |
+| [Sort your own inbox](monitor-your-inbox.md) | swap a file for your Gmail, and send only a short alert onward |
+| [Send results outside](send-messages-outside.md) | write files, send email, post to Slack or a web service |
+| [Receive webhooks](receive-webhooks.md) | listen for posts from other services |
+| [Build an office out of offices](chain-offices.md) | use a whole office as one agent of a bigger one |
+| [Deploy with Docker](deploy-with-docker.md) | run an office on a schedule, in the cloud or on your own machine |
+| [Add a model backend](add-a-backend/README.md) | plug in a language model DisSysLab does not ship with |
 
-- **[How to filter for a topic](filter-for-a-topic.md)** —
-  forward only the items you care about; drop everything else
-  into an inspectable file.
-- **[How to add a new RSS source](add-an-rss-source.md)** — swap
-  one shipped feed for another, or register a brand-new feed by
-  name.
-- **[How to chain offices](chain-offices.md)** *(advanced)* —
-  feed the output of one office into the input of another, with
-  each office as a black box.
-- **[How to write a custom role](write-a-custom-role.md)** —
-  define a new kind of agent (translator, summarizer, tagger,
-  fact-checker) by writing a short job description.
-- **[How to send messages to the outside world](send-messages-outside.md)**
-  — route an agent's mailbox to a file, the terminal, your inbox,
-  or a chat channel: how an office acts on the world.
-- **[How to monitor your inbox](monitor-your-inbox.md)** — point an
-  office at your Gmail inbox and let an analyst surface only the
-  emails that matter.
-- **[How to receive webhooks](receive-webhooks.md)** — listen for
-  HTTP POSTs from another service (GitHub, Stripe, Zapier, another
-  office) and let an agent decide what to do with each one.
-- **[How to deploy with Docker](deploy-with-docker.md)** — run an
-  office continuously in the cloud on a schedule (Docker + Railway,
-  or cron + Docker on your own machine).
-- **[How to add a custom LLM backend](add-a-backend/README.md)** —
-  plug a non-shipped LLM provider into DisSysLab without forking
-  the package. Mock + Ollama examples.
+Related:
 
-## Related references
-
-- [Sources and sinks reference](../SOURCES_AND_SINKS.md) —
-  every source and sink shipped with DisSysLab.
-- [Gallery README](../../dissyslab/gallery/README.md) — every
-  office the framework ships with.
+- [SOURCES_AND_SINKS.md](../SOURCES_AND_SINKS.md): every source and sink,
+  with its arguments.
+- [LANGUAGE_MODELS.md](../LANGUAGE_MODELS.md): choosing a model, for the
+  whole office or one agent.
+- [The gallery](../../dissyslab/gallery/README.md): the example offices.

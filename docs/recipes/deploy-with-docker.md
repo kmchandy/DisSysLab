@@ -47,10 +47,11 @@ or a Linux box running `systemd`.
 
 ## What you'll need
 
-- An office you already run locally with `dsl run <office>`. We'll
-  use `periodic_brief` as the example (it produces a styled morning
-  HTML brief and exits — perfect for a "run once each morning"
-  schedule).
+- An office you already run locally with `dsl run .`, and that stops by
+  itself: its sources read a fixed number of items (`max_articles=5`,
+  `max_emails=10`) rather than polling forever. The example folder is
+  called `my_brief`; a copy of `situation_room_pro` with
+  `max_articles=3` on each feed is a good one.
 - [Docker Desktop](https://www.docker.com/products/docker-desktop/)
   installed locally.
 - A [Railway account](https://railway.app) — free, no credit card
@@ -242,8 +243,7 @@ recipe above.
 
 ## See also
 
-- `docs/algorithms/CHECKPOINT_RESUME.md` — if your office is
-  long-running (not a daily cron) and you want crash-resume.
-- `docs/BUILD_APPS.md` — the full guide to designing offices.
+- [GETTING_STARTED.md](../GETTING_STARTED.md) — building and checking
+  an office before you deploy it.
 - Railway docs: [docs.railway.app](https://docs.railway.app).
 - Cron syntax help: [crontab.guru](https://crontab.guru).

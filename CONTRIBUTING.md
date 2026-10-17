@@ -4,9 +4,10 @@ Thank you for considering a contribution. DisSysLab is a small,
 actively-maintained project; honest expectations up front:
 
 - **One maintainer (K. Mani Chandy) reads issues regularly. Pull
-  requests are handled when there is time.** Please open an issue
-  to discuss a proposed change before writing code — that
-  protects your time as much as mine.
+  requests from outside the course staff are handled when there is
+  time.** Please open an issue to discuss a proposed change before
+  writing code; that protects your time as much as mine. Course staff:
+  see [Working on the repository](#working-on-the-repository-course-staff).
 - **The project's main audience is first-year undergraduates and
   curious learners.** Changes that simplify the user surface for
   a beginner usually win against changes that add power for
@@ -38,7 +39,7 @@ Use the **Feature request** issue template. The template asks
 for:
 
 - The problem you are trying to solve, not your solution.
-- A concrete use case from a gallery office or a recipe.
+- A concrete use case from a gallery office.
 - Alternatives you have considered.
 - Whether the feature could be a gallery office rather than a
   framework change.
@@ -48,7 +49,13 @@ multiple gallery offices, and the implementation has to stay
 small.
 
 
-## Running the tests
+## Working on the repository (course staff)
+
+Course staff have write access but work through **pull requests**: `main`
+changes only when a pull request is merged, so everyone who pulls `main`
+gets something that passed CI. The routine:
+
+**Once:**
 
 ```bash
 git clone https://github.com/kmchandy/DisSysLab.git
@@ -56,60 +63,90 @@ cd DisSysLab
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
-pytest tests/
+dsl doctor
+pytest tests/ -q
 ```
 
-The full regression suite should pass in under 30 seconds. If it
-does not, your environment is misconfigured before any change is
-made. `dsl doctor` is the faster first check: it verifies
-dependencies and runs a built-in self-test without needing pytest.
+`pip install -e` means `dsl` runs the code in your clone, so a change is
+live as soon as you save it. The suite takes under a minute.
 
-### Offices that are still being built
-
-Two tests sweep every office under `dissyslab/gallery/` — one
-parses each one, one compiles each one. An office you are still
-working on will therefore fail the suite, which is misleading,
-because the sentence above tells the next person their
-environment is broken.
-
-Drop a file named `WIP` in the office's own folder to opt out:
+**For each change:**
 
 ```bash
-echo "salton_wind is not registered yet" > \
-  dissyslab/gallery/apps/my_new_office/WIP
+git checkout main
+git pull                                # start from what is merged
+git checkout -b short-name-for-change   # one branch per change
+# ... edit, then:
+pytest tests/ -q
+mypy dissyslab
+git add <the files you changed or made>
+git commit -m "What changed, and why"
+git push -u origin short-name-for-change
 ```
 
-The office is then reported as XFAIL with that text as the
-reason, instead of failing the run.
+Then open a pull request on GitHub (the push prints the link). CI runs
+the suite on Linux (Python 3.10 to 3.14), macOS and Windows, and mypy;
+it must be green before merging. Windows is advisory: a red Windows job
+alone does not block. After the pull request is merged, `git checkout
+main && git pull`, and delete the branch.
 
-The two sweeps report independently, and the pair is useful: an
-office that parses but does not compile shows up as one XPASS and
-one XFAIL, which tells you how far it gets without your having to
-run anything. Delete the marker when no XFAIL is left.
+Keep pull requests small and about one thing: a new lab office, a fix, a
+doc. A small one is merged the same day; a large one waits.
 
-Keeping the opt-out in the office folder means an unfinished
-office needs no edit to any tracked test file — which matters,
-since an office still being built is usually untracked.
+**Rules this project keeps, each learnt the hard way:**
 
-
-## Coding conventions
-
-- Match the surrounding style. Do not run a project-wide
-  formatter as part of a feature PR.
-- Add a test for any new behaviour.
-- Update the docstring on the function or class you change.
-- Update `CHANGELOG.md` under `[Unreleased]` for user-visible
-  changes.
-
+- **Run the tests without the optional extras.** CI installs `.[dev]`
+  only. A test that imports `yfinance` or `openpyxl` passes on a machine
+  that has them and fails in CI. An optional package is imported inside
+  the function that needs it.
+- **`git add` new files.** `git commit -a` does not pick them up, and a
+  file on your disk but not in the repository passes every local test and
+  fails in CI and for every student. (A test checks that every file a
+  gallery office reads is tracked.)
+- **When a document and the code disagree, fix both, and add the test
+  that would have caught it.** `tests/integration/test_docs_match_code.py`
+  and `tests/integration/test_getting_started.py` exist for this: the
+  second re-runs the student guide and fails if any output it quotes is
+  no longer what DisSysLab prints. If you change a message a student
+  sees, update `docs/GETTING_STARTED.md` with the real output.
+- **Verify by running, not by reading.** Before you say something works,
+  run it the way a student would: `dsl init`, `dsl check .`, `dsl run .`.
+- **The runtime (`dissyslab/runtime/`) is frozen.** Changes there need
+  the maintainer's agreement first, in an issue.
+- **Never edit the installed package** (anything under `site-packages`).
 
 ## Where things live
 
-See [docs/EXTENDING.md](docs/EXTENDING.md) for the layered
-framework surface and the *"local office vs. framework library"*
-decision rule. That doc is the one you want if you are unsure
-whether your change belongs in your own office's `roles/` folder
-or in the framework's `dissyslab/fn_lib/` or
-`dissyslab/office/library.py`.
+| Path | What |
+|---|---|
+| `dissyslab/office/` | the office language: `syntax` (office.md), `frontmatter`, `resolve` (finding kinds), `build`, `check`, `draw`, `components` (built-in sources and sinks) |
+| `dissyslab/agents/` | roles as agents: English and Python roles, routers, synchronizers, reply checking |
+| `dissyslab/runtime/` | messages, threads, termination and stall detection, snapshots (frozen) |
+| `dissyslab/components/` | the built-in sources and sinks; registered in `office/utils.py` |
+| `dissyslab/roles/` | the built-in roles (`dsl roles`) |
+| `dissyslab/gallery/` | the example offices (`dsl list`); each has a README and an end-to-end test in `tests/e2e/test_examples.py` |
+| `dissyslab/reference/` | what `dsl grammar` prints; also what `dsl new` gives the model |
+| `docs/GETTING_STARTED.md` | the student guide |
+| `docs/internals/design/officespeak_revised.md` | the language specification |
+| `tests/unit`, `tests/e2e`, `tests/integration` | unit tests; whole offices run through `dsl`; docs checked against the code |
+
+**Adding a gallery office:** a folder under `dissyslab/gallery/` with
+`office.md`, `README.md`, `roles/` and any data files; a row in
+`dissyslab/gallery/README.md`; a test in `tests/e2e/test_examples.py`
+(scripted model, recorded sources: see the others); and, if it writes
+output files, their names in `dissyslab/gallery/.gitignore` and in
+`[tool.setuptools.exclude-package-data]` in `pyproject.toml`.
+
+## Coding conventions
+
+- Match the surrounding style. Do not run a project-wide formatter as
+  part of a change.
+- Type hints on new code; new modules go on the strict list in
+  `[tool.mypy]` in `pyproject.toml`.
+- Add a test for any new behaviour, and update the docstring of what you
+  change.
+- Messages a student reads name the line and the fix, and point to
+  `dsl grammar`, not to the specification.
 
 
 ## What we do not accept

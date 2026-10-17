@@ -34,7 +34,7 @@ def test_news_reaching_email_is_a_note(tmp_path):
     assert report.ok, report.problems
     (note,) = report.notes
     assert note.startswith("line 4: text from bbc_world can reach gmail_sink, which sends email.")
-    assert "declared in out:" in note
+    assert "put an author role before the sink" in note
 
 
 def test_no_note_when_the_acting_sink_is_not_reachable(tmp_path):
@@ -136,3 +136,63 @@ def test_a_role_that_lists_no_values_is_not_judged(tmp_path):
     office = _router_office(tmp_path, "    Rex.tiny -> console_printer\n",
                             decider=DECIDER.replace("size (small | large)", "size"))
     assert check_office(office).notes == []
+
+
+def test_an_unknown_model_backend_is_a_problem(tmp_path):
+    office = write(tmp_path / "typo", {
+        "office.md": ("sources:\n    items: file_source(path=\"items.jsonl\")\n"
+                      "sinks:\n    console_printer\n"
+                      "agents:\n    Sam: brief(ai=\"opnai\")\n"
+                      "connections:\n    items -> Sam -> console_printer\n"),
+        "roles/brief.md": SUMMARIZER,
+        "items.jsonl": "{}\n",
+    })
+    (problem,) = check_office(office).problems
+    assert problem == ("line 6: ai='opnai' is not a model backend. Did you mean 'openai'? "
+                       "docs/LANGUAGE_MODELS.md lists them.")
+
+
+def test_every_backend_name_and_alias_is_accepted(tmp_path):
+    from dissyslab.backends import backend_names
+
+    for name in ("anthropic", "claude", "qwen_precise", "OpenAI"):
+        office = write(tmp_path / name, {
+            "office.md": ("sources:\n    items: file_source(path=\"items.jsonl\")\n"
+                          "sinks:\n    console_printer\n"
+                          f"agents:\n    Sam: brief(ai=\"{name}\")\n"
+                          "connections:\n    items -> Sam -> console_printer\n"),
+            "roles/brief.md": SUMMARIZER,
+            "items.jsonl": "{}\n",
+        })
+        assert check_office(office).ok, name
+    assert "claude" in backend_names() and "anthropic" in backend_names()
+
+
+
+def _mailer(tmp_path, name, pick_role):
+    return write(tmp_path / name, {
+        "office.md": (
+            "sources:\n    bbc_world\n"
+            "sinks:\n    gmail_sink(to=\"me@example.com\")\n"
+            "agents:\n    Pick: pick\n"
+            "connections:\n    bbc_world -> Pick -> gmail_sink\n"),
+        "roles/pick.py": pick_role,
+    })
+
+
+def test_an_author_that_declares_out_stops_the_text(tmp_path):
+    """Following the note's advice -- an author listing only chosen fields --
+    makes the note go away."""
+    author = ('"""\n---\nkind: author\nin: title\nout: label\n---\n"""\n\n\n'
+              "class Pick:\n    def __call__(self, item):\n"
+              "        return [{\"label\": \"news\"}]\n")
+    assert check_office(_mailer(tmp_path, "author", author)).notes == []
+
+
+def test_an_annotator_does_not_stop_the_text(tmp_path):
+    """An annotator's message still carries the article's text."""
+    annotator = ('"""\n---\nin: title\nout: label\n---\n"""\n\n\n'
+                 "class Pick:\n    def __call__(self, item):\n"
+                 "        return {\"label\": \"news\"}\n")
+    (note,) = check_office(_mailer(tmp_path, "annotator", annotator)).notes
+    assert "text from bbc_world can reach gmail_sink" in note

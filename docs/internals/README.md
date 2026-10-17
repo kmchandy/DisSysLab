@@ -2,7 +2,7 @@
 
 Design and implementation notes for the framework itself. If you are
 *using* DisSysLab to build offices, start with
-[../../README.md](../../README.md) and [../BUILD_APPS.md](../BUILD_APPS.md);
+[../GETTING_STARTED.md](../GETTING_STARTED.md) and `dsl grammar`;
 the documents here are for developers who want to read the source.
 
 **Start with [STATUS.md](STATUS.md)** — one page on where the project

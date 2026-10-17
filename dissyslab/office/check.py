@@ -199,7 +199,11 @@ def _untrusted_reaches_acting(office: OfficeFile, found: dict[str, Found]) -> li
     """A note for each acting sink that text from an untrusted source can reach.
 
     Reachability over the arrows of this office; a nested office passes
-    everything through (its own sinks are checked when it is).
+    everything through (its own sinks are checked when it is). An
+    **author that declares** ``out:`` is a barrier: it sends new messages
+    holding only the fields it lists, and anything else is dropped (spec
+    4.5), so the source's text does not get past it. An annotator is not:
+    the message it passes on still carries everything that came in.
     """
     def builtin(decls: tuple[Declaration, ...], test: Callable[[str], bool]) -> list[Declaration]:
         return [d for d in decls if d.name in found and found[d.name].origin == "builtin"
@@ -221,15 +225,17 @@ def _untrusted_reaches_acting(office: OfficeFile, found: dict[str, Found]) -> li
             for sender in feeds.get(name, ()):
                 if sender not in seen:
                     seen.add(sender)
-                    stack.append(sender)
+                    if not _is_barrier(found.get(sender)):
+                        stack.append(sender)
         upstream = sorted(n for n in untrusted if n in seen)
         if upstream:
             notes.append(
                 f"line {sink.line}: text from {', '.join(upstream)} can reach {sink.name}, "
                 f"which {what_it_does(sink.kind)}. Whoever writes what those sources carry "
                 "is writing to a model, and through it to this sink. If that is not what "
-                "you meant, send on only fields you chose -- a label, a score, a URL -- "
-                "declared in out:, so nothing else gets through."
+                "you meant, put an author role before the sink that sends on only fields "
+                "you chose -- a label, a score, a URL -- listed in its out:. An annotator "
+                "cannot do this: the message it passes on keeps the original text."
             )
     return notes
 
@@ -296,6 +302,17 @@ def _router_values(office: OfficeFile, found: dict[str, Found]) -> list[str]:
                         "would fail at run time."
                     )
     return notes
+
+
+def _is_barrier(f: Found | None) -> bool:
+    """An author with a declared ``out:``: only its listed fields pass it."""
+    if f is None or f.path is None or f.origin == "reserved":
+        return False
+    try:
+        fm = read_front_matter(f.path)
+    except FrontMatterError:
+        return False
+    return fm.kind == "author" and fm.outputs is not None
 
 
 def _python_reach(office: OfficeFile, found: dict[str, Found], office_dir: Path) -> list[str]:

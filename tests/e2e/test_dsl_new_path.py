@@ -309,3 +309,54 @@ def test_check_every_example(name, tmp_path):
 @pytest.mark.parametrize("md", sorted(EXAMPLES.rglob("office.md")), ids=lambda p: p.parent.name)
 def test_every_example_is_new_form(md):
     assert not is_old_form(md.read_text(encoding="utf-8"))
+
+
+# ── Ctrl-C ─────────────────────────────────────────────────────────────────
+
+FOREVER = '''"""
+---
+out: tick
+---
+A source that never ends.
+"""
+import time
+
+
+class Forever:
+    def __init__(self):
+        self.n = 0
+
+    def __call__(self):
+        time.sleep(0.05)
+        self.n += 1
+        return {"tick": self.n}
+'''
+
+
+@pytest.mark.skipif(sys.platform == "win32", reason="SIGINT is delivered differently on Windows")
+def test_ctrl_c_stops_an_office_that_would_run_for_ever(tmp_path):
+    """Before: a KeyboardInterrupt traceback, and the process kept running."""
+    import signal
+    import time
+
+    office = tmp_path / "forever"
+    (office / "sources").mkdir(parents=True)
+    (office / "sources" / "forever.py").write_text(FOREVER, encoding="utf-8")
+    (office / "office.md").write_text(
+        "sources:\n    ticks: forever\nsinks:\n    discard\nconnections:\n    ticks -> discard\n",
+        encoding="utf-8")
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join(
+        [str(REPO)] + ([env["PYTHONPATH"]] if env.get("PYTHONPATH") else []))
+    env["PYTHONUNBUFFERED"] = "1"
+    proc = subprocess.Popen(
+        [sys.executable, "-c",
+         "import sys; from dissyslab.cli import main; sys.exit(main(sys.argv[1:]))", "run", "."],
+        cwd=office, env=env, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    time.sleep(3)
+    proc.send_signal(signal.SIGINT)
+    out, _ = proc.communicate(timeout=30)
+    assert proc.returncode == 130, out
+    assert "Stopped (Ctrl-C)." in out
+    assert "Run summary" in out and "forever::ticks" in out
+    assert "Traceback" not in out

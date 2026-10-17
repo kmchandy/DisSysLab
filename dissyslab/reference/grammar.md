@@ -272,8 +272,11 @@ Guardrails are recommended, never required, so they never fail the check:
   carries other people's words (a news feed, an inbox) has a path to a sink
   that sends mail, posts to Slack, or calls out. Whoever writes those words
   is writing to a model, and through it to that sink. If that is not what
-  you meant, have the role declare `out:` with only the fields you chose --
-  a label, a score, a URL -- so nothing else gets through.
+  you meant, put an **author** role before the sink that sends on only the
+  fields you chose -- a label, a score, a URL -- listed in its `out:`. Fields
+  it does not list are dropped, so the original text stops there, and the
+  note goes away. An annotator cannot do this: the message it passes on
+  still carries everything that came in.
 - **A Python file reaches past the office's sinks.** It imports a network or
   process module, or calls `eval` and the like. The check reads imports; it
   cannot see what the code does. If you did not write the file, read it.

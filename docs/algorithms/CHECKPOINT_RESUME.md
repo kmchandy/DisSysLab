@@ -1,5 +1,7 @@
 # Checkpoint-and-Resume — Snapshot Algorithm for Sense & Respond: DRAFT
 
+> **Status in 2.0.** The runtime implements what this note describes, but the 2.0 office build does not wire it in yet: `dsl run` refuses `--snapshot-interval`, `--resume` and `--trace` (docs/internals/STATUS.md, "Not built yet"). The algorithm is unchanged, and this note explains it.
+
 
 ## Why this document exists
 

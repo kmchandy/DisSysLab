@@ -26,6 +26,7 @@ naming the line (spec 3.5).
 from __future__ import annotations
 
 import os
+import sys
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -90,12 +91,32 @@ def _local_component(decl: Declaration, found: Found) -> Agent:
 
 
 def english_args_problem(decl: Declaration) -> str | None:
-    """The problem with an English role's arguments, or None: it takes only ``ai=``."""
+    """The problem with an English role's arguments, or None.
+
+    It takes only ``ai=``, and that must name a backend
+    (``dissyslab.backends.backend_names``, which includes any registered
+    through ``DSL_BACKEND_MODULE``).
+    """
+    import difflib
+
+    from dissyslab.backends import backend_names
+
     others = [k for k in decl.args if k != "ai"]
     if others:
         return (
             f"line {decl.line}: an English role takes only ai=, not "
             f"{', '.join(others)}. See `dsl grammar roles`."
+        )
+    ai = decl.args.get("ai")
+    if ai is None:
+        return None
+    names = backend_names()
+    if not isinstance(ai, str) or ai.lower() not in names:
+        near = difflib.get_close_matches(str(ai).lower(), names, n=1)
+        hint = f" Did you mean {near[0]!r}?" if near else ""
+        return (
+            f"line {decl.line}: ai={ai!r} is not a model backend.{hint} "
+            "docs/LANGUAGE_MODELS.md lists them."
         )
     return None
 
@@ -393,8 +414,31 @@ def build_office(office_dir: Path) -> Network:
         return build_network(office, office_dir)
 
 
+#: The exit status of a run stopped with Ctrl-C (128 + SIGINT, by convention).
+STOPPED = 130
+
+
 def run_office(office_dir: Path) -> int:
-    """Build and run the office from inside its folder; return the exit code."""
+    """Build and run the office from inside its folder; return the exit code.
+
+    An office with a live source (a news feed, a webhook, a mailbox) runs
+    until it is stopped. Ctrl-C stops it: every agent is asked to stop, the
+    run summary is printed (when ``DSL_RUN_SUMMARY`` is set, as ``dsl run``
+    sets it), and ``STOPPED`` is returned. Agents still busy -- a source in
+    the middle of a network call cannot notice a stop request -- are named.
+    The caller must not wait for their threads: ``dsl run`` exits at once.
+    """
     office_dir = office_dir.resolve()
     with inside(office_dir):
-        return build_office(office_dir).run_network()
+        network = build_office(office_dir)
+        try:
+            return network.run_network()
+        except KeyboardInterrupt:
+            print("\nStopped (Ctrl-C).", file=sys.stderr, flush=True)
+            still_running = network._stop_all_agents()
+            if os.environ.get("DSL_RUN_SUMMARY"):
+                network.print_run_summary()
+            if still_running:
+                names = ", ".join(t.name.replace("_thread", "") for t in still_running)
+                print(f"  (still busy when stopped: {names})", file=sys.stderr)
+            return STOPPED

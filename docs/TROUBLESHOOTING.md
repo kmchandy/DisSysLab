@@ -92,16 +92,16 @@ Your office can't reach Claude because it can't find the key.
 export ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-Or, more permanently, put it in a `.env` file inside the office
-folder:
+Or, more permanently, put it in a `.env` file in your course folder
+(or the office folder; `dsl` looks in the folder you run it from and
+every folder above it):
 
 ```bash
 echo "ANTHROPIC_API_KEY=sk-ant-..." > .env
 ```
 
-`dsl` loads `.env` automatically when it finds one. Run `dsl
-doctor` from inside the office folder to confirm the key is
-visible.
+Run `dsl doctor` from inside the office folder: it names the `.env` it
+found and says whether the key is set.
 
 ### `Anthropic rejected the API key (HTTP 401)`
 
@@ -118,26 +118,55 @@ The key is set but the server rejects it. Almost always one of:
 
 After fixing, run `dsl doctor` to confirm.
 
-### Office runs but produces no output, no error
+### Office runs but shows nothing
 
-The office started, the agents are alive, the source is polling —
-but nothing reaches the terminal. Two common causes:
+Read the run summary first: it counts, for every agent, the messages it
+received and sent, so it shows where they stopped.
 
-- **The source has nothing to send yet.** A poll-based source like
-  `bbc_world(poll_interval=600)` waits 10 minutes between polls,
-  and only emits articles published since the last poll. Drop
-  `poll_interval` to something small (e.g. `60`) for testing, or
-  use a source like `hacker_news` that returns the current top
-  stories on first call.
-- **The agent's role description doesn't match what's coming in.**
-  If a role says "filter for political news" and the source
-  produces sports headlines, every message is discarded silently.
-  Check the role description and the source independently.
+- **The source sent nothing.** Its `sent` count is 0, and the run ends
+  with `the office ran but produced nothing`, naming the source. A file
+  path that does not exist, a feed that returned nothing, or credentials
+  that expired.
+- **A router sent everything elsewhere.** The router's `sent` count is
+  right, but the screen is not where those messages went. `dsl draw .`
+  shows where each outbox leads. While developing, send rejects to a
+  `jsonl_recorder` rather than `discard`, so you can read them.
+- **A poll-based source is waiting.** `bbc_world(poll_interval=600)`
+  waits ten minutes between checks. Use a small `max_articles` and no
+  `poll_interval` while testing.
 
-A future `dsl run --debug` flag will print each agent's incoming
-messages and outgoing responses; until then, `jsonl_recorder` is
-the easiest way to see what's actually flowing through. Wire one
-to the source's destination port and tail the file.
+## Office errors
+
+These are the messages from `dsl check` and `dsl run` about the office
+itself. [GETTING_STARTED.md](GETTING_STARTED.md), part 4, breaks an
+office on purpose to show each one, and how to read it.
+
+### `problem: line N: ...` from `dsl check`, or `cannot start`
+
+The office is wrong at that line of `office.md` (or of the role file it
+names). The message says what is wrong and suggests the nearest name.
+`dsl run` refuses an office with a problem; fix it and check again.
+
+### `failed on N message(s) and they were not processed`
+
+A role's reply did not fit its `out:` line (the first failure says how),
+or a Python role raised an exception (the traceback ends at the line of
+your file that raised it). Each failure costs that one message; the
+office carries on, and `dsl run` exits non-zero.
+
+### `Stalled: X holds ... it will never arrive`
+
+An agent holds work it can never finish: a gate whose `done` never comes,
+a synchronizer group missing a message. The lines below it follow the
+connections backwards from what it is waiting for; look for the agent
+you expected on that path and cannot find. Usually a message was lost
+earlier (a failure above it), or a connection is missing.
+
+### `dsl run` keeps running
+
+An office with a live source (a feed with `poll_interval`, `gmail`,
+`webhook`) runs until you stop it. Press Ctrl-C: it says
+`Stopped (Ctrl-C).`, prints the run summary, and exits.
 
 ---
 
@@ -152,7 +181,8 @@ still holding the socket in TIME_WAIT for ~30 seconds.
 **Fix:** wait 30 seconds and retry, or pick a different port.
 
 ```
-Sources: webhook(port=9001)
+sources:
+    hook: webhook(port=9001)
 ```
 
 If the port is held by a different application entirely, find
@@ -221,7 +251,7 @@ The full walkthrough is in the
   After `setx`, open a new shell — the variable doesn't appear in
   the shell that ran the command.
 - If `dsl` isn't found after activation, run
-  `python -m dissyslab.cli ...` instead.
+  `python -m dissyslab.cli ...` instead (`python -m dissyslab.cli doctor`).
 
 ### Apple Silicon (M1/M2/M3)
 

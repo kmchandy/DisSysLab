@@ -1,5 +1,20 @@
 # DisSysLab DSL Architecture
 
+## How the pieces fit (2.0)
+
+Three layers, each ignorant of the one above (spec, Principle 1):
+
+| Layer | Where | What |
+|---|---|---|
+| Roles | an office's `roles/`, `dissyslab/roles/` | one JSON object in, JSON out; know nothing of DisSysLab |
+| The office | `dissyslab/office/`, `dissyslab/agents/` | `syntax` reads `office.md`; `frontmatter` reads roles; `resolve` finds each kind; `build` makes agents (`agents/`: English and Python roles, routers, synchronizers, reply checking) and connects them; `check` and `draw` work on the parsed office without building it |
+| The runtime | `dissyslab/runtime/` (frozen; `core.py`, `network.py`, `os_agent.py` are aliases) | agents, messages, the network, termination and stall detection, snapshots |
+
+`dsl run` is `office.build.run_office`: parse, resolve, build a runtime
+`Network`, run it. The rest of this document describes the runtime and
+its Python API, which the office layer builds on.
+
+
 ## Overview
 
 This document describes the architecture of the DisSysLab Domain-Specific Language (DSL) for building distributed dataflow networks. The DSL allows students to create concurrent agent networks using ordinary Python functions without explicit concurrency primitives.

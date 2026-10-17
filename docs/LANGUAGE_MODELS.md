@@ -1,690 +1,152 @@
 # Language models in DisSysLab
 
-Every agent role in DisSysLab is, at its core, an LLM prompt:
-when an agent receives a message, it sends the message to an LLM
-along with the role's prompt and routes the reply based on the
-LLM's `send_to` field. The LLM is hidden behind a one-method
-interface — a Backend — so any model can plug in (Claude, OpenAI,
-Gemini, Ollama-served SLMs, OpenRouter-routed open models) without
-touching the office files.
+An English role (a `.md` file in `roles/`) is run by a language model. The
+model receives the role's text, followed by the message as JSON, and its
+reply is checked against the role's `out:` line. Which model runs it is a
+setting, not part of the role: the same office can run on Claude, on GPT,
+or on a model on your own laptop.
 
-DisSysLab supports two value streams:
+Python roles use no model and need no key.
 
-- **Free, local, private.** Run open-weight SLMs on your laptop
-  via Ollama. Your data never leaves your machine. Recurring cost
-  is $0. Recommended for Pat — the framework's primary persona
-  (small-business owner, journalist, analyst, NGO staff, anyone
-  doing continuous information processing on a budget).
-- **Paid, hosted, fast.** Plug in Claude, OpenAI, Gemini, or
-  another commercial API for research, enterprise, or anyone who
-  doesn't optimise on cost. Same authoring affordances; just a
-  different backend.
+## The default: Claude
 
-This guide covers:
+With nothing set, every English role uses Anthropic's Claude
+(`claude-sonnet-4-5`). It needs one thing, a key in `ANTHROPIC_API_KEY`;
+[GETTING_STARTED.md](GETTING_STARTED.md), part 5, shows how to put it in a
+`.env` file. This is what the course uses.
 
-1. **The recommended default for v1**: Ollama + Qwen3.
-2. **Paid hosted alternatives**: Claude, OpenAI, Gemini.
-3. **Switching the backend** for a whole office (`DSL_BACKEND`).
-4. **Mixing backends inside one office** (one role on Claude,
-   another on a local SLM).
-5. **Comparing models** — running the same office under different
-   backends and measuring the difference.
+## Choosing the model for every agent: `DSL_BACKEND`
 
----
-
-## 1. Recommended default — Ollama + Qwen3
-
-For most users, the right starting point is **Ollama serving
-Qwen3** as your local backend. It's free, private, and the role
-library is calibrated for it.
+To run a whole office on another model, set `DSL_BACKEND`, in the shell or
+in `.env`:
 
 ```bash
-# 1. Install Ollama (https://ollama.com/download)
-# 2. Pull the recommended model
-ollama pull qwen3:30b
+export DSL_BACKEND=openai        # Windows PowerShell: $env:DSL_BACKEND="openai"
+dsl run .
+```
 
-# 3. Tell DisSysLab to use it
+| `DSL_BACKEND` | Model | Needs |
+|---|---|---|
+| `anthropic` (or `claude`) | Claude, by Anthropic | `ANTHROPIC_API_KEY` |
+| `openai` (or `gpt`) | GPT, by OpenAI | `OPENAI_API_KEY`; `OPENAI_MODEL` to pick one |
+| `gemini`, `gemma` | Google's models, via AI Studio | `GEMINI_API_KEY` (or `GOOGLE_API_KEY`); `GEMINI_MODEL` |
+| `openrouter` | many models, open and closed, via openrouter.ai | `OPENROUTER_API_KEY`; `OPENROUTER_MODEL` |
+| `ollama` (or `qwen`) | a model on your own computer, through Ollama | Ollama running; `OLLAMA_MODEL` (default `qwen3:30b`); `OLLAMA_HOST` if not local |
+
+`dsl doctor` shows which backend is active and whether its key is set.
+
+Each name also comes in two other temperatures: `_creative` (1.0) and
+`_precise` (0.1), as in `anthropic_precise` or `qwen_creative`. The plain
+name is 0.7. A classifier usually wants `_precise`; a writer may want
+`_creative`.
+
+## Choosing the model for one agent: `ai=`
+
+An English role takes one argument in `office.md`, `ai=`, which chooses
+the model for that agent only. The rest follow `DSL_BACKEND`.
+
+```
+agents:
+    Qwen: qwen(ai="openrouter")
+    GPT: gpt(ai="openai")
+    Claude: claude(ai="anthropic")
+    Riley: moderator
+```
+
+This is the `debate` office: three panellists on three different models,
+and a moderator on the default. `ai=` never reaches the prompt; the role's
+text is the same whichever model reads it.
+
+`situation_room_pro` uses the same idea for cost: four annotators that
+each add one short field run on the default, and only the writer, whose
+output a person reads, names a stronger model.
+
+## Running a model on your own computer
+
+[Ollama](https://ollama.com) runs open models locally: free, private, and
+offline once downloaded, but slower, and it needs a computer with enough
+memory for the model.
+
+```bash
+# after installing Ollama from ollama.com:
+ollama pull qwen3:8b
 export DSL_BACKEND=ollama
-export DSL_BACKEND_MODULE=path.to.your.ollama_backend
-# (see section 4 for the ~30-line Ollama backend module)
+export OLLAMA_MODEL=qwen3:8b
+dsl run .
 ```
 
-A fresh `pip install dissyslab` already includes the
-**OpenRouter** backend (`DSL_BACKEND=openrouter`) for users who
-want to test against open-weight models hosted somewhere other
-than their own laptop. OpenRouter is also where this project's
-empirical evaluation runs.
+Smaller models make more mistakes of form: a reply that is not JSON, a
+value not in the role's list. The guardrails catch these (each costs one
+message, and the run summary counts them), so the run summary is also a
+measure of how well a model follows your roles. See below.
 
-The default model in the OpenRouter backend is
-`qwen/qwen3.5-35b-a3b` — a 35B-parameter Mixture-of-Experts model
-with 3B active parameters per token, the open-weight model that
-the role library was calibrated against.
+## Comparing two models on the same office
 
-**Reasoning models need more `max_tokens`.** Qwen3.5-A3B,
-DeepSeek-V3, and similar models spend a substantial fraction of
-their token budget on internal chain-of-thought before producing
-the final JSON output. The framework's `nl_role` calls now
-default to `max_tokens=8192`; values below 4096 will cause
-intermittent empty responses on these models.
-
----
-
-## 2. Paid hosted alternative — Claude (and OpenAI, Gemini)
-
-If you can budget for hosted API costs and want maximum
-quality/speed, point DisSysLab at Anthropic's Claude (or
-OpenAI/Gemini — see section 4).
+The guardrails make a fair comparison easy, because a mistake of form is
+counted rather than passed on. Run the same office twice:
 
 ```bash
-echo "ANTHROPIC_API_KEY=<your-key>" > .env
-export DSL_BACKEND=anthropic
+dsl run . > claude.txt 2>&1
+DSL_BACKEND=ollama dsl run . > local.txt 2>&1
 ```
 
-Then `dsl run <office>` uses Claude for every role. `dsl doctor`
-shows the active backend:
+and compare:
 
-```
-Backend:
-  active: anthropic
-```
+1. **Failures.** The run summary's `failed` column, and the first failure
+   it quotes: replies that broke `out:`.
+2. **Dropped fields.** The summary's note on fields a reply carried that
+   `out:` did not declare.
+3. **Decisions.** For a role that chooses from a list (`urgent | routine`),
+   how often the two models agree, message by message. Where they
+   disagree, which one is right is your judgement, not the framework's.
 
-The default model is `claude-sonnet-4-5` (set in
-`dissyslab/backends/anthropic_backend.py`). You can override
-per-role with `nl_role(prompt, AI="claude")` or per-call by
-passing `model=...` into `complete()`.
+`inbox_sorter` (from the student guide) is a good office to try this on:
+four messages, one decision each, and a file source, so both runs see
+exactly the same input.
 
-**Cost note for 24/7 offices.** A pipeline running 100
-articles/day through 5 roles is 500 LLM calls/day. At Claude
-Sonnet 4.5 pricing (~$3/M input, $15/M output) and ~2K tokens
-per call, that's roughly $0.45/day or ~$14/month per office.
-Running the same office on Ollama+Qwen3 is $0/month. Choose
-based on quality bar and budget.
+## Adding a backend of your own
 
----
-
-## 2. Switching to a different model
-
-To use a different LLM for an entire office, you do three things:
-
-1. Write a small Python class that implements the **Backend Protocol**
-   (one method, `complete()`).
-2. Register it under a name with `register_backend("name", lambda:
-   YourBackend())`.
-3. Set two environment variables before `dsl run`:
-
-   ```bash
-   export DSL_BACKEND_MODULE=path.to.your.module   # tells dsl to import it
-   export DSL_BACKEND=name                         # tells dsl to use it
-   ```
-
-You do not fork DisSysLab. The above works against a stock
-`pip install dissyslab`.
-
-`dsl doctor` will confirm the wiring:
-
-```
-Backend:
-  active: openai
-  DSL_BACKEND_MODULE: my_openai_backend
-```
-
-### The Backend Protocol
-
-From `dissyslab/backends/base.py`:
+A backend is any class with one method:
 
 ```python
-class Backend(Protocol):
-    def complete(
-        self,
-        *,
-        system: str,
-        user: str,
-        max_tokens: int = 1024,
-        temperature: float = 1.0,
-        model: Optional[str] = None,
-    ) -> str:
+class MyBackend:
+    def complete(self, *, system, user, max_tokens=1024, temperature=1.0, model=None):
+        # send `system` (the role's text) and `user` (the message as JSON)
+        # to your model; return its reply as a string
         ...
 ```
 
-That's the entire interface. Take a system prompt and a user message,
-return raw text. The runtime parses JSON or strips markdown fences
-on its own — your backend never has to.
-
-The reference implementation, `dissyslab/backends/anthropic_backend.py`,
-is under 80 lines including docstrings.
-
----
-
-## 3. Worked examples
-
-Three examples below — OpenAI, Gemini, and Ollama (a local SLM
-server). Each is a self-contained Python file you save somewhere on
-your `PYTHONPATH` (e.g. your home directory) and reference via
-`DSL_BACKEND_MODULE`.
-
-### OpenAI (~30 lines)
-
-Save as `~/my_openai_backend.py`:
+Register it from a module of your own, and tell `dsl` to import that
+module:
 
 ```python
-import os
-from typing import Optional
-from openai import OpenAI                       # pip install openai
+# my_backend.py, somewhere on your PYTHONPATH
 from dissyslab.backends import register_backend
 
-
-class OpenAIBackend:
-    """OpenAI Chat Completions wrapped in the Backend Protocol."""
-
-    DEFAULT_MODEL = "gpt-4o-mini"
-
-    def __init__(self, model: Optional[str] = None) -> None:
-        self._default_model = model or self.DEFAULT_MODEL
-        self._client: Optional[OpenAI] = None
-
-    def _get_client(self) -> OpenAI:
-        if self._client is None:
-            api_key = os.environ.get("OPENAI_API_KEY")
-            if not api_key:
-                raise ValueError(
-                    "OPENAI_API_KEY not set. Get a key at "
-                    "https://platform.openai.com/api-keys "
-                    "then export OPENAI_API_KEY=sk-..."
-                )
-            self._client = OpenAI(api_key=api_key)
-        return self._client
-
-    def complete(self, *, system, user,
-                 max_tokens=1024, temperature=1.0, model=None) -> str:
-        resp = self._get_client().chat.completions.create(
-            model=model or self._default_model,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            messages=[
-                {"role": "system", "content": system},
-                {"role": "user",   "content": user},
-            ],
-        )
-        return resp.choices[0].message.content
-
-
-# Registers the backend at import time. dsl will import this module
-# when DSL_BACKEND_MODULE=my_openai_backend.
-register_backend("openai", lambda: OpenAIBackend())
+register_backend("mine", lambda: MyBackend())
 ```
-
-Then in your shell:
 
 ```bash
-pip install openai
-export OPENAI_API_KEY=sk-...
-export PYTHONPATH=$HOME:$PYTHONPATH
-export DSL_BACKEND_MODULE=my_openai_backend
-export DSL_BACKEND=openai
-
-dsl run my_office
+export DSL_BACKEND_MODULE=my_backend
+export DSL_BACKEND=mine        # or ai="mine" on one agent
+dsl doctor                     # shows: active: mine, DSL_BACKEND_MODULE: my_backend
 ```
 
-Every agent in every office now talks to GPT-4o-mini instead of
-Claude, with no other changes.
-
-### Gemini (~35 lines)
-
-Same shape, different SDK. Save as `~/my_gemini_backend.py`:
-
-```python
-import os
-from typing import Optional
-import google.generativeai as genai            # pip install google-generativeai
-from dissyslab.backends import register_backend
-
-
-class GeminiBackend:
-    DEFAULT_MODEL = "gemini-1.5-flash"
-
-    def __init__(self, model: Optional[str] = None) -> None:
-        self._default_model = model or self.DEFAULT_MODEL
-        self._configured = False
-
-    def _ensure_configured(self) -> None:
-        if self._configured:
-            return
-        api_key = os.environ.get("GOOGLE_API_KEY")
-        if not api_key:
-            raise ValueError(
-                "GOOGLE_API_KEY not set. Get a key at "
-                "https://aistudio.google.com/app/apikey"
-            )
-        genai.configure(api_key=api_key)
-        self._configured = True
-
-    def complete(self, *, system, user,
-                 max_tokens=1024, temperature=1.0, model=None) -> str:
-        self._ensure_configured()
-        m = genai.GenerativeModel(
-            model_name=model or self._default_model,
-            system_instruction=system,
-        )
-        resp = m.generate_content(
-            user,
-            generation_config={
-                "max_output_tokens": max_tokens,
-                "temperature":       temperature,
-            },
-        )
-        return resp.text
-
-
-register_backend("gemini", lambda: GeminiBackend())
-```
-
-Same wiring (`DSL_BACKEND_MODULE` + `DSL_BACKEND`), just `gemini`
-instead of `openai`.
-
-### Local SLM via Ollama (~30 lines)
-
-[Ollama](https://ollama.com) is a local model server. Free, no API
-key, runs on your laptop. Pull a small instruction-tuned model first:
-
-```bash
-# macOS:
-brew install ollama
-brew services start ollama
-
-# Then any platform:
-ollama pull llama3.2:3b   # 3B params; smaller models often fail JSON
-ollama list
-```
-
-Save as `~/my_ollama_backend.py`:
-
-```python
-import requests
-from typing import Optional
-from dissyslab.backends import register_backend
-
-
-class OllamaBackend:
-    DEFAULT_MODEL = "llama3.2:3b"
-
-    def __init__(self, host="http://localhost:11434",
-                 model: Optional[str] = None) -> None:
-        self.host = host
-        self._default_model = model or self.DEFAULT_MODEL
-
-    def complete(self, *, system, user,
-                 max_tokens=1024, temperature=1.0, model=None) -> str:
-        # Smaller models often need a stronger nudge toward valid JSON.
-        # Larger models (8B+) usually don't need this and you can
-        # delete the next two lines.
-        nudge = "\n\nReply with valid JSON only. No commentary."
-        system = system + nudge
-
-        r = requests.post(
-            f"{self.host}/api/chat",
-            json={
-                "model": model or self._default_model,
-                "stream": False,
-                "options": {
-                    "num_predict": max_tokens,
-                    "temperature": temperature,
-                },
-                "messages": [
-                    {"role": "system", "content": system},
-                    {"role": "user",   "content": user},
-                ],
-            },
-            timeout=120,
-        )
-        r.raise_for_status()
-        return r.json()["message"]["content"]
-
-
-register_backend("ollama", lambda: OllamaBackend())
-```
-
-Wiring:
-
-```bash
-export PYTHONPATH=$HOME:$PYTHONPATH
-export DSL_BACKEND_MODULE=my_ollama_backend
-export DSL_BACKEND=ollama
-
-dsl doctor                          # confirm "active: ollama"
-dsl run dissyslab/gallery/my_first_office/
-```
-
-No API key, no per-call cost. Useful when you want to iterate
-without running a meter, and necessary when you want to run
-DisSysLab on a machine without internet access.
-
----
-
-## 4. Per-role model choice
-
-`DSL_BACKEND` switches the backend for *every* agent in *every*
-office. Sometimes you want one role on Claude (because it's hard
-and quality matters) and another role on a local SLM (because it's
-cheap and fast and the task is easy).
-
-DisSysLab supports this via `nl_role(prompt, AI="...")`. The `AI`
-argument names a registered backend; that role calls *that* backend
-regardless of `DSL_BACKEND`.
-
-To use this in an office, drop a Python role file into your
-office's `roles/` folder:
-
-```python
-# my_office/roles/correspondent_slm.py
-from dissyslab.office import nl_role
-
-role = nl_role(
-    prompt="""You are a correspondent. You receive an article and
-decide whether it is significant enough to forward to the analyst.
-
-If significant, send to analyst. Otherwise send to discard.""",
-    AI="ollama",
-)
-```
-
-Now in `office.md`:
-
-```
-Agents:
-Alex is a correspondent_slm.   # uses Ollama (explicit AI="ollama" wins)
-Morgan is an analyst.          # uses whatever DSL_BACKEND says
-```
-
-The library loader treats `*.py` files in `roles/` as having a
-`role` attribute that is an `AgentRoleEntry`. The `AI` argument is
-captured at registration time and used whenever that role's agent
-runs.
-
-For this to work, the `ollama` backend must be registered. The
-cleanest way: keep `DSL_BACKEND_MODULE=my_ollama_backend` in your
-shell so the registration runs, then either leave `DSL_BACKEND`
-unset (the rest of the office uses Claude) or set it to whatever
-backend you want for the *non*-ollama roles.
-
-### Why .md role files follow DSL_BACKEND automatically
-
-Roles loaded from plain `.md` files in `roles/` (whether the
-office's local `roles/` or the framework's built-in
-`dissyslab/roles/`) always call `nl_role(prompt)` with no `AI`
-argument. When `AI` is
-unset, the role defers the backend choice to run time and uses
-whichever backend `DSL_BACKEND` names (or anthropic if `DSL_BACKEND`
-is unset). That's what makes a single `export DSL_BACKEND=ollama`
-flip every gallery role to ollama with no `.py` overrides needed —
-useful when you want to run the whole office on a different model
-without touching its files.
-
-The two contrasting rules:
-
-| How the role was built | Backend at run time |
-| --- | --- |
-| `nl_role(prompt)` (no `AI`) — what `.md` files do | follows `DSL_BACKEND` (or anthropic if unset) |
-| `nl_role(prompt, AI="X")` — explicit `.py` files | locked to backend `X`, regardless of `DSL_BACKEND` |
-
-A third pattern is available without writing any Python at all: see
-**Per-agent backend selection in office.md** below.
-
-### Per-agent backend selection in office.md
-
-For the common case where you want different agents on different
-backends but you'd rather not write a `.py` wrapper per agent,
-office.md accepts a sentence-form declaration in the `Agents:`
-section:
-
-```
-Agents:
-Qwen is a qwen.
-Qwen's AI is ollama.
-Claude is a claude.
-Claude's AI is anthropic.
-```
-
-The parser folds the backend name into the agent's role reference;
-the compiler passes it to `nl_role`'s factory via a new `AI=` kwarg.
-Per-agent override wins over the role file's default (if any), which
-in turn wins over `DSL_BACKEND`. This is the recommended path when
-you want a single office to compare backends side-by-side — the
-`debate` gallery app uses it to put each of Qwen, Gemma, GPT, and
-Claude on its own LLM.
-
----
-
-## 5. Named backend variants — picking a persona, not a number
-
-DisSysLab registers two extra variants for each backend, encoding a
-sampling temperature in the name:
-
-| Variant | Temperature | When to use |
-| --- | --- | --- |
-| `anthropic` / `ollama` / `openrouter` (bare) | 0.7 | The balanced default. Good for almost everything. |
-| `<name>_creative` | 1.0 | Brainstorming, divergent writing, anything where you want more variance. |
-| `<name>_precise` | 0.1 | Arithmetic, structured extraction, anything where determinism matters. |
-
-So `claude_creative` and `claude_precise` are first-class names
-alongside `claude`. They show up in `office.md` exactly the same way:
-
-```
-Qwen's AI is qwen_creative.       # high temperature local Qwen
-Claude's AI is claude_precise.    # low temperature Claude
-GPT is a gpt.                     # follows DSL_BACKEND
-```
-
-Why this exists. Picking a number on a `0-1` scale is an unhelpful
-abstraction for most users; picking *creative* vs *precise* is not.
-The variants register a persona as a name; the underlying parameter
-is an implementation detail. Power users who want a specific
-temperature can still construct the backend directly in a Python
-role file:
-
-```python
-# my_office/roles/skeptic.py
-from dissyslab.backends import AnthropicBackend
-from dissyslab.office.library import AgentRoleEntry, nl_role
-
-# A custom temperature that doesn't match the canonical 0.7 / 1.0 / 0.1
-# tiers — uncommon, but supported for research.
-_BACKEND = AnthropicBackend(temperature=0.35)
-
-# ... wire it into an AgentRoleEntry with that backend baked in.
-```
-
-Both routes coexist. Most offices use the named variants in
-`office.md`; an occasional `.py` role pins a specific temperature
-when the experiment demands it.
-
-### Available backends and their variants
-
-| Bare name | Aliases | Where it runs | Notes |
-| --- | --- | --- | --- |
-| `anthropic` | `claude` | Anthropic Claude (cloud) | Highest quality, real cost. |
-| `ollama` | `qwen` | Local model server | Free, private, slow. |
-| `openrouter` | — | OpenRouter (cloud, many models) | Cheap, fast, model-pickable. |
-| `openai` | `gpt` | OpenAI (cloud) | GPT-4o-mini by default; real cost. |
-| `gemini` | — | Google AI Studio (cloud) | Free tier, Gemini 2.5 Flash by default. |
-| `gemma` | — | Google AI Studio (cloud) | Free tier, Gemma 4 31B (dense) by default. Same API key as `gemini`. |
-
-Every backend gets the three-tier treatment, so the full vocabulary is
-eighteen registered names plus nine aliases. `dsl doctor` (when
-available) prints the active list.
-
-### Google AI Studio (gemini + gemma)
-
-One backend module (``GeminiBackend``) serves both Google model
-families through ``generativelanguage.googleapis.com``. The same
-``GEMINI_API_KEY`` (or ``GOOGLE_API_KEY`` as a fallback) authenticates
-both — there is no separate "Gemma key". Get a free key at
-<https://aistudio.google.com/apikey>; no credit card needed.
-
-The two model families differ only in their default model name:
-
-* ``gemini`` / ``gemini_creative`` / ``gemini_precise`` — point at
-  ``gemini-2.5-flash`` (frontier proprietary, free tier).
-* ``gemma`` / ``gemma_creative`` / ``gemma_precise`` — point at
-  ``gemma-4-31b-it`` (open-weight dense 31B, free tier). For higher
-  throughput at slightly lower quality, the MoE variant
-  ``gemma-4-26b-a4b-it`` (4B active params) is also available; swap
-  it into the registry entries in
-  ``dissyslab/backends/__init__.py`` if needed.
-
-If Google rotates these defaults in the future, list the models your
-key can see with::
-
-    curl -s -H "x-goog-api-key: $GEMINI_API_KEY" \\
-      "https://generativelanguage.googleapis.com/v1beta/models" \\
-      | python3 -m json.tool | grep '"name"'
-
-To use a different model inside the same family, either set
-``GEMINI_MODEL`` in your shell or pass ``model=`` per-call in a
-``.py`` role file. Free-tier rate limits at time of writing are
-generous for both families (tens of thousands of requests per day);
-enough to run the ``debate`` gallery office repeatedly without
-hitting limits.
-
----
-
-## 5. Comparing models in the same office
-
-The most informative thing you can do with multiple backends is run
-the same office twice and look at the outputs side by side. The
-recipe below uses the gallery's `my_first_office` (HackerNews →
-Alex(analyst) → console_printer) but works with any office.
-
-### Setup
-
-Edit the office to write to a file instead of the console, so you
-can compare runs offline. In `dissyslab/gallery/my_first_office/office.md`:
-
-```
-Sinks: jsonl_recorder(path="output.jsonl")
-
-Connections:
-hacker_news's destination is Alex.
-Alex's briefing is jsonl_recorder.
-```
-
-(The `path` argument names the output file, relative to wherever
-you run `dsl run` from.)
-
-### Run with the LLM
-
-```bash
-unset DSL_BACKEND                          # use the default (Claude)
-dsl run dissyslab/gallery/my_first_office/
-# Ctrl-C after ~10 messages
-mv dissyslab/gallery/my_first_office/output.jsonl ~/output_llm.jsonl
-```
-
-### Run with the SLM
-
-```bash
-export DSL_BACKEND_MODULE=my_ollama_backend
-export DSL_BACKEND=ollama
-dsl run dissyslab/gallery/my_first_office/
-# Ctrl-C after ~10 messages
-mv dissyslab/gallery/my_first_office/output.jsonl ~/output_slm.jsonl
-```
-
-### Compare
-
-Four things are worth measuring:
-
-1. **JSON validity.** What fraction of replies parsed cleanly?
-   Claude is essentially 100%; SLMs vary by size.
-2. **Routing accuracy.** Did the agent's `send_to` choice make
-   sense for the input? Eyeball 10–20 messages.
-3. **Output quality.** Pick five articles seen by both backends
-   and read the `text` and `significance` fields side by side.
-4. **Latency.** Wall-clock time per message. Claude is API-bounded
-   (~1–3s typical); Ollama is CPU/GPU-bounded on your laptop and
-   varies wildly with model size and hardware.
-
-A small Python script for the validity check:
-
-```python
-import json
-from pathlib import Path
-
-for label, path in [("LLM", "output_llm.jsonl"),
-                    ("SLM", "output_slm.jsonl")]:
-    lines = Path.home().joinpath(path).read_text().splitlines()
-    valid = 0
-    for ln in lines:
-        try:
-            obj = json.loads(ln)
-            if "send_to" in obj and "text" in obj:
-                valid += 1
-        except json.JSONDecodeError:
-            pass
-    print(f"{label}: {valid}/{len(lines)} messages produced valid output")
-```
-
-### If the SLM struggles
-
-- **Bigger model.** `ollama pull llama3.2` defaults to 3B; some
-  models also come in 7B and 8B variants. Bigger = better JSON
-  but slower.
-- **Lower temperature.** `temperature=0.1` in the backend's
-  `complete` method makes the model more rule-following.
-- **Stronger prompt nudge.** Spell out the contract: "You MUST
-  reply with a JSON object containing exactly the keys 'send_to'
-  and 'text'." Some models respond well to "MUST."
-- **Different model family.** `qwen2.5:3b`, `phi3.5`, `gemma2:2b`
-  vary in their structured-output reliability. If one struggles,
-  try another at the same parameter count.
-
-### What "win" means
-
-Quality almost always favors larger models. The interesting
-question is rarely "which is better" but "is the SLM good enough
-for *this* office?" An office that filters articles by
-significance is much more SLM-tolerant than one that writes
-journalism in three paragraphs. Reporting that distinction is
-where a comparison study earns its keep.
-
----
-
-## 6. Tradeoffs and caveats
-
-**Run-time prompts ask the agent for JSON.** When an agent receives
-a message, it sends a prompt that ends with `Return JSON only ...
-{"send_to": "...", "text": "..."}` and the runtime parses the
-reply. A backend that produces meandering prose, hallucinates extra
-fields, or wraps replies in conversational filler will route
-messages incorrectly. Models in the GPT-4o / Claude Sonnet /
-Gemini 1.5 tier handle this reliably; smaller local models often
-need a system-prompt nudge ("Reply with JSON only, no commentary")
-and are usually unreliable below 2–3B parameters.
-
-(Note: there are no *build-time* LLM calls. The compiler that
-turns `office.md` into Python is hand-written; only run-time
-agent calls go through the backend.)
-
-**Cost and latency are yours to manage.** Some backends charge
-per token and rate-limit aggressively. The shipped CLI does not
-estimate costs across providers — partly because per-provider
-price tables are brittle. If you need cost tracking, wrap your
-`complete` method to log token counts.
-
-**The Protocol may grow.** If a future DisSysLab needs streaming,
-tool calls, or vision, the Protocol will gain optional methods.
-Backends that only implement `complete` will keep working —
-additions are designed to be opt-in.
-
----
-
-## See also
-
-- [dissyslab/backends/base.py](https://github.com/kmchandy/DisSysLab/blob/main/dissyslab/backends/base.py)
-  — the Protocol definition.
-- [dissyslab/backends/anthropic_backend.py](https://github.com/kmchandy/DisSysLab/blob/main/dissyslab/backends/anthropic_backend.py)
-  — the reference implementation.
-- [docs/recipes/add-a-backend/](https://github.com/kmchandy/DisSysLab/tree/main/docs/recipes/add-a-backend)
-  — a runnable mock backend that demonstrates the registration
-  pattern end-to-end without any external LLM.
-- [docs/BUILD_APPS.md](BUILD_APPS.md) — how to build offices
-  that run on whichever backend you've configured here.
+The backend returns the raw reply. DisSysLab does the rest: it reads the
+reply as JSON (unwrapping one code fence), checks it against `out:`, and
+counts what fails. `dissyslab/backends/anthropic_backend.py` is the
+reference implementation, and
+[recipes/add-a-backend/](recipes/add-a-backend/) has a runnable example
+with a scripted model that needs no key.
+
+## Things to know
+
+- **Cost is per message per English agent.** An office with four English
+  annotators and a writer makes five model calls per article. Python
+  roles cost nothing; use them wherever no judgement is needed.
+- **Rate limits.** Many agents running at once can exceed a provider's
+  rate limit (`429`). Wait and run again, or use fewer English agents.
+- **The prompt is your text.** DisSysLab adds nothing to a role's
+  instruction: what to return is said by the role itself, in its last
+  sentence (`dsl grammar roles`). If a model keeps returning the wrong
+  shape, that sentence is the first thing to look at.

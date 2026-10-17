@@ -614,12 +614,21 @@ def cmd_run(args: argparse.Namespace) -> int:
         os.environ["DSL_RUN_SUMMARY"] = "1"
 
     from dissyslab.agents.python_role import RoleLoadError
-    from dissyslab.office.build import BuildError, run_office
+    from dissyslab.office.build import STOPPED, BuildError, run_office
     from dissyslab.office.frontmatter import FrontMatterError
     from dissyslab.office.syntax import OfficeSyntaxError
 
     try:
-        return run_office(Path(office_dir))
+        code = run_office(Path(office_dir))
+        if code == STOPPED:
+            # Stopped with Ctrl-C. A source blocked in a network call keeps
+            # its thread alive, and agent threads are not daemons, so a
+            # normal return would wait for it -- the "Ctrl-C does nothing"
+            # a student meets in the first hour. Leave now.
+            sys.stdout.flush()
+            sys.stderr.flush()
+            os._exit(STOPPED)
+        return code
     except (OfficeSyntaxError, BuildError, FrontMatterError, RoleLoadError) as exc:
         _eprint(f"dsl run: {Path(office_dir).resolve().name} cannot start.")
         for line in str(exc).splitlines():
@@ -1960,13 +1969,15 @@ def build_parser() -> argparse.ArgumentParser:
         help="create a new office by chatting with Claude",
         description=(
             "Create a new office by chatting with Claude in plain English. "
-            "Describe what you want — Claude may ask follow-up questions, "
-            "then write the office.md and roles/*.md files for you. The "
+            "Describe what you want; Claude may ask questions, then writes "
+            "office.md, the roles and any data files. dsl check runs on the "
+            "result, and any problems it finds go back to Claude to fix. "
+            "Claude is given the same reference `dsl grammar` prints. The "
             "target folder must not already exist."
         ),
         epilog=(
             "Examples:\n"
-            "  dsl new briefing\n"
+            "  dsl new study_planner\n"
             "  dsl new sentiment_demo --model claude-opus-4-6\n"
             "\n"
             "Requires ANTHROPIC_API_KEY in your environment or a .env file."
@@ -1988,13 +1999,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="modify an existing office by chatting with Claude",
         description=(
             "Modify an existing office by chatting with Claude in plain "
-            "English. Claude sees the current office.md and roles/*.md, "
-            "applies the change you describe, and rewrites the files in "
-            "place."
+            "English. Claude sees the office's files, applies the change you "
+            "describe, rewrites the files that change, and dsl check runs on "
+            "the result."
         ),
         epilog=(
             "Examples:\n"
-            "  dsl edit briefing\n"
+            "  dsl edit my_desk\n"
             "  dsl edit . --model claude-opus-4-6\n"
             "\n"
             "Requires ANTHROPIC_API_KEY in your environment or a .env file."

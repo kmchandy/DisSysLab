@@ -22,12 +22,13 @@ once — if you close the window you will need to generate a new one.
 
 ## 2. Put the key in a `.env` file
 
-DisSysLab reads the key from a file named `.env` in your office folder.
-The fastest way to create it — on macOS, with the key still on your
-clipboard:
+DisSysLab reads the key from a file named `.env` in the folder you run
+`dsl` from, or in any folder above it. Put it in your course folder and
+every office inside that folder finds it. The fastest way to create it —
+on macOS, with the key still on your clipboard:
 
 ```bash
-cd path/to/your/office
+cd path/to/your/course/folder
 echo "ANTHROPIC_API_KEY=$(pbpaste)" > .env
 ```
 
@@ -145,21 +146,22 @@ dsl --version
 
 ---
 
-## Where to put `.env` for multiple offices
+## Where to put `.env` for several offices
 
-Each office folder gets its own `.env`. `dsl run path/to/office/`
-looks for `.env` inside **that folder**. If you share one key across
-several offices, you can either:
+`dsl` looks for `.env` in the folder you run it from, then in each folder
+above it, and uses the first it finds. So one `.env` in your course
+folder serves every office inside it:
 
-- Copy `.env` into each office folder, or
-- Export the key in your shell once, so every office picks it up:
+```
+dsl_course/
+    .env              <- ANTHROPIC_API_KEY=...
+    my_desk/
+    inbox_sorter/
+```
 
-  ```bash
-  export ANTHROPIC_API_KEY=sk-ant-api03-...
-  ```
+`dsl doctor`, run from inside an office folder, names the `.env` file it
+found. A key exported in your shell (`export ANTHROPIC_API_KEY=...`) is
+used when no `.env` sets it.
 
-  (Add that line to `~/.zshrc` or `~/.bashrc` to make it permanent.)
-
----
-
-*Last reviewed for DisSysLab v1.1.3.*
+**Never commit `.env` to git.** Anyone with the key can spend money on
+your account.

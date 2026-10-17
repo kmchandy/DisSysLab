@@ -1,7 +1,7 @@
 # Sources and Sinks Reference
 
-Offices in DisSysLab have **sources** that generate messages
-come in and **sinks** where messages are stored. This
+Offices in DisSysLab have **sources**, where messages come in, and
+**sinks**, where results go out. This
 page lists every source and sink shipped with the framework, what
 each one accepts, and how to connect it in `office.md`.
 You can also build your own sources and sinks.
@@ -12,8 +12,9 @@ here once you want to swap in a different source or send results
 somewhere new.
 
 **Conventions used below.**
-- Each entry shows a one-line usage example **as it appears in
-  `office.md`**.
+- Each entry shows a usage example **as it appears in `office.md`**.
+  Every example was checked by building the component from exactly
+  those arguments.
 - Optional arguments show their defaults.
 - "Setup" notes describe credentials or installations needed for
   the source/sink to run.
@@ -22,8 +23,10 @@ somewhere new.
 
 ## Sources
 
-A source is an agent that generates messages. You declare the sources in 
-an office in the `Sources:` line.
+A source sends messages into an office. Sources are declared under
+`sources:` in `office.md`; a source with no name in front is named
+after its kind (`bbc_world`), and two of the same kind need two names
+(`world: bbc_world`, `tech: bbc_tech`).
 
 ### `rss` — any RSS or Atom feed at all (no key)
 
@@ -31,8 +34,8 @@ an office in the `Sources:` line.
 do not need us to add it. Pass the URL:
 
 ```
-Sources: rss(url="https://example.com/feed.xml", name="my_feed",
-             max_articles=5)
+sources:
+    rss(url="https://example.com/feed.xml", name="my_feed", max_articles=5)
 ```
 
 `name` is what the feed calls itself in each message's `source`
@@ -72,8 +75,9 @@ already filled in. Each is free and public; no signups, no API keys.
 
 **Example `office.md`:**
 ```
-Sources: hacker_news(max_articles=20),
-         bbc_world(max_articles=10, poll_interval=600)
+sources:
+    hacker_news(max_articles=20)
+    bbc_world(max_articles=10, poll_interval=600)
 ```
 
 **Each message yielded:**
@@ -103,12 +107,14 @@ Reads a single line with Python's `input()` when stdin is a TTY
 
 **Example `office.md`:**
 ```
-Sources: console_input(default_message="Summarize the weather for Pasadena.")
-Sinks: console_printer
-...
-Connections:
-  console_input's destination is Alex.
-  Alex's briefing is console_printer.
+sources:
+    console_input(default_message="Summarize the weather for Pasadena.")
+sinks:
+    console_printer
+agents:
+    Alex: summarizer
+connections:
+    console_input -> Alex -> console_printer
 ```
 
 ### `weather` — current weather for any city (no key)
@@ -125,7 +131,8 @@ signup, no key.
 
 **Example `office.md`:**
 ```
-Sources: weather(city="London", poll_interval=600)
+sources:
+    weather(city="London", poll_interval=600)
 ```
 
 ### `stocks` — live ticker prices (needs `dissyslab[market]`)
@@ -164,7 +171,8 @@ Tickers are written the way Yahoo writes them: `"AAPL"`, `"BP.L"`,
 
 **Example `office.md`:**
 ```
-Sources: stocks(ticker="AAPL", poll_interval=300, max_readings=1)
+sources:
+    stocks(ticker="AAPL", poll_interval=300, max_readings=1)
 ```
 
 **Each message yielded:**
@@ -258,14 +266,10 @@ the whole batch.
   same before and after `dsl init`. Give it only for data you keep
   somewhere of your own.
 
-  **Why the default exists.** `paper_trader` and `mac_speed_suite` used
-  to say `directory='../../../../sp100_data'`, counted from the office's
-  own folder — because `build/run.py` chdirs there first, see
-  `jsonl_recorder`'s `path` argument below. Four levels above the office
-  folder is the repository root *in a clone*; after `dsl init` it is the
-  filesystem root. So the documented way to get your own copy of a
-  shipped office produced a backtester that could neither read data nor
-  download any, and the only working path was a git clone.
+  **Why the default exists.** A relative `directory` is counted from
+  the office's folder (see `jsonl_recorder`'s `path` below), so an office
+  that names one breaks the moment `dsl init` copies it somewhere else.
+  The shared directory is the same wherever the office is.
 - `filename_pattern` *(str, default `"{ticker}_1year.csv"`)* — must
   contain `{ticker}`.
 - `start` / `end` *(str, default: no bound)* — optionally filter rows
@@ -273,64 +277,8 @@ the whole batch.
 
 **Example `office.md`:**
 ```
-Sources: csv_stock_history(tickers=["AMD", "NFLX", "NVDA", "PLTR", "TSLA"],
-                            directory="sp100_data")
-```
-
-### `salton_wind` — NASA/JPL Salton Sea buoy wind (real, no key, not yet registered)
-
-> **Not yet registered.** The implementation exists
-> (`components/sources/jpl_saltonsea_buoy_source.py`) but has no entry
-> in `SOURCE_REGISTRY`, so `Sources: salton_wind` in an `office.md`
-> does not compile yet. Until it does, wrap it directly:
-> `Source(fn=JPLSaltonSeaBuoySource().run, name="salton_wind")`.
-> This is why `salton_sea_dashboard` is an xfail in the compiler tests.
-
-One-shot fetch of the two NASA/JPL buoys (SS1, SS1A) moored on the
-Salton Sea, CA, from `https://saltonsea.jpl.nasa.gov/get_met_weather`
-— wind speed, wind direction, air temp, humidity, and pressure, each
-as `{"min":..., "avg":..., "max":...}` over the previous 30 minutes.
-Built for the `salton_sea_dashboard` gallery app. JPL's own caveat
-("raw data, not quality-checked... informational purposes only") is
-passed through on every message as `quality_note`.
-
-Output is nested under a single `"wind"` key (not flattened) so it
-merges into `synchronizer` alongside `synthetic_salton_h2s` (nested
-under `"h2s"`) without any key collision — see
-`jpl_saltonsea_buoy_source.py`'s docstring.
-
-**Arguments:**
-- `url` *(str, default JPL's live page)*.
-- `timeout` *(float seconds, default `15.0`)*.
-
-```
-Sources: salton_wind
-```
-
-### `synthetic_salton_h2s` — synthetic Salton Sea H2S readings (no network, not real data, not yet registered)
-
-> **Not yet registered.** As with `salton_wind` above: the
-> implementation exists, the registry entry does not.
-
-Prototyping stand-in for four named CARB hydrogen-sulfide monitoring
-sites near the Salton Sea (Salton Sea Park, Torres-Martinez,
-Mecca-Saul Martinez, Niland English), while the mapping from those
-sites' public "ARB codes" to CARB AQMIS2's own internal `site=` query
-parameter is unresolved (queries return "No Data Available" even for
-old, settled dates — looks like an id-namespace mismatch, not an
-actual data gap; CARB's download tool and the `H2S` parameter code
-are otherwise confirmed working). Every message is stamped
-`"synthetic": True`. Same `"h2s"`-nested message shape a real
-CARB-backed source would use, so `salton_sea_dashboard` can swap this
-out with zero downstream changes once the real site ids are found.
-
-**Arguments:**
-- `spike_probability` *(float, default `0.15`)* — chance any one
-  site shows a synthetic odor-event spike this run.
-- `seed` *(int, default `None`)* — set for reproducible output.
-
-```
-Sources: synthetic_salton_h2s
+sources:
+    prices: csv_stock_history(tickers=["AMD", "NFLX", "NVDA", "PLTR", "TSLA"], filename_pattern="{ticker}_10_year.csv")
 ```
 
 ### `bluesky` — live BlueSky posts (no key)
@@ -354,8 +302,8 @@ breaking events.
 
 **Example `office.md`:**
 ```
-Sources: bluesky(max_posts=None, lifetime=None,
-                 filter_keywords=["AI", "python"])
+sources:
+    bluesky(max_posts=None, lifetime=None, filter_keywords=["AI", "python"])
 ```
 
 ### `web` — fetch a URL (MCP shortcut)
@@ -372,7 +320,8 @@ single web page that changes over time.
 
 **Example `office.md`:**
 ```
-Sources: web(url="https://example.com/news", poll_interval=600)
+sources:
+    web(url="https://example.com/news", poll_interval=600)
 ```
 
 ### `search` — Brave web search (MCP shortcut)
@@ -390,7 +339,8 @@ key as documented in that server's instructions.
 
 **Example `office.md`:**
 ```
-Sources: search(query="AI policy", poll_interval=900)
+sources:
+    search(query="AI policy", poll_interval=900)
 ```
 
 ### `gmail` — your Gmail inbox (credentialed)
@@ -417,7 +367,8 @@ settings. No Google Cloud project, nothing else to configure.
 
 **Example `office.md`:**
 ```
-Sources: gmail(poll_interval=60, unread_only=True)
+sources:
+    gmail(poll_interval=60, unread_only=True)
 ```
 
 **Each message yielded:**
@@ -463,7 +414,8 @@ export CALENDAR_ICS_URL='https://calendar.google.com/calendar/ical/.../basic.ics
 
 **Example `office.md`:**
 ```
-Sources: calendar(poll_interval=600, days_ahead=7)
+sources:
+    calendar(poll_interval=600, days_ahead=7)
 ```
 
 ### `webhook` — listen for inbound HTTP POSTs (push-style)
@@ -505,8 +457,9 @@ firewall to specific source IPs.
 
 **Example `office.md`:**
 ```
-Sources: webhook                              # localhost:8000/webhook
-Sources: webhook(port=9000, path="/incoming")
+sources:
+    hook: webhook                                  # localhost:8000/webhook
+    incoming: webhook(port=9000, path="/incoming")
 ```
 
 **Each message yielded:**
@@ -547,10 +500,8 @@ you're using.
 
 **Example `office.md`:**
 ```
-Sources: mcp_source(server="github",
-                    tool="search_repositories",
-                    args={"query": "language:python stars:>1000"},
-                    poll_interval=3600)
+sources:
+    mcp_source(server="github", tool="search_repositories", args={"query": "language:python stars:>1000"}, poll_interval=3600)
 ```
 
 ### arXiv category feeds (5 named, no key)
@@ -578,7 +529,8 @@ one message per run holding the whole forecast. Needs a free
 WeatherAPI.com key in `WEATHERAPI_KEY`.
 
 ```
-Sources: weatherapi(city="Pasadena", days=3)
+sources:
+    weatherapi(q="Pasadena", days=3)
 ```
 
 ### `kalshi` — prediction-market prices (no key for public data)
@@ -588,44 +540,35 @@ give a keyword and let it discover matching open events and
 markets. Used by `kalshi_market_watch`.
 
 ```
-Sources: kalshi(tickers=["KXBTC-25DEC31-B100000"])
-Sources: kalshi(keyword="hurricane", poll_interval=300)
+sources:
+    bitcoin: kalshi(tickers=["KXBTC-25DEC31-B100000"])
+    hurricanes: kalshi(keyword="hurricane", poll_interval=300)
 ```
 
 Kalshi's default market listing is dominated by sports, so keyword
 discovery searches events as well as markets.
 
-### `file_source` — read a local CSV or JSON file
+### `file_source` — read a local JSONL, JSON or CSV file
 
-One message per row (CSV) or per top-level item (JSON). The plain
-way to get your own data into an office.
-
-```
-Sources: file_source(path="data/readings.csv")
-```
-
-### `starter` and `session_starter` — one message, to start a loop
-
-`starter` emits exactly one message at startup and then stops. An
-office built as a cycle — a debate, a negotiation, anything that
-runs until it converges — needs one bootstrap message to set the
-first round going; after that the feedback edges keep it moving.
-Used by `debate`, `trading_room`, `returns_desk`,
-`shipment_release`.
+One message per line (`.jsonl`), per top-level item (a `.json` list),
+or per row (`.csv`, with the header row naming the fields). The plain
+way to get your own data into an office, and the stand-in for any
+real source while you build one: replacing it later changes one
+declaration line and none of the connections.
 
 ```
-Sources: starter
+sources:
+    readings: file_source(path="readings.jsonl")
 ```
 
-`session_starter` (and the numbered `session_starter_2`,
-`session_starter_3`) do the same for offices that open a
-multi-turn session rather than a single round.
+### `starter` and `session_starter` — retired
 
-Because a starter is *meant* to send one message and stop, it is
-the usual reason to reach for `allow_empty` — not because it
-produces nothing, but because offices built around it often want
-the empty-source guard relaxed elsewhere. See the guard's own
-message when it fires.
+Version 1 offices used `starter` (and `session_starter`,
+`session_starter_2`, `session_starter_3`) to send one message that woke
+an agent standing in for a source. In this version a source is a source:
+use `file_source` with a small data file, or write a local source in
+`sources/` (`dsl grammar sources`). `debate`'s problems, for example,
+come from `problems.jsonl`.
 
 ### Audio and images (sensor sources)
 
@@ -650,18 +593,19 @@ downstream agent opens what it needs, so the queue stays light.
 `image_folder` does load pixels, since the analysers all want them.
 
 ```
-Sources: audio_folder(folder="recordings/")
-Sources: image_folder(folder="camera_trap/")
-Sources: audio_mic(chunk_seconds=1.0)
+sources:
+    clips: audio_folder(path="recordings/", glob="*.mp3")
+    photos: image_folder(folder="camera_trap/")
+    mic: audio_mic(chunk_ms=1000)
 ```
 
 ---
 
 ## Sinks
 
-A sink is an agent that saves messages. You declare the sinks in 
-an office in the `Sinks:` line. The following sinks are shipped
-with the framework.
+A sink receives messages at the end of an office: it shows them,
+saves them, or sends them on. Sinks are declared under `sinks:` in
+`office.md`. These ship with DisSysLab.
 
 ### `discard` — drop messages silently
 
@@ -672,10 +616,16 @@ decides a message is not worth keeping.
 
 **Example `office.md`:**
 ```
-Sinks: discard
-...
-Connections:
-  Alex's throw_away is discard.
+sinks:
+    console_printer
+    discard
+agents:
+    Felix: topic_filter
+    Rex: router(on="on_topic")
+connections:
+    Felix -> Rex
+    Rex.yes -> console_printer
+    Rex.no -> discard
 ```
 
 ### `console_printer` — print to the terminal
@@ -689,10 +639,10 @@ office.
 
 **Example `office.md`:**
 ```
-Sinks: console_printer
-...
-Connections:
-    Sita's display is console_printer
+sinks:
+    console_printer
+connections:
+    Sita -> console_printer
 ```
 
 ### `intelligence_display` — color-coded briefing display
@@ -701,21 +651,22 @@ Renders each message as a color-coded bordered block. With
 `max_items` set, refreshes the display in place showing the most
 recent N — like a live dashboard.
 
-**Arguments:**
+**Arguments** -- it never guesses field names; you say which to show:
+- `title` -- the field shown as the block's heading.
+- `text` -- the field shown as its body.
+- `color` -- a field whose value is `CRITICAL`, `HIGH`, `MEDIUM` or
+  `LOW` (red, red, green, white).
+- `lines` -- a list of fields printed one per line as `field: value`.
 - `max_items` *(int, default `None`)* — `None` scrolls
   continuously; an integer (e.g. `8`) keeps the last N visible
   and clears the screen on each update.
 
-The sink colors blocks by a `significance` field on the message
-(`CRITICAL`, `HIGH`, `MEDIUM`, `LOW` → red, yellow, green,
-white). Messages without that field render as `LOW`.
-
 **Example `office.md`:**
 ```
-Sinks: intelligence_display(max_items=8)
-....
-Connections:
-  Zhou's cockpit is intelligence_display
+sinks:
+    intelligence_display(title="headline", text="summary", color="severity", max_items=8)
+connections:
+    Riley -> intelligence_display
 ```
 
 ### `jsonl_recorder` — append messages to a JSONL file
@@ -728,9 +679,9 @@ later.
 - `path` *(str, default `"anomaly_stream.jsonl"`)* — output file.
   A bare filename like `"briefings.jsonl"` is **relative to the
   office folder**, not to wherever you were standing when you typed
-  the command. The generated `build/run.py` does
-  `os.chdir(<office folder>)` before starting, so an office's output
-  lands next to its `office.md` no matter where you ran it from.
+  the command. `dsl run` works from inside the office's folder, so an
+  office's output lands next to its `office.md` no matter where you
+  ran it from.
   That is usually what you want: the office and its results stay
   together.
 
@@ -739,11 +690,9 @@ later.
   form that escapes the office folder — use it when you deliberately
   want output somewhere else.
 
-  One consequence worth knowing: running a *shipped* gallery office
-  in place writes into your `site-packages`, because that is where
-  that office's folder is. `dsl init <office> <folder>` copies it
-  somewhere of your own first, which is why the course tells you to
-  start there.
+  This is why a gallery office is copied with `dsl init <office>
+  <folder>` before it is run: its own folder is inside the installed
+  package.
 - `mode` *(str, default `"w"`)* — `"w"` overwrites at start,
   `"a"` appends.
 - `flush_every` *(int, default `1`)* — flush after every N
@@ -751,34 +700,28 @@ later.
 
 **Example `office.md`:**
 ```
-Sinks: jsonl_recorder(path="briefings.jsonl")
+sinks:
+    jsonl_recorder(path="briefings.jsonl")
 ```
 
-After the office runs, find the file with `ls -la *.jsonl` from
-the directory you launched `dsl run` from.
+After the office runs, the file is in the office's folder.
 
-### `jsonl_recorder_*` — multiple JSONL files in one office
+### Two or more of the same sink
 
-If your office needs more than one JSONL file (e.g. one for
-discards, one for keepers), use these aliases. Each is a distinct
-sink instance using the same `JSONLRecorder` class.
+Give each its own name; the kind is the same:
 
-| Alias                       | Suggested use            |
-|-----------------------------|--------------------------|
-| `jsonl_recorder_discard`    | dropped messages         |
-| `jsonl_recorder_briefing`   | finalized briefings      |
-| `jsonl_recorder_archive`    | full archive             |
-| `jsonl_recorder_raw`        | raw upstream input       |
-
-Each takes the same arguments as `jsonl_recorder`. Add more
-aliases in `dissyslab/office/utils.py:SINK_REGISTRY` if you need
-them.
-
-**Example `office.md`:**
 ```
-Sinks: jsonl_recorder_discard(path="discards.jsonl"),
-       jsonl_recorder_briefing(path="briefings.jsonl")
+sinks:
+    kept: jsonl_recorder(path="kept.jsonl")
+    rejected: jsonl_recorder(path="rejected.jsonl")
+connections:
+    Rex.yes -> kept
+    Rex.no -> rejected
 ```
+
+(The `jsonl_recorder_briefing`, `slack_sink_alerts`, `gmail_sink_match`
+and similar aliases are from version 1, where a sink could not be
+named. They still work, but a name says more.)
 
 ### `markdown_digest` — one markdown file, one section per message
 
@@ -798,8 +741,8 @@ by `competitor_watch`.
 
 **Example `office.md`:**
 ```
-Sinks: markdown_digest(path="competitors.md",
-                       title="Competitor watch")
+sinks:
+    markdown_digest(path="competitors.md", title="Competitor watch")
 ```
 
 ### `gmail_sink` — send emails via Gmail (credentialed)
@@ -819,7 +762,8 @@ The message's `text` field becomes the email body.
 
 **Example `office.md`:**
 ```
-Sinks: gmail_sink(to="you@example.com", subject="Briefing")
+sinks:
+    gmail_sink(to="you@example.com", subject="Briefing")
 ```
 
 ### `slack_sink` — post to a Slack channel (credentialed)
@@ -856,7 +800,8 @@ it appears on its own line so Slack can unfurl it.
 
 **Example `office.md`:**
 ```
-Sinks: slack_sink
+sinks:
+    slack_sink
 ```
 
 **Posting to multiple channels.** A webhook URL is bound to one
@@ -864,7 +809,9 @@ channel. To post to a second channel, create a second webhook and
 a second `slack_sink` instance with a different env var:
 
 ```
-Sinks: slack_sink(webhook_url_env="SLACK_WEBHOOK_URL_ALERTS")
+sinks:
+    team: slack_sink
+    alerts: slack_sink(webhook_url_env="SLACK_WEBHOOK_URL_ALERTS")
 ```
 
 then `export SLACK_WEBHOOK_URL_ALERTS='...'` for the second URL.
@@ -893,9 +840,10 @@ message nicely. `webhook_sink` is the unopinionated fallback.
 
 **Example `office.md`:**
 ```
-Sinks: webhook_sink                                   # reads WEBHOOK_URL
-Sinks: webhook_sink(url="http://localhost:8000/webhook")
-Sinks: webhook_sink(webhook_url_env="ZAPIER_HOOK_URL")
+sinks:
+    out: webhook_sink                                       # reads WEBHOOK_URL
+    local: webhook_sink(url="http://localhost:8000/webhook")
+    zapier: webhook_sink(webhook_url_env="ZAPIER_HOOK_URL")
 ```
 
 The full message dict is sent as the JSON body. Non-dict messages
@@ -917,9 +865,8 @@ args (message fields win) and calls the MCP tool.
 
 **Example `office.md`:**
 ```
-Sinks: mcp_sink(server="filesystem",
-                tool="write_file",
-                args={"path": "output.txt"})
+sinks:
+    mcp_sink(server="filesystem", tool="write_file", args={"path": "output.txt"})
 ```
 
 ---

@@ -188,7 +188,10 @@ class GmailSource:
                 if uid_str in self._seen_uids:
                     continue
 
-                _, msg_data = mail.fetch(uid, "(RFC822)")
+                # BODY.PEEK[] returns the same bytes as RFC822 without
+                # setting the Seen flag: reading a student's inbox must not mark
+                # their mail as read.
+                _, msg_data = mail.fetch(uid, "(BODY.PEEK[])")
                 raw = msg_data[0][1]
                 msg = email.message_from_bytes(raw)
 

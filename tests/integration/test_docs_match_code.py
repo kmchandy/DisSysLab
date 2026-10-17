@@ -645,7 +645,7 @@ def test_the_internals_readme_does_not_point_at_missing_files():
 # student following it.
 #
 # It found sixteen already broken before a single file moved — including
-# `situation_room/README.md` pointing at `../../../docs/BUILD_APPS.md`
+# `situation_room/README.md` pointing at the old app-building guide
 # when the gallery app is four levels down, not three. That link has been
 # dead for as long as the file has existed, and it is in the README of the
 # office the course calls its workhorse.
@@ -1361,3 +1361,71 @@ def test_quoted_gallery_offices_match_the_gallery():
             f"worked_examples.md quotes {rel} and it has changed since. "
             "Paste the current file in."
         )
+
+
+# ── §12. Every source and sink example in the docs builds ─────────────────────
+#
+# docs/SOURCES_AND_SINKS.md showed `audio_folder(folder=...)`,
+# `weatherapi(city=...)` and `audio_mic(chunk_seconds=...)`: arguments those
+# components never took. A student copying the example got an error naming
+# an argument the documentation had just told them to use. So every
+# declaration in an office.md example is built here, from exactly the
+# documented arguments. A component that needs credentials, a package or a
+# file to construct is allowed to fail for that reason; a wrong argument,
+# an unknown kind or an example that does not parse is not.
+
+_EXAMPLE_DOCS = ("docs/SOURCES_AND_SINKS.md", "dissyslab/reference/sources_and_sinks.md")
+
+
+def _fenced_blocks(text: str) -> list[str]:
+    blocks, buf, inside = [], [], False
+    for line in text.split("\n"):
+        if line.lstrip().startswith("```"):
+            if inside:
+                blocks.append("\n".join(buf))
+                buf = []
+            inside = not inside
+            continue
+        if inside:
+            buf.append(line)
+    return blocks
+
+
+@pytest.mark.parametrize("doc", _EXAMPLE_DOCS)
+def test_every_documented_source_and_sink_builds(doc, tmp_path, monkeypatch):
+    from dissyslab.office.components import ComponentError, build_component
+    from dissyslab.office.syntax import parse_office_text
+    from dissyslab.office.utils import lookup_component
+
+    monkeypatch.chdir(tmp_path)
+    wrong: list[str] = []
+    built = 0
+    for block in _fenced_blocks((REPO_ROOT / doc).read_text(encoding="utf-8")):
+        if not re.search(r"^(sources|sinks):\s*$", block, re.M):
+            continue
+        # The declarations are what is being checked; an excerpt may show
+        # connections to agents it does not declare.
+        declarations = re.split(r"^connections:\s*$", block, flags=re.M)[0]
+        try:
+            office = parse_office_text(declarations)
+        except Exception as exc:  # noqa: BLE001 - reported below
+            wrong.append(f"does not parse: {exc}")
+            continue
+        for decl in office.sources + office.sinks:
+            if lookup_component(decl.kind) is None:
+                if f"{decl.kind}.py" not in block:  # a local component the doc defines
+                    wrong.append(f"{decl.kind}: no such source or sink")
+                continue
+            path = decl.args.get("path")
+            if isinstance(path, str) and not path.startswith("/") and not Path(path).exists():
+                Path(path).parent.mkdir(parents=True, exist_ok=True)
+                Path(path).write_text("{}\n", encoding="utf-8")
+            try:
+                build_component(decl)
+                built += 1
+            except ComponentError as exc:
+                wrong.append(f"{decl.kind}{dict(decl.args)}: {exc}")
+            except Exception:  # noqa: BLE001 - credentials, packages: not the doc's fault
+                pass
+    assert built, f"{doc}: no example was built; is this test still finding them?"
+    assert not wrong, f"{doc} shows examples that do not work:\n  " + "\n  ".join(wrong)

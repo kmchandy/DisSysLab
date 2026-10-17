@@ -81,13 +81,15 @@ old version.
 Then:
 
 ```powershell
-dsl run periodic_brief
+dsl init returns_desk my_desk
+cd my_desk
+dsl check .
+dsl run .
 ```
 
-This office makes no LLM calls and needs no key. It previously could
-not run on Windows at all: it formatted dates with `%-d` and `%-I`,
-which are glibc extensions that MSVC's `strftime` rejects. That is
-fixed. If the brief renders, the fix holds.
+This office makes no model calls and needs no key. It should print four
+refund tickets and a run summary, exactly as in
+[GETTING_STARTED.md](GETTING_STARTED.md), part 2.
 
 ## What is known to be broken
 
@@ -123,7 +125,7 @@ Also useful:
   A previous Windows report counted 477 tests where the current tree
   collects 543, and without a commit hash there was no way to tell
   which failures still existed.
-- Whether `dsl run periodic_brief` renders.
+- Whether `returns_desk` runs as shown in GETTING_STARTED.md, part 2.
 - Whether you set `PYTHONUTF8=1`, and whether anything changed when
   you did.
 

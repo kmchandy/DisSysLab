@@ -8,16 +8,13 @@ Useful for:
   - Showing extension authors the smallest possible Backend
     implementation (under 30 lines including docs).
 
-Not useful for:
-  - Actually running offices — the analyst won't analyze anything,
-    because the response is canned. Use a real backend (Anthropic,
-    OpenAI, Gemini, Ollama) for real work. See docs/LANGUAGE_MODELS.md.
+Not useful for real work: every reply is the same text, which is not
+JSON, so every English role that uses it fails -- which is itself worth
+seeing once (README.md, step 2).
 
-To use:
-    export DSL_BACKEND_MODULE=mock_backend
-    export DSL_BACKEND=mock
-    python -c "from dissyslab.backends import get_backend; \
-               print(get_backend().complete(system='hi', user='hello'))"
+To use, from this folder:
+    python -c "import mock_backend; from dissyslab.backends import get_backend; \
+               print(get_backend('mock').complete(system='hi', user='hello'))"
 """
 
 from typing import Optional
@@ -45,6 +42,6 @@ class MockBackend:
         )
 
 
-# Register at import time. dissyslab will import this module if you
-# set DSL_BACKEND_MODULE=mock_backend before running `dsl run`.
+# Register at import time. `dsl` imports this module when
+# DSL_BACKEND_MODULE=mock_backend is set and the folder is on PYTHONPATH.
 register_backend("mock", lambda: MockBackend())

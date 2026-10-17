@@ -34,6 +34,7 @@ __all__ = [
     "OllamaBackend",
     "OpenAIBackend",
     "OpenRouterBackend",
+    "backend_names",
     "get_backend",
     "register_backend",
 ]
@@ -156,6 +157,11 @@ def register_backend(name: str, factory: Callable[[], Backend]) -> None:
     key = name.lower()
     _REGISTRY[key] = factory
     _CACHE.pop(key, None)
+
+
+def backend_names() -> list:
+    """Every name ``ai=`` or ``DSL_BACKEND`` may use: registered names and aliases."""
+    return sorted(set(_REGISTRY) | set(_ALIASES))
 
 
 def get_backend(name: Optional[str] = None) -> Backend:
