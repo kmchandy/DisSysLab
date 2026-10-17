@@ -44,6 +44,7 @@ defined, `dsl show <name>` prints its file.
 | `audio_clip`, `audio_mic` | ... | audio in chunks, from a file or the microphone |
 | `image_folder` | `folder`, `max_images` | one message per image |
 | `webhook` | `port`, `path`, `host` | messages POSTed to a local URL |
+| `chat_page` | `title`, `port`, `open_browser` | a chat page in the browser: each turn a message with `session`, `turn`, `text`, `history` |
 | `mcp_source` | `server`, `tool`, `args` | any tool with an MCP server |
 | `console_input` | `prompt` | lines typed at the terminal |
 
@@ -62,6 +63,7 @@ Every source also takes `allow_empty=True`: see [Empty output](#empty-output).
 | `slack_sink` | `webhook_url_env="SLACK_WEBHOOK_URL"`, `username`, `icon_emoji` |
 | `webhook_sink` | `url` or `webhook_url_env`, `headers`, `timeout`, `retry_count` |
 | `mcp_sink` | `server`, `tool`, `args` |
+| `chat_reply` | `text="reply"`, `port` -- shows the reply in the `chat_page`; the message must keep `session` and `turn` |
 
 `intelligence_display` never guesses field names. Tell it which to show:
 

@@ -298,6 +298,9 @@ def test_check_every_example(name, tmp_path):
     if name == "backyard_birds" and not importlib.util.find_spec("birdnetlib"):
         assert code == 1
         assert "pip install birdnetlib" in out
+    elif name == "car_dealer":      # Lab 1's starter: unguarded on purpose
+        assert code == 0, out
+        assert "text from customer can reach screen" in out and "no other problems" in out
     else:
         assert code == 0, out
         assert "no problems found" in out

@@ -418,6 +418,31 @@ sources:
     calendar(poll_interval=600, days_ahead=7)
 ```
 
+### `chat_page` — a chat page in the browser (no key)
+
+Opens a chat page on this computer when the office starts. Each thing a
+person types arrives as one message; `chat_reply` (a sink) shows the
+office's answer under it. Used by Lab 1's car dealership.
+
+**Arguments:**
+- `title` *(str, default `"Chat"`)* — shown at the top of the page.
+- `port` *(int, default `8765`)* — `chat_reply` must use the same.
+- `open_browser` *(bool, default `True`)* — open the page at start.
+
+Each message: `session` (one per browser tab), `turn` (1, 2, ...),
+`text` (what was typed), and `history` (the earlier turns of that
+conversation, each `{"customer": ..., "reply": ...}`). The office runs
+until you press Ctrl-C. The page is reachable from this computer only.
+
+```
+sources:
+    customer: chat_page(title="Main Street Motors")
+sinks:
+    screen: chat_reply
+connections:
+    customer -> Sal -> screen
+```
+
 ### `webhook` — listen for inbound HTTP POSTs (push-style)
 
 A push-style source. Spins up a stdlib HTTP listener; each
@@ -815,6 +840,22 @@ sinks:
 ```
 
 then `export SLACK_WEBHOOK_URL_ALERTS='...'` for the second URL.
+
+### `chat_reply` — answer in the chat page
+
+Shows a message's reply in the `chat_page`, under the turn it answers.
+The message must still carry the `session` and `turn` it arrived with:
+an annotator keeps them; an author that builds a new message must copy
+them.
+
+**Arguments:**
+- `text` *(str, default `"reply"`)* — the field holding the reply.
+- `port` *(int, default `8765`)* — the same as `chat_page`'s.
+
+```
+sinks:
+    screen: chat_reply(text="reply")
+```
 
 ### `webhook_sink` — POST each message to an arbitrary HTTP endpoint
 

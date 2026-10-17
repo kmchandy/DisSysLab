@@ -191,6 +191,12 @@ SOURCE_REGISTRY = {
     },
 
     # ── HTTP webhook listener (push-style source) ─────────────────────
+    # A chat page in the browser (Lab 1): what a person types arrives
+    # here; `chat_reply` shows the office's answer. Same port for both.
+    "chat_page": {
+        "import": "from dissyslab.components.chat_page import ChatPage",
+        "class":  "ChatPage",
+    },
     "webhook": {
         "type":   "webhook",
         "import": "from dissyslab.components.sources.webhook_source import WebhookSource",
@@ -391,6 +397,12 @@ SINK_REGISTRY = {
     "jsonl_recorder_raw": {
         "import": "from dissyslab.components.sinks.sink_jsonl_recorder import JSONLRecorder",
         "class":  "JSONLRecorder",
+        "args":   "named",
+        "call":   "run",
+    },
+    "chat_reply": {
+        "import": "from dissyslab.components.chat_page import ChatReply",
+        "class":  "ChatReply",
         "args":   "named",
         "call":   "run",
     },

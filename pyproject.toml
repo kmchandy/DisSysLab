@@ -183,6 +183,7 @@ exclude = [
   "gallery/backyard_birds/bird_detections.jsonl",
   "gallery/inbox_sorter/urgent.jsonl",
   "gallery/inbox_sorter/later.jsonl",
+  "gallery/car_dealer/replies.jsonl",
 ]
 
 [tool.pytest.ini_options]

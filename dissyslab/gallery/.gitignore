@@ -13,3 +13,4 @@ mac_speed_suite/report.html
 mac_speed_suite/*.csv
 inbox_sorter/urgent.jsonl
 inbox_sorter/later.jsonl
+car_dealer/replies.jsonl

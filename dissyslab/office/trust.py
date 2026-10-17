@@ -58,6 +58,8 @@ from typing import Dict, Set
 
 #: Sources carrying free text composed by someone other than the user.
 UNTRUSTED_SOURCES: Set[str] = {
+    # A chat page: whoever is at the keyboard types whatever they like.
+    "chat_page",
     # News and feeds -- anyone can publish into these, and several are
     # arbitrary URLs the user pastes in.
     "al_jazeera",
@@ -122,6 +124,9 @@ TRUSTED_SOURCES: Set[str] = {
 
 #: Sinks that affect something outside this machine.
 ACTING_SINKS: Set[str] = {
+    # Its words reach a customer outside the organisation: what the
+    # Chevrolet of Watsonville chatbot "agreed" to is the case in point.
+    "chat_reply",
     "gmail_sink",
     "gmail_sink_cover_letter",
     "gmail_sink_match",
@@ -151,6 +156,7 @@ INERT_SINKS: Set[str] = {
 #: What each acting sink actually does, for a message a person can act
 #: on. "sends email" beats "is an acting sink".
 _WHAT_IT_DOES: Dict[str, str] = {
+    "chat_reply": "answers the customer in the chat page",
     "gmail_sink": "sends email",
     "gmail_sink_cover_letter": "sends email",
     "gmail_sink_match": "sends email",

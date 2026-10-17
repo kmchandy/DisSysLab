@@ -66,9 +66,13 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
 4. **Thirty students installing at once** has never been tried. Windows
    is the sharp end. Do it before 4 January; what it finds needs a
    release.
-5. **Lab 1.** Teaching order per spec §14: annotators, routers and the
-   built-in coordinators first; authors and stateful Python roles with
-   the protocol algorithms.
+5. **Lab 1 needs a real-model rehearsal.** Built: `course/lab1.html` (the
+   one-dollar Tahoe), the `car_dealer` gallery office, `chat_page` /
+   `chat_reply`, `grade.py`, and a reference guard in
+   `tests/e2e/car_dealer_guarded/`; all tested against a scripted model.
+   Not yet known: whether the starter is vulnerable *enough* to the
+   default model (if Sal resists every attack in `attacks.jsonl`, Step 5
+   teaches nothing), and how often the grader misjudges real replies.
 6. **Cost guard on generated offices.** `dsl new` is told to prefer a
    file source and small `max_articles`; nothing enforces it. A student
    who leaves a generated office polling a hosted model over a weekend

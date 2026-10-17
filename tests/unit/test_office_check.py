@@ -67,10 +67,28 @@ def test_python_that_reaches_the_network_is_a_note(tmp_path):
     assert note.startswith("line 6: roles/fetch.py imports `requests`.")
 
 
+#: Gallery offices that raise a guardrail note on purpose: the lab's
+#: starter is unguarded, and the note is the first thing students fix.
+NOTED_ON_PURPOSE = {"car_dealer"}
+
+
 def test_the_gallery_offices_raise_no_guardrail_notes():
     gallery = Path(__file__).resolve().parents[2] / "dissyslab" / "gallery"
     for office in sorted(p.parent for p in gallery.glob("*/office.md")):
-        assert check_office(office).notes == [], office.name
+        if office.name not in NOTED_ON_PURPOSE:
+            assert check_office(office).notes == [], office.name
+
+
+def test_the_unguarded_lab_office_is_noted_and_the_guarded_one_is_not(tmp_path):
+    import shutil
+    root = Path(__file__).resolve().parents[2]
+    starter = root / "dissyslab" / "gallery" / "car_dealer"
+    (note,) = check_office(starter).notes
+    assert "text from customer can reach screen" in note
+    guarded = tmp_path / "car_dealer"
+    shutil.copytree(starter, guarded)
+    shutil.copytree(root / "tests" / "e2e" / "car_dealer_guarded", guarded, dirs_exist_ok=True)
+    assert check_office(guarded).notes == []
 
 
 def test_a_long_path_is_still_found(tmp_path):
