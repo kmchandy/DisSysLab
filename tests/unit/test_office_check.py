@@ -97,3 +97,42 @@ def test_a_trusted_source_or_an_inert_sink_is_not_reported(tmp_path):
         "items.jsonl": "{}\n",
     })
     assert check_office(office).notes == []
+
+
+# ── Router outboxes against the values the roles declare (W26, W27) ────────
+
+DECIDER = ('"""\n---\nin: n\nout: size (small | large)\n---\n"""\n\n\n'
+           "class Decider:\n    def __call__(self, item):\n"
+           "        return {\"size\": \"small\" if item[\"n\"] < 5 else \"large\"}\n")
+
+
+def _router_office(tmp_path, connections, decider=DECIDER):
+    return write(tmp_path / "sizes", {
+        "office.md": (
+            "sources:\n    items: file_source(path=\"items.jsonl\")\n"
+            "sinks:\n    console_printer\n    discard\n"
+            "agents:\n    D: decider\n    Rex: router(on=\"size\")\n"
+            "connections:\n    items -> D -> Rex\n" + connections),
+        "roles/decider.py": decider,
+        "items.jsonl": "{\"n\": 1}\n",
+    })
+
+
+def test_a_misspelt_router_value_is_noted(tmp_path):
+    office = _router_office(tmp_path, "    Rex.smal -> console_printer\n    Rex.large -> discard\n")
+    notes = check_office(office).notes
+    assert "line 11: Rex.smal can never be used: D declares size as small | large. " \
+           "Did you mean 'small'?" in notes
+    assert "line 8: Rex has no outbox for size 'small' (declared by D) and no otherwise; " \
+           "such a message would fail at run time." in notes
+
+
+def test_otherwise_covers_the_values_without_an_outbox(tmp_path):
+    office = _router_office(tmp_path, "    Rex.small -> console_printer\n    Rex.otherwise -> discard\n")
+    assert check_office(office).notes == []
+
+
+def test_a_role_that_lists_no_values_is_not_judged(tmp_path):
+    office = _router_office(tmp_path, "    Rex.tiny -> console_printer\n",
+                            decider=DECIDER.replace("size (small | large)", "size"))
+    assert check_office(office).notes == []

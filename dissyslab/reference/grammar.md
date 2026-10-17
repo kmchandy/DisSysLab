@@ -248,9 +248,9 @@ broken/office.md:
   problem: line 6: a gate takes no arguments.
   problem: line 7: no agent called 'clerck' in roles/ or the built-ins. Did you mean 'clerk'?
   problem: line 9: roles/manager.py: front matter line 3: 'decision (yes | no' is not a field, or a field with values like 'verdict (yes | no)'.
-  problem: line 11: an English role takes only ai=, not style (spec 4.2).
-  problem: line 14: Gate has inboxes in and done; it has no 'finished' (spec 3.3).
-  problem: line 16: Manager has one outbox, out; it has no 'yes' (spec 3.3).
+  problem: line 11: an English role takes only ai=, not style. See `dsl grammar roles`.
+  problem: line 14: Gate has inboxes in and done; it has no 'finished'. See `dsl grammar`, Ports.
+  problem: line 16: Manager has one outbox, out; it has no 'yes'. See `dsl grammar`, Ports.
   note: line 10: Jay is unassigned, so this office is a draft: it can be checked, not run.
 ```
 
@@ -258,7 +258,14 @@ It checks the syntax, that every kind exists, every role's front matter,
 the packages a Python role `needs:`, the arguments of routers,
 synchronizers, gates and English roles, nested offices, and every port.
 
-Two **notes** are about what an office can do rather than whether it runs.
+**Notes** are things that are probably mistakes, or worth knowing; they
+never fail the check. A router whose outbox names a value that the role
+feeding it never produces (`Rex.aprove`, when the role declares
+`approve | escalate`) gets a note naming the nearest value, and so does a
+declared value with no outbox and no `otherwise`. This works when the
+role lists its values in `out:`.
+
+Two notes are about what an office can do rather than whether it runs.
 Guardrails are recommended, never required, so they never fail the check:
 
 - **Text from the open web can reach something that acts.** A source that

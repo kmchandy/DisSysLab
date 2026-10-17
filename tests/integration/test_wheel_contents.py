@@ -59,6 +59,8 @@ REQUIRED_FILE_GLOBS = [
     "dissyslab/gallery/backyard_birds/office.md",
     "dissyslab/gallery/backyard_birds/samples/.gitkeep",
     "dissyslab/gallery/debate/office.md",
+    "dissyslab/gallery/inbox_sorter/office.md",
+    "dissyslab/gallery/inbox_sorter/messages.jsonl",
     "dissyslab/gallery/mac_speed_suite/office.md",
     "dissyslab/gallery/org_news_filter/office.md",
     "dissyslab/gallery/org_two_office_news/office.md",

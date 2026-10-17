@@ -129,7 +129,7 @@ def resolve_declaration(decl: Declaration, office_dir: Path) -> Found | Problem:
         if kind in builtin:
             return problem(
                 f"{LOCAL_FOLDER[section]}/{files[0].name} reuses the built-in name {kind!r}; "
-                "copy it under a new name instead (spec 4.2)."
+                "copy it under a new name instead (`dsl grammar roles`)."
             )
         return Found(decl.name, kind, "local", files[0])
 

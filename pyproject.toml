@@ -181,6 +181,8 @@ exclude = [
   "gallery/debate/debate_transcript.jsonl",
   "gallery/situation_room_pro/briefings.jsonl",
   "gallery/backyard_birds/bird_detections.jsonl",
+  "gallery/inbox_sorter/urgent.jsonl",
+  "gallery/inbox_sorter/later.jsonl",
 ]
 
 [tool.pytest.ini_options]

@@ -1200,6 +1200,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     print()
     print("Next steps:")
     print(f"  cd {target}")
+    print("  dsl check .      every problem, without running anything")
     print("  dsl run .")
     if _office_uses_llm_roles(target) and not os.environ.get("ANTHROPIC_API_KEY"):
         print()
@@ -1339,9 +1340,28 @@ def _diagnose_env_file() -> tuple[str, str]:
 
     detail is a one-line human-readable summary for the OK/FAIL line.
     """
+    # The file `dsl run` loads (_load_env): the nearest .env in this folder
+    # or one above it. Diagnosing only ./.env reported "no .env" to a
+    # student whose key sat, as the guide tells them to put it, in the
+    # course folder one level up -- and was being used.
     env_path = Path(".env")
+    try:
+        from dotenv import find_dotenv
+
+        found = find_dotenv(usecwd=True)
+        if found:
+            env_path = Path(found)
+    except ImportError:
+        pass
     if not env_path.exists():
-        return ("absent", "no .env in current directory")
+        return ("absent", "no .env in this folder or any folder above it")
+    where = "" if env_path.resolve() == Path(".env").resolve() else f"{env_path}: "
+    status, detail = _diagnose_env_text(env_path)
+    return status, where + detail
+
+
+def _diagnose_env_text(env_path: Path) -> tuple[str, str]:
+    """The checks of _diagnose_env_file, on the file it chose."""
 
     try:
         raw = env_path.read_bytes()
@@ -1427,9 +1447,9 @@ def _env_file_advice(status: str) -> list[str]:
         ]
     if status == "absent":
         return [
-            "Fix: no .env was found in the current directory. Either",
-            "     create one here, or run `dsl doctor` from inside your",
-            "     office folder. Quick create:",
+            "Fix: no .env was found in this folder or any folder above it.",
+            "     Put one in your course folder, which serves every office",
+            "     inside it (docs/GETTING_STARTED.md, part 5):",
             '       echo "ANTHROPIC_API_KEY=<paste-your-key>" > .env',
         ]
     return []
@@ -1703,7 +1723,7 @@ def cmd_doctor(args: argparse.Namespace) -> int:
                 print(f"  [    ] {required_key}: not set")
                 print(f"         Needed only by offices with LLM roles on "
                       f"backend '{active}'.")
-                print("         Key-free offices (periodic_brief, recovery_demo)")
+                print("         Key-free offices (returns_desk, room_climate_monitor)")
                 print("         run without it.")
                 # Only nudge about .env when a key is actually wanted.
                 if env_status == "absent":
@@ -1845,7 +1865,7 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         epilog=(
             "Common workflow:\n"
-            "  dsl init my_first_office briefing    # copy a gallery office\n"
+            "  dsl init returns_desk my_desk        # copy a gallery office\n"
             "  cd briefing\n"
             "  dsl run .                            # run it; Ctrl-C to stop\n"
             "\n"
@@ -1891,7 +1911,7 @@ def build_parser() -> argparse.ArgumentParser:
         ),
         epilog=(
             "Example:\n"
-            "  dsl init my_first_office briefing\n"
+            "  dsl init returns_desk my_desk\n"
             "  cd briefing\n"
             "  dsl run ."
         ),
@@ -2305,18 +2325,30 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv: list[str] | None = None) -> int:
-    # Load .env from the current working directory (or any ancestor) so that
-    # students who follow the micro-course and put ANTHROPIC_API_KEY into a
-    # .env file in their office folder actually get it picked up by `dsl run`.
-    # This has to happen before any subcommand runs, because ai_agent.py and
-    # friends read os.environ directly at call time. If no .env is found,
-    # load_dotenv() is a no-op.
+def _load_env() -> None:
+    """Load ``.env`` from the current folder or the nearest one above it.
+
+    So a student who puts ANTHROPIC_API_KEY in a ``.env`` in their office
+    folder has it read by ``dsl run``. It must happen before any subcommand
+    runs, because the backends read ``os.environ`` at call time.
+
+    ``usecwd=True`` is the whole point. Without it, python-dotenv searches
+    upward from the file that *called* it -- this one, inside
+    site-packages -- and never sees the student's folder. That went
+    unnoticed because an editable install lives inside the repository
+    (which has its own ``.env``), and because the tests run ``dsl`` through
+    ``python -c``, which dotenv treats as interactive and searches from the
+    current folder after all. ``test_cli_env.py`` calls this from a file.
+    """
     try:
-        from dotenv import load_dotenv
-        load_dotenv()
+        from dotenv import find_dotenv, load_dotenv
     except ImportError:
-        pass
+        return
+    load_dotenv(find_dotenv(usecwd=True))
+
+
+def main(argv: list[str] | None = None) -> int:
+    _load_env()
 
     # Optional backend registration hook. Set DSL_BACKEND_MODULE to an
     # import path (e.g. "my_backends" or "my_app.backends") and we

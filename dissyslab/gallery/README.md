@@ -4,6 +4,7 @@ Each folder is one office. Each teaches one idea, roughly in this order:
 
 | Office | Idea |
 |---|---|
+| [inbox_sorter](inbox_sorter/) | your first office: an English role decides, a router sorts (built step by step in `docs/GETTING_STARTED.md`) |
 | [org_news_filter](org_news_filter/) | a router: an English role decides, a router routes |
 | [returns_desk](returns_desk/) | one item at a time: a gate, and escalation |
 | [room_climate_monitor](room_climate_monitor/) | a keyed synchronizer joining two sensors |

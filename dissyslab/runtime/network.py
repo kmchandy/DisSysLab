@@ -991,6 +991,15 @@ class Network:
         # the summary says, because it is the only one that means some
         # of the work simply did not happen -- and because the office
         # otherwise finished normally and looks like a success.
+        # Work held for ever (spec 4.5, item 6). The full report, with the
+        # path that proves it, was printed when the stall was found, which
+        # may be far above; the summary is where a reader looks for why
+        # the exit status is not 0.
+        for holder, lines in sorted(report.get("stalls", {}).items()):
+            print()
+            print(f"  {lines[0]}")
+            print("    (the path that proves it is printed above, under 'Stalled:')")
+
         broken = report.get("failed_agents", [])
         if broken:
             print()
@@ -999,6 +1008,7 @@ class Network:
                       f"were not processed.")
                 if detail:
                     print(f"    first failure: {detail}")
+        if broken or report.get("stalls"):
             print("  The office finished; this work did not. `dsl run` "
                   "exits non-zero.")
 

@@ -40,6 +40,7 @@ that reaches no sink, a sink nothing feeds), spec section 9, W16-W32.
 
 from __future__ import annotations
 
+import difflib
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Callable
@@ -188,6 +189,7 @@ def _check(office_dir: Path, stack: tuple[Path, ...]) -> tuple[Report, OfficeFil
         except BuildError as exc:
             report.problems.append(str(exc))
 
+    report.notes.extend(_router_values(office, found))
     report.notes.extend(_untrusted_reaches_acting(office, found))
     report.notes.extend(_python_reach(office, found, office_dir))
     return report, office
@@ -229,6 +231,70 @@ def _untrusted_reaches_acting(office: OfficeFile, found: dict[str, Found]) -> li
                 "you meant, send on only fields you chose -- a label, a score, a URL -- "
                 "declared in out:, so nothing else gets through."
             )
+    return notes
+
+
+def _declared_values(found: Found | None, field_name: str) -> tuple[str, ...]:
+    """The values a role's front matter lists for ``field_name``, or ()."""
+    if found is None or found.path is None:
+        return ()
+    try:
+        fm = read_front_matter(found.path)
+    except FrontMatterError:
+        return ()  # reported as a problem already
+    fields = list(fm.outputs or ())
+    for c in fm.conditionals:
+        fields.extend(c.fields)
+    for f in fields:
+        if f.name == field_name and f.values:
+            return tuple(f.values)
+    return ()
+
+
+def _router_values(office: OfficeFile, found: dict[str, Found]) -> list[str]:
+    """Compare each router's outboxes with the values the roles feeding it declare.
+
+    A role that lists its values (``out: verdict (publish | revise)``)
+    says which outboxes a router on that field can ever use. An outbox
+    naming another value can receive nothing -- usually a misspelling --
+    and a value with no outbox and no ``otherwise`` will fail at run time.
+    Notes, not problems (spec 9, W26 and W27): a role with no listed
+    values, or a router fed by something else, is not checked.
+    """
+    notes: list[str] = []
+    for d in office.agents:
+        f = found.get(d.name)
+        on = d.args.get("on")
+        if f is None or f.kind != "router" or not isinstance(on, str):
+            continue
+        feeders = [c.sender.name for c in office.connections if c.receiver.name == d.name]
+        declared: dict[str, tuple[str, ...]] = {}
+        for name in feeders:
+            values = _declared_values(found.get(name), on)
+            if values:
+                declared[name] = values
+        if not declared or len(declared) != len(feeders):
+            continue  # some feeder does not say: nothing can be concluded
+        allowed = list(dict.fromkeys(v for vs in declared.values() for v in vs))
+        who = ", ".join(declared)
+        outboxes = {c.sender.port: c.line for c in office.connections
+                    if c.sender.name == d.name and c.sender.port}
+        for port, line in sorted(outboxes.items(), key=lambda p: p[1]):
+            if port != "otherwise" and port not in allowed:
+                near = difflib.get_close_matches(port, allowed, n=1)
+                hint = f" Did you mean '{near[0]}'?" if near else ""
+                notes.append(
+                    f"line {line}: {d.name}.{port} can never be used: {who} declares "
+                    f"{on} as {' | '.join(allowed)}.{hint}"
+                )
+        if "otherwise" not in outboxes:
+            for v in allowed:
+                if v not in outboxes:
+                    notes.append(
+                        f"line {d.line}: {d.name} has no outbox for {on} '{v}' "
+                        f"(declared by {who}) and no otherwise; such a message "
+                        "would fail at run time."
+                    )
     return notes
 
 

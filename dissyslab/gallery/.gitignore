@@ -11,3 +11,5 @@ backyard_birds/samples/*
 !backyard_birds/samples/.gitkeep
 mac_speed_suite/report.html
 mac_speed_suite/*.csv
+inbox_sorter/urgent.jsonl
+inbox_sorter/later.jsonl

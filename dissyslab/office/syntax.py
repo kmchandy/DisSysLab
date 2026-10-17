@@ -245,7 +245,7 @@ def parse_office_text(text: str) -> OfficeFile:
                 line,
                 raw,
                 "this looks like the old sentence form. Write declarations as "
-                "'name: kind(args)' and connections as 'a -> b' (spec section 3.1).",
+                "'name: kind(args)' and connections as 'a -> b'. See `dsl grammar`.",
             )
 
         if section is None:

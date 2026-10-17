@@ -397,3 +397,21 @@ def test_every_file_a_gallery_office_reads_is_tracked_by_git():
         f"gallery offices read files that are not in git: {untracked}. "
         "Check .gitignore (`git check-ignore -v <file>`), then `git add` them."
     )
+
+
+# ── inbox_sorter ───────────────────────────────────────────────────────────
+
+
+def test_inbox_sorter(tmp_path, model):
+    office = copy_example("inbox_sorter", tmp_path)
+
+    def answer(system, m):
+        assert "Decide how soon it needs an answer" in system
+        due = "due" in m["text"] and ("tomorrow" in m["text"] or "hours" in m["text"])
+        return json.dumps({"urgency": "urgent" if due else "routine"})
+
+    model(answer)
+    assert run_office(office) == 0
+    urgent = [m["id"] for m in read_jsonl(office / "urgent.jsonl")]
+    later = [m["id"] for m in read_jsonl(office / "later.jsonl")]
+    assert sorted(urgent) == [1, 3] and sorted(later) == [2, 4]

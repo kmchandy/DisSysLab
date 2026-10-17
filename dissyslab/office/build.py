@@ -95,7 +95,7 @@ def english_args_problem(decl: Declaration) -> str | None:
     if others:
         return (
             f"line {decl.line}: an English role takes only ai=, not "
-            f"{', '.join(others)} (spec 4.2)."
+            f"{', '.join(others)}. See `dsl grammar roles`."
         )
     return None
 
@@ -197,7 +197,7 @@ def _agent(decl: Declaration, found: Found, office: OfficeFile) -> Agent:
         if found.kind == "unassigned":
             raise BuildError(
                 f"line {decl.line}: {decl.name} is unassigned; a draft office can be "
-                "checked and drawn, but not run (spec 3.5)."
+                "checked and drawn, but not run. Give it a role first."
             )
         raise BuildError(f"line {decl.line}: {found.kind} is not built yet (Phase 3).")
     return _role(decl, found)
@@ -239,7 +239,7 @@ def _sender(c: Connection, p: _Ports) -> tuple[str, str]:
         if port not in outs:
             raise BuildError(
                 f"line {c.line}: office {name}'s outputs are {', '.join(outs) or 'none'}; "
-                f"write {name}.<output> -> {c.receiver} (spec 3.4)."
+                f"write {name}.<output> -> {c.receiver}. See `dsl grammar`, Nested offices."
             )
         return name, port
     if p.found[name].kind == "router":
@@ -247,7 +247,7 @@ def _sender(c: Connection, p: _Ports) -> tuple[str, str]:
     if port in (None, "out"):
         return name, RUNTIME_OUT
     raise BuildError(
-        f"line {c.line}: {name} has one outbox, out; it has no {port!r} (spec 3.3)."
+        f"line {c.line}: {name} has one outbox, out; it has no {port!r}. See `dsl grammar`, Ports."
     )
 
 
@@ -262,7 +262,7 @@ def _receiver(c: Connection, p: _Ports) -> tuple[str, str]:
         if port not in ins:
             raise BuildError(
                 f"line {c.line}: office {name}'s inputs are {', '.join(ins) or 'none'}; "
-                f"write {c.sender} -> {name}.<input> (spec 3.4)."
+                f"write {c.sender} -> {name}.<input>. See `dsl grammar`, Nested offices."
             )
         return name, port
     found = p.found[name]
@@ -275,7 +275,7 @@ def _receiver(c: Connection, p: _Ports) -> tuple[str, str]:
         names = " and ".join(inboxes)
         raise BuildError(
             f"line {c.line}: {name} has inbox{'es' if len(inboxes) > 1 else ''} "
-            f"{names}; it has no {written_in!r} (spec 3.3)."
+            f"{names}; it has no {written_in!r}. See `dsl grammar`, Ports."
         )
     return name, inboxes[written_in]
 
@@ -299,7 +299,7 @@ def _runtime_connection(c: Connection, p: _Ports) -> tuple[str, str, str, str]:
 def _nested_office(
     decl: Declaration, office_dir: Path, stack: tuple[Path, ...]
 ) -> Network:
-    """``name: office(path="...")``: build the office in that folder (spec 3.4)."""
+    """``name: office(path="...")``: build the office in that folder. See `dsl grammar`, Nested offices."""
     args = dict(decl.args)
     rel = args.pop("path", None)
     if not isinstance(rel, str) or args:
@@ -332,6 +332,13 @@ def build_network(
     found, problems = resolve_office(office, office_dir)
     if problems:
         raise BuildError("\n".join(f"line {p.line}: {p.message}" for p in problems))
+    drafts = [d for d in office.agents if found[d.name].kind == "unassigned"]
+    if drafts:
+        # Refused before anything is built: a draft is not run, so no
+        # source should open a file or a feed on its way to being refused.
+        raise BuildError("\n".join(
+            f"line {d.line}: {d.name} is unassigned; a draft office can be "
+            "checked and drawn, but not run. Give it a role first." for d in drafts))
 
     ports = _Ports(found=found, inputs=office.inputs, outputs=office.outputs)
     blocks: dict[str, Agent | Network] = {}
