@@ -14,6 +14,7 @@ the guide says so.)
 from __future__ import annotations
 
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -52,10 +53,25 @@ def replace(path: Path, old: str, new: str) -> None:
     path.write_text(text.replace(old, new), encoding="utf-8")
 
 
+def _unnumbered(text: str) -> str:
+    """Text without console_printer's "[n] " counters, which number messages
+    in the order they reach the printer: not always ticket order (in
+    returns_desk the gate releases the next ticket while the printer is still
+    receiving this one), so a line is compared without its number."""
+    return re.sub(r"^\[\d+\] ", "", text, flags=re.M)
+
+
 def quoted_in_guide_and_printed(lines: list[str], out: str) -> None:
     for line in lines:
         assert line in GUIDE, f"the guide no longer quotes: {line!r}"
-        assert line in out, f"the guide quotes a line DisSysLab no longer prints:\n{line}\n\n{out}"
+        assert _unnumbered(line) in _unnumbered(out), (
+            f"the guide quotes a line DisSysLab no longer prints:\n{line}\n\n{out}")
+
+
+def test_unnumbered_ignores_only_the_counter():
+    assert _unnumbered("[3] {'ticket_id': 'T4'}\n[4] {'ticket_id': 'T3'}") == (
+        "{'ticket_id': 'T4'}\n{'ticket_id': 'T3'}")
+    assert _unnumbered("x [3] y") == "x [3] y"
 
 
 TICKET_LINES = [

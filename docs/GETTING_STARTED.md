@@ -222,6 +222,11 @@ How to read this:
   a set of named **fields**. Each ticket arrived with five fields
   (`ticket_id` to `reason`); the clerk added `clerk_decision`, and for the
   two large refunds the manager added `manager_decision`.
+- The `n` counts messages in the order they reach the printer. Once in
+  a while two of them swap: the gate lets the next ticket in at the same
+  moment the printer receives this one, and either can get there first.
+  The same office, the same input, a different order: that is what
+  running agents at the same time means.
 - The **run summary** counts, for every agent, the messages it sent and
   received. Use it to see where messages went. Here the gate received 8:
   4 tickets, and 4 "done" signals.
