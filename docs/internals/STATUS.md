@@ -42,19 +42,34 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
   back from held work proving it can never be released).
 - **Ctrl-C** stops a running office with its summary (fixed 17 Oct; it
   used to hang).
-- **The gallery** (`dissyslab/gallery/`): ten offices, each with a README
-  and an end-to-end test, from `inbox_sorter` to `mac_speed_suite`.
+- **The gallery** (`dissyslab/gallery/`): eleven offices, each with a
+  README and an end-to-end test, from `inbox_sorter` to `mac_speed_suite`,
+  including `car_dealer` (Lab 1).
+- **Lab 1** (`course/lab1.html`, the one-dollar Tahoe): the `chat_page`
+  source and `chat_reply` sink (a local chat page in the browser), the
+  `car_dealer` office, `attacks.jsonl` and `grade.py`, and a reference
+  guard in `tests/e2e/car_dealer_guarded/` (public: the repository is).
+  The files the handout prints are built and run by the tests.
+- **Course pages students open first, in 2.0:** `course/index.html`,
+  `setup.html`, `microcourse.html` (was `microcourse_draft.html`; the old
+  root `office_microcourse.html` is now a redirect to it),
+  `OfficeToolkit.html`, `lab1.html`. `tests/integration/test_course_pages.py`
+  checks their links, the office files and `dsl check` output they quote,
+  and the toolkit's lists against the package.
 - **Docs:** `docs/GETTING_STARTED.md` (the student guide; its outputs are
   re-checked by `tests/integration/test_getting_started.py`), the
   `dsl grammar` reference (shipped in the package, also what `dsl new`
   gives the model), recipes, and the three skills, all in 2.0.
 - **CI:** Linux 3.10–3.14, macOS, Windows (advisory), mypy on the strict
-  modules. The suite is about 720 tests and runs in under a minute.
+  modules. The suite is about 740 tests and runs in under a minute.
+  Windows has failed on every commit since 6c (1); the failing tests have
+  not been read (the job log needs a signed-in GitHub user).
 
 ## Open, in order
 
-1. **Finish 6c:** the microcourse and the course pages (`course/`) still
-   teach version 1.
+1. **Lab 1 needs a real-model rehearsal** (see 6 below), and the
+   **Windows CI failures** need their names: open the latest Windows job,
+   paste the `FAILED` lines.
 2. **Model reliability check** (spec §11), before release: every English
    role, old prompt form against new, on a small local model and a
    frontier model; tune the closing sentences; check every example in a
@@ -66,14 +81,19 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
 4. **Thirty students installing at once** has never been tried. Windows
    is the sharp end. Do it before 4 January; what it finds needs a
    release.
-5. **Lab 1 needs a real-model rehearsal.** Built: `course/lab1.html` (the
-   one-dollar Tahoe), the `car_dealer` gallery office, `chat_page` /
-   `chat_reply`, `grade.py`, and a reference guard in
-   `tests/e2e/car_dealer_guarded/`; all tested against a scripted model.
-   Not yet known: whether the starter is vulnerable *enough* to the
-   default model (if Sal resists every attack in `attacks.jsonl`, Step 5
-   teaches nothing), and how often the grader misjudges real replies.
-6. **Cost guard on generated offices.** `dsl new` is told to prefer a
+5. **Course pages still in version 1:** the lecture notes
+   `OfficeRepresentation.html` (and its notes), `DistributedSystemModel.html`
+   (one office in the sentence form) and `lecture_build.html` (`--trace`);
+   and `labs.html`, the staff plan, which now says at the top what changed:
+   Labs 2–4 need re-planning (no `select`/`match`, no `--trace`,
+   `--resume`, `dsl build` in 2.0). `README.pypi.md` should be read
+   through before the release, since it becomes the PyPI page.
+6. **Lab 1, rehearsed with a real key:** whether the starter is
+   vulnerable *enough* to the default model (if Sal resists every attack
+   in `attacks.jsonl`, Step 5 teaches nothing), and how often the grader
+   misjudges real replies. Ten minutes: `dsl init car_dealer lab1`, try
+   Bakke's message in the browser, then Step 5.
+7. **Cost guard on generated offices.** `dsl new` is told to prefer a
    file source and small `max_articles`; nothing enforces it. A student
    who leaves a generated office polling a hosted model over a weekend
    finds out.

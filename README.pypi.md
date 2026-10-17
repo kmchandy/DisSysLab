@@ -119,7 +119,7 @@ for full release notes.
   job-hunting assistant, a wardrobe stylist, and a local-events
   calendar matcher — use `dissyslab` as a PyPI dependency.
 - Visual walk-through in the
-  [micro-course](https://kmchandy.github.io/DisSysLab/office_microcourse.html).
+  [micro-course](https://kmchandy.github.io/DisSysLab/course/microcourse.html).
 
 
 ## Requirements

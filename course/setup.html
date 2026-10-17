@@ -58,146 +58,153 @@
   <header>
     <div class="kicker">DisSysLab &middot; before the first class</div>
     <h1>Setting up</h1>
-    <p class="lead">You do not need to know anything about distributed systems
-      to start. You need some Python, and something you would like watched.
-      Everything below has been run start to finish on a clean machine; where a
-      step has a catch, the catch is written down rather than left for you to
-      hit.</p>
+    <p class="lead">Install DisSysLab, run your first office, read what you ran,
+      and get the key the labs need. You do not need to know anything about
+      distributed systems to start; you need some Python and a terminal.</p>
     <div class="meta">
-      <span><b>Time</b> ~30 minutes</span>
-      <span><b>You need</b> Cowork, Python 3.10+</span>
-      <span><b>No API key</b> for any of this</span>
+      <span><b>Time</b> about 45 minutes</span>
+      <span><b>You need</b> Python 3.10 or later</span>
+      <span><b>An API key</b> only for step 5</span>
     </div>
   </header>
 
-  <h2><span class="n">Before you start</span>On your computer, not in the cloud</h2>
-  <p>When you begin a task in Cowork you can run it <b>on your computer</b> or
-     <b>in the cloud</b>. Choose on your computer. A cloud task gets a fresh
-     machine that is thrown away afterwards, so the office you build today
-     would not be there tomorrow.</p>
+  <p>This page is the short version. The full guide,
+     <a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/GETTING_STARTED.md">GETTING_STARTED</a>,
+     has the same steps with every output shown, and more. If anything here
+     surprises you, look there first.</p>
 
-  <h2><span class="n">Step 1</span>Let Cowork install it</h2>
-  <blockquote>The project is at
-    https://github.com/kmchandy/DisSysLab. Install its Python package
-    <code>dissyslab</code> for me, then run <code>dsl list</code> and show me
-    what offices come with it.</blockquote>
-  <p><b>Name the repository, every time.</b> <i>Install dissyslab</i> on its own
-     asks an assistant to trust a name it cannot check. Given the address it can
-     read the project's own instructions, confirm the package it is about to
-     install is this one, and find the skill, which lives in that repository and
-     not on PyPI.</p>
-  <p>You should get a list of around forty offices — a morning brief, a news
-     situation room, a bird-call classifier, a stock watcher. These are working
-     programs, not examples in a book.</p>
-  <p>If anything looks wrong: <i>run <code>dsl doctor</code> and tell me what it
-     says.</i> Its first line is a verdict — <code>Ready. You can build an
-     office.</code>, or <code>Not ready:</code> and the one thing that is wrong.
-     Everything under it is detail.</p>
+  <h2><span class="n">Step 1</span>A folder for the course</h2>
+  <p>In a terminal (Terminal on macOS, PowerShell on Windows):</p>
+<pre>python3 --version
+mkdir dsl_course
+cd dsl_course
+python3 -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate</pre>
+  <p>The first line should say Python 3.10 or higher. On Windows, type
+     <code>python</code> instead of <code>python3</code>, here and below.</p>
+  <div class="warn"><b>Every new terminal:</b> <code>cd</code> into
+     <code>dsl_course</code> and run the <code>activate</code> line again. If
+     <code>dsl</code> is ever "command not found", this is almost always why.</div>
 
-  <h2><span class="n">Step 2</span>Watch one run</h2>
-  <blockquote>Make me my own copy of the <code>periodic_brief</code> office in a
-    folder called <code>my_brief</code>, then run it and open the result.</blockquote>
-  <p>In ten to twenty seconds you get <code>brief.html</code>: real news
-     headlines and real weather. No key, no model download.</p>
-  <div class="warn"><b>Why the copy matters.</b> If you skip it and run
-    <code>dsl run periodic_brief</code>, it works — but it writes
-    <code>brief.html</code> inside the installed package, somewhere in your
-    Python site-packages, not in the folder you are standing in. You will not
-    find it. Make a copy first. Always.</div>
+  <h2><span class="n">Step 2</span>Install it, and ask it whether it works</h2>
+<pre>pip install dissyslab
+dsl --version
+dsl doctor</pre>
+  <p><code>dsl --version</code> should say <code>dissyslab 2.0</code> or later.
+     If it says 1.something, run <code>pip install --upgrade dissyslab</code>.
+     The first line <code>dsl doctor</code> prints should be:</p>
+<pre>Ready. You can build an office.</pre>
+  <p>If instead it says <b>Not ready:</b>, the rest of that line is the one thing
+     to fix. Below it, two lines will say <code>not set</code> or
+     <code>not installed</code> for now, and that is fine: the API key (step 5)
+     and <code>yfinance</code> (only for the stock-market office).</p>
 
-  <h2><span class="n">Step 3</span>Read what you just ran</h2>
-  <p>Open <code>my_brief/office.md</code>. It is not code:</p>
-<pre><code>Sources: bbc_world(max_articles=5), npr_news(max_articles=5)
-Sinks: brief_html
+  <h2><span class="n">Step 3</span>Run an office</h2>
+  <p>An <b>office</b> is a small distributed system: <b>agents</b> that pass
+     messages to each other. This one is a refund desk. It needs no key and no
+     network.</p>
+<pre>dsl init returns_desk my_desk
+cd my_desk
+dsl check .
+dsl run .</pre>
+  <p><code>dsl init</code> copies an office from the gallery into a folder of
+     your own; always work on a copy. <code>dsl check</code> reads the office
+     and reports every problem it can find without running anything:</p>
+<pre>my_desk/office.md:
+  no problems found.</pre>
+  <p><code>dsl run</code> runs it. Four refund requests go through, and the office
+     stops by itself:</p>
+<pre>[FileSource] Loaded 4 items from tickets.jsonl (jsonl)
+[1] {'ticket_id': 'T1', 'customer': 'Ana', 'amount': 20, 'item': 'book', 'reason': 'wrong item', 'clerk_decision': 'approve'}
+[2] {'ticket_id': 'T2', 'customer': 'Ben', 'amount': 120, 'item': 'chair', 'reason': 'damaged', 'clerk_decision': 'escalate', 'manager_decision': 'approve'}
+[3] {'ticket_id': 'T3', 'customer': 'Cy', 'amount': 35, 'item': 'lamp', 'reason': 'changed mind', 'clerk_decision': 'approve'}
+[4] {'ticket_id': 'T4', 'customer': 'Dee', 'amount': 80, 'item': 'monitor', 'reason': 'defective', 'clerk_decision': 'escalate', 'manager_decision': 'approve'}
 
-Agents:
-Sasha is a deduplicator(by="url").
-Riley is a writer.
+Run summary (messages):
+  my_desk::Clerk             sent      4   received      4
+  my_desk::Gate              sent      4   received      8
+  my_desk::Manager           sent      2   received      2
+  my_desk::Rex               sent      4   received      4
+  my_desk::console_printer   sent      0   received      4
+  my_desk::jsonl_recorder    sent      0   received      4
+  my_desk::tickets           sent      4   received      0</pre>
+  <p>Once in a while two of the numbered lines come out in the other order.
+     That is not a fault: the agents run at the same time, and either message
+     can reach the screen first.</p>
 
-Connections:
-bbc_world's destination is Sasha.
-npr_news's destination is Sasha.
-Sasha's out is Riley.
-Riley's out is brief_html.</code></pre>
-  <p>That is the whole program. <b>Sources</b> fetch things from the world.
-     <b>Sinks</b> do something with the result. <b>Agents</b> are workers, each
-     with one job. <b>Connections</b> is the network — who sends what to whom.</p>
-  <p>Each agent's job is described in <code>roles/&lt;name&gt;.md</code>, in
-     English, or <code>roles/&lt;name&gt;.py</code>, in Python. English when the
-     job needs judgment; Python when the job is exact. Python roles cost nothing
-     to run; English roles call a language model.</p>
-  <p>Change something small and run it again. Add a third source. Break
-     something on purpose and see what happens — that is allowed, and it is how
-     you find the edges.</p>
+  <h2><span class="n">Step 4</span>Read what you ran</h2>
+  <p>Open <code>office.md</code> in any editor (VS Code is a good choice):</p>
+<pre>sources:
+    tickets: file_source(path="tickets.jsonl")
 
-  <h2><span class="n">Step 4</span>Give your assistant the skill</h2>
-  <p>A <b>skill</b> is a folder of instructions that teaches your assistant how
-     to build offices correctly. Without it your assistant will improvise, and
-     improvised concurrency is exactly what this course is trying to spare you.</p>
-  <p><b>Either</b> download
-     <a href="https://github.com/kmchandy/DisSysLab/blob/main/skills/office-builder.skill">office-builder.skill</a>
-     and add it to Cowork as a skill. <b>Or</b> clone the repository and say:</p>
-  <blockquote>Clone https://github.com/kmchandy/DisSysLab. Read
-    <code>skills/office-builder/SKILL.md</code> and its <code>references/</code>
-    folder, and follow it when you build offices for me.</blockquote>
-  <div class="warn"><b>Then check it took, and check properly.</b> Installing a
-    skill can fail quietly — the button reports success and the old version
-    stays loaded. Ask: <i>does your office-builder skill list the roles that
-    ship with dissyslab, and what does it say to do if <code>dsl check</code> is
-    missing from my installed version?</i> You want both halves: it should name
-    roles like <code>relevance_filter</code>, and it should say to report the
-    missing command and carry on <b>without patching your installation</b>.
-    "What does <code>dsl check</code> do?" is a bad test — every version answers
-    that, so it tells you a skill is loaded, not which one.</div>
+sinks:
+    jsonl_recorder(path="outcomes.jsonl")
+    console_printer
 
-  <h2><span class="n">Step 5</span>Build your own</h2>
-  <blockquote>I want an office that checks the campus events page every hour,
-    keeps only the events about music, and writes them to a file. Build it as a
-    DisSysLab office in a folder called <code>gig_watch</code>.</blockquote>
-  <p>Read what it wrote before you run it. You should be able to follow the
-     network, because it is four sections of English. Good first projects are
-     the ones you would actually check: something you keep refreshing a browser
-     tab for, a deadline or a price you are tired of watching by hand, a folder
-     of photos or recordings you want sorted.</p>
+agents:
+    Gate: gate
+    Clerk: clerk(limit=50)
+    Rex: router(on="clerk_decision")
+    Manager: manager
 
-  <h2><span class="n">Step 6</span>Check the wiring before you run</h2>
-  <blockquote>Run <code>dsl check</code> on my office.</blockquote>
-  <p>This reads your network and reports problems <i>without running
-     anything</i>: an agent nothing can reach, usually a name spelled two
-     different ways; an agent whose output goes nowhere; a sink nothing sends
-     to; a role you named with no file behind it; a feedback loop with nothing
-     to stop it. It reports everything at once, not just the first thing.</p>
-  <p><b>What it cannot tell you.</b> <code>dsl check</code> reads the network,
-     not the run. A wiring diagram can be perfectly correct and the office can
-     still get stuck, because getting stuck can depend on what actually arrives
-     and in what order. That difference — what you can know from the diagram
-     versus what you can only know by watching it run — is one of the real
-     ideas in this subject, and you have just met it on your own program.</p>
+connections:
+    tickets -&gt; Gate -&gt; Clerk -&gt; Rex
+    Rex.approve -&gt; jsonl_recorder, console_printer, Gate.done
+    Rex.escalate -&gt; Manager -&gt; jsonl_recorder, console_printer, Gate.done</pre>
+  <p>That is the whole program. A <b>source</b> brings messages in; a
+     <b>sink</b> writes them out; each <b>agent</b> has one job; the
+     <b>connections</b> say who sends to whom. Each job is described in
+     <code>roles/</code>: here two short Python files, <code>clerk.py</code> and
+     <code>manager.py</code>. Other offices describe jobs in English, for a
+     language model to carry out.</p>
+  <p>Change <code>clerk(limit=50)</code> to <code>clerk(limit=100)</code> and run
+     it again. Then misspell a name on purpose and run <code>dsl check .</code>
+     to see what it tells you. Breaking things on purpose is how you find the
+     edges.</p>
 
-  <h2><span class="n">If it goes wrong</span>The three usual ones</h2>
-  <p><b>It hangs and nothing happens.</b> Some agent is waiting for a message
-     that is not coming. Run <code>dsl check</code> first. If that is clean the
-     fault is in the run, not the diagram — say <i>my office hangs, help me work
-     out which agent is waiting and what for.</i></p>
-  <p><b>It finishes but produces nothing.</b> Look at the per-agent message
-     counts <code>dsl run</code> prints at the end. The first agent showing zero
-     is where the flow stops. A sink that no connection feeds is the usual
-     cause, and <code>dsl check</code> names it.</p>
-  <p><b>An English role does something odd.</b> Language models are literal. If
-     the job description is vague, the output will be too. Say what to keep,
-     what to add, and always where to send it.</p>
+  <h2><span class="n">Step 5</span>Your API key</h2>
+  <p>The labs use a language model, Anthropic's Claude, which needs a key of
+     your own. Each request costs a fraction of a cent.</p>
+  <ol>
+    <li>Go to <a href="https://console.anthropic.com/">console.anthropic.com</a>,
+        sign in, and create an API key. It starts with <code>sk-ant-</code>.
+        Copy it: it is shown only once.</li>
+    <li>Put it in a file called <code>.env</code> in your course folder. One
+        file there serves every office inside it:
+<pre>cd ~/dsl_course                    # or wherever you made it
+echo "ANTHROPIC_API_KEY=paste-your-key-here" &gt; .env</pre>
+        Replace <code>paste-your-key-here</code> with your key, with no spaces
+        or quotes. On a Mac, do not edit it in TextEdit, which saves rich text.</li>
+    <li>Run <code>dsl doctor</code>. The <code>Credentials:</code> section should
+        show <code>[SET ] ANTHROPIC_API_KEY</code>.</li>
+  </ol>
+  <div class="warn"><b>Never share your key, and never commit <code>.env</code>
+     to git.</b> Anyone with the key can spend money on your account.</div>
 
-  <h2><span class="n">Honest limits</span>What this does not do yet</h2>
+  <h2><span class="n">If it goes wrong</span>The usual ones</h2>
   <ul>
-    <li>An office runs on one machine, in one process, each agent in its own
-        thread. Separate processes are being built.</li>
-    <li>Checkpoint-and-resume is real, but an office only gets it where the
-        author switched it on.</li>
-    <li>There is no web interface. Offices produce files — HTML, JSONL, text.</li>
-    <li>Offices with English roles call a language model, which costs money.
-        Every shipped office stops after a few cycles by default, so you cannot
-        run up a bill by accident. Leave those limits until you mean to remove
-        them.</li>
+    <li><b><code>dsl: command not found</code>.</b> The virtual environment is not
+        active: step 1's <code>activate</code> line.</li>
+    <li><b><code>dsl doctor</code> says Not ready.</b> Do what the rest of that
+        line says.</li>
+    <li><b>The key is not found, or is refused.</b>
+        <a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/API_KEY_SETUP.md">API_KEY_SETUP</a>.</li>
+    <li><b>Windows.</b>
+        <a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/WINDOWS.md">WINDOWS</a>
+        has the differences.</li>
+    <li><b>Anything else.</b>
+        <a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/TROUBLESHOOTING.md">TROUBLESHOOTING</a>,
+        then the course staff, with what <code>dsl doctor</code> printed.</li>
+  </ul>
+
+  <h2><span class="n">Next</span>Build one, then break one</h2>
+  <ul>
+    <li><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/GETTING_STARTED.md">GETTING_STARTED</a>,
+        parts 4 and 6: break an office four ways and read what DisSysLab says,
+        then build an office of your own from nothing.</li>
+    <li><a href="lab1.html">Lab 1, the one-dollar Tahoe</a>: talk a car
+        dealership's chatbot into selling you a car for a dollar, then build the
+        guardrail that stops it.</li>
   </ul>
 
   <h2><span class="n">Then</span>The interesting part</h2>

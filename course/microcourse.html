@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DisSysLab micro-course (draft)</title>
+<title>DisSysLab micro-course</title>
 <style>
 :root {
   --ink: #1a1a2e; --paper: #faf8f3;
@@ -58,7 +58,7 @@ svg text { font-family: var(--font-body); }
 </style>
 </head>
 <body>
-<div class="draft">Draft for testing. It describes the redesigned language (specification of 16 October 2026), which is not yet released. Command output is illustrative.</div>
+<div class="draft">DisSysLab 2.0. Every office on these slides is in the gallery: <code>dsl init &lt;name&gt; &lt;folder&gt;</code> copies it, and the output shown is what it prints.</div>
 <div class="deck">
 
 <!-- 1 -->
@@ -89,13 +89,13 @@ svg text { font-family: var(--font-body); }
       <rect x="300" y="122" width="110" height="56" rx="12" fill="#00c9a7" fill-opacity=".18" stroke="#00947d"/><text x="355" y="146" text-anchor="middle" font-weight="700">Felix</text><text x="355" y="166" text-anchor="middle" font-size="12">topic_filter</text>
       <rect x="500" y="122" width="100" height="56" rx="28" fill="#ffd166" fill-opacity=".35" stroke="#b8860b"/><text x="550" y="146" text-anchor="middle" font-weight="700">Rex</text><text x="550" y="166" text-anchor="middle" font-size="12">router</text>
       <rect x="740" y="58" width="150" height="44" rx="10" fill="#fff" stroke="#1a1a2e"/><text x="815" y="85" text-anchor="middle">console_printer</text>
-      <rect x="740" y="198" width="150" height="44" rx="10" fill="#fff" stroke="#1a1a2e"/><text x="815" y="225" text-anchor="middle">jsonl_recorder</text>
+      <rect x="740" y="198" width="150" height="44" rx="10" fill="#fff" stroke="#1a1a2e"/><text x="815" y="225" text-anchor="middle">discard</text>
       <text x="672" y="96" font-size="13" fill="#00947d" font-weight="700">yes</text>
       <text x="672" y="214" font-size="13" fill="#d13d0e" font-weight="700">no</text>
     </g>
     <g id="msgs"></g>
   </svg>
-  <p><b>Felix</b> reads each article and decides whether it is about a topic you chose. <b>Rex</b> is a router: it sends <code>yes</code> articles to the screen and <code>no</code> articles to a file. The office runs until you stop it.</p>
+  <p><b>Felix</b> reads each article and decides whether it is about a topic you chose. <b>Rex</b> is a router: it sends <code>yes</code> articles to the screen and <code>no</code> articles to <code>discard</code>. Each feed sends two articles, and the office stops by itself when they have all been dealt with.</p>
 </div></section>
 
 <!-- 3 -->
@@ -151,7 +151,7 @@ Return only a JSON object with one field,
     </div>
     <div>
       <p>This role is a prompt in English, so a language model carries it out.</p>
-      <div class="note"><p><b>The prompt the model receives is exactly this text, followed by the message as JSON.</b> DisSysLab adds nothing. <code>dsl show topic_filter --prompt</code> prints it.</p></div>
+      <div class="note"><p><b>The prompt the model receives is exactly this text, followed by the message as JSON.</b> DisSysLab adds nothing, so the file is the whole prompt.</p></div>
       <p>The block between the <code>---</code> lines is optional metadata, not the model:</p>
       <p>The metadata is helpful for checking your network and for debugging. You
         are strongly encouraged to use metadata, but you don't have to.
@@ -247,7 +247,7 @@ out: clerk_decision (approve | escalate)
 
 <span class="k">sinks:</span>
     console_printer
-    jsonl_recorder(path=<span class="s">"filtered.jsonl"</span>)
+    discard
 
 <span class="k">agents:</span>
     <span class="n">Felix</span>: topic_filter
@@ -256,7 +256,7 @@ out: clerk_decision (approve | escalate)
 <span class="k">connections:</span>
     al_jazeera, bbc_world -&gt; Felix -&gt; Rex
     Rex.yes -&gt; console_printer
-    Rex.no -&gt; jsonl_recorder</pre>
+    Rex.no -&gt; discard</pre>
     </div>
     <div>
       <table>
@@ -284,7 +284,7 @@ out: clerk_decision (approve | escalate)
 <span class="k">connections:</span>
     Felix -&gt; Rex
     Rex.yes -&gt; console_printer
-    Rex.no -&gt; jsonl_recorder</pre>
+    Rex.no -&gt; discard</pre>
       <p>A role decides and writes its decision in a field. A router reads that one field and sends the message out of the outbox named by its value.</p>
     </div>
     <div>
@@ -310,7 +310,8 @@ out: clerk_decision (approve | escalate)
     arxiv_cs_cl(max_articles=3)
 
 <span class="k">sinks:</span>
-    intelligence_display(title=<span class="s">"title"</span>, text=<span class="s">"abstract"</span>, color=<span class="s">"relevance"</span>)
+    intelligence_display(title=<span class="s">"title"</span>, text=<span class="s">"abstract"</span>, color=<span class="s">"relevance"</span>,
+                         lines=[<span class="s">"authors"</span>, <span class="s">"paper_type"</span>, <span class="s">"reason"</span>])
 
 <span class="k">agents:</span>
     <span class="n">Carla</span>: paper_classifier       <span class="c"># adds paper_type</span>
@@ -407,7 +408,7 @@ Sync -&gt; Riley -&gt; intelligence_display, jsonl_recorder</pre>
 Qwen -&gt; Sync.qwen
 GPT -&gt; Sync.gpt
 Claude -&gt; Sync.claude
-Sync -&gt; Riley -&gt; Ref -&gt; Rex, debate_display
+Sync -&gt; Riley -&gt; Ref -&gt; Rex, panel_display
 Sync -&gt; transcript
 Rex.continue -&gt; Qwen, GPT, Claude
 Rex.finish -&gt; answers, Gate.done</pre>
@@ -447,26 +448,20 @@ Rex.finish -&gt; answers, Gate.done</pre>
   <div class="cols">
     <div>
 <pre>$ dsl check my_filter
-my_filter/office.md -- 2 problems
-
-  error  W22  Felix reads "body", and nothing
-              upstream produces it. bbc_world and
-              al_jazeera produce: source, title,
-              text, url, timestamp.
-
-  note   W26  Felix's out: lists on_topic value
-              "maybe", and Rex has no outbox
-              "maybe" and no "otherwise".
-
-dsl checks W22 explains any code.</pre>
+my_filter/office.md:
+  problem: line 17: 'console_printr' is not declared. Did you mean 'console_printer'?
+    Rex.yes -&gt; console_printr</pre>
+      <p>Fix the name, and check again:</p>
+<pre>$ dsl check my_filter
+my_filter/office.md:
+  note: line 13: Rex has no outbox for on_topic 'maybe' (declared by Felix) and no otherwise; such a message would fail at run time.
+  no other problems.</pre>
     </div>
     <div>
-      <p>Because sources, roles and sinks say what they read (<code>in:</code>) and write (<code>out:</code>), DisSysLab can follow every field through the network before anything runs.</p>
+      <p>Someone added <code>maybe</code> to Felix's <code>out:</code> line and misspelt a sink. Nothing has run, and no model has been called.</p>
       <ul>
-        <li>a field a role needs that nothing produces;</li>
-        <li>a router value with nowhere to go;</li>
-        <li>a name used but never declared;</li>
-        <li>an inbox nothing writes to, an agent nothing can reach.</li>
+        <li>A <b>problem</b> stops the office from running: a name used but never declared, a role with no file, a wrong argument.</li>
+        <li>A <b>note</b> is advice. Here, because <code>out:</code> lists the values, <code>dsl check</code> can see that a <code>maybe</code> has nowhere to go.</li>
       </ul>
       <p>The check is about structure. A correctly drawn office can still wait for ever. Finding out why is part of the course.</p>
     </div>
@@ -479,15 +474,14 @@ dsl checks W22 explains any code.</pre>
   <h1>Everything DisSysLab does,<br><span class="soft">on one slide.</span></h1>
   <table>
     <tr><th>DisSysLab…</th><th>you see it with</th></tr>
-    <tr><td>finds each role, source and sink by name: your office's folders first, then the library</td><td><code>dsl check</code></td></tr>
-    <tr><td>when the run starts, builds each Python role with the arguments in the office file</td><td><code>dsl check</code> (checks the arguments)</td></tr>
+    <tr><td>finds each role, source and sink by name: your office's folders first, then the library</td><td><code>dsl check</code>, <code>dsl show &lt;name&gt;</code></td></tr>
+    <tr><td>builds each Python role with the arguments in the office file</td><td><code>dsl check</code> (checks the arguments)</td></tr>
     <tr><td>gives each agent its own copy of a message</td><td></td></tr>
-    <tr><td>sends an English role's text, then the message as JSON</td><td><code>dsl show &lt;role&gt; --prompt</code></td></tr>
-    <tr><td>reads the reply as JSON and checks it against <code>out:</code></td><td><code>dsl run --trace</code></td></tr>
-    <tr><td>adds an annotator's fields; sends each of an author's objects</td><td><code>dsl run --trace</code></td></tr>
-    <tr><td>saves and restores the state of stateful Python roles</td><td><code>dsl show-checkpoint</code></td></tr>
-    <tr><td>drops, counts and reports a failed message</td><td>run summary</td></tr>
-    <tr><td>when the office goes quiet, reports who is still waiting, and on what</td><td>run summary</td></tr>
+    <tr><td>sends an English role's text, then the message as JSON</td><td>the role's file: nothing is added</td></tr>
+    <tr><td>reads the reply as JSON and checks it against <code>out:</code>; drops fields it did not declare</td><td>the run summary counts them</td></tr>
+    <tr><td>drops a message whose reply failed, and carries on</td><td>the reason, in the terminal; the run summary</td></tr>
+    <tr><td>notices text from strangers that can reach a sink that acts</td><td><code>dsl check</code> (a note)</td></tr>
+    <tr><td>when the office goes quiet, reports who is still waiting, and on what</td><td>the stall report</td></tr>
   </table>
   <p>Everything else in an office is written by you.</p>
 </div></section>
@@ -560,7 +554,7 @@ dsl checks W22 explains any code.</pre>
         <li><b>Resources</b> (a model, a connection) are rebuilt at start and never saved.</li>
         <li><b>State</b> is everything that changes between messages. Keep it in one dict of plain data, and give the class <code>checkpoint</code> and <code>restore</code>.</li>
       </ul>
-      <p>Then DisSysLab can snapshot a running office and resume it after a crash: <code>dsl run --resume latest</code>. What a consistent snapshot of a distributed system is comes later in the course.</p>
+      <p>This is the built-in <code>deduplicator</code> (<code>dsl show deduplicator</code>). State kept this way can be saved and put back. When a snapshot of a whole running office is consistent, so that it can be resumed after a crash, comes later in the course.</p>
     </div>
   </div>
 </div></section>
@@ -576,10 +570,9 @@ $ dsl init org_news_filter my_filter        <span class="c"># a folder that is y
 $ cd my_filter
 $ dsl draw .                                <span class="c"># every connection</span>
 $ dsl check .                               <span class="c"># the faults, before running</span>
-$ dsl run .                                 <span class="c"># Ctrl+C to stop</span>
-$ dsl run . --trace                         <span class="c"># and every message</span></pre>
+$ dsl run .                                 <span class="c"># stops by itself; Ctrl+C stops it sooner</span></pre>
   <p>English roles need a model: put <code>ANTHROPIC_API_KEY=…</code> in a <code>.env</code> file in the folder, or use a local model with <code>ai="ollama"</code>.</p>
-  <div class="note warn"><p>Until the new release is out, <code>dsl init</code> copies offices in the old form. This deck is for reviewing the new design.</p></div>
+  <p>Step by step, with the output you should see at each step: <code>docs/GETTING_STARTED.md</code>. The first lab, <a href="lab1.html">the one-dollar Tahoe</a>, starts from <code>dsl init car_dealer lab1</code>.</p>
 </div></section>
 
 <!-- 20 -->
@@ -610,7 +603,7 @@ energy.</pre>
     <div class="card"><h3>role</h3><p>what an agent does: JSON in, JSON out. An <b>annotator</b> adds fields; an <b>author</b> writes new messages.</p></div>
     <div class="card"><h3>agent</h3><p>a named worker playing a role: <code>Felix: topic_filter</code>.</p></div>
     <div class="card"><h3>router</h3><p>sends a message on by the value of one field.</p></div>
-    <div class="card"><h3>coordinator</h3><p>more than one inbox: <b>synchronizer</b>, <b>gate</b>, <b>record</b>.</p></div>
+    <div class="card"><h3>coordinator</h3><p>more than one inbox: <b>synchronizer</b>, <b>gate</b>.</p></div>
     <div class="card"><h3>source</h3><p>where messages come from: feeds, files, sensors.</p></div>
     <div class="card"><h3>sink</h3><p>where they end: the screen, a file, <code>discard</code>.</p></div>
   </div>

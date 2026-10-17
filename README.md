@@ -170,7 +170,7 @@ then studies the algorithms underneath it.**
 | Path | Contents |
 |---|---|
 | [skills/](skills/) | Skills an assistant loads to build offices |
-| [course/](course/) | The course: setup, what you build, the catalogue, and `micro/` — short self-paced sittings |
+| [course/](course/) | The course pages: the index, setup, the micro-course, the labs, and the lecture notes |
 | [docs/](docs/) | Reference: components, backends, algorithms, internals |
 | [dissyslab/](dissyslab/) | The library and the gallery |
 | [tests/](tests/) | The suite; CI runs it on Python 3.10–3.14 |
