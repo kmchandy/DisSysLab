@@ -104,12 +104,46 @@
     <tr><td><code>dsl grammar examples</code></td><td>Four gallery offices explained line by line: <code>returns_desk</code>, <code>room_climate_monitor</code>, <code>situation_room_pro</code>, <code>debate</code>.</td></tr>
     <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/PATTERN_sense_think_respond.md">Sense, think, respond</a></td><td>The shape most offices take: sources sense, agents think, sinks respond.</td></tr>
   </table>
-  <p>Two kinds of line: <code>name: kind(args)</code> declares a source, sink or
-     agent; <code>a -&gt; b</code> connects them. Chains (<code>a -&gt; b -&gt; c</code>),
-     fan-in (<code>a, b -&gt; c</code>) and fan-out (<code>a -&gt; b, c</code>).
-     Every agent has one inbox and one outbox, so <code>a -&gt; b</code> never
-     names them; a dot names one of a router's ways out (<code>Rex.yes</code>) or
-     one of a coordinator's inboxes (<code>Gate.done</code>).</p>
+  <p>An office is agents, the roles they play, and the connections between
+     them. <code>office.md</code> holds two of those three: <b>who is in the
+     office</b>, and <b>where each one's messages go</b>. What each agent
+     <i>does</i>, its role, and the role's contracts, live in its own file
+     under <code>roles/</code> (<a href="#roles">below</a>). So
+     <code>office.md</code> has just two kinds of line:</p>
+  <ul>
+    <li><b><code>name: kind(args)</code> says who is in the office.</b> Under
+        <code>sources:</code>, where messages come from; under
+        <code>sinks:</code>, where they end; under <code>agents:</code>, each
+        worker in between, with the role it plays (<code>Felix: topic_filter</code>)
+        or the router or coordinator it is (<code>Rex: router(on="on_topic")</code>).
+        Arguments are written as in a Python call.</li>
+    <li><b><code>a -&gt; b</code> says where messages go:</b> every message
+        <code>a</code> sends, <code>b</code> receives, in the order sent.
+        Chains (<code>a -&gt; b -&gt; c</code>), fan-in (<code>a, b -&gt; c</code>)
+        and fan-out (<code>a -&gt; b, c</code>, each getting its own copy) are
+        shorthand for several such lines.</li>
+  </ul>
+  <p>The news filter from the micro-course, whole:</p>
+<pre style="background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px 14px;font:13.5px/1.55 var(--mono);overflow-x:auto">sources:                              # who is in the office
+    al_jazeera(max_articles=2)
+    bbc_world(max_articles=2)
+
+sinks:
+    console_printer
+    discard
+
+agents:
+    Felix: topic_filter               # an agent playing the role roles/topic_filter.md
+    Rex: router(on="on_topic")
+
+connections:                          # where messages go
+    al_jazeera, bbc_world -&gt; Felix -&gt; Rex
+    Rex.yes -&gt; console_printer
+    Rex.no -&gt; discard</pre>
+  <p>Every agent has one inbox and one outbox, so <code>a -&gt; b</code> never
+     names them. A dot is needed only where there is a choice: one of a
+     router's ways out (<code>Rex.yes</code>), or one of a coordinator's
+     inboxes (<code>Gate.done</code>).</p>
 
   <h2 id="roles">Roles</h2>
   <p>A role is what an agent does: one JSON object in, JSON out. An
