@@ -59,3 +59,42 @@ def test_contracts_stop_what_does_not_fit(tmp_path):
     # Three messages failed, the run says so, and the first is quoted.
     assert code != 0, out
     assert "does not fit its in: line" in out or "below its range" in out, out
+
+
+# ── A sink that declares in: ─────────────────────────────────────────────────
+
+BOOKING = {
+    "office.md": (
+        "sources:\n    quotes: file_source(path=\"quotes.jsonl\")\n"
+        "sinks:\n    book: booking\n"
+        "connections:\n    quotes -> book\n"),
+    "sinks/booking.py": textwrap.dedent('''\
+        """
+        ---
+        emits: books a sale, one line per sale
+        in: vehicle (tahoe | trax), price (number, >= 20000)
+        ---
+        """
+        import json
+
+
+        class Booking:
+            def __call__(self, msg):
+                with open("sales.jsonl", "a", encoding="utf-8") as f:
+                    f.write(json.dumps({"vehicle": msg["vehicle"], "price": msg["price"]}) + "\\n")
+        '''),
+    "quotes.jsonl": "".join(json.dumps(m) + "\n" for m in (
+        {"vehicle": "trax", "price": 21500},
+        {"vehicle": "tahoe", "price": 1},          # below the floor
+        {"vehicle": "tahoe", "price": "62400"},    # text, not a number
+        {"vehicle": "tahoe", "price": 62400},
+    )),
+}
+
+
+def test_a_sink_acts_only_on_messages_that_fit_its_in(tmp_path):
+    office = write_office(tmp_path / "booking", BOOKING)
+    code, out, _ = run_office(office)
+    assert [s["price"] for s in lines_of(office / "sales.jsonl")] == [21500, 62400]
+    assert code != 0, out
+    assert "does not fit its in: line" in out, out

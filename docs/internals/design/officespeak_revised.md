@@ -473,6 +473,10 @@ lives in a Python role and travels in the messages (as the debate's
   Python role. A source's instance is called with no arguments and returns
   the next message, or `None` when it has no more; a sink's instance is
   called with each message.
+- A local sink's `in:` is checked on arrival, as a role's is (4.5, step 0;
+  added 18 Oct 2026): a message that does not fit is a failure and the
+  sink does not act on it. Built-in sinks have no front matter yet and are
+  not checked.
 - `starter` is retired. In all seven offices that use it, it only wakes a role
   standing in for a source.
 - The sink aliases that exist only to give a second copy a name

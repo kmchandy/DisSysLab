@@ -71,19 +71,22 @@ def _local_component(decl: Declaration, found: Found) -> Agent:
 
     A local source's instance is called with no arguments and returns the
     next message, or None when it has no more. A local sink's instance is
-    called with each message.
+    called with each message, after the message is checked against the
+    sink's ``in:`` if it declares one (:mod:`dissyslab.agents.checked_sink`).
     """
-    from dissyslab.blocks import Sink, Source
+    from dissyslab.agents.checked_sink import sink_agent
+    from dissyslab.blocks import Source
 
     assert found.path is not None
-    instance = python_instance(found.path, read_front_matter(found.path), dict(decl.args))
+    fm = read_front_matter(found.path)
+    instance = python_instance(found.path, fm, dict(decl.args))
     if not callable(instance):
         raise BuildError(f"line {decl.line}: {found.path.name}'s class has no __call__.")
     block: Agent
     if decl.section == "sources":
         block = Source(fn=instance, name=decl.name)
     else:
-        block = Sink(fn=instance, name=decl.name)
+        block = sink_agent(fn=instance, name=decl.name, front_matter=fm)
     return block
 
 

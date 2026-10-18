@@ -116,6 +116,30 @@ class Ticker:
 (`file_source`) and a real source are interchangeable: only the declaration
 line changes, never the connections.
 
+**A sink you write can refuse what it should not act on.** Its `in:` is a
+contract, as for a role (`dsl grammar roles`): every message is checked on
+arrival, before `__call__`, and one that does not fit is not acted on. It
+is counted and reported, and `dsl run` exits non-zero.
+
+```python
+"""
+---
+emits: books a sale, one line per sale
+in: vehicle (tahoe | trax), price (number, >= 20000)
+---
+"""
+import json
+
+
+class Booking:
+    def __call__(self, msg):
+        with open("sales.jsonl", "a", encoding="utf-8") as f:
+            f.write(json.dumps({"vehicle": msg["vehicle"], "price": msg["price"]}) + "\n")
+```
+
+A quote of `"price": 1`, or `"price": "62400"` (text, not a number), is
+never booked. Built-in sinks do not check `in:` yet.
+
 ## Notes that save time
 
 **`discard` is a decision.** Routing a router's `no` branch to `discard`

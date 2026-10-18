@@ -104,7 +104,9 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
    who leaves a generated office polling a hosted model over a weekend
    finds out.
 8. **The next contracts** (after 18 Oct's `in:`/ranges), in order:
-   (a) `in:` on sinks that act, checked on arrival; (b) per-field taint
+   (a) `in:` on sinks: **done for local sinks** (18 Oct, `agents/checked_sink.py`);
+   built-in sinks have no front matter, so the acting ones (`gmail_sink`,
+   `slack_sink`, `webhook_sink`) still need an `in:` of their own; (b) per-field taint
    in `dsl check`: text from an untrusted source stays tainted until a
    contract bounds it (values or a range), and a note names each tainted
    field that reaches an acting sink; (c) the field-flow checks W21–W31,
@@ -140,6 +142,10 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
   `explain_strategy.py` (the per-day Excel workbook Vikram uses). Testers
   on 1.x keep it; porting it is open.
 - Renaming "office" to "network of agents" (spec §15): last, in one pass.
+  If there is time, the same pass renames the role kind `author` to
+  `composer` (not "agent", which already names the workers in an office),
+  with `kind: author` accepted for one release; and the docs call
+  sources, sinks, routers, coordinators and roles "components".
 
 ## Two that may not be features
 
