@@ -1,0 +1,7 @@
+# Check text files out with LF on every platform.
+#
+# Without this, Git on Windows checks text out with CRLF. The skills'
+# version hashes and .skill bundles are computed from the LF bytes, so
+# on Windows every skill read as stale (five CI failures, Oct 2026).
+# tests/integration/test_docs_match_code.py checks this file exists.
+* text=auto eol=lf

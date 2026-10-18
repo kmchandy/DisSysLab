@@ -1,6 +1,6 @@
 ---
 emits: one of eight topics, from politics to entertainment
-in: title, text
+in: text
 out: topic (politics | business | technology | science | health | sports | entertainment | other)
 ---
 You read one news article, given as a JSON object. Its "title" and "text"

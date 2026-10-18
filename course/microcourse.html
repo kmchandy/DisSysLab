@@ -65,15 +65,17 @@ svg text { font-family: var(--font-body); }
 <section class="slide active"><div class="inner">
   <div class="kicker">DisSysLab · micro-course</div>
   <h1>Build a network of agents.<br><span class="soft">Each agent does one job.</span></h1>
-  <p>An <b>office</b> is a network of agents that pass messages to each other. Messages are JSON objects. Some agents use a large language model (LLM); others are Python.</p>
-  <p>You write two things: <b>what each agent does</b>, and <b>the network - who sends to whom</b>. DisSysLab runs it, checks it before it runs, and shows you every message.</p>
+  <p>An <b>office</b> is a network of agents that pass messages to each other. Messages are JSON objects. Some agents use large language models (LLMs); others use Python
+  A network may have agents with different LLMs.</p>
+  <p>You write two things: <b>what each agent does</b>, and <b>the network - who sends to whom</b>. DisSysLab runs and checks
+    the network.</p>
   <div class="note"><p>You need: Python, a terminal, and less than an hour. Use the arrow keys or the buttons below.</p></div>
 </div></section>
 
 <!-- 2 -->
 <section class="slide"><div class="inner">
   <div class="kicker">What you will build first</div>
-  <h1>Two news feeds. One decision.<br><span class="soft">Messages flow; nobody waits for you to ask.</span></h1>
+  <h1>Two sources, one agent, one router, two sinks.<br><span class="soft">Example of a network.</span></h1>
   <svg id="flow" viewBox="0 0 900 300" width="100%" style="max-width:900px;display:block;margin:0 auto 10px">
     <defs><marker id="ah" markerWidth="9" markerHeight="9" refX="8" refY="4.5" orient="auto"><path d="M0,0 L9,4.5 L0,9 z" fill="#1a1a2e"/></marker></defs>
     <g stroke="#1a1a2e" stroke-width="1.6" fill="none" marker-end="url(#ah)">
@@ -95,7 +97,23 @@ svg text { font-family: var(--font-body); }
     </g>
     <g id="msgs"></g>
   </svg>
-  <p><b>Felix</b> reads each article and decides whether it is about a topic you chose. <b>Rex</b> is a router: it sends <code>yes</code> articles to the screen and <code>no</code> articles to <code>discard</code>. Each feed sends two articles, and the office stops by itself when they have all been dealt with.</p>
+  <p>Agent <b>Felix</b> receives message streams from data sources 
+    <code>bbc_world</code> and <code></code>al_jazeera</code>; 
+    reads each article; determines whether the article is about a topic you chose;
+    and annotates each article with  <code>yes</code> if the article is about your
+    topic and <code>no</code> otherwise.
+  </p>
+  <p>
+    <b>Rex</b> is a router: it sends <code>yes</code> articles to 
+    <code>console_printer</code> (the monitor screen) and 
+    <code>no</code> articles to <code>discard</code>. 
+    <code>console_printer</code> and <code>discard</code>
+    are sinks. 
+  </p>
+  <p>
+    In this network, each source sends two articles and then stops.
+    The office stops after messages from all sources have been processed.
+  </p>
 </div></section>
 
 <!-- 3 -->
@@ -115,10 +133,11 @@ svg text { font-family: var(--font-body); }
     </div>
     <div>
       <ul>
-        <li>A message is a <code>dict</code>. Never a bare string, number or list.</li>
+        <li>A message is always a <code>dict</code>.</li>
         <li>News sources use the same five fields: <code>source</code>, <code>title</code>, <code>text</code>, <code>url</code>, <code>timestamp</code>.</li>
         <li>Each agent gets <b>its own copy</b> of a message.</li>
-        <li>Each connection delivers messages in the order they were sent (FIFO).</li>
+        <li>Each connection between components delivers messages in 
+          the order in which they were sent.</li>
       </ul>
     </div>
   </div>

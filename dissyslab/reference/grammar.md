@@ -233,6 +233,10 @@ built-in (`dsl roles`). `dsl grammar roles` has the whole story; in short:
 - An **annotator** (the default) returns one object whose fields are added
   to the message. An **author** (`kind: author`) returns a list of complete
   new messages.
+- The front matter's `in:` and `out:` are **contracts**, checked by Python
+  on every message: `in:` before the role is called, `out:` on its reply. A
+  field may say what it holds: `verdict (yes | no)`, `price (number, >= 0)`,
+  `score (0..10)`, `reply (text, at most 600 chars)`.
 
 ## Checking it
 
@@ -297,9 +301,9 @@ Run summary (messages):
   ...
 ```
 
-- A role whose reply does not fit its front matter, or whose Python raises,
-  costs that one message: it is reported, the office carries on, and
-  `dsl run` exits non-zero.
+- A message that does not fit a role's `in:`, a reply that does not fit
+  its front matter, or Python that raises, costs that one message: it is
+  reported, the office carries on, and `dsl run` exits non-zero.
 - An agent left holding work it can never finish -- a gate whose `done`
   never comes, a synchronizer group that never completes -- is reported as
   **Stalled**, with the path of empty connections and idle agents that

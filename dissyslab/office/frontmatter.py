@@ -16,10 +16,14 @@ required):
 - ``emits:`` one line, shown by ``dsl roles``;
 - ``kind:`` ``author``; absent means annotator;
 - ``needs:`` the packages a Python file imports;
-- ``in:`` the fields the role reads;
-- ``out:`` the fields it returns, each optionally with its values,
-  ``verdict (publish | revise), feedback``; or ``same as in`` for an
-  author that passes its input on unchanged;
+- ``in:`` the fields the role reads, checked before the role is called;
+- ``out:`` the fields it returns, checked on every reply; or ``same as in``
+  for an author that passes its input on unchanged.
+
+  A field in ``in:`` or ``out:`` may say what it holds, in parentheses:
+  values, ``verdict (publish | revise)``; a number, ``price (number)``,
+  ``score (0..10)``, ``count (integer, >= 1)``; or text,
+  ``reply (text, at most 600 chars)``;
 - ``out if <field> is <value>:`` further fields of the messages whose
   ``<field>`` has that value (an author whose messages differ).
 
@@ -60,13 +64,49 @@ class FrontMatterError(Exception):
 
 @dataclass(frozen=True)
 class Field:
-    """One field in ``out:``, with its allowed values (empty: any value)."""
+    """One field in ``in:`` or ``out:``, and what it may hold.
+
+    At most one of two kinds of constraint:
+
+    - ``values``: the named values it may take (``yes | no``);
+    - ``type`` (``number``, ``integer`` or ``text``) with, for a number,
+      inclusive bounds ``low``/``high``, and for text, ``max_chars``.
+
+    A field with neither may hold anything.
+    """
 
     name: str
     values: tuple[str, ...] = ()
+    type: str | None = None
+    low: float | None = None
+    high: float | None = None
+    max_chars: int | None = None
+
+    def constraint(self) -> str:
+        """What is inside the parentheses, as it would be written; '' if nothing."""
+        if self.values:
+            return " | ".join(self.values)
+        if self.type is None:
+            return ""
+        parts = [self.type]
+        if self.low is not None and self.high is not None:
+            parts.append(f"{_num(self.low)}..{_num(self.high)}")
+        elif self.low is not None:
+            parts.append(f">= {_num(self.low)}")
+        elif self.high is not None:
+            parts.append(f"<= {_num(self.high)}")
+        if self.max_chars is not None:
+            parts.append(f"at most {self.max_chars} chars")
+        return ", ".join(parts)
 
     def __str__(self) -> str:
-        return f"{self.name} ({' | '.join(self.values)})" if self.values else self.name
+        inside = self.constraint()
+        return f"{self.name} ({inside})" if inside else self.name
+
+
+def _num(x: float) -> str:
+    """3.0 as 3, 2.5 as 2.5."""
+    return str(int(x)) if float(x).is_integer() else str(x)
 
 
 @dataclass(frozen=True)
@@ -90,8 +130,10 @@ class FrontMatter:
     emits: str | None = None
     kind: str = "annotator"
     needs: tuple[str, ...] = ()
+    #: The names in ``in:``; ``input_fields`` has what each may hold.
     inputs: tuple[str, ...] | None = None
     outputs: tuple[Field, ...] | None = None
+    input_fields: tuple[Field, ...] | None = None
     same_as_in: bool = False
     conditionals: tuple[Conditional, ...] = ()
     #: For a .md role, the prompt: exactly the text after the block.
@@ -132,22 +174,88 @@ def _names(value: str, line: int, *, fields: bool) -> tuple[str, ...]:
     return names
 
 
-def _fields(value: str, line: int) -> tuple[Field, ...]:
+_TYPES = ("number", "integer", "text")
+_NUMBER = r"-?\d+(?:\.\d+)?"
+_RANGE = re.compile(rf"({_NUMBER})\s*\.\.\s*({_NUMBER})\Z")
+_BOUND = re.compile(rf"(>=|<=)\s*({_NUMBER})\Z")
+_LENGTH = re.compile(r"at\s+most\s+(\d+)\s+(?:chars?|characters?)\Z", re.IGNORECASE)
+_FORMS = ("values like (yes | no), or number, integer, text, 0..10, >= 0, <= 100, "
+          "at most 600 chars")
+
+
+def _constraint(name: str, inside: str, part: str, line: int) -> Field:
+    """The Field for ``name (inside)``.
+
+    ``|`` means named values, as before. Otherwise a comma-separated list
+    of terms: a type, a range or bound (a number), a length (text). A
+    single word that is not a type is one named value, as it always was.
+    """
+    single = inside.strip()
+    if "|" in inside or (single not in _TYPES and (
+            _IDENT.match(single) or re.fullmatch(_NUMBER, single))):
+        values = tuple(v.strip() for v in inside.split("|"))
+        if not all(values):
+            raise FrontMatterError(line, f"an empty value in {part!r}.")
+        return Field(name, values)
+
+    type_: str | None = None
+    low: float | None = None
+    high: float | None = None
+    max_chars: int | None = None
+    for term in (t.strip() for t in inside.split(",")):
+        rng, bound, length = _RANGE.match(term), _BOUND.match(term), _LENGTH.match(term)
+        if term in _TYPES:
+            if type_ is not None:
+                raise FrontMatterError(line, f"{part!r} gives two types; choose one.")
+            type_ = term
+        elif rng:
+            low, high = float(rng.group(1)), float(rng.group(2))
+            if low > high:
+                raise FrontMatterError(line, f"in {part!r} the range runs backwards.")
+        elif bound:
+            if bound.group(1) == ">=":
+                low = float(bound.group(2))
+            else:
+                high = float(bound.group(2))
+        elif length:
+            max_chars = int(length.group(1))
+        else:
+            raise FrontMatterError(
+                line, f"{term!r} in {part!r} is not something a field can hold. "
+                f"In parentheses: {_FORMS}."
+            )
+    numeric = low is not None or high is not None
+    if numeric and max_chars is not None:
+        raise FrontMatterError(line, f"{part!r} is a number and text at once.")
+    if numeric:
+        if type_ == "text":
+            raise FrontMatterError(line, f"{part!r}: text cannot have a range; did you mean number?")
+        type_ = type_ or "number"
+    if max_chars is not None:
+        if type_ not in (None, "text"):
+            raise FrontMatterError(line, f"{part!r}: a {type_} has no length; did you mean text?")
+        type_ = "text"
+    if type_ == "integer":
+        for bound_value in (low, high):
+            if bound_value is not None and not bound_value.is_integer():
+                raise FrontMatterError(line, f"{part!r}: an integer's bounds are whole numbers.")
+    return Field(name, type=type_, low=low, high=high, max_chars=max_chars)
+
+
+def _fields(value: str, line: int, key: str = "out") -> tuple[Field, ...]:
     fields: list[Field] = []
     for part in _split_top(value):
         m = _FIELD.match(part)
         if not m:
+            if key == "in" and "(" not in part:
+                raise FrontMatterError(line, f"{part!r} in in: is not a field name.")
             raise FrontMatterError(
                 line, f"{part!r} is not a field, or a field with values like 'verdict (yes | no)'."
             )
-        values: tuple[str, ...] = ()
-        if m.group(2) is not None:
-            values = tuple(v.strip() for v in m.group(2).split("|"))
-            if not all(values):
-                raise FrontMatterError(line, f"an empty value in {part!r}.")
-        if any(f.name == m.group(1) for f in fields):
-            raise FrontMatterError(line, f"{m.group(1)!r} is listed twice.")
-        fields.append(Field(m.group(1), values))
+        name, inside = m.group(1), m.group(2)
+        if any(f.name == name for f in fields):
+            raise FrontMatterError(line, f"{name!r} is listed twice.")
+        fields.append(Field(name) if inside is None else _constraint(name, inside, part, line))
     return tuple(fields)
 
 
@@ -224,12 +332,14 @@ def parse_front_matter(text: str) -> FrontMatter:
                 f"line with the value '{c.value}'.",
             )
 
+    input_fields = _fields(found["in"], at["in"], key="in") if "in" in found else None
     return FrontMatter(
         emits=found.get("emits"),
         kind=kind,
         needs=_names(found.get("needs", ""), at.get("needs", first), fields=False),
-        inputs=_names(found["in"], at["in"], fields=True) if "in" in found else None,
+        inputs=None if input_fields is None else tuple(f.name for f in input_fields),
         outputs=outputs,
+        input_fields=input_fields,
         same_as_in=same_as_in,
         conditionals=tuple(conditionals),
         body=body,
@@ -251,5 +361,6 @@ def read_front_matter(path: Path) -> FrontMatter:
     fm = parse_front_matter(doc or "")
     return FrontMatter(
         emits=fm.emits, kind=fm.kind, needs=fm.needs, inputs=fm.inputs,
-        outputs=fm.outputs, same_as_in=fm.same_as_in, conditionals=fm.conditionals,
+        outputs=fm.outputs, input_fields=fm.input_fields, same_as_in=fm.same_as_in,
+        conditionals=fm.conditionals,
     )

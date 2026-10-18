@@ -2,17 +2,17 @@
 ---
 emits: the spans to validate, one at a time: full, walk-forward folds, Monte Carlo samples
 kind: author
-in: msg_type
 out: span, type, tickers, history, _wf_tag
 ---
 Arguments: n_folds, n_samples, seed, block_size, walk_forward, monte_carlo,
 stop_pct.
 
-Receives two kinds of message on its one inbox, told apart by msg_type
-(spec section 14): the price history from the source ("stock_history",
-the source's own type field) and "next" from the comparator, which
-releases the next span. The span logic is unchanged from version 1
-(``_validation.py``).
+Receives two kinds of message on its one inbox: the price history from
+the source (with "type": "stock_history" and "history") and
+{"msg_type": "next"} from the comparator, which releases the next span.
+The two share no field, so there is no in: line: in: is checked on
+every message, and no field is in both. The span logic is unchanged
+from version 1 (``_validation.py``).
 """
 
 from _validation import (

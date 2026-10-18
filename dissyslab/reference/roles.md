@@ -114,12 +114,31 @@ to a model.
 |---|---|
 | `emits:` | one line, shown by `dsl roles` |
 | `kind:` | `author`; absent means annotator |
-| `in:` | the fields the role uses |
+| `in:` | the fields the role needs; checked before the role is called |
 | `out:` | annotator: the fields it adds; author: the fields of each object |
 | `needs:` | Python only: the packages it imports |
 
-- **Values.** A field may list its values: `out: verdict (publish | revise), feedback`.
-  The reply must use one of them.
+- **What a field holds.** In `in:` or `out:`, a field may say, in
+  parentheses, what it may hold. These are contracts: Python checks them,
+  every message, whatever the model wrote.
+
+  | Written | Means |
+  |---|---|
+  | `verdict (publish \| revise)` | one of these values |
+  | `price (number)` | a number (not the text `"62400"`) |
+  | `score (0..10)` | a number from 0 to 10, ends included |
+  | `price (number, >= 0)`, `temp (<= 40)` | a number with one bound |
+  | `count (integer, 1..5)` | a whole number |
+  | `reply (text, at most 600 chars)` | text no longer than 600 characters |
+  | `reply (text)` | text |
+
+  A field with nothing in parentheses may hold anything. Write the same
+  thing in the role's instruction, too: the model never sees the front
+  matter.
+- **`in:` is checked first.** A message without every field of `in:`, or
+  with one that does not hold what it says, is not given to the role: a
+  model never sees it. List only the fields the role cannot do without.
+  `in:` does not trim the message; the role still receives all of it.
 - **Conditional lines**, for an author whose messages differ by a value:
   ```
   out: next (finish | continue), problem_id, problem, history
@@ -129,16 +148,18 @@ to a model.
 - **Pass-through.** An author that returns its input unchanged (a filter)
   says `out: same as in`.
 - **All optional.** Guardrails are recommended, never required. Without
-  `out:` the reply is not checked and nothing is dropped; the role still
-  runs.
+  `in:` every message is given to the role; without `out:` the reply is
+  not checked and nothing is dropped. The role still runs.
 
-## What happens to a reply
+## What happens to a message
 
-1. It is read as one JSON value. A reply wrapped in one code fence is
+0. Before the role is called, the message is checked against `in:`. A
+   message that does not fit is a failure, and the role never sees it.
+1. The reply is read as one JSON value. A reply wrapped in one code fence is
    unwrapped. Anything else is a failure.
-2. An annotator's reply must be an object with every field of `out:`, and
-   a listed value where values are listed. An author's must be a list of
-   such objects.
+2. An annotator's reply must be an object with every field of `out:`, each
+   holding what it declares: a listed value, a number in its range, text
+   within its length. An author's must be a list of such objects.
 3. Fields the reply carries that `out:` does not declare are **dropped and
    counted**. The message goes on; the run summary names the fields. This
    is the guardrail: a model that writes more than it was asked cannot pass

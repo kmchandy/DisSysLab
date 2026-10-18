@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import difflib
 import json
+import math
 from dataclasses import dataclass
 from typing import Any
 
@@ -79,20 +80,71 @@ def written(value: Any) -> str:
     return value if isinstance(value, str) else json.dumps(value)
 
 
-def _check_fields(obj: Message, fields: tuple[Field, ...]) -> str | None:
-    """Every field present, with one of its listed values. The problem, or None."""
+def _shown(value: Any) -> str:
+    """A value for an error message: short, and saying what it is."""
+    if isinstance(value, str):
+        text = value if len(value) <= 40 else value[:37] + "..."
+        return f"the text {text!r}"
+    return repr(written(value)) if isinstance(value, (bool, int, float)) else type(value).__name__
+
+
+def _holds(f: Field, value: Any) -> str | None:
+    """Why ``value`` is not what ``f`` says it holds, or None if it is."""
+    if f.values:
+        got = written(value)
+        if got in f.values:
+            return None
+        near = difflib.get_close_matches(got, f.values, n=1)
+        hint = f" (closest: {near[0]!r})" if near else ""
+        return f"{f.name!r} is {got!r}, which is not one of {', '.join(f.values)}{hint}."
+    if f.type in ("number", "integer"):
+        # bool is an int in Python; true is not a number in a contract.
+        if isinstance(value, bool) or not isinstance(value, (int, float)):
+            return f"{f.name!r} is {_shown(value)}, not a number."
+        if not math.isfinite(value):
+            return f"{f.name!r} is {value!r}, not a finite number."
+        if f.type == "integer" and not float(value).is_integer():
+            return f"{f.name!r} is {value!r}, not a whole number."
+        # Written as `not (a <= b)` so that a NaN could never pass.
+        if f.low is not None and not (value >= f.low):
+            return f"{f.name!r} is {written(value)}, below its range ({f.constraint()})."
+        if f.high is not None and not (value <= f.high):
+            return f"{f.name!r} is {written(value)}, above its range ({f.constraint()})."
+        return None
+    if f.type == "text":
+        if not isinstance(value, str):
+            return f"{f.name!r} is {_shown(value)}, not text."
+        if f.max_chars is not None and len(value) > f.max_chars:
+            return (f"{f.name!r} is {len(value)} characters long; "
+                    f"at most {f.max_chars} are allowed.")
+    return None
+
+
+def _check_fields(obj: Message, fields: tuple[Field, ...], what: str = "reply") -> str | None:
+    """Every field present, holding what it declares. The problem, or None.
+
+    ``what`` names the object in the message: "reply" for ``out:``,
+    "message" for ``in:``.
+    """
     for f in fields:
         if f.name not in obj:
-            return f"the reply has no field {f.name!r}."
-        if f.values and written(obj[f.name]) not in f.values:
-            got = written(obj[f.name])
-            near = difflib.get_close_matches(got, f.values, n=1)
-            hint = f" (closest: {near[0]!r})" if near else ""
-            return (
-                f"{f.name!r} is {got!r}, which is not one of "
-                f"{', '.join(f.values)}{hint}."
-            )
+            return f"the {what} has no field {f.name!r}."
+        problem = _holds(f, obj[f.name])
+        if problem:
+            return problem
     return None
+
+
+def check_incoming(msg: Message, fm: FrontMatter) -> str | None:
+    """Why ``msg`` does not fit the role's ``in:``, or None if it does.
+
+    Checked before the role is called, so a model never sees a message its
+    role did not declare it can take. Without ``in:`` nothing is checked.
+    ``in:`` does not trim the message: the role still receives all of it.
+    """
+    if fm.input_fields is None:
+        return None
+    return _check_fields(msg, fm.input_fields, what="message")
 
 
 def _declared(obj: Message, fields: tuple[Field, ...]) -> tuple[Message, tuple[str, ...]]:
@@ -109,8 +161,9 @@ def _declared(obj: Message, fields: tuple[Field, ...]) -> tuple[Message, tuple[s
 def check_annotator_reply(reply: Any, fm: FrontMatter, incoming: Message) -> Result:
     """Check an annotator's reply and add its fields to ``incoming``.
 
-    The reply must be one object with every field in ``out:``, each with
-    one of its listed values. Undeclared fields are dropped. An annotator
+    The reply must be one object with every field in ``out:``, each
+    holding what it declares (a listed value, a number in range, text no
+    longer than its limit). Undeclared fields are dropped. An annotator
     only adds: a field already in the message may not be given a different
     value. Without ``out:`` nothing is checked or dropped (spec 4.4).
     """

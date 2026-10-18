@@ -426,6 +426,19 @@ def test_there_is_at_least_one_skill_bundle():
     assert _skill_bundles(), "no .skill bundles found under skills/"
 
 
+def test_text_is_checked_out_with_lf_everywhere():
+    """The bundle and version checks below compare bytes. Git on Windows
+    checks text out with CRLF unless told otherwise, and then every skill
+    read as stale on the Windows CI job while the files were correct."""
+    attrs = REPO_ROOT / ".gitattributes"
+    assert attrs.is_file(), ".gitattributes is missing; it pins eol=lf"
+    lines = [ln.split() for ln in attrs.read_text(encoding="utf-8").splitlines()
+             if ln.strip() and not ln.lstrip().startswith("#")]
+    assert ["*", "text=auto", "eol=lf"] in lines, (
+        ".gitattributes should contain the line:  * text=auto eol=lf"
+    )
+
+
 @pytest.mark.parametrize(
     "bundle", _skill_bundles(), ids=lambda p: p.name
 )
@@ -917,7 +930,7 @@ _VOCABULARY_EXEMPT_PREFIXES = (
 def _user_facing_markdown() -> list[Path]:
     return [
         p for p in _markdown_files()
-        if not str(p.relative_to(REPO_ROOT)).startswith(
+        if not p.relative_to(REPO_ROOT).as_posix().startswith(
             _VOCABULARY_EXEMPT_PREFIXES
         )
     ]

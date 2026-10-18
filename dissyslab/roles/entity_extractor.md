@@ -1,6 +1,6 @@
 ---
 emits: the people, organisations, places and events named in the item
-in: title, text
+in: text
 out: entities
 ---
 You read one news article, given as a JSON object. Its "title" and "text"

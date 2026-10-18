@@ -37,9 +37,12 @@ from __future__ import annotations
 import json
 import os
 import string
+import threading
 from typing import Any
 
 from dissyslab.backends import _ALIASES, _REGISTRY, register_backend
+
+_LOG_LOCK = threading.Lock()
 
 
 class ScriptedModel:
@@ -74,7 +77,10 @@ class ScriptedModel:
                 values = {k: v for k, v in fields.items() if isinstance(v, (str, int, float))}
                 reply = string.Template(rule["reply"]).safe_substitute(values)
                 if self.log:
-                    with open(self.log, "a", encoding="utf-8") as f:
+                    # Agents call from several threads at once. On Windows
+                    # an append is a seek then a write, not one step, so
+                    # unlocked writers overwrote each other's lines.
+                    with _LOG_LOCK, open(self.log, "a", encoding="utf-8") as f:
                         f.write(json.dumps({"when": rule["when"], "user": user}) + "\n")
                 return reply
         raise RuntimeError(

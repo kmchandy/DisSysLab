@@ -1,6 +1,6 @@
 ---
 emits: how significant the item is: CRITICAL, HIGH, MEDIUM or LOW
-in: title, text
+in: text
 out: severity (CRITICAL | HIGH | MEDIUM | LOW)
 ---
 You read one news article, given as a JSON object. Its "title" and "text"

@@ -303,11 +303,25 @@ docstring.
 | `emits:` | one line, shown by `dsl roles` |
 | `kind:` | `author`; absent means annotator |
 | `needs:` | Python only: the packages it imports (`needs: birdnetlib, librosa`). `dsl check` reports any not installed, with the `pip install` line, without importing them; `dsl run` stops before starting if one is missing |
-| `in:` | the fields the role uses from its input |
+| `in:` | the fields the role needs from its input; checked before the role is called (4.5) |
 | `out:` | annotator: the fields it adds; author: the fields of each object it returns |
 
-- **Values.** A field may list its values:
-  `out: verdict (publish | revise), feedback`.
+- **What a field holds** (added 18 Oct 2026). A field in `in:` or `out:` may
+  say, in parentheses, what it may hold. These are contracts, checked by
+  Python on every message:
+  - values: `verdict (publish | revise)`; a single word that is not a type
+    is one value, `verdict (yes)`;
+  - a number: `price (number)`; a range, ends included, `score (0..10)`;
+    one bound, `price (number, >= 0)` or `temp (<= 40)`; `integer` for a
+    whole number. A range or bound alone implies `number`. A JSON string
+    is not a number, nor is `true`, `NaN` or `Infinity`;
+  - text: `reply (text)`, `reply (text, at most 600 chars)`.
+
+  Nothing else: relations between fields (a price above the floor for that
+  car) are a Python role's job. The language stays small on purpose; a
+  contract that could express anything would need a program to check it.
+  Bounded fields are the basis of the planned per-field taint check
+  (STATUS): a field with values or a range cannot carry instructions.
 - **Conditional lines.** An author whose messages differ by a listed value adds
   `out if` lines below its ordinary `out:`:
   ```
@@ -332,7 +346,8 @@ docstring.
   is not reported by W21.
 - `in:` is for checking only; it does not trim the prompt. An English role
   always receives the whole incoming message. A role with no `in:` accepts any
-  object, and the end-to-end check skips it.
+  object, and the end-to-end check skips it. A role fed two kinds of message
+  lists in `in:` only the fields both carry, or has no `in:`.
 - A role whose input field is chosen by an argument
   (`deduplicator(by="url")`) has no `in:`; its docstring names the argument.
 - The same two words are used for sources (`out:`) and sinks (`in:`), and they
@@ -340,16 +355,20 @@ docstring.
 
 Removed: `outboxes:`, `inboxes:`, `contract:`, `adds:`.
 
-### 4.5 Checking a role's reply
+### 4.5 Checking a role's input and reply
 
+0. Before the role is called, the message must have every field of `in:`,
+   each holding what it declares (4.4). A message that does not is a failure
+   (5 below), and the role is not called: a model never sees it.
 1. Parse the reply as one JSON value. A reply inside a single code fence is
    unwrapped (a declared framework step). Anything else is a failure.
 2. Annotator: the value must be an object. Every field in `out:` must be
-   present; a field with listed values must have one of them (the error names
-   the closest). It may not change a field already in the message.
+   present, holding what it declares; a field with listed values must have
+   one of them (the error names the closest). It may not change a field
+   already in the message.
 3. Author: the value must be a list of objects. Each object must have the
-   fields of `out:`, plus those of any `out if` line whose condition it meets;
-   a field with listed values must have one of them.
+   fields of `out:`, plus those of any `out if` line whose condition it meets,
+   each holding what it declares.
 4. Fields the reply carries but `out:` does not declare are **dropped and
    counted**, for English and Python roles alike. This is not a failure: the
    message continues, and the run summary shows the count as a note naming

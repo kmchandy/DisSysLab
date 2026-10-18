@@ -78,8 +78,10 @@ class Report:
 def _file_problems(decl: Declaration, found: Found, office_dir: Path) -> list[str]:
     """Front matter and ``needs:`` of a role or local component's file."""
     assert found.path is not None
-    where = found.path.relative_to(office_dir) if found.path.is_relative_to(office_dir) \
-        else found.path.name
+    # as_posix: the office file names roles with `/`, and the message
+    # should read the same on Windows as in the grammar reference.
+    where = found.path.relative_to(office_dir).as_posix() \
+        if found.path.is_relative_to(office_dir) else found.path.name
     try:
         fm = read_front_matter(found.path)
     except FrontMatterError as exc:

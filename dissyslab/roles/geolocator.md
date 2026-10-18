@@ -1,6 +1,6 @@
 ---
 emits: where in the world the item is about: country and region
-in: title, text
+in: text
 out: location
 ---
 You read one news article, given as a JSON object. Its "title" and "text"

@@ -1,6 +1,6 @@
 ---
 emits: one plain-English sentence saying what the item is about
-in: title, text
+in: text
 out: summary
 ---
 You read one news article, given as a JSON object. Its "title" and "text"

@@ -125,7 +125,8 @@ def test_the_roots_searched_are_always_reported(tmp_path, monkeypatch):
     it a question the user can answer."""
     monkeypatch.setattr(Path, "home", staticmethod(lambda: tmp_path / "home"))
     (tmp_path / "home").mkdir()
-    text = "\n".join(report_lines(cwd=tmp_path))
+    # Paths are printed in the user's own form; `\` on Windows.
+    text = "\n".join(report_lines(cwd=tmp_path)).replace("\\", "/")
     assert "searched:" in text
     assert ".claude/skills" in text
     assert ".agents/skills" in text

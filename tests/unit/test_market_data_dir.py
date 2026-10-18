@@ -125,4 +125,5 @@ def test_the_shipped_offices_name_no_data_directory():
 
 
 def test_describe_lists_directories_for_a_human():
-    assert describe([Path("/a"), Path("/b")]) == "/a, /b"
+    # The user's own separator: on Windows they paste it into Explorer.
+    assert describe([Path("/a"), Path("/b")]) == f"{Path('/a')}, {Path('/b')}"

@@ -32,11 +32,15 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
   does not run on `main`.
 - **One build path, in memory:** `office/syntax` → `resolve` → `build`.
   No generated `build/run.py`.
-- **Guardrails** (all optional, Principle 6): every reply checked against
-  the role's `out:` (undeclared fields dropped and counted, bad values
-  failed and counted); `needs:` checked before a run; `dsl check` notes
-  for untrusted text reaching an acting sink, Python reaching past the
-  sinks, and router outboxes that no declared value can reach.
+- **Guardrails** (all optional, Principle 6): **contracts on both ends of
+  a role** (18 Oct): every message checked against the role's `in:`
+  before the role is called, every reply against its `out:` (undeclared
+  fields dropped and counted, bad values failed and counted). A field may
+  declare what it holds: values, `number`/`integer` with a range or bound,
+  `text` with a maximum length (spec 4.4). `needs:` checked before a run;
+  `dsl check` notes for untrusted text reaching an acting sink, Python
+  reaching past the sinks, and router outboxes that no declared value can
+  reach.
 - **The runtime is frozen** (`dissyslab/runtime/`), with two approved
   exceptions: the dropped-fields note, and the **stall report** (a walk
   back from held work proving it can never be released).
@@ -62,14 +66,16 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
   gives the model), recipes, and the three skills, all in 2.0.
 - **CI:** Linux 3.10–3.14, macOS, Windows (advisory), mypy on the strict
   modules. The suite is about 740 tests and runs in under a minute.
-  Windows has failed on every commit since 6c (1); the failing tests have
-  not been read (the job log needs a signed-in GitHub user).
+  Windows failed 15 tests on b95fd2b; all are addressed (17 Oct) but
+  not yet confirmed by a Windows run: CRLF checkout (`.gitattributes`
+  now pins LF), `CSVPointsSource` leaving its file open at the end,
+  unlocked appends in the scripted model's log, and `\` in paths.
 
 ## Open, in order
 
-1. **Lab 1 needs a real-model rehearsal** (see 6 below), and the
-   **Windows CI failures** need their names: open the latest Windows job,
-   paste the `FAILED` lines.
+1. **Lab 1 needs a real-model rehearsal** (see 6 below). Confirm the
+   Windows job is green after the 17 Oct fixes; if it is, consider
+   making it required rather than advisory.
 2. **Model reliability check** (spec §11), before release: every English
    role, old prompt form against new, on a small local model and a
    frontier model; tune the closing sentences; check every example in a
@@ -97,6 +103,14 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
    file source and small `max_articles`; nothing enforces it. A student
    who leaves a generated office polling a hosted model over a weekend
    finds out.
+8. **The next contracts** (after 18 Oct's `in:`/ranges), in order:
+   (a) `in:` on sinks that act, checked on arrival; (b) per-field taint
+   in `dsl check`: text from an untrusted source stays tainted until a
+   contract bounds it (values or a range), and a note names each tainted
+   field that reaches an acting sink; (c) the field-flow checks W21–W31,
+   comparing each producer's `out:` with the next role's `in:`. Not yet
+   used in the course pages, the skills or Lab 1's reference guard; the
+   course team decides where to teach them.
 
 ## Not built yet (spec, deferred)
 

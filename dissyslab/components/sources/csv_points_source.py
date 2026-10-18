@@ -111,7 +111,7 @@ class CSVPointsSource:
             while skipped_data < self.cursor:
                 line = self._file.readline()
                 if not line:
-                    return None
+                    return self._end_of_stream()
                 stripped = line.strip()
                 if not stripped or stripped.startswith("#"):
                     continue
@@ -121,7 +121,7 @@ class CSVPointsSource:
         while True:
             line = self._file.readline()
             if not line:
-                return None
+                return self._end_of_stream()
             stripped = line.strip()
             if not stripped or stripped.startswith("#"):
                 continue
@@ -136,3 +136,19 @@ class CSVPointsSource:
 
         self.cursor += 1
         return {"x": x, "y": y}
+
+    def _end_of_stream(self) -> None:
+        """Close the file and return None, the framework's end signal.
+
+        The file used to stay open after the last line. On Windows an
+        open file cannot be deleted, so a run's folder could not be
+        removed while the process lived (found by the Windows CI job:
+        test_checkpoint_resume's temporary directory).
+        """
+        if self._file is not None:
+            try:
+                self._file.close()
+            except Exception:
+                pass
+            self._file = None
+        return None

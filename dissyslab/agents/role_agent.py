@@ -13,8 +13,10 @@ role's raw reply (see :mod:`dissyslab.agents.english` and
 :mod:`dissyslab.agents.python_role`). The agent does not know or care
 which. The checks are in :mod:`dissyslab.agents.reply`.
 
-A message that cannot be handled -- the role raised, or its reply does
-not fit its front matter -- costs that one message: it is counted, the
+A message that cannot be handled -- it does not fit the role's ``in:``
+(checked before the role is called, so a model never sees it), the role
+raised, or its reply does not fit its ``out:`` -- costs that one
+message: it is counted, the
 first one is printed, the run summary reports them, and ``dsl run``
 exits non-zero (spec 4.5). Fields a reply carries without declaring
 them are dropped and counted per field name; the run summary lists them
@@ -34,6 +36,7 @@ from dissyslab.agents.reply import (
     Result,
     check_annotator_reply,
     check_author_reply,
+    check_incoming,
 )
 from dissyslab.office.frontmatter import FrontMatter
 from dissyslab.runtime.agent import Agent
@@ -61,6 +64,10 @@ class RoleAgent(Agent):
             msg = self.recv("in_")
             if not isinstance(msg, dict):
                 self._reject(f"it received a {type(msg).__name__}; every message is a JSON object.")
+                continue
+            problem = check_incoming(msg, self.front_matter)
+            if problem:
+                self._reject(f"the message it received does not fit its in: line: {problem}")
                 continue
             try:
                 reply = self.call(msg)
