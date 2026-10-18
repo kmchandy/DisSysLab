@@ -110,12 +110,16 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
 4. **Thirty students installing at once** has never been tried. Windows
    is the sharp end. Do it before 4 January; what it finds needs a
    release.
-5. **Course pages still in version 1:** the lecture notes
-   `OfficeRepresentation.html` (and its notes) and `lecture_build.html`
-   (`--trace`). (`DistributedSystemModel.html` is in 2.0 since 18 Oct: the
-   refund desk as Figure 1, a section mapping DisSysLab's agents onto the
-   model, and its quotes tested; the v1 page is in `_to_delete/`.)
-   and `labs.html`, the staff plan, which now says at the top what changed:
+5. **Course pages still in version 1:** `lecture_build.html` (`--trace`;
+   linked only from `labs.html`; to retire, its three safety sections into
+   the Lab 2 plan). Done 18 Oct: `DistributedSystemModel.html` (class 1, in
+   2.0, tested) and **class 2 rebuilt as `Contracts.html`** (metadata,
+   contracts, refusals and `refused`, barriers, a Python refund guard,
+   `dsl check`, evidence, Lab 1 preview without its answer; every quoted file
+   and output line tested, the guard office in
+   `tests/integration/class2_offices/`). `OfficeRepresentation.html` and its
+   notes are in `_to_delete/`; their logistics are on the index ("How this
+   course works"). Also `labs.html`, the staff plan, which now says at the top what changed:
    Labs 2–4 need re-planning (no `select`/`match`, no `--trace`,
    `--resume`, `dsl build` in 2.0). `README.pypi.md` should be read
    through before the release, since it becomes the PyPI page.

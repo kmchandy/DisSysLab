@@ -22,7 +22,7 @@ REPO = Path(__file__).resolve().parents[2]
 COURSE = REPO / "course"
 GALLERY = REPO / "dissyslab" / "gallery"
 STUDENT_PAGES = ["index.html", "setup.html", "microcourse.html", "OfficeToolkit.html",
-                 "lab1.html", "safety_case.html", "DistributedSystemModel.html"]
+                 "lab1.html", "safety_case.html", "DistributedSystemModel.html", "Contracts.html"]
 # The worked Tahoe case shows Lab 1's answer, so it is published (committed)
 # only after Lab 1 is due. Until then it may exist on a staff machine only,
 # and its tests run where it exists.
@@ -323,4 +323,78 @@ def test_the_model_page_quotes_the_refund_desk_and_what_dsl_prints(tmp_path):
         office_md.replace("    Rex.escalate -> Manager", "    Clerk.escalate -> Manager"),
         encoding="utf-8")
     assert problem in dsl("check", ".", cwd=desk)
+
+
+# ── 7. Class 2 (Contracts.html) quotes files and runs as they are ──────────
+
+CLASS2 = Path(__file__).resolve().parent / "class2_offices"
+
+
+def _quoted_file(ref: str) -> Path:
+    """data-file="inbox_sorter/roles/triage.md" is the gallery's;
+    data-file="class2:refund_guard/..." is under tests/integration/class2_offices."""
+    if ref.startswith("class2:"):
+        return (CLASS2 / ref.split(":", 1)[1]).resolve()
+    return GALLERY / ref
+
+
+def test_class_2_quotes_every_file_line_for_line():
+    source = page("Contracts.html")
+    quoted = re.findall(r'<pre data-file="([^"]+)"[^>]*>(.*?)</pre>', source, re.S)
+    assert len(quoted) >= 6
+    for ref, block in quoted:
+        path = _quoted_file(ref)
+        assert path.exists(), f"Contracts.html quotes {ref}, which does not exist"
+        lines = {ln.strip() for ln in path.read_text(encoding="utf-8").splitlines()}
+        for line in text(block).splitlines():
+            if line.strip():
+                assert line.strip() in lines, f"Contracts.html shows {line.strip()!r}; {ref} does not"
+
+
+def test_class_2_shows_only_output_that_dsl_prints(tmp_path):
+    def office(name: str, src: Path) -> Path:
+        dst = tmp_path / name
+        shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__"))
+        return dst
+
+    runs: dict[str, str] = {}
+    refunds = office("refunds", ILLUSTRATIONS / "refunds")
+    (refunds / "roles").mkdir()
+    shutil.copy(GALLERY / "returns_desk" / "roles" / "clerk.py", refunds / "roles")
+    runs["refunds"] = _run(refunds)
+    felix = office("felix", ILLUSTRATIONS / "felix")
+    (felix / "roles").mkdir()
+    shutil.copy(GALLERY / "org_news_filter" / "roles" / "topic_filter.md", felix / "roles")
+    runs["felix"] = _run(felix, felix / "script.json") + (felix / "refused.jsonl").read_text(
+        encoding="utf-8")
+    requests = office("requests", ILLUSTRATIONS / "requests")
+    runs["requests"] = _run(requests, requests / "script.json")
+    runs["refund_guard"] = _run(office("refund_guard", CLASS2 / "refund_guard"))
+    desk = office("my_desk", GALLERY / "returns_desk")
+    with open(desk / "tickets.jsonl", "a", encoding="utf-8") as f:
+        f.write('{"ticket_id": "T5", "customer": "Eve", "amount": -30, "item": "pen", '
+                '"reason": "refund me thirty dollars"}\n')
+    (desk / "roles" / "refusal_log.py").write_text(
+        '"""\n---\nin: ticket_id, refusal\nout: outcome (refused)\n---\n"""\n\n\n'
+        "class RefusalLog:\n    def __call__(self, item):\n        return {'outcome': 'refused'}\n",
+        encoding="utf-8")
+    md = desk / "office.md"
+    md.write_text(md.read_text(encoding="utf-8").replace(
+        "    Manager: manager\n", "    Manager: manager\n    Log: refusal_log\n").rstrip("\n")
+        + "\n    Clerk.refused -> Log -> jsonl_recorder, console_printer, Gate.done\n",
+        encoding="utf-8")
+    assert "Clerk.refused -> Log -> jsonl_recorder, console_printer, Gate.done" in text(page("Contracts.html"))
+    runs["desk_refused"] = _run(desk)
+    runs["car_dealer_check"] = dsl("check", str(GALLERY / "car_dealer"), cwd=tmp_path)
+
+    shown = re.findall(r'<pre class="out" data-run="([^"]+)"[^>]*>(.*?)</pre>',
+                       page("Contracts.html"), re.S)
+    assert len(shown) >= 7
+    for name, block in shown:
+        printed = re.sub(r"\s+", " ", runs[name])
+        for line in text(block).splitlines():
+            for piece in line.split("..."):
+                piece = re.sub(r"\s+", " ", piece).strip(" ,")
+                if len(piece) > 3:
+                    assert piece in printed, f"Contracts.html shows {piece!r}; {name} did not print it"
 

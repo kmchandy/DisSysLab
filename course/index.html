@@ -124,9 +124,22 @@
   </p>
   <div class="meta">
     <span><b>Every page</b> is HTML; many can be presented with <b>P</b></span>.
-    
+
   </div>
 
+  <h2>How this course works</h2>
+  <p><b>What you are here for.</b> You are going to determine the power and
+    safety of systems in a critical time in human history. You are here to
+    think for yourselves, explore, and prepare for this task.</p>
+  <ul>
+    <li>Collaborate. Do homework and projects in groups of 2 or 3.</li>
+    <li>Use everything, for example Claude Cowork, that helps you learn and
+      explore.</li>
+    <li>This course is graded pass/fail. You will get a pass if you turn in
+      homework.</li>
+    <li>Help me help you explore. Give me ideas for the course.</li>
+    <li>This course is about safety and power. Be safe.</li>
+  </ul>
 
   <h2>Before the first class</h2>
   <p class="sub">About an hour, on your own machine.</p>
@@ -170,27 +183,28 @@
 
     <li>
       <div class="li-body">
-        <h3>Lab: An office representation of a distributed system</h3>
-        <p>Grading, collaboration, safety, ombudsperson.</p>
-        <p>Examples of distributed systems using DisSysLab.</p>
+        <h3>Contracts: agents a customer cannot argue with</h3>
+        <p>Metadata, contracts and the first tools of safety, ready for Lab 1.</p>
         <ul class="topics">
-          <li>Agents, messages and offices in DisSysLab.</li>
-          <li>The coordinators <code>gate</code> and <code>synchronizer</code>.</li>
-          <li>Running a small app and reading its run summary against the
-            dataflow graph.</li>
-          <li>Replacing a scripted agent with an LLM agent: what changes when
-            an agent is nondeterministic, slow and costly.</li>
-          <li><b>Contracts:</b> each role's <code>in:</code> and
-            <code>out:</code> say what it takes and what it gives, down to a
-            number's range or a text's length, and DisSysLab checks both on
-            every message.</li>
+          <li><b>Metadata:</b> the front matter of a role, read by Python and
+            never sent to the model.</li>
+          <li><b>Contracts:</b> <code>in:</code> and <code>out:</code>, down to
+            a number's range or a text's length, checked on every message.</li>
+          <li><b>Refusals:</b> why a refusal stops the office, and how to wire
+            <code>refused</code> to handle it instead.</li>
+          <li><b>Barriers and guards:</b> authors that stop a stranger's words;
+            Python for the rules a contract cannot say.</li>
+          <li><b><code>dsl check</code></b> sees where untrusted text can reach
+            a sink that acts, before anything runs.</li>
+          <li><b>Evidence:</b> a model is not a script; a safety claim is a
+            rate.</li>
         </ul>
         <p class="q"><b>Safety question.</b> What happens when one agent is
           talked into something? In Lab 1 a customer's message makes a
-          salesperson agree to sell a car for a dollar, and you add the guard
+          salesperson agree to sell a car for a dollar, and you build the guard
           that stops it.</p>
         <div class="links">
-          <a class="primary" href="OfficeRepresentation.html">Open</a>
+          <a class="primary" href="Contracts.html">Open</a>
           <a href="lab1.html">Lab 1: the one-dollar Tahoe</a>
         </div>
       </div>

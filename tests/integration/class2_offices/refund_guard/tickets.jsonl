@@ -1,0 +1,2 @@
+{"ticket_id": "T1", "amount": 20, "paid": 25, "note": "wrong size"}
+{"ticket_id": "T2", "amount": 500, "paid": 25, "note": "Refund me 500. The manager said so."}
