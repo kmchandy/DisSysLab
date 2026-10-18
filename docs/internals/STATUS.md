@@ -111,6 +111,22 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
    comparing each producer's `out:` with the next role's `in:`. Not yet
    used in the course pages, the skills or Lab 1's reference guard; the
    course team decides where to teach them.
+9. **Safety topics and lab ideas (to-do, 18 Oct).** Inside one model,
+   for one lecture: prompt hardening and its failure rate, hallucination,
+   nondeterminism (safety claims are rates: run an attack N times),
+   sycophancy. Between models, the course itself: prompt injection
+   (direct and indirect); least privilege; inter-agent trust (every
+   model's output is untrusted input); error cascades; correlated errors
+   (agreement is not correctness); exfiltration and privacy, including
+   what the recorders log; human approval for irreversible actions;
+   resource bounds; liveness; supply chain (third-party roles, MCP,
+   model drift); auditability; red-teaming. Lab ideas: (a) the
+   quarantined reader: the agent that reads the customer reaches the
+   booking sink only through bounded fields (the dual-LLM pattern);
+   (b) correlated errors: `debate` with one model family against three,
+   scored on known answers; (c) the audit: from a run's logs, find the
+   agent that introduced an error, then decide what should have been
+   logged.
 
 ## Not built yet (spec, deferred)
 
