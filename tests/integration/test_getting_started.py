@@ -159,13 +159,50 @@ def test_part_4_5_a_message_that_breaks_a_contract(tmp_path):
     assert T5 in GUIDE, "part 4.5 no longer shows the ticket it adds"
     assert "in: amount (number, >= 0)" in (
         GALLERY / "returns_desk" / "roles" / "clerk.py").read_text(encoding="utf-8")
-    out = dsl("run", ".", cwd=desk(tmp_path, _negative_refund))
+    office = desk(tmp_path, _negative_refund)
+    out = dsl("run", ".", cwd=office)
     quoted_in_guide_and_printed([
         "[my_desk::Clerk] the message it received does not fit its in: line: 'amount' is -30, below its range (number, >= 0).",
-        "This message was not processed. The office carries on; the run summary counts the rest.",
-        "  Stalled: my_desk::Gate holds an item it admitted, until done arrives; it will never arrive.",
-        "    first failure: the message it received does not fit its in: line: 'amount' is -30, below its range (number, >= 0).",
+        "A contract refused this message, so the office is stopping. It is recorded in refused.jsonl.",
+        "  Stopped: my_desk::Clerk refused a message, so the office stopped.",
+        "    Recorded in my_desk/refused.jsonl.",
     ], out)
+    # Stopped, not stalled: the gate holding T5 is not reported as a stall.
+    assert "Stalled:" not in out, out
+    record = (office / "refused.jsonl").read_text(encoding="utf-8").strip()
+    assert record in GUIDE, f"part 4.5 no longer shows refused.jsonl as written:\n{record}"
+    # T1 to T4 were finished before the refusal, and are kept.
+    assert len((office / "outcomes.jsonl").read_text(encoding="utf-8").splitlines()) == 4
+
+
+def _guide_block_after(marker: str) -> str:
+    """The first fenced block after ``marker`` in the guide."""
+    rest = GUIDE[GUIDE.index(marker):]
+    start = rest.index("```")
+    start = rest.index("\n", start) + 1
+    return rest[start:rest.index("```", start)]
+
+
+def test_part_4_5_the_refused_outbox_lets_the_desk_carry_on(tmp_path):
+    """The second half of 4.5: the guide's refusal_log.py and its one line."""
+    def edit(office: Path) -> None:
+        _negative_refund(office)
+        (office / "roles" / "refusal_log.py").write_text(
+            _guide_block_after("Make `roles/refusal_log.py`"), encoding="utf-8")
+        line = _guide_block_after("and this line\nunder `connections:`").strip()
+        replace(office / "office.md", "    Manager: manager\n",
+                "    Manager: manager\n    Log: refusal_log\n")
+        md = office / "office.md"
+        md.write_text(md.read_text(encoding="utf-8").rstrip("\n") + "\n    " + line + "\n",
+                      encoding="utf-8")
+    office = desk(tmp_path, edit)
+    out = dsl("run", ".", cwd=office)
+    quoted_in_guide_and_printed([
+        "  note: my_desk::Clerk refused 1 message(s) and sent them to Clerk.refused; see my_desk/refused.jsonl.",
+    ], out)
+    assert "Stopped:" not in out and "Stalled:" not in out, out
+    outcomes = (office / "outcomes.jsonl").read_text(encoding="utf-8").splitlines()
+    assert len(outcomes) == 5 and '"outcome": "refused"' in outcomes[-1]
 
 
 def test_part_6_the_first_steps_of_the_inbox_sorter(tmp_path):

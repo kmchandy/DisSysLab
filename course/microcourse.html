@@ -80,6 +80,7 @@ svg text { font-family: var(--font-body); }
 .gone { position: absolute; inset: 0; border-radius: 10px; background: rgba(250,248,243,.78); display: flex; align-items: center; justify-content: center; font: 700 13px var(--font-body); color: var(--text-muted); letter-spacing: .04em; }
 .stamp { position: absolute; right: 10px; top: -13px; transform: rotate(-6deg); border: 2.5px solid var(--red); color: var(--red); font: 800 12.5px var(--font-body); letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border-radius: 6px; background: rgba(255,255,255,.9); }
 .stamp.ok { border-color: var(--teal-deep); color: var(--teal-deep); }
+.stamp.off { border-color: var(--text-muted); color: var(--text-muted); }
 [data-at].stamp { transform: rotate(-6deg) scale(1.25); }
 [data-at].stamp.shown { transform: rotate(-6deg) scale(1); }
 .row .msg { margin-top: 6px; }
@@ -258,8 +259,8 @@ out: clerk_decision (approve | escalate)
       <div class="row">
         <div class="msg">{"ticket_id": "T1", "amount": 20}<span class="stamp ok" data-at="1">passes</span></div>
         <div class="msg">{"ticket_id": "T2", "amount": -500}<span class="stamp" data-at="2.2">refused</span></div>
-        <div class="msg">{"ticket_id": "T3", "amount": "twenty"}<span class="stamp" data-at="3.4">refused</span></div>
-        <div class="msg">{"ticket_id": "T4", "amount": 80}<span class="stamp ok" data-at="4.6">passes</span></div>
+        <div class="msg">{"ticket_id": "T3", "amount": "twenty"}<span class="stamp off" data-at="3.4">office stopped</span></div>
+        <div class="msg">{"ticket_id": "T4", "amount": 80}<span class="stamp off" data-at="3.4">office stopped</span></div>
       </div>
     </div>
     <div>
@@ -272,9 +273,11 @@ out: clerk_decision (approve | escalate)
         <tr><td><code>(text, at most 2000 chars)</code></td><td>text, no longer than that</td></tr>
       </table>
       <div class="file">dsl run on tickets -&gt; Clerk -&gt; console_printer <span class="tag">illustration</span></div>
-<pre class="out">refunds::Clerk  sent 2  received 4  <span class="bad">failed 2</span>
-first failure: the message it received does not fit its in: line: 'amount' is -500, below its range (number, &gt;= 0).</pre>
-      <p>A refused message costs that one message. It is counted and reported, and the office carries on. An LLM agent never sees a message its contract refuses.</p>
+<pre class="out">refunds::Clerk  sent 1  received 4  <span class="bad">failed 1</span>
+Stopped: refunds::Clerk refused a message, so the office stopped.
+  the message it received does not fit its in: line: 'amount' is -500, below its range (number, &gt;= 0).</pre>
+      <p>A refusal may be an attack, so it <b>stops the whole office</b>, and the message and the reason are written to <code>refused.jsonl</code>. T1 was finished before T2 was refused, so it is kept. T3 and T4 were still waiting in the clerk's inbox, so the clerk never saw them, not even T4, which is a good ticket. An LLM agent never sees a message its contract refuses.</p>
+      <p>To handle refusals instead of stopping, connect the agent's <code>refused</code> outbox: <code>Clerk.refused -&gt; Log -&gt; recorder, Gate.done</code>. The refused ticket goes there, with its reason, and the office carries on.</p>
     </div>
   </div>
 </div></section>
@@ -289,7 +292,7 @@ first failure: the message it received does not fit its in: line: 'amount' is -5
 <pre><span class="c">out: on_topic (yes | no)</span></pre>
       <div class="msg">model replies {"on_topic": "maybe"}<span class="stamp" data-at="1.2">stopped</span></div>
 <pre class="out" style="margin-top:10px">first failure: its reply does not fit its front matter: 'on_topic' is 'maybe', which is not one of yes, no.</pre>
-      <p>A reply that breaks the contract goes no further. It cannot reach Rex, and so it cannot reach a sink.</p>
+      <p>A reply that breaks the contract goes no further, and the office stops. It cannot reach Rex, and so it cannot reach a sink.</p>
     </div>
     <div>
       <h3 style="margin:0 0 6px">An author: Rita <span class="tag">illustration</span></h3>
@@ -577,10 +580,11 @@ emits: books a sale, one line per sale
       <div class="row">
         <div class="msg">{"vehicle": "trax", "price": 21500}<span class="stamp ok" data-at="1">booked</span></div>
         <div class="msg">{"vehicle": "tahoe", "price": 1}<span class="stamp" data-at="2.2">refused</span></div>
-        <div class="msg">{"vehicle": "tahoe", "price": "62400"}<span class="stamp" data-at="3.4">refused</span></div>
-        <div class="msg">{"vehicle": "tahoe", "price": 62400}<span class="stamp ok" data-at="4.6">booked</span></div>
+        <div class="msg">{"vehicle": "tahoe", "price": "62400"}<span class="stamp off" data-at="3.4">office stopped</span></div>
+        <div class="msg">{"vehicle": "tahoe", "price": 62400}<span class="stamp off" data-at="3.4">office stopped</span></div>
       </div>
-<pre class="out" style="margin-top:10px">first failure: the message it received does not fit its in: line: 'price' is 1, below its range (number, &gt;= 20000).</pre>
+<pre class="out" style="margin-top:10px">Stopped: booking::book refused a message, so the office stopped.
+  the message it received does not fit its in: line: 'price' is 1, below its range (number, &gt;= 20000).</pre>
       <ul>
         <li>A sink you write in your office's <code>sinks/</code> folder checks its <code>in:</code> before it acts, exactly as an agent does.</li>
         <li>For a check a contract cannot say (the floor price depends on the car), put a Python agent in front of the sink. That is Lab 1.</li>
@@ -697,9 +701,9 @@ and wind power, electric cars, and carbon emissions.</pre>
   <h1>What DisSysLab checks for you,<br><span class="soft">and where you see it.</span></h1>
   <table>
     <tr><th>DisSysLab…</th><th>you see it with</th></tr>
-    <tr><td>checks each message against an agent's <code>in:</code> before the agent sees it</td><td>the run summary</td></tr>
-    <tr><td>checks each reply against <code>out:</code>: values, ranges, lengths; drops fields it does not declare</td><td>the run summary, and a note naming the dropped fields</td></tr>
-    <tr><td>checks each message against a sink's <code>in:</code> before the sink acts</td><td>the run summary</td></tr>
+    <tr><td>checks each message against an agent's <code>in:</code> before the agent sees it; a refusal stops the office</td><td><code>Stopped:</code> in the run summary; <code>refused.jsonl</code></td></tr>
+    <tr><td>checks each reply against <code>out:</code>: values, ranges, lengths; a reply that breaks it stops the office; fields it does not declare are dropped</td><td><code>Stopped:</code> and <code>refused.jsonl</code>; a note naming the dropped fields</td></tr>
+    <tr><td>checks each message against a sink's <code>in:</code> before the sink acts; a refusal stops the office</td><td><code>Stopped:</code> in the run summary; <code>refused.jsonl</code></td></tr>
     <tr><td>notices text from strangers (a chat page, an inbox, the news) that can reach a sink that acts</td><td><code>dsl check</code>, a note</td></tr>
     <tr><td>when the office goes quiet, reports who is still waiting, and on what</td><td>the stall report</td></tr>
   </table>

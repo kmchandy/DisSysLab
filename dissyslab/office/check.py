@@ -54,6 +54,7 @@ from dissyslab.office.build import (
     _runtime_connection,
     _synchronizer,
     english_args_problem,
+    role_names,
 )
 from dissyslab.office.frontmatter import FrontMatterError, read_front_matter
 from dissyslab.office.model import Declaration, OfficeFile
@@ -158,7 +159,8 @@ def _check(office_dir: Path, stack: tuple[Path, ...]) -> tuple[Report, OfficeFil
     found, unresolved = resolve_office(office, office_dir)
     report.problems.extend(f"line {p.line}: {p.message}" for p in unresolved)
 
-    ports = _Ports(found=found, inputs=office.inputs, outputs=office.outputs)
+    ports = _Ports(found=found, inputs=office.inputs, outputs=office.outputs,
+                   roles=role_names(office, found))
     for decl in office.declarations:
         f = found.get(decl.name)
         if f is None:
@@ -205,7 +207,9 @@ def _untrusted_reaches_acting(office: OfficeFile, found: dict[str, Found]) -> li
     **author that declares** ``out:`` is a barrier: it sends new messages
     holding only the fields it lists, and anything else is dropped (spec
     4.5), so the source's text does not get past it. An annotator is not:
-    the message it passes on still carries everything that came in.
+    the message it passes on still carries everything that came in. Nor is
+    any agent's ``refused`` outbox: a refusal goes out as the message the
+    agent received, so the source's text goes with it.
     """
     def builtin(decls: tuple[Declaration, ...], test: Callable[[str], bool]) -> list[Declaration]:
         return [d for d in decls if d.name in found and found[d.name].origin == "builtin"
@@ -215,20 +219,22 @@ def _untrusted_reaches_acting(office: OfficeFile, found: dict[str, Found]) -> li
     acting = builtin(office.sinks, is_acting_sink)
     if not untrusted or not acting:
         return []
-    feeds: dict[str, set[str]] = {}
+    feeds: dict[str, set[tuple[str, str | None]]] = {}
     for c in office.connections:
-        feeds.setdefault(c.receiver.name, set()).add(c.sender.name)
+        feeds.setdefault(c.receiver.name, set()).add((c.sender.name, c.sender.port))
     notes: list[str] = []
     for sink in acting:
         seen: set[str] = set()
+        walked: set[str] = set()
         stack = [sink.name]
         while stack:
             name = stack.pop()
-            for sender in feeds.get(name, ()):
-                if sender not in seen:
-                    seen.add(sender)
-                    if not _is_barrier(found.get(sender)):
-                        stack.append(sender)
+            for sender, port in feeds.get(name, ()):
+                seen.add(sender)
+                passes = port == "refused" or not _is_barrier(found.get(sender))
+                if passes and sender not in walked:
+                    walked.add(sender)
+                    stack.append(sender)
         upstream = sorted(n for n in untrusted if n in seen)
         if upstream:
             notes.append(

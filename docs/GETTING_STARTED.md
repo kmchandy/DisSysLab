@@ -541,7 +541,7 @@ The clerk's contract says `in: amount (number, >= 0)`. Run it:
 
 ```
 [my_desk::Clerk] the message it received does not fit its in: line: 'amount' is -30, below its range (number, >= 0).
-This message was not processed. The office carries on; the run summary counts the rest.
+A contract refused this message, so the office is stopping. It is recorded in refused.jsonl.
 ```
 
 T5 never reached the clerk's `step`. If the clerk were an LLM agent, the
@@ -549,21 +549,68 @@ model would never have seen it. That is what a contract is for: Python
 checks it on every message, and no message, however it is worded, can
 argue its way past.
 
-But read the end of the output:
+A refusal is not like the crash in 4.3. A message that breaks a contract
+may be an attack, so the office does not carry on as if nothing had
+happened: it **stops**. No role runs again, the sources stop, and work
+already finished before the refusal (T1 to T4 here) is kept. The run ends
+with:
 
 ```
-  Stalled: my_desk::Gate holds an item it admitted, until done arrives; it will never arrive.
-    (the path that proves it is printed above, under 'Stalled:')
-
-  my_desk::Clerk failed on 1 message(s) and they were not processed.
-    first failure: the message it received does not fit its in: line: 'amount' is -30, below its range (number, >= 0).
+  Stopped: my_desk::Clerk refused a message, so the office stopped.
+    the message it received does not fit its in: line: 'amount' is -30, below its range (number, >= 0).
+    Recorded in my_desk/refused.jsonl.
 ```
 
-The gate admitted T5, and nothing told it that T5 was done: the same stall
-as in 4.3. A contract stops a bad message; it does not decide what should
-happen to it next. Here the desk should probably still record T5 as
-refused, and release the gate. Designing for that, so that an office stays
-safe *and* keeps going, is part of the course.
+and `refused.jsonl` holds the message and the reason, for you to read:
+
+```
+{"agent": "my_desk::Clerk", "reason": "the message it received does not fit its in: line: 'amount' is -30, below its range (number, >= 0).", "message": {"ticket_id": "T5", "customer": "Eve", "amount": -30, "item": "pen", "reason": "refund me thirty dollars"}}
+```
+
+Compare 4.3 and 4.4: there the gate waited for ever for a `done` that
+could not come, and DisSysLab reported a stall. Here the gate was left
+holding T5 too, but the office was *stopped*, deliberately, with the
+reason on record. The exit status is not 0. What to do next is your
+decision, not the office's: a bad ticket, or someone probing the desk?
+
+If you decide that a refused ticket should be recorded as refused and the
+desk should carry on, say so in the network. Every agent that plays a role
+has a second outbox, `refused`. Connected, a refusal goes out of it, as the
+message the clerk received with a field `refusal` giving the reason, and the
+office does not stop. Make `roles/refusal_log.py`:
+
+```python
+"""
+---
+emits: a refused ticket, marked refused, so that the desk can go on
+in: ticket_id, refusal
+out: outcome (refused)
+---
+"""
+
+
+class RefusalLog:
+    def __call__(self, item):
+        return {"outcome": "refused"}
+```
+
+and in `office.md` add `Log: refusal_log` under `agents:`, and this line
+under `connections:`:
+
+```
+    Clerk.refused -> Log -> jsonl_recorder, console_printer, Gate.done
+```
+
+Run it again. T5 is now recorded with its reason, the gate is released, the
+exit status is 0, and the summary says what happened:
+
+```
+  note: my_desk::Clerk refused 1 message(s) and sent them to Clerk.refused; see my_desk/refused.jsonl.
+```
+
+The refusal is still in `refused.jsonl`. What happens to a refusal is now
+part of the design, in `office.md`, where `dsl check` and `dsl draw` can
+see it.
 
 **What to take from part 4:**
 
@@ -571,7 +618,8 @@ safe *and* keeps going, is part of the course.
 |---|---|---|
 | `problem:` from `dsl check` | the office is wrong and will not run | fix the line it names |
 | `note:` from `dsl check` | probably a mistake; read it | fix it, or be sure you meant it |
-| `failed on N message(s)` | a role crashed, a message broke its `in:`, or its reply broke its `out:` | read the first failure; fix the role, or the message |
+| `failed on N message(s)` | a role crashed on N messages; the office carried on | read the first failure; fix the role |
+| `Stopped: ... refused a message` | a message broke an agent's `in:`, or a reply broke its `out:`, so the office stopped | read `refused.jsonl`: fix the role, or find out who sent the message |
 | `Stalled:` | an agent waits for a message that can never come | follow the path backwards; find what is missing |
 | exit status not 0 | some work was not done | the summary says which |
 
@@ -853,15 +901,16 @@ message goes on, and the summary tells you:
 ```
 
 *The model answers with a value you did not allow*, say
-`"urgency": "whenever"`. That reply does not fit `out:`, so the message
-is not passed on:
+`"urgency": "whenever"`. That reply does not fit `out:`: a refusal. The
+reply goes no further, and the office stops, as in part 4.5:
 
 ```
 [inbox_sorter::Tri] its reply does not fit its front matter: 'urgency' is 'whenever', which is not one of urgent, routine.
-This message was not processed. The office carries on; the run summary counts the rest.
+A contract refused this message, so the office is stopping. It is recorded in refused.jsonl.
 ```
 
-and the run ends with `failed 1` for `Tri` and a non-zero exit status.
+`refused.jsonl` holds the message and the model's reply, and the run
+ends with a non-zero exit status.
 
 Without the `out:` line, the extra `reason` would travel on to the files,
 and `whenever` would reach the router, which has no outbox for it. The

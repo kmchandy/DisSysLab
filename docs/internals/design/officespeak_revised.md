@@ -373,10 +373,23 @@ Removed: `outboxes:`, `inboxes:`, `contract:`, `adds:`.
    counted**, for English and Python roles alike. This is not a failure: the
    message continues, and the run summary shows the count as a note naming
    the fields. (Not applied to `out: same as in`.)
-5. A failure drops that one message, is counted, and the office continues.
-   `dsl run` exits non-zero, and the summary quotes the first failure. An
-   exception raised by a Python role's `__call__` is a failure in the same
-   way, quoted with the exception.
+5. A message or reply that does not fit (steps 0 to 3) is a **refusal**,
+   and stops the whole office (decided 18 Oct 2026: a refusal may be an
+   attack, and an office that carries on, or stalls, hides it). No role
+   runs again and sources stop; work that had already passed every role is
+   delivered, so what a stopped office has written does not depend on
+   timing; a coordinator left holding the refused item is not reported as a
+   stall. The message, the reason and any reply go to `refused.jsonl`; the
+   summary ends with `Stopped:`; `dsl run` exits non-zero
+   (`agents/refusals.py`, `office/build.py`).
+   An office may instead connect an agent's `refused` outbox
+   (`Clerk.refused -> Log`; added 18 Oct): the refusal goes out of it, as
+   the message received plus `refusal` (the reason), is still recorded,
+   and the office carries on. `dsl check` never treats a `refused` outbox
+   as a barrier to untrusted text: it carries the message as received.
+   An exception raised by a Python role's `__call__` is not a refusal: it
+   drops that one message, is counted, and the office continues; `dsl run`
+   exits non-zero, and the summary quotes the first failure.
 6. **A stalled office is reported.** A dropped message can leave a loop
    waiting for ever (a gate whose `done` never comes, a synchronizer group
    that never completes). When the office goes quiet, the run summary lists

@@ -21,6 +21,11 @@ A rule may also give ``"user_contains"``, a string or a list of strings:
 then it applies only when each occurs in the incoming message as well,
 which lets one role answer differently for different messages.
 
+A rule may give ``"raise"`` instead of ``"reply"``: the model call then
+fails with that message, as a model service that errors does. That costs
+the one message; a reply that breaks the role's ``out:`` would be a
+refusal instead, which stops the whole office.
+
 ``$name`` in a reply is replaced by that field of the incoming message
 (the user prompt is the message as JSON), so a reply can copy fields
 through. A prompt that matches no rule is a test error: the model's
@@ -75,6 +80,8 @@ class ScriptedModel:
                 except ValueError:
                     fields = {}
                 values = {k: v for k, v in fields.items() if isinstance(v, (str, int, float))}
+                if "raise" in rule:
+                    raise RuntimeError(rule["raise"])
                 reply = string.Template(rule["reply"]).safe_substitute(values)
                 if self.log:
                     # Agents call from several threads at once. On Windows

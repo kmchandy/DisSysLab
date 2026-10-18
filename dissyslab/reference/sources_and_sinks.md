@@ -118,8 +118,9 @@ line changes, never the connections.
 
 **A sink you write can refuse what it should not act on.** Its `in:` is a
 contract, as for a role (`dsl grammar roles`): every message is checked on
-arrival, before `__call__`, and one that does not fit is not acted on. It
-is counted and reported, and `dsl run` exits non-zero.
+arrival, before `__call__`, and one that does not fit is not acted on.
+It is a refusal: the office stops, and the message and the reason go to
+`refused.jsonl`.
 
 ```python
 """

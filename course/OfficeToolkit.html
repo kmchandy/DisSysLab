@@ -232,13 +232,22 @@ connections:                          # where messages go
      argue with them.</p>
   <table>
     <tr><th>Where</th><th>Checked</th><th>If it does not fit</th></tr>
-    <tr><td><code>in:</code> of a role</td><td>each message, before the role is called</td><td>the message is refused; an LLM never sees it</td></tr>
-    <tr><td><code>out:</code> of a role</td><td>each reply</td><td>the reply is stopped; fields not declared are dropped and named in the run summary</td></tr>
-    <tr><td><code>in:</code> of a sink you write</td><td>each message, before the sink acts</td><td>the sink does not act on it</td></tr>
+    <tr><td><code>in:</code> of a role</td><td>each message, before the role is called</td><td>refused: an LLM never sees it</td></tr>
+    <tr><td><code>out:</code> of a role</td><td>each reply</td><td>refused: the reply goes no further</td></tr>
+    <tr><td><code>in:</code> of a sink you write</td><td>each message, before the sink acts</td><td>refused: the sink does not act on it</td></tr>
   </table>
-  <p>Every refusal costs that one message: it is counted, the first is printed,
-     and <code>dsl run</code> exits non-zero. A field in <code>in:</code> or
-     <code>out:</code> may say what it holds:</p>
+  <p>A refusal may be an attack, so it <b>stops the whole office</b>: no role
+     runs again, sources stop, and work finished before it is kept. The run
+     summary ends with <code>Stopped:</code>, naming the agent and the reason;
+     the message, the reason and any reply are written to
+     <code>refused.jsonl</code> in the office's folder; <code>dsl run</code>
+     exits non-zero. To handle refusals instead, connect the agent's
+     <code>refused</code> outbox (<code>Clerk.refused -&gt; Log</code>): the
+     refused message goes there, with a field <code>refusal</code> giving the
+     reason, it is still recorded, and the office carries on. (Fields a reply
+     carries but <code>out:</code> does not declare are only dropped, and
+     named in the summary.) A field in
+     <code>in:</code> or <code>out:</code> may say what it holds:</p>
   <table>
     <tr><th>Written</th><th>Means</th></tr>
     <tr><td><code>verdict (publish | revise)</code></td><td>one of these values</td></tr>

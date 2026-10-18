@@ -52,13 +52,15 @@ def test_contracts_stop_what_does_not_fit(tmp_path):
     office = write_office(tmp_path / "quoting", QUOTING)
     code, out, calls = run_office(office, SCRIPT)
 
-    # Only the first two messages fit in:, so only they reached the model.
+    # The one-dollar Tahoe broke out:'s range: a refusal, so the office
+    # stopped there. Messages 3 and 4 never reached the model.
     assert [json.loads(c["user"])["id"] for c in calls] == [1, 2], calls
-    # The one-dollar Tahoe broke out:'s range and was stopped.
     assert [m["id"] for m in lines_of(office / "booked.jsonl")] == [1]
-    # Three messages failed, the run says so, and the first is quoted.
     assert code != 0, out
-    assert "does not fit its in: line" in out or "below its range" in out, out
+    assert "Stopped: quoting::Sal refused a message, so the office stopped." in out, out
+    refused = lines_of(office / "refused.jsonl")
+    assert [r["message"]["id"] for r in refused] == [2]
+    assert "below its range" in refused[0]["reason"]
 
 
 # ── A sink that declares in: ─────────────────────────────────────────────────
@@ -95,6 +97,9 @@ BOOKING = {
 def test_a_sink_acts_only_on_messages_that_fit_its_in(tmp_path):
     office = write_office(tmp_path / "booking", BOOKING)
     code, out, _ = run_office(office)
-    assert [s["price"] for s in lines_of(office / "sales.jsonl")] == [21500, 62400]
+    # The $1 quote is refused and the office stops: the sink books nothing
+    # after it, not even the good quote that was already on its way.
+    assert [s["price"] for s in lines_of(office / "sales.jsonl")] == [21500]
     assert code != 0, out
-    assert "does not fit its in: line" in out, out
+    assert "Stopped: booking::book refused a message" in out, out
+    assert [r["message"]["price"] for r in lines_of(office / "refused.jsonl")] == [1]

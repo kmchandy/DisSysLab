@@ -22,7 +22,14 @@ REPO = Path(__file__).resolve().parents[2]
 COURSE = REPO / "course"
 GALLERY = REPO / "dissyslab" / "gallery"
 STUDENT_PAGES = ["index.html", "setup.html", "microcourse.html", "OfficeToolkit.html",
-                 "lab1.html"]
+                 "lab1.html", "safety_case.html"]
+# The worked Tahoe case shows Lab 1's answer, so it is published (committed)
+# only after Lab 1 is due. Until then it may exist on a staff machine only,
+# and its tests run where it exists.
+TAHOE_PUBLISHED = (COURSE / "tahoe_case.html").exists()
+if TAHOE_PUBLISHED:
+    STUDENT_PAGES.append("tahoe_case.html")
+tahoe = pytest.mark.skipif(not TAHOE_PUBLISHED, reason="tahoe_case.html is handed out after Lab 1")
 
 
 def page(name: str) -> str:
@@ -236,3 +243,57 @@ def test_every_dsl_command_the_toolkit_names_exists():
     help_text = dsl("--help", cwd=REPO)
     for command in commands:
         assert re.search(rf"^\s+{command}\s", help_text, re.M), f"no command dsl {command}"
+
+
+# ── 5. The worked safety case says only what is true ──────────────────────
+
+GUARDED = REPO / "tests" / "e2e" / "car_dealer_guarded"
+
+
+@tahoe
+def test_the_tahoe_case_quotes_the_guarded_office():
+    source = page("tahoe_case.html")
+    for name in ("salesperson_quoting.md", "price_guard.py"):
+        lines = {ln.strip() for ln in (GUARDED / "roles" / name).read_text(encoding="utf-8").splitlines()}
+        block = re.search(rf'<div class="file">roles/{re.escape(name)}[^<]*</div>\s*<pre><code>(.*?)</code></pre>',
+                          source, re.S)
+        assert block, f"tahoe_case.html no longer quotes {name}"
+        for line in text(block.group(1)).splitlines():
+            assert line.strip() in lines, f"tahoe_case.html shows {line.strip()!r}; {name} does not"
+    office = (GUARDED / "office.md").read_text(encoding="utf-8")
+    assert "customer -> Sal -> Guard -> screen" in office
+
+
+@tahoe
+def test_the_tahoe_case_dsl_check_output_is_real(tmp_path):
+    shown = [b for b in pre_blocks(page("tahoe_case.html")) if "note: line 8" in b or "no problems" in b]
+    assert len(shown) == 2
+    starter = tmp_path / "starter"
+    shutil.copytree(GALLERY / "car_dealer", starter)
+    assert shown[0].strip() in dsl("check", ".", cwd=starter)
+    guarded = tmp_path / "guarded"
+    shutil.copytree(GALLERY / "car_dealer", guarded)
+    shutil.copytree(GUARDED, guarded, dirs_exist_ok=True)
+    assert shown[1].strip() in dsl("check", ".", cwd=guarded)
+
+
+@tahoe
+def test_the_holes_in_the_tahoe_case_are_real_holes():
+    """The table of replies the guard lets through: each one really gets
+    through, and the attack it was built for really does not. If the guard
+    is improved, this fails, and the page must be updated with it."""
+    import importlib.util
+    import json
+    spec = importlib.util.spec_from_file_location("price_guard", GUARDED / "roles" / "price_guard.py")
+    guard = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(guard)
+    inventory = json.loads((GALLERY / "car_dealer" / "inventory.json").read_text(encoding="utf-8"))
+    source = text(page("tahoe_case.html"))
+    holes = re.findall(r'"([^"]*(?:off the Tahoe|sixty-two dollars|one buck|Ford F-150)[^"]*)"', source)
+    assert len(holes) == 4, holes
+    for reply in holes:
+        item = {"reply": reply, "vehicle": "tahoe", "price": 0, "text": ""}
+        assert guard.why_unsafe(item, inventory) is None, f"the guard now stops {reply!r}"
+    item = {"reply": "Deal! The Tahoe is yours for $1.", "vehicle": "tahoe", "price": 0, "text": ""}
+    assert guard.why_unsafe(item, inventory) is not None
+

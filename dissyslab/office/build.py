@@ -34,7 +34,7 @@ from typing import Any, Iterator
 
 from dissyslab.agents.english import english_call
 from dissyslab.agents.python_role import python_instance
-from dissyslab.agents.role_agent import role_agent
+from dissyslab.agents.role_agent import REFUSED, role_agent
 from dissyslab.agents.router import RouterAgent
 from dissyslab.agents.synchronizer import SynchronizerAgent
 from dissyslab.office.frontmatter import read_front_matter
@@ -124,19 +124,22 @@ def english_args_problem(decl: Declaration) -> str | None:
     return None
 
 
-def _role(decl: Declaration, found: Found) -> Agent:
+def _role(decl: Declaration, found: Found, office: OfficeFile) -> Agent:
     assert found.path is not None
     fm = read_front_matter(found.path)
     args: dict[str, Any] = dict(decl.args)
+    # The refused outbox exists only where the office wires it.
+    refused = any(c.sender.name == decl.name and c.sender.port == REFUSED
+                  for c in office.connections)
     if found.language == "english":
         problem = english_args_problem(decl)
         if problem:
             raise BuildError(problem)
-        return role_agent(decl.name, english_call(fm, ai=args.get("ai")), fm)
+        return role_agent(decl.name, english_call(fm, ai=args.get("ai")), fm, refused)
     instance = python_instance(found.path, fm, args)
     if not callable(instance):
         raise BuildError(f"line {decl.line}: {found.path.name}'s class has no __call__.")
-    return role_agent(decl.name, instance, fm)
+    return role_agent(decl.name, instance, fm, refused)
 
 
 def _router(decl: Declaration, office: OfficeFile) -> Agent:
@@ -224,7 +227,7 @@ def _agent(decl: Declaration, found: Found, office: OfficeFile) -> Agent:
                 "checked and drawn, but not run. Give it a role first."
             )
         raise BuildError(f"line {decl.line}: {found.kind} is not built yet (Phase 3).")
-    return _role(decl, found)
+    return _role(decl, found, office)
 
 
 # ── Connections ────────────────────────────────────────────────────────────
@@ -250,6 +253,15 @@ class _Ports:
     outputs: tuple[str, ...]
     #: For each nested office used as an agent: (its inputs, its outputs).
     nested: dict[str, tuple[tuple[str, ...], tuple[str, ...]]] = field(default_factory=dict)
+    #: Agents that play a role: each may also have the outbox ``refused``.
+    roles: frozenset[str] = frozenset()
+
+
+def role_names(office: OfficeFile, found: dict[str, Found]) -> frozenset[str]:
+    """The agents of ``office`` that play a role (not a router, coordinator or office)."""
+    return frozenset(d.name for d in office.agents
+                     if d.name in found and found[d.name].origin != "reserved"
+                     and found[d.name].kind != "office")
 
 
 def _sender(c: Connection, p: _Ports) -> tuple[str, str]:
@@ -266,10 +278,13 @@ def _sender(c: Connection, p: _Ports) -> tuple[str, str]:
                 f"write {name}.<output> -> {c.receiver}. See `dsl grammar`, Nested offices."
             )
         return name, port
-    if p.found[name].kind == "router":
+    found = p.found[name]
+    if found.kind == "router":
         return name, port or ""  # _router has already required a value
     if port in (None, "out"):
         return name, RUNTIME_OUT
+    if port == REFUSED and name in p.roles:
+        return name, REFUSED  # where a refusal goes, instead of stopping the office
     raise BuildError(
         f"line {c.line}: {name} has one outbox, out; it has no {port!r}. See `dsl grammar`, Ports."
     )
@@ -364,7 +379,8 @@ def build_network(
             f"line {d.line}: {d.name} is unassigned; a draft office can be "
             "checked and drawn, but not run. Give it a role first." for d in drafts))
 
-    ports = _Ports(found=found, inputs=office.inputs, outputs=office.outputs)
+    ports = _Ports(found=found, inputs=office.inputs, outputs=office.outputs,
+                   roles=role_names(office, found))
     blocks: dict[str, Agent | Network] = {}
     for decl in office.sources + office.sinks:
         f = found[decl.name]
@@ -421,6 +437,80 @@ def build_office(office_dir: Path) -> Network:
 STOPPED = 130
 
 
+def _counts(network: Network) -> tuple[int, int, bool]:
+    """(messages sent, messages received, every inbox empty), across the office.
+
+    Only inboxes: a source's operating-system queue is not one, and a
+    finished source never reads it, so a stop request left there stays.
+    """
+    from dissyslab.runtime.agent import Agent as _Agent
+
+    sent = received = 0
+    empty = True
+    for agent in network.agents.values():
+        sent += sum(getattr(agent, "sent", {}).values())
+        received += sum(getattr(agent, "received", {}).values())
+        for port, q in getattr(agent, "in_q", {}).items():
+            if port != _Agent._OS_PORT_NAME and q is not None and not q.empty():
+                empty = False
+    return sent, received, empty
+
+
+def _stop_after_refusal(network: Network, *, settle: float = 0.25, limit: float = 10.0) -> None:
+    """Stop the office after a refusal, without losing work already done.
+
+    Roles have stopped already (``Refusals.halted``). Here: (1) the
+    termination detector is stopped, so a coordinator left holding the
+    refused item -- a gate waiting for ``done`` -- is not reported as a
+    stall: the office did not stall, it was stopped; (2) sources stop;
+    (3) we wait until every inbox is empty and the counts have not moved
+    for ``settle`` seconds, so a message already past every role reaches
+    its sink; (4) everything is stopped, without waiting (this runs on an
+    agent's side and must not join that agent's thread).
+
+    Stopping every queue at once, without (3), lost such a message
+    whenever it was between two agents at that instant: the sink's
+    shutdown arrived ahead of it.
+    """
+    import time
+
+    from dissyslab.runtime.agent import Agent as _Agent
+    from dissyslab.runtime.messages import _Shutdown
+
+    if network._os_agent is not None:
+        network._os_agent.request_stop()
+    for agent in network.agents.values():
+        os_q = agent.in_q.get(_Agent._OS_PORT_NAME)
+        if os_q is not None:
+            os_q.put(_Shutdown())
+    deadline = time.time() + limit
+    last = _counts(network)
+    quiet_since = time.time()
+    while time.time() < deadline:
+        time.sleep(0.02)
+        now = _counts(network)
+        if now != last or not now[2]:
+            last, quiet_since = now, time.time()
+        elif time.time() - quiet_since >= settle:
+            break
+    network._stop_all_agents(grace=0)
+
+
+def _stop_on_refusal(network: Network, office_dir: Path) -> Any:
+    """Give every role and every sink with a contract the run's ``Refusals``."""
+    from dissyslab.agents.checked_sink import CheckedSink
+    from dissyslab.agents.refusals import RECORD, Refusals
+    from dissyslab.agents.role_agent import RoleAgent
+
+    refusals = Refusals(office_dir / RECORD, stop=lambda: _stop_after_refusal(network))
+    if not network.compiled:
+        network.compile()  # fills network.agents, nested offices included; run_network skips it
+    for agent in network.agents.values():
+        if isinstance(agent, (RoleAgent, CheckedSink)):
+            agent.refusals = refusals
+    return refusals
+
+
 def run_office(office_dir: Path) -> int:
     """Build and run the office from inside its folder; return the exit code.
 
@@ -430,12 +520,31 @@ def run_office(office_dir: Path) -> int:
     sets it), and ``STOPPED`` is returned. Agents still busy -- a source in
     the middle of a network call cannot notice a stop request -- are named.
     The caller must not wait for their threads: ``dsl run`` exits at once.
+
+    A contract refusal stops the office the same way, by itself
+    (:mod:`dissyslab.agents.refusals`): the summary ends with a line naming
+    the agent and the reason, the refusal is in ``refused.jsonl``, and the
+    exit code is 1.
     """
     office_dir = office_dir.resolve()
     with inside(office_dir):
         network = build_office(office_dir)
+        refusals = _stop_on_refusal(network, office_dir)
         try:
-            return network.run_network()
+            code = network.run_network()
+            for agent, count in sorted(refusals.routed.items()):
+                short = agent.rsplit("::", 1)[-1]
+                print(f"\n  note: {agent} refused {count} message(s) and sent them to "
+                      f"{short}.refused; see {office_dir.name}/refused.jsonl.",
+                      file=sys.stderr, flush=True)
+            if refusals.first is not None:
+                agent, reason = refusals.first
+                print(f"\n  Stopped: {agent} refused a message, so the office stopped.\n"
+                      f"    {reason}\n"
+                      f"    Recorded in {office_dir.name}/refused.jsonl.",
+                      file=sys.stderr, flush=True)
+                return 1
+            return code
         except KeyboardInterrupt:
             print("\nStopped (Ctrl-C).", file=sys.stderr, flush=True)
             still_running = network._stop_all_agents()

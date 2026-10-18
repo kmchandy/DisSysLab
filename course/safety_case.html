@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The safety case</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:820px; margin:0 auto; padding:44px 20px 90px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em;
+    text-transform:uppercase; color:var(--orange); margin-bottom:14px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(34px,5.4vw,52px);
+     line-height:1.05; letter-spacing:-.02em; margin:0 0 16px}
+  h2{font-family:var(--display); font-weight:600; font-size:clamp(22px,2.9vw,31px);
+     line-height:1.2; margin:44px 0 12px}
+  h2 .n{display:block; font:600 11.5px var(--sans); letter-spacing:.14em;
+     text-transform:uppercase; color:var(--orange); margin-bottom:5px}
+  h3{font-size:18px; margin:26px 0 8px}
+  p{color:var(--body); margin:0 0 15px}
+  .lead{font-size:19.5px; line-height:1.55; max-width:640px}
+  ul,ol{color:var(--body); margin:0 0 15px; padding-left:22px}
+  li{margin-bottom:7px}
+  code{font-family:var(--mono); font-size:.88em;
+    background:rgba(26,26,46,.06); padding:2px 6px; border-radius:5px}
+  pre{font-family:var(--mono); font-size:14px; line-height:1.6;
+    background:#20232e; color:#e6e3da; padding:16px 18px; border-radius:11px;
+    overflow:auto; margin:0 0 16px}
+  pre code{background:none; padding:0; font-size:1em; color:inherit}
+  blockquote{margin:0 0 16px; padding:12px 16px; background:var(--panel);
+    border:1px solid var(--line); border-left:3px solid var(--teal);
+    border-radius:0 10px 10px 0; color:var(--ink); font-size:15.5px}
+  table{width:100%; border-collapse:collapse; margin:0 0 18px; background:#fff; font-size:15px; color:var(--body)}
+  th, td{border:1px solid var(--line); padding:8px 11px; text-align:left; vertical-align:top}
+  th{background:#f6f4ee; color:var(--ink); font-weight:700}
+  .good{color:var(--teal); font-weight:700}
+  .weak{color:var(--orange); font-weight:700}
+  a{color:var(--teal)}
+  footer{margin-top:60px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:14px; color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="kicker">DisSysLab &middot; the project</div>
+    <h1>The safety case</h1>
+    <p class="lead">
+      Your project is a multi-agent app that interests you. With it you hand
+      in a <b>safety case</b>: a short argument, with evidence, that your app
+      does not do harm, even when one of its agents is wrong or has been
+      talked into something.
+    </p>
+  </header>
+
+  <p>A safety case is not a promise that nothing can go wrong. It says
+     exactly what must not go wrong, shows how your network prevents it, and
+     gives the evidence. It also says honestly what your network does
+     <i>not</i> prevent. A reader should finish it knowing what they can rely
+     on, and what they cannot.</p>
+  <p>It has three parts, the three habits of the course:
+     <b>specify</b>, <b>structure</b>, <b>evidence</b>. One to three pages is
+     enough. Write it in a file called <code>SAFETY.md</code> in your
+     office's folder, next to <code>office.md</code>.</p>
+
+  <h2><span class="n">Part 1</span>What must never happen, and what must eventually happen</h2>
+  <p>List the bad things your app must never do, and the good things it must
+     eventually do. Each one is a sentence someone else could check against a
+     run of your app, without asking you what you meant.</p>
+  <table>
+    <tr><th></th><th>Checkable</th><th>Not checkable</th></tr>
+    <tr><td>never</td>
+        <td class="good">No message to the <code>gmail_sink</code> contains text from an outside source.</td>
+        <td class="weak">The app does not leak private data.</td></tr>
+    <tr><td>never</td>
+        <td class="good">The booking sink never records a price below the floor for that car.</td>
+        <td class="weak">The chatbot behaves responsibly.</td></tr>
+    <tr><td>eventually</td>
+        <td class="good">Every ticket is either recorded in <code>outcomes.jsonl</code> or refused in <code>refused.jsonl</code>.</td>
+        <td class="weak">The app handles every request.</td></tr>
+  </table>
+  <p>"Never" sentences are <b>safety</b> properties; "eventually" sentences
+     are <b>progress</b> properties. Temporal logic, later in the course,
+     writes them as <i>always not</i> and <i>eventually</i>. You do not need
+     the notation here, only the precision.</p>
+  <p>Think about: who can put words into your app (a feed, an inbox, a chat
+     page, a file someone sends you); what your app can do in the world (send,
+     post, book, pay, delete); what it records, and about whom; and what it
+     costs if it runs all weekend.</p>
+
+  <h2><span class="n">Part 2</span>How your network prevents it</h2>
+  <p>For each property in Part 1, say what in your network makes it true, and
+     where it sits. Include the drawing (<code>dsl draw . --mermaid</code>)
+     and mark on it which agents are LLM agents, which sources carry other
+     people's words, and which sinks act in the world. The tools:</p>
+  <ul>
+    <li><b>Contracts</b>: <code>in:</code> and <code>out:</code> on every
+        agent, and <code>in:</code> on the sinks you write. A refusal stops the
+        office and is recorded in <code>refused.jsonl</code>.</li>
+    <li><b>Barriers</b>: an author whose <code>out:</code> lists only bounded
+        fields (a value from a list, a number in a range), so other people's
+        words stop there.</li>
+    <li><b>Guards</b>: a Python agent in front of a sink, for a rule a
+        contract cannot say, as in Lab 1.</li>
+    <li><b>Fences</b>: what each agent can reach. A sink that acts should be
+        reachable only through a guard or a barrier.</li>
+    <li><b>Approval</b>: a person in the loop for what cannot be undone.</li>
+  </ul>
+  <p>Every note <code>dsl check .</code> prints belongs here: either your
+     network removes it, or you say why it is acceptable.</p>
+
+  <h2><span class="n">Part 3</span>The evidence</h2>
+  <p>Two kinds, and you need both.</p>
+  <h3>An argument</h3>
+  <p>For a "never" property, an argument of the form: <i>if</i> each agent
+     on the path keeps its contract, then the property holds; and here is
+     why each contract on that path is checked by code rather than trusted to
+     a model. For example: the booking sink's <code>in:</code> refuses any
+     price that is not a number of at least 20000, and the guard before it
+     passes on only prices at or above the floor for the car it names, so no
+     price below the floor reaches the booking file, whatever the model said.
+     This is a <b>rely&ndash;guarantee</b> argument: it relies on the parts
+     you wrote in Python, and on nothing a model does.</p>
+  <h3>Attacks, repeated</h3>
+  <p>A file of inputs designed to break each property, honest inputs that
+     must still work, and a small program that checks a run, as
+     <code>attacks.jsonl</code> and <code>grade.py</code> do in Lab 1. Copy
+     those as a start. A model gives different answers to the same input, so
+     <b>run each attack at least ten times</b> and report how often it got
+     through. A safety claim about a model is a rate, not a yes or a no.</p>
+<pre><code># macOS and Linux: ten runs, one score each
+for i in 1 2 3 4 5 6 7 8 9 10; do dsl run . --quiet; python grade.py | tail -2; done</code></pre>
+  <p>Report the result as a table: each property, each attack, how many runs
+     out of how many it got through, before and after your guardrails.</p>
+  <h3>What it does not stop</h3>
+  <p>End with what your network does <i>not</i> prevent, and why you accept
+     it. An attack that still gets through sometimes; a property you could not
+     check; a cost of a strict guardrail (a refusal stops the whole office, so
+     a sloppy model can take your app down). This section is not a weakness
+     of your case. A case without it is not believed.</p>
+
+  <h2><span class="n">Template</span>Copy this into SAFETY.md</h2>
+<pre><code># Safety case: &lt;your app&gt;
+
+## 1. Properties
+Never:
+- N1. ...
+- N2. ...
+Eventually:
+- E1. ...
+
+Who can put words into this app: ...
+What it can do in the world: ...
+
+## 2. How the network prevents it
+(the drawing: dsl draw . --mermaid, with LLM agents, untrusted sources
+and acting sinks marked)
+- N1: &lt;contract / barrier / guard / fence / approval&gt;, at &lt;agent&gt;, because ...
+- N2: ...
+- E1: ...
+dsl check notes, and what each one means here: ...
+
+## 3. Evidence
+Argument for each "never" property: ...
+Attacks (attacks.jsonl), each run 10 times:
+| property | attack | got through, before | got through, after |
+|---|---|---|---|
+| N1 | ... | 7/10 | 0/10 |
+
+What this network does not stop, and why that is accepted: ...</code></pre>
+
+  <h2><span class="n">For the staff, and for you</span>How it is read</h2>
+  <p>The course is graded pass/fail. A safety case passes when all of these
+     hold; otherwise it comes back with a note, to be revised.</p>
+  <table>
+    <tr><th>Part</th><th>Passes when</th></tr>
+    <tr><td>1</td><td>At least two "never" and one "eventually" properties,
+        each checkable from a run, and about this app (not about apps in
+        general).</td></tr>
+    <tr><td>2</td><td>Each property is matched to something in the network,
+        and where it is. The drawing is there, with the three kinds of thing
+        marked. Every <code>dsl check</code> note is answered.</td></tr>
+    <tr><td>3</td><td>An argument for each "never" property that relies only
+        on code. At least one attack per "never" property, run at least ten
+        times, with the rate reported. A section on what it does not
+        stop.</td></tr>
+  </table>
+  <p>Two checkpoints: <b>Part 1</b>, with your project proposal, so the staff
+     can help you choose properties worth checking; and the <b>whole case</b>,
+     with the finished project.</p>
+  <blockquote>A worked example, the one-dollar Tahoe, comes out after Lab 1
+     is handed in. It is the case for the guarded <code>car_dealer</code>,
+     written this way.</blockquote>
+
+  <footer>DisSysLab &middot; <a href="index.html">course index</a> &middot;
+    <a href="lab1.html">Lab 1</a> &middot;
+    <a href="OfficeToolkit.html#guardrails">contracts and guardrails</a></footer>
+</div>
+</body>
+</html>

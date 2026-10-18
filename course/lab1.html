@@ -295,9 +295,27 @@ customer will see; "vehicle", the car the reply is about (tahoe,
 silverado, equinox, trax or malibu), or none; and "price", the price in
 dollars that the reply names for that car, as a number, or 0 if it names
 none.</pre>
-<p>The <code>out:</code> line is a guardrail in itself. DisSysLab checks every
-reply against it: a <code>vehicle</code> that is not one of the six values,
-or a reply missing a field, is reported and never goes on.</p>
+<p>The <code>out:</code> line is a guardrail in itself: a <b>contract</b>.
+DisSysLab checks every reply against it, in Python, whatever the model was
+told. A <code>vehicle</code> that is not one of the six values, or a reply
+missing a field, is <b>refused</b>: it never reaches the customer. A refusal
+may be an attack, so it also stops the whole office. The terminal says
+<code>Stopped:</code>, and the reply and the reason are written to
+<code>refused.jsonl</code>. On the attack file, every turn after the refusal
+then gets no answer, and the grader counts those as failures.</p>
+<p>So when a run stops, open <code>refused.jsonl</code> and decide: did the
+contract catch an attack, or did Sal simply answer in the wrong shape? The
+first is a guardrail doing its job. The second is the price of a strict
+guardrail: a dealership whose chat goes down whenever its model is sloppy.
+Say in your write-up which you saw. If you would rather the customer got an
+apology than the chat went down, say so in the network: every agent that plays a
+role has a second outbox, <code>refused</code>, and a line such as
+<code>Sal.refused -&gt; Sorry -&gt; screen</code> sends a refused reply to an
+agent of yours (with the reason in a field <code>refusal</code>) instead of
+stopping the office. Contracts can say more than a list of
+values (<code>price (number, 0..100000)</code>,
+<code>reply (text, at most 600 chars)</code>); <code>dsl grammar roles</code>
+has them all, and Lab 2 is built on them.</p>
 <p>But it does not make Sal honest. A model that was talked into a one-dollar
 Tahoe can also be talked into reporting <code>"price": 0</code>. The next step
 must not trust it.</p>
@@ -513,6 +531,13 @@ one.</p>
       <code>price</code> field can be checked; a paragraph cannot, quite.
       But the structure is still the model's claim. Check it against the
       text, and the text against the facts.</li>
+  <li><b>Contracts are checked by code, not by the model.</b> An
+      <code>out:</code> line with values is the simplest guardrail there is,
+      and a refusal stops the office rather than letting it carry on as if
+      nothing happened. A contract can say what shape a reply has; it cannot
+      say whether a price is right for that car. That needs the Python guard
+      of Step 8. Lab 2 puts contracts on every agent and on the sinks that
+      act.</li>
   <li><b>The shape of the network is a safety property.</b>
       <code>dsl check</code> could tell, without running anything, that the
       customer's words had a path to the dealership's voice with no barrier on

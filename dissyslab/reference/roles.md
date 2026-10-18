@@ -154,9 +154,10 @@ to a model.
 ## What happens to a message
 
 0. Before the role is called, the message is checked against `in:`. A
-   message that does not fit is a failure, and the role never sees it.
+   message that does not fit is refused (4, below), and the role never
+   sees it.
 1. The reply is read as one JSON value. A reply wrapped in one code fence is
-   unwrapped. Anything else is a failure.
+   unwrapped. Anything else is refused.
 2. An annotator's reply must be an object with every field of `out:`, each
    holding what it declares: a listed value, a number in its range, text
    within its length. An author's must be a list of such objects.
@@ -164,8 +165,18 @@ to a model.
    counted**. The message goes on; the run summary names the fields. This
    is the guardrail: a model that writes more than it was asked cannot pass
    the extra along.
-4. A failure costs that one message. It is counted, the first is quoted in
-   the summary, the office carries on, and `dsl run` exits non-zero.
+4. A message or reply that does not fit is a **refusal**, and a refusal
+   stops the whole office: it may be an attack. No role runs again; work
+   finished before it is kept; the message, the reason and the reply go to
+   `refused.jsonl` in the office's folder; the summary ends with
+   `Stopped:`; `dsl run` exits non-zero. **Unless** the office connects the
+   agent's `refused` outbox (`Clerk.refused -> Log`): then the refused
+   message goes there, with a field `refusal` giving the reason, it is
+   still written to `refused.jsonl`, and the office carries on. What a
+   refusal should do is then part of the design, in `office.md`.
+5. A Python role that raises is different: that is a bug, not an attack. It
+   costs that one message, which is counted and quoted in the summary; the
+   office carries on, and `dsl run` exits non-zero.
 
 ## The built-in roles
 

@@ -162,8 +162,13 @@ def test_a_failing_message_makes_the_exit_code_non_zero(tmp_path):
         "roles/topic_filter.md": TOPIC_FILTER,
         "articles.jsonl": jsonl(ARTICLES),
     })
+    # "maybe" is not in out: (yes | no): a refusal, so the office stops.
+    # Brazil, done before it, is delivered; Ottawa, after it, never runs.
     assert run_office(office) == 1
-    assert len(read_jsonl(office / "out.jsonl")) == 2
+    assert [m["title"] for m in read_jsonl(office / "out.jsonl")] == ["Brazil votes"]
+    refused = read_jsonl(office / "refused.jsonl")
+    assert [r["message"]["title"] for r in refused] == ["Tokyo rains"]
+    assert refused[0]["reply"] == '{"on_topic": "maybe"}'
 
 
 # ── Clear errors for what is not built yet, or not right ───────────────────
@@ -350,7 +355,9 @@ out: severity (HIGH | LOW)
 class Severity:
     def __call__(self, item):
         if "fail" in item["text"]:
-            return {"severity": "SEVERE"}      # not in out: -- rejected
+            # A role that raises loses only this message. (A reply that broke
+            # out: would be a refusal, which stops the whole office.)
+            raise ValueError("cannot rate this one")
         return {"severity": "HIGH" if "war" in item["text"] else "LOW"}
 '''
 

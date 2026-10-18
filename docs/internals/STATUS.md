@@ -35,9 +35,17 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
 - **Guardrails** (all optional, Principle 6): **contracts on both ends of
   a role** (18 Oct): every message checked against the role's `in:`
   before the role is called, every reply against its `out:` (undeclared
-  fields dropped and counted, bad values failed and counted). A field may
-  declare what it holds: values, `number`/`integer` with a range or bound,
-  `text` with a maximum length (spec 4.4). `needs:` checked before a run;
+  fields dropped and counted). A field may declare what it holds: values,
+  `number`/`integer` with a range or bound, `text` with a maximum length
+  (spec 4.4). **A refusal stops the whole office** (Mani, 18 Oct; spec 4.5
+  step 5): no role runs again, finished work is kept, the refusal goes to
+  `refused.jsonl`, the summary ends with `Stopped:`, no stall is reported.
+  A Python role that raises still costs only that message. An office may
+  instead wire an agent's **`refused` outbox** (`Sal.refused -> Sorry ->
+  screen`, 18 Oct): the refusal goes there with a `refusal` field, is still
+  recorded, and the office carries on; `dsl check` never treats it as a
+  barrier. GETTING_STARTED 4.5 and Lab 1 step 7 show it.
+  `needs:` checked before a run;
   `dsl check` notes for untrusted text reaching an acting sink, Python
   reaching past the sinks, and router outboxes that no declared value can
   reach.
@@ -61,12 +69,20 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
   screens, from `course/microcourse_plan.html`: LLM and Python agents,
   contracts, inboxes taught with coordinators; the previous one is in
   `_to_delete/`), the toolkit's "Contracts and guardrails", GETTING_STARTED
-  part 4.5 (a message that breaks a contract, and the stall it leaves),
-  setup. The gallery's `clerk`, `manager` and `triage` now declare bounded
-  `in:` contracts. `tests/integration/test_course_pages.py` checks links,
-  every office, role and sink file the pages quote (illustrations against
+  part 4.5 (a message that breaks a contract stops the office), setup;
+  Lab 1 step 7 explains contracts and refusals. The gallery's `clerk`,
+  `manager` and `triage` now declare bounded `in:` contracts.
+  **The project's safety case is required** (Mani, 18 Oct):
+  `course/safety_case.html` (three parts, a template, the pass/fail
+  reading, two checkpoints). **The worked example,
+  `course/tahoe_case.html`, is handed out after Lab 1**: keep it out of git
+  until then (GitHub Pages publishes `course/`); its tests skip while it is
+  absent. Its real-model table is empty until the real-key rehearsal.
+  `tests/integration/test_course_pages.py` checks links, every office,
+  role and sink file the pages quote (illustrations against
   `tests/integration/microcourse_offices/`), every line of output on the
-  micro-course, and the toolkit's lists against the package.
+  micro-course, the toolkit's lists against the package, and the Tahoe
+  case's quotes, `dsl check` output and the holes it claims in the guard.
 - **Docs:** `docs/GETTING_STARTED.md` (the student guide; its outputs are
   re-checked by `tests/integration/test_getting_started.py`), the
   `dsl grammar` reference (shipped in the package, also what `dsl new`

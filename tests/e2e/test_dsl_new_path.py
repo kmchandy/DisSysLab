@@ -159,12 +159,16 @@ def test_show_prints_a_built_in_role(tmp_path):
 
 
 def _debate_script(fail_on: str | None = None) -> list[dict]:
-    """Three panellists who agree; a moderator who fails on ``fail_on``."""
+    """Three panellists who agree; a moderator whose model call fails on ``fail_on``.
+
+    A failed call costs that one message, so the loop stalls. (A reply
+    that broke the moderator's out: would be a refusal and stop the office.)
+    """
     panel = [{"when": f"You are {who},",
               "reply": json.dumps({key: {"answer": "A", "reasoning": "r", "confidence": 0.9}})}
              for who, key in (("Qwen", "qwen"), ("GPT", "gpt"), ("Claude", "claude"))]
     bad = ([{"when": "You moderate a panel", "user_contains": fail_on,
-             "reply": json.dumps({"agreement": "total", "final_answer": "A", "note": ""})}]
+             "raise": "the model service is unavailable"}]
            if fail_on else [])
     good = {"when": "You moderate a panel",
             "reply": json.dumps({"agreement": "unanimous", "final_answer": "A", "note": ""})}

@@ -103,6 +103,7 @@ One or more per line, under `connections:`.
 |---|---|
 | `a -> b` | `a.out -> b.in` |
 | `Rex.yes -> console_printer` | from a named outbox (a router's value) |
+| `Clerk.refused -> Log` | where Clerk's refusals go, instead of stopping the office |
 | `temp_sensor -> Join.temp` | into a named inbox (a coordinator's, or a nested office's input) |
 | `Join -> Checker -> Rex` | a chain: `Join -> Checker` and `Checker -> Rex` |
 | `Gate -> Qwen, GPT, Claude` | fan-out: one connection to each |
@@ -113,7 +114,10 @@ dot. A list (`a, b`) may stand only at either end of a chain.
 
 **Ports:**
 
-- A role has one inbox, `in`, and one outbox, `out`.
+- A role has one inbox, `in`, and one outbox, `out`. It also has the
+  outbox `refused`, used only if a connection names it: a message or reply
+  its contract refuses then goes there, with a field `refusal` giving the
+  reason, and the office carries on instead of stopping.
 - A source has one outbox, `out`; a sink has one inbox, `in`.
 - A router's outboxes are named by values.
 - A synchronizer's inboxes are the names its connections use:
@@ -301,9 +305,14 @@ Run summary (messages):
   ...
 ```
 
-- A message that does not fit a role's `in:`, a reply that does not fit
-  its front matter, or Python that raises, costs that one message: it is
-  reported, the office carries on, and `dsl run` exits non-zero.
+- A message that does not fit an agent's `in:`, or a reply that does not
+  fit its front matter, is a **refusal**: it may be an attack, so the
+  office stops, unless the office connects that agent's `refused` outbox
+  (then the refusal goes there, and the office carries on). No role runs again, work finished before it is kept, the
+  message and the reason go to `refused.jsonl`, the summary ends with
+  `Stopped:`, and `dsl run` exits non-zero.
+- Python that raises costs only that message: it is reported, the office
+  carries on, and `dsl run` exits non-zero.
 - An agent left holding work it can never finish -- a gate whose `done`
   never comes, a synchronizer group that never completes -- is reported as
   **Stalled**, with the path of empty connections and idle agents that
