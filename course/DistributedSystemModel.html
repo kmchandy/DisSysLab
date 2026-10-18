@@ -212,128 +212,68 @@
 
   <figure class="fig wideout">
     <svg viewBox="0 0 1040 372" role="img" aria-labelledby="f1t f1d">
-      <title id="f1t">An office of six agents</title>
-      <desc id="f1d">An agent is represented by a box.
-        hacker_news and file_source are sources;
-        console_printer and jsonl_recorder are sinks. Screen has one
-        inbox and two outboxes, keep and discard.
-        Editor has two inboxes,
-        article and guidance, and one outbox.</desc>
-
+      <title id="f1t">The refund desk: an office of six agents</title>
+      <desc id="f1d">tickets is a source and jsonl_recorder a sink. Gate has two inboxes, in and done.
+        Rex, a router, has two outboxes, approve and escalate. Clerk and Manager each have one inbox and
+        one outbox. Two connections end at Gate.done, and two at the recorder.</desc>
       <defs>
-        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5"
-                markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M0,0 L10,5 L0,10 z" fill="#9a9384"/>
         </marker>
       </defs>
-
       <g fill="none" stroke="#9a9384" stroke-width="1.7" marker-end="url(#ah)">
-        <path d="M200,172 L244,172"/>
-        <path d="M420,60 C490,60 490,196 554,196"/>
-        <path d="M430,148 L554,148"/>
-        <path d="M430,196 C520,240 640,296 834,296"/>
-        <path d="M740,172 C790,172 790,152 834,152"/>
+        <path d="M144,174 C165,174 168,150 186,150"/>
+        <path d="M324,174 L366,174"/>
+        <path d="M494,174 L536,174"/>
+        <path d="M674,150 C760,150 800,124 876,124"/>
+        <path d="M674,198 C700,198 690,268 716,268"/>
+        <path d="M854,268 C900,268 860,132 876,128"/>
+        <path d="M674,150 C705,150 712,330 600,330 L175,330 C150,330 160,200 186,200"/>
+        <path d="M854,268 C880,268 880,348 600,348 L170,348 C140,348 150,206 186,203"/>
       </g>
-
       <g font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
-
-        <!-- ── source agents: no inboxes ────────────────────────────── -->
-        <g>
-          <rect x="30" y="142" width="170" height="60" rx="9"
-                fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
-          <text x="115" y="167" text-anchor="middle" font-size="13.5"
-                font-weight="600" fill="#1a1a2e">hacker_news</text>
-          <text x="115" y="184" text-anchor="middle" font-size="11"
-                fill="#8a8578" font-style="italic">source agent</text>
-          <rect x="196" y="168" width="8" height="8" rx="2" fill="#d13d0e"/>
-          <text x="200" y="136" text-anchor="end" font-size="10.5"
-                font-family="ui-monospace,Menlo,Consolas,monospace"
-                fill="#b0553a">destination</text>
-        </g>
-
-        <g>
-          <rect x="250" y="30" width="170" height="60" rx="9"
-                fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
-          <text x="335" y="55" text-anchor="middle" font-size="13.5"
-                font-weight="600" fill="#1a1a2e">file_source</text>
-          <text x="335" y="72" text-anchor="middle" font-size="11"
-                fill="#8a8578" font-style="italic">source agent</text>
-          <rect x="416" y="56" width="8" height="8" rx="2" fill="#d13d0e"/>
-          <text x="420" y="24" text-anchor="end" font-size="10.5"
-                font-family="ui-monospace,Menlo,Consolas,monospace"
-                fill="#b0553a">destination</text>
-        </g>
-
-        <!-- ── Screen: one inbox, two outboxes ──────────────────────── -->
-        <g>
-          <rect x="250" y="124" width="180" height="96" rx="10"
-                fill="#ffffff" stroke="#2f3d55" stroke-width="2"/>
-          <text x="340" y="167" text-anchor="middle" font-size="15"
-                font-weight="650" fill="#1a1a2e">Screen</text>
-          <text x="340" y="185" text-anchor="middle" font-size="11.5"
-                fill="#6f7583" font-style="italic">relevance_filter</text>
-          <rect x="246" y="168" width="8" height="8" rx="2" fill="#00947d"/>
-          <text x="258" y="176" font-size="10.5"
-                font-family="ui-monospace,Menlo,Consolas,monospace"
-                fill="#00806c">in_</text>
-          <rect x="426" y="144" width="8" height="8" rx="2" fill="#d13d0e"/>
-          <text x="422" y="152" text-anchor="end" font-size="10.5"
-                font-family="ui-monospace,Menlo,Consolas,monospace"
-                fill="#b0553a">keep</text>
-          <rect x="426" y="192" width="8" height="8" rx="2" fill="#d13d0e"/>
-          <text x="422" y="200" text-anchor="end" font-size="10.5"
-                font-family="ui-monospace,Menlo,Consolas,monospace"
-                fill="#b0553a">discard</text>
-        </g>
-
-        <!-- ── Editor: two inboxes, one outbox ──────────────────────── -->
-        <g>
-          <rect x="560" y="124" width="180" height="96" rx="10"
-                fill="#ffffff" stroke="#2f3d55" stroke-width="2"/>
-          <text x="655" y="167" text-anchor="middle" font-size="15"
-                font-weight="650" fill="#1a1a2e">Editor</text>
-          <text x="655" y="185" text-anchor="middle" font-size="11.5"
-                fill="#6f7583" font-style="italic">house_editor</text>
-          <rect x="556" y="144" width="8" height="8" rx="2" fill="#00947d"/>
-          <text x="568" y="152" font-size="10.5"
-                font-family="ui-monospace,Menlo,Consolas,monospace"
-                fill="#00806c">article</text>
-          <rect x="556" y="192" width="8" height="8" rx="2" fill="#00947d"/>
-          <text x="568" y="200" font-size="10.5"
-                font-family="ui-monospace,Menlo,Consolas,monospace"
-                fill="#00806c">guidance</text>
-          <rect x="736" y="168" width="8" height="8" rx="2" fill="#d13d0e"/>
-          <text x="732" y="160" text-anchor="end" font-size="10.5"
-                font-family="ui-monospace,Menlo,Consolas,monospace"
-                fill="#b0553a">out</text>
-        </g>
-
-        <!-- ── sink agents: no outboxes ─────────────────────────────── -->
-        <g>
-          <rect x="840" y="122" width="170" height="60" rx="9"
-                fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
-          <text x="925" y="147" text-anchor="middle" font-size="13.5"
-                font-weight="600" fill="#1a1a2e">console_printer</text>
-          <text x="925" y="164" text-anchor="middle" font-size="11"
-                fill="#8a8578" font-style="italic">sink agent</text>
-          <rect x="836" y="148" width="8" height="8" rx="2" fill="#00947d"/>
-          <text x="848" y="140" font-size="10.5"
-                font-family="ui-monospace,Menlo,Consolas,monospace"
-                fill="#00806c">in_</text>
-        </g>
-
-        <g>
-          <rect x="840" y="266" width="170" height="60" rx="9"
-                fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
-          <text x="925" y="291" text-anchor="middle" font-size="13.5"
-                font-weight="600" fill="#1a1a2e">jsonl_recorder</text>
-          <text x="925" y="308" text-anchor="middle" font-size="11"
-                fill="#8a8578" font-style="italic">sink agent</text>
-          <rect x="836" y="292" width="8" height="8" rx="2" fill="#00947d"/>
-          <text x="848" y="284" font-size="10.5"
-                font-family="ui-monospace,Menlo,Consolas,monospace"
-                fill="#00806c">in_</text>
-        </g>
+        <rect x="20" y="146" width="120" height="56" rx="10" fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
+        <text x="80" y="171" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">tickets</text>
+        <text x="80" y="188" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">source agent</text>
+        <rect x="136" y="170" width="8" height="8" rx="2" fill="#d13d0e"/>
+        <text x="136" y="166" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">out</text>
+        <rect x="190" y="120" width="130" height="108" rx="10" fill="#ffffff" stroke="#2f3d55" stroke-width="2"/>
+        <text x="255" y="171" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">Gate</text>
+        <text x="255" y="188" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">gate</text>
+        <rect x="186" y="146" width="8" height="8" rx="2" fill="#00947d"/>
+        <text x="202" y="142" text-anchor="start" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">in</text>
+        <rect x="186" y="196" width="8" height="8" rx="2" fill="#00947d"/>
+        <text x="202" y="192" text-anchor="start" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">done</text>
+        <rect x="316" y="170" width="8" height="8" rx="2" fill="#d13d0e"/>
+        <text x="316" y="166" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">out</text>
+        <rect x="370" y="142" width="120" height="64" rx="10" fill="#ffffff" stroke="#2f3d55" stroke-width="2"/>
+        <text x="430" y="171" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">Clerk</text>
+        <text x="430" y="188" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">clerk</text>
+        <rect x="366" y="170" width="8" height="8" rx="2" fill="#00947d"/>
+        <text x="382" y="166" text-anchor="start" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">in</text>
+        <rect x="486" y="170" width="8" height="8" rx="2" fill="#d13d0e"/>
+        <text x="486" y="166" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">out</text>
+        <rect x="540" y="128" width="130" height="92" rx="10" fill="#ffffff" stroke="#2f3d55" stroke-width="2"/>
+        <text x="605" y="171" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">Rex</text>
+        <text x="605" y="188" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">router</text>
+        <rect x="536" y="170" width="8" height="8" rx="2" fill="#00947d"/>
+        <text x="552" y="166" text-anchor="start" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">in</text>
+        <rect x="666" y="146" width="8" height="8" rx="2" fill="#d13d0e"/>
+        <text x="666" y="142" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">approve</text>
+        <rect x="666" y="194" width="8" height="8" rx="2" fill="#d13d0e"/>
+        <text x="666" y="214" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">escalate</text>
+        <rect x="720" y="236" width="130" height="64" rx="10" fill="#ffffff" stroke="#2f3d55" stroke-width="2"/>
+        <text x="785" y="265" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">Manager</text>
+        <text x="785" y="282" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">manager</text>
+        <rect x="716" y="264" width="8" height="8" rx="2" fill="#00947d"/>
+        <text x="732" y="260" text-anchor="start" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">in</text>
+        <rect x="846" y="264" width="8" height="8" rx="2" fill="#d13d0e"/>
+        <text x="846" y="260" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">out</text>
+        <rect x="880" y="96" width="140" height="56" rx="10" fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
+        <text x="950" y="121" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">jsonl_recorder</text>
+        <text x="950" y="138" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">sink agent</text>
+        <rect x="876" y="120" width="8" height="8" rx="2" fill="#00947d"/>
+        <text x="872" y="114" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">in</text>
       </g>
     </svg>
 
@@ -342,15 +282,14 @@
       <span><i style="background:#d13d0e"></i>outbox</span>
     </div>
 
-    <figcaption><b>Figure 1. An office of six agents.</b>
-      Each agent is represented by a box.
-      <code>hacker_news</code> and <code>file_source</code> are sources;
-      <code>console_printer</code> and
-      <code>jsonl_recorder</code> are sinks.
-      <code>Screen</code> has one inbox and two outboxes called
-      <code>keep</code> and <code>discard</code>.
-      <code>Editor</code> has two inboxes — <code>guidance</code>
-      and <code>article</code> — and one outbox.</figcaption>
+    <figcaption><b>Figure 1. The refund desk: an office of six agents</b>
+      (the gallery's <code>returns_desk</code>, without its screen printer).
+      Each agent is a box. <code>tickets</code> is a source; <code>jsonl_recorder</code>
+      is a sink. <code>Gate</code> has two inboxes, <code>in</code> and <code>done</code>.
+      <code>Rex</code>, a router, has two outboxes, <code>approve</code> and
+      <code>escalate</code>. <code>Clerk</code> and <code>Manager</code> have one inbox and
+      one outbox each. Two connections end at <code>Gate.done</code>, and two at the
+      recorder's inbox.</figcaption>
   </figure>
 
   <p><b>Connections: message channels.</b>
@@ -528,6 +467,43 @@
   A sink removes a message from its inbox and sends messages to external devices
   such as actuators, databases, or files.
 </p>
+
+  <h3>The agents of DisSysLab, in this model</h3>
+  <p>DisSysLab's office file hides most boxes, because most agents have one
+    of each. Every kind of agent is a case of the model above:</p>
+  <ul>
+    <li><b>An agent that plays a role</b> (an LLM agent or a Python agent)
+      has one inbox, <code>in</code>, and one outbox, <code>out</code>. Its
+      action on a message is: check the message against the role's
+      <code>in:</code>, call the role, check the reply against its
+      <code>out:</code>, and put messages on <code>out</code>.
+      <ul>
+        <li>An <b>annotator</b> puts exactly one message on <code>out</code>:
+          the message it received, with the role's fields added.</li>
+        <li>An <b>author</b> puts zero or more messages on <code>out</code>,
+          each one new; the message it received goes no further.</li>
+      </ul></li>
+    <li><b>A refusal</b>, a message or a reply that breaks the agent's
+      contract, puts nothing on <code>out</code>. If the office connects the
+      agent's second outbox, <code>refused</code>, the refused message goes
+      there. If not, the office stops: from then on, in the model, every
+      action is a skip.</li>
+    <li><b>A router</b> has one inbox and one outbox for each value of the
+      field it reads (<code>Rex.approve</code>, <code>Rex.escalate</code>).
+      Its action puts the message on exactly one of them.</li>
+    <li><b>A gate</b> has two inboxes, <code>in</code> and <code>done</code>.
+      It waits on <code>in</code>, passes one message on, then waits on
+      <code>done</code>: the model's "waits on exactly one inbox", used on
+      purpose.</li>
+    <li><b>A synchronizer</b> waits on all its inboxes at once and takes from
+      whichever has a message. In the model, that is the merge of
+      <b>Figure 4</b> (each message labelled with the inbox it came from)
+      followed by an agent with one inbox that collects a group per key.</li>
+  </ul>
+  <p>So <code>Clerk -&gt; Rex</code> in an office file means
+    <code>(Clerk, out, Rex, in)</code>, and a name after a dot is written only
+    where an agent has a choice of boxes: <code>Rex.approve</code>,
+    <code>Gate.done</code>.</p>
 
 <h2><span class="n">SECTION 2</span>A Model of Computation</h2>
 
@@ -746,53 +722,72 @@ performance.
 
   <h2><span class="n">SECTION 6</span>The picture is the code</h2>
   <p>That was not an analogy. The picture is what the framework runs, and the
-    framework will print it back to you. An office is described in a file of
-    English called <code>office.md</code>:</p>
+    framework will print it back to you. Figure 1 is described in a file
+    called <code>office.md</code>:</p>
 
-<pre># Office: my_first_office
+<pre><span class="k">sources:</span>
+    tickets: file_source(path="tickets.jsonl")
 
-<span class="k">Sources:</span> hacker_news(max_articles=10, poll_interval=600)
-<span class="k">Sinks:</span> console_printer
+<span class="k">sinks:</span>
+    jsonl_recorder(path="outcomes.jsonl")
+    console_printer
 
-<span class="k">Agents:</span>
-Alex is an analyst.
+<span class="k">agents:</span>
+    Gate: gate
+    Clerk: clerk(limit=50)
+    Rex: router(on="clerk_decision")
+    Manager: manager
 
-<span class="k">Connections:</span>
-hacker_news's destination is Alex.
-Alex's briefing is console_printer.</pre>
+<span class="k">connections:</span>
+    tickets -&gt; Gate -&gt; Clerk -&gt; Rex
+    Rex.approve -&gt; jsonl_recorder, console_printer, Gate.done
+    Rex.escalate -&gt; Manager -&gt; jsonl_recorder, console_printer, Gate.done</pre>
 
-  <p>Each line under <b>Connections</b> is one instance of the picture you just
-    played with — a named outbox, three queues, a named inbox. Ask the framework
-    to draw it and that is literally what it prints:</p>
+  <p>Every arrow under <b>connections:</b> is one instance of the picture you
+    just played with: an outbox, a connection, an inbox. Ask the framework to
+    list them and that is what it prints, one per connection:</p>
 
-<pre>$ dsl draw my_first_office
-hacker_news  destination ──▶ in_  Alex
-Alex         briefing    ──▶ in_  console_printer</pre>
+<pre>$ dsl draw .
+  ...
+  arrows:
+    tickets -&gt; Gate
+    Gate -&gt; Clerk
+    Clerk -&gt; Rex
+    Rex.approve -&gt; jsonl_recorder
+    Rex.approve -&gt; console_printer
+    Rex.approve -&gt; Gate.done
+    Rex.escalate -&gt; Manager
+    Manager -&gt; jsonl_recorder
+    Manager -&gt; console_printer
+    Manager -&gt; Gate.done</pre>
 
-  <p>Two connections, two copies of the animation, running at once and
-    independently. An office of forty agents is the same picture forty times.
+  <p>Ten connections, ten copies of the animation, running at once and
+    independently. An office of forty agents is the same picture many times.
     There is nothing else in the model.</p>
 
   <div class="task">
     <h4>Task 5 · Run it</h4>
     <p>Make yourself a copy, look at it, and run it:</p>
-<pre>$ dsl init my_first_office my_office
-$ dsl draw my_office     <span class="c"># the picture</span>
-$ dsl check my_office    <span class="c"># is the wiring sound?</span>
-$ dsl run my_office      <span class="c"># watch messages move</span></pre>
-    <p>Open <code>my_office/office.md</code> and <code>my_office/roles/analyst.md</code>
-      and satisfy yourself that you can point at the outbox named
-      <code>briefing</code> in both files, and at the connection it feeds.</p>
+<pre>$ dsl init returns_desk my_desk
+$ cd my_desk
+$ dsl draw .     <span class="c"># the picture</span>
+$ dsl check .    <span class="c"># is the wiring sound?</span>
+$ dsl run .      <span class="c"># watch messages move</span></pre>
+    <p>Open <code>office.md</code> and satisfy yourself that you can point, in
+      Figure 1, at every connection it names, and at the two that end at
+      <code>Gate.done</code>.</p>
   </div>
 
   <div class="task">
     <h4>Task 6 · Break it on purpose</h4>
-    <p>In <code>office.md</code>, change <code>Alex's briefing is
-      console_printer.</code> to <code>Alex's summary is console_printer.</code>
-      and run <code>dsl check</code> again. Read what it says. Then put it back.</p>
-    <p>Notice which kind of mistake that was: it is wrong in the
-      <em>structure</em>, so it can be caught without running anything. Hold on
-      to that distinction — you are about to meet a mistake that cannot be.</p>
+    <p>In <code>office.md</code>, change <code>Rex.escalate -&gt; Manager</code>
+      to <code>Clerk.escalate -&gt; Manager</code> and run <code>dsl check .</code>
+      again:</p>
+<pre>problem: line 19: Clerk has one outbox, out; it has no 'escalate'. See `dsl grammar`, Ports.</pre>
+    <p>Then put it back. Notice which kind of mistake that was: it is wrong in
+      the <em>structure</em>, so it can be caught without running anything.
+      Hold on to that distinction — you are about to meet a mistake that cannot
+      be.</p>
   </div>
 
   <h2><span class="n">SECTION 7</span>Now the question</h2>
@@ -876,17 +871,17 @@ $ dsl run my_office      <span class="c"># watch messages move</span></pre>
     thousand others. These four commands answer from your own installation, which
     is the version you are actually running:</p>
 <pre>dsl grammar     <span class="c"># what office.md is allowed to say</span>
-dsl roles       <span class="c"># every role that ships, and what it emits</span>
-dsl checks      <span class="c"># every structural fault check knows how to find</span>
+dsl roles       <span class="c"># every role that ships, and what it adds</span>
+dsl list        <span class="c"># every office that ships, to copy and read</span>
 dsl doctor      <span class="c"># what is installed, and whether it is stale</span></pre>
   <p>A habit worth forming this week: when an assistant tells you something about
     an office, ask it which command it read that from. If it cannot say, it did
     not read it.</p>
 
   <footer>
-    DisSysLab micro-course 1 of n. Next: <b>An office that cannot tell it has
-    finished</b> — you build the five-agent case, watch it hang, and then read
-    the algorithm that fixes it.
+    DisSysLab · <a href="index.html">course index</a> ·
+    <a href="microcourse.html">micro-course</a> (how to build an office) ·
+    next: <a href="ComputationsAndDataFlow.html">Computations and data flow</a>.
   </footer>
 </div>
 

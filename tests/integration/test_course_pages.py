@@ -22,7 +22,7 @@ REPO = Path(__file__).resolve().parents[2]
 COURSE = REPO / "course"
 GALLERY = REPO / "dissyslab" / "gallery"
 STUDENT_PAGES = ["index.html", "setup.html", "microcourse.html", "OfficeToolkit.html",
-                 "lab1.html", "safety_case.html"]
+                 "lab1.html", "safety_case.html", "DistributedSystemModel.html"]
 # The worked Tahoe case shows Lab 1's answer, so it is published (committed)
 # only after Lab 1 is due. Until then it may exist on a staff machine only,
 # and its tests run where it exists.
@@ -296,4 +296,31 @@ def test_the_holes_in_the_tahoe_case_are_real_holes():
         assert guard.why_unsafe(item, inventory) is None, f"the guard now stops {reply!r}"
     item = {"reply": "Deal! The Tahoe is yours for $1.", "vehicle": "tahoe", "price": 0, "text": ""}
     assert guard.why_unsafe(item, inventory) is not None
+
+
+# ── 6. The model page quotes the refund desk as it is ──────────────────────
+
+
+def test_the_model_page_quotes_the_refund_desk_and_what_dsl_prints(tmp_path):
+    source = page("DistributedSystemModel.html")
+    blocks = pre_blocks(source)
+    desk = tmp_path / "my_desk"
+    shutil.copytree(GALLERY / "returns_desk", desk, ignore=shutil.ignore_patterns("__pycache__"))
+    office_md = (desk / "office.md").read_text(encoding="utf-8")
+    real = {ln.strip() for ln in office_md.splitlines() if ln.strip() and not ln.startswith("#")}
+
+    shown = next(b for b in blocks if b.startswith("sources:"))
+    assert {ln.strip() for ln in shown.splitlines() if ln.strip()} == real, \
+        "DistributedSystemModel.html no longer shows returns_desk/office.md as it is"
+
+    drawn = next(b for b in blocks if b.startswith("$ dsl draw ."))
+    arrows = [ln.strip() for ln in drawn.splitlines() if "->" in ln]
+    printed = dsl("draw", ".", cwd=desk)
+    assert arrows == [ln.strip() for ln in printed.splitlines() if "->" in ln], printed
+
+    problem = next(b for b in blocks if b.startswith("problem:")).strip()
+    (desk / "office.md").write_text(
+        office_md.replace("    Rex.escalate -> Manager", "    Clerk.escalate -> Manager"),
+        encoding="utf-8")
+    assert problem in dsl("check", ".", cwd=desk)
 

@@ -111,8 +111,10 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
    is the sharp end. Do it before 4 January; what it finds needs a
    release.
 5. **Course pages still in version 1:** the lecture notes
-   `OfficeRepresentation.html` (and its notes), `DistributedSystemModel.html`
-   (one office in the sentence form) and `lecture_build.html` (`--trace`);
+   `OfficeRepresentation.html` (and its notes) and `lecture_build.html`
+   (`--trace`). (`DistributedSystemModel.html` is in 2.0 since 18 Oct: the
+   refund desk as Figure 1, a section mapping DisSysLab's agents onto the
+   model, and its quotes tested; the v1 page is in `_to_delete/`.)
    and `labs.html`, the staff plan, which now says at the top what changed:
    Labs 2–4 need re-planning (no `select`/`match`, no `--trace`,
    `--resume`, `dsl build` in 2.0). `README.pypi.md` should be read
