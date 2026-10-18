@@ -95,20 +95,26 @@
   <div class="kicker">Caltech &middot; Winter 2027 &middot; 4 January – 10 March</div>
   <h1>Distributed Systems</h1>
   <p class="lead">
-    This course is about building safe systems with multiple agents,
-    some of which may be LLMs. The course emphasizes safety.
-    We use temporal logic to prove that our algorithms
-    do what they are specified to do, and we use systematic ways
-    of testing multi-agent systems. We take particular care that the systems
-    we create do not modify the environment in unintended ways.
+    This course is about building safe multi-agent systems.
+    Some or all of the agents may be LLMs.
+    Different agents may use different LLMs.
+    The course emphasizes safety.
+    You will use guard rails to improve LLM safety and use systematic ways
+    of testing multi-agent systems. You will use the theory of concurrency
+    and temporal logic to prove the correctness of the operating
+    systems algorithms that run distributed systems. 
   </p>
 
   <p>
-    The course has two aspects: (1) distributed system algorithms and (2) building
-    multi-agent systems. Homework on algorithms is often either multiple choice or
-    the design of small algorithms. The major part of the course is a project: you
-    develop a multi-agent app that interests you. You can do the project on your
-    own or in a team of two or three people.
+    <span><b>Graded</b> pass/fail</span>
+  </p>
+
+  <p>
+    The course covers (1) the design of concurrent algorithms and 
+    their correctness proofs  and (2) building safe multi-LLM agent systems. 
+    The major part of the course is a project: develop a multi-agent app 
+    that interests you. Do the project on your own or in a team of two or 
+    three people.
   </p>
 
   <p>
@@ -117,57 +123,24 @@
     may arise by prompt injection.
   </p>
   <div class="meta">
-    <span><b>Every page</b> is HTML; many can be presented with <b>P</b></span>
-    <span><b>Graded</b> pass/fail</span>
+    <span><b>Every page</b> is HTML; many can be presented with <b>P</b></span>.
+    
   </div>
 
-  <h2>One idea: safety</h2>
-  <p class="sub">The thread through every class, lab and the project.</p>
-  <p>
-    A system is <b>safe</b> if nothing bad happens, whatever any one agent
-    does. A language model is an agent whose behaviour we cannot specify
-    exactly: it can be wrong, it can be talked into things, and the same
-    question can get a different answer tomorrow. So we do not try to make
-    each model safe. We design the network around the models so that the
-    system is safe even when one of them is not. Three habits, used all
-    term:
-  </p>
-  <div class="idea">
-    <div><b>Specify</b>
-      <p>Say exactly what must never happen, and what must eventually
-        happen. Temporal logic is the language for both.</p></div>
-    <div><b>Structure</b>
-      <p>Build the network so that a bad message cannot travel far: a
-        contract on what each agent takes and gives, checked by code on every
-        message; a guard before anything that acts; a fence around what an
-        agent can reach; a person's approval for what cannot be undone.</p></div>
-    <div><b>Evidence</b>
-      <p>Prove what can be proved: the system is safe <i>if</i> every agent
-        keeps its contract (rely and guarantee). Test the rest: attack your
-        own system, many times, and report how often the attack succeeds.</p></div>
-  </div>
-  <p class="sub" style="margin-top:14px">
-    Each class below names the safety question it answers. The algorithms
-    are the ones that make the structure trustworthy: they are how a
-    system notices that it is stuck, recovers from a failure, agrees when an
-    agent halts or lies, and shares a resource without harm.
-  </p>
 
   <h2>Notes</h2>
   <p class="sub">The classes follow these notes and
     <a href="labs.html">labs.html</a>.</p>
 
-  <!-- ── Part 1 ─────────────────────────────────────────────── -->
-  <h2 class="part"><span>Part 1</span>Agents, messages, and what can go wrong</h2>
+ 
   <ol class="plan">
 
     <li>
       <div class="li-body">
         <h3>A model of a distributed system</h3>
         <p>Agents and messages. Execution model.</p>
-        <p class="q"><b>Safety question.</b> Where can harm travel? Agents
-          share no memory, so only along messages: every safety argument in
-          this course is about what crosses a connection.</p>
+        LLM agent guard rails.
+        Error propagation through messages.</p>
         <div class="links">
           <a class="primary" href="DistributedSystemModel.html">Open</a>
         </div>
@@ -205,16 +178,14 @@
   </ol>
 
   <!-- ── Part 2 ─────────────────────────────────────────────── -->
-  <h2 class="part"><span>Part 2</span>What happened, and can we recover?</h2>
+  
   <ol class="plan">
 
     <li>
       <div class="li-body">
-        <h3>Computations and Data Flow</h3>
-        <p class="q"><b>Safety question.</b> What actually happened? To say
-          that something bad did or could not happen, we need to say exactly
-          what a run is; and to find which agent caused a failure, we need to
-          trace it back along the messages.</p>
+        <h3>Computations and Data Flow among Agents</h3>
+        Timeline diagrams, computations, interleaving of agent computations,
+        sequential execution of actions.
         <div class="links">
           <a class="primary" href="ComputationsAndDataFlow.html">Open</a>
         </div>
@@ -235,12 +206,9 @@
 
     <li>
       <div class="li-body">
-        <h3>Logical time, termination and deadlock detection</h3>
+        <h3>Logical time, termination detection and deadlock detection</h3>
         <p>Logical clocks, snapshots at a logical time, vector clocks, and
-           termination detection. Deadlock detection not written yet.</p>
-        <p class="q"><b>Safety question.</b> Is the system finished, or
-          stuck? A system that waits for ever has failed too, and a loop
-          that never ends keeps spending money.</p>
+           termination detection. </p>
         <div class="links">
           <a class="primary" href="LogicalTime.html">Open</a>
         </div>
@@ -250,19 +218,16 @@
   </ol>
 
   <!-- ── Part 3 ─────────────────────────────────────────────── -->
-  <h2 class="part"><span>Part 3</span>What agents know, and what they may do</h2>
+
   <ol class="plan">
 
     <li>
       <div class="li-body">
         <h3>What Agents Know</h3>
         <p>&ldquo;Agent X knows P&rdquo;:
-          a formal definition of knowledge.
+          a formal definition of knowledge. Using agent knowledge in 
+          determining message flows.
         </p>
-        <p class="q"><b>Safety question.</b> What can an agent leak?
-          Knowledge travels only along paths of messages, so an agent that
-          was never sent a secret cannot reveal it. This is the reason to
-          give each agent only what it needs.</p>
         <div class="links">
           <a class="primary" href="WhatAgentsKnow.html">Open</a>
         </div>
@@ -305,12 +270,11 @@
 
     <li>
       <div class="li-body">
-        <h3>Distributed consensus: The FLP theorem</h3>
-        <p>Agents propose values and must agree on one: validity, agreement and
+        <h3>Distributed consensus: The FLP theorem - consensus is impossible.</h3>
+        <p>Consensus: agents propose values and agents must collectively
+          agree on a single consensus value. Requirements of validity, agreement and
            termination. Why no deterministic algorithm can guarantee all three
            if even one agent may halt &mdash; the FLP theorem.</p>
-        <p class="q"><b>Safety question.</b> What can no design guarantee?
-          Knowing the limit tells you which promise you are giving up.</p>
         <div class="links">
           <a class="primary" href="DistributedConsensus.html">Open</a>
         </div>
@@ -319,9 +283,7 @@
 
     <li>
       <div class="li-body">
-        <h3>The Paxos algorithm: serializing transactions</h3>
-        <p class="q"><b>Safety question.</b> When several agents update
-          shared state, how do we keep it from being corrupted?</p>
+        <h3>The Paxos algorithm for partial consensus: serializing transactions</h3>
         <div class="links">
           <a class="primary" href="PaxosTransactions.html">Open</a>
         </div>
@@ -330,10 +292,7 @@
 
     <li>
       <div class="li-body">
-        <h3>The Paxos algorithm</h3>
-        <p class="q"><b>Safety question.</b> How do agents agree when some
-          may stop or be slow? Paxos never lets two agents decide different
-          values, whatever the timing.</p>
+        <h3>The Paxos algorithm for partial consensus</h3>
         <div class="links">
           <a class="primary" href="Paxos.html">Open</a>
         </div>
@@ -376,12 +335,8 @@
     <li>
       <div class="li-body">
         <h3>Byzantine consensus</h3>
-        <p>Consensus when agents may lie. Why majority voting fails, how signed
-           messages help, and why the algorithm can stop after t+1 rounds
-           &mdash; with a figure in which you choose the faults.</p>
-        <p class="q"><b>Safety question.</b> An agent that has been
-          prompt-injected is a Byzantine agent: it says whatever its attacker
-          wants. How many such agents can a system tolerate?</p>
+        <p>Consensus when agents may lie. Using signed
+           messages.</p>
         <div class="links">
           <a class="primary" href="ByzantineGenerals.html">Open</a>
         </div>
@@ -392,10 +347,7 @@
       <div class="li-body">
         <h3>Cryptography and cryptocurrency</h3>
         <p>Hash functions, commitments, search puzzles, block chains, Merkle
-           trees and digital signatures &mdash; every hash on the page computed
-           live in your browser.</p>
-        <p class="q"><b>Safety question.</b> Who sent this message, and has
-          it been changed on the way?</p>
+           trees and digital signatures &mdash.</p>
         <div class="links">
           <a class="primary" href="Cryptography.html">Open</a>
         </div>
@@ -408,8 +360,6 @@
         <p>Goofycoin, Scroogecoin and the double-spending problem; then consensus
            without a trusted party: proof of work, the longest chain,
            incentives and attacks, and how Bitcoin is engineered.</p>
-        <p class="q"><b>Safety question.</b> Can agents that do not trust
-          one another, and act in their own interest, still agree?</p>
         <div class="links">
           <a class="primary" href="Bitcoin.html">Open</a>
         </div>
@@ -487,9 +437,10 @@
       <div class="li-body">
         <h3>Mutual exclusion: Distributed dining philosophers
         </h3>
-        <p class="q"><b>Safety question.</b> Two agents must never use a
-          resource at once, and no agent may wait for ever. The first is
-          easy; the second is the hard part.</p>
+          Two agents cannot use an
+          indivisible resource at the same time.
+          Algorithms that guarantee that no agent waits for a resource
+          for ever.</p>
         <div class="links">
           <a class="primary" href="DiningPhilosophers.html">Open</a>
         </div>
@@ -500,9 +451,8 @@
       <div class="li-body">
         <h3>Managing resources shared by multiple agents
         </h3>
-        <p class="q"><b>Safety question.</b> Agents compete for tools,
-          budgets and rate limits. How do we share them without deadlock or
-          starvation?</p>
+        Agents compete for indivisible resources such as write-access
+        to files. Algorithms that share resources fairly.</p>
         <div class="links">
           <a class="primary" href="SharingResources.html">Open</a>
         </div>
@@ -513,7 +463,7 @@
       <div class="li-body">
         <h3>Diffusing computations
         </h3>
-        <p class="q"><b>Safety question.</b> When an agent hands a task to
+          When an agent hands a task to
           other agents, which hand it on again, how does the first agent learn
           that everything it started has stopped?</p>
         <div class="links">
