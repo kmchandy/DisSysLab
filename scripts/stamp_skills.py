@@ -58,12 +58,19 @@ def content_hash(skill_dir: Path) -> str:
     The exclusion is what makes this well-defined: the hash lives inside
     one of the files it hashes, so hashing it raw would never converge.
     Paths are included so a rename counts as a change.
+
+    Files are taken in the order of their path parts as plain strings,
+    the same on every platform. Sorting the Path objects themselves
+    ignores case on Windows, which put ``scripts/`` before ``SKILL.md``
+    there and after it everywhere else: the same skill hashed two ways
+    (Windows CI, Oct 2026).
     """
     h = hashlib.sha256()
     for path in sorted(
-        p for p in skill_dir.rglob("*")
-        if p.is_file() and p.name not in SKIP_NAMES
-        and "__pycache__" not in p.parts
+        (p for p in skill_dir.rglob("*")
+         if p.is_file() and p.name not in SKIP_NAMES
+         and "__pycache__" not in p.parts),
+        key=lambda p: p.relative_to(skill_dir).parts,
     ):
         h.update(path.relative_to(skill_dir).as_posix().encode())
         h.update(b"\0")
