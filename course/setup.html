@@ -155,8 +155,10 @@ connections:
      <b>sink</b> writes them out; each <b>agent</b> has one job; the
      <b>connections</b> say who sends to whom. Each job is described in
      <code>roles/</code>: here two short Python files, <code>clerk.py</code> and
-     <code>manager.py</code>. Other offices describe jobs in English, for a
-     language model to carry out.</p>
+     <code>manager.py</code>. Other offices describe jobs as prompts, for an
+     LLM to carry out. The lines between <code>---</code> at the top of each
+     are its <b>contracts</b>: what it may take in and send out, checked by
+     DisSysLab on every message.</p>
   <p>Change <code>clerk(limit=50)</code> to <code>clerk(limit=100)</code> and run
      it again. Then misspell a name on purpose and run <code>dsl check .</code>
      to see what it tells you. Breaking things on purpose is how you find the
@@ -200,7 +202,7 @@ echo "ANTHROPIC_API_KEY=paste-your-key-here" &gt; .env</pre>
   <h2><span class="n">Next</span>Build one, then break one</h2>
   <ul>
     <li><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/GETTING_STARTED.md">GETTING_STARTED</a>,
-        parts 4 and 6: break an office four ways and read what DisSysLab says,
+        parts 4 and 6: break an office five ways and read what DisSysLab says,
         then build an office of your own from nothing.</li>
     <li><a href="lab1.html">Lab 1, the one-dollar Tahoe</a>: talk a car
         dealership's chatbot into selling you a car for a dollar, then build the
@@ -210,7 +212,9 @@ echo "ANTHROPIC_API_KEY=paste-your-key-here" &gt; .env</pre>
   <h2><span class="n">Then</span>The interesting part</h2>
   <p>Once your office runs you have a small distributed system you understand
      completely, because you wrote it. The questions that follow are the
-     subject of the course. How does an office know it has <i>finished</i>, when
+     subject of the course. When one agent is wrong, or has been talked into
+     something, how do you stop the harm from spreading through the rest?
+     How does an office know it has <i>finished</i>, when
      no single agent can see the whole system? How do you photograph a system
      whose parts are all still moving, so you can restart from it after a crash?
      If agents wait on each other, how do you tell "still working" from "stuck

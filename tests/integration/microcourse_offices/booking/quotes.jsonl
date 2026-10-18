@@ -1,0 +1,4 @@
+{"vehicle": "trax", "price": 21500}
+{"vehicle": "tahoe", "price": 1}
+{"vehicle": "tahoe", "price": "62400"}
+{"vehicle": "tahoe", "price": 62400}

@@ -55,11 +55,18 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
   guard in `tests/e2e/car_dealer_guarded/` (public: the repository is).
   The files the handout prints are built and run by the tests.
 - **Course pages students open first, in 2.0:** `course/index.html`,
-  `setup.html`, `microcourse.html` (was `microcourse_draft.html`; the old
-  root `office_microcourse.html` is now a redirect to it),
-  `OfficeToolkit.html`, `lab1.html`. `tests/integration/test_course_pages.py`
-  checks their links, the office files and `dsl check` output they quote,
-  and the toolkit's lists against the package.
+  `setup.html`, `microcourse.html`, `OfficeToolkit.html`, `lab1.html`; the
+  old root `office_microcourse.html` redirects to the micro-course.
+  **Day-1 pages rewritten around safety (18 Oct):** the micro-course (20
+  screens, from `course/microcourse_plan.html`: LLM and Python agents,
+  contracts, inboxes taught with coordinators; the previous one is in
+  `_to_delete/`), the toolkit's "Contracts and guardrails", GETTING_STARTED
+  part 4.5 (a message that breaks a contract, and the stall it leaves),
+  setup. The gallery's `clerk`, `manager` and `triage` now declare bounded
+  `in:` contracts. `tests/integration/test_course_pages.py` checks links,
+  every office, role and sink file the pages quote (illustrations against
+  `tests/integration/microcourse_offices/`), every line of output on the
+  micro-course, and the toolkit's lists against the package.
 - **Docs:** `docs/GETTING_STARTED.md` (the student guide; its outputs are
   re-checked by `tests/integration/test_getting_started.py`), the
   `dsl grammar` reference (shipped in the package, also what `dsl new`

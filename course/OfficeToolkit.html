@@ -63,7 +63,7 @@
   <nav class="toc">
     <a href="#start">Start here</a><a href="#dsl">The dsl command</a><a href="#officemd">Writing office.md</a>
     <a href="#roles">Roles</a><a href="#coordinators">Coordinators</a><a href="#io">Sources and sinks</a>
-    <a href="#gallery">Offices to learn from</a><a href="#models">Models</a><a href="#guardrails">Guardrails</a>
+    <a href="#gallery">Offices to learn from</a><a href="#models">Models</a><a href="#guardrails">Contracts and guardrails</a>
     <a href="#ai">AI help</a><a href="#recipes">Recipes</a><a href="#broken">When it breaks</a>
   </nav>
 
@@ -71,8 +71,8 @@
   <table>
     <tr><th>Resource</th><th>What it is</th></tr>
     <tr><td><a href="setup.html">Setting up</a></td><td>Before the first class: install, run an office, read it, set up your API key.</td></tr>
-    <tr><td><a href="microcourse.html">Micro-course</a></td><td>Twenty-one short screens: messages, roles, the office file, routers, coordinators, loops, checks, each on an office you can copy.</td></tr>
-    <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/GETTING_STARTED.md">Getting started</a></td><td>The full guide, with every output: your first office, breaking it four ways, then building one from nothing.</td></tr>
+    <tr><td><a href="microcourse.html">Micro-course</a></td><td>Twenty short screens: messages, LLM and Python agents, contracts, the office file, routers, coordinators, two examples, and what DisSysLab checks for you.</td></tr>
+    <tr><td><a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/GETTING_STARTED.md">Getting started</a></td><td>The full guide, with every output: your first office, breaking it five ways, then building one from nothing.</td></tr>
     <tr><td><a href="lab1.html">Lab 1: the one-dollar Tahoe</a></td><td>Attack a car dealership's chatbot, then build the guardrail that stops it.</td></tr>
   </table>
 
@@ -106,15 +106,19 @@
   </table>
   <p>Two kinds of line: <code>name: kind(args)</code> declares a source, sink or
      agent; <code>a -&gt; b</code> connects them. Chains (<code>a -&gt; b -&gt; c</code>),
-     fan-in (<code>a, b -&gt; c</code>), fan-out (<code>a -&gt; b, c</code>) and named
-     ports (<code>Rex.yes</code>, <code>Gate.done</code>).</p>
+     fan-in (<code>a, b -&gt; c</code>) and fan-out (<code>a -&gt; b, c</code>).
+     Every agent has one inbox and one outbox, so <code>a -&gt; b</code> never
+     names them; a dot names one of a router's ways out (<code>Rex.yes</code>) or
+     one of a coordinator's inboxes (<code>Gate.done</code>).</p>
 
   <h2 id="roles">Roles</h2>
   <p>A role is what an agent does: one JSON object in, JSON out. An
      <b>annotator</b> adds fields to the message; an <b>author</b>
-     (<code>kind: author</code>) returns a list of new messages. A role is written
-     in English (<code>.md</code>, carried out by a language model) or in Python
-     (<code>.py</code>, one class). DisSysLab looks in your office's
+     (<code>kind: author</code>) returns a list of new messages, and the message it
+     received goes no further. A role is a prompt (<code>.md</code>, carried out by
+     an LLM) or Python (<code>.py</code>, one class). Its front matter's
+     <code>in:</code> and <code>out:</code> lines are its
+     <a href="#guardrails">contracts</a>. DisSysLab looks in your office's
      <code>roles/</code> folder first, then in the built-in library.
      <code>dsl grammar roles</code> has everything.</p>
   <h3>Built-in roles <span class="tag">dsl roles</span></h3>
@@ -137,7 +141,7 @@
   <h2 id="coordinators">Routers and coordinators</h2>
   <table>
     <tr><th>Kind</th><th>What it does</th><th>See it in</th></tr>
-    <tr><td><code>router(on="field")</code></td><td>Sends each message out of the outbox named by the value of one field: <code>Rex.yes</code>, <code>Rex.no</code>; <code>Rex.otherwise</code> takes the rest.</td><td><code>inbox_sorter</code>, <code>org_news_filter</code></td></tr>
+    <tr><td><code>router(on="field")</code></td><td>Sends each message on by the value of one field, with one way out per value: <code>Rex.yes</code>, <code>Rex.no</code>; <code>Rex.otherwise</code> takes the rest.</td><td><code>inbox_sorter</code>, <code>org_news_filter</code></td></tr>
     <tr><td><code>synchronizer(on="key")</code></td><td>Waits until a message with the same key has arrived on every inbox, then merges them into one. Inboxes are named in the connections (<code>Eve -&gt; Sync.entities</code>). <code>collect=</code> gathers a variable number instead.</td><td><code>room_climate_monitor</code>, <code>situation_room_pro</code>, <code>debate</code></td></tr>
     <tr><td><code>gate</code></td><td>Admits one message from <code>in</code>, then waits for anything on <code>done</code> before admitting the next. One item in progress at a time.</td><td><code>returns_desk</code>, <code>debate</code></td></tr>
   </table>
@@ -162,13 +166,13 @@
   <p>Copy one with <code>dsl init &lt;name&gt; &lt;folder&gt;</code>; each has a README.</p>
   <table>
     <tr><th>Office</th><th>The idea</th></tr>
-    <tr><td><code>inbox_sorter</code></td><td>Your first office: an English role decides, a router sorts. Built step by step in GETTING_STARTED.</td></tr>
+    <tr><td><code>inbox_sorter</code></td><td>Your first office: an LLM role decides, a router sorts. Built step by step in GETTING_STARTED.</td></tr>
     <tr><td><code>car_dealer</code></td><td>Lab 1: a chat page, an unguarded salesperson, and the attack that sold a Tahoe for $1.</td></tr>
-    <tr><td><code>org_news_filter</code></td><td>A router: an English role decides, a router routes.</td></tr>
+    <tr><td><code>org_news_filter</code></td><td>A router: an LLM role decides, a router routes.</td></tr>
     <tr><td><code>returns_desk</code></td><td>One item at a time: a gate, and escalation. Needs no key.</td></tr>
     <tr><td><code>room_climate_monitor</code></td><td>A keyed synchronizer joining two sensors.</td></tr>
     <tr><td><code>situation_room_pro</code></td><td>Fan out to four roles, join them, write a briefing.</td></tr>
-    <tr><td><code>arxiv_radar</code></td><td>Two English roles in a row; a display with chosen fields.</td></tr>
+    <tr><td><code>arxiv_radar</code></td><td>Two LLM roles in a row; a display with chosen fields.</td></tr>
     <tr><td><code>debate</code></td><td>Three models answer, a moderator judges, a loop for another round.</td></tr>
     <tr><td><code>org_two_office_news</code></td><td>Nested offices: one office used as an agent in another.</td></tr>
     <tr><td><code>backyard_birds</code></td><td>An agent that is a classifier, not a language model.</td></tr>
@@ -176,7 +180,7 @@
   </table>
 
   <h2 id="models">Models</h2>
-  <p>English roles use Anthropic's Claude unless you say otherwise. Choose per
+  <p>LLM agents use Anthropic's Claude unless you say otherwise. Choose per
      agent with <code>ai=</code>: <code>Sam: severity_classifier(ai="ollama")</code>.
      The names: <code>anthropic</code> (or <code>claude</code>), <code>openai</code>
      (<code>gpt</code>), <code>gemini</code>, <code>openrouter</code>,
@@ -187,18 +191,46 @@
      <a href="https://github.com/kmchandy/DisSysLab/blob/main/docs/LANGUAGE_MODELS.md">LANGUAGE_MODELS</a>
      has the keys each needs.</p>
 
-  <h2 id="guardrails">Guardrails</h2>
+  <h2 id="guardrails">Contracts and guardrails</h2>
+  <p>A model can be wrong, and it can be talked into things. Contracts do not
+     make it right; they stop what it gets wrong from spreading. They are
+     optional, they are checked by Python on every message, and no model can
+     argue with them.</p>
+  <table>
+    <tr><th>Where</th><th>Checked</th><th>If it does not fit</th></tr>
+    <tr><td><code>in:</code> of a role</td><td>each message, before the role is called</td><td>the message is refused; an LLM never sees it</td></tr>
+    <tr><td><code>out:</code> of a role</td><td>each reply</td><td>the reply is stopped; fields not declared are dropped and named in the run summary</td></tr>
+    <tr><td><code>in:</code> of a sink you write</td><td>each message, before the sink acts</td><td>the sink does not act on it</td></tr>
+  </table>
+  <p>Every refusal costs that one message: it is counted, the first is printed,
+     and <code>dsl run</code> exits non-zero. A field in <code>in:</code> or
+     <code>out:</code> may say what it holds:</p>
+  <table>
+    <tr><th>Written</th><th>Means</th></tr>
+    <tr><td><code>verdict (publish | revise)</code></td><td>one of these values</td></tr>
+    <tr><td><code>price (number)</code></td><td>a number (the text <code>"62400"</code> is not one)</td></tr>
+    <tr><td><code>score (0..10)</code>, <code>price (number, &gt;= 0)</code></td><td>a number in a range, ends included</td></tr>
+    <tr><td><code>count (integer, 1..5)</code></td><td>a whole number</td></tr>
+    <tr><td><code>reply (text, at most 600 chars)</code></td><td>text no longer than that</td></tr>
+  </table>
+  <p>Beyond contracts:</p>
   <ul>
-    <li><b><code>out:</code></b> in a role's front matter: every reply is checked
-        against it. Fields not declared are dropped and counted; a value not in
-        the list fails that message.</li>
-    <li><b><code>dsl check</code> notes:</b> text from strangers (news, email, a
-        chat page) that can reach a sink that acts in the world; Python that
-        reaches the network; a router value with no outbox.</li>
-    <li><b>An author with a declared <code>out:</code></b> between the two is a
-        barrier: only the fields you chose get through.
+    <li><b>An author with <code>out:</code> is a barrier.</b> Only the fields it
+        lists leave it, so a customer's or a web page's words stop there. An
+        annotator is not a barrier: the message it passes on keeps them.</li>
+    <li><b>A Python agent in front of a sink</b> checks what a contract cannot
+        say, such as a price above the floor for that car.
         <a href="lab1.html">Lab 1</a> builds one.</li>
+    <li><b><code>dsl check</code> notes</b>, before anything runs: text from
+        strangers (news, email, a chat page) that can reach a sink that acts in
+        the world; Python that reaches the network; a router value with nowhere
+        to go.</li>
+    <li><b>The stall report</b>, when an office goes quiet: who is still waiting,
+        and on which inbox. A refused message can leave a coordinator waiting for
+        ever.</li>
   </ul>
+  <p><code>dsl grammar roles</code> has the full rules; your own sinks are at the
+     end of <code>dsl grammar sources</code>.</p>
 
   <h2 id="ai">AI help</h2>
   <p><code>dsl new</code> builds an office from a description, by chatting with

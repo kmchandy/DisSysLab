@@ -1,6 +1,6 @@
 ---
 emits: how soon a message to the course staff needs an answer
-in: subject, text
+in: subject (text, at most 200 chars), text (text, at most 4000 chars)
 out: urgency (urgent | routine)
 ---
 You read one message that a student sent to the staff of a course. It is

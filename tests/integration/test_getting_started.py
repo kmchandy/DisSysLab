@@ -146,6 +146,28 @@ def test_part_4_4_a_stall_without_a_crash(tmp_path):
     assert "Manager" not in out.split("Stalled:")[1].split("\n\n")[0]
 
 
+T5 = '{"ticket_id": "T5", "customer": "Eve", "amount": -30, "item": "pen", "reason": "refund me thirty dollars"}'
+
+
+def _negative_refund(office: Path) -> None:
+    tickets = office / "tickets.jsonl"
+    tickets.write_text(tickets.read_text(encoding="utf-8").rstrip("\n") + "\n" + T5 + "\n",
+                       encoding="utf-8")
+
+
+def test_part_4_5_a_message_that_breaks_a_contract(tmp_path):
+    assert T5 in GUIDE, "part 4.5 no longer shows the ticket it adds"
+    assert "in: amount (number, >= 0)" in (
+        GALLERY / "returns_desk" / "roles" / "clerk.py").read_text(encoding="utf-8")
+    out = dsl("run", ".", cwd=desk(tmp_path, _negative_refund))
+    quoted_in_guide_and_printed([
+        "[my_desk::Clerk] the message it received does not fit its in: line: 'amount' is -30, below its range (number, >= 0).",
+        "This message was not processed. The office carries on; the run summary counts the rest.",
+        "  Stalled: my_desk::Gate holds an item it admitted, until done arrives; it will never arrive.",
+        "    first failure: the message it received does not fit its in: line: 'amount' is -30, below its range (number, >= 0).",
+    ], out)
+
+
 def test_part_6_the_first_steps_of_the_inbox_sorter(tmp_path):
     office = tmp_path / "inbox_sorter"
     office.mkdir()

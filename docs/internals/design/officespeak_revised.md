@@ -272,7 +272,7 @@ undecided is said explicitly, with `unassigned`.
 """
 ---
 emits: approves small refunds; escalates the rest
-in: amount
+in: amount (number, >= 0)
 out: clerk_decision (approve | escalate)
 ---
 Arguments: limit -- the largest refund the clerk may approve (default 50).

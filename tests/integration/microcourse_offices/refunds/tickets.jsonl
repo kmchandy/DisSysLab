@@ -1,0 +1,4 @@
+{"ticket_id": "T1", "amount": 20}
+{"ticket_id": "T2", "amount": -500}
+{"ticket_id": "T3", "amount": "twenty"}
+{"ticket_id": "T4", "amount": 80}

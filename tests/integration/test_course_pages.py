@@ -73,7 +73,7 @@ def test_every_office_file_on_a_slide_is_in_the_gallery():
     source = page("microcourse.html")
     quoted = re.findall(r'<div class="file">([\w/]+/office\.md)[^<]*</div>\s*<pre>(.*?)</pre>',
                         source, re.S)
-    assert len(quoted) >= 6
+    assert len(quoted) >= 3
     for path, block in quoted:
         office = path.split("/")[0]
         real = GALLERY / office / path.split("/", 1)[1]
@@ -110,6 +110,74 @@ def test_the_microcourse_names_only_commands_and_flags_that_exist():
     for gone in (r"--trace", r"--resume", r"--prompt", r"dsl checks\b", r"\brecord\b",
                  r"\bselect\b", r"\bmatch\b"):
         assert not re.search(gone, source), f"the micro-course still mentions {gone!r}"
+
+
+# The offices behind the slides tagged "illustration" (not in the gallery).
+ILLUSTRATIONS = Path(__file__).resolve().parent / "microcourse_offices"
+
+
+def test_every_role_or_sink_file_on_a_slide_is_real():
+    """A slide headed roles/x or sinks/x quotes the gallery's file, or an
+    illustration's, line for line."""
+    source = page("microcourse.html")
+    quoted = re.findall(r'<div class="file">((?:roles|sinks)/\w+\.(?:py|md))[^<]*(?:<span[^>]*>[^<]*</span>)?'
+                        r'[^<]*</div>\s*<pre>(.*?)</pre>', source, re.S)
+    assert len(quoted) >= 5
+    for path, block in quoted:
+        files = list(GALLERY.glob(f"*/{path}")) + list(ILLUSTRATIONS.glob(f"*/{path}"))
+        assert files, f"a slide quotes {path}, which neither the gallery nor an illustration has"
+        lines = {ln.strip() for f in files for ln in f.read_text(encoding="utf-8").splitlines()}
+        for line in text(block).splitlines():
+            if line.strip():
+                assert line.strip() in lines, f"{path} on a slide shows {line.strip()!r}; the file does not"
+
+
+def _run(office: Path, script: Path | None = None) -> str:
+    env = dict(os.environ, PYTHONIOENCODING="utf-8")
+    env["PYTHONPATH"] = os.pathsep.join([str(REPO)] + ([env["PYTHONPATH"]]
+                                                       if env.get("PYTHONPATH") else []))
+    if script is not None:
+        env["DSL_BACKEND_MODULE"] = "tests.e2e.fake_model"
+        env["DSL_FAKE_SCRIPT"] = str(script)
+    done = subprocess.run(
+        [sys.executable, "-c",
+         "import sys; from dissyslab.cli import main; sys.exit(main(sys.argv[1:]))", "run", "."],
+        cwd=office, env=env, capture_output=True, text=True, encoding="utf-8", timeout=120)
+    return done.stdout + done.stderr
+
+
+def test_every_line_of_output_on_the_slides_is_what_dsl_prints(tmp_path):
+    """The dark boxes on the slides are output. Run every office they come
+    from and check each line, whitespace aside; '...' marks a cut."""
+    for name in ("requests", "refunds", "felix", "booking"):
+        shutil.copytree(ILLUSTRATIONS / name, tmp_path / name)
+    # The two that use gallery roles take them from the gallery, so they cannot drift.
+    (tmp_path / "refunds" / "roles").mkdir()
+    shutil.copy(GALLERY / "returns_desk" / "roles" / "clerk.py", tmp_path / "refunds" / "roles")
+    (tmp_path / "felix" / "roles").mkdir()
+    shutil.copy(GALLERY / "org_news_filter" / "roles" / "topic_filter.md",
+                tmp_path / "felix" / "roles")
+    shutil.copytree(GALLERY / "returns_desk", tmp_path / "desk",
+                    ignore=shutil.ignore_patterns("__pycache__"))
+    printed = " ".join([
+        _run(tmp_path / "requests", tmp_path / "requests" / "script.json"),
+        _run(tmp_path / "refunds"),
+        _run(tmp_path / "felix", tmp_path / "felix" / "script.json"),
+        _run(tmp_path / "booking"),
+        _run(tmp_path / "desk"),
+        dsl("check", str(GALLERY / "car_dealer"), cwd=tmp_path),
+    ])
+    printed = re.sub(r"\s+", " ", printed)
+    shown = re.findall(r'<pre class="out"[^>]*>(.*?)</pre>', page("microcourse.html"), re.S)
+    assert len(shown) >= 6
+    for block in shown:
+        for line in text(block).splitlines():
+            if line.strip().startswith("$"):
+                continue
+            for piece in line.split("..."):
+                piece = re.sub(r"\s+", " ", piece).strip(" ,")
+                if len(piece) > 3:
+                    assert piece in printed, f"a slide shows {piece!r}, which no run printed"
 
 
 # ── 3. Setup quotes the getting-started guide and the gallery ──────────────

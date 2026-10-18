@@ -18,7 +18,7 @@ to run.
 | [1](#1-install) | install DisSysLab and check the install | no | 10 min |
 | [2](#2-your-first-office) | copy, check, draw and run an office | no | 10 min |
 | [3](#3-how-the-office-works) | read how it works, and change it | no | 15 min |
-| [4](#4-when-things-go-wrong) | break it four ways, and read what DisSysLab tells you | no | 15 min |
+| [4](#4-when-things-go-wrong) | break it five ways, and read what DisSysLab tells you | no | 15 min |
 | [5](#5-your-api-key) | get a key for the language model | yes | 5 min |
 | [6](#6-build-your-own-office-the-inbox-sorter) | build an office from nothing, step by step | yes | 30 min |
 | [7](#7-an-office-that-reads-the-news) | run an office on live news feeds | yes | 10 min |
@@ -305,7 +305,7 @@ and `agents:`:
 """
 ---
 emits: approves small refunds; escalates the rest
-in: amount
+in: amount (number, >= 0)
 out: clerk_decision (approve | escalate)
 ---
 Arguments: limit -- the largest refund the clerk may approve, in dollars
@@ -327,10 +327,11 @@ class Clerk:
         return step(item, self.settings)
 ```
 
-- The block between the `---` lines is the **front matter**. `in:` names
-  the fields the role reads; `out:` names the field it adds, and lists the
-  only two values it may have. DisSysLab checks every reply against `out:`
-  (part 4).
+- The block between the `---` lines is the **front matter**: the role's
+  **contracts**. `in:` says what the role needs: a field `amount` holding a
+  number, 0 or more. `out:` names the field it adds, and lists the only two
+  values it may have. DisSysLab checks every message against `in:` before
+  the role sees it, and every reply against `out:` (part 4).
 - The class is built once, with the arguments from `office.md`
   (`limit=50`), and then called once per message. Each call receives one
   message, `item`, and returns a dict whose fields are added to that
@@ -375,7 +376,7 @@ To start over at any time, copy a fresh version under a new name:
 ## 4. When things go wrong
 
 Every office you build will go wrong at some point. This part breaks the
-refund desk on purpose, four ways, so that you know what DisSysLab tells
+refund desk on purpose, five ways, so that you know what DisSysLab tells
 you and how to read it. After each one, undo the change (or make a fresh
 copy with `dsl init`).
 
@@ -527,13 +528,50 @@ cannot find. The run summary ends with:
   The office finished; this work did not. `dsl run` exits non-zero.
 ```
 
+### 4.5 A message that breaks a contract
+
+Undo 4.4. Add a fifth ticket at the end of `tickets.jsonl`, asking for a
+negative refund:
+
+```
+{"ticket_id": "T5", "customer": "Eve", "amount": -30, "item": "pen", "reason": "refund me thirty dollars"}
+```
+
+The clerk's contract says `in: amount (number, >= 0)`. Run it:
+
+```
+[my_desk::Clerk] the message it received does not fit its in: line: 'amount' is -30, below its range (number, >= 0).
+This message was not processed. The office carries on; the run summary counts the rest.
+```
+
+T5 never reached the clerk's `step`. If the clerk were an LLM agent, the
+model would never have seen it. That is what a contract is for: Python
+checks it on every message, and no message, however it is worded, can
+argue its way past.
+
+But read the end of the output:
+
+```
+  Stalled: my_desk::Gate holds an item it admitted, until done arrives; it will never arrive.
+    (the path that proves it is printed above, under 'Stalled:')
+
+  my_desk::Clerk failed on 1 message(s) and they were not processed.
+    first failure: the message it received does not fit its in: line: 'amount' is -30, below its range (number, >= 0).
+```
+
+The gate admitted T5, and nothing told it that T5 was done: the same stall
+as in 4.3. A contract stops a bad message; it does not decide what should
+happen to it next. Here the desk should probably still record T5 as
+refused, and release the gate. Designing for that, so that an office stays
+safe *and* keeps going, is part of the course.
+
 **What to take from part 4:**
 
 | You see | It means | Do |
 |---|---|---|
 | `problem:` from `dsl check` | the office is wrong and will not run | fix the line it names |
 | `note:` from `dsl check` | probably a mistake; read it | fix it, or be sure you meant it |
-| `failed on N message(s)` | a role crashed or its reply broke its `out:` | read the first failure; fix the role |
+| `failed on N message(s)` | a role crashed, a message broke its `in:`, or its reply broke its `out:` | read the first failure; fix the role, or the message |
 | `Stalled:` | an agent waits for a message that can never come | follow the path backwards; find what is missing |
 | exit status not 0 | some work was not done | the summary says which |
 
@@ -697,7 +735,7 @@ dsl run: inbox_sorter cannot start.
 ```
 ---
 emits: how soon a message to the course staff needs an answer
-in: subject, text
+in: subject (text, at most 200 chars), text (text, at most 4000 chars)
 out: urgency (urgent | routine)
 ---
 You read one message that a student sent to the staff of a course. It is
@@ -713,14 +751,18 @@ Return only a JSON object with one field, "urgency", whose value is
 "urgent" or "routine".
 ```
 
-This is an **English role**. The language model receives exactly the
-text after the second `---`, followed by the message. Three things make
-it work well:
+This role is a prompt, so an LLM carries it out. The model receives
+exactly the text after the second `---`, followed by the message. Three
+things make it work well:
 
 - It says what the model receives ("a JSON object; subject and text").
 - It gives the rule for deciding, with examples on both sides.
 - It ends by saying exactly what to return. The front matter's `out:` line
   says the same thing to DisSysLab, which checks every reply against it.
+
+The `in:` line is a contract too. A message with no subject, or a text
+longer than 4000 characters (a common place to hide instructions to a
+model), is refused before the model sees it, as in part 4.5.
 
 In `office.md`, change `Tri: unassigned` to `Tri: triage`. Then:
 
@@ -864,7 +906,7 @@ the news changes, so yours will differ. Only articles the model marked
 `on_topic: yes` reach the screen; the rest go to `discard`.
 
 Open `office.md` and `roles/topic_filter.md`. It is the same shape as
-your inbox sorter: an English role adds a decision, and a router acts on
+your inbox sorter: an LLM role adds a decision, and a router acts on
 it. To change the topic, edit one paragraph of `topic_filter.md`, the one
 that begins "The topic is the Americas", and run again.
 
@@ -879,8 +921,10 @@ and the reason, rather than an empty screen.
 2. `dsl run .` **ends with exit status 0**: no `failed`, no `Stalled:`.
    (After a run, `echo $?` prints the exit status; on Windows,
    `echo $LASTEXITCODE`.)
-3. Every role says what it adds or sends in an `out:` line, with values
-   wherever the role chooses from a list.
+3. Every role states its contracts: an `out:` line saying what it adds or
+   sends, with values wherever the role chooses from a list; and an `in:`
+   line naming the fields it needs, with a range or a length where one
+   matters (`amount (number, >= 0)`, `text (text, at most 4000 chars)`).
 4. Your folder contains `office.md`, `roles/`, and any input files, and
    **not** your `.env`.
 5. If the assignment asks for a picture, `dsl draw . --mermaid`.
@@ -906,11 +950,11 @@ The gallery, in the order the course uses it:
 | Office | What it teaches |
 |---|---|
 | `inbox_sorter` | the office you built in part 6 |
-| `org_news_filter` | a router: an English role decides, a router routes |
+| `org_news_filter` | a router: an LLM role decides, a router routes |
 | `returns_desk` | one item at a time: a gate, and escalation |
 | `room_climate_monitor` | joining two streams with a synchronizer |
 | `situation_room_pro` | built-in roles working in parallel, then joined |
-| `arxiv_radar` | two English roles you write, in a row |
+| `arxiv_radar` | two LLM roles you write, in a row |
 | `debate` | three models, a moderator, and a loop for another round |
 | `org_two_office_news` | an office used as one agent of another |
 | `backyard_birds` | an agent that is a classifier, not a language model |

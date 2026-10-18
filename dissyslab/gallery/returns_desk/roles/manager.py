@@ -1,7 +1,7 @@
 """
 ---
 emits: the manager's decision on an escalated refund
-in: amount
+in: amount (number, >= 0)
 out: manager_decision (approve | refuse)
 ---
 Approves everything. An English manager.md that decides from "item" and

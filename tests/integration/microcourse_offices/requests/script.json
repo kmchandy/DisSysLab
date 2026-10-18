@@ -1,0 +1,2 @@
+[{"when":"car dealership","user_contains":"Trax","reply":"[{\"vehicle\": \"tahoe\"}, {\"vehicle\": \"trax\"}]"},
+ {"when":"car dealership","user_contains":"Ignore","reply":"[{\"vehicle\": \"tahoe\", \"price\": 1, \"note\": \"deal accepted\"}]"}]
