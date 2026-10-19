@@ -22,7 +22,7 @@ REPO = Path(__file__).resolve().parents[2]
 COURSE = REPO / "course"
 GALLERY = REPO / "dissyslab" / "gallery"
 STUDENT_PAGES = ["index.html", "setup.html", "microcourse.html", "OfficeToolkit.html",
-                 "lab1.html", "safety_case.html", "DistributedSystemModel.html", "Contracts.html"]
+                 "lab1.html", "lab2.html", "safety_case.html", "DistributedSystemModel.html", "Contracts.html"]
 # The worked Tahoe case shows Lab 1's answer, so it is published (committed)
 # only after Lab 1 is due. Until then it may exist on a staff machine only,
 # and its tests run where it exists.

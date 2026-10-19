@@ -62,6 +62,19 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
   `car_dealer` office, `attacks.jsonl` and `grade.py`, and a reference
   guard in `tests/e2e/car_dealer_guarded/` (public: the repository is).
   The files the handout prints are built and run by the tests.
+- **Lab 2** (`course/lab2.html`, the incident room, 18 Oct): the gallery's
+  `incident_room` (an open whiteboard: a Python `Board`, three LLM
+  analysts, a writer; `evidence.jsonl` carries an injected report),
+  `grade.py` (quality, attack, spread on the board) and `trials.py` (N runs,
+  rates; `--command` for any other system that writes `report.jsonl`).
+  Students run A open board, B pipeline with contracts, C guarded board
+  and D their own, 10+ runs each, and argue which to deploy. References
+  for B and C in `tests/e2e/incident_room_pipeline/` and `_guarded/`;
+  `tests/e2e/test_incident_room.py` and `test_lab2_handout.py`. An optional
+  Claude Agent SDK track (`claude_room.py` on the page) is **untested**:
+  written from the SDK docs; a staff member with the SDK should run it once.
+  Like Lab 1, it needs a real-key rehearsal (does the attack spread on the
+  default model at all?).
 - **Course pages students open first, in 2.0:** `course/index.html`,
   `setup.html`, `microcourse.html`, `OfficeToolkit.html`, `lab1.html`; the
   old root `office_microcourse.html` redirects to the micro-course.
