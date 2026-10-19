@@ -65,7 +65,13 @@ Run `dsl doctor` from the same folder:
 dsl doctor
 ```
 
-You should see:
+The line under the verdict should say:
+
+```
+  Key: ANTHROPIC_API_KEY is set.
+```
+
+`dsl doctor --full` shows where it came from:
 
 ```
 Local .env:

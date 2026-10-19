@@ -398,3 +398,35 @@ def test_class_2_shows_only_output_that_dsl_prints(tmp_path):
                 if len(piece) > 3:
                     assert piece in printed, f"Contracts.html shows {piece!r}; {name} did not print it"
 
+
+
+# ── What the pages say `dsl doctor` prints ───────────────────────────────
+
+
+def test_the_doctor_lines_the_pages_quote_are_what_it_prints(tmp_path):
+    """setup.html and the labs tell students which line to look for. Until
+    19 Oct 2026 they promised `Ready.` while doctor said `Not ready` to
+    anyone without an assistant's skill, and the labs used it to check a
+    key that the verdict never looked at."""
+    import shutil
+
+    env_key = "sk-ant-test"
+    for name in ("car_dealer", "incident_room"):
+        office = tmp_path / name
+        shutil.copytree(REPO / "dissyslab" / "gallery" / name, office,
+                        ignore=shutil.ignore_patterns("__pycache__"))
+        done = subprocess.run(
+            [sys.executable, "-c",
+             "import sys; from dissyslab.cli import main; sys.exit(main(sys.argv[1:]))",
+             "doctor", "."],
+            cwd=office, capture_output=True, text=True, encoding="utf-8", timeout=120,
+            env=dict(os.environ, ANTHROPIC_API_KEY=env_key, PYTHONIOENCODING="utf-8",
+                     PYTHONPATH=os.pathsep.join([str(REPO)] + ([os.environ["PYTHONPATH"]]
+                                                if os.environ.get("PYTHONPATH") else []))))
+        out = done.stdout
+        assert out.startswith("Ready. You can build an office.\n  Key: ANTHROPIC_API_KEY is set.\n"), out
+        assert "\nReady to run.\n" in out, out
+    assert "Ready. You can build an office." in page("setup.html")
+    assert "  Key: ANTHROPIC_API_KEY is set." in text(page("setup.html"))
+    for lab in ("lab1.html", "lab2.html"):
+        assert "dsl doctor ." in text(page(lab)) and "Ready to run." in text(page(lab)), lab

@@ -11,7 +11,7 @@ subcommands aimed at first-year undergraduates:
     dsl edit <office_dir>         modify an existing office by chatting with Claude
     dsl run <office_dir>          run a closed office end-to-end
     dsl build <office_dir>        generate build/run.py for an office
-    dsl doctor                    check Python, deps, backend, and run a self-test
+    dsl doctor [office]           check the install (and that an office can run here)
     dsl --version                 print the installed dissyslab version
 
 This module is intentionally small: it dispatches to the real
@@ -1510,16 +1510,19 @@ def _smoke_test_office() -> list:
 def _doctor_verdict() -> tuple[str, list[str], object]:
     """One sentence saying whether you can build an office, and why not.
 
-    Two things decide it, and nothing else does:
+    One thing decides it: the library works -- a three-agent office
+    builds and runs.
 
-    * the library works -- a three-agent office builds and runs;
-    * an assistant has the ``office-builder`` skill, without which it
-      improvises its own concurrency and looks like it is working.
+    Until 19 Oct 2026 a second thing did too: whether an assistant had
+    the ``office-builder`` skill. That made sense while offices were
+    mostly built by asking an assistant. The course builds them by hand,
+    nothing in its setup installs a skill, and so every student who
+    followed setup was told "Not ready" by an install that had all they
+    needed. Skills are reported by ``dsl skills`` and ``--full``.
 
-    A missing API key is not here on purpose. Offices whose roles are
-    all plain Python need no credential, and those are the offices a
-    new user runs first; calling that install "not ready" would be the
-    false alarm that teaches people to skip the verdict.
+    A missing API key is not here either, on purpose: offices whose
+    roles are all Python need none. It is the line under the verdict,
+    and ``dsl doctor <office>`` says whether *that* office needs it.
 
     Returns ``(headline, detail_lines, smoke_result)``. The smoke
     result is handed back so the Self-test section below does not run
@@ -1532,28 +1535,6 @@ def _doctor_verdict() -> tuple[str, list[str], object]:
         smoke_result = exc
         smoke_ok = False
 
-    try:
-        from dissyslab.skills_installed import is_source_checkout, locate
-
-        found, _roots, _deep = locate()
-        have_skill = any(
-            s.name == "office-builder" and not is_source_checkout(s.path)
-            for s in found
-        )
-        # Found in a clone is a different fact from found nowhere, and
-        # only the first is something doctor knows. Saying "not
-        # installed" for the second claims knowledge of what exists on
-        # a disk it has only partly read -- the wording mistake this
-        # whole section was rewritten to stop making, still living on
-        # in the verdict line.
-        repo_copy_only = not have_skill and any(
-            s.name == "office-builder" and is_source_checkout(s.path)
-            for s in found
-        )
-    except Exception:  # noqa: BLE001 - doctor must always finish
-        have_skill = False
-        repo_copy_only = False
-
     if not smoke_ok:
         return (
             "Not ready: dissyslab itself is not working here.",
@@ -1562,25 +1543,104 @@ def _doctor_verdict() -> tuple[str, list[str], object]:
              " that passes."],
             smoke_result,
         )
-    if repo_copy_only:
-        return (
-            "Not ready: office-builder is only in the repository, not installed.",
-            ["An assistant loads what was installed, not what is in a",
-             "clone. dissyslab itself works. Ask your assistant to",
-             "install the office-builder skill from the repository.",
-             "See the Skills section below."],
-            smoke_result,
-        )
-    if not have_skill:
-        return (
-            "Not ready: I could not find the office-builder skill.",
-            ["dissyslab itself works. Without the skill an assistant will",
-             "improvise its own concurrency instead of assembling tested",
-             "parts -- and it will look as though it worked.",
-             "The Skills section below lists everywhere I looked."],
-            smoke_result,
-        )
     return ("Ready. You can build an office.", [], smoke_result)
+
+
+def _required_key() -> tuple[str, str | None]:
+    """(active backend, the environment variable it needs, or None)."""
+    active = os.environ.get("DSL_BACKEND", "anthropic")
+    return active, {
+        "anthropic":  "ANTHROPIC_API_KEY",
+        "claude":     "ANTHROPIC_API_KEY",
+        "openrouter": "OPENROUTER_API_KEY",
+        "ollama":     None,          # local model, no credential needed
+    }.get(active, "ANTHROPIC_API_KEY")
+
+
+def _key_line() -> str:
+    """The line under the verdict: is the key set? Never prints the key."""
+    active, key = _required_key()
+    if key is None:
+        return f"Key: none needed (backend '{active}')."
+    if os.environ.get(key):
+        return f"Key: {key} is set."
+    return (f"Key: {key} is not set. Offices with LLM agents need it;\n"
+            "  offices of Python agents do not. Put it in a .env file in\n"
+            "  your course folder (setup, step 5).")
+
+
+def _doctor_office(office_dir: Path) -> bool:
+    """`dsl doctor <office>`: can *this* office run here? Prints; True if so.
+
+    Three questions, each one a reason `dsl run` would fail before doing
+    anything useful: does `dsl check` pass; if the office has LLM agents,
+    is the key set; are the files its sources read there.
+    """
+    from dissyslab.office.check import check_office
+    from dissyslab.office.model import OfficeFile
+    from dissyslab.office.resolve import Found, resolve_office
+    from dissyslab.office.syntax import parse_office_file
+
+    name = office_dir.resolve().name
+    print(f"This office, {name}:")
+    if not (office_dir / "office.md").is_file():
+        print(f"  [FAIL] there is no office.md in {office_dir}")
+        print()
+        print(f"Not ready to run: {office_dir} is not an office folder.")
+        return False
+
+    reasons: list[str] = []
+    report = check_office(office_dir)
+    if report.problems:
+        n = len(report.problems)
+        print(f"  [FAIL] dsl check: {n} problem{'s' if n != 1 else ''}; "
+              f"`dsl check {office_dir}` lists them")
+        reasons.append("dsl check found problems")
+    else:
+        print("  [OK] dsl check: no problems")
+
+    office: OfficeFile | None = None
+    found: dict[str, Found] = {}
+    try:
+        office = parse_office_file(office_dir / "office.md")
+        found, _ = resolve_office(office, office_dir)
+    except Exception:  # noqa: BLE001 - already reported by dsl check
+        office = None
+
+    llm = sorted(n for n, f in found.items() if f.language == "english")
+    if any(f.kind == "office" for f in found.values()):
+        llm.append("(and any in its nested offices)")
+    _active, key = _required_key()
+    if llm and key is not None:
+        who = ", ".join(llm)
+        if os.environ.get(key):
+            print(f"  [OK] {key} is set; the LLM agents need it: {who}")
+        else:
+            print(f"  [FAIL] {key} is not set, and these are LLM agents: {who}")
+            if (office_dir / ".env").exists() and office_dir.resolve() != Path.cwd().resolve():
+                print(f"         {office_dir}/.env is read only when you run from that folder:")
+                print(f"         cd {office_dir}, then `dsl doctor .`")
+            reasons.append(f"{key} is not set")
+    elif not llm:
+        print("  [OK] no LLM agents: no key needed")
+
+    if office is not None:
+        for decl in office.declarations:
+            path = decl.args.get("path") if decl.section == "sources" else None
+            if not isinstance(path, str):
+                continue
+            if (office_dir / path).exists():
+                print(f"  [OK] {path}: there (read by {decl.name})")
+            else:
+                print(f"  [FAIL] {path}: not there (read by {decl.name})")
+                reasons.append(f"{path} is missing")
+
+    print()
+    if reasons:
+        print(f"Not ready to run: {'; '.join(reasons)}.")
+        return False
+    print("Ready to run.")
+    return True
 
 
 def cmd_doctor(args: argparse.Namespace) -> int:
@@ -1610,7 +1670,16 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     print(verdict)
     for line in verdict_detail:
         print(f"  {line}")
+    print(f"  {_key_line()}")
     print()
+
+    # `dsl doctor <office>`: the question a student actually has before a
+    # lab -- will this office run here? -- answered for that office.
+    office_ok = True
+    office_arg = getattr(args, "office", None)
+    if office_arg:
+        office_ok = _doctor_office(Path(office_arg))
+        print()
 
     # The inventory is captured rather than printed, because most of
     # the time nobody should see it.
@@ -1798,51 +1867,13 @@ def cmd_doctor(args: argparse.Namespace) -> int:
     if _show_all:
         print(_inventory.getvalue(), end="")
     else:
-        # The three facts anyone actually carries away, and the two an
-        # assistant is told to report: what package, and what skill.
+        # What package, on what Python. Skills are not here: they are
+        # about assistants, which a course student does not need, and a
+        # beginner shown "this is not the copy this release was built
+        # with" about a skill they never installed reads it as a fault.
+        # `dsl skills` and `--full` report them.
         print(f"dissyslab {_package_version()}   Python "
               f"{sys.version.split()[0]}")
-        try:
-            from dissyslab.skills_installed import (
-                is_source_checkout,
-                locate,
-                stale_message,
-            )
-
-            found, _roots, _deep = locate()
-            installed = [s for s in found if not is_source_checkout(s.path)]
-
-            # Grouped by name, and the note about a skill printed under
-            # that skill. An indented note belongs to whatever is above
-            # it -- so a "2 copies of backtest-strategy-builder" line
-            # emitted after the loop landed under sensor-office-builder
-            # and read as being about it. Two copies of one skill is a
-            # finding, not a repetition: an assistant loads one of them
-            # and which one is not the user's to choose.
-            by_name: dict[str, list] = {}
-            for s in installed:
-                by_name.setdefault(s.name, []).append(s)
-
-            for name, hits in sorted(by_name.items()):
-                for s in hits:
-                    # `or` and not a bare print: a skill whose SKILL.md
-                    # has no version line has ``version is None``, and
-                    # printing it raw put the word `None` in front of a
-                    # beginner.
-                    print(f"{name} {s.version or 'no version string'}")
-                    # A skill that is not the one this release expects
-                    # survives the short form. It is the one thing here
-                    # that changes what the user should do next.
-                    for line in stale_message(name, s.version):
-                        print(f"  {line}")
-                if len(hits) > 1:
-                    print(f"  {len(hits)} copies of {name} are installed. An "
-                          "assistant loads one")
-                    print("  of them and which one is not yours to choose; "
-                          "`dsl doctor --full`")
-                    print("  gives the folder of each.")
-        except Exception:  # noqa: BLE001 - doctor must always finish
-            pass
         print()
         print("`dsl doctor --full` for the rest: dependencies, extras,")
         print("skills, .env, backend, credentials and the self-test.")
@@ -1858,10 +1889,10 @@ def cmd_doctor(args: argparse.Namespace) -> int:
             print(verdict)
             for line in verdict_detail:
                 print(f"  {line}")
-    if ok:
-        return 0
-    print("One or more required checks failed. See above.")
-    return 1
+    if not ok:
+        print("One or more required checks failed. See above.")
+        return 1
+    return 0 if office_ok else 1
 
 
 # ── Argument parser ───────────────────────────────────────────────────────────
@@ -2309,16 +2340,15 @@ def build_parser() -> argparse.ArgumentParser:
         "doctor",
         help="check your setup if something breaks",
         description=(
-            "Check your Python version, your dependencies, which DisSysLab "
-            "skills are installed and where, the credential your selected "
-            "backend actually needs, and any optional integrations (Gmail, "
-            "Slack, webhook URLs) you've configured. "
-            "Finishes by building and running a small office as a "
-            "self-test, so you get a straight answer about whether the "
-            "install works. Run this first when something breaks.\n\n"
+            "Say whether this install works (it builds and runs a small "
+            "office as a self-test) and whether your key is set. Given an "
+            "office folder, also say whether that office can run here: "
+            "dsl check, the key if it has LLM agents, and the files its "
+            "sources read.\n\n"
             "When everything is in order it prints the verdict and little "
-            "else; the inventory appears whenever something is wrong, or "
-            "on request with --full."
+            "else; the inventory (dependencies, extras, skills, .env, "
+            "backend, credentials, integrations, self-test) appears whenever "
+            "something is wrong, or on request with --full."
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -2330,6 +2360,12 @@ def build_parser() -> argparse.ArgumentParser:
             "dependencies, market and test extras, skills, .env, backend, "
             "credentials and the self-test."
         ),
+    )
+    p_doc.add_argument(
+        "office", nargs="?", default=None,
+        help=("an office folder (`.` for this one): also check that this "
+              "office can run here -- dsl check, the key if it has LLM "
+              "agents, and the files its sources read"),
     )
     p_doc.set_defaults(handler=cmd_doctor)
 

@@ -95,9 +95,8 @@ dsl doctor</pre>
      The first line <code>dsl doctor</code> prints should be:</p>
 <pre>Ready. You can build an office.</pre>
   <p>If instead it says <b>Not ready:</b>, the rest of that line is the one thing
-     to fix. Below it, two lines will say <code>not set</code> or
-     <code>not installed</code> for now, and that is fine: the API key (step 5)
-     and <code>yfinance</code> (only for the stock-market office).</p>
+     to fix. The line under it says whether your API key is set. Until step 5
+     it says <code>not set</code>, and that is fine.</p>
 
   <h2><span class="n">Step 3</span>Run an office</h2>
   <p>An <b>office</b> is a small distributed system: <b>agents</b> that pass
@@ -177,8 +176,9 @@ connections:
 echo "ANTHROPIC_API_KEY=paste-your-key-here" &gt; .env</pre>
         Replace <code>paste-your-key-here</code> with your key, with no spaces
         or quotes. On a Mac, do not edit it in TextEdit, which saves rich text.</li>
-    <li>Run <code>dsl doctor</code>. The <code>Credentials:</code> section should
-        show <code>[SET ] ANTHROPIC_API_KEY</code>.</li>
+    <li>Run <code>dsl doctor</code> in your course folder. The line under
+        <code>Ready.</code> should now say:
+<pre>  Key: ANTHROPIC_API_KEY is set.</pre></li>
   </ol>
   <div class="warn"><b>Never share your key, and never commit <code>.env</code>
      to git.</b> Anyone with the key can spend money on your account.</div>

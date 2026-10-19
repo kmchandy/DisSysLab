@@ -77,10 +77,8 @@ The first line `dsl doctor` prints should be:
 Ready. You can build an office.
 ```
 
-Below it, `dsl doctor` lists what is installed. Two lines will say
-`not set` or `not installed` until later parts of this guide, and that is
-fine: `ANTHROPIC_API_KEY` (part 5) and `yfinance` (only for the
-stock-market office).
+The line under it says whether your API key is set. Until part 5 it
+says `not set`, and that is fine.
 
 ---
 
@@ -654,9 +652,15 @@ text); use VS Code or the command above.
 dsl doctor
 ```
 
-The `Credentials:` section should show `[SET ] ANTHROPIC_API_KEY`, with
-the first few characters of the key. [API_KEY_SETUP.md](API_KEY_SETUP.md)
-covers what to do if it does not.
+The line under `Ready.` should now say:
+
+```
+  Key: ANTHROPIC_API_KEY is set.
+```
+
+`dsl doctor --full` shows more: the `.env` it read and the first few
+characters of the key. [API_KEY_SETUP.md](API_KEY_SETUP.md) covers what
+to do if the key is not found.
 
 **Never share your key, and never commit `.env` to git.** Anyone with the
 key can spend money on your account.

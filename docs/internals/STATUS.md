@@ -52,6 +52,15 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
 - **The runtime is frozen** (`dissyslab/runtime/`), with two approved
   exceptions: the dropped-fields note, and the **stall report** (a walk
   back from held work proving it can never be released).
+- **`dsl doctor` is about running offices** (19 Oct): the verdict is the
+  self-test alone (a missing `office-builder` skill used to make it "Not
+  ready", which every student following setup would have seen); the line
+  under it says whether the key is set; skills appear only in `--full` and
+  `dsl skills`. **`dsl doctor .`** in an office folder adds whether that
+  office can run: `dsl check`, the key if it has LLM agents, the files its
+  sources read; it ends `Ready to run.` or `Not ready to run: ...` (exit 1).
+  setup, GETTING_STARTED, API_KEY_SETUP, TROUBLESHOOTING and Labs 1–2 say so;
+  `test_course_pages.py` runs it on the two lab offices.
 - **Ctrl-C** stops a running office with its summary (fixed 17 Oct; it
   used to hang).
 - **The gallery** (`dissyslab/gallery/`): eleven offices, each with a

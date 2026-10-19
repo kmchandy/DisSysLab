@@ -7,11 +7,13 @@ remedy for each. The first thing to try, in almost every case, is:
 dsl doctor
 ```
 
-`dsl doctor` checks your Python version, that every dependency is
-importable, that your API key is set, and that any optional
-integrations (Gmail, Slack, webhook URLs) are wired correctly. If
-the entry below mentions a fix, run `dsl doctor` afterward to
-confirm it took.
+`dsl doctor` says whether DisSysLab works here and whether your API key
+is set. `dsl doctor .`, in an office folder, also says whether that
+office can run: `dsl check`, the key if it has LLM agents, and the files
+its sources read. `dsl doctor --full` adds every dependency, the `.env`
+it read, and any optional integrations (Gmail, Slack, webhook URLs). If
+the entry below mentions a fix, run `dsl doctor` afterward to confirm it
+took.
 
 If the error you're seeing isn't here, open an issue on
 [GitHub](https://github.com/kmchandy/DisSysLab/issues) — that's the

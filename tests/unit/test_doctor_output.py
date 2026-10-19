@@ -106,13 +106,26 @@ def test_a_healthy_install_says_almost_nothing(healthy_home, capsys):
     )
 
 
-def test_it_still_names_the_package_and_the_skill(healthy_home, capsys):
-    """The two facts the skill tells an assistant to report back, so
-    the short form does not force it to go looking."""
+def test_it_names_the_package_and_the_key_but_no_skill(healthy_home, capsys, monkeypatch):
+    """The short form is for a student asking whether it works. Skills
+    are about assistants; `this is not the copy this release was built
+    with` about a skill they never installed reads as a fault."""
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
     out = _doctor(capsys, ["doctor"])
     _healthy_or_skip(out)
+    assert out.splitlines()[:2] == ["Ready. You can build an office.",
+                                    "  Key: ANTHROPIC_API_KEY is set."]
     assert "dissyslab" in out
-    assert "office-builder" in out
+    assert "office-builder" not in out and "Skills:" not in out
+
+
+def test_a_missing_key_is_said_under_the_verdict(healthy_home, capsys, monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("DSL_BACKEND", raising=False)
+    out = _doctor(capsys, ["doctor"])
+    _healthy_or_skip(out)
+    assert out.splitlines()[1] == ("  Key: ANTHROPIC_API_KEY is not set. "
+                                   "Offices with LLM agents need it;")
 
 
 def test_it_says_how_to_see_the_rest(healthy_home, capsys):
@@ -138,6 +151,9 @@ def test_a_broken_install_prints_everything_without_being_asked(
     monkeypatch.setattr(Path, "home", staticmethod(lambda: home))
     monkeypatch.chdir(tmp_path)
 
+    import dissyslab.cli as cli
+
+    monkeypatch.setattr(cli, "_smoke_test_office", lambda: [])
     out = _doctor(capsys, ["doctor"])
     assert out.startswith("Not ready")
     assert "Dependencies:" in out, (
@@ -147,76 +163,82 @@ def test_a_broken_install_prints_everything_without_being_asked(
     assert "Skills:" in out
 
 
-# ── the short form's own two defects, found on 2026-08-29 ─────────────
-#
-# Both were in the short form only. The long form already printed "no
-# version string" and already said how many copies it found; the short
-# form printed a Python literal and said nothing. A summary that drops
-# the finding is worse than one that is long, because the reader
-# believes it.
+# The short form used to list the installed skills, and two defects were
+# found in that listing on 2026-08-29 (a Python `None` for a skill with no
+# version line; two copies printed with no comment). The short form no
+# longer lists skills at all (19 Oct 2026); the long form's handling of
+# both is tested in test_skills_installed.py.
 
 
-def test_a_skill_with_no_version_line_does_not_print_the_word_None(
-    healthy_home, capsys
+# ── `dsl doctor <office>`: will this office run here? ──────────────────
+
+GALLERY = Path(__file__).resolve().parents[2] / "dissyslab" / "gallery"
+
+
+def _office_section(capsys, office: Path) -> tuple[int, list[str]]:
+    from dissyslab.cli import main
+
+    code = main(["doctor", str(office)])
+    out = capsys.readouterr().out.splitlines()
+    first = next(i for i, ln in enumerate(out) if ln.startswith("This office, "))
+    last = next(i for i in range(first, len(out)) if out[i].endswith("to run.")
+                or out[i].startswith("Not ready to run:"))
+    return code, out[first:last + 1]
+
+
+def _copy(name: str, tmp_path: Path) -> Path:
+    import shutil
+
+    dst = tmp_path / name
+    shutil.copytree(GALLERY / name, dst, ignore=shutil.ignore_patterns("__pycache__"))
+    return dst
+
+
+def test_an_office_with_llm_agents_and_no_key_is_not_ready_to_run(
+    healthy_home, capsys, monkeypatch, tmp_path
 ):
-    """`backtest-strategy-builder None`, on a real machine.
-
-    A SKILL.md with no `**Skill version:**` line has ``version is
-    None``, and the short form interpolated it straight into an
-    f-string. A beginner asking whether their install worked was shown
-    a Python literal.
-    """
-    d = healthy_home / ".claude" / "skills" / "office-builder"
-    (d / "SKILL.md").write_text(
-        "---\nname: office-builder\ndescription: test\n---\n\nNo version here.\n",
-        encoding="utf-8",
-    )
-    out = _doctor(capsys, ["doctor"])
-    _healthy_or_skip(out)
-    assert " None" not in out, f"printed a Python literal at the user:\n{out}"
-    assert "no version string" in out
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("DSL_BACKEND", raising=False)
+    code, lines = _office_section(capsys, _copy("incident_room", tmp_path))
+    assert lines == [
+        "This office, incident_room:",
+        "  [OK] dsl check: no problems",
+        "  [FAIL] ANTHROPIC_API_KEY is not set, and these are LLM agents: Lena, Max, Rae, Wren",
+        "  [OK] evidence.jsonl: there (read by evidence)",
+        "",
+        "Not ready to run: ANTHROPIC_API_KEY is not set.",
+    ]
+    assert code == 1
 
 
-def test_two_copies_of_one_skill_are_reported_in_the_short_form(
-    healthy_home, capsys
-):
-    """Two installs is a finding, not a repetition.
-
-    An assistant loads one of them and which one is not the user's to
-    choose -- so the same name twice with no comment reads as a display
-    glitch rather than as the thing to go and fix. The long form said
-    so; the short form printed the name twice and moved on.
-    """
-    second = healthy_home / ".claude" / "skills" / "synced" / "abc"
-    _install_skill(second, "office-builder")
-    out = _doctor(capsys, ["doctor"])
-    _healthy_or_skip(out)
-    assert "2 copies of office-builder" in out, (
-        f"the short form printed it twice and said nothing:\n{out}"
-    )
+def test_with_the_key_it_is_ready_to_run(healthy_home, capsys, monkeypatch, tmp_path):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    monkeypatch.delenv("DSL_BACKEND", raising=False)
+    code, lines = _office_section(capsys, _copy("incident_room", tmp_path))
+    assert lines[2] == ("  [OK] ANTHROPIC_API_KEY is set; the LLM agents need it: "
+                        "Lena, Max, Rae, Wren")
+    assert lines[-1] == "Ready to run."
 
 
-def test_the_duplicate_note_sits_under_the_skill_it_is_about(
-    healthy_home, capsys
-):
-    """An indented line belongs to whatever is above it.
+def test_an_office_of_python_agents_needs_no_key(healthy_home, capsys, monkeypatch, tmp_path):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    monkeypatch.delenv("DSL_BACKEND", raising=False)
+    _code, lines = _office_section(capsys, _copy("returns_desk", tmp_path))
+    assert "  [OK] no LLM agents: no key needed" in lines
+    assert lines[-1] == "Ready to run."
 
-    The first version of the note was emitted after the whole loop, so
-    on a real machine `2 copies of backtest-strategy-builder` printed
-    underneath `sensor-office-builder` at the same indent as that
-    skill's own notes. Every word of it was true and it was attached to
-    the wrong skill -- the same defect as printing a fact where nobody
-    will look, one level down.
-    """
-    second = healthy_home / ".claude" / "skills" / "synced" / "abc"
-    _install_skill(second, "office-builder")
-    out = _doctor(capsys, ["doctor"])
-    _healthy_or_skip(out)
 
-    lines = out.splitlines()
-    note = next(i for i, ln in enumerate(lines) if "2 copies of" in ln)
-    above = [ln for ln in lines[:note] if ln and not ln.startswith(" ")]
-    assert above[-1].startswith("office-builder"), (
-        "the note is indented under "
-        f"{above[-1]!r}, which is not what it is about:\n{out}"
-    )
+def test_a_missing_source_file_is_named(healthy_home, capsys, monkeypatch, tmp_path):
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-ant-test")
+    office = _copy("incident_room", tmp_path)
+    (office / "evidence.jsonl").unlink()
+    code, lines = _office_section(capsys, office)
+    assert "  [FAIL] evidence.jsonl: not there (read by evidence)" in lines
+    assert lines[-1] == "Not ready to run: evidence.jsonl is missing."
+    assert code == 1
+
+
+def test_a_folder_that_is_not_an_office_says_so(healthy_home, capsys, tmp_path):
+    code, lines = _office_section(capsys, tmp_path)
+    assert lines[-1] == f"Not ready to run: {tmp_path} is not an office folder."
+    assert code == 1
