@@ -2,7 +2,6 @@
 
 sources:
     evidence: file_source(path="evidence.jsonl")
-    # evidence: file_source(path="evidence_clean.jsonl")
 
 sinks:
     report: jsonl_recorder(path="report.jsonl")

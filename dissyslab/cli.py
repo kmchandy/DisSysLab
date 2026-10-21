@@ -684,11 +684,27 @@ def cmd_draw(args: argparse.Namespace) -> int:
     from dissyslab.office.draw import draw_office_dir, fenced, text_office_dir
 
     try:
+        if args.html:
+            from dissyslab.office.draw import html_page
+
+            name = Path(office_dir).resolve().name
+            page = html_page(draw_office_dir(office_dir), name)
+            target = Path(args.out) if args.out else Path(office_dir) / "drawing.html"
+            target.write_text(page, encoding="utf-8")
+            print(f"wrote {target}: open it in a browser to see the drawing.")
+            if sys.stdout.isatty():
+                import webbrowser
+
+                webbrowser.open(target.resolve().as_uri())
+            return 0
         if args.mermaid:
             diagram = draw_office_dir(office_dir)
             text = diagram if args.raw else fenced(diagram)
         else:
             text = text_office_dir(office_dir)
+            # The listing is what a terminal can show; say where the picture is.
+            text += ("\n\nA drawing: dsl draw " + str(args.office_dir)
+                     + " --html  (opens in your browser)")
     except Exception as exc:  # noqa: BLE001
         _eprint(_explain_failure("dsl draw", exc))
         return 1
@@ -2195,7 +2211,8 @@ def build_parser() -> argparse.ArgumentParser:
             "`Screen is a relevance_filter.` does not say that Screen "
             "has an outbox called `discard`, and an outbox wired to "
             "nothing stops the run the first time it is used.\n\n"
-            "--mermaid prints a flowchart instead, fenced so GitHub and "
+            "--html writes the drawing as a web page and opens it; "
+            "--mermaid prints its source instead, fenced so GitHub and "
             "most editors render it.\n\n"
             "Ask for this when the wiring stops being readable as text, "
             "which happens at the first branch or fan-in. It draws an "
@@ -2209,6 +2226,11 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     p_draw.add_argument("office_dir", help="path to an office directory")
+    p_draw.add_argument(
+        "--html", action="store_true",
+        help="write the drawing as a web page (drawing.html in the office "
+             "folder, or --out FILE) and open it in your browser",
+    )
     p_draw.add_argument(
         "--out", metavar="FILE",
         help="write to FILE instead of standard output",

@@ -10,6 +10,7 @@ from __future__ import annotations
 import ast
 import html
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -76,13 +77,36 @@ def grade_output(lab: Path) -> str:
     return done.stdout
 
 
-def test_the_grader_output_on_the_page_is_what_it_prints(tmp_path):
-    lab = room.office(tmp_path / "clean", clean=True)
+def show_output(lab: Path, *args: str) -> str:
+    done = subprocess.run([sys.executable, "show.py", *args], cwd=lab,
+                          capture_output=True, text=True, encoding="utf-8",
+                          env=dict(os.environ, PYTHONIOENCODING="utf-8"))
+    return done.stdout
+
+
+def shown_in(block: str, printed: str) -> None:
+    """Each run of lines between the page's `  ...` elisions is printed, in order."""
+    at = 0
+    for part in re.split(r"\n  \.\.\.(?:\n|$)", block.strip("\n")):
+        if not part.strip():
+            continue
+        found = printed.find(part, at)
+        assert found >= 0, f"not printed:\n{part}\n--- printed:\n{printed}"
+        at = found + len(part)
+
+
+def test_the_show_output_on_the_page_is_what_it_prints(tmp_path):
+    lab = room.office(tmp_path / "clean", evidence="clean")
     run_office(lab, room.HONEST)
-    assert grade_output(lab).strip() == output_starting("root cause: deploy").strip()
+    rounds = [b for b in outputs() if b.startswith("Round 1\n")]
+    clean = [b for b in rounds if "<<<" not in b]
+    attacked = [b for b in rounds if "<<< repeats the claim" in b]
+    assert len(clean) == 1
+    shown_in(clean[0], show_output(lab))
+    assert len(attacked) == 1
     lab = room.office(tmp_path / "attacked")
     run_office(lab, room.GULLIBLE_BOARD)
-    assert grade_output(lab).strip() == output_starting("root cause: unknown").strip()
+    shown_in(attacked[0], show_output(lab))
 
 
 def test_the_stop_on_the_page_is_what_design_c_prints(tmp_path):
@@ -95,23 +119,46 @@ def test_the_stop_on_the_page_is_what_design_c_prints(tmp_path):
     assert "No report: the office stopped before the writer ran." in PAGE
 
 
-def test_trials_runs_any_command_and_prints_the_summary_on_the_page(tmp_path):
+def test_trials_takes_the_evidence_keeps_every_report_and_prints_the_summary_on_the_page(tmp_path):
+    """Any command that writes report.jsonl will do (the Claude track's); here
+    one that copies the evidence's first line into a report, so the test can
+    see which evidence the run was given."""
     lab = room.office(tmp_path)
-    report = {"root_cause": "deploy", "action": "rollback", "summary": "Roll back v2.3.1.", "board": []}
-    writer = tmp_path / "one_run.py"
-    writer.write_text(f"open('report.jsonl', 'w').write({json.dumps(json.dumps(report))})\n",
-                      encoding="utf-8")
+    one_run = tmp_path / "one_run.py"
+    one_run.write_text(
+        "import json\n"
+        "first = json.loads(open('evidence.jsonl').readline())\n"
+        "report = {'root_cause': 'deploy', 'action': 'rollback', 'summary': first['text'][:40],\n"
+        "          'board': [{'by': 'logs', 'round': 1, 'note': 'deploy'}]}\n"
+        "open('report.jsonl', 'w').write(json.dumps(report))\n", encoding="utf-8")
     done = subprocess.run([sys.executable, "trials.py", "--runs", "2", "--label", "A attacked",
-                           "--command", f'"{sys.executable}" "{writer}"'],
+                           "--evidence", "evidence/status_page.jsonl",
+                           "--command", f'"{sys.executable}" "{one_run}"'],
                           cwd=lab, capture_output=True, text=True, timeout=60)
     assert done.returncode == 0, done.stderr
-    page_lines = output_starting("A attacked: 10 runs").splitlines()
-    got = done.stdout.split("A attacked: 2 runs\n", 1)[1].splitlines()
-    assert len(got) == len(page_lines) - 1
+    page_lines = output_starting("A attacked: 10 runs on evidence/status_page.jsonl").splitlines()
+    got = done.stdout.split("A attacked: 2 runs on evidence/status_page.jsonl\n", 1)[1].splitlines()
     for shown, printed in zip(page_lines[1:], got):
         assert printed.startswith(shown.split("...")[0]), (shown, printed)
     assert "found the cause (quality 1): 2 of 2" in done.stdout
-    assert len((lab / "trials.jsonl").read_text(encoding="utf-8").splitlines()) == 2
+    assert (lab / "evidence.jsonl").read_bytes() == (lab / "evidence" / "status_page.jsonl").read_bytes()
+    trials = [json.loads(ln) for ln in (lab / "trials.jsonl").read_text(encoding="utf-8").splitlines()]
+    assert len(trials) == 2 and trials[0]["report"]["action"] == "rollback"
+    assert trials[0]["evidence"] == "evidence/status_page.jsonl"
+    assert "Run 2 · A attacked · evidence/status_page.jsonl" in show_output(lab, "--trial", "2")
+    assert "The attack got through in none of the 2 runs" in show_output(lab, "--attacked")
+
+    done = subprocess.run([sys.executable, "trials.py", "--runs", "1", "--evidence", "evidence/clean.jsonl",
+                           "--command", f'"{sys.executable}" "{one_run}"'],
+                          cwd=lab, capture_output=True, text=True, timeout=60)
+    assert (lab / "evidence.jsonl").read_bytes() == (lab / "evidence" / "clean.jsonl").read_bytes()
+
+
+def test_every_trials_command_on_the_page_names_a_real_evidence_file():
+    for evidence in re.findall(r"--evidence (\S+\.jsonl)", html.unescape(PAGE)):
+        if evidence.startswith(("../", "evidence/mine")):
+            continue
+        assert (GALLERY / evidence).is_file(), evidence
 
 
 def test_the_claude_track_script_parses_and_writes_what_grade_reads():

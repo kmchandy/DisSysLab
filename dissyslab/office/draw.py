@@ -115,6 +115,37 @@ def fenced(diagram: str) -> str:
     return f"```mermaid\n{diagram}\n```"
 
 
+#: Where the page gets Mermaid from. The page needs the network once, to
+#: fetch it; offline, it shows the diagram's source instead.
+MERMAID_JS = "https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"
+
+
+def html_page(diagram: str, title: str) -> str:
+    """A page that draws the diagram when opened in a browser.
+
+    `--mermaid` prints source to paste somewhere that renders it; a
+    student who typed `dsl draw .` wanting a picture had nowhere obvious
+    to paste it. This is the picture, one double-click away.
+    """
+    import html as _html
+
+    body = _html.escape(diagram)
+    return f"""<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>{_html.escape(title)}</title>
+<style>body{{font-family:-apple-system,Segoe UI,Helvetica,Arial,sans-serif;margin:24px}}
+h1{{font-size:20px}} p{{color:#666;font-size:14px}}</style></head>
+<body><h1>{_html.escape(title)}</h1>
+<pre class="mermaid">
+{body}
+</pre>
+<p>Drawn by <code>dsl draw --html</code>. If you see text instead of a picture,
+this browser could not fetch Mermaid; paste the text into https://mermaid.live.</p>
+<script src="{MERMAID_JS}"></script>
+<script>if (window.mermaid) mermaid.initialize({{startOnLoad: true}});</script>
+</body></html>
+"""
+
+
 def text_office_dir(office_dir: Path) -> str:
     return text(parse_office_file(office_dir / "office.md"), office_dir.resolve().name)
 

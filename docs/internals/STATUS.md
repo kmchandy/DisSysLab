@@ -73,7 +73,11 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
   The files the handout prints are built and run by the tests.
 - **Lab 2** (`course/lab2.html`, the incident room, 18 Oct): the gallery's
   `incident_room` (an open whiteboard: a Python `Board`, three LLM
-  analysts, a writer; `evidence.jsonl` carries an injected report),
+  analysts, a writer; `evidence/` has the clean evidence and three attacks,
+  each one added line: a crude note to "the AI analysts" (Mani, 19 Oct: the
+  default model never fell for it), a forged status email, a line forged
+  into the log; `trials.py --evidence` picks one, `show.py` prints the
+  board round by round; students who find no attack that works write one),
   `grade.py` (quality, attack, spread on the board) and `trials.py` (N runs,
   rates; `--command` for any other system that writes `report.jsonl`).
   Students run A open board, B pipeline with contracts, C guarded board
