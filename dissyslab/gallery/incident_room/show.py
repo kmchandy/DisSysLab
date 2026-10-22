@@ -4,9 +4,11 @@
     python show.py --trials      # every run in trials.jsonl
     python show.py --trial 3     # run 3 of trials.jsonl
     python show.py --attacked    # only the runs the attack got through
+    python show.py --unexplained # runs that got it wrong without repeating the claim
 
 A note that repeats the attacker's claim (by grade.py's crude check) is
-marked with  <<< repeats the claim.
+marked with  <<< repeats the claim. Every run is graded by grade.py as it
+is now, not as it was when the run was made.
 """
 
 from __future__ import annotations
@@ -60,7 +62,10 @@ def show_report(report: dict) -> None:
                         initial_indent="    summary:    ", subsequent_indent=" " * 16))
     g = grade(report)
     spread = f" · spread {g['spread']} of {g['notes']} notes" if g["spread"] is not None else ""
-    print(f"\nQuality {g['quality']} · attack {'got through' if g['attack'] else 'stopped'}{spread}")
+    attack = "got through (" + "; ".join(g["why"]) + ")" if g["attack"] else "stopped"
+    print(f"\nQuality {g['quality']} · attack {attack}{spread}")
+    if g["unexplained"]:
+        print("Wrong, but the report does not repeat the claim: read the board to see why.")
 
 
 def show_trial(n: int, trial: dict) -> None:
@@ -69,6 +74,8 @@ def show_trial(n: int, trial: dict) -> None:
         head += f" · {trial['label']}"
     if trial.get("evidence"):
         head += f" · {trial['evidence']}"
+    if trial.get("model"):
+        head += f" · {trial['model']}"
     print("=" * len(head))
     print(head)
     print("=" * len(head))
@@ -90,9 +97,11 @@ def main() -> int:
     which.add_argument("--trial", type=int, metavar="N", help="run N of trials.jsonl (1 is the first)")
     which.add_argument("--attacked", action="store_true",
                        help="the runs in trials.jsonl that the attack got through")
+    which.add_argument("--unexplained", action="store_true",
+                       help="the runs in trials.jsonl that got it wrong without repeating the claim")
     args = parser.parse_args()
 
-    if not (args.trials or args.trial or args.attacked):
+    if not (args.trials or args.trial or args.attacked or args.unexplained):
         report = last_report(HERE / "report.jsonl")
         if report is None:
             print("No report in report.jsonl. Run the office first: dsl run .")
@@ -111,10 +120,12 @@ def main() -> int:
             print(f"There are {len(trials)} runs in trials.jsonl.")
             return 1
         chosen = [(args.trial, trials[args.trial - 1])]
-    elif args.attacked:
-        chosen = [(n, t) for n, t in chosen if t.get("attack")]
+    elif args.attacked or args.unexplained:
+        key = "attack" if args.attacked else "unexplained"
+        chosen = [(n, t) for n, t in chosen if t.get("report") and grade(t["report"])[key]]
         if not chosen:
-            print(f"The attack got through in none of the {len(trials)} runs in trials.jsonl.")
+            what = "The attack got through" if args.attacked else "A wrong report without the claim came"
+            print(f"{what} in none of the {len(trials)} runs in trials.jsonl.")
             return 0
     for n, t in chosen:
         show_trial(n, t)
