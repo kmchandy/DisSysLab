@@ -95,14 +95,11 @@
   <div class="kicker">Caltech &middot; Winter 2027 &middot; 4 January – 10 March</div>
   <h1>Distributed Systems</h1>
   <p class="lead">
-    This course is about building safe multi-agent systems.
-    Some or all of the agents may be LLMs.
-    Different agents may use different LLMs.
-    The course emphasizes safety.
-    You will use guard rails to improve LLM safety and use systematic ways
-    of testing multi-agent systems. You will use the theory of concurrency
-    and temporal logic to prove the correctness of the operating
-    systems algorithms that run distributed systems. 
+    This course focuses on building safe multi-agent systems, in which
+    some or all agents may use LLMs, including different models. You will
+    use guardrails and systematic testing to improve their safety, and
+    use concurrency theory and temporal logic to prove the correctness
+    of the operating systems algorithms that run distributed systems.
   </p>
 
   <p>
@@ -110,11 +107,10 @@
   </p>
 
   <p>
-    The course covers (1) the design of concurrent algorithms and 
-    their correctness proofs  and (2) building safe multi-LLM agent systems. 
-    The major part of the course is a project: develop a multi-agent app 
-    that interests you. Do the project on your own or in a team of two or 
-    three people.
+    The course covers concurrent algorithms and their correctness proofs,
+    alongside building safe multi-LLM agent systems. The major part is a
+    project in an area that interests you, completed on your own or in a
+    team of two or three.
   </p>
 
   <p>
@@ -142,7 +138,8 @@
   </ul>
 
   <h2>Before the first class</h2>
-  <p class="sub">About an hour, on your own machine.</p>
+  <p class="sub">Allow about an hour to install the software and work through
+    the setup guide on your computer.</p>
   <ul class="plain">
     <li><a href="setup.html">setup.html</a>
         <span>Install DisSysLab, run an office, read what you ran, and set up
@@ -155,11 +152,19 @@
         <span>Every command, role, source and sink, and where to read more.</span></li>
   </ul>
 
+  <h2 id="term-project">Term Project</h2>
+  <p>Build a multi-agent application in an area that interests you, test
+    how it works, and explain what you learned. The proposed plan includes
+    a short proposal, a progress check midway through the term, and a final
+    report and presentation, including the course’s required safety case.</p>
+  <div class="links">
+    <a class="primary" href="project.html">Project outline, ideas, and papers</a>
+  </div>
+
   <div class="note">
-    <b>Presenting.</b> Pages with a <b>Present</b> button at the bottom right
-    are readings that become talks — press <b>P</b> to show one piece at a time at projector
-    size, arrow keys to move, <b>Esc</b> to go back to reading. The animations
-    keep running either way. <b>P</b> never means "go back".
+    <b>Presentation mode.</b> On pages with a <b>Present</b> button,
+    press <b>P</b> to display the material as slides. Use the arrow keys to
+    move between slides and <b>Esc</b> to return to the full page.
   </div>
 
   <h2>Notes</h2>
@@ -172,9 +177,8 @@
     <li>
       <div class="li-body">
         <h3>A model of a distributed system</h3>
-        <p>Agents and messages. Execution model.</p>
-        LLM agent guard rails.
-        Error propagation through messages.</p>
+        <p>How agents execute and exchange messages, how errors propagate,
+          and where LLM guardrails can limit their effects.</p>
         <div class="links">
           <a class="primary" href="DistributedSystemModel.html">Open</a>
         </div>
@@ -515,11 +519,10 @@
 
   </ol>
 
-  <h2>The project</h2>
-  <p class="sub">The major part of the course.</p>
+  <h2>The project's safety case</h2>
   <p>
-    You build a multi-agent app that interests you, and you make the case
-    that it is safe. The case has three parts, the three habits above:
+    Alongside your application, explain the safety properties you claim
+    and the evidence for them. The case has three parts:
   </p>
   <ol class="case">
     <li><b>What must never happen</b>, and what must eventually happen,
@@ -531,7 +534,8 @@
   </ol>
   <p>The safety case is required. <a href="safety_case.html">The safety
     case</a> says what goes in each part, gives a template to copy, and says
-    how it is read.</p>
+    how it is read. See the <a href="project.html">project guide</a> for
+    proposed milestones, submission details, and ideas.</p>
 
   <footer>
     Code, offices and issues:

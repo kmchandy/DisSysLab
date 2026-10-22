@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Term project — Distributed Systems</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&amp;display=swap" rel="stylesheet">
+<style>
+:root {
+  --ink:#1a1a2e; --paper:#faf8f3; --line:#ddd8cd; --muted:#596270;
+  --orange:#b93b12; --teal:#007b68;
+  --display:'Fraunces',Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-padding-top:24px}
+body{margin:0;background:var(--paper);color:var(--ink);font:16px/1.65 var(--sans);-webkit-font-smoothing:antialiased}
+.wrap{max-width:960px;margin:auto;padding:35px 24px 70px}
+a{color:var(--teal);text-underline-offset:3px}
+a:hover{text-decoration-thickness:2px}
+h1,h2{font-family:var(--display);line-height:1.15;letter-spacing:-.02em}
+h1{font-size:clamp(36px,6vw,56px);margin:24px 0 14px}
+h2{font-size:30px;margin:42px 0 14px}
+h3{font-size:19px;line-height:1.4;margin:0 0 8px}
+p{margin:0 0 14px}
+.lead{font-size:20px;max-width:750px}
+.small,.meta{font-size:13px;color:var(--muted)}
+.nav{display:flex;gap:12px 24px;flex-wrap:wrap;margin:24px 0;font-size:14px}
+ol{padding-left:24px}
+li{margin:12px 0}
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse;background:white;margin:20px 0;font-size:14px}
+th,td{padding:12px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{background:#f0eee7}
+td:first-child{min-width:130px}
+details{border:1px solid var(--line);border-radius:10px;background:white;margin:12px 0}
+summary{cursor:pointer;padding:17px 20px;font-weight:650;font-size:18px}
+summary::marker{color:var(--teal)}
+.detail{padding:0 20px 19px}
+.detail p:last-child{margin-bottom:0}
+.number{color:var(--orange);font-size:14px;margin-right:9px}
+.summary-meta{display:block;margin:5px 0 0 23px;font-size:12px;font-weight:500;color:var(--muted)}
+.question{font-size:17px;margin:2px 0 16px}
+dl{margin:0}
+dt{font-size:13px;font-weight:750;color:var(--teal);margin-top:15px}
+dd{margin:3px 0 0;font-size:15px}
+.reading-links{margin-top:18px!important;font-size:13px}
+.paper-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.paper{background:white;border:1px solid var(--line);border-radius:10px;padding:20px}
+.paper h3{font-size:16px}
+.paper p{font-size:14px}
+.paper .meta{font-size:12px}
+.paper p:last-child{margin-bottom:0}
+.group-title{margin:28px 0 12px;font-size:20px}
+:focus-visible{outline:3px solid var(--teal);outline-offset:4px}
+.top-link{font-size:14px}
+@media(max-width:600px){
+  .wrap{padding:24px 16px 50px}.paper-grid{grid-template-columns:1fr}
+  .lead{font-size:18px}summary{padding:15px}.detail{padding:0 15px 16px}
+  h2{font-size:26px}.summary-meta{margin-left:0}
+}
+</style></head><body><main class="wrap" id="top">
+<a class="top-link" href="index.html">← Course index</a>
+<h1>Term Project</h1>
+<p class="lead">Build a multi-agent application in an area you care about, and use ideas from the course to understand how it works and how it can fail.</p>
+<p>Work on your own or in a team of two or three. Choose an idea below, adapt a paper, or propose your own project.</p>
+<p class="small">Proposed outline for discussion with the teaching team. The course’s existing <a href="safety_case.html">safety-case requirement</a> still applies.</p>
+<nav class="nav" aria-label="Project guide"><a href="#requirements">Project outline</a><a href="#ideas">Project ideas</a><a href="#readings">Papers and inspiration</a></nav>
+<section id="requirements"><h2>Project outline</h2>
+<ol>
+<li><strong>Propose an idea.</strong> Write a short proposal describing what you want to build, the data you will use, a related paper or technical reference, and how it connects to the course. Check that you can access the data before committing.</li>
+<li><strong>Build and test it.</strong> Use DisSysLab or discuss another framework with the teaching team. Compare your system with a simpler approach on the same inputs, including ordinary requests and cases designed to make it fail. Record the results so someone else can repeat the comparison.</li>
+<li><strong>Explain what you learned.</strong> Submit your code with setup instructions and a short report covering the design, results, limitations, and sources. Give a brief presentation or demo. An unsuccessful idea can still make a good project if you explain what happened.</li>
+</ol>
+<div class="table-wrap"><table><thead><tr><th scope="col">Proposed timing</th><th scope="col">What to bring</th></tr></thead><tbody>
+<tr><td>Early in the term</td><td>A short proposal and a sample of your data.</td></tr>
+<tr><td>Midway through</td><td>A working example and initial results to discuss.</td></tr>
+<tr><td>End of the term</td><td>Code, a short report with the safety case, and a brief presentation.</td></tr>
+</tbody></table></div>
+<p class="small">Choose a scope you can finish during the term. Exact dates and submission details will be agreed with the teaching team.</p>
+</section>
+<section id="deliverables"><h2>What to turn in</h2>
+<ul>
+<li><strong>A short proposal:</strong> your question, team members, data source, a related paper or reference, and the course ideas you plan to use.</li>
+<li><strong>Working code and a README:</strong> instructions to run the project, obtain the data, and repeat your main experiment.</li>
+<li><strong>A short final report:</strong> what you built, how it compares with a simpler approach, your results and limitations, and the sources you used. For group projects, describe each person’s contribution.</li>
+<li><strong>A safety case in <a href="safety_case.html">SAFETY.md</a>:</strong> at least two things your system must never do, one thing it must eventually do, how these properties are enforced, and supporting evidence. Follow the linked guide for the full requirements. This can serve as the report’s safety section without repeating it elsewhere.</li>
+<li><strong>A brief presentation or demo:</strong> show how the system works and explain a useful finding or failure from your experiments.</li>
+</ul>
+</section>
+<section id="ideas"><h2>Project ideas</h2>
+<p>Open an idea for a suggested approach, data source, and experiment. These are examples to adapt; the suggested checks and dataset sizes are not additional requirements. You are welcome to propose something else.</p>
+<div id="idea-list">
+
+
+<details class="idea" id="idea-sports">
+<summary><span class="number">01</span> A sports reporter whose numbers you can check<span class="summary-meta">Sports &amp; media</span></summary>
+<div class="detail"><p class="question">Can a team of agents write an accurate match report without inventing events or statistics?</p><dl>
+<dt>Build</dt><dd>An analyst selects important events, a writer drafts the report, and a Python checker verifies structured claims against the event log. Keep the first version to goals, shots, and named players.</dd>
+<dt>Data and starting scope</dt><dd><a href="https://github.com/hudl/open-data">StatsBomb open data</a> provides match and event JSON. Start with five matches, then evaluate on ten different matches. Follow the repository’s attribution terms.</dd>
+<dt>Compare and measure</dt><dd>Compare a writer alone with the checked pipeline. Insert a misleading note into an event description; count unsupported claims, valid reports, refusals, and calls. A numeric check cannot certify all of the surrounding prose.</dd>
+<dt>Example safety checks</dt><dd>Every published statistic must match a cited event or computed total; every named player must appear in the match roster.</dd>
+<dt>Connection to the course</dt><dd>Typed messages, provenance, and guards at an output sink. Extend it by tracing which message introduced a wrong claim.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-scaling">Towards a Science of Scaling Agent Systems</a>, <a href="#paper-agentdyn">AgentDyn</a>.</p></div></details>
+<details class="idea" id="idea-music">
+<summary><span class="number">02</span> A playlist that represents everyone<span class="summary-meta">Sports &amp; media</span></summary>
+<div class="detail"><p class="question">Does discussion produce a better shared playlist than simply taking turns choosing songs?</p><dl>
+<dt>Build</dt><dd>Two listener agents have different genre preferences. A coordinator proposes a ten-track playlist, and a checker enforces duration and catalog constraints. Define a simple, visible satisfaction score for each listener.</dd>
+<dt>Data and starting scope</dt><dd><a href="https://github.com/mdeff/fma">FMA</a> includes track metadata. Use 200 metadata records, without downloading audio; define simulated listener preferences yourself. Audio playback would require checking the tracks’ licenses.</dd>
+<dt>Compare and measure</dt><dd>Compare round-robin selection with negotiation under the same call budget. Measure minimum listener satisfaction, repeated tracks, constraint violations, and messages used. Report satisfaction as a proxy, not a measure of musical quality.</dd>
+<dt>Example safety checks</dt><dd>Every track must exist in the supplied catalog; total duration must stay within the agreed limit.</dd>
+<dt>Connection to the course</dt><dd>Resource allocation, fairness, and bounded negotiation. A team should finish even when preferences conflict.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-masbench">MASBench</a>, <a href="#paper-patterns">Patterns and problems in emerging multiagent systems</a>.</p></div></details>
+<details class="idea" id="idea-movies">
+<summary><span class="number">03</span> Choosing a movie as a group<span class="summary-meta">Sports &amp; media</span></summary>
+<div class="detail"><p class="question">When people have different preferences, does agent discussion help the least satisfied person?</p><dl>
+<dt>Build</dt><dd>Give three agents separate preference profiles and ask them to choose from a fixed movie shortlist. Compare a vote with a discussion followed by a decision. Keep the ranking rule explicit.</dd>
+<dt>Data and starting scope</dt><dd><a href="https://grouplens.org/datasets/movielens/100k/">MovieLens 100K</a> supplies ratings and movie metadata. Select 50 movies and construct simulated groups from ratings. Missing ratings mean unknown preference. Check the dataset’s use and redistribution terms.</dd>
+<dt>Compare and measure</dt><dd>Measure average and worst-member rating on movies rated by all group members, then separately test cases with missing ratings. Add one agent that falsely claims unanimous agreement.</dd>
+<dt>Example safety checks</dt><dd>The chosen movie must belong to the shortlist; the final record must preserve each member’s actual vote rather than accepting a claimed consensus.</dd>
+<dt>Connection to the course</dt><dd>Partial knowledge, voting, and dishonest peers. Agreement among LLMs is not a fault-tolerant consensus protocol.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-masbench">MASBench</a>, <a href="#paper-patterns">Patterns and problems in emerging multiagent systems</a>.</p></div></details>
+<details class="idea" id="idea-booking">
+<summary><span class="number">04</span> Booking a room without double-booking it<span class="summary-meta">Campus &amp; daily life</span></summary>
+<div class="detail"><p class="question">What happens when two assistants try to reserve the same room at the same time?</p><dl>
+<dt>Build</dt><dd>Two requester agents negotiate with a booking coordinator. A Python booking tool owns the calendar and applies changes atomically. Show the resulting schedule and a timeline of requests.</dd>
+<dt>Data and starting scope</dt><dd>Create a fictional Avery House calendar with three rooms and 30 requests. Include overlapping reservations, cancellations, duplicate messages, and retries. This does not require access to Caltech’s booking systems.</dd>
+<dt>Compare and measure</dt><dd>Compare a shared text calendar with a guarded booking tool. Replay the same requests in different orders. Measure double bookings, duplicate reservations, completed requests, and waiting time.</dd>
+<dt>Example safety checks</dt><dd>A room must never have overlapping reservations; retrying the same request must never create a second reservation.</dd>
+<dt>Connection to the course</dt><dd>Mutual exclusion, serializability, and idempotence. Extend to lab instruments that require several resources, where deadlock and fairness become visible.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-patterns">Patterns and problems in emerging multiagent systems</a>, <a href="#paper-agentdyn">AgentDyn</a>.</p></div></details>
+<details class="idea" id="idea-papers">
+<summary><span class="number">05</span> A research reading list with traceable claims<span class="summary-meta">Science &amp; research</span></summary>
+<div class="detail"><p class="question">Can several agents find useful papers while keeping their summaries tied to actual sources?</p><dl>
+<dt>Build</dt><dd>A scout retrieves records, a reader extracts supported claims, and an editor produces a short reading list. Pass paper IDs and evidence spans between roles rather than only free-form summaries.</dd>
+<dt>Data and starting scope</dt><dd><a href="https://help.openalex.org/api/">OpenAlex</a> offers scholarly metadata. Cache 50–100 records on one topic and use openly available abstracts or author-provided text. Basic access is limited; larger queries may need a free key. Metadata access does not grant full-text access.</dd>
+<dt>Compare and measure</dt><dd>Compare one summarizer with the pipeline on a small set of manually checked questions. Seed a source with an instruction to fabricate a citation. Measure citation validity, claim support, coverage, and cost.</dd>
+<dt>Example safety checks</dt><dd>Every cited paper must exist in the cached collection; every quoted passage must match its cited source. These checks alone do not prove a paraphrase is correct.</dd>
+<dt>Connection to the course</dt><dd>Fan-out and fan-in, typed evidence, trust boundaries, and termination when a source is unavailable.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-research">An Empirical Study of Multi-Agent Collaboration for Automated Research</a>, <a href="#paper-agentdyn">AgentDyn</a>.</p></div></details>
+<details class="idea" id="idea-plot">
+<summary><span class="number">06</span> Reproducing a published scientific plot<span class="summary-meta">Science &amp; research</span></summary>
+<div class="detail"><p class="question">Can an agent team reproduce a figure and explain exactly which data and transformations it used?</p><dl>
+<dt>Build</dt><dd>One agent identifies the table and requested transformation, a Python worker computes the plot, and a reviewer checks units, axis labels, and provenance. Start with one figure and a fixed set of plotting operations.</dd>
+<dt>Data and starting scope</dt><dd><a href="https://www.hepdata.net/">HEPData</a> hosts tables associated with particle-physics publications; its <a href="https://github.com/HEPData/hepdata">maintained repository</a> describes the collection. Choose and download one accessible table before proposing the project; keep its units, uncertainty columns, and source reference.</dd>
+<dt>Compare and measure</dt><dd>Compare direct plot generation with the checked pipeline on deliberately altered units, missing rows, and mislabeled columns. Check plotted values against an independently written reference calculation.</dd>
+<dt>Example safety checks</dt><dd>Every plotted point must have a traceable source row; incompatible units must be rejected before a plot is exported.</dd>
+<dt>Connection to the course</dt><dd>Contracts, data lineage, and recovery. An extension can save intermediate results and test restarting after a failed worker.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-research">An Empirical Study of Multi-Agent Collaboration for Automated Research</a>, <a href="#paper-autoresearch">autoresearch</a>.</p></div></details>
+<details class="idea" id="idea-astronomy">
+<summary><span class="number">07</span> Scheduling a small observing program<span class="summary-meta">Science &amp; research</span></summary>
+<div class="detail"><p class="question">Can agents allocate a shared telescope fairly while respecting observing constraints?</p><dl>
+<dt>Build</dt><dd>Two proposal agents request targets and a scheduler assigns a single simulated telescope. A Python checker owns the schedule. Start with supplied visibility windows so astronomy calculations do not dominate the project.</dd>
+<dt>Data and starting scope</dt><dd><a href="https://exoplanetarchive.ipac.caltech.edu/docs/TAP/usingTAP.html">NASA Exoplanet Archive’s TAP service</a> can export a small target catalog as CSV. Use 20 targets with explicitly simulated visibility windows, durations, and priorities; do not present the schedule as an operational observing plan.</dd>
+<dt>Compare and measure</dt><dd>Compare greedy scheduling with negotiation. Measure accepted science priority, the least-served proposal’s allocation, conflicts, and response to a simulated telescope outage.</dd>
+<dt>Example safety checks</dt><dd>Observations must fit their supplied visibility windows; two observations must never occupy the telescope at once.</dd>
+<dt>Connection to the course</dt><dd>Resource sharing, fairness, and progress under changing availability. State the assumptions under which a waiting proposal is eventually considered.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-masbench">MASBench</a>, <a href="#paper-agentworld">AgentWorld</a>.</p></div></details>
+<details class="idea" id="idea-air">
+<summary><span class="number">08</span> Explaining disagreements between air-quality sensors<span class="summary-meta">Science &amp; research</span></summary>
+<div class="detail"><p class="question">Can a monitoring team distinguish a genuine change from stale or inconsistent measurements?</p><dl>
+<dt>Build</dt><dd>Station agents send observations to an aggregator; an explanation agent describes flagged discrepancies. A Python validator handles units, timestamps, and missing data before the explanation is published.</dd>
+<dt>Data and starting scope</dt><dd><a href="https://www.epa.gov/outdoor-air-quality-data/download-daily-data">EPA AirData</a> provides downloadable daily measurements. Start with one county and pollutant for one month. Replay rows as a simulated stream and inject known delays and unit errors.</dd>
+<dt>Compare and measure</dt><dd>Compare immediate aggregation with an event-time window and validation. Measure detection of injected faults, false alarms, and time to produce a complete summary. Describe missing observations explicitly.</dd>
+<dt>Example safety checks</dt><dd>Incompatible units must never be averaged; a report must never label an out-of-window observation as current.</dd>
+<dt>Connection to the course</dt><dd>Message ordering, partial information, time windows, and liveness when a station stops responding. This is a data-quality exercise, not a health advisory service.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-failures">Why Do Multi-Agent LLM Systems Fail?</a>.</p></div></details>
+<details class="idea" id="idea-earthquakes">
+<summary><span class="number">09</span> An earthquake feed that survives a restart<span class="summary-meta">Science &amp; research</span></summary>
+<div class="detail"><p class="question">Can a reporting pipeline recover without losing events or issuing the same notification twice?</p><dl>
+<dt>Build</dt><dd>An ingest worker reads events, an analyst drafts brief summaries, and an output worker writes to a local notification log. Add durable event IDs and an explicit checkpoint of application state.</dd>
+<dt>Data and starting scope</dt><dd><a href="https://earthquake.usgs.gov/fdsnws/event/1/">USGS earthquake API</a> returns event data, including GeoJSON. Cache a week of events and replay them locally. Notifications are simulated, not public alerts.</dd>
+<dt>Compare and measure</dt><dd>Crash the pipeline before and after a log write, then replay its input. Compare an ordinary retry with a checkpoint and idempotent output. Count lost events, duplicate outputs, and recovery time.</dd>
+<dt>Example safety checks</dt><dd>An event ID must never produce two committed notifications; a committed checkpoint must never skip an event that has not been handled.</dd>
+<dt>Connection to the course</dt><dd>Consistent state, recovery, logical ordering, and idempotence. Implement the checkpoint yourself: DisSysLab offices do not currently expose automatic snapshot recovery.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-failures">Why Do Multi-Agent LLM Systems Fail?</a>, <a href="#paper-attribution">Which Agent Causes Task Failures and When? On Automated Failure Attribution of LLM Multi-Agent Systems</a>.</p></div></details>
+<details class="idea" id="idea-memory">
+<summary><span class="number">10</span> A house planning assistant that remembers corrections<span class="summary-meta">Campus &amp; daily life</span></summary>
+<div class="detail"><p class="question">When plans change, can an assistant remember whose preference changed and which version is current?</p><dl>
+<dt>Build</dt><dd>A note-taking agent records messages from a fictional Avery House planning group. A retrieval agent answers questions about dates, responsibilities, and preferences, using speaker IDs and versioned facts.</dd>
+<dt>Data and starting scope</dt><dd>Write 15 short fictional conversations with corrections, ambiguous names, and unanswered questions. Store exact answers separately. You can borrow evaluation categories from GroupMemBench without needing its full benchmark.</dd>
+<dt>Compare and measure</dt><dd>Compare one rolling summary, keyword retrieval, and structured memory on the same questions. Measure stale answers, attribution mistakes, correct abstentions, and memory size.</dd>
+<dt>Example safety checks</dt><dd>One person’s statement must not overwrite another person’s preference; a superseded date must not be returned as the current confirmed date.</dd>
+<dt>Connection to the course</dt><dd>Knowledge, causality, and versioned shared state. Checks can enforce record ownership and freshness; interpreting a person’s intent remains fallible.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-groupmem">GroupMemBench</a>, <a href="#paper-memoryarena">MemoryArena</a>, <a href="#paper-lost">LLMs Get Lost In Multi-Turn Conversation</a>.</p></div></details>
+<details class="idea" id="idea-social">
+<summary><span class="number">11</span> A social-media digest that resists manipulated posts<span class="summary-meta">Sports &amp; media</span></summary>
+<div class="detail"><p class="question">Can agents summarize a discussion without treating a post as an instruction or counting reposts as independent evidence?</p><dl>
+<dt>Build</dt><dd>A collector saves a bounded sample, topic agents classify posts, and an editor produces an aggregate digest. Keep publication local and retain source IDs so a claim can be inspected.</dd>
+<dt>Data and starting scope</dt><dd><a href="https://github.com/bluesky-social/jetstream">Bluesky Jetstream</a> provides streaming infrastructure. Capture a small sample of public posts using a documented endpoint, pin the protocol version, and evaluate on a saved sample. Use synthetic posts for a redistributable test fixture; do not assume public posts are freely licensed.</dd>
+<dt>Compare and measure</dt><dd>Add duplicate posts, a coordinated false claim, and text that tells the summarizer to change its task. Compare raw aggregation with deduplication and a structured extraction stage. Hand-label a small evaluation subset.</dd>
+<dt>Example safety checks</dt><dd>A post ID must not be counted twice; the digest tool must not accept a source post as permission to publish externally.</dd>
+<dt>Connection to the course</dt><dd>Untrusted inputs, correlated evidence, and exactly-once effects. Report coverage and false exclusions alongside successful attacks.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-agentdyn">AgentDyn</a>, <a href="#paper-patterns">Patterns and problems in emerging multiagent systems</a>.</p></div></details>
+<details class="idea" id="idea-fashion">
+<summary><span class="number">12</span> Planning outfits from a fixed wardrobe<span class="summary-meta">Campus &amp; daily life</span></summary>
+<div class="detail"><p class="question">Can agents satisfy several outfit requests without inventing clothes or silently exceeding a budget?</p><dl>
+<dt>Build</dt><dd>A stylist proposes outfits, an inventory agent tracks available items, and a checker enforces declared constraints. Use explicit categories and occasion rules; leave subjective taste to a short human review.</dd>
+<dt>Data and starting scope</dt><dd><a href="https://github.com/cvdfoundation/fashionpedia">Fashionpedia</a> supplies clothing categories and attributes. Start with a hand-curated catalog of 50 items using that vocabulary, with simulated prices and availability. The dataset is not a shopping catalog. Images are optional and have separate terms.</dd>
+<dt>Compare and measure</dt><dd>Compare a single stylist with the pipeline across 20 requests. Include an item description that claims an exception to the budget. Measure valid outfits, item coverage, and preference ratings separately.</dd>
+<dt>Example safety checks</dt><dd>Every selected item must exist and be available; the total computed from catalog prices must stay within the stated budget.</dd>
+<dt>Connection to the course</dt><dd>Structured messages, shared inventory, and guards. An extension can reserve scarce items for multiple users without double allocation.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-skillsbench">SkillsBench</a>, <a href="#paper-agentdyn">AgentDyn</a>.</p></div></details>
+<details class="idea" id="idea-transit">
+<summary><span class="number">13</span> A trip planner that checks its connections<span class="summary-meta">Campus &amp; daily life</span></summary>
+<div class="detail"><p class="question">Does separating route planning from timetable checking reduce impossible itineraries?</p><dl>
+<dt>Build</dt><dd>A planner proposes a sequence of stops and trips, a Python validator checks it against a timetable, and an assistant explains the accepted route or why no route was found.</dd>
+<dt>Data and starting scope</dt><dd><a href="https://gtfs.org/getting-started/example-feed/">The official GTFS example feed</a> is a manageable starting point. Use its complete linked feed rather than combining unrelated documentation snippets. Create 30 departure-and-destination requests and a few simulated delays.</dd>
+<dt>Compare and measure</dt><dd>Compare an unvalidated planner with a checked pipeline; use a small deterministic route search as the reference. Measure valid connections, missed feasible routes, arrival times, and calls.</dd>
+<dt>Example safety checks</dt><dd>Every leg must reference an existing scheduled trip; a transfer must allow the declared minimum connection time.</dd>
+<dt>Connection to the course</dt><dd>Partial knowledge, time ordering, contracts, and replanning. Scope the first version to one service day and a small network.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-masbench">MASBench</a>, <a href="#paper-lost">LLMs Get Lost In Multi-Turn Conversation</a>.</p></div></details>
+<details class="idea" id="idea-finance">
+<summary><span class="number">14</span> An agent team that audits a backtest<span class="summary-meta">Science &amp; research</span></summary>
+<div class="detail"><p class="question">Can an independent reviewer catch a strategy that looks good only because it uses future information?</p><dl>
+<dt>Build</dt><dd>A strategy agent proposes a small rule, a Python runner evaluates it, and a reviewer inspects feature availability and costs. Restrict rules to a short list of operations so every data dependency is visible.</dd>
+<dt>Data and starting scope</dt><dd><a href="https://fred.stlouisfed.org/series/SP500">FRED’s S&amp;P 500 series</a> is one source of historical observations. Download a permitted fixed interval and record its coverage and terms. A synthetic price series with seeded mistakes is enough for the first version.</dd>
+<dt>Compare and measure</dt><dd>Compare review by an LLM with a runner that enforces the cutoff date for each decision. Seed a future-shifted feature and omitted transaction costs. Use a separate later interval for evaluation.</dd>
+<dt>Example safety checks</dt><dd>A decision must not read observations dated after its cutoff; the simulated runner must never exceed the declared position limit.</dd>
+<dt>Connection to the course</dt><dd>Information flow, reproducibility, and code-enforced permissions. Keep trades simulated; good historical returns alone do not establish a useful strategy.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-research">An Empirical Study of Multi-Agent Collaboration for Automated Research</a>, <a href="#paper-autoresearch">autoresearch</a>.</p></div></details>
+<details class="idea" id="idea-collaboration">
+<summary><span class="number">15</span> When does collaboration actually help?<span class="summary-meta">Agent experiments</span></summary>
+<div class="detail"><p class="question">Does telling agents about one another improve a task that requires combining different information?</p><dl>
+<dt>Build</dt><dd>Give three agents different clues to a small route or scheduling puzzle. A coordinator collects answers. Use a Python solver to generate solvable instances and verify answers.</dd>
+<dt>Data and starting scope</dt><dd>Generate 40 puzzles with known solutions: 10 for development and 30 held out. Include an easier set where one agent has every clue, so you can separate information access from the effect of discussion.</dd>
+<dt>Compare and measure</dt><dd>Compare independent answers, anonymous messages, named messages, and explicit collaboration. Keep information access and total token budget comparable. Measure correctness, correct-to-incorrect revisions, and communication cost.</dd>
+<dt>Example safety checks</dt><dd>A final solution must satisfy all supplied constraints; a participant must not overwrite another participant’s original clue record.</dd>
+<dt>Connection to the course</dt><dd>Partial knowledge, error propagation, and Byzantine behavior. Add one lying peer; compare checking evidence with simply trusting a majority.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-masbench">MASBench</a>, <a href="#paper-patterns">Patterns and problems in emerging multiagent systems</a>, <a href="#paper-scaling">Towards a Science of Scaling Agent Systems</a>.</p></div></details>
+<details class="idea" id="idea-game">
+<summary><span class="number">16</span> Two agents sharing a kitchen<span class="summary-meta">Agent experiments</span></summary>
+<div class="detail"><p class="question">Can agents coordinate a simple game without repeatedly blocking one another?</p><dl>
+<dt>Build</dt><dd>Build a small text-grid kitchen with two workers, one counter, and three recipes. Each worker sees its own position and nearby objects; a simulator validates actions and owns the game state.</dd>
+<dt>Data and starting scope</dt><dd>Use a deterministic toy environment with saved seeds and 20 layouts. AgentWorld is inspiration for asymmetric roles and long tasks; reproducing its full game environment is outside the proposed scope.</dd>
+<dt>Compare and measure</dt><dd>Compare independent policies, a central planner, and agents that send short messages. Measure completed recipes, collisions, repeated actions, and total messages under a fixed turn limit.</dd>
+<dt>Example safety checks</dt><dd>Two workers must not occupy an exclusive cell simultaneously; an item must not be consumed twice.</dd>
+<dt>Connection to the course</dt><dd>Mutual exclusion, deadlock, and progress. A trace should explain whether failure came from a bad plan, missing information, or coordination.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-agentworld">AgentWorld</a>, <a href="#paper-masbench">MASBench</a>.</p></div></details>
+<details class="idea" id="idea-debugger">
+<summary><span class="number">17</span> Finding where an agent workflow went wrong<span class="summary-meta">Agent experiments</span></summary>
+<div class="detail"><p class="question">Can a debugger identify the first consequential error instead of blaming the last agent to speak?</p><dl>
+<dt>Build</dt><dd>Instrument a small workflow with message IDs and parent IDs. An investigator reconstructs the causal chain; a reviewer proposes the smallest useful repair. Keep an untouched copy of the trace.</dd>
+<dt>Data and starting scope</dt><dd>Generate traces from one gallery office with seeded wrong facts, dropped messages, and failed checks. The <a href="https://github.com/mingyin1/Agents_Failure_Attribution">Who&amp;When project</a> provides further examples, subject to its data terms.</dd>
+<dt>Compare and measure</dt><dd>Compare reading a flat transcript with reading a message graph. Score agent and step attribution against seeded faults. Replay with only the proposed repair to see whether it changes the outcome.</dd>
+<dt>Example safety checks</dt><dd>A reported causal edge must correspond to an actual message dependency; diagnostic agents must not modify the original log.</dd>
+<dt>Connection to the course</dt><dd>Logical clocks, causality, consistent observations, and fault isolation. Hashing logs can expose changes relative to a trusted digest; it does not prove their contents true.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-attribution">Which Agent Causes Task Failures and When? On Automated Failure Attribution of LLM Multi-Agent Systems</a>, <a href="#paper-failures">Why Do Multi-Agent LLM Systems Fail?</a>.</p></div></details>
+<details class="idea" id="idea-experiments">
+<summary><span class="number">18</span> A small automated research assistant<span class="summary-meta">Science &amp; research</span></summary>
+<div class="detail"><p class="question">Can an agent improve a simple predictive model without changing the test or spending indefinitely?</p><dl>
+<dt>Build</dt><dd>A proposer chooses from a fixed set of features and model settings, a Python worker trains the candidate, and a recorder saves its configuration and validation score. Permit 15 trials.</dd>
+<dt>Data and starting scope</dt><dd><a href="https://archive.ics.uci.edu/dataset/186/wine+quality">UCI Wine Quality</a> is a small tabular dataset with a CC BY 4.0 license. Use one CSV and CPU-sized models; split training, validation, and held-out test data before the agent runs.</dd>
+<dt>Compare and measure</dt><dd>Compare agent proposals with random search using equal trials. Let the agent see validation scores only. A separate evaluator reports final test performance once; log failed trials and elapsed time too.</dd>
+<dt>Example safety checks</dt><dd>The proposer must not access the held-out labels; a trial must not alter the evaluator or exceed its resource budget.</dd>
+<dt>Connection to the course</dt><dd>Tool permissions, bounded autonomy, task completion, and reproducible evidence. No language-model training or dedicated GPU is needed for this version.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-autoresearch">autoresearch</a>, <a href="#paper-research">An Empirical Study of Multi-Agent Collaboration for Automated Research</a>.</p></div></details>
+<details class="idea" id="idea-skills">
+<summary><span class="number">19</span> When do reusable agent skills help?<span class="summary-meta">Agent experiments</span></summary>
+<div class="detail"><p class="question">Does a written procedure help an agent perform a task, and what happens if the procedure contains a bad instruction?</p><dl>
+<dt>Build</dt><dd>Choose a narrow task such as cleaning a CSV of event registrations. A worker follows a supplied procedure; an independent Python checker validates the resulting table. Keep file access limited to a project workspace.</dd>
+<dt>Data and starting scope</dt><dd>Create 30 small tables with known duplicates, missing values, and spelling variants. SkillsBench supplies a model for comparing task-specific procedures; its entire benchmark is not required.</dd>
+<dt>Compare and measure</dt><dd>Compare no skill, a carefully written skill, and a model-written skill. Hold tools and budgets fixed. Then test a skill that asks the worker to skip validation. Count correct outputs, damaged valid rows, and tool-policy violations.</dd>
+<dt>Example safety checks</dt><dd>The original input file must remain unchanged; a completed output must preserve every required unique registration ID.</dd>
+<dt>Connection to the course</dt><dd>Contracts between agents, least privilege, trusted code versus instructions, and evaluation beyond a successful demonstration.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-skillsbench">SkillsBench</a>, <a href="#paper-agentdojo">AgentDojo</a>.</p></div></details>
+<details class="idea" id="idea-chemistry">
+<summary><span class="number">20</span> Checking evidence in a drug-discovery dataset<span class="summary-meta">Science &amp; research · Domain guidance recommended</span></summary>
+<div class="detail"><p class="question">Can an agent team distinguish measurements that are genuinely comparable before summarizing a compound?</p><dl>
+<dt>Build</dt><dd>An extractor selects assay records, a Python validator checks identifiers and units, and a reviewer explains which results can be compared. Begin with one target and one measurement type, with a domain mentor checking your reference answers.</dd>
+<dt>Data and starting scope</dt><dd><a href="https://chembl.gitbook.io/chembl-interface-documentation/web-services/chembl-data-web-services">ChEMBL data web services</a> expose compounds, assays, and activity records. Save about 100 records, retaining assay conditions, relation signs, units, and source IDs. Confirm access and attribution before the proposal.</dd>
+<dt>Compare and measure</dt><dd>Compare a single summarizer with the checked pipeline on deliberately mixed units, mismatched targets, and censored values such as “less than.” Measure invalid comparisons and rejection of valid records.</dd>
+<dt>Example safety checks</dt><dd>A comparison must not silently mix units or targets; a censored measurement must not be reported as an exact value.</dd>
+<dt>Connection to the course</dt><dd>Typed contracts, provenance, and independent verification. The result is an evidence-curation tool; laboratory effectiveness cannot be inferred from these checks.</dd>
+</dl><p class="reading-links">Reading: <a href="#paper-research">An Empirical Study of Multi-Agent Collaboration for Automated Research</a>, <a href="#paper-agentdyn">AgentDyn</a>.</p></div></details>
+</div></section>
+<section id="readings"><h2>Papers and inspiration</h2><p>These readings offer methods you can adapt, from testing collaboration to handling memory and prompt injection. Pick one or two that fit your question; you do not need to reproduce a full benchmark. Dates and publication types are listed with each source.</p>
+
+<h3 class="group-title">Work first released in 2026</h3><div class="paper-grid">
+<article class="paper" id="paper-masbench"><h3><a href="https://arxiv.org/abs/2610.04672">MASBench: Benchmarking LLM-based Multi-Agent Collaboration under Partial Observability</a></h3><p class="meta">3 October 2026 · preprint</p><p>Studies collaboration when agents have different information. Borrow its separation of task performance from communication cost; start with puzzles you can score exactly.</p></article>
+<article class="paper" id="paper-agentworld"><h3><a href="https://arxiv.org/abs/2609.31590">AgentWorld: Benchmarking Long-Horizon Collaboration of Multi-agent LLMs</a></h3><p class="meta">25 September 2026 · authors report COLM 2026 acceptance</p><p>Examines persistent teamwork with different roles. A small text game can test role assignment and coordination without reproducing the full benchmark.</p></article>
+<article class="paper" id="paper-patterns"><h3><a href="https://www.anthropic.com/research/multiagent-systems">Patterns and problems in emerging multiagent systems</a></h3><p class="meta">13 August 2026 · research report, not a conference paper</p><p>Investigates agent interactions, including shared resources, conflicting instructions, and correlated behavior. Pick one controlled failure mode; do not treat more communication as automatically beneficial.</p></article>
+<article class="paper" id="paper-groupmem"><h3><a href="https://arxiv.org/abs/2605.14498">GroupMemBench: Benchmarking LLM Agent Memory in Multi-Party Conversations</a></h3><p class="meta">14 May 2026 · preprint</p><p>Tests memory across people and conversations, including changed facts and ambiguous language. Borrow the speaker-aware questions and include a simple retrieval baseline.</p></article>
+<article class="paper" id="paper-research"><h3><a href="https://arxiv.org/abs/2603.29632">An Empirical Study of Multi-Agent Collaboration for Automated Research</a></h3><p class="meta">31 March 2026 · preprint</p><p>Compares individual and collaborative research workflows under controlled time budgets. Use that comparison to avoid giving a larger agent team an unfair resource advantage.</p></article>
+<article class="paper" id="paper-memoryarena"><h3><a href="https://arxiv.org/abs/2602.16313">MemoryArena: Benchmarking Agent Memory in Interdependent Multi-Session Agentic Tasks</a></h3><p class="meta">18 February 2026 · ICML 2026, per the paper record</p><p>Evaluates whether earlier experience helps with later actions, rather than testing recall alone. Design a second planning task that depends on a correction made in the first.</p></article>
+<article class="paper" id="paper-skillsbench"><h3><a href="https://arxiv.org/abs/2602.12670">SkillsBench: Benchmarking How Well Agent Skills Work Across Diverse Tasks</a></h3><p class="meta">13 February 2026 · preprint</p><p>Compares agents with and without reusable procedures across tasks with verifiable outcomes. Adapt the comparison to one small task family and measure both improvements and regressions.</p></article>
+<article class="paper" id="paper-agentdyn"><h3><a href="https://arxiv.org/abs/2602.03117">AgentDyn: A Dynamic Open-Ended Benchmark for Evaluating Prompt Injection Attacks of Real-World Agent Security System</a></h3><p class="meta">3 February 2026 · preprint</p><p>Evaluates prompt injection alongside legitimate uses of external information. Borrow the paired test: can the system reject malicious instructions while still completing ordinary requests?</p></article>
+<article class="paper" id="paper-autoresearch"><h3><a href="https://github.com/karpathy/autoresearch">autoresearch</a></h3><p class="meta">2026 · software repository, not a paper</p><p>Provides a concrete loop for proposing, running, and evaluating experiments. Adapt the loop to a cheap CPU task, with a fixed evaluator and trial budget, rather than reproducing language-model training.</p></article>
+</div>
+<h3 class="group-title">Earlier work worth reading alongside it</h3><div class="paper-grid">
+<article class="paper" id="paper-lost"><h3><a href="https://arxiv.org/abs/2505.06120">LLMs Get Lost In Multi-Turn Conversation</a></h3><p class="meta">First posted May 2025 · ICLR 2026 Outstanding Paper</p><p>Studies failures when a task unfolds over multiple turns. Compare giving an agent all constraints at once with revealing the same constraints gradually. <a href="https://blog.iclr.cc/2026/04/23/announcing-the-iclr-2026-outstanding-papers/">Official award announcement</a>.</p></article>
+<article class="paper" id="paper-scaling"><h3><a href="https://arxiv.org/abs/2512.08296">Towards a Science of Scaling Agent Systems</a></h3><p class="meta">First posted December 2025 · revised April 2026</p><p>Compares several agent architectures across tasks with standardized tools and compute. Use it to choose meaningful baselines and investigate when coordination overhead outweighs its benefit.</p></article>
+<article class="paper" id="paper-failures"><h3><a href="https://arxiv.org/abs/2503.13657">Why Do Multi-Agent LLM Systems Fail?</a></h3><p class="meta">First posted March 2025</p><p>Organizes failures into categories involving system design, agent alignment, and task verification. Use the categories to label failed runs, then explain the actual cause with a trace.</p></article>
+<article class="paper" id="paper-attribution"><h3><a href="https://arxiv.org/abs/2505.00212">Which Agent Causes Task Failures and When? On Automated Failure Attribution of LLM Multi-Agent Systems</a></h3><p class="meta">First posted April 2025</p><p>Studies identifying the agent and step responsible for a failure. Borrow its attribution task, and test your debugger on faults whose location you control.</p></article>
+<article class="paper" id="paper-agentdojo"><h3><a href="https://arxiv.org/abs/2406.13352">AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM Agents</a></h3><p class="meta">First posted June 2024</p><p>An established environment for testing attacks carried in tool outputs. Start with one local workflow and evaluate ordinary task completion as well as attacker success.</p></article>
+</div>
+</section>
+</main></body></html>
