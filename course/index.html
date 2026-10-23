@@ -111,7 +111,8 @@
     <li>Collaborate or work by yourself. Do what is best for you.</li>
     <li>Use anything and everything - AI, documents, videos - 
       that helps you learn and explore.</li>
-    <li>The course has homework, labs, and a project. Do as much as
+    <li>The course has homework, labs, and a project. 
+      The course has no mid-term or final. Do as much as
       you want to on the project. You will get a passing grade if you
       turn in homework and inspect solutions.
     </li>
@@ -131,6 +132,23 @@
     <a class="primary" href="project.html">Project outline, ideas, and papers</a>
   </div>
 
+  <h2>The project's safety case</h2>
+  <p>
+    Alongside your application, explain the safety properties you claim
+    and the evidence for them. The case has three parts:
+  </p>
+  <ol class="case">
+    <li><b>What must never happen</b>, and what must eventually happen,
+      stated precisely enough that someone else could check it.</li>
+    <li><b>How your network prevents it:</b> which contracts, guards, fences
+      and approvals, and where they sit in the network.</li>
+    <li><b>The evidence:</b> what you proved, the attacks you tried, how many
+      times, and how often they succeeded.</li>
+  </ol>
+  <p>The safety case is required. <a href="safety_case.html">The safety
+    case</a> says what goes in each part, gives a template to copy, and says
+    how it is read. See the <a href="project.html">project guide</a> for
+    proposed milestones, submission details, and ideas.</p>
 
   <h2>After the first class</h2>
   <p class="sub">Allow about an hour to install the software and work through
@@ -302,8 +320,9 @@
           agent keeping its contract.</p>
         <div class="links">
           <a class="primary" href="TemporalLogic3.html">Open part 3</a>
-          <a class="primary" href="UNITY.html">Open part 3</a>
+          <a class="primary" href="UNITY.html">Open part 4</a>
         </div>
+        <h3>Homework 4 - termination detection; temporal logic</h3>
       </div>
     </li>
 
@@ -335,6 +354,7 @@
         <div class="links">
           <a class="primary" href="DistributedConsensus.html">Open</a>
         </div>
+        <h3>Homework 5 - agent knowledge; FLP theorem; mid-term project report</h3>
       </div>
     </li>
 
@@ -344,8 +364,6 @@
         <div class="links">
           <a class="primary" href="PaxosTransactions.html">Open</a>
         </div>
-
-        <h3>Homework 4 - detection algorithms; agent knowledge; FLP theorem</h3>
       </div>
     </li>
 
@@ -355,6 +373,7 @@
         <div class="links">
           <a class="primary" href="Paxos.html">Open</a>
         </div>
+        <h3>Homework 6 - the Paxos algorithm</h3>
       </div>
     </li>
 
@@ -399,6 +418,7 @@
         <div class="links">
           <a class="primary" href="ByzantineGenerals.html">Open</a>
         </div>
+        <h3>Homework 7 - lab 3; Byzantine consensus</h3>
       </div>
     </li>
 
@@ -422,8 +442,42 @@
         <div class="links">
           <a class="primary" href="Bitcoin.html">Open</a>
         </div>
+        <h3>Homework 8: Bitcoin and Block chain</h3>
       </div>
     </li>
+
+
+  </ol>
+
+  <!-- ── Part 7 ─────────────────────────────────────────────── -->
+  <h2 class="part"><span>Part 7</span>Sharing resources safely</h2>
+  <ol class="plan">
+
+    <li>
+      <div class="li-body">
+        <h3>Mutual exclusion: Distributed dining philosophers algorithm</h3>
+        <p>Two agents cannot use an
+          indivisible resource at the same time.
+          Algorithms that guarantee that no agent waits for a resource
+          for ever.</p>
+        <div class="links">
+          <a class="primary" href="DiningPhilosophers.html">Open</a>
+        </div>
+      </div>
+    </li>
+
+    <li>
+      <div class="li-body">
+        <h3>Managing resources shared by multiple agents</h3>
+        <p>Agents compete for indivisible resources such as write-access
+        to files. Algorithms that share resources fairly.</p>
+        <div class="links">
+          <a class="primary" href="SharingResources.html">Open</a>
+        </div>
+        <h3>Homework 9: Sharing resources in distributed systems</h3>
+      </div>
+    </li>
+
 
     <li>
       <div class="li-body">
@@ -451,36 +505,7 @@
         <p class="q"><b>Safety question.</b> When should a system trust what
           its agents agree on?</p>
         <p class="unwritten">Not written yet</p>
-      </div>
-    </li>
-
-  </ol>
-
-  <!-- ── Part 7 ─────────────────────────────────────────────── -->
-  <h2 class="part"><span>Part 7</span>Sharing resources safely</h2>
-  <ol class="plan">
-
-    <li>
-      <div class="li-body">
-        <h3>Mutual exclusion: Distributed dining philosophers</h3>
-        <p>Two agents cannot use an
-          indivisible resource at the same time.
-          Algorithms that guarantee that no agent waits for a resource
-          for ever.</p>
-        <div class="links">
-          <a class="primary" href="DiningPhilosophers.html">Open</a>
-        </div>
-      </div>
-    </li>
-
-    <li>
-      <div class="li-body">
-        <h3>Managing resources shared by multiple agents</h3>
-        <p>Agents compete for indivisible resources such as write-access
-        to files. Algorithms that share resources fairly.</p>
-        <div class="links">
-          <a class="primary" href="SharingResources.html">Open</a>
-        </div>
+        <h3>Turn in project</h3>
       </div>
     </li>
 
@@ -498,23 +523,6 @@
 
   </ol>
 
-  <h2>The project's safety case</h2>
-  <p>
-    Alongside your application, explain the safety properties you claim
-    and the evidence for them. The case has three parts:
-  </p>
-  <ol class="case">
-    <li><b>What must never happen</b>, and what must eventually happen,
-      stated precisely enough that someone else could check it.</li>
-    <li><b>How your network prevents it:</b> which contracts, guards, fences
-      and approvals, and where they sit in the network.</li>
-    <li><b>The evidence:</b> what you proved, the attacks you tried, how many
-      times, and how often they succeeded.</li>
-  </ol>
-  <p>The safety case is required. <a href="safety_case.html">The safety
-    case</a> says what goes in each part, gives a template to copy, and says
-    how it is read. See the <a href="project.html">project guide</a> for
-    proposed milestones, submission details, and ideas.</p>
 
   <footer>
     Code, offices and issues:
