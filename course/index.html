@@ -161,8 +161,7 @@
     <li>
       <div class="li-body">
         <h3>A model of a distributed system</h3>
-        <p>How agents execute and exchange messages, how errors propagate,
-          and where LLM guardrails can limit their effects.</p>
+        <p>Agents and messages. Sequential model of concurrent systems.</p>
         <div class="links">
           <a class="primary" href="DistributedSystemModel.html">Open</a>
         </div>
@@ -179,12 +178,8 @@
         <div class="links">
           <a class="primary" href="microcourse.html">Open</a>
         </div>
-      </div>
-    </li>
 
-    <li>
-      <div class="li-body">
-        <h3>Lab 1: the one-dollar Tahoe</h3>
+        <h3>Homework 1 - Lab 1: the one-dollar Tahoe</h3>
         <p>Contracts, refusals, guards and <code>dsl check</code> are in the
           <a href="microcourse.html">micro-course</a>; Lab 1 puts them to work.</p>
         <p class="q"><b>Safety question.</b> What happens when one agent is
@@ -223,6 +218,7 @@
         <div class="links">
           <a class="primary" href="GlobalSnapshots.html">Open</a>
         </div>
+        <h3>Homework 2 - (a) Global snapshots and (b) turn in project plan</h3>
       </div>
     </li>
 
@@ -243,18 +239,7 @@
 
   <ol class="plan">
 
-    <li>
-      <div class="li-body">
-        <h3>What Agents Know</h3>
-        <p>&ldquo;Agent X knows P&rdquo;:
-          a formal definition of knowledge. Using agent knowledge in 
-          determining message flows.
-        </p>
-        <div class="links">
-          <a class="primary" href="WhatAgentsKnow.html">Open</a>
-        </div>
-      </div>
-    </li>
+ 
 
     <li>
       <div class="li-body">
@@ -287,9 +272,54 @@
         <div class="links">
           <a class="primary" href="lab2.html">Open Lab 2</a>
         </div>
+        <h3>Homework 3 - lab 2</h3>
       </div>
     </li>
 
+  <!-- ── Part 6 ─────────────────────────────────────────────── -->
+  <h2 class="part"><span>Part 6</span>Saying and proving what &ldquo;safe&rdquo; means</h2>
+  <ol class="plan">
+
+    <li>
+      <div class="li-body">
+        <h3>Temporal Logic: Class 1</h3>
+        <p class="q"><b>Safety question.</b> How do we say exactly what must
+          always hold, and what must eventually happen?</p>
+        <div class="links">
+          <a class="primary" href="TemporalLogic1.html">Open part 1</a>
+          <a class="primary" href="TemporalLogic2.html">Open part 2</a>
+        </div>
+      </div>
+    </li>
+
+    <li>
+      <div class="li-body">
+        <h3>Temporal Logic: Class 2</h3>
+        <p class="q"><b>Safety question.</b> How do we prove it? Safety
+          properties (nothing bad ever happens) and progress properties
+          (something good eventually happens), and proofs that rely on each
+          agent keeping its contract.</p>
+        <div class="links">
+          <a class="primary" href="TemporalLogic3.html">Open part 3</a>
+          <a class="primary" href="UNITY.html">Open part 3</a>
+        </div>
+      </div>
+    </li>
+
+  </ol>
+
+    <li>
+      <div class="li-body">
+        <h3>What Agents Know</h3>
+        <p>&ldquo;Agent X knows P&rdquo;:
+          a formal definition of knowledge. Using agent knowledge in 
+          determining message flows.
+        </p>
+        <div class="links">
+          <a class="primary" href="WhatAgentsKnow.html">Open</a>
+        </div>
+      </div>
+    </li>
   </ol>
 
   <!-- ── Part 4 ─────────────────────────────────────────────── -->
@@ -315,6 +345,8 @@
         <div class="links">
           <a class="primary" href="PaxosTransactions.html">Open</a>
         </div>
+
+        <h3>Homework 4 - detection algorithms; agent knowledge; FLP theorem</h3>
       </div>
     </li>
 
@@ -420,38 +452,6 @@
         <p class="q"><b>Safety question.</b> When should a system trust what
           its agents agree on?</p>
         <p class="unwritten">Not written yet</p>
-      </div>
-    </li>
-
-  </ol>
-
-  <!-- ── Part 6 ─────────────────────────────────────────────── -->
-  <h2 class="part"><span>Part 6</span>Saying and proving what &ldquo;safe&rdquo; means</h2>
-  <ol class="plan">
-
-    <li>
-      <div class="li-body">
-        <h3>Temporal Logic: Class 1</h3>
-        <p class="q"><b>Safety question.</b> How do we say exactly what must
-          always hold, and what must eventually happen?</p>
-        <div class="links">
-          <a class="primary" href="TemporalLogic1.html">Open part 1</a>
-          <a class="primary" href="TemporalLogic2.html">Open part 2</a>
-        </div>
-      </div>
-    </li>
-
-    <li>
-      <div class="li-body">
-        <h3>Temporal Logic: Class 2</h3>
-        <p class="q"><b>Safety question.</b> How do we prove it? Safety
-          properties (nothing bad ever happens) and progress properties
-          (something good eventually happens), and proofs that rely on each
-          agent keeping its contract.</p>
-        <div class="links">
-          <a class="primary" href="TemporalLogic3.html">Open part 3</a>
-          <a class="primary" href="UNITY.html">Open part 3</a>
-        </div>
       </div>
     </li>
 
