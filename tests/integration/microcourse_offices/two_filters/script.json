@@ -1,0 +1,2 @@
+[{"when": "news article", "user_contains": "Brazil", "reply": "{\"on_topic\": \"yes\"}"},
+ {"when": "news article", "user_contains": "Tokyo", "reply": "{\"on_topic\": \"no\"}"}]

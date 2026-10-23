@@ -77,13 +77,16 @@ def test_the_old_microcourse_address_still_works():
 
 
 def test_every_office_file_on_a_slide_is_in_the_gallery():
+    """...or, on a slide tagged "illustration", in microcourse_offices/."""
     source = page("microcourse.html")
-    quoted = re.findall(r'<div class="file">([\w/]+/office\.md)[^<]*</div>\s*<pre>(.*?)</pre>',
-                        source, re.S)
-    assert len(quoted) >= 3
+    quoted = re.findall(r'<div class="file">([\w/]+/office\.md)[^<]*(?:<span[^>]*>[^<]*</span>)?'
+                        r'[^<]*</div>\s*<pre[^>]*>(.*?)</pre>', source, re.S)
+    assert len(quoted) >= 4
     for path, block in quoted:
         office = path.split("/")[0]
         real = GALLERY / office / path.split("/", 1)[1]
+        if not real.exists():
+            real = ILLUSTRATIONS / path
         if not real.exists():  # a nested office, inside its parent
             real = next(GALLERY.glob(f"*/{path}"))
         lines = {ln.strip() for ln in real.read_text(encoding="utf-8").splitlines()}
@@ -128,7 +131,7 @@ def test_every_role_or_sink_file_on_a_slide_is_real():
     illustration's, line for line."""
     source = page("microcourse.html")
     quoted = re.findall(r'<div class="file">((?:roles|sinks)/\w+\.(?:py|md))[^<]*(?:<span[^>]*>[^<]*</span>)?'
-                        r'[^<]*</div>\s*<pre>(.*?)</pre>', source, re.S)
+                        r'[^<]*</div>\s*<pre[^>]*>(.*?)</pre>', source, re.S)
     assert len(quoted) >= 5
     for path, block in quoted:
         files = list(GALLERY.glob(f"*/{path}")) + list(ILLUSTRATIONS.glob(f"*/{path}"))
@@ -430,3 +433,17 @@ def test_the_doctor_lines_the_pages_quote_are_what_it_prints(tmp_path):
     assert "  Key: ANTHROPIC_API_KEY is set." in text(page("setup.html"))
     for lab in ("lab1.html", "lab2.html"):
         assert "dsl doctor ." in text(page(lab)) and "Ready to run." in text(page(lab)), lab
+
+
+def test_two_agents_can_play_one_role(tmp_path):
+    """The roles slide: Felix and Fiona both play topic_filter, each on its
+    own feed, and each annotates only what reaches it."""
+    office = tmp_path / "two_filters"
+    shutil.copytree(ILLUSTRATIONS / "two_filters", office)
+    (office / "roles").mkdir()
+    shutil.copy(GALLERY / "org_news_filter" / "roles" / "topic_filter.md", office / "roles")
+    assert "no problems found" in dsl("check", ".", cwd=office)
+    printed = _run(office, office / "script.json")
+    assert "'title': 'Brazil votes', 'text': '...', 'on_topic': 'yes'" in printed, printed
+    assert "'title': 'Tokyo rains', 'text': '...', 'on_topic': 'no'" in printed, printed
+    assert "two_filters::Felix" in printed and "two_filters::Fiona" in printed, printed

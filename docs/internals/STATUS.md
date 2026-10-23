@@ -105,8 +105,11 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
 - **Course pages students open first, in 2.0:** `course/index.html`,
   `setup.html`, `microcourse.html`, `OfficeToolkit.html`, `lab1.html`; the
   old root `office_microcourse.html` redirects to the micro-course.
-  **Day-1 pages rewritten around safety (18 Oct):** the micro-course (20
-  screens, from `course/microcourse_plan.html`: LLM and Python agents,
+  **Day-1 pages rewritten around safety (18 Oct):** the micro-course (25
+  screens since 22 Oct: what you could build, the office file first, the
+  $1 Tahoe as the danger, roles, annotators vs authors and why, contracts
+  for safety, sinks as the last line of defence, the project; from
+  `course/microcourse_plan.html`: LLM and Python agents,
   contracts, inboxes taught with coordinators; the previous one is in
   `_to_delete/`), the toolkit's "Contracts and guardrails", GETTING_STARTED
   part 4.5 (a message that breaks a contract stops the office), setup;
