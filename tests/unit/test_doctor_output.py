@@ -64,6 +64,10 @@ def healthy_home(tmp_path, monkeypatch):
             __import__(mod)
         except Exception:  # noqa: BLE001
             monkeypatch.setitem(sys.modules, mod, types.ModuleType(mod))
+    # The backend decides which key the report names. A shell left on
+    # DSL_BACKEND=openrouter (Lab 2's trials) made the key line say
+    # OPENROUTER_API_KEY; every test here assumes the default backend.
+    monkeypatch.delenv("DSL_BACKEND", raising=False)
 
     home = tmp_path / "home"
     skills = home / ".claude" / "skills"
