@@ -465,6 +465,22 @@ out: on_topic (yes | no)
   <p>The prompt the model receives is exactly the role's text, followed by the message as JSON. DisSysLab adds nothing, so what you read is what the model reads.</p>
 </div></section>
 
+<!-- a model is not a script (Class 2) -->
+<section class="slide"><div class="inner">
+  <div class="kicker">Models · what to expect</div>
+  <h1>A model is not a script.<br><span class="soft">Plan for what it does, not what you asked.</span></h1>
+  <div class="cols">
+    <div class="card"><div class="num">Nondeterminism</div><h3>The same input can get a different answer.</h3>
+      <p>An attack that fails once may work the next time. So a safety claim about a model is a rate, not a yes or a no: a fixed file of attacks and honest inputs, a grader, many runs, and count. Labs 1 and 2 do exactly this.</p></div>
+    <div class="card"><div class="num">Hallucination</div><h3>A model can be confidently wrong.</h3>
+      <p>It can state a fact, a number or a cause that is not in anything it read. Treat every model's output as untrusted input to the next agent: bound it with a contract, check it in Python, before anything acts on it.</p></div>
+    <div class="card"><div class="num">Cost</div><h3>Every message to a hosted model is paid for.</h3>
+      <p>Prices differ widely between models; a local model costs nothing. Test on a small file source with a cheap model. An office left polling a news feed through a hosted model all weekend sends a bill.</p></div>
+    <div class="card"><div class="num">Records</div><h3>What a recorder keeps is stored.</h3>
+      <p>Recorders and <code>refused.jsonl</code> keep every message they see, including anything private a source brought in. They are also how you find which agent went wrong. Decide what to keep, and what not to.</p></div>
+  </div>
+</div></section>
+
 <!-- 5 · plan 8, moved up -->
 <section class="slide" data-period="7"><div class="inner">
   <div class="kicker">Python agents</div>
@@ -715,6 +731,7 @@ out: next (finish | continue), problem_id, problem, history
 out if next is finish: final_answer, agreement, rounds_used
 out if next is continue: round</span></pre>
       <div class="note"><p>The models judge; Python keeps the rules. The round limit is in no prompt, so no model can talk its way past it.</p></div>
+      <div class="note warn"><p><b>Agreement is not correctness.</b> Models trained on similar text make similar mistakes, so three models agreeing is not evidence that they are right.</p></div>
     </div>
   </div>
 </div></section>

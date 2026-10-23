@@ -107,8 +107,9 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
 - **Course pages students open first, in 2.0:** `course/index.html`,
   `setup.html`, `microcourse.html`, `OfficeToolkit.html`, `lab1.html`; the
   old root `office_microcourse.html` redirects to the micro-course.
-  **Day-1 pages rewritten around safety (18 Oct):** the micro-course (28
-  screens since 23 Oct: what you could build, the office file first, the
+  **Day-1 pages rewritten around safety (18 Oct):** the micro-course (29
+  screens since 23 Oct; **it is Class 2**: nondeterminism, hallucination, cost
+  and records on one screen, correlated errors on the debate screen; what you could build, the office file first, the
   $1 Tahoe as the danger, the two July 2026 incidents and the four rules, roles, annotators vs authors and why, contracts
   for safety and what they cannot say (a Python refund guard), sinks as the last line of defence, the project; from
   `course/microcourse_plan.html`: LLM and Python agents,
