@@ -101,28 +101,25 @@
     use concurrency theory and temporal logic to prove system correctness.
   </p>
 
-  <h2>How this course works</h2>
+  <h2>This course</h2>
   <p><b>What you are here for.</b> When you leave Caltech you are going 
-    to be the among those who determine the safety of multi-agent systems at a critical 
-    time in human history. You are here to think for yourselves, explore, 
+    to help determine the safety of multi-agent systems at a critical 
+    time. You are here to think for yourselves, explore, 
     and prepare for this task.</p>
   <ul>
     <li>The course is graded <b>pass/fail</b></li>
-    <li>Collaborate. Do homework and projects in groups if you like.</li>
+    <li>Collaborate or work by yourself. Do what is best for you.</li>
     <li>Use anything and everything - AI, documents, vidoes - 
       that helps you learn and explore.</li>
+    <li>The course has homework, labs, and a project. Do as much as
+      you want to on the project. You will get a passing grade if you
+      turn in homework and inspect solutions.
+    </li>
     <li>This course emphasizes safety. You can use AI and sensors
       that may accidentally impinge on somebody's privacy. Follow
       the Caltech honor code.
     </li>
   </ul>
-
-  <p>
-    The first lab homework, <a href="lab1.html">the one-dollar Tahoe</a>,
-    asks you to modify a network of agents and to investigate problems that
-    may arise by prompt injection.
-  </p>
-
   
 
   <h2 id="term-project">Term Project</h2>
@@ -174,29 +171,15 @@
 
     <li>
       <div class="li-body">
-        <h3>Contracts: agents a customer cannot argue with</h3>
-        <p>Metadata, contracts and the first tools of safety, ready for Lab 1.</p>
-        <ul class="topics">
-          <li><b>Metadata:</b> the front matter of a role, read by Python and
-            never sent to the model.</li>
-          <li><b>Contracts:</b> <code>in:</code> and <code>out:</code>, down to
-            a number's range or a text's length, checked on every message.</li>
-          <li><b>Refusals:</b> why a refusal stops the office, and how to wire
-            <code>refused</code> to handle it instead.</li>
-          <li><b>Barriers and guards:</b> authors that stop a stranger's words;
-            Python for the rules a contract cannot say.</li>
-          <li><b><code>dsl check</code></b> sees where untrusted text can reach
-            a sink that acts, before anything runs.</li>
-          <li><b>Evidence:</b> a model is not a script; a safety claim is a
-            rate.</li>
-        </ul>
+        <h3>Lab 1: the one-dollar Tahoe</h3>
+        <p>Contracts, refusals, guards and <code>dsl check</code> are in the
+          <a href="microcourse.html">micro-course</a>; Lab 1 puts them to work.</p>
         <p class="q"><b>Safety question.</b> What happens when one agent is
           talked into something? In Lab 1 a customer's message makes a
           salesperson agree to sell a car for a dollar, and you build the guard
           that stops it.</p>
         <div class="links">
-          <a class="primary" href="Contracts.html">Open</a>
-          <a href="lab1.html">Lab 1: the one-dollar Tahoe</a>
+          <a class="primary" href="lab1.html">Open</a>
         </div>
       </div>
     </li>

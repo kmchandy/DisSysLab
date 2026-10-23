@@ -100,15 +100,17 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
   `--regrade` re-grades saved runs. `log_injection` is the starting
   evidence and the lab's main attack; the table has a log-injection and a
   status-page row for every design (C bounds only Rae, so the two rows
-  differ there). Next: ~10 real runs each of clean, log injection, status
-  page.
+  differ there). **10 runs each on `qwen-2.5-7b` (21 Oct, `lab2/`):** clean
+  9/10 correct; log injection 3/10 correct, attack in 5, spread in 8, 2
+  stopped by a refusal; status page 5/10, attack in 3. Next: `--regrade` the
+  six 19 Oct runs, then the same 3 × 10 on the default model.
 - **Course pages students open first, in 2.0:** `course/index.html`,
   `setup.html`, `microcourse.html`, `OfficeToolkit.html`, `lab1.html`; the
   old root `office_microcourse.html` redirects to the micro-course.
-  **Day-1 pages rewritten around safety (18 Oct):** the micro-course (25
-  screens since 22 Oct: what you could build, the office file first, the
-  $1 Tahoe as the danger, roles, annotators vs authors and why, contracts
-  for safety, sinks as the last line of defence, the project; from
+  **Day-1 pages rewritten around safety (18 Oct):** the micro-course (28
+  screens since 23 Oct: what you could build, the office file first, the
+  $1 Tahoe as the danger, the two July 2026 incidents and the four rules, roles, annotators vs authors and why, contracts
+  for safety and what they cannot say (a Python refund guard), sinks as the last line of defence, the project; from
   `course/microcourse_plan.html`: LLM and Python agents,
   contracts, inboxes taught with coordinators; the previous one is in
   `_to_delete/`), the toolkit's "Contracts and guardrails", GETTING_STARTED
@@ -156,11 +158,10 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
 5. **Course pages still in version 1:** `lecture_build.html` (`--trace`;
    linked only from `labs.html`; to retire, its three safety sections into
    the Lab 2 plan). Done 18 Oct: `DistributedSystemModel.html` (class 1, in
-   2.0, tested) and **class 2 rebuilt as `Contracts.html`** (metadata,
-   contracts, refusals and `refused`, barriers, a Python refund guard,
-   `dsl check`, evidence, Lab 1 preview without its answer; every quoted file
-   and output line tested, the guard office in
-   `tests/integration/class2_offices/`). `OfficeRepresentation.html` and its
+   2.0, tested). **Class 2 (`Contracts.html`) retired 23 Oct:** the
+   micro-course covers it; its incidents, four rules and refund guard moved
+   there (the guard office is now in `tests/integration/microcourse_offices/`).
+   `OfficeRepresentation.html` and its
    notes are in `_to_delete/`; their logistics are on the index ("How this
    course works"). Also `labs.html`, the staff plan, which now says at the top what changed:
    Labs 2–4 need re-planning (no `select`/`match`, no `--trace`,
