@@ -414,6 +414,10 @@ def test_the_doctor_lines_the_pages_quote_are_what_it_prints(tmp_path):
     import shutil
 
     env_key = "sk-ant-test"
+    # The pages describe a student's default setup: Anthropic. A staff shell
+    # with DSL_BACKEND=openrouter made doctor check the other key (22 Oct).
+    base_env = {k: v for k, v in os.environ.items()
+                if k not in ("DSL_BACKEND", "DSL_BACKEND_MODULE")}
     for name in ("car_dealer", "incident_room"):
         office = tmp_path / name
         shutil.copytree(REPO / "dissyslab" / "gallery" / name, office,
@@ -423,7 +427,7 @@ def test_the_doctor_lines_the_pages_quote_are_what_it_prints(tmp_path):
              "import sys; from dissyslab.cli import main; sys.exit(main(sys.argv[1:]))",
              "doctor", "."],
             cwd=office, capture_output=True, text=True, encoding="utf-8", timeout=120,
-            env=dict(os.environ, ANTHROPIC_API_KEY=env_key, PYTHONIOENCODING="utf-8",
+            env=dict(base_env, ANTHROPIC_API_KEY=env_key, PYTHONIOENCODING="utf-8",
                      PYTHONPATH=os.pathsep.join([str(REPO)] + ([os.environ["PYTHONPATH"]]
                                                 if os.environ.get("PYTHONPATH") else []))))
         out = done.stdout
