@@ -181,12 +181,6 @@
     <div class="kicker">DisSysLab</div>
     <h1>Model of a distributed system</h1>
 
-    <p>The focus of this course is the safety of multi-agent systems. We use
-       simple models of distributed systems that allow us to show 
-       that algorithms satisfy their specifications. An algorithm
-      proved to satisfy its specification is safe. This page
-      gives the model.</p>
-
     <div class="meta">
       <span><b>Time</b> ~45 minutes</span>
       <span><b>Part 1</b> this page only</span>
@@ -196,27 +190,37 @@
 
   <h2><span class="n">SECTION 1</span>A model of a distributed system</h2>
 
-  <p class="lead">An <em class="term">office</em> is a set of agents and a
+  <p class="lead">A <em class="term">system</em> is a set of agents and a
     set of connections. Each agent runs in its own thread of execution, and
     each agent has its own private state. Agents share no memory. The only
     way in which agents can interact is that an agent can send a message to
     another agent.</p>
+  
+  <p>
+    A system is also referred to an <b>office</b> because you think of a
+    system as an office of agents.
+  </p>
 
   <p><b>Inboxes and outboxes.</b>
-    Inboxes and outboxes are queues of messages. An agent receives messages
-    from its inboxes and puts outgoing messages in its outboxes.
-    Almost every agent has exactly one inbox, <code>in</code>, and one
+    An agent receives messages from its inboxes and puts outgoing messages 
+    in its outboxes.
+    Inboxes and outboxes are queues of messages. 
+    Most agents have exactly one inbox, <code>in</code>, and exactly one
     outbox, <code>out</code>. There are two exceptions, and they are the
-    only places in an office where an agent has a choice of boxes:
+    only places in a system where an agent has a choice of boxes:
   </p>
   <ul>
-    <li>A <em class="term">router</em> has one outbox for each value of the
-      field it reads. Agents decide; routers send.</li>
+    <li>A <em class="term">router</em> has multiple outboxes and one
+      inbox. A router reads a message and forwards the message on
+      the outbox specified by a field in the message.
+    </li>
     <li>A <em class="term">coordinator</em> has more than one inbox, and
-      chooses which one to take from next.</li>
+      the coordinator state determines which inbox to receive messages
+       from next.
+    </li>
   </ul>
-  <p>A <em class="term">source</em> agent is one with no inboxes, and
-    a <em class="term">sink</em> agent is one with no outboxes.
+  <p>A <em class="term">source</em> agent has no inboxes, and
+    a <em class="term">sink</em> has no outboxes.
   </p>
 
   <figure class="fig wideout">
@@ -479,21 +483,48 @@
   such as actuators, databases, or files.
 </p>
 
-  <h3>The agents of DisSysLab, in this model</h3>
-  <p>DisSysLab's office file hides most boxes, because most agents have one
-    of each. Every kind of agent is a case of the model above:</p>
+<h3>Roles</h3>
+<p>
+A <b>role</b> is a job description - a specification of agent behavior.
+Multiple agents can have the same job description.
+For example, you may want multiple agents with the role detect_attacks
+and have detect-attack agents at different points in the network.
+</p>
+
+<h3>Agent</h3>
+  <p>
+    When an agent has exactly one inbox the inbox is <b>in</b> and need not be
+  explicitly referenced in a connection. Likewise when an agent has exactly one
+  outbox, the outbox is <b>out</b> and need not be referenced explicitly in
+  connections.
+  </p>
+
+  <p>
+    An agent specified by a role</b> can be an LLM agent or a Python agent;
+    it has exactly one inbox, <code>in</code>, and exactly one outbox, 
+    <code>out</code>. 
+    The agent repeatedly executes the following action. 
+      If its inbox is empty then wait for the inbox to become non-empty.
+      Remove one message from a non-empty inbox.
+      Process the message and put messages in the agent's outbox.
+  </p>
+
+  <p>
+    There are two kinds of roles.
+    <ul>
+      <li>An <b>annotator</b> receives exactly one message on <code>out</code>:
+        the message it received, with the role's fields added.</li>
+      <li>An <b>author</b> puts zero or more messages on <code>out</code>,
+        each one new; the message it received goes no further.</li>
+    </ul>
+  </p>
+</p>
   <ul>
-    <li><b>An agent that plays a role</b> (an LLM agent or a Python agent)
-      has one inbox, <code>in</code>, and one outbox, <code>out</code>. Its
+    <li>
+
       action on a message is: check the message against the role's
       <code>in:</code>, call the role, check the reply against its
-      <code>out:</code>, and put messages on <code>out</code>.
-      <ul>
-        <li>An <b>annotator</b> puts exactly one message on <code>out</code>:
-          the message it received, with the role's fields added.</li>
-        <li>An <b>author</b> puts zero or more messages on <code>out</code>,
-          each one new; the message it received goes no further.</li>
-      </ul></li>
+      <code>out:</code>, and put messages on <code>out</code>.</li>
     <li><b>A refusal</b>, a message or a reply that breaks the agent's
       contract, puts nothing on <code>out</code>. If the office connects the
       agent's second outbox, <code>refused</code>, the refused message goes
