@@ -203,77 +203,82 @@
     another agent.</p>
 
   <p><b>Inboxes and outboxes.</b>
-    Each agent has a set of inboxes and a set of outboxes. Inboxes and
-    outboxes are queues of messages. An agent receives messages from its
-    inboxes and puts outgoing messages in its outboxes.
-    A <em class="term">source</em> agent is one with no inboxes, and
+    Inboxes and outboxes are queues of messages. An agent receives messages
+    from its inboxes and puts outgoing messages in its outboxes.
+    Almost every agent has exactly one inbox, <code>in</code>, and one
+    outbox, <code>out</code>. There are two exceptions, and they are the
+    only places in an office where an agent has a choice of boxes:
+  </p>
+  <ul>
+    <li>A <em class="term">router</em> has one outbox for each value of the
+      field it reads. Agents decide; routers send.</li>
+    <li>A <em class="term">coordinator</em> has more than one inbox, and
+      chooses which one to take from next.</li>
+  </ul>
+  <p>A <em class="term">source</em> agent is one with no inboxes, and
     a <em class="term">sink</em> agent is one with no outboxes.
   </p>
 
   <figure class="fig wideout">
-    <svg viewBox="0 0 1040 372" role="img" aria-labelledby="f1t f1d">
-      <title id="f1t">The refund desk: an office of six agents</title>
-      <desc id="f1d">tickets is a source and jsonl_recorder a sink. Gate has two inboxes, in and done.
-        Rex, a router, has two outboxes, approve and escalate. Clerk and Manager each have one inbox and
-        one outbox. Two connections end at Gate.done, and two at the recorder.</desc>
+    <svg viewBox="0 0 1040 300" role="img" aria-labelledby="f1t f1d">
+      <title id="f1t">The news filter: an office of six agents</title>
+      <desc id="f1d">al_jazeera and bbc_world are sources; console_printer and discard are sinks.
+        Two connections end at Felix's inbox. Rex, a router, has two outboxes, yes and no.
+        Felix has one inbox and one outbox.</desc>
       <defs>
         <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
           <path d="M0,0 L10,5 L0,10 z" fill="#9a9384"/>
         </marker>
       </defs>
       <g fill="none" stroke="#9a9384" stroke-width="1.7" marker-end="url(#ah)">
-        <path d="M144,174 C165,174 168,150 186,150"/>
-        <path d="M324,174 L366,174"/>
-        <path d="M494,174 L536,174"/>
-        <path d="M674,150 C760,150 800,124 876,124"/>
-        <path d="M674,198 C700,198 690,268 716,268"/>
-        <path d="M854,268 C900,268 860,132 876,128"/>
-        <path d="M674,150 C705,150 712,330 600,330 L175,330 C150,330 160,200 186,200"/>
-        <path d="M854,268 C880,268 880,348 600,348 L170,348 C140,348 150,206 186,203"/>
+        <path d="M164,68 C250,68 250,148 326,148"/>
+        <path d="M164,228 C250,228 250,148 326,148"/>
+        <path d="M464,148 L586,148"/>
+        <path d="M724,124 C790,124 790,84 856,84"/>
+        <path d="M724,176 C790,176 790,216 856,216"/>
       </g>
       <g font-family="-apple-system,Segoe UI,Helvetica,Arial,sans-serif">
-        <rect x="20" y="146" width="120" height="56" rx="10" fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
-        <text x="80" y="171" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">tickets</text>
-        <text x="80" y="188" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">source agent</text>
-        <rect x="136" y="170" width="8" height="8" rx="2" fill="#d13d0e"/>
-        <text x="136" y="166" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">out</text>
-        <rect x="190" y="120" width="130" height="108" rx="10" fill="#ffffff" stroke="#2f3d55" stroke-width="2"/>
-        <text x="255" y="171" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">Gate</text>
-        <text x="255" y="188" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">gate</text>
-        <rect x="186" y="146" width="8" height="8" rx="2" fill="#00947d"/>
-        <text x="202" y="142" text-anchor="start" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">in</text>
-        <rect x="186" y="196" width="8" height="8" rx="2" fill="#00947d"/>
-        <text x="202" y="192" text-anchor="start" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">done</text>
-        <rect x="316" y="170" width="8" height="8" rx="2" fill="#d13d0e"/>
-        <text x="316" y="166" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">out</text>
-        <rect x="370" y="142" width="120" height="64" rx="10" fill="#ffffff" stroke="#2f3d55" stroke-width="2"/>
-        <text x="430" y="171" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">Clerk</text>
-        <text x="430" y="188" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">clerk</text>
-        <rect x="366" y="170" width="8" height="8" rx="2" fill="#00947d"/>
-        <text x="382" y="166" text-anchor="start" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">in</text>
-        <rect x="486" y="170" width="8" height="8" rx="2" fill="#d13d0e"/>
-        <text x="486" y="166" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">out</text>
-        <rect x="540" y="128" width="130" height="92" rx="10" fill="#ffffff" stroke="#2f3d55" stroke-width="2"/>
-        <text x="605" y="171" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">Rex</text>
-        <text x="605" y="188" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">router</text>
-        <rect x="536" y="170" width="8" height="8" rx="2" fill="#00947d"/>
-        <text x="552" y="166" text-anchor="start" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">in</text>
-        <rect x="666" y="146" width="8" height="8" rx="2" fill="#d13d0e"/>
-        <text x="666" y="142" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">approve</text>
-        <rect x="666" y="194" width="8" height="8" rx="2" fill="#d13d0e"/>
-        <text x="666" y="214" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">escalate</text>
-        <rect x="720" y="236" width="130" height="64" rx="10" fill="#ffffff" stroke="#2f3d55" stroke-width="2"/>
-        <text x="785" y="265" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">Manager</text>
-        <text x="785" y="282" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">manager</text>
-        <rect x="716" y="264" width="8" height="8" rx="2" fill="#00947d"/>
-        <text x="732" y="260" text-anchor="start" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">in</text>
-        <rect x="846" y="264" width="8" height="8" rx="2" fill="#d13d0e"/>
-        <text x="846" y="260" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">out</text>
-        <rect x="880" y="96" width="140" height="56" rx="10" fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
-        <text x="950" y="121" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">jsonl_recorder</text>
-        <text x="950" y="138" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">sink agent</text>
-        <rect x="876" y="120" width="8" height="8" rx="2" fill="#00947d"/>
-        <text x="872" y="114" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">in</text>
+        <rect x="20" y="40" width="140" height="56" rx="10" fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
+        <text x="90" y="65" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">al_jazeera</text>
+        <text x="90" y="82" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">source agent</text>
+        <rect x="156" y="64" width="8" height="8" rx="2" fill="#d13d0e"/>
+        <text x="156" y="60" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">out</text>
+
+        <rect x="20" y="200" width="140" height="56" rx="10" fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
+        <text x="90" y="225" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">bbc_world</text>
+        <text x="90" y="242" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">source agent</text>
+        <rect x="156" y="224" width="8" height="8" rx="2" fill="#d13d0e"/>
+        <text x="156" y="220" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">out</text>
+
+        <rect x="330" y="112" width="130" height="72" rx="10" fill="#ffffff" stroke="#2f3d55" stroke-width="2"/>
+        <text x="395" y="143" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">Felix</text>
+        <text x="395" y="160" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">topic_filter</text>
+        <rect x="326" y="144" width="8" height="8" rx="2" fill="#00947d"/>
+        <text x="342" y="140" text-anchor="start" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">in</text>
+        <rect x="456" y="144" width="8" height="8" rx="2" fill="#d13d0e"/>
+        <text x="456" y="140" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">out</text>
+
+        <rect x="590" y="100" width="130" height="96" rx="10" fill="#ffffff" stroke="#2f3d55" stroke-width="2"/>
+        <text x="655" y="143" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">Rex</text>
+        <text x="655" y="160" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">router</text>
+        <rect x="586" y="144" width="8" height="8" rx="2" fill="#00947d"/>
+        <text x="602" y="140" text-anchor="start" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">in</text>
+        <rect x="716" y="120" width="8" height="8" rx="2" fill="#d13d0e"/>
+        <text x="712" y="116" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">yes</text>
+        <rect x="716" y="172" width="8" height="8" rx="2" fill="#d13d0e"/>
+        <text x="712" y="192" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#b0553a">no</text>
+
+        <rect x="860" y="56" width="160" height="56" rx="10" fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
+        <text x="940" y="81" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">console_printer</text>
+        <text x="940" y="98" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">sink agent</text>
+        <rect x="856" y="80" width="8" height="8" rx="2" fill="#00947d"/>
+        <text x="852" y="74" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">in</text>
+
+        <rect x="860" y="188" width="160" height="56" rx="10" fill="#fdfcfa" stroke="#2f3d55" stroke-width="1.6"/>
+        <text x="940" y="213" text-anchor="middle" font-size="14.5" font-weight="650" fill="#1a1a2e">discard</text>
+        <text x="940" y="230" text-anchor="middle" font-size="11" fill="#6f7583" font-style="italic">sink agent</text>
+        <rect x="856" y="212" width="8" height="8" rx="2" fill="#00947d"/>
+        <text x="852" y="206" text-anchor="end" font-size="10.5" font-family="ui-monospace,Menlo,Consolas,monospace" fill="#00806c">in</text>
       </g>
     </svg>
 
@@ -282,14 +287,13 @@
       <span><i style="background:#d13d0e"></i>outbox</span>
     </div>
 
-    <figcaption><b>Figure 1. The refund desk: an office of six agents</b>
-      (the gallery's <code>returns_desk</code>, without its screen printer).
-      Each agent is a box. <code>tickets</code> is a source; <code>jsonl_recorder</code>
-      is a sink. <code>Gate</code> has two inboxes, <code>in</code> and <code>done</code>.
-      <code>Rex</code>, a router, has two outboxes, <code>approve</code> and
-      <code>escalate</code>. <code>Clerk</code> and <code>Manager</code> have one inbox and
-      one outbox each. Two connections end at <code>Gate.done</code>, and two at the
-      recorder's inbox.</figcaption>
+    <figcaption><b>Figure 1. The news filter: an office of six agents</b>
+      (the gallery's <code>org_news_filter</code>, the office of the micro-course).
+      Each agent is a box. <code>al_jazeera</code> and <code>bbc_world</code> are
+      sources; <code>console_printer</code> and <code>discard</code> are sinks.
+      <code>Felix</code> has one inbox and one outbox; two connections end at its
+      inbox. <code>Rex</code>, a router, has two outboxes, <code>yes</code> and
+      <code>no</code>.</figcaption>
   </figure>
 
   <p><b>Connections: message channels.</b>
@@ -410,15 +414,22 @@
   <p>
     <b>Agent Actions.</b>
     We first describe actions for agents other than sources.
-    An agent waits to receive a message from exactly one of its inboxes.
-    If that inbox is empty then the agent does nothing and continues waiting
-    for a message in that inbox. If the inbox is not empty then the agent 
-    removes a message from the inbox and processes it.
+    An agent waits to receive a message from its inbox.
+    If the inbox is empty then the agent does nothing and continues waiting.
+    If the inbox is not empty then the agent removes a message from the inbox
+    and processes it.
     While it is processing the message the agent may put messages on its outboxes
     and change values of its variables.
     The processing of a message always terminates. After the message is processed
-    the agent waits again for a message from an inbox which may be the
-    same inbox that it was waiting for earlier or a different one.
+    the agent waits again.
+  </p>
+  <p>
+    A coordinator has more than one inbox, and waits on <em>exactly one</em> of
+    them at a time. Its own state decides which. The simplest is the
+    <em class="term">gate</em>, with inboxes <code>in</code> and <code>done</code>:
+    it takes one message from <code>in</code> and puts it on <code>out</code>,
+    then takes nothing more from <code>in</code> until a message reaches
+    <code>done</code>.
   </p>
 
   <figure class="fig wideout">
@@ -427,15 +438,15 @@
     </div>
     <div class="figctl">
       <div class="ctl">
-        <label>messages arriving at U <span class="val"></span></label>
+        <label>messages arriving at in <span class="val"></span></label>
         <input type="range" min="0" max="2" step="0.1" value="0.6" data-a="arriveU">
       </div>
       <div class="ctl">
-        <label>messages arriving at V <span class="val"></span></label>
+        <label>messages arriving at done <span class="val"></span></label>
         <input type="range" min="0" max="2" step="0.1" value="0.6" data-a="arriveV">
       </div>
       <div class="ctl">
-        <label>the agent's own speed <span class="val"></span></label>
+        <label>the gate's own speed <span class="val"></span></label>
         <input type="range" min="0.1" max="2" step="0.1" value="0.8" data-a="speed">
       </div>
       <div class="btns">
@@ -445,13 +456,13 @@
       </div>
     </div>
     <figcaption>
-      <b>Figure 5. What an agent does.</b>
-      The agent waits on exactly one inbox at a time. While it waits on
-      <b>U</b>, messages arriving at <b>V</b> accumulate and are not processed.
-       After getting a message from the inbox, the agent processes it to
-      completion, and only then waits again to receive a message, possibly 
-      from the same or another inbox. While the agent processes a message
-      it may put messages on the agent's outboxes. </figcaption>
+      <b>Figure 5. What a gate does.</b>
+      The gate waits on exactly one inbox at a time. While it waits on
+      <b>done</b>, messages arriving at <b>in</b> accumulate and are not processed.
+      A message from <b>in</b> is put on <b>out</b>; a message from
+      <b>done</b> puts nothing anywhere, and only changes which inbox the
+      gate waits on next. A <b>done</b> comes back only after the message
+      the gate passed on has left <b>out</b>, so there is at most one at a time.</figcaption>
   </figure>
 
   <p>
@@ -489,21 +500,23 @@
       there. If not, the office stops: from then on, in the model, every
       action is a skip.</li>
     <li><b>A router</b> has one inbox and one outbox for each value of the
-      field it reads (<code>Rex.approve</code>, <code>Rex.escalate</code>).
-      Its action puts the message on exactly one of them.</li>
-    <li><b>A gate</b> has two inboxes, <code>in</code> and <code>done</code>.
-      It waits on <code>in</code>, passes one message on, then waits on
-      <code>done</code>: the model's "waits on exactly one inbox", used on
-      purpose.</li>
-    <li><b>A synchronizer</b> waits on all its inboxes at once and takes from
+      field it reads (<code>Rex.yes</code>, <code>Rex.no</code>), and
+      <code>otherwise</code> for any other value if the office connects it.
+      Its action puts the message on exactly one of them. It adds nothing to
+      the message and decides nothing: the value was written by an agent
+      before it (here Felix's <code>on_topic</code>).</li>
+    <li><b>A gate</b>, a coordinator, has two inboxes, <code>in</code> and
+      <code>done</code> (<b>Figure 5</b>). It waits on <code>in</code>, passes one
+      message on, then waits on <code>done</code>.</li>
+    <li><b>A synchronizer</b>, also a coordinator, waits on all its inboxes at once and takes from
       whichever has a message. In the model, that is the merge of
       <b>Figure 4</b> (each message labelled with the inbox it came from)
       followed by an agent with one inbox that collects a group per key.</li>
   </ul>
-  <p>So <code>Clerk -&gt; Rex</code> in an office file means
-    <code>(Clerk, out, Rex, in)</code>, and a name after a dot is written only
-    where an agent has a choice of boxes: <code>Rex.approve</code>,
-    <code>Gate.done</code>.</p>
+  <p>So <code>Felix -&gt; Rex</code> in an office file means
+    <code>(Felix, out, Rex, in)</code>, and a name after a dot is written only
+    where an agent has a choice of boxes: a router's outbox,
+    <code>Rex.yes</code>, or a coordinator's inbox, <code>Gate.done</code>.</p>
 
 <h2><span class="n">SECTION 2</span>A Model of Computation</h2>
 
@@ -626,26 +639,32 @@ performance.
 
 
   <h2><span class="n">SECTION 4</span>Exercises</h2>
-  <
 
   <div class="task">
     <h4>Task 1 · Message Ordering</h4>
     <p>
-      An office has three agents <b>X, Y, Z</b>. Agent <b>X</b> has two
-      outboxes <b>to_Y</b> and <b>to_Z</b>. Agents <b>Y</b> and <b>Z</b>
-      each have one inbox <b>in</b> and one outbox <b>out</b>. The
+      A network (office) has three agents <b>X, Y, Z</b>, and a router <b>R</b>.
+      It also has sources and sinks which are not specified here. The
       connections are:
-      (<b>X, to_Y, Y, in</b>), 
-      (<b>X, to_Z, Z, in</b>),
-      (<b>Y, out, Z, in</b>)
+    </p>
+<pre>X -&gt; R
+R.y -&gt; Y
+R.z -&gt; Z
+Z -&gt; Y</pre>
+    <p>
+      R sends a message M1 to Y, and later sends a message M2 to Z. When
+      Z receives M2 it sends M3 to Y. Can Y receive M3 before it receives M1?
     </p>
     <details><summary>What you should have found</summary>
-      <p>The first prediction is easy: given an action, the message that moves is
-      determined — it is always the head of a queue, and it always goes to the
-      tail of the next one. The second prediction is impossible. You can know
-      what each action <em>does</em> and still not know which one happens next.
-      Distributed systems are exactly this: local behaviour that is completely
-      determined, composed into a global behaviour that is not.</p>
+      <p>Yes. M1 and M3 reach Y's inbox along two different connections,
+      <code>(R, y, Y, in)</code> and <code>(Z, out, Y, in)</code>. That is the
+      merge of <b>Figure 4</b>: each connection keeps its own order, and the
+      order between them is unspecified. M1 may still be in its connection while
+      M2 travels to Z, Z processes it, and M3 travels to Y. Sent first is not
+      delivered first. You can know what each action <em>does</em> and still
+      not know which one happens next. Distributed systems are exactly this:
+      local behaviour that is completely determined, composed into a global
+      behaviour that is not.</p>
     </details>
   </div>
 
@@ -680,14 +699,16 @@ performance.
 
   <div class="task">
     <h4>Task 4 · Make an agent wait for ever</h4>
-    <p>In <b>Figure 5</b>, wait until the agent is waiting on <b>U</b>, then set
-      <b>messages arriving at U</b> to 0 and leave <b>V</b> running. Watch for
-      half a minute. Now answer two questions: is the agent broken, and is
+    <p>In <b>Figure 5</b>, wait until the gate is waiting on <b>done</b>, then set
+      <b>messages arriving at done</b> to 0 and leave <b>in</b> running. Watch for
+      half a minute. Now answer two questions: is the gate broken, and is
       anything in its own state different from a moment ago?</p>
     <details><summary>What you should have found</summary>
-      <p>The agent is doing exactly what it was told: waiting on one inbox for a
+      <p>The gate is doing exactly what it was told: waiting on one inbox for a
       message that is not going to come. Nothing in its state is wrong, nothing
-      is different from any other wait, and V goes on filling. This is the
+      is different from any other wait, and <b>in</b> goes on filling. In an
+      office, <code>done</code> is sent by an agent further down the line; if
+      one path never reaches <code>Gate.done</code>, this is what you see. This is the
       shape of almost every office that hangs — not a crash, not an error, but
       an agent correctly waiting for something that will never arrive. Notice
       also that <em>you</em> can see the problem only because you can see both
@@ -726,22 +747,21 @@ performance.
     called <code>office.md</code>:</p>
 
 <pre><span class="k">sources:</span>
-    tickets: file_source(path="tickets.jsonl")
+    al_jazeera(max_articles=2)
+    bbc_world(max_articles=2)
 
 <span class="k">sinks:</span>
-    jsonl_recorder(path="outcomes.jsonl")
     console_printer
+    discard
 
 <span class="k">agents:</span>
-    Gate: gate
-    Clerk: clerk(limit=50)
-    Rex: router(on="clerk_decision")
-    Manager: manager
+    Felix: topic_filter
+    Rex: router(on="on_topic")
 
 <span class="k">connections:</span>
-    tickets -&gt; Gate -&gt; Clerk -&gt; Rex
-    Rex.approve -&gt; jsonl_recorder, console_printer, Gate.done
-    Rex.escalate -&gt; Manager -&gt; jsonl_recorder, console_printer, Gate.done</pre>
+    al_jazeera, bbc_world -&gt; Felix -&gt; Rex
+    Rex.yes -&gt; console_printer
+    Rex.no -&gt; discard</pre>
 
   <p>Every arrow under <b>connections:</b> is one instance of the picture you
     just played with: an outbox, a connection, an inbox. Ask the framework to
@@ -750,41 +770,39 @@ performance.
 <pre>$ dsl draw .
   ...
   arrows:
-    tickets -&gt; Gate
-    Gate -&gt; Clerk
-    Clerk -&gt; Rex
-    Rex.approve -&gt; jsonl_recorder
-    Rex.approve -&gt; console_printer
-    Rex.approve -&gt; Gate.done
-    Rex.escalate -&gt; Manager
-    Manager -&gt; jsonl_recorder
-    Manager -&gt; console_printer
-    Manager -&gt; Gate.done</pre>
+    al_jazeera -&gt; Felix
+    bbc_world -&gt; Felix
+    Felix -&gt; Rex
+    Rex.yes -&gt; console_printer
+    Rex.no -&gt; discard</pre>
 
-  <p>Ten connections, ten copies of the animation, running at once and
+  <p>Five connections, five copies of the animation, running at once and
     independently. An office of forty agents is the same picture many times.
     There is nothing else in the model.</p>
 
   <div class="task">
     <h4>Task 5 · Run it</h4>
     <p>Make yourself a copy, look at it, and run it:</p>
-<pre>$ dsl init returns_desk my_desk
-$ cd my_desk
+<pre>$ dsl init org_news_filter my_filter
+$ cd my_filter
 $ dsl draw .     <span class="c"># the picture</span>
 $ dsl check .    <span class="c"># is the wiring sound?</span>
 $ dsl run .      <span class="c"># watch messages move</span></pre>
-    <p>Open <code>office.md</code> and satisfy yourself that you can point, in
+    <p><code>dsl run</code> needs your key (setup, step 5): Felix is an LLM
+      agent. Open <code>office.md</code> and satisfy yourself that you can point, in
       Figure 1, at every connection it names, and at the two that end at
-      <code>Gate.done</code>.</p>
+      Felix's inbox.</p>
   </div>
 
   <div class="task">
     <h4>Task 6 · Break it on purpose</h4>
-    <p>In <code>office.md</code>, change <code>Rex.escalate -&gt; Manager</code>
-      to <code>Clerk.escalate -&gt; Manager</code> and run <code>dsl check .</code>
+    <p>In <code>office.md</code>, change <code>Rex.no -&gt; discard</code>
+      to <code>Felix.no -&gt; discard</code> and run <code>dsl check .</code>
       again:</p>
-<pre>problem: line 19: Clerk has one outbox, out; it has no 'escalate'. See `dsl grammar`, Ports.</pre>
-    <p>Then put it back. Notice which kind of mistake that was: it is wrong in
+<pre>problem: line 18: Felix has one outbox, out; it has no 'no'. See `dsl grammar`, Ports.</pre>
+    <p>Felix is an agent, not a router: it has one way out. <code>dsl check</code>
+      also notes that Rex now has nowhere to send an article Felix marks
+      <code>no</code>. Then put it back. Notice which kind of mistake that was: it is wrong in
       the <em>structure</em>, so it can be caught without running anything.
       Hold on to that distinction — you are about to meet a mistake that cannot
       be.</p>
@@ -1401,26 +1419,29 @@ dsl doctor      <span class="c"># what is installed, and whether it is stale</sp
     };
   })();
 
-  // ══ Figure 5 — what one agent does ═════════════════════════════════
+  // ══ Figure 5 — what a gate does ════════════════════════════════════
   //
-  // The agent is not a Poisson actor like the transports around it: it
+  // The gate is not a Poisson actor like the transports around it: it
   // is a small state machine, because the paragraph it illustrates is
   // about sequence. Wait on ONE inbox; take a message only from that
-  // one; process it to completion; then choose again. The cost of that
-  // rule is the thing worth seeing -- while it waits on U, V fills, and
-  // nothing in the agent's state says so.
+  // one; process it to completion; then choose again -- in, then done,
+  // then in (dissyslab/blocks/gate.py). The cost of that rule is the
+  // thing worth seeing -- while it waits on done, in fills, and nothing
+  // in the gate's state says so. Internally U is the inbox `in`, V is
+  // `done`, X the outbox `out`.
   (function(){
     const cv=document.getElementById('agent'); if(!cv) return;
     const c=cv.getContext('2d'), W=1040, H=330;
 
-    const U = Q(150,  72, 4, 'inbox U');
-    const V = Q(150, 232, 4, 'inbox V');
-    const X = Q(660,  72, 4, 'outbox X');
-    const Y = Q(660, 232, 4, 'outbox Y');
-    const qs=[U,V,X,Y];
+    const U = Q(150,  72, 4, 'inbox in');
+    const V = Q(150, 232, 4, 'inbox done');
+    const X = Q(660, 152, 4, 'outbox out');
+    const qs=[U,V,X];
+    const NAME = {U:'in', V:'done'};
     const BX0=430, BX1=620, BY0=104, BY1=200, BCX=(BX0+BX1)/2, BCY=152;
 
     let nu=1, nv=1, leaving=[], held=null;
+    let owed=0;   // messages that have left out and whose done has not yet come back
     let sel='U', phase='waiting', timer=0;
 
     const inbox = k => k==='U' ? U : V;
@@ -1445,21 +1466,20 @@ dsl doctor      <span class="c"># what is installed, and whether it is stale</sp
         held=m; phase='processing'; timer=0;
       } else if(phase==='processing'){
         if(timer < 1.1) return;              // processing always terminates
-        const roll=Math.random();
-        if(roll<0.45){ emit(X); }
-        else if(roll<0.8){ emit(Y); }
-        else if(roll<0.93){ emit(X); emit(Y); }
-        // else: this message produced nothing
+        if(sel==='U') emit(X);               // from in: pass it on
+        // from done: nothing is sent; only the next inbox changes
         held=null; phase='waiting'; timer=0;
-        sel = Math.random()<0.5 ? 'U' : 'V';  // possibly a different one
+        sel = sel==='U' ? 'V' : 'U';         // in, then done, then in
       }
     }
 
     const sched=scheduler([
-      {key:'arriveU', rate:0.6, next:0, run:()=>{ nu=arrive(U,'u',205,nu); }},
-      {key:'arriveV', rate:0.6, next:0, run:()=>{ nv=arrive(V,'v',28,nv); }},
-      {key:'drainX',  rate:0.6, next:0, run:()=>{ const m=head(X); if(m){X.items.shift(); m.tx=980; leaving.push(m);} }},
-      {key:'drainY',  rate:0.6, next:0, run:()=>{ const m=head(Y); if(m){Y.items.shift(); m.tx=980; leaving.push(m);} }}
+      {key:'arriveU', rate:0.6, next:0, run:()=>{ nu=arrive(U,'m',205,nu); }},
+      // Two steps: the message leaves out, then its done may arrive. So
+      // done never comes while out still holds it, and there is never
+      // more than one: the gate passes nothing more until it comes.
+      {key:'arriveV', rate:0.6, next:0, run:()=>{ if(owed>0){ owed--; nv=arrive(V,'d',28,nv); } }},
+      {key:'drainX',  rate:0.6, next:0, run:()=>{ const m=head(X); if(m){X.items.shift(); m.tx=980; leaving.push(m); owed++;} }}
     ]);
     let speed=0.8;
 
@@ -1468,11 +1488,11 @@ dsl doctor      <span class="c"># what is installed, and whether it is stale</sp
         return 'processing ' + (held?held.label:'') + ' — neither inbox is being read';
       const other = sel==='U' ? V : U;
       const waiting = inbox(sel).items.length;
-      if(waiting) return 'waiting on ' + sel + ' — about to take its first message';
+      if(waiting) return 'waiting on ' + NAME[sel] + ' — about to take its first message';
       const n=other.items.length;
-      return 'waiting on ' + sel + ' (empty)' +
+      return 'waiting on ' + NAME[sel] + ' (empty)' +
              (n ? ' — ' + n + (n===1?' message is':' messages are') + ' waiting in ' +
-                  (sel==='U'?'V':'U') + ', and will not be looked at'
+                  (sel==='U'?'done':'in') + ', and will not be looked at'
                 : '');
     }
 
@@ -1492,8 +1512,8 @@ dsl doctor      <span class="c"># what is installed, and whether it is stale</sp
       // arrows in and out
       arrow(c,58,72,U.x0-6,72); arrow(c,58,232,V.x0-6,232);
       arrow(c,U.x1+6,80,BX0-6,138); arrow(c,V.x1+6,224,BX0-6,166);
-      arrow(c,BX1+6,138,X.x0-6,80); arrow(c,BX1+6,166,Y.x0-6,224);
-      arrow(c,X.x1+6,72,974,72);   arrow(c,Y.x1+6,232,974,232);
+      arrow(c,BX1+6,152,X.x0-6,152);
+      arrow(c,X.x1+6,152,974,152);
 
       // the agent, with the inbox it is attending to picked out
       const busy = phase==='processing';
@@ -1501,9 +1521,9 @@ dsl doctor      <span class="c"># what is installed, and whether it is stale</sp
       c.strokeStyle='#2f3d55'; c.lineWidth=2;
       roundRect(c,BX0,BY0,BX1,BY1,11); c.fill(); c.stroke();
       c.fillStyle='#2f3d55'; c.textAlign='center'; c.textBaseline='middle';
-      c.font='600 16px '+FS; c.fillText('the agent',BCX,BY0+22);
+      c.font='600 16px '+FS; c.fillText('Gate',BCX,BY0+22);
       c.font='12.5px '+FS; c.fillStyle= busy ? '#00806c' : '#8a8578';
-      c.fillText(busy?'processing':'waiting on '+sel, BCX, BY1-18);
+      c.fillText(busy?'processing':'waiting on '+NAME[sel], BCX, BY1-18);
 
       // a ring on the inbox being waited on
       if(!busy){
@@ -1550,7 +1570,7 @@ dsl doctor      <span class="c"># what is installed, and whether it is stale</sp
     };
     fig.querySelector('[data-a=reset]').onclick=()=>{
       qs.forEach(q=>{q.items=[];q.flash=0;});
-      leaving=[]; held=null; nu=1; nv=1; sel='U'; phase='waiting'; timer=0;
+      leaving=[]; held=null; nu=1; nv=1; owed=0; sel='U'; phase='waiting'; timer=0;
       sched.reset();
     };
   })();

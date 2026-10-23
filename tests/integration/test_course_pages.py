@@ -302,31 +302,36 @@ def test_the_holes_in_the_tahoe_case_are_real_holes():
     assert guard.why_unsafe(item, inventory) is not None
 
 
-# ── 6. The model page quotes the refund desk as it is ──────────────────────
+# ── 6. The model page quotes the news filter as it is ──────────────────────
 
 
-def test_the_model_page_quotes_the_refund_desk_and_what_dsl_prints(tmp_path):
+def test_the_model_page_quotes_the_news_filter_and_what_dsl_prints(tmp_path):
+    """Class 1 is built on the micro-course's office, org_news_filter."""
     source = page("DistributedSystemModel.html")
     blocks = pre_blocks(source)
-    desk = tmp_path / "my_desk"
-    shutil.copytree(GALLERY / "returns_desk", desk, ignore=shutil.ignore_patterns("__pycache__"))
-    office_md = (desk / "office.md").read_text(encoding="utf-8")
+    office = tmp_path / "my_filter"
+    shutil.copytree(GALLERY / "org_news_filter", office, ignore=shutil.ignore_patterns("__pycache__"))
+    office_md = (office / "office.md").read_text(encoding="utf-8")
     real = {ln.strip() for ln in office_md.splitlines() if ln.strip() and not ln.startswith("#")}
 
     shown = next(b for b in blocks if b.startswith("sources:"))
     assert {ln.strip() for ln in shown.splitlines() if ln.strip()} == real, \
-        "DistributedSystemModel.html no longer shows returns_desk/office.md as it is"
+        "DistributedSystemModel.html no longer shows org_news_filter/office.md as it is"
 
     drawn = next(b for b in blocks if b.startswith("$ dsl draw ."))
     arrows = [ln.strip() for ln in drawn.splitlines() if "->" in ln]
-    printed = dsl("draw", ".", cwd=desk)
+    printed = dsl("draw", ".", cwd=office)
     assert arrows == [ln.strip() for ln in printed.splitlines() if "->" in ln], printed
 
+    assert "dsl init org_news_filter my_filter" in text(source)
     problem = next(b for b in blocks if b.startswith("problem:")).strip()
-    (desk / "office.md").write_text(
-        office_md.replace("    Rex.escalate -> Manager", "    Clerk.escalate -> Manager"),
-        encoding="utf-8")
-    assert problem in dsl("check", ".", cwd=desk)
+    assert "Change <code>Rex.no -&gt; discard</code>".lower() in source.lower()
+    (office / "office.md").write_text(
+        office_md.replace("    Rex.no -> discard", "    Felix.no -> discard"), encoding="utf-8")
+    checked = dsl("check", ".", cwd=office)
+    assert problem in checked, checked
+    # the prose says dsl check also notes that Rex has nowhere to send `no`
+    assert "Rex has no outbox for on_topic 'no'" in checked, checked
 
 
 # ── What the pages say `dsl doctor` prints ───────────────────────────────

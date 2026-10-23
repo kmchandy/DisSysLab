@@ -158,7 +158,9 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
 5. **Course pages still in version 1:** `lecture_build.html` (`--trace`;
    linked only from `labs.html`; to retire, its three safety sections into
    the Lab 2 plan). Done 18 Oct: `DistributedSystemModel.html` (class 1, in
-   2.0, tested). **Class 2 (`Contracts.html`) retired 23 Oct:** the
+   2.0, tested; **rebuilt 23 Oct on the micro-course's `org_news_filter`**:
+   every agent one inbox and one outbox, routers for a choice of outbox,
+   coordinators for a choice of inbox; Figure 5 is now a gate). **Class 2 (`Contracts.html`) retired 23 Oct:** the
    micro-course covers it; its incidents, four rules and refund guard moved
    there (the guard office is now in `tests/integration/microcourse_offices/`).
    `OfficeRepresentation.html` and its
