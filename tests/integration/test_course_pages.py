@@ -302,36 +302,17 @@ def test_the_holes_in_the_tahoe_case_are_real_holes():
     assert guard.why_unsafe(item, inventory) is not None
 
 
-# ── 6. The model page quotes the news filter as it is ──────────────────────
+# ── 6. The model page is about the model, not the office language ────────
 
 
-def test_the_model_page_quotes_the_news_filter_and_what_dsl_prints(tmp_path):
-    """Class 1 is built on the micro-course's office, org_news_filter."""
-    source = page("DistributedSystemModel.html")
-    blocks = pre_blocks(source)
-    office = tmp_path / "my_filter"
-    shutil.copytree(GALLERY / "org_news_filter", office, ignore=shutil.ignore_patterns("__pycache__"))
-    office_md = (office / "office.md").read_text(encoding="utf-8")
-    real = {ln.strip() for ln in office_md.splitlines() if ln.strip() and not ln.startswith("#")}
-
-    shown = next(b for b in blocks if b.startswith("sources:"))
-    assert {ln.strip() for ln in shown.splitlines() if ln.strip()} == real, \
-        "DistributedSystemModel.html no longer shows org_news_filter/office.md as it is"
-
-    drawn = next(b for b in blocks if b.startswith("$ dsl draw ."))
-    arrows = [ln.strip() for ln in drawn.splitlines() if "->" in ln]
-    printed = dsl("draw", ".", cwd=office)
-    assert arrows == [ln.strip() for ln in printed.splitlines() if "->" in ln], printed
-
-    assert "dsl init org_news_filter my_filter" in text(source)
-    problem = next(b for b in blocks if b.startswith("problem:")).strip()
-    assert "Change <code>Rex.no -&gt; discard</code>".lower() in source.lower()
-    (office / "office.md").write_text(
-        office_md.replace("    Rex.no -> discard", "    Felix.no -> discard"), encoding="utf-8")
-    checked = dsl("check", ".", cwd=office)
-    assert problem in checked, checked
-    # the prose says dsl check also notes that Rex has nowhere to send `no`
-    assert "Rex has no outbox for on_topic 'no'" in checked, checked
+def test_the_model_page_teaches_no_office_syntax():
+    """Class 1 is message flow and the model of computation only; the dsl
+    command, office.md, roles and contracts are in the toolkit and the
+    micro-course (Mani, 23 Oct)."""
+    body = page("DistributedSystemModel.html").split("<body", 1)[1].split("<script", 1)[0]
+    shown = text(body)
+    for word in ("dsl ", "office.md", "contract", " in:", " out:"):
+        assert word not in shown, f"DistributedSystemModel.html mentions {word!r}"
 
 
 # ── What the pages say `dsl doctor` prints ───────────────────────────────

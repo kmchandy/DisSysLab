@@ -160,7 +160,11 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
    the Lab 2 plan). Done 18 Oct: `DistributedSystemModel.html` (class 1, in
    2.0, tested; **rebuilt 23 Oct on the micro-course's `org_news_filter`**:
    every agent one inbox and one outbox, routers for a choice of outbox,
-   coordinators for a choice of inbox; Figure 5 is now a gate). **Class 2 (`Contracts.html`) retired 23 Oct:** the
+   coordinators for a choice of inbox; Figure 5 is now a gate). **Since
+   23 Oct it is message flow and the model of computation only** (Mani): no
+   office syntax, roles or contracts (a test checks); animations of a router,
+   an annotator and an author (Figures 6–8); the AI-help commands moved to
+   the toolkit. **Class 2 (`Contracts.html`) retired 23 Oct:** the
    micro-course covers it; its incidents, four rules and refund guard moved
    there (the guard office is now in `tests/integration/microcourse_offices/`).
    `OfficeRepresentation.html` and its

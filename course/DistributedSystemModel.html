@@ -184,7 +184,6 @@
     <div class="meta">
       <span><b>Time</b> ~45 minutes</span>
       <span><b>Part 1</b> this page only</span>
-      <span><b>Part 2</b> a terminal, <code>dissyslab</code> installed</span>
     </div>
   </header>
 
@@ -506,6 +505,32 @@
     by a field in the message. 
   </p>
 
+  <figure class="fig wideout">
+    <div class="stage" style="border:0;padding:0;background:none">
+      <canvas id="router" width="1040" height="300"></canvas>
+    </div>
+    <div class="figctl">
+      <div class="ctl">
+        <label>messages arriving at in <span class="val"></span></label>
+        <input type="range" min="0" max="2" step="0.1" value="0.6" data-k="arrive">
+      </div>
+      <div class="ctl">
+        <label>the agent's own speed <span class="val"></span></label>
+        <input type="range" min="0.1" max="2" step="0.1" value="0.8" data-k="speed">
+      </div>
+      <div class="btns">
+        <button data-k="step">Step</button>
+        <button data-k="reset">Reset</button>
+        <button data-k="play" class="primary">Pause</button>
+      </div>
+    </div>
+    <figcaption>
+      <b>Figure 6. What a router does.</b>
+      The field the router reads, here <b>on_topic</b>, was written by an agent
+      before it: the router only reads it. Each message goes on, unchanged, on
+      exactly one outbox: <b>yes</b> or <b>no</b>.</figcaption>
+  </figure>
+
   <p>
     <b>Basic Agent Actions</b>
     There are two types of basic agents: <b>annotator</b> and <b>author</b>. 
@@ -515,6 +540,58 @@
     and puts the annotated message - the input message with the additional fields -
     in its outbox.
   </p>
+
+  <figure class="fig wideout">
+    <div class="stage" style="border:0;padding:0;background:none">
+      <canvas id="annotator" width="1040" height="300"></canvas>
+    </div>
+    <div class="figctl">
+      <div class="ctl">
+        <label>messages arriving at in <span class="val"></span></label>
+        <input type="range" min="0" max="2" step="0.1" value="0.6" data-k="arrive">
+      </div>
+      <div class="ctl">
+        <label>the agent's own speed <span class="val"></span></label>
+        <input type="range" min="0.1" max="2" step="0.1" value="0.8" data-k="speed">
+      </div>
+      <div class="btns">
+        <button data-k="step">Step</button>
+        <button data-k="reset">Reset</button>
+        <button data-k="play" class="primary">Pause</button>
+      </div>
+    </div>
+    <figcaption>
+      <b>Figure 7. What an annotator does.</b>
+      Each message goes on with one field added, here <b>on_topic</b>.
+      Exactly one message leaves for each message taken, and it is the same
+      message: everything it carried, it still carries.</figcaption>
+  </figure>
+
+  <figure class="fig wideout">
+    <div class="stage" style="border:0;padding:0;background:none">
+      <canvas id="author" width="1040" height="300"></canvas>
+    </div>
+    <div class="figctl">
+      <div class="ctl">
+        <label>messages arriving at in <span class="val"></span></label>
+        <input type="range" min="0" max="2" step="0.1" value="0.6" data-k="arrive">
+      </div>
+      <div class="ctl">
+        <label>the agent's own speed <span class="val"></span></label>
+        <input type="range" min="0.1" max="2" step="0.1" value="0.8" data-k="speed">
+      </div>
+      <div class="btns">
+        <button data-k="step">Step</button>
+        <button data-k="reset">Reset</button>
+        <button data-k="play" class="primary">Pause</button>
+      </div>
+    </div>
+    <figcaption>
+      <b>Figure 8. What an author does.</b>
+      Each message taken goes no further. The author puts zero, one or more
+      <em>new</em> messages (green) on its outbox; nothing of the message it
+      received leaves unless the author writes it into a new one.</figcaption>
+  </figure>
 
 
 
@@ -582,7 +659,7 @@ The system has three types of actions: agent actions, outbox actions, and channe
       </div>
     </div>
     <figcaption>
-      <b>Figure 6. Selecting any action.</b>
+      <b>Figure 9. Selecting any action.</b>
       Actions of the office of Figure 2,represented as
       balls in a jar.
       The bars record how many steps have passed since each action was last
@@ -741,74 +818,7 @@ Z -&gt; Y</pre>
         which is subject to axioms 1 to 3.</span></li>
   </ol>
 
-  <h2><span class="n">SECTION 6</span>The picture is the code</h2>
-  <p>That was not an analogy. The picture is what the framework runs, and the
-    framework will print it back to you. Figure 1 is described in a file
-    called <code>office.md</code>:</p>
-
-<pre><span class="k">sources:</span>
-    al_jazeera(max_articles=2)
-    bbc_world(max_articles=2)
-
-<span class="k">sinks:</span>
-    console_printer
-    discard
-
-<span class="k">agents:</span>
-    Felix: topic_filter
-    Rex: router(on="on_topic")
-
-<span class="k">connections:</span>
-    al_jazeera, bbc_world -&gt; Felix -&gt; Rex
-    Rex.yes -&gt; console_printer
-    Rex.no -&gt; discard</pre>
-
-  <p>Every arrow under <b>connections:</b> is one instance of the picture you
-    just played with: an outbox, a connection, an inbox. Ask the framework to
-    list them and that is what it prints, one per connection:</p>
-
-<pre>$ dsl draw .
-  ...
-  arrows:
-    al_jazeera -&gt; Felix
-    bbc_world -&gt; Felix
-    Felix -&gt; Rex
-    Rex.yes -&gt; console_printer
-    Rex.no -&gt; discard</pre>
-
-  <p>Five connections, five copies of the animation, running at once and
-    independently. An office of forty agents is the same picture many times.
-    There is nothing else in the model.</p>
-
-  <div class="task">
-    <h4>Task 5 · Run it</h4>
-    <p>Make yourself a copy, look at it, and run it:</p>
-<pre>$ dsl init org_news_filter my_filter
-$ cd my_filter
-$ dsl draw .     <span class="c"># the picture</span>
-$ dsl check .    <span class="c"># is the wiring sound?</span>
-$ dsl run .      <span class="c"># watch messages move</span></pre>
-    <p><code>dsl run</code> needs your key (setup, step 5): Felix is an LLM
-      agent. Open <code>office.md</code> and satisfy yourself that you can point, in
-      Figure 1, at every connection it names, and at the two that end at
-      Felix's inbox.</p>
-  </div>
-
-  <div class="task">
-    <h4>Task 6 · Break it on purpose</h4>
-    <p>In <code>office.md</code>, change <code>Rex.no -&gt; discard</code>
-      to <code>Felix.no -&gt; discard</code> and run <code>dsl check .</code>
-      again:</p>
-<pre>problem: line 18: Felix has one outbox, out; it has no 'no'. See `dsl grammar`, Ports.</pre>
-    <p>Felix is an agent, not a router: it has one way out. <code>dsl check</code>
-      also notes that Rex now has nowhere to send an article Felix marks
-      <code>no</code>. Then put it back. Notice which kind of mistake that was: it is wrong in
-      the <em>structure</em>, so it can be caught without running anything.
-      Hold on to that distinction — you are about to meet a mistake that cannot
-      be.</p>
-  </div>
-
-  <h2><span class="n">SECTION 7</span>Now the question</h2>
+  <h2><span class="n">SECTION 6</span>Now the question</h2>
   <p class="lead">Here is the office of <b>Figure 2</b> again, frozen. X's outbox
     is empty. Y's inbox is empty. Both agents have finished everything they were
     given.</p>
@@ -830,7 +840,7 @@ $ dsl run .      <span class="c"># watch messages move</span></pre>
     </div>
     <div class="verdict" id="verdictB">Ask them.</div>
     <figcaption>
-      <b>Figure 7. Asking every agent whether it is idle.</b>
+      <b>Figure 10. Asking every agent whether it is idle.</b>
       The office of Figure 2, frozen: both agents have finished everything
       they were given, and one message is still in the connection between them.
     </figcaption>
@@ -871,30 +881,16 @@ $ dsl run .      <span class="c"># watch messages move</span></pre>
     not produce a wrong answer; it produces an office that runs for ever. That
     happened in this framework: an agent's thread ended without reaching the
     shutdown protocol, detection waited for an agent that was gone, and the whole
-    office hung. <code>dsl check</code> was silent, and correctly so — the wiring
-    was fine. It was a fact about the execution, not about the structure. You met
-    that boundary in Task 6.</p>
+    office hung. Checking the wiring before running could not have caught it: the
+    wiring was fine. It was a fact about the execution, not about the
+    structure.</p>
 
-  <h2><span class="n">SECTION 8</span>Before the first class</h2>
+  <h2><span class="n">SECTION 7</span>Before the first class</h2>
   <ol>
-    <li>Tasks 5 and 6 done, on your own machine.</li>
     <li>The four axioms written down somewhere you will find again.</li>
     <li>One sentence: <em>the thing I would like to have watched.</em> It will
       become your own office. It does not have to be right — it has to be yours.</li>
   </ol>
-
-  <h3>Where to get answers without asking anybody</h3>
-  <p>You are welcome to use an AI assistant in this course, and it will be wrong
-    about this framework in ways you cannot detect, because it has read a
-    thousand others. These four commands answer from your own installation, which
-    is the version you are actually running:</p>
-<pre>dsl grammar     <span class="c"># what office.md is allowed to say</span>
-dsl roles       <span class="c"># every role that ships, and what it adds</span>
-dsl list        <span class="c"># every office that ships, to copy and read</span>
-dsl doctor      <span class="c"># what is installed, and whether it is stale</span></pre>
-  <p>A habit worth forming this week: when an assistant tells you something about
-    an office, ask it which command it read that from. If it cannot say, it did
-    not read it.</p>
 
   <footer>
     DisSysLab · <a href="index.html">course index</a> ·
@@ -1173,7 +1169,7 @@ dsl doctor      <span class="c"># what is installed, and whether it is stale</sp
     });
   })();
 
-  // ══ Figure 6 — a computation is a sequence of chosen actions ═══════
+  // ══ Figure 9 — a computation is a sequence of chosen actions ═══════
   //
   // The same office as Figure 2, described the other way round. There it
   // was four independent schedulers running at their own rates; here it
@@ -1574,6 +1570,141 @@ dsl doctor      <span class="c"># what is installed, and whether it is stale</sp
       sched.reset();
     };
   })();
+
+  // ══ Figures 6–8 — a router, an annotator, an author ════════════════
+  //
+  // One small state machine for all three, as in Figure 5: wait on the
+  // one inbox; take its head; process it to completion; put what the
+  // kind says on the outbox(es); wait again. Only `act` differs. A
+  // message is a token; a field is the tag drawn above it.
+  function kindFigure(id, opt){
+    const cv=document.getElementById(id); if(!cv) return;
+    const c=cv.getContext('2d'), W=1040, H=300;
+    const IN = Q(120, 150, 4, 'inbox in');
+    const OUT = opt.outs.map(o => Q(690, o.y, 5, 'outbox '+o.name));
+    const qs=[IN, ...OUT];
+    const BX0=420, BX1=600, BY0=88, BY1=212, BCX=(BX0+BX1)/2, BCY=150;
+    let n=1, made=1, held=null, phase='waiting', timer=0, leaving=[], last='';
+    let speed=0.8;
+
+    function tag(c,m){
+      if(!m.tag) return;
+      c.globalAlpha=Math.max(0,Math.min(1,m.alpha));
+      c.font='600 10.5px '+FS;
+      const tw=c.measureText(m.tag).width+10, x=m.x-tw/2, y=m.y-TOK/2-17;
+      c.fillStyle = m.tag==='no' ? '#fbe3d8' : '#d6f2ea';
+      c.strokeStyle = m.tag==='no' ? '#d13d0e' : '#00947d'; c.lineWidth=1.2;
+      roundRect(c,x,y,x+tw,y+14,5); c.fill(); c.stroke();
+      c.fillStyle = m.tag==='no' ? '#b0553a' : '#00806c';
+      c.textAlign='center'; c.textBaseline='middle';
+      c.fillText(m.tag, m.x, y+7.5);
+      c.globalAlpha=1;
+    }
+
+    const sched=scheduler([
+      {key:'arrive', rate:0.6, next:0, run:()=>{
+        if(IN.items.length>=IN.cap) return;
+        IN.items.push({label:opt.letter+n, hue:205, x:IN.x0-34, y:IN.y, alpha:1,
+                       tag: opt.arriveTag ? opt.arriveTag() : null});
+        n++; IN.flash=1; }},
+      ...OUT.map((q,i)=>({key:'drain'+i, rate:0.9, next:0, run:()=>{
+        const m=head(q); if(m){ q.items.shift(); m.tx=1000; leaving.push(m); } }}))
+    ]);
+
+    function tick(dt){
+      timer += dt*speed;
+      if(phase==='waiting'){
+        const m=head(IN); if(!m) return;
+        IN.items.shift(); held=m; phase='processing'; timer=0;
+      } else if(timer>=1.1){
+        if(!held.sends) held.sends = opt.act(held, ()=>opt.newLetter+(made++));
+        const sends = held.sends;
+        if(sends.some(([i])=>OUT[i].items.length>=OUT[i].cap)) return;  // wait for room
+        sends.forEach(([i,m])=>{ const t={...m, x:BCX, y:BCY, alpha:1}; delete t.sends; OUT[i].items.push(t); OUT[i].flash=1; });
+        last = opt.say(held, sends);
+        held=null; phase='waiting'; timer=0;
+      }
+    }
+
+    loop(dt=>{
+      if(sched.isPlaying()) tick(dt);
+      sched.tick(dt);
+      qs.forEach(q=>{ q.items.forEach((m,i)=>glide(m,slotX(q,i),q.y,dt)); q.flash=Math.max(0,q.flash-dt*1.6); });
+      if(held) glide(held,BCX,BCY,dt);
+      leaving.forEach(m=>{ glide(m,m.tx,m.y,dt); m.alpha-=dt; });
+      leaving=leaving.filter(m=>m.alpha>0);
+
+      c.clearRect(0,0,W,H);
+      arrow(c,40,150,IN.x0-6,150);
+      arrow(c,IN.x1+6,150,BX0-6,150);
+      OUT.forEach(q=>{ arrow(c,BX1+6,BCY+(q.y-BCY)*0.25,q.x0-6,q.y); arrow(c,q.x1+6,q.y,1010,q.y); });
+
+      const busy = phase==='processing';
+      c.fillStyle = busy ? '#eef4f2' : '#f3f1ec'; c.strokeStyle='#2f3d55'; c.lineWidth=2;
+      roundRect(c,BX0,BY0,BX1,BY1,11); c.fill(); c.stroke();
+      c.fillStyle='#2f3d55'; c.textAlign='center'; c.textBaseline='middle';
+      c.font='600 16px '+FS; c.fillText(opt.name,BCX,BY0+18);
+      c.font='12.5px '+FS; c.fillStyle= busy ? '#00806c' : '#8a8578';
+      c.fillText(busy?'processing':'waiting on in', BCX, BY1-16);
+
+      qs.forEach(q=>drawQ(c,q));
+      const all=[...leaving, ...qs.flatMap(q=>q.items), ...(held?[held]:[])];
+      all.forEach(m=>drawTok(c,m)); all.forEach(m=>tag(c,m));
+
+      c.font='14px '+FS; c.fillStyle='#3b4353'; c.textAlign='center'; c.textBaseline='middle';
+      c.fillText(busy ? 'processing '+held.label+' — the inbox is not being read'
+                      : (last || 'waiting on in'), W/2, 282);
+    });
+
+    const fig=cv.closest('figure');
+    fig.querySelectorAll('input[data-k]').forEach(inp=>{
+      const val=inp.closest('.ctl').querySelector('.val');
+      const set=()=>{ if(inp.dataset.k==='speed') speed=+inp.value; else sched.setRate(inp.dataset.k,+inp.value);
+                      val.textContent = (+inp.value===0) ? '— stopped' : '— about '+(+inp.value).toFixed(1)+'×/s'; };
+      inp.addEventListener('input',set); set();
+    });
+    const play=fig.querySelector('[data-k=play]');
+    play.onclick=()=>{ sched.setPlaying(!sched.isPlaying()); play.textContent=sched.isPlaying()?'Pause':'Play'; };
+    fig.querySelector('[data-k=step]').onclick=()=>{
+      if(sched.isPlaying()){ sched.setPlaying(false); play.textContent='Play'; }
+      const before=phase; tick(2);
+      if(phase===before) sched.step();
+    };
+    fig.querySelector('[data-k=reset]').onclick=()=>{
+      qs.forEach(q=>{q.items=[];q.flash=0;}); leaving=[]; held=null;
+      n=1; made=1; phase='waiting'; timer=0; last=''; sched.reset();
+    };
+  }
+
+  const yesno = () => Math.random()<0.6 ? 'yes' : 'no';
+
+  // Figure 6: the field was written before the router; it only reads it.
+  kindFigure('router', {
+    name:'Rex', letter:'a', outs:[{name:'yes', y:76}, {name:'no', y:224}],
+    arriveTag: yesno,
+    act: m => [[m.tag==='yes' ? 0 : 1, m]],
+    say: (m) => m.label+' has '+m.tag+' — Rex put it on outbox '+m.tag+', unchanged'
+  });
+
+  // Figure 7: the same message goes on, with one field added.
+  kindFigure('annotator', {
+    name:'Felix', letter:'a', outs:[{name:'out', y:150}],
+    act: m => [[0, {...m, tag:yesno()}]],
+    say: (m, s) => m.label+' went on with a field added: '+s[0][1].tag
+  });
+
+  // Figure 8: zero or more new messages; the one received goes no further.
+  kindFigure('author', {
+    name:'the author', letter:'q', newLetter:'r', outs:[{name:'out', y:150}],
+    act: (m, fresh) => {
+      const k = [0,1,1,2][Math.floor(Math.random()*4)];
+      return Array.from({length:k}, () => [0, {label:fresh(), hue:150}]);
+    },
+    say: (m, s) => m.label+' goes no further — the author wrote ' +
+                   (s.length ? s.length+' new message'+(s.length>1?'s':'')+': '+s.map(x=>x[1].label).join(', ')
+                             : 'nothing')
+  });
+
 })();
 </script>
 
