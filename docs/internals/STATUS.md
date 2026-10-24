@@ -1,4 +1,4 @@
-# Where the project is — 2026-10-17
+# Where the project is — 2026-10-23
 
 One page. What is true now, what is open, and in what order. This is the
 only status document kept current; the history is in git and in
@@ -139,6 +139,49 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
   not yet confirmed by a Windows run: CRLF checkout (`.gitattributes`
   now pins LF), `CSVPointsSource` leaving its file open at the end,
   unlocked appends in the scripted model's log, and `\` in paths.
+
+## Plan to mid-November (Mani, 23 Oct)
+
+Goal: every lab and homework written, and **2.0.0 released, by about
+15 November**. Order: labs, then homework, then the release. "Mani" marks
+what needs his key, his machine or his decision; the container has no
+network, so every real-model run is his.
+
+**Week of 26 Oct: labs that exist, then Lab 3.**
+- Mani: Lab 1 real-key rehearsal (10 minutes; Open 6 below). Lab 2:
+  `trials.py --regrade` in `lab2/`, then 3 × 10 runs on the default model
+  (clean, log injection, status page).
+- Lab 3, *Agent SDK, managed agents* (index, Part 5): draft `lab3.html`
+  and its code from the topics on the index (the agent loop, subagents,
+  context isolation, termination, failures and retries, budgets). Written
+  from the SDK docs; Mani or a TA runs it once with the SDK. Homework 7
+  depends on it.
+
+**Week of 2 Nov: Lab 4, and the staff plan.**
+- Lab 4, *Agent collaboration*: built on the gallery's `debate`. A panel
+  of one model family against a panel of three, on questions whose
+  answers are known (correlated errors); voting versus a judge; a grader
+  and N runs. Mani runs the panels (OpenRouter).
+- `labs.html` brought to 2.0; `lecture_build.html` retired (Open 5).
+- Start homework: 2 (global snapshots, project plan) and 4 (termination
+  detection, temporal logic).
+
+**Week of 9 Nov: homework, then the release.**
+- Homework 5–9 (agent knowledge and FLP, Paxos, Lab 3 and Byzantine
+  consensus, Bitcoin, sharing resources), each with solutions, since a
+  pass needs homework turned in and solutions inspected.
+- Release 2.0.0 (Open 2 and 3): the model reliability check, a read of
+  `README.pypi.md`, the wheel into an empty virtualenv, `GETTING_STARTED`
+  followed literally on a clean machine with a real key, Windows CI green.
+  Mani publishes to PyPI.
+
+**Risk.** Three weeks is tight. If it slips, the release moves (by a
+week at most) before any lab does: students need the labs, and a release
+after mid-November still leaves seven weeks before 4 January.
+
+**After mid-November, before 4 January:** thirty students installing at
+once (Open 4), `tahoe_case.html` committed after Lab 1 is due, the cost
+guard (Open 7), and a 2.0.x for whatever the install trial finds.
 
 ## Open, in order
 

@@ -70,6 +70,10 @@
   .links a.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
   .links a.primary:hover{background:#000; color:#fff}
   .unwritten{font-size:13.5px; color:var(--muted); font-style:italic}
+  /* a page for interested students, not a class: no number */
+  ol.plan > li.extra{counter-increment:none; background:transparent; border-style:dashed}
+  ol.plan > li.extra::before{content:"Optional"; color:var(--muted)}
+  .li-body p.note-inline{font-size:14px; color:var(--muted); font-style:italic}
   /* homework and project deadlines: purple, so they stand out from classes */
   .li-body h3.hw{margin:14px 0 6px; padding:7px 12px; font-size:15.5px;
     color:#5b3f87; background:rgba(123,94,167,.10);
@@ -486,6 +490,9 @@
     <li>
       <div class="li-body">
         <h3>Lab 4: Agent collaboration</h3>
+        <p class="note-inline">Lab 4 builds on Part 6, agreement when agents
+          lie: voting, Byzantine agreement and correlated errors. It comes
+          last so that it falls in the last week of the term.</p>
         <ul class="topics">
           <li><b>Agreement among LLMs:</b> voting, debate, and a judge agent.
             When does majority voting help, and when does it fail? &mdash; the
@@ -513,9 +520,11 @@
       </div>
     </li>
 
-    <li>
+    <li class="extra">
       <div class="li-body">
         <h3>Diffusing computations</h3>
+        <p class="note-inline">Not a class: the term has 19. For students who
+          want to go further.</p>
         <p>When an agent hands a task to
           other agents, which hand it on again, how does the first agent learn
           that everything it started has stopped?</p>
