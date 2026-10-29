@@ -80,9 +80,15 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
   board round by round; students who find no attack that works write one),
   `grade.py` (quality, attack, spread on the board) and `trials.py` (N runs,
   rates; `--command` for any other system that writes `report.jsonl`).
-  Students run A open board, B pipeline with contracts, C guarded board
-  and D their own, 10+ runs each, and argue which to deploy. References
-  for B and C in `tests/e2e/incident_room_pipeline/` and `_guarded/`;
+  **Since 29 Oct (Mani: the middle path)** the handout opens with the
+  whole incident and an animation (the log, the dashboards, the coupon-code
+  injection, the board's two rounds, Wren's report, clean or attacked);
+  students run 10 clean and 10 attacked, then change Lena once, (a) a
+  better prompt or (b) a one-word contract
+  (`tests/e2e/incident_room_bounded_logs/`), and run 10 again: a
+  three-row table and half a page. Designs B and C are no longer in the
+  handout; their references stay in `tests/e2e/incident_room_pipeline/`
+  and `_guarded/`;
   `tests/e2e/test_incident_room.py` and `test_lab2_handout.py`. An optional
   Claude Agent SDK track (`claude_room.py` on the page) is **untested**:
   written from the SDK docs; a staff member with the SDK should run it once.

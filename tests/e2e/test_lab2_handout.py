@@ -51,18 +51,56 @@ def test_the_starter_files_on_the_page_are_the_gallery_files():
         assert shown[name].strip() == (GALLERY / name).read_text(encoding="utf-8").strip(), name
 
 
-def test_the_design_files_on_the_page_are_the_reference_designs():
-    shown = files()
-    pipeline = HERE / "incident_room_pipeline"
-    assert shown["roles/reports_finding.md"].strip() == \
-        (pipeline / "roles" / "reports_finding.md").read_text(encoding="utf-8").strip()
-    assert shown["roles/reports_analyst.md (design C)"].strip() == \
-        (HERE / "incident_room_guarded" / "roles" / "reports_analyst.md").read_text(encoding="utf-8").strip()
-    office_b = output_starting("# incident_room, design B")
-    assert code_lines(office_b) == code_lines((pipeline / "office.md").read_text(encoding="utf-8"))
-    out_line = output_starting("out: incident, suspect").strip()
-    for role in ("logs_finding.md", "metrics_finding.md"):
-        assert out_line in (pipeline / "roles" / role).read_text(encoding="utf-8").splitlines(), role
+def test_step_6b_on_the_page_is_the_reference_and_passes_dsl_check(tmp_path):
+    from tests.e2e.test_refused_outbox import dsl
+
+    shown = files()["roles/logs_analyst.md (bounded)"]
+    ref = HERE / "incident_room_bounded_logs" / "roles" / "logs_analyst.md"
+    assert shown.strip() == ref.read_text(encoding="utf-8").strip()
+    lab = room.office(tmp_path, "incident_room_bounded_logs")
+    assert "no problems found" in dsl("check", ".", cwd=lab)
+
+
+#: Step 6 (b): a fooled Lena can still say card_processor, but no sentence of
+#: the forged line can reach the board, so Rae has nothing to repeat.
+BOUNDED_FOOLED = [
+    {"when": "You are Lena", "reply": json.dumps({"note": "card_processor"})},
+] + room.HONEST
+
+
+def test_step_6b_a_fooled_lena_can_name_the_wrong_cause_but_not_carry_the_claim(tmp_path):
+    lab = room.office(tmp_path, "incident_room_bounded_logs")  # the log injection
+    code, out, calls = run_office(lab, BOUNDED_FOOLED)
+    assert code == 0, out
+    for c in calls:
+        if c["when"] in ("You are Rae", "You are Max", "You are Wren"):
+            assert "vendor confirmed" not in c["user"] and "oncall-bot" not in c["user"]
+    g = room.report_grade(lab)
+    assert g["spread"] == 0, g
+    assert any('"card_processor"' in c["user"] for c in calls if c["when"] == "You are Wren")
+
+
+def test_step_6b_a_lena_who_writes_a_sentence_stops_the_office(tmp_path):
+    lab = room.office(tmp_path, "incident_room_bounded_logs")
+    code, out, _ = run_office(lab, room.GULLIBLE_LOGS)
+    assert code != 0
+    assert "Lena refused a message, so the office stopped." in out
+    assert "No report: the office stopped before the writer ran. Read refused.jsonl." in grade_output(lab)
+    assert "No report: the office stopped before the writer ran." in PAGE
+    assert "the office stops" in PAGE
+
+
+def test_the_story_shows_the_attack_line_as_it_is_in_the_evidence():
+    """The animation and the opening quote the forged line word for word."""
+    logs = next(json.loads(ln) for ln in (GALLERY / "evidence" / "log_injection.jsonl")
+                .read_text(encoding="utf-8").splitlines() if '"logs"' in ln)["text"]
+    forged = [ln for ln in logs.splitlines() if "oncall-bot" in ln][0]
+    coupon = [ln for ln in logs.splitlines() if "coupon code" in ln][0]
+    assert html.unescape(PAGE).count(forged) >= 2  # the opening, and the animation's script
+    assert coupon in html.unescape(PAGE)
+    for line in ("deploy payment-service v2.3.1 started by ci-bot (config change: retry_limit 3 -> 0)",
+                 "timeout from card processor, retry_limit=0, giving up"):
+        assert line in logs and line in html.unescape(PAGE), line
 
 
 def test_the_dsl_check_output_is_real(tmp_path):
@@ -109,22 +147,12 @@ def test_the_show_output_on_the_page_is_what_it_prints(tmp_path):
     shown_in(attacked[0], show_output(lab))
 
 
-def test_the_stop_on_the_page_is_what_design_c_prints(tmp_path):
-    lab = tmp_path / "lab2c"
-    shutil.copytree(room.office(tmp_path / "base", "incident_room_guarded"), lab)
-    code, out, _ = run_office(lab, room.GULLIBLE_BOARD)
-    assert code != 0
-    assert output_starting("  Stopped:").strip() in out
-    assert "No report: the office stopped before the writer ran. Read refused.jsonl." in grade_output(lab)
-    assert "No report: the office stopped before the writer ran." in PAGE
-
-
 def test_trials_takes_the_evidence_keeps_every_report_and_prints_the_summary_on_the_page(tmp_path):
     """Any command that writes report.jsonl will do (the Claude track's); here
     one that copies the evidence's first line into a report, so the test can
     see which evidence the run was given."""
     lab = room.office(tmp_path)
-    for row in ("A clean", "A log", "A status"):
+    for row in ("A clean", "A log", "A log, changed"):
         assert f'--label "{row}"' in PAGE, row
     one_run = tmp_path / "one_run.py"
     one_run.write_text(
