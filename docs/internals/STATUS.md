@@ -86,7 +86,13 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
   students run 10 clean and 10 attacked, then change Lena once, (a) a
   better prompt or (b) a one-word contract
   (`tests/e2e/incident_room_bounded_logs/`), and run 10 again: a
-  three-row table and half a page. Designs B and C are no longer in the
+  three-row table and half a page. **Class 6 is `course/IncidentRoom.html`**
+  (Present mode): the incident, the animation, why the board spreads one
+  lie, Mani's 40 real runs on `claude-sonnet-4-5` (29 Oct; the same office
+  ranged from 6 to 10 of 10; pooled, the attack got through 8 of 30), what
+  ten runs can show, and the index's guardrail topics placed in the room.
+  Its numbers and quotes are checked against
+  `tests/fixtures/lab2_runs/2026-10-29.jsonl`. Designs B and C are no longer in the
   handout; their references stay in `tests/e2e/incident_room_pipeline/`
   and `_guarded/`;
   `tests/e2e/test_incident_room.py` and `test_lab2_handout.py`. An optional
