@@ -13,3 +13,7 @@
 `course/IncidentRoom.html` quotes these runs and prints their rates;
 `tests/integration/test_incident_room_page.py` checks every quote and
 number against this file.
+
+`2026-10-30.jsonl`: 10 runs, `A log, one word`: Lab 2's Step 6 (b), Lena
+bounded to one cause from a list (`tests/e2e/incident_room_bounded_logs`),
+on the same evidence and model (Mani, 30 Oct).

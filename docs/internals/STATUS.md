@@ -89,7 +89,8 @@ branches and pull requests, see [CONTRIBUTING.md](../../CONTRIBUTING.md)).
   three-row table and half a page. **Class 6 is `course/IncidentRoom.html`**
   (Present mode): the incident, the animation, why the board spreads one
   lie, Mani's 40 real runs on `claude-sonnet-4-5` (29 Oct; the same office
-  ranged from 6 to 10 of 10; pooled, the attack got through 8 of 30), what
+  ranged from 6 to 10 of 10; pooled, the attack got through 8 of 30; with
+  Lena bounded to one word, 30 Oct, 0 of 10, and 10 of 10 found), what
   ten runs can show, and the index's guardrail topics placed in the room.
   Its numbers and quotes are checked against
   `tests/fixtures/lab2_runs/2026-10-29.jsonl`. Designs B and C are no longer in the

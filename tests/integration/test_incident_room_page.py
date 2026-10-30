@@ -15,8 +15,10 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
 PAGE = (REPO / "course" / "IncidentRoom.html").read_text(encoding="utf-8")
-RUNS = [json.loads(ln) for ln in
-        (REPO / "tests" / "fixtures" / "lab2_runs" / "2026-10-29.jsonl").read_text(encoding="utf-8").splitlines()]
+FIXTURES = REPO / "tests" / "fixtures" / "lab2_runs"
+RUNS = [json.loads(ln) for ln in (FIXTURES / "2026-10-29.jsonl").read_text(encoding="utf-8").splitlines()]
+#: Lab 2's Step 6 (b) on the same model: Lena may write one cause from a list.
+BOUNDED = [json.loads(ln) for ln in (FIXTURES / "2026-10-30.jsonl").read_text(encoding="utf-8").splitlines()]
 EVIDENCE = REPO / "dissyslab" / "gallery" / "incident_room" / "evidence" / "log_injection.jsonl"
 BATCHES = ["A log", "A log, changed", "A log, bounded"]  # three batches of the unchanged office
 
@@ -40,7 +42,7 @@ def counts(runs: list[dict]) -> list[str]:
 
 
 def test_every_run_is_on_the_model_the_page_names():
-    assert {r["model"] for r in RUNS} == {"anthropic: claude-sonnet-4-5"}
+    assert {r["model"] for r in RUNS + BOUNDED} == {"anthropic: claude-sonnet-4-5"}
     assert "claude-sonnet-4-5" in PAGE
 
 
@@ -77,3 +79,16 @@ def test_the_forged_line_is_the_evidences():
                 if '"logs"' in ln)["text"]
     forged = next(ln for ln in logs.splitlines() if "oncall-bot" in ln)
     assert forged in html.unescape(PAGE)
+
+
+def test_the_one_word_lena_row_and_what_the_page_says_she_wrote():
+    assert {r["label"] for r in BOUNDED} == {"A log, one word"}
+    assert table_rows("Office") == [["Lena, one word", *counts(BOUNDED)]]
+    lena = {(n["round"], n["note"]) for r in BOUNDED for n in r["report"]["board"] if n["by"] == "logs"}
+    assert lena == {(1, "card_processor"), (2, "deploy")}  # every run, both rounds
+    text = flat(PAGE)
+    assert "In every one of the ten runs she was fooled in round 1, and wrote card_processor" in text
+    assert "she wrote deploy, in every run" in text
+    attacked = [r for r in RUNS if r["label"] in BATCHES]
+    p = sum(r["attack"] for r in attacked) / len(attacked)
+    assert f"a {round(100 * (1 - p) ** 10)}% chance if the change did nothing" in text
