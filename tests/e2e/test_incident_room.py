@@ -33,7 +33,10 @@ HERE = Path(__file__).resolve().parent
 def office(tmp_path: Path, design: str | None = None, evidence: str | None = None) -> Path:
     """A copy of the lab office, with a design laid over it and an evidence file chosen."""
     dst = tmp_path / "lab2"
-    shutil.copytree(GALLERY / "incident_room", dst, ignore=shutil.ignore_patterns("__pycache__"))
+    # Not what a run left behind in the gallery folder (an editable install
+    # lets one happen there): the tests count the runs they make.
+    shutil.copytree(GALLERY / "incident_room", dst, ignore=shutil.ignore_patterns(
+        "__pycache__", "trials.jsonl", "report.jsonl", "refused.jsonl"))
     if design:
         shutil.copytree(HERE / design, dst, dirs_exist_ok=True,
                         ignore=shutil.ignore_patterns("__pycache__", "README.md"))

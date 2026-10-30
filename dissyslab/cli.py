@@ -1208,6 +1208,10 @@ def cmd_init(args: argparse.Namespace) -> int:
                 "__pycache__", "*.pyc", "__init__.py",
                 "*_DESIGN.md", "*_BUILD_PLAN.md", "*_FEEDBACK.md",
                 "draft_*", "paper", "*.pdf",
+                # What a run writes. A gallery office run in place (an
+                # editable install) leaves these beside office.md, and a
+                # copy would start with someone else's runs in it.
+                "trials.jsonl", "report.jsonl", "refused.jsonl",
             ),
         )
     except OSError as exc:
