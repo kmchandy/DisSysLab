@@ -674,6 +674,7 @@ python trials.py --command "python claude_room.py" --evidence evidence/log_injec
 <table>
 <tr><th>You see</th><th>What to do</th></tr>
 <tr><td><code>No report: the office stopped before the writer ran.</code></td><td>A contract refused a reply (Step 6 (b)). <code>refused.jsonl</code> says which agent and why.</td></tr>
+<tr><td><code>run  1: failed (exit code ...)</code> from <code>trials.py</code></td><td>The office did not run; the lines under it are what <code>dsl</code> said. The usual cause: you are in the wrong folder. Run it in the copy <code>dsl init</code> made, not in the gallery.</td></tr>
 <tr><td><code>No report in report.jsonl</code></td><td>Run the office first, or look at the terminal: the run failed before the writer.</td></tr>
 <tr><td>A run hangs with no output</td><td>Ctrl-C prints the summary; a stall report says which agent is waiting for what.</td></tr>
 <tr><td><code>dsl check</code> names a line and a problem</td><td>Do what it says. After Step 6, check the front matter of <code>roles/logs_analyst.md</code>: the lines between the two <code>---</code>.</td></tr>

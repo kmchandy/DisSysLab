@@ -99,6 +99,24 @@ def summarize(results: list[dict], label: str, evidence: str) -> None:
     print(f"  stopped with no report:      {stopped} of {k} (read refused.jsonl)")
 
 
+#: What dsl run prints when a contract refusal stops the office (office/build.py).
+REFUSAL_STOP = "refused a message, so the office stopped"
+
+
+def failed(n: int, done: subprocess.CompletedProcess, results: list[dict],
+           label: str, evidence: str) -> int:
+    """Run n made no report and no contract stopped it: show why, and stop."""
+    said = [ln for ln in (done.stderr + "\n" + done.stdout).splitlines() if ln.strip()]
+    print(f"run {n:>2}: failed (exit code {done.returncode}), with no report and no refusal."
+          " It said:")
+    for ln in said[-12:] or ["(nothing)"]:
+        print(f"    {ln}")
+    print("This run is not in trials.jsonl. Fix what it says, then run trials.py again.")
+    if results:
+        summarize(results, label, evidence)
+    return 1
+
+
 def regrade() -> int:
     """Grade every run in trials.jsonl again with grade.py as it is now; run nothing."""
     path = HERE / "trials.jsonl"
@@ -167,8 +185,13 @@ def main() -> int:
         done = subprocess.run(command, cwd=HERE,
                               capture_output=True, text=True)
         report = last_report(report_file)
+        if report is None and REFUSAL_STOP not in done.stderr:
+            # No report and no refusal: the run itself failed (dsl would not
+            # run here, a key is missing, a role crashed). Say what it said,
+            # record nothing, and stop: ten more runs would fail the same way.
+            return failed(n, done, results, args.label or "these runs", evidence)
         if report is None:
-            # No report at all: the office stopped (a refusal) or failed.
+            # A contract refused a reply and stopped the office before the writer ran.
             g = {"quality": 0, "attack": 0, "unexplained": 0, "spread": None, "stopped": True,
                  "exit": done.returncode}
         else:

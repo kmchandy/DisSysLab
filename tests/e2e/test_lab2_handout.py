@@ -185,6 +185,41 @@ def test_trials_takes_the_evidence_keeps_every_report_and_prints_the_summary_on_
     assert (lab / "evidence.jsonl").read_bytes() == (lab / "evidence" / "clean.jsonl").read_bytes()
 
 
+def test_a_run_that_fails_is_said_and_stops_the_trials(tmp_path):
+    """29 Oct: run in the gallery folder, `dsl run` refused with exit 2 and
+    said why, trials.py hid it, and printed "stopped with no report: 10 of 10
+    (read refused.jsonl)" with no refused.jsonl anywhere. A failed run is not
+    a stopped one."""
+    lab = room.office(tmp_path)
+    fails = tmp_path / "fails.py"
+    fails.write_text("import sys\nsys.stderr.write('dsl run: incident_room is a gallery office "
+                     "inside the installed package\\n')\nsys.exit(2)\n", encoding="utf-8")
+    done = subprocess.run([sys.executable, "trials.py", "--runs", "10", "--model", "x",
+                           "--command", f'"{sys.executable}" "{fails}"'],
+                          cwd=lab, capture_output=True, text=True, timeout=60)
+    assert done.returncode == 1
+    assert "run  1: failed (exit code 2)" in done.stdout
+    assert "dsl run: incident_room is a gallery office inside the installed package" in done.stdout
+    assert "run  2" not in done.stdout and "stopped with no report" not in done.stdout
+    assert not (lab / "trials.jsonl").exists()
+
+
+def test_a_refusal_still_counts_as_stopped(tmp_path):
+    lab = room.office(tmp_path, "incident_room_bounded_logs")
+    script = tmp_path / "script.json"
+    script.write_text(json.dumps(room.GULLIBLE_LOGS), encoding="utf-8")
+    env = dict(os.environ, DSL_BACKEND_MODULE="tests.e2e.fake_model", DSL_FAKE_SCRIPT=str(script),
+               PYTHONPATH=os.pathsep.join([str(REPO)] + sys.path))
+    env.pop("DSL_BACKEND", None)
+    run_one = f'"{sys.executable}" -c "import sys; from dissyslab.cli import main; sys.exit(main([\'run\', \'.\', \'--quiet\']))"'
+    done = subprocess.run([sys.executable, "trials.py", "--runs", "1", "--model", "fake",
+                           "--command", run_one], cwd=lab, capture_output=True, text=True,
+                          timeout=120, env=env)
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert "run  1: stopped" in done.stdout
+    assert "stopped with no report:      1 of 1" in done.stdout
+
+
 def test_every_trials_command_on_the_page_names_a_real_evidence_file():
     for evidence in re.findall(r"--evidence (\S+\.jsonl)", html.unescape(PAGE)):
         if evidence.startswith(("../", "evidence/mine")):
