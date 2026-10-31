@@ -170,6 +170,17 @@ network, so every real-model run is his.
   from the SDK docs; Mani or a TA runs it once with the SDK. Homework 7
   depends on it.
 
+**Lab 3, redesigned (Mani, 31 Oct):** *Agents that act*, on the Claude
+Agent SDK. The staff run it and keep the traces; students read the code,
+predict and check the traces. Part 1: Lab 1's dealer with a `book_sale`
+tool, open and with Lab 1's guard as a PreToolUse hook. Part 2: an agent
+told to make four tests pass, two of which contradict each other; variants
+base, honest (prompt), hook (only `pricing.py` writable), budget. Scripts,
+README and a checker in `course/lab3/` (tested without the SDK through
+`tests/fixtures/fake_agent_sdk`); `course/lab3.html` says what is pending.
+**Next: Mani's runs** (about 5 Nov; README step 4 first, then step 5;
+$40 cap), then the traces become the lab's material as in Class 6.
+
 **Week of 2 Nov: Lab 4, and the staff plan.**
 - Lab 4, *Agent collaboration*: built on the gallery's `debate`. A panel
   of one model family against a panel of three, on questions whose

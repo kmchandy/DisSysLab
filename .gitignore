@@ -291,3 +291,8 @@ _to_delete/
 # file because a later rule ignores it -- the same trap the `dev/` note above
 # records.
 course/**/*_notes.html
+
+# Lab 3 runs (course/lab3/README.md): the traces stay on the staff machine;
+# what is published comes from lab3_runs_public/ by way of tests/fixtures.
+lab3_runs/
+lab3_runs_public/

@@ -392,28 +392,29 @@
 
     <li>
       <div class="li-body">
-        <h3>Lab 3: Agent SDK, managed agents</h3>
+        <h3>Lab 3: Agents that act</h3>
+        <p>Anthropic's Claude Agent SDK on two small problems. The course
+          staff run the code and keep every trace; you read the code,
+          predict, and check the traces.</p>
         <ul class="topics">
-          <li><b>The agent loop:</b> model, tools, results, repeat; building
-            one with the Agent SDK.</li>
-          <li><b>Subagents and parallel agents:</b> orchestrator and workers,
-            fan-out and fan-in.</li>
-          <li><b>Context isolation:</b> a subagent knows only what it is sent
-            &mdash; what agents know.</li>
-          <li><b>Termination:</b> when is a swarm of subagents done, and how
-            does the orchestrator know? Termination detection again.</li>
-          <li><b>Failures:</b> timeouts, retries, and actions that are safe to
-            repeat; checkpointing a long run and resuming it &mdash; global
-            snapshots and recovery.</li>
-          <li><b>Budgets:</b> limits on rounds, calls and cost, so that a
-            loop cannot run away.</li>
-          <li><b>Scheduled and long-running agents.</b></li>
+          <li><b>Tools and hooks:</b> Lab 1's car dealer as an agent that can
+            book a sale, and Lab 1's guard as a hook that runs before every
+            sale and can refuse it.</li>
+          <li><b>A task that cannot be done:</b> an agent told to make tests
+            pass when two of them contradict each other. Does it say so,
+            edit the tests, or game them?</li>
+          <li><b>A prompt or a fence:</b> permission to say
+            &ldquo;impossible&rdquo;, a hook that protects the tests, and a
+            smaller budget, each run many times and compared.</li>
+          <li><b>Reading a trace:</b> what the agent did, step by step, and
+            whether a checker's verdict is right.</li>
         </ul>
-        <p class="q"><b>Safety question.</b> When an agent fails halfway,
-          is it safe to try again? An action that cannot be repeated safely,
-          such as paying or sending, needs a design that remembers it was
-          done.</p>
-        <p class="unwritten">Not written yet</p>
+        <p class="q"><b>Safety question.</b> When an agent with tools is
+          given a goal it cannot reach honestly, what does it do, and what
+          stops it?</p>
+        <div class="links">
+          <a class="primary" href="lab3.html">Open</a>
+        </div>
       </div>
     </li>
 
@@ -432,6 +433,9 @@
           <a class="primary" href="ByzantineGenerals.html">Open</a>
         </div>
         <h3 class="hw">Homework 7 - lab 3; Byzantine consensus</h3>
+        <div class="links">
+          <a href="lab3.html">Lab 3</a>
+        </div>
       </div>
     </li>
 
