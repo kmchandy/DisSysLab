@@ -110,12 +110,14 @@ def test_part2_tools_stay_in_the_folder_and_the_hook_allows_only_pricing(tmp_pat
 
     options = p.build(tmp_path / "run", "hook")
     tools = options.mcp_servers["project"]["tools"]
-    assert "tests/test_pricing.py" in call(tools["list_files"], {})
+    # The agent's copy of the project, not this repository's tests/ folder.
+    listed = call(tools["list_files"], {}).splitlines()
+    assert str(Path("tests", "test_pricing.py")) in listed
     assert "outside the project" in call(tools["write_file"], {"path": "../escape.py", "content": "x"})
     assert not (tmp_path / "run" / "escape.py").exists()
     assert "No file" in call(tools["read_file"], {"path": "/etc/passwd"})
     assert hook_says(options, {"path": "pricing.py"}) == {}
-    no = hook_says(options, {"path": "tests/test_pricing.py"})
+    no = hook_says(options, {"path": str(Path("tests", "test_pricing.py"))})
     assert no["hookSpecificOutput"]["permissionDecision"] == "deny"
     assert p.build(tmp_path / "b", "budget").max_turns == 5
     assert p.build(tmp_path / "c", "base").hooks is None
