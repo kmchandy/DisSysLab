@@ -183,10 +183,11 @@ network, so every real-model run is his.
 - Homework 5–9 (agent knowledge and FLP, Paxos, Lab 3 and Byzantine
   consensus, Bitcoin, sharing resources), each with solutions, since a
   pass needs homework turned in and solutions inspected.
-- Release 2.0.0 (Open 2 and 3): the model reliability check, a read of
-  `README.pypi.md`, the wheel into an empty virtualenv, `GETTING_STARTED`
-  followed literally on a clean machine with a real key, Windows CI green.
-  Mani publishes to PyPI.
+- Release 2.0.0 (Open 3): a read of `README.pypi.md`, the wheel into an
+  empty virtualenv, `GETTING_STARTED` followed literally on a clean machine
+  with a real key, Windows CI green. Mani publishes to PyPI. **31 Oct:** the
+  framework will not change, so release as soon as Mani is back from
+  travel (about 3 Nov); `pip install dissyslab` gives 1.x until then.
 
 **Risk.** Three weeks is tight. If it slips, the release moves (by a
 week at most) before any lab does: students need the labs, and a release
@@ -201,10 +202,10 @@ guard (Open 7), and a 2.0.x for whatever the install trial finds.
 1. **Lab 1 needs a real-model rehearsal** (see 6 below). Confirm the
    Windows job is green after the 17 Oct fixes; if it is, consider
    making it required rather than advisory.
-2. **Model reliability check** (spec §11), before release: every English
-   role, old prompt form against new, on a small local model and a
-   frontier model; tune the closing sentences; check every example in a
-   role against its own `out:`. Needs a key and a small budget.
+2. **Model reliability check** (spec §11): **skipped** (Mani, 31 Oct): the
+   framework will not change, and what it would find is prompt wording in
+   the gallery, which a 2.0.1 could carry. Was: every English role, old
+   prompt form against new, on a small local model and a frontier model.
 3. **Release 2.0.0** and **rehearse the install**: wheel into an empty
    virtualenv, then `docs/GETTING_STARTED.md` followed literally, parts 1
    to 8, on a clean machine, with a real key (part 6 has only been run

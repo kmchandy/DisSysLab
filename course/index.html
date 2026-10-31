@@ -271,27 +271,25 @@
     <li>
       <div class="li-body">
         <h3>The incident room (Lab 2)</h3>
-        <p>One forged line in a log, three analysts and a shared whiteboard:
-          how one agent's mistake becomes the team's, what happened when we
-          ran it on a real model, and where each guardrail goes. The
-          structures that limit what can go wrong:</p>
+        <p>One forged line in a log, three analysts and a shared whiteboard.
+          The class covers:</p>
         <ul class="topics">
-          <li><b>Prompt injection:</b> a web page, an email or a customer's
-            message that tells the agent what to do. Some inputs are
-            adversarial, as in the Byzantine generals problem.</li>
+          <li><b>Indirect prompt injection:</b> the attacker never talks to a
+            model; a coupon code forges a line in a log that an agent later
+            reads as evidence.</li>
+          <li><b>How a whiteboard spreads one lie:</b> one agent is fooled,
+            and every agent reads its note.</li>
+          <li><b>What happened on a real model:</b> 40 runs, and how the
+            fooled agent's claim travelled to agents that never saw the
+            log.</li>
+          <li><b>A safety claim is a rate:</b> the same office scored 6 to 10
+            out of 10; what ten runs can and cannot show.</li>
           <li><b>The quarantined reader:</b> the agent that reads untrusted
-            text passes on only bounded fields (one of a few values, a number
-            in a range), so no instruction can reach the agents that act.</li>
-          <li><b>Permissions and sandboxing:</b> what an agent may read, write,
-            run or fetch, and why the default should be &ldquo;no&rdquo;.</li>
-          <li><b>Hooks:</b> fixed code that runs before or after each tool call
-            to block, log or check actions &mdash; a rule the agent cannot be
-            argued out of.</li>
-          <li><b>Human approval:</b> which actions need a person to approve
-            them.</li>
-          <li><b>Skills and MCP connectors:</b> packaged instructions an agent
-            loads, and the connectors through which it reaches external tools
-            and data: the trust boundary each one creates.</li>
+            text may pass on only one value from a list, so no sentence of
+            the attack reaches the others.</li>
+          <li><b>Where other guardrails go:</b> a better prompt, fixing the
+            log at its source, permissions, a check on the report before it
+            acts, and human approval.</li>
         </ul>
         <p class="q"><b>Safety question.</b> If an agent is compromised,
           what is the most it can do?</p>
