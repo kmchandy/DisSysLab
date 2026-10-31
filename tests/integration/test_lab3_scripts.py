@@ -200,3 +200,25 @@ def test_every_file_lab3_html_shows_is_in_course_lab3_word_for_word():
     assert len(shown) >= 6
     for name, block in shown:
         assert h.unescape(block) in (LAB3 / name).read_text(encoding="utf-8"), name
+
+
+def test_class_13_shows_the_lab_code_and_lab_1s_attacks_as_they_are():
+    """course/AgentsThatAct.html quotes the scripts and Lab 1's attack file."""
+    import html as h
+
+    page = (REPO / "course" / "AgentsThatAct.html").read_text(encoding="utf-8")
+    shown = re.findall(r'<pre data-file="lab3/([^"]+)">(.*?)</pre>', page, re.S)
+    assert len(shown) >= 7
+    for name, block in shown:
+        assert h.unescape(block) in (LAB3 / name).read_text(encoding="utf-8"), name
+    attacks = [json.loads(ln)["text"] for ln in
+               (REPO / "dissyslab" / "gallery" / "car_dealer" / "attacks.jsonl")
+               .read_text(encoding="utf-8").splitlines() if ln.strip()]
+    quoted = [h.unescape(q) for q in re.findall(r"<q>(.*?)</q>", page, re.S)]
+    quoted += [h.unescape(b).strip() for b in re.findall(r"<blockquote>(.*?)</blockquote>", page, re.S)
+               if "objective" in b]
+    assert len(quoted) >= 7
+    for q in quoted:
+        assert q in attacks, q
+    import part1_dealer
+    assert {s for s in part1_dealer.ATTACK_SESSIONS} <= set(re.findall(r"<code>(c0\d)</code>", page))
