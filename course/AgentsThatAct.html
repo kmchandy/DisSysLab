@@ -154,20 +154,44 @@ greet("ada")            # 'hi ada hi ada'
 # @repeat(2) means:  greet = repeat(2)(greet)</pre>
 <p><b>A decorator need not return a function.</b> It can return anything,
 for example a record that keeps the function together with facts about
-it:</p>
+it. Here it is without <code>@</code>, so that you can see the two calls:</p>
 <pre class="run">def described(name, text):
     def decorator(f):
         return {"name": name, "text": text, "run": f}
     return decorator
 
-@described("greet", "Say hello to someone.")
 def greet(name):
     return "hello " + name
 
+d = described("greet", "Say hello to someone.")   # call 1: the strings
+greet = d(greet)                                  # call 2: the function
+
 greet["name"]           # 'greet'
 greet["run"]("ada")     # 'hello ada'</pre>
-<p>That last shape is <code>@tool</code>: a decorator with arguments that
-wraps your function in a record.</p>
+<ul>
+  <li><b>Two functions, two sets of arguments.</b> <code>described</code>
+      takes the two strings and never sees a function: all it does is make
+      <code>decorator</code> and return it. So after call 1, <code>d</code>
+      <i>is</i> <code>decorator</code>. Call 2 gives it <code>greet</code>,
+      and inside it <code>f</code> is <code>greet</code>.</li>
+  <li><b>How does <code>decorator</code> know <code>name</code> and
+      <code>text</code>?</b> They are not its arguments. It was created inside
+      <code>described</code> while <code>described</code> was running with
+      them, and a function remembers the variables it could see when it was
+      created. That is called a <i>closure</i>.</li>
+  <li><b>What <code>greet</code> is now:</b> the dictionary, not a function.
+      <code>greet["run"]("ada")</code> calls the original;
+      <code>greet("ada")</code> no longer works.</li>
+</ul>
+<p>The <code>@</code> form does both calls on one line: the first
+parentheses are call 1, the second are call 2.</p>
+<pre>@described("greet", "Say hello to someone.")
+def greet(name):
+    return "hello " + name
+
+# means:  greet = described("greet", "Say hello to someone.")(greet)</pre>
+<p>That is the shape of <code>@tool</code>: call 1 takes the descriptive
+arguments, call 2 takes your function, and what comes back is a record.</p>
 
 <h2>3 &middot; A tool: <code>@tool</code></h2>
 <p>A tool is an ordinary Python function the model may ask you to run.
