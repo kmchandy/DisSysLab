@@ -112,7 +112,8 @@ call:</p>
         # The tool itself checks nothing: like a sink in an office, it acts.
         with open(sales, &quot;a&quot;, encoding=&quot;utf-8&quot;) as f:
             f.write(json.dumps(args) + &quot;\n&quot;)
-        return {&quot;content&quot;: [{&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: f&quot;Booked: {args[&#x27;vehicle&#x27;]} for &quot;</pre>
+        return {&quot;content&quot;: [{&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: f&quot;Booked: {args[&#x27;vehicle&#x27;]} for &quot;
+                             f&quot;${args[&#x27;price&#x27;]:,.2f} to {args[&#x27;customer&#x27;]}.&quot;}]}</pre>
 <p>The tool checks nothing, like a sink in an office: it acts. The agent
 is configured with exactly these two tools and nothing else:</p>
 <pre data-file="lab3/part1_dealer.py">    return ClaudeAgentOptions(

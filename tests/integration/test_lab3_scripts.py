@@ -222,3 +222,28 @@ def test_class_13_shows_the_lab_code_and_lab_1s_attacks_as_they_are():
         assert q in attacks, q
     import part1_dealer
     assert {s for s in part1_dealer.ATTACK_SESSIONS} <= set(re.findall(r"<code>(c0\d)</code>", page))
+
+
+def test_class_13s_decorator_examples_print_what_the_slides_say():
+    """Each <pre class="run"> block runs, in order, in one namespace; a line
+    `expression   # 'value'` must evaluate to that value."""
+    import ast
+    import html as h
+
+    page = (REPO / "course" / "AgentsThatAct.html").read_text(encoding="utf-8")
+    blocks = [h.unescape(b) for b in re.findall(r'<pre class="run">(.*?)</pre>', page, re.S)]
+    assert len(blocks) == 4
+    namespace: dict = {}
+    checked = 0
+    for block in blocks:
+        lines = block.splitlines()
+        for stmt in ast.parse(block).body:
+            line = lines[stmt.lineno - 1]
+            expected = line.partition("#")[2].strip()
+            if isinstance(stmt, ast.Expr) and expected.startswith("'"):
+                value = eval(compile(ast.Expression(stmt.value), "<slide>", "eval"), namespace)
+                assert value == ast.literal_eval(expected), line
+                checked += 1
+            else:
+                exec(compile(ast.Module([stmt], []), "<slide>", "exec"), namespace)
+    assert checked == 5
