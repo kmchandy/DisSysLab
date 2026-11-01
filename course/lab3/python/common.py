@@ -32,10 +32,10 @@ BUILT_IN_TOOLS = ["Bash", "Read", "Write", "Edit", "MultiEdit", "Glob", "Grep",
                   "WebFetch", "WebSearch", "NotebookEdit", "Agent", "Task",
                   "TodoWrite", "BashOutput", "KillShell"]
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 #: Where runs go: outside course/ (so nothing is published by accident), and
 #: in .gitignore.
-RUNS = REPO / "lab3_runs"
+RUNS = REPO / "lab3_runs" / "python"
 
 
 def sdk_version() -> str:

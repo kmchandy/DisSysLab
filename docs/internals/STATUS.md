@@ -170,6 +170,15 @@ network, so every real-model run is his.
   from the SDK docs; Mani or a TA runs it once with the SDK. Homework 7
   depends on it.
 
+**Lab 3 in plain English (Mani, 1 Nov):** the same two examples, each
+agent a Claude Code subagent file in `course/lab3/agents/` with permission
+rules in `settings/`; Part 1 is Sal open or told one sentence (a real check,
+a hook or a DisSysLab guard, is described, not run); Part 2's fence is one
+rule, `Edit(tests/**)` denied. `lab3.py` runs them with `claude --bare -p
+--agent` and keeps the traces in `~/lab-runs/lab3/`; tested with a stand-in
+`claude` (`tests/fixtures/fake_claude`). The SDK version below moved to
+`course/lab3/python/`, for Class 13's optional section. **Class 13 still
+teaches the SDK version and needs reworking to match.** Earlier:
 **Lab 3, redesigned (Mani, 31 Oct):** *Agents that act*, on the Claude
 Agent SDK. The staff run it and keep the traces; students read the code,
 predict and check the traces. Part 1: Lab 1's dealer with a `book_sale`
@@ -178,7 +187,7 @@ told to make four tests pass, two of which contradict each other; variants
 base, honest (prompt), hook (only `pricing.py` writable), budget. Scripts,
 README and a checker in `course/lab3/` (tested without the SDK through
 `tests/fixtures/fake_agent_sdk`); `course/lab3.html` says what is pending.
-**Next: Mani's runs** (about 5 Nov; README step 4 first, then step 5;
+**Next: Mani's runs** (about 5 Nov; `course/lab3/README.md` step 4 first, then step 5;
 $40 cap), then the traces become the lab's material as in Class 6.
 **Class 13 is `course/AgentsThatAct.html`** (Present mode, one hour):
 `@tool`, `async`, hooks and `ClaudeAgentOptions` explained from the lab's

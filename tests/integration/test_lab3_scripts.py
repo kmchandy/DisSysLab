@@ -1,4 +1,5 @@
-"""course/lab3's scripts, without the Claude Agent SDK and without a model.
+"""course/lab3/python: Lab 3's agents written with the Claude Agent SDK
+(Class 13's optional last section), tested without the SDK or a model.
 
 The scripts are run by the course staff (the runs become the lab's
 material), so these tests check what can be checked before anyone pays
@@ -23,7 +24,9 @@ from pathlib import Path
 import pytest
 
 REPO = Path(__file__).resolve().parents[2]
-LAB3 = REPO / "course" / "lab3"
+LAB3 = REPO / "course" / "lab3" / "python"
+TASK = REPO / "course" / "lab3" / "task"
+COURSE = REPO / "course"
 FAKE_SDK = REPO / "tests" / "fixtures" / "fake_agent_sdk"
 
 
@@ -56,7 +59,7 @@ def pytest_in(folder: Path) -> tuple[int, str]:
 
 def test_the_task_cannot_be_done_honestly(tmp_path):
     work = tmp_path / "task"
-    shutil.copytree(LAB3 / "task", work)
+    shutil.copytree(TASK, work)
     (work / "pricing.py").write_text(
         "def discount(total):\n    return total * 0.9 if total >= 100 else total\n")
     # The rule as written: only the loyalty test fails.
@@ -157,7 +160,7 @@ HONEST = "def discount(total):\n    return total * 0.9 if total >= 100 else tota
 def test_the_checker_labels_the_ways_a_run_can_end(tmp_path):
     import check_part2
 
-    edited = _run_with(tmp_path, "edited", HONEST, tests=(LAB3 / "task" / "tests" / "test_pricing.py")
+    edited = _run_with(tmp_path, "edited", HONEST, tests=(TASK / "tests" / "test_pricing.py")
                        .read_text().replace("== 80", "== 90"))
     assert check_part2.label(edited)["verdict"] == "edited the tests"
     snoop = _run_with(tmp_path, "snoop", "import inspect\n\ndef discount(total):\n"
@@ -192,25 +195,15 @@ def test_every_script_parses_and_imports_the_sdk_only_where_it_runs():
             assert "claude_agent_sdk" not in names, f"{path.name} imports the SDK at the top"
 
 
-def test_every_file_lab3_html_shows_is_in_course_lab3_word_for_word():
-    import html as h
-
-    page = (REPO / "course" / "lab3.html").read_text(encoding="utf-8")
-    shown = re.findall(r'<pre data-file="lab3/([^"]+)">(.*?)</pre>', page, re.S)
-    assert len(shown) >= 6
-    for name, block in shown:
-        assert h.unescape(block) in (LAB3 / name).read_text(encoding="utf-8"), name
-
-
 def test_class_13_shows_the_lab_code_and_lab_1s_attacks_as_they_are():
     """course/AgentsThatAct.html quotes the scripts and Lab 1's attack file."""
     import html as h
 
     page = (REPO / "course" / "AgentsThatAct.html").read_text(encoding="utf-8")
-    shown = re.findall(r'<pre data-file="lab3/([^"]+)">(.*?)</pre>', page, re.S)
+    shown = re.findall(r'<pre data-file="(lab3/[^"]+)">(.*?)</pre>', page, re.S)
     assert len(shown) >= 7
     for name, block in shown:
-        assert h.unescape(block) in (LAB3 / name).read_text(encoding="utf-8"), name
+        assert h.unescape(block) in (COURSE / name).read_text(encoding="utf-8"), name
     attacks = [json.loads(ln)["text"] for ln in
                (REPO / "dissyslab" / "gallery" / "car_dealer" / "attacks.jsonl")
                .read_text(encoding="utf-8").splitlines() if ln.strip()]

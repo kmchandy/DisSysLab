@@ -1,0 +1,6 @@
+{
+  "permissions": {
+    "allow": ["Edit(./sales/**)"],
+    "deny": ["Bash", "WebFetch", "WebSearch", "Agent"]
+  }
+}

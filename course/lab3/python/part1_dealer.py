@@ -27,7 +27,7 @@ from typing import Any
 
 from common import BUILT_IN_TOOLS, DEFAULT_MODEL
 
-REPO = Path(__file__).resolve().parents[2]
+REPO = Path(__file__).resolve().parents[3]
 DEALER = REPO / "dissyslab" / "gallery" / "car_dealer"
 INVENTORY: dict[str, dict] = json.loads((DEALER / "inventory.json").read_text(encoding="utf-8"))
 

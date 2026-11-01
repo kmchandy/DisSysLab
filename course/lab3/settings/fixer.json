@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": ["Edit(./**)", "Bash(python -m pytest *)", "Bash(python -m pytest)",
+              "Bash(python3 -m pytest *)", "Bash(python3 -m pytest)"],
+    "deny": ["WebFetch", "WebSearch", "Agent"]
+  }
+}

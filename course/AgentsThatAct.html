@@ -235,7 +235,7 @@ arguments, call 2 takes your function, and what comes back is a record.</p>
 <h2>3 &middot; A tool: <code>@tool</code></h2>
 <p>A tool is an ordinary Python function the model may ask you to run.
 Here is Sal's:</p>
-<pre data-file="lab3/part1_dealer.py">    @tool(&quot;book_sale&quot;, &quot;Book a sale: the vehicle key, the agreed price in dollars, &quot;
+<pre data-file="lab3/python/part1_dealer.py">    @tool(&quot;book_sale&quot;, &quot;Book a sale: the vehicle key, the agreed price in dollars, &quot;
           &quot;and the customer&#x27;s name.&quot;, {&quot;vehicle&quot;: str, &quot;price&quot;: float, &quot;customer&quot;: str})
     async def book_sale(args: dict) -&gt; dict:
         # The tool itself checks nothing: like a sink in an office, it acts.
@@ -342,7 +342,7 @@ your hooks or tools.</p>
     network.</figcaption>
 </figure>
 <p>The code that drives it:</p>
-<pre data-file="lab3/common.py">async def run_session(prompts: list[str], options: Any) -&gt; list[dict]:
+<pre data-file="lab3/python/common.py">async def run_session(prompts: list[str], options: Any) -&gt; list[dict]:
     &quot;&quot;&quot;Send each prompt in turn, in one session; return the trace.&quot;&quot;&quot;
     from claude_agent_sdk import ClaudeSDKClient
 
@@ -372,7 +372,7 @@ else can interleave.</p>
 <p>A hook is your code that the SDK runs at a fixed point in the agent's
 loop. <code>PreToolUse</code> runs before a tool call and can refuse it.
 This is Lab 1's guard:</p>
-<pre data-file="lab3/part1_dealer.py">    async def floor_guard(input_data: dict, tool_use_id: str | None, context: Any) -&gt; dict:
+<pre data-file="lab3/python/part1_dealer.py">    async def floor_guard(input_data: dict, tool_use_id: str | None, context: Any) -&gt; dict:
         &quot;&quot;&quot;PreToolUse hook: runs before every book_sale, and can say no.&quot;&quot;&quot;
         args = input_data[&quot;tool_input&quot;]
         why = below_floor(str(args.get(&quot;vehicle&quot;, &quot;&quot;)).lower(), float(args.get(&quot;price&quot;, 0)))
@@ -382,7 +382,7 @@ This is Lab 1's guard:</p>
             &quot;hookEventName&quot;: input_data[&quot;hook_event_name&quot;],
             &quot;permissionDecision&quot;: &quot;deny&quot;,
             &quot;permissionDecisionReason&quot;: f&quot;Sale refused: {why}.&quot;}}</pre>
-<pre data-file="lab3/part1_dealer.py">    if variant == &quot;hook&quot;:
+<pre data-file="lab3/python/part1_dealer.py">    if variant == &quot;hook&quot;:
         hooks = {&quot;PreToolUse&quot;: [HookMatcher(matcher=&quot;mcp__dealer__book_sale&quot;,
                                             hooks=[floor_guard])]}</pre>
 <p>These two pieces of code run at different times. The lines that
@@ -423,7 +423,7 @@ defined but never registered, so it never runs.</p>
 <h2>6 &middot; <code>ClaudeAgentOptions</code>, briefly</h2>
 <p>One object configures the whole agent. You do not need every field; you
 need to know what each group is for:</p>
-<pre data-file="lab3/part1_dealer.py">    return ClaudeAgentOptions(
+<pre data-file="lab3/python/part1_dealer.py">    return ClaudeAgentOptions(
         system_prompt=SYSTEM_PROMPT,
         model=model,
         mcp_servers={&quot;dealer&quot;: server},
@@ -508,7 +508,7 @@ tests has other options:</p>
 </ul>
 <p>The variants ask which fence works. The <code>hook</code> variant lets
 the agent write only <code>pricing.py</code>:</p>
-<pre data-file="lab3/part2_impossible.py">    async def only_pricing(input_data: dict, tool_use_id: str | None, context: Any) -&gt; dict:
+<pre data-file="lab3/python/part2_impossible.py">    async def only_pricing(input_data: dict, tool_use_id: str | None, context: Any) -&gt; dict:
         &quot;&quot;&quot;PreToolUse hook (variant hook): the one file the agent may write.&quot;&quot;&quot;
         path = str(input_data[&quot;tool_input&quot;].get(&quot;path&quot;, &quot;&quot;))
         if inside(work, path) == (work / &quot;pricing.py&quot;).resolve():

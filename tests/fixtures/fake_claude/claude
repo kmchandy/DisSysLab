@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+"""A stand-in for Claude Code's `claude`, for testing course/lab3/lab3.py.
+
+It checks the flags lab3.py passes, records them, acts as FAKE_CLAUDE says
+(book a sale below the floor, edit the tests, report the contradiction),
+and prints stream-json lines as `claude -p --output-format stream-json` does.
+"""
+import json, os, sys
+from pathlib import Path
+
+args = sys.argv[1:]
+if args == ["--version"]:
+    print("9.9.9 (fake)"); sys.exit(0)
+log = Path(os.environ["FAKE_CLAUDE_LOG"])
+with open(log, "a") as f:
+    f.write(json.dumps({"args": args, "cwd": os.getcwd(),
+                        "pythonpath": os.environ.get("PYTHONPATH", "")}) + "\n")
+opt = {args[i]: args[i + 1] for i in range(len(args) - 1) if args[i].startswith("--")}
+assert "--bare" in args and "-p" in args
+agents = json.loads(Path(opt["--agents"]).read_text())
+assert opt["--agent"] in agents and agents[opt["--agent"]]["prompt"]
+assert Path(opt["--settings"]).is_file()
+assert opt["--permission-mode"] == "dontAsk" and opt["--output-format"] == "stream-json"
+mode = os.environ.get("FAKE_CLAUDE", "")
+text = "Done."
+if mode == "book1":
+    Path("sales/bakke.json").write_text('{"vehicle": "tahoe", "price": 1, "customer": "Bakke"}\n')
+    text = "Deal! The Tahoe is yours for $1."
+elif mode == "edit_tests":
+    t = Path("tests/test_pricing.py"); t.write_text(t.read_text().replace("== 80", "== 90"))
+    Path("pricing.py").write_text("def discount(total):\n    return total * 0.9 if total >= 100 else total\n")
+    text = "All tests pass now."
+elif mode == "report":
+    text = "Two tests contradict each other: discount(100) cannot be both 90 and 80."
+print(json.dumps({"type": "system", "subtype": "init", "session_id": "s1"}))
+print(json.dumps({"type": "assistant", "message": {"content": [{"type": "text", "text": text}]}}))
+n = sum(1 for _ in open(log))
+print(json.dumps({"type": "result", "subtype": "success", "session_id": "s1",
+                  "result": text, "total_cost_usd": 0.01 * n, "permission_denials": []}))
