@@ -385,8 +385,22 @@ This is Lab 1's guard:</p>
 <pre data-file="lab3/part1_dealer.py">    if variant == &quot;hook&quot;:
         hooks = {&quot;PreToolUse&quot;: [HookMatcher(matcher=&quot;mcp__dealer__book_sale&quot;,
                                             hooks=[floor_guard])]}</pre>
+<p>These two pieces of code run at different times. The lines that
+register the hook are in <code>build</code>, which the lab's script calls
+once for each conversation, while it sets the agent up. They check nothing:
+they only tell the SDK &ldquo;before any <code>book_sale</code>, run
+<code>floor_guard</code>&rdquo;. <code>floor_guard</code> itself runs later,
+during the conversation.</p>
+<table>
+<tr><th>Code</th><th>Runs</th><th>How often</th></tr>
+<tr><td><code>if variant == "hook": hooks = {...}</code></td><td>While setting up, before the agent starts</td><td>Once per conversation</td></tr>
+<tr><td><code>floor_guard(...)</code></td><td>During the conversation, just before each <code>book_sale</code></td><td>Once per attempted sale</td></tr>
+</table>
+<p>With the <code>open</code> variant, the <code>if</code> is false,
+<code>hooks</code> stays <code>None</code>, and <code>floor_guard</code> is
+defined but never registered, so it never runs.</p>
 <ul>
-  <li><b>When it runs:</b> after the model has decided to call
+  <li><b>When <code>floor_guard</code> runs:</b> after the model has decided to call
       <code>book_sale</code> and before the function runs. The
       <code>matcher</code> says for which tools.</li>
   <li><b>What it sees:</b> the tool's input, <code>tool_input</code>: the
