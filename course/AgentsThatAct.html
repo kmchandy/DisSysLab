@@ -122,25 +122,22 @@
 <header>
 <div class="kicker">DisSysLab &middot; Class 13</div>
 <h1>Agents that act</h1>
-<p class="lead">Lab 3 in detail: a real agent framework, the four ideas
-you need to read its code, the attacks the lab throws at it, and what
-happened in July 2026 when agents with tools were given goals and a fence
-with a hole in it.</p>
+<p class="lead">This class describes Lab 3 in detail: Anthropic's Claude
+Agent SDK; the four concepts you need to read its code; the attacks in the
+lab; and an introduction to the incidents of July 2026, when agents with
+tools were given hard goals and an incomplete protective fence.</p>
 <div class="links"><a class="primary" href="lab3.html">Lab 3, the handout</a></div>
 </header>
+<!-- The hour, for the instructor:
+     0-5   1 What changes when an agent can act
+     5-10  2 Decorators: a review
+     10-18 3 A tool: @tool
+     18-25 4 async
+     25-33 5 A hook
+     33-37 6 ClaudeAgentOptions, briefly
+     37-50 7 The attacks in the lab
+     50-60 8 July 2026, if there is time; 9 questions -->
 
-<h2>The hour</h2>
-<table class="plan">
-<tr><th>Minutes</th><th>Section</th></tr>
-<tr><td>0&ndash;5</td><td>1 &middot; What changes when an agent can act</td></tr>
-<tr><td>5&ndash;10</td><td>2 &middot; Decorators, in five minutes</td></tr>
-<tr><td>10&ndash;18</td><td>3 &middot; A tool: <code>@tool</code></td></tr>
-<tr><td>18&ndash;25</td><td>4 &middot; <code>async</code>: why the code waits the way it does</td></tr>
-<tr><td>25&ndash;33</td><td>5 &middot; A hook</td></tr>
-<tr><td>33&ndash;37</td><td>6 &middot; <code>ClaudeAgentOptions</code>, briefly</td></tr>
-<tr><td>37&ndash;50</td><td>7 &middot; The attacks in the lab</td></tr>
-<tr><td>50&ndash;60</td><td>8 &middot; July 2026, if there is time; 9 &middot; questions</td></tr>
-</table>
 
 <h2>1 &middot; What changes when an agent can act</h2>
 <p>In Lab 1, Sal could only talk. A one-dollar Tahoe was a sentence in a
@@ -152,10 +149,11 @@ connected to. That is the whole subject of this class: <b>an agent is a
 model plus tools, and safety is about the tools and the fence around
 them.</b></p>
 
-<h2>2 &middot; Decorators, in five minutes</h2>
+<h2>2 &middot; Decorators: A review</h2>
 <p class="where">The <code>@</code> in front of <code>@tool</code></p>
-<p><b>A function is a value.</b> You can pass a function to another
-function, and a function can build and return a new one:</p>
+<p><b>You can pass a function to another function, which can return a new
+function:</b>
+</p>
 <pre class="run">def shout(f):
     def louder(name):
         return f(name).upper()
@@ -208,27 +206,29 @@ greet = d(greet)                                  # call 2: the function
 greet["name"]           # 'greet'
 greet["run"]("ada")     # 'hello ada'</pre>
 <ul>
-  <li><b>Two functions, two sets of arguments.</b> <code>described</code>
-      takes the two strings and never sees a function: all it does is make
-      <code>decorator</code> and return it. So after call 1, <code>d</code>
-      <i>is</i> <code>decorator</code>. Call 2 gives it <code>greet</code>,
-      and inside it <code>f</code> is <code>greet</code>.</li>
-  <li><b>How does <code>decorator</code> know <code>name</code> and
-      <code>text</code>?</b> They are not its arguments. It was created inside
-      <code>described</code> while <code>described</code> was running with
-      them, and a function remembers the variables it could see when it was
-      created. That is called a <i>closure</i>.</li>
-  <li><b>What <code>greet</code> is now:</b> the dictionary, not a function.
-      <code>greet["run"]("ada")</code> calls the original;
-      <code>greet("ada")</code> no longer works.</li>
+  <li>
+    <code>described</code> has two arguments, both strings. It makes
+    a decorator using these arguments, which <code>decorator</code>
+    remembers (this is called a <i>closure</i>), and returns the decorator.
+    So after call 1, <code>d</code> <i>is</i> <code>decorator</code>, which
+    has not been called yet, so its parameter <code>f</code> has no value.
+    Call 2 calls <code>d</code> with <code>greet</code>, so inside it
+    <code>f</code> is <code>greet</code>.
+  </li>
+  <li><code>greet</code> is now the dictionary with keys "name",
+    "text", and "run".
+    Now <code>greet["run"]</code> is the original function <code>greet</code>.
+    So <code>greet["run"]("ada")</code> executes the original function <code>greet</code>
+    with argument "ada".
+    Note: <code>greet("ada")</code> no longer works.</li>
 </ul>
-<p>The <code>@</code> form does both calls on one line: the first
-parentheses are call 1, the second are call 2.</p>
+<p>The <code>@</code> form, below, does both call 1 and call 2 on one line.</p>
 <pre>@described("greet", "Say hello to someone.")
 def greet(name):
     return "hello " + name
 
-# means:  greet = described("greet", "Say hello to someone.")(greet)</pre>
+# means:  greet = described("greet", "Say hello to someone.")(greet)
+#  i.e.:  greet = {"name": "greet", "text": "Say hello to someone.", "run": greet}</pre>
 <p>That is the shape of <code>@tool</code>: call 1 takes the descriptive
 arguments, call 2 takes your function, and what comes back is a record.</p>
 
