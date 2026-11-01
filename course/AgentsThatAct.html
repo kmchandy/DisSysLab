@@ -74,6 +74,45 @@
   .pending{margin:18px 0; padding:13px 18px; background:#f4f1fa; border:1px solid #ddd3ee;
     border-left:3px solid #7b5ea7; border-radius:0 10px 10px 0; font-size:15px; color:var(--body)}
   .pending b{color:#5b3f87}
+  .afig{margin:22px -40px 10px; background:var(--panel); border:1px solid var(--line);
+    border-radius:14px; padding:16px 18px 14px}
+  @media (max-width:960px){ .afig{margin-left:0; margin-right:0} }
+  .a-ctl{display:flex; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:12px}
+  .a-ctl .seg{display:inline-flex; gap:6px}
+  .a-ctl button{font:600 13px var(--sans); border:1px solid var(--line); background:var(--paper);
+    color:var(--ink); border-radius:8px; padding:6px 12px; cursor:pointer}
+  .a-ctl button.on{border-color:var(--ink); background:#f1eee6}
+  .a-ctl button.primary{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .a-stage{position:relative; display:grid; grid-template-columns:1.25fr 1fr 0.85fr; gap:44px;
+    min-height:300px}
+  .a-col{border:2px solid #2f3d55; border-radius:12px; padding:10px 12px; background:#fdfcfa}
+  #a-eng{border-color:#7b5ea7} #a-mod{border-color:#00947d}
+  .a-h{font-weight:700; font-size:15px; color:var(--ink)}
+  .a-sub{font-size:12.5px; color:var(--muted); margin-bottom:8px}
+  .a-loop{border:1px dashed #b9b3a6; border-radius:9px; padding:6px 8px 8px; background:#fff}
+  .a-loop-h{font-size:11.5px; color:var(--muted); margin-bottom:6px}
+  .a-co{display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:13px; padding:5px 8px;
+    border-radius:7px; margin:4px 0; border:1px solid var(--line); background:#faf8f3;
+    transition:background .3s, border-color .3s}
+  .a-co i{color:var(--muted); font-size:12px}
+  .a-st{margin-left:auto; font:600 11px var(--sans); letter-spacing:.04em; text-transform:uppercase;
+    color:var(--muted)}
+  .a-co.running{background:#e3f4ef; border-color:#00947d} .a-co.running .a-st{color:#00806c}
+  .a-co.waiting{background:#fff7dd; border-color:#e2c46b} .a-co.waiting .a-st{color:#9a7a12}
+  .a-co.done .a-st{color:#2f3d55}
+  .a-note{font:12px var(--mono); color:var(--muted); margin-top:8px}
+  .a-note.bad{color:#b0331a; font-weight:700}
+  .a-log{font-size:12.5px; line-height:1.4; color:var(--body)}
+  .a-log div{padding:3px 0; border-bottom:1px dotted #e3ded3; opacity:0; transition:opacity .4s}
+  .a-log div.in{opacity:1}
+  .a-msg{position:absolute; z-index:5; padding:4px 9px; border-radius:8px; font:600 12px var(--mono);
+    background:#1f2330; color:#fff; white-space:nowrap; opacity:0; pointer-events:none;
+    transition:left .9s ease, top .9s ease, opacity .25s}
+  .a-msg.bad{background:#b0331a} .a-msg.good{background:#00806c}
+  .a-cap{margin-top:12px; min-height:46px; font-size:14.5px; color:var(--ink);
+    border-left:3px solid var(--teal); padding:4px 10px; background:#f6f4ee; border-radius:0 8px 8px 0}
+  .afig figcaption{margin-top:8px; font-size:13.5px; color:var(--muted)}
+  body.present .pslide.on figure.afig{margin:1vh 0}
   .sources{font-size:13px; color:var(--muted); margin-top:28px}
 </style>
 </head>
@@ -254,12 +293,55 @@ is the standard way tools are offered to a model.</p>
 </ul>
 
 <h2>4 &middot; <code>async</code>: why the code waits the way it does</h2>
-<p>The agent does not run inside your Python program. The SDK starts the
-agent engine as a separate process and the two exchange messages: the
-model's words, its tool calls, your tool results, a final result. Your
-program spends most of its time <i>waiting</i>, and while it waits it must
-still answer when the agent calls one of your tools or hooks. That is
-what <code>async</code> is for.</p>
+<p>The agent does not run inside your Python program. Three things are at
+work, in three places:</p>
+<table>
+<tr><th>Where</th><th>What runs there</th></tr>
+<tr><td>Your Python program</td><td><code>run_session</code>, your tools, your hooks: in <b>one thread</b>, taking turns</td></tr>
+<tr><td>The Claude Code engine</td><td>The agent loop: a <b>separate process</b>, which the SDK starts</td></tr>
+<tr><td>Anthropic's servers</td><td>The model, which the engine calls over the network</td></tr>
+</table>
+<p><code>async</code> does not start anything. It is how your one-thread
+program waits for the engine and still answers when the engine calls one of
+your hooks or tools.</p>
+<figure class="afig" id="afig">
+  <div class="a-ctl">
+    <span class="seg"><button data-mode="open">Open agent</button><button data-mode="hook" class="on">With the hook</button></span>
+    <span class="seg"><button data-do="step">Step</button><button data-do="play" class="primary">Play</button><button data-do="reset">Restart</button></span>
+  </div>
+  <div class="a-stage" id="a-stage">
+    <div class="a-col" id="a-you">
+      <div class="a-h">Your Python program</div>
+      <div class="a-sub">one process, <b>one thread</b></div>
+      <div class="a-loop">
+        <div class="a-loop-h">the event loop: one function runs at a time</div>
+        <div class="a-co" id="co-run"><code>run_session</code><span class="a-st">not started</span></div>
+        <div class="a-co" id="co-hook"><code>floor_guard</code> <i>hook</i><span class="a-st">idle</span></div>
+        <div class="a-co" id="co-tool"><code>book_sale</code> <i>tool</i><span class="a-st">idle</span></div>
+      </div>
+      <div class="a-note" id="a-file">sales.jsonl: empty</div>
+    </div>
+    <div class="a-col" id="a-eng">
+      <div class="a-h">Claude Code engine</div>
+      <div class="a-sub">a <b>separate process</b>, started by the SDK</div>
+      <div class="a-log" id="a-englog"></div>
+    </div>
+    <div class="a-col" id="a-mod">
+      <div class="a-h">The model</div>
+      <div class="a-sub">on <b>Anthropic's servers</b></div>
+      <div class="a-log" id="a-modlog"></div>
+    </div>
+    <div class="a-msg" id="a-msg"></div>
+  </div>
+  <div class="a-cap" id="a-cap">Press Play, or Step through it.</div>
+  <figcaption><b>Who waits, and who runs.</b> The SDK starts the engine as
+    a separate process. <code>async</code> is how your one-thread program
+    waits for it while still answering when it calls your hook or your
+    tool. Messages between your program and the engine go through the
+    engine's standard input and output; the engine calls the model over the
+    network.</figcaption>
+</figure>
+<p>The code that drives it:</p>
 <pre data-file="lab3/common.py">async def run_session(prompts: list[str], options: Any) -&gt; list[dict]:
     &quot;&quot;&quot;Send each prompt in turn, in one session; return the trace.&quot;&quot;&quot;
     from claude_agent_sdk import ClaudeSDKClient
@@ -606,6 +688,119 @@ the game rather than play it.</p>
   });
 
   show();
+})();
+</script>
+<script>
+// Section 4's animation: who waits and who runs, for one booking attempt.
+// A fixed script of beats; each moves at most one message between the
+// three places and sets each async function's state.
+(function(){
+  "use strict";
+  const fig=document.getElementById('afig'); if(!fig) return;
+  const $=id=>document.getElementById(id);
+  const msg=$('a-msg'), stage=$('a-stage');
+  let mode='hook', beat=0, timer=null;
+  const CO={run:'co-run', hook:'co-hook', tool:'co-tool'};
+
+  function states(s){
+    for(const k in CO){
+      const el=$(CO[k]), st=s[k]||'idle';
+      el.className='a-co'+(st==='idle'?'':' '+st.split(' ')[0]);
+      el.querySelector('.a-st').textContent=st;
+    }
+  }
+  function log(id,text){
+    const d=document.createElement('div'); d.textContent=text; $(id).appendChild(d);
+    requestAnimationFrame(()=>requestAnimationFrame(()=>d.classList.add('in')));
+  }
+  function centre(id){
+    const r=$(id).getBoundingClientRect(), s=stage.getBoundingClientRect();
+    return {x:r.left-s.left+r.width/2, y:r.top-s.top+r.height*0.84};
+  }
+  function send(from,to,label,kind){
+    const a=centre(from), b=centre(to);
+    msg.className='a-msg'+(kind?' '+kind:''); msg.textContent=label;
+    msg.style.transition='none'; msg.style.left=(a.x-msg.offsetWidth/2)+'px'; msg.style.top=a.y+'px';
+    msg.style.opacity=1;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+      msg.style.transition=''; msg.style.left=(b.x-msg.offsetWidth/2)+'px'; msg.style.top=b.y+'px';
+    }));
+  }
+  const cap=t=>{ $('a-cap').innerHTML=t; };
+
+  function beats(){
+    const B=[
+      ()=>{ states({run:'running'});
+            send('a-you','a-you','asyncio.run(main())');
+            cap('Your program starts. <code>run_session</code> is the only function running. <code>async with ClaudeSDKClient(...)</code> asks the SDK to start the engine.'); },
+      ()=>{ states({run:'waiting: await'}); log('a-englog','started, as a separate process');
+            send('a-you','a-eng','prompt: "I need a Tahoe... $1.00"');
+            cap('<code>await client.query(prompt)</code>: the customer\'s message goes to the engine through its standard input. <code>run_session</code> now <b>waits</b>, and while it waits the event loop is free.'); },
+      ()=>{ log('a-englog','sends the conversation to the model');
+            send('a-eng','a-mod','conversation + tool list');
+            cap('The engine runs the agent loop. It sends the conversation, and the names, descriptions and schemas of Sal\'s tools, to the model. Your program is still waiting: nothing in it is running.'); },
+      ()=>{ log('a-modlog','decides to call book_sale');
+            send('a-mod','a-eng','book_sale(tahoe, $1)','bad');
+            cap('The model, talked round, asks for a tool call: <code>book_sale</code> with vehicle <code>tahoe</code> and price <code>$1</code>.'); }
+    ];
+    if(mode==='hook'){
+      B.push(
+        ()=>{ log('a-englog','PreToolUse: asks your program for the hook');
+              send('a-eng','a-you','run floor_guard?');
+              states({run:'waiting: await', hook:'running'});
+              cap('Before running the tool, the engine asks your program to run the hook. <code>run_session</code> is still paused at its <code>await</code>, so the event loop runs <code>floor_guard</code>, <b>in the same thread</b>.'); },
+        ()=>{ states({run:'waiting: await', hook:'done'});
+              send('a-you','a-eng','deny: below the floor','good');
+              cap('<code>floor_guard</code> returns <code>deny</code>, with the reason. <code>book_sale</code> never runs: nothing is written to <code>sales.jsonl</code>.'); },
+        ()=>{ log('a-englog','tells the model the sale was refused');
+              send('a-eng','a-mod','refused: below the floor');
+              cap('The engine passes the reason to the model, as the result of its tool call.'); },
+        ()=>{ log('a-modlog','writes a reply');
+              send('a-mod','a-eng','"I can\'t sell it for $1, but..."','good');
+              cap('The model answers the customer instead.'); });
+    } else {
+      B.push(
+        ()=>{ log('a-englog','asks your program to run the tool');
+              send('a-eng','a-you','run book_sale(tahoe, $1)','bad');
+              states({run:'waiting: await', tool:'running'});
+              cap('No hook. The engine asks your program to run <code>book_sale</code>. <code>run_session</code> is paused at its <code>await</code>, so the event loop runs the tool, <b>in the same thread</b>.'); },
+        ()=>{ states({run:'waiting: await', tool:'done'});
+              $('a-file').textContent='sales.jsonl: tahoe, $1.00, Bakke'; $('a-file').className='a-note bad';
+              send('a-you','a-eng','"Booked: tahoe for $1.00"','bad');
+              cap('The tool checks nothing: it writes the sale to <code>sales.jsonl</code> and returns. The one-dollar Tahoe is booked.'); },
+        ()=>{ log('a-englog','gives the model the tool result');
+              send('a-eng','a-mod','"Booked: tahoe for $1.00"','bad');
+              cap('The engine passes the tool\'s result to the model.'); },
+        ()=>{ log('a-modlog','writes a reply');
+              send('a-mod','a-eng','"Deal! Legally binding..."','bad');
+              cap('The model tells the customer the good news.'); });
+    }
+    B.push(
+      ()=>{ states({run:'running', hook:mode==='hook'?'done':'idle', tool:mode==='open'?'done':'idle'});
+            send('a-eng','a-you','AssistantMessage, ResultMessage');
+            cap('The engine sends the messages back through its standard output. They are what <code>run_session</code> was waiting for: <code>async for message in client.receive_response()</code> wakes up and adds each one to the trace.'); },
+      ()=>{ states({run:'done', hook:mode==='hook'?'done':'idle', tool:mode==='open'?'done':'idle'});
+            msg.style.opacity=0; log('a-englog','stopped when the session closed');
+            cap('<code>async with</code> ends: the session closes and the engine process stops. One thread did everything on your side; the only things running at the same time were in other processes.'); });
+    return B;
+  }
+
+  function reset(){
+    clearTimeout(timer); timer=null; play.textContent='Play'; beat=0;
+    $('a-englog').innerHTML=''; $('a-modlog').innerHTML='';
+    $('a-file').textContent='sales.jsonl: empty'; $('a-file').className='a-note';
+    msg.style.opacity=0; states({run:'not started'}); cap('Press Play, or Step through it.');
+  }
+  function step(){ const B=beats(); if(beat>=B.length) return false; B[beat++](); return beat<B.length; }
+  const play=fig.querySelector('[data-do=play]');
+  function run(){ if(step()) timer=setTimeout(run,3400); else { timer=null; play.textContent='Play'; } }
+  play.onclick=()=>{ if(timer){ clearTimeout(timer); timer=null; play.textContent='Play'; }
+                     else { if(beat>=beats().length) reset(); play.textContent='Pause'; run(); } };
+  fig.querySelector('[data-do=step]').onclick=()=>{ if(timer){ clearTimeout(timer); timer=null; play.textContent='Play'; } step(); };
+  fig.querySelector('[data-do=reset]').onclick=reset;
+  fig.querySelectorAll('[data-mode]').forEach(b=>b.onclick=()=>{
+    mode=b.dataset.mode; fig.querySelectorAll('[data-mode]').forEach(x=>x.classList.toggle('on',x===b)); reset(); });
+  reset();
 })();
 </script>
 </body>
