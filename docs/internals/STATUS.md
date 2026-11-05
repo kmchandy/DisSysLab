@@ -177,8 +177,9 @@ a hook or a DisSysLab guard, is described, not run); Part 2's fence is one
 rule, `Edit(tests/**)` denied. `lab3.py` runs them with `claude --bare -p
 --agent` and keeps the traces in `~/lab-runs/lab3/`; tested with a stand-in
 `claude` (`tests/fixtures/fake_claude`). The SDK version below moved to
-`course/lab3/python/`, for Class 13's optional section. **Class 13 still
-teaches the SDK version and needs reworking to match.** Earlier:
+`course/lab3/python/`, for Class 13's optional section. **Class 13 now
+teaches the plain-English lab (5 Nov; Mani to confirm the plan, agreed in
+principle 1 Nov).** Earlier:
 **Lab 3, redesigned (Mani, 31 Oct):** *Agents that act*, on the Claude
 Agent SDK. The staff run it and keep the traces; students read the code,
 predict and check the traces. Part 1: Lab 1's dealer with a `book_sale`
@@ -189,11 +190,15 @@ README and a checker in `course/lab3/` (tested without the SDK through
 `tests/fixtures/fake_agent_sdk`); `course/lab3.html` says what is pending.
 **Next: Mani's runs** (about 5 Nov; `course/lab3/README.md` step 4 first, then step 5;
 $40 cap), then the traces become the lab's material as in Class 6.
-**Class 13 is `course/AgentsThatAct.html`** (Present mode, one hour):
-`@tool`, `async`, hooks and `ClaudeAgentOptions` explained from the lab's
-code; Lab 1's six attacks in Part 1 and the ways to game Part 2; the July
-2026 incidents from OpenAI's, Hugging Face's and Anthropic's own reports.
-Its code and attack quotations are tested; Part 2's results are pending.
+**Class 13 is `course/AgentsThatAct.html`** (Present mode, one hour): an
+agent as a plain-English file, what it may do as permission rules, advice
+against a fence, and where a real check goes; Lab 1's six attacks in Part 1
+and the ways to game Part 2; the July 2026 incidents from OpenAI's, Hugging
+Face's and Anthropic's own reports. An optional last section (8) keeps the
+SDK version in Python: decorators, `@tool`, `async` with the animation,
+the hook and `ClaudeAgentOptions`, quoted from `course/lab3/python/`. Its
+quotations of the agent files, the rules, the code and Lab 1's attacks are
+tested; Part 2's results are pending.
 
 **Week of 2 Nov: Lab 4, and the staff plan.**
 - Lab 4, *Agent collaboration*: built on the gallery's `debate`. A panel
