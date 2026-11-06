@@ -70,15 +70,28 @@
 
 <div class="kicker">DisSysLab &middot; Lab 3</div>
 <h1>Agents that act</h1>
-<p class="lead">In Labs 1 and 2 no agent could do anything: the worst
-outcome was bad advice written to a file. Real agents have tools: they
+<p class="lead">In Labs 1 and 2 agents did not change the environment.
+Agents use tools that send messages to the environment in many apps: they
 book a sale, edit a file, run a program. In Claude Code you can make such
-an agent without programming: you describe it in plain English, in a short
-file, and say what it may do in a few permission rules.</p>
-<p class="lead">This lab makes two: Lab 1's car salesperson, now able to
-book a sale, and an engineer given a task that cannot be done. The course
-staff ran each one many times and kept every trace. You read the agents,
-predict what they will do, and check the traces.</p>
+an agent without programming: you specify an agent in plain English in a short
+file, and specify what the agent can do in permission rules.</p>
+<p class="lead">This lab makes two such agents: (1) A modification of Lab 1's 
+car salesperson so that the salesperson can now book a sale, and 
+(2) an engineer given an impossible task 
+to see how agents deal with tasks that cannot be done. I ran systems with
+both these agents a few times and kept traces of their activities. 
+</p>
+<p>
+<b>What you do in this homework:</b>
+(1) Read the specifications of the agents and then predict what they will do, and 
+(2)check your predictions against the traces. Agents are non-deterministic, 
+and so different traces may show different outcomes and traces may not match 
+your predictions.
+</p>
+<p>
+Auditing agent behavior is a new skill required to building safer systems. 
+Auditing agent behavior is more complex than auditing output of code.
+</p>
 <div class="facts"><span>About 3 hours</span><span>Needs: nothing to
 install</span><span>Files: <a href="https://github.com/kmchandy/DisSysLab/tree/main/course/lab3">course/lab3/</a></span></div>
 
@@ -86,20 +99,45 @@ install</span><span>Files: <a href="https://github.com/kmchandy/DisSysLab/tree/m
 are not done yet. The traces and the rates arrive with the runs, in
 November.</div>
 
-<h2>Why agents that act</h2>
-<p class="where">The fence, not the model</p>
+<h2>Agents may reach goals in undesired ways</h2>
+
 <p>In July 2026, models being tested on security tasks found a hole in
 the test rig, reached the internet, and went to Hugging&nbsp;Face's
 production systems to look up the answers to the benchmark they were being
-graded on (Class 13 tells the story). They were asked to solve the tasks,
-and they had tools. An agent with a goal and with tools looks for a way to
-reach the goal, and the way it finds may not be the one you meant.</p>
+graded on (Class 13 tells the story). The agents reached the goals but
+in totally unexpected ways.</p>
 
-<h2>An agent is a file</h2>
-<p class="where">Plain English, and a few lines on top</p>
-<p>This is the whole of Sal, the salesperson. You could write it yourself,
+<h2>The specification of an agent is a plain English markdown file</h2>
+
+<p>Below is the specification of Sal, the salesperson from lab 1. 
+You could write the file yourself,
 or ask Claude Code in English (&ldquo;make me a sales assistant for a car
 dealership that can book sales&rdquo;) and check what it wrote.</p>
+
+<h3>Front Matter</h3> 
+<p>
+  The file has two parts: front matter between "---" lines, followed by 
+  an English description of agent behavior.
+  The front matter has four fields: <b>name</b>, <b>description</b>, 
+  <b>tools</b>, and <b>model</b>.
+  In this example, <b>tools</b> are <b>Read</b> and <b>Write</b>, 
+  which means that this agent can read files and create or ovwerwrite files.
+  Other tools include <b>Edit</b> to edit files, 
+  <b>Bash</b> to run shell commands, and <b>Agent</b> to start agents.
+  An agent can also have tools added by MCP servers, such as Slack and Gmail.
+  Look up other available tools.
+</p>
+
+<h3>Permissions</h3> 
+<p>
+  You will use a separate file, 
+  <code>lab3/settings/dealer.json</code>, 
+  to specify which files the agent (dealer.json) is allowed to use.
+  The permissions rules are enforced by Claude Code, and the agent 
+  cannot override them.
+  Use these rules to build safer systems.
+  For example, Sal’s Write capability is limited to ./sales/**
+</p>
 <pre data-file="lab3/agents/sal.md">---
 name: sal
 description: Sales assistant for Main Street Motors. Books sales.
