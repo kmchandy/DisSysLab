@@ -200,12 +200,12 @@ the hook and `ClaudeAgentOptions`, quoted from `course/lab3/python/`. Its
 quotations of the agent files, the rules, the code and Lab 1's attacks are
 tested; Part 2's results are pending.
 
-**Week of 2 Nov: Lab 4, and the staff plan.**
-- Lab 4, *Agent collaboration*: built on the gallery's `debate`. A panel
-  of one model family against a panel of three, on questions whose
-  answers are known (correlated errors); voting versus a judge; a grader
-  and N runs. Mani runs the panels (OpenRouter).
-- `labs.html` brought to 2.0; `lecture_build.html` retired (Open 5).
+**Week of 2 Nov: the staff plan.**
+- **No Lab 4** (Mani, 6 Nov): the class is *Student project presentations*
+  (index; "Turn in project" stays). The `debate` panels, the OpenRouter
+  runs and the `labs.html` Lab 4 plan are dropped, not moved. Still open:
+  the date, the length of each talk and how it is graded.
+- `labs.html` brought to 2.0 (Labs 2 and 3 only); `lecture_build.html` retired (Open 5).
 - Start homework: 2 (global snapshots, project plan) and 4 (termination
   detection, temporal logic).
 

@@ -80,7 +80,8 @@
      <code>--processes</code>. Offices named below that are not in
      <code>dsl list</code> (<code>periodic_brief</code>, <code>shipment_release</code>,
      <code>wildlife_watcher</code>, <code>recovery_demo</code>) are on the
-     <code>v1</code> branch. Labs 2 to 4 need re-planning against 2.0.</div>
+     <code>v1</code> branch. Labs 2 and 3 need re-planning against 2.0. There is no Lab 4: the
+     last class is student project presentations.</div>
 
   <h2>Lab 1 &middot; Building distributed systems</h2>
   <p class="where">Class 3 &middot; the page exists: lecture_build.html</p>
@@ -297,78 +298,6 @@
     And nothing in the gallery is about the bench, so a domain like drug
     discovery needs one public data source and one worked example chosen in
     advance.</div>
-
-  <h2>Lab 4 &middot; Agents that create agents, fenced in</h2>
-  <p class="where">Class 9 &middot; not written yet</p>
-
-  <p>The last lab, and the one the course has been walking towards: a
-     population of agents that can grow, inside a fence that holds however
-     large it grows. Students have already written a checker in Lab 3; here
-     they write the constraints that bound a population rather than an
-     individual, and then read the primary reports of the cases where nobody
-     had.</p>
-
-  <h3>What goes in</h3>
-  <ul>
-    <li><b>Least privilege at the boundary.</b> What an office can reach once
-        it talks to something outside itself, and what was granted rather than
-        assumed.</li>
-    <li><b>A dynamic population without creation.</b> Subscribers that come
-        and go, served out of what has already been computed.</li>
-    <li><b>Capabilities that can only be split.</b> A child gets a subset of
-        its parent's authority; the union over any population is the root's.</li>
-    <li><b>A budget that bounds the search.</b> The same number that makes the
-        run terminate also bounds how many hypotheses were tried, which is
-        what an honest claim about a winner needs.</li>
-    <li><b>Write-once facts and provenance.</b> Who read what before writing
-        what &mdash; the dataflow graph of Class 4, built live, answering "how
-        many <i>independent</i> attempts were there?"</li>
-    <li><b>The reports.</b> Primary write-ups of agents that escaped their
-        intended boundary: what is documented, what is inferred, and which
-        invariant would have held.</li>
-  </ul>
-
-  <h3>Demos, in order</h3>
-  <ol class="demo">
-    <li><span class="cmd">dsl run webhook_listener &nbsp;&middot;&nbsp; dsl run web_monitor</span>
-        An office with a door to the outside. List what it can now reach, and
-        which of those you meant to grant.</li>
-    <li><span class="cmd">dsl run situation_room_requests</span>
-        A changing set of subscribers served from a registry &mdash; a
-        population that varies without anyone creating an agent.</li>
-    <li><span class="cmd">read the seven verbs</span>
-        The whiteboard design: the complete list of things an agent may do,
-        and the five invariants. Each student says what a rogue searcher could
-        and could not do under it.</li>
-    <li><span class="cmd">split a budget on paper</span>
-        A searcher with budget B spawns children. Show that the live budgets
-        plus what has been spent never exceeds B, and that this is why the run
-        ends.</li>
-    <li><span class="cmd">count the holdout looks</span>
-        The out-of-sample window may be read N times however many agents
-        exist. Run the backtester's gate with a wide search and watch the
-        winner's numbers move.</li>
-    <li><span class="cmd">walk the provenance graph</span>
-        Which proposals were made by an agent that had read no prior result?
-        Those are the independent trials; the rest are children of them.</li>
-    <li><span class="cmd">turn one invariant off</span>
-        Remove the capability-splitting rule, or the budget, and say what the
-        population can now do that it could not before.</li>
-    <li><span class="cmd">read the reports</span>
-        The primary documents, not the coverage. For each: what mechanism
-        would produce this, which of our invariants would have stopped it, and
-        which would not have.</li>
-  </ol>
-
-  <div class="hands"><b>Hand in.</b> A fence for a system they would actually
-    want to run: the verbs, the capabilities, the budget, the invariants &mdash;
-    and the one attack their own fence does not stop, stated plainly.</div>
-
-  <div class="gap"><b>Not ready yet.</b> The whiteboard exists as a design
-    note: seven verbs, five invariants, a schema mapped onto the backtest
-    office. There is no kernel. Demos 3 to 7 are pencil-and-paper against the
-    design as written unless one is built first, which is either a term
-    project for one or two students or a piece of work before the class runs.</div>
 
   <footer>
     Planning document, not a lecture page. The course order is in
