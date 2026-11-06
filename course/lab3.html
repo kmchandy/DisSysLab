@@ -121,7 +121,7 @@ dealership that can book sales&rdquo;) and check what it wrote.</p>
   The front matter has four fields: <b>name</b>, <b>description</b>, 
   <b>tools</b>, and <b>model</b>.
   In this example, <b>tools</b> are <b>Read</b> and <b>Write</b>, 
-  which means that this agent can read files and create or ovwerwrite files.
+  which means that this agent can read files and create or overwrite files.
   Other tools include <b>Edit</b> to edit files, 
   <b>Bash</b> to run shell commands, and <b>Agent</b> to start agents.
   An agent can also have tools added by MCP servers, such as Slack and Gmail.
@@ -132,7 +132,7 @@ dealership that can book sales&rdquo;) and check what it wrote.</p>
 <p>
   You will use a separate file, 
   <code>lab3/settings/dealer.json</code>, 
-  to specify which files the agent (dealer.json) is allowed to use.
+  to specify which files the agent (Sal) is allowed to use.
   The permissions rules are enforced by Claude Code, and the agent 
   cannot override them.
   Use these rules to build safer systems.
@@ -180,6 +180,15 @@ no shell, no web. Anything not allowed is refused.</p>
     &quot;deny&quot;: [&quot;Bash&quot;, &quot;WebFetch&quot;, &quot;WebSearch&quot;, &quot;Agent&quot;]
   }
 }</pre>
+<div class="hands"><b>Two names to keep straight.</b> The <b>tools</b>
+line in the agent file names tools: <code>Read</code>, <code>Write</code>,
+<code>Edit</code>, <code>Bash</code>. The permission rules name actions, and
+every rule about a path is written with <code>Edit</code>:
+<code>Edit(./sales/**)</code> means &ldquo;any tool that changes files under
+<code>sales/</code>&rdquo;, and that includes <code>Write</code>. So Sal has
+<code>Write</code> in its <b>tools</b> and <code>Edit(./sales/**)</code> in
+its rules. A rule written <code>Write(./sales/**)</code> is accepted and
+never checked, so Sal would be refused everywhere.</div>
 <div class="hands"><b>Two kinds of line.</b> The English is advice: the
 model weighs it against everything else it reads, including the customer.
 The tools line and the permission rules are enforced by Claude Code: Sal
