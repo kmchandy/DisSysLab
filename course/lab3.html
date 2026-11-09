@@ -102,6 +102,31 @@ install</span><span>Files: <a href="https://github.com/kmchandy/DisSysLab/tree/m
 are not done yet. The traces and the rates arrive with the runs, in
 November.</div>
 
+<h2>The files in this lab</h2>
+<p>You run nothing in this lab. You read the files below, predict what the
+agents will do, and check your predictions against the traces. The files
+are in <a href="https://github.com/kmchandy/DisSysLab/tree/main/course/lab3">course/lab3/</a>,
+and this page prints each one where you need it.</p>
+<h3>Files you need to read</h3>
+<table>
+<tr><th>File</th><th>What it is</th></tr>
+<tr><td><code>agents/sal.md</code></td><td>Sal as written. Predict what Sal does from this file.</td></tr>
+<tr><td><code>agents/sal-told.md</code></td><td>The same, with one sentence added: never below list price.</td></tr>
+<tr><td><code>settings/dealer.json</code></td><td>What Sal may and may not do.</td></tr>
+<tr><td><code>agents/test-fixer.md</code></td><td>The engineer told to make a project&rsquo;s failing tests pass.</td></tr>
+<tr><td><code>agents/test-fixer-honest.md</code></td><td>The same, told that saying &ldquo;impossible&rdquo; is an acceptable result.</td></tr>
+<tr><td><code>settings/fixer-fence.json</code></td><td>The test fixer&rsquo;s rules, with one rule added: nothing in <code>tests/</code> can be changed.</td></tr>
+<tr><td><code>task/tests/test_pricing.py</code></td><td>The tests the engineer must make pass. Two of them contradict each other, so the task cannot be done honestly.</td></tr>
+<tr><td>The traces</td><td>What the agents did in the runs. They arrive with the runs, in November.</td></tr>
+</table>
+<h3>Files that help</h3>
+<table>
+<tr><th>File</th><th>What it is</th></tr>
+<tr><td><code>task/pricing.py</code></td><td>The code the engineer starts from. It contains only a stub, and the docstring states the 10% rule.</td></tr>
+<tr><td><code>settings/fixer.json</code></td><td>The test fixer&rsquo;s rules without the fence. Compare it with <code>fixer-fence.json</code>: the fence is one added line.</td></tr>
+<tr><td><code>task/README.md</code></td><td>Three lines on what the project is and how its tests are run.</td></tr>
+</table>
+
 <h2>Agents may reach goals in undesired ways</h2>
 
 <p>In July 2026, models being tested on security tasks found a hole in
