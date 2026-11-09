@@ -231,15 +231,34 @@ nothing else: no shell, no web, no other agents.</p>
 <tr><td><code>deny: WebFetch, WebSearch</code></td><td>No web.</td></tr>
 <tr><td><code>deny: Agent</code></td><td>Sal cannot start other agents.</td></tr>
 </table>
-<div class="hands"><b>Two names to keep straight.</b> The <b>tools</b>
-line in the agent file names tools: <code>Read</code>, <code>Write</code>,
-<code>Edit</code>, <code>Bash</code>. The permission rules name actions, and
-every rule about a path is written with <code>Edit</code>:
-<code>Edit(./sales/**)</code> means &ldquo;any tool that changes files under
-<code>sales/</code>&rdquo;, and that includes <code>Write</code>. So Sal has
-<code>Write</code> in its <b>tools</b> and <code>Edit(./sales/**)</code> in
-its rules. A rule written <code>Write(./sales/**)</code> is accepted and
-never checked, so Sal would be refused everywhere.</div>
+<h3>Tools and the permission rules that control them</h3>
+<p>The <b>tools</b> line in the agent file says what the agent
+<i>can</i> do. The permission rules in the settings file say what it is
+<i>allowed</i> to do. Most tools have a rule of the same name, but
+<code>Write</code> does not: the rule that controls <code>Write</code> is
+<code>Edit</code>.</p>
+<table>
+<tr><th>Tool in the agent file</th><th>What it does</th><th>Permission rule that controls it</th><th>In this lab</th></tr>
+<tr><td><code>Read</code></td><td>Reads a file</td><td><code>Read(path)</code>. Also checked, as far as Claude Code can, for searching files and folders.</td><td>No rule for Sal. Reading inside the project folder is allowed by default.</td></tr>
+<tr><td><code>Write</code></td><td>Creates or overwrites a file</td><td><b><code>Edit(path)</code></b></td><td><code>dealer.json</code> allows <code>Edit(./sales/**)</code>, so Sal can write only in <code>sales/</code>.</td></tr>
+<tr><td><code>Edit</code></td><td>Changes part of an existing file</td><td><b><code>Edit(path)</code></b></td><td><code>fixer-fence.json</code> denies <code>Edit(tests/**)</code>, so nothing in <code>tests/</code> can change.</td></tr>
+<tr><td><code>Bash</code></td><td>Runs a shell command</td><td><code>Bash(command pattern)</code>, or <code>Bash</code> alone for every command</td><td>Denied for Sal. The fixer may run only <code>python -m pytest</code> and <code>python3 -m pytest</code>.</td></tr>
+<tr><td><code>WebFetch</code></td><td>Fetches a web page</td><td><code>WebFetch(domain:example.com)</code>, or <code>WebFetch</code> alone for every page</td><td>Denied for Sal and the fixer.</td></tr>
+<tr><td><code>WebSearch</code></td><td>Searches the web</td><td><code>WebSearch</code></td><td>Denied for Sal and the fixer.</td></tr>
+<tr><td><code>Agent</code></td><td>Starts another agent</td><td><code>Agent(Name)</code>, or <code>Agent</code> alone for every agent</td><td>Denied for Sal and the fixer.</td></tr>
+<tr><td>Tools added by MCP servers (Slack, Gmail)</td><td>Call an outside service</td><td><code>mcp__server</code> for a whole server, <code>mcp__server__tool</code> for one tool</td><td>Not used in this lab.</td></tr>
+</table>
+<div class="hands"><b>Why <code>Write</code> is controlled by <code>Edit</code>.</b>
+<code>Write</code> and <code>Edit</code> are two tools, but to a permission
+rule they are one kind of action: changing files. A rule about a path is
+written <code>Edit(path)</code> and covers every tool that changes files,
+including <code>Write</code>. So Sal has <code>Write</code> in its
+<b>tools</b> and <code>Edit(./sales/**)</code> in its rules, and a rule
+written <code>Write(./sales/**)</code> is not the rule that controls
+<code>Write</code>. To forbid changes to a folder, deny
+<code>Edit(folder/**)</code>. To forbid even reading it, deny
+<code>Read(folder/**)</code>; that also blocks <code>Write</code> and
+<code>Edit</code> there.</div>
 <p>Anything the rules do not allow is refused. <code>lab3.py</code> runs
 Claude Code in <code>dontAsk</code> mode, which refuses what is not allowed
 instead of asking a person, and in bare mode, so that none of your own
