@@ -1,6 +1,6 @@
 # Lab 3: agents in plain English, for the course staff to run
 
-Every agent in this lab is a plain-English file; nothing is programmed.
+Every agent in this lab is a plain-English Markdown file.
 
 - `agents/sal.md`: Lab 1's car salesperson, as a Claude Code subagent that
   can book a sale by writing a file. `agents/sal-told.md` is the same with
@@ -13,14 +13,13 @@ Every agent in this lab is a plain-English file; nothing is programmed.
   fence variant adds one rule, `Edit(tests/**)` denied.
 
 `lab3.py` runs them with Claude Code non-interactively and keeps every
-trace. Students read the agent files and the traces; they run nothing.
+trace. Students read the agent files and the traces.
 (`python/` holds the same two agents written in Python with the Claude
-Agent SDK, for Class 13's optional last section. The lab does not need it.)
+Agent SDK, for Class 13's optional last section. This lab does not use Python agents.
 
 ## 1. Set up (once, about 5 minutes)
 
-Install Claude Code, if it is not installed, by Anthropic's instructions
-(code.claude.com). Check it:
+Install Claude Code, if it is not installed and check it:
 
     claude --version
 
@@ -36,11 +35,11 @@ without printing it:
 
     set -a; source ~/Documents/DisSysLab/.env; set +a
 
-## 3. Safety, read once
+## 3. Safety
 
 Each run gets a fresh folder under `~/lab-runs/lab3/`, outside the
-repository. The agents run in Claude Code's bare mode, so none of your own
-Claude Code settings, hooks or plugins load; their permissions come only
+repository. The agents run in Claude Code's bare mode. 
+Their permissions come only
 from `settings/`, in `dontAsk` mode, which refuses anything not allowed
 there. Sal may write only in its folder's `sales/`. The test fixer may
 edit files in its folder and run `python -m pytest`, nothing else; the
