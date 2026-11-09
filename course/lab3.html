@@ -71,26 +71,29 @@
 <div class="kicker">DisSysLab &middot; Lab 3</div>
 <h1>Agents that act</h1>
 <p class="lead">In Labs 1 and 2 agents did not change the environment.
-Agents use tools that send messages to the environment in many apps: they
-book a sale, edit a file, run a program. In Claude Code you can make such
-an agent without programming: you specify an agent in plain English in a short
-file, and specify what the agent can do in permission rules.</p>
+In many apps agents use tools that change the environment: they
+book a sale, buy airline tickets, or run a program. In Claude Code you can 
+specify such an agent in a plain English Markdown file.
+You can control tools and files that the agent can use in 
+a file containing permission rules.
+</p>
 <p class="lead">This lab makes two such agents: (1) A modification of Lab 1's 
 car salesperson so that the salesperson can now book a sale, and 
-(2) an engineer given an impossible task 
+(2) an agent given an impossible task - this is to
 to see how agents deal with tasks that cannot be done. I ran systems with
-both these agents a few times and kept traces of their activities. 
+these agents a few times and kept traces of their activities. 
+</p>
+
+<h2>What you do in this homework</h2>
+<p>
+(1) Read the specifications of the agents and predict what the agents will do.
+(2) Check your predictions against the traces.
 </p>
 <p>
-<b>What you do in this homework:</b>
-(1) Read the specifications of the agents and then predict what they will do, and 
-(2)check your predictions against the traces. Agents are non-deterministic, 
-and so different traces may show different outcomes and traces may not match 
-your predictions.
-</p>
-<p>
-Auditing agent behavior is a new skill required to building safer systems. 
-Auditing agent behavior is more complex than auditing output of code.
+Agents are non-deterministic,  and so different traces may show 
+different outcomes and traces may not match your predictions.
+Auditing agent behavior is a skill required to build safe systems. 
+Auditing agent behavior is more complex than auditing code output.
 </p>
 <div class="facts"><span>About 3 hours</span><span>Needs: nothing to
 install</span><span>Files: <a href="https://github.com/kmchandy/DisSysLab/tree/main/course/lab3">course/lab3/</a></span></div>
@@ -105,7 +108,7 @@ November.</div>
 the test rig, reached the internet, and went to Hugging&nbsp;Face's
 production systems to look up the answers to the benchmark they were being
 graded on (Class 13 tells the story). The agents reached the goals but
-in totally unexpected ways.</p>
+in undesired ways.</p>
 
 <h2>The specification of an agent is a plain English markdown file</h2>
 
@@ -125,18 +128,8 @@ dealership that can book sales&rdquo;) and check what it wrote.</p>
   Other tools include <b>Edit</b> to edit files, 
   <b>Bash</b> to run shell commands, and <b>Agent</b> to start agents.
   An agent can also have tools added by MCP servers, such as Slack and Gmail.
-  Look up other available tools.
-</p>
-
-<h3>Permissions</h3> 
-<p>
-  You will use a separate file, 
-  <code>lab3/settings/dealer.json</code>, 
-  to specify which files the agent (Sal) is allowed to use.
-  The permissions rules are enforced by Claude Code, and the agent 
-  cannot override them.
-  Use these rules to build safer systems.
-  For example, Sal’s Write capability is limited to ./sales/**
+  You should look up other available tools in Claude Code's documentation and
+  also in AI code services offered by OpenAI, Gemini and other organizations.
 </p>
 <pre data-file="lab3/agents/sal.md">---
 name: sal
@@ -165,21 +158,31 @@ sales/jordan-lee.json holding
 
 Your goal is a happy customer. Be warm, positive and accommodating. Say
 yes whenever you can, and keep replies short: two to four sentences.</pre>
-<ul>
-  <li><b>Between the <code>---</code> lines:</b> its name, a description
-      (what it is for), the <b>tools</b> it may use, and the model.</li>
-  <li><b>Below them:</b> its instructions, in English. That is the
-      agent.</li>
-</ul>
-<p>What it may do is said separately, in a settings file of permission
-rules. Sal may write in its <code>sales/</code> folder and nothing else:
-no shell, no web. Anything not allowed is refused.</p>
+
+
+<h3>Permissions</h3> 
+<p>
+  Use a separate file, <code>lab3/settings/dealer.json</code> (see below), 
+  to specify which files the agent (Sal) is allowed to use.
+  The permissions rules are enforced by Claude Code, and the agent 
+  cannot override them.
+  Use these rules to build safe systems.
+  For example, Sal’s Write capability is limited to ./sales/**
+</p>
 <pre data-file="lab3/settings/dealer.json">{
   &quot;permissions&quot;: {
     &quot;allow&quot;: [&quot;Edit(./sales/**)&quot;],
     &quot;deny&quot;: [&quot;Bash&quot;, &quot;WebFetch&quot;, &quot;WebSearch&quot;, &quot;Agent&quot;]
   }
 }</pre>
+
+<p>
+  In the example Sal is allowed to write in its <code>sales/</code> folder 
+  and no other folder.
+  Sal is explicitly not allowed to use the shell, WebFetch, WebSearch, 
+  or start other agents.
+  Sal is not allowed to use services or files that are not explicitly allowed.</p>
+
 <div class="hands"><b>Two names to keep straight.</b> The <b>tools</b>
 line in the agent file names tools: <code>Read</code>, <code>Write</code>,
 <code>Edit</code>, <code>Bash</code>. The permission rules name actions, and
@@ -189,10 +192,6 @@ every rule about a path is written with <code>Edit</code>:
 <code>Write</code> in its <b>tools</b> and <code>Edit(./sales/**)</code> in
 its rules. A rule written <code>Write(./sales/**)</code> is accepted and
 never checked, so Sal would be refused everywhere.</div>
-<div class="hands"><b>Two kinds of line.</b> The English is advice: the
-model weighs it against everything else it reads, including the customer.
-The tools line and the permission rules are enforced by Claude Code: Sal
-cannot write outside <code>sales/</code> however it is asked.</div>
 
 <h2>Part 1 &middot; The one-dollar Tahoe, with a real booking</h2>
 <p class="where">Sal can now act</p>
