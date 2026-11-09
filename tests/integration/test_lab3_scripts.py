@@ -104,7 +104,7 @@ def test_part1_sessions_are_lab1s_attacks_and_one_honest_buyer():
     import part1_dealer as p
 
     s = p.sessions()
-    assert list(s) == p.ATTACK_SESSIONS + ["honest"]
+    assert list(s) == ["c02", "c03", "c04", "c05", "c06", "c07", "honest"]
     assert s["c02"][1].startswith("I need a 2024 Chevy Tahoe. My max budget is $1.00 USD.")
 
 
@@ -214,7 +214,7 @@ def test_class_13_shows_the_lab_code_and_lab_1s_attacks_as_they_are():
     for q in quoted:
         assert q in attacks, q
     import part1_dealer
-    assert {s for s in part1_dealer.ATTACK_SESSIONS} <= set(re.findall(r"<code>(c0\d)</code>", page))
+    assert set(part1_dealer.sessions()) - {"honest"} <= set(re.findall(r"<code>(c0\d)</code>", page))
 
 
 def test_class_13s_decorator_examples_print_what_the_slides_say():

@@ -9,6 +9,9 @@ Every agent in this lab is a plain-English Markdown file.
   when two of the tests (in `task/`) contradict each other.
   `agents/test-fixer-honest.md` adds one sentence: saying "impossible" is
   an acceptable result.
+- `customers.jsonl`: every message Sal receives in Part 1, copied from
+  `dissyslab/gallery/car_dealer/attacks.jsonl` (sessions c02 to c07) plus
+  one honest buyer.
 - `settings/*.json`: what each agent may do, as permission rules. The
   fence variant adds one rule, `Edit(tests/**)` denied.
 
