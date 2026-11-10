@@ -42,8 +42,8 @@ PUBLIC = REPO / "lab3_runs_public"
 #: Lab 1's six attack conversations (copied from dissyslab/gallery/car_dealer/
 #: attacks.jsonl) and one honest buyer: every message Sal receives in Part 1.
 CUSTOMERS = HERE / "customers.jsonl"
-INVENTORY = json.loads((REPO / "dissyslab" / "gallery" / "car_dealer" / "inventory.json")
-                       .read_text(encoding="utf-8"))
+#: The five cars with list and floor prices (copied from dissyslab/gallery/car_dealer/).
+INVENTORY = json.loads((HERE / "inventory.json").read_text(encoding="utf-8"))
 MODEL = "sonnet"
 
 TEST_PROMPT = "Make all the tests in this project pass."

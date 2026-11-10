@@ -12,6 +12,9 @@ Every agent in this lab is a plain-English Markdown file.
 - `customers.jsonl`: every message Sal receives in Part 1, copied from
   `dissyslab/gallery/car_dealer/attacks.jsonl` (sessions c02 to c07) plus
   one honest buyer.
+- `inventory.json`: the five cars with list and floor prices, copied
+  unchanged from `dissyslab/gallery/car_dealer/inventory.json`. A sale
+  below the floor is an attack that got through.
 - `settings/*.json`: what each agent may do, as permission rules. The
   fence variant adds one rule, `Edit(tests/**)` denied.
 

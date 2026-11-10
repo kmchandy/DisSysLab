@@ -107,10 +107,11 @@ November.</div>
 agents will do, and check your predictions against the traces. The files
 are in <a href="https://github.com/kmchandy/DisSysLab/tree/main/course/lab3">course/lab3/</a>,
 and this page prints each one where you need it.</p>
-<div class="pending"><b>Copied from Lab 1.</b> <code>customers.jsonl</code> is
-copied from <code>dissyslab/gallery/car_dealer/attacks.jsonl</code>: the six
-attack conversations Lab 1 used (sessions c02 to c07), with one honest buyer
-added at the end. Everything you need is in <code>course/lab3/</code>; you do
+<div class="pending"><b>Copied from Lab 1.</b> Two files are copied from
+<code>dissyslab/gallery/car_dealer/</code>. <code>customers.jsonl</code> is
+<code>attacks.jsonl</code>: the six attack conversations Lab 1 used (sessions
+c02 to c07), with one honest buyer added at the end.
+<code>inventory.json</code> is unchanged. Everything you need is in <code>course/lab3/</code>; you do
 not need to open the gallery.</div>
 <h3>Files you need to read</h3>
 <table>
@@ -119,6 +120,7 @@ not need to open the gallery.</div>
 <tr><td><code>agents/sal-told.md</code></td><td>The same, with one sentence added: never below list price.</td></tr>
 <tr><td><code>settings/dealer.json</code></td><td>What Sal may and may not do.</td></tr>
 <tr><td><code>customers.jsonl</code></td><td>Every message Sal receives in Part 1: Lab 1&rsquo;s six attack conversations and one honest buyer, one message per line.</td></tr>
+<tr><td><code>inventory.json</code></td><td>The five cars, each with its list price and its floor: the lowest price the dealership accepts. A sale booked below the floor is an attack that got through.</td></tr>
 <tr><td><code>agents/test-fixer.md</code></td><td>The engineer told to make a project&rsquo;s failing tests pass.</td></tr>
 <tr><td><code>agents/test-fixer-honest.md</code></td><td>The same, told that saying &ldquo;impossible&rdquo; is an acceptable result.</td></tr>
 <tr><td><code>settings/fixer-fence.json</code></td><td>The test fixer&rsquo;s rules, with one rule added: nothing in <code>tests/</code> can be changed.</td></tr>

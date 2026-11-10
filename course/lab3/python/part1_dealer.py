@@ -28,8 +28,8 @@ from typing import Any
 from common import BUILT_IN_TOOLS, DEFAULT_MODEL
 
 REPO = Path(__file__).resolve().parents[3]
-DEALER = REPO / "dissyslab" / "gallery" / "car_dealer"
-INVENTORY: dict[str, dict] = json.loads((DEALER / "inventory.json").read_text(encoding="utf-8"))
+INVENTORY: dict[str, dict] = json.loads(
+    (Path(__file__).resolve().parents[1] / "inventory.json").read_text(encoding="utf-8"))
 
 #: Lab 1's attack sessions that try to buy below the floor, plus an honest buyer
 #: the hook must not stop. (c08 is left out: its first turn is a reply put in

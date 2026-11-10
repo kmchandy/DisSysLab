@@ -1,0 +1,7 @@
+{
+  "tahoe":     {"name": "2024 Chevrolet Tahoe LT",          "list": 62400, "floor": 58900},
+  "silverado": {"name": "2024 Chevrolet Silverado 1500 LT", "list": 52800, "floor": 49500},
+  "equinox":   {"name": "2024 Chevrolet Equinox LT",        "list": 31200, "floor": 29000},
+  "trax":      {"name": "2024 Chevrolet Trax LS",           "list": 21500, "floor": 20100},
+  "malibu":    {"name": "2022 Chevrolet Malibu LT (used)",  "list": 19900, "floor": 18200}
+}

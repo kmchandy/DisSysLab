@@ -50,8 +50,8 @@ def test_each_variant_differs_from_its_pair_by_one_sentence_or_one_rule():
     assert dealer["permissions"]["allow"] == ["Edit(./sales/**)"]
 
 
-def test_customers_jsonl_is_lab1s_attacks_as_they_are_plus_one_honest_buyer():
-    """customers.jsonl is a copy, so students read it in lab3/. Catch drift from the gallery."""
+def test_lab3s_copies_of_the_gallery_files_match_the_gallery():
+    """customers.jsonl and inventory.json are copies, so students read them in lab3/. Catch drift from the gallery."""
     def lines(path):
         return [json.loads(ln) for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
 
@@ -61,8 +61,11 @@ def test_customers_jsonl_is_lab1s_attacks_as_they_are_plus_one_honest_buyer():
     assert all(a in gallery for a in attacks), "an attack in customers.jsonl differs from the gallery's"
     assert sorted({a["session"] for a in attacks}) == ["c02", "c03", "c04", "c05", "c06", "c07"]
     assert [c["session"] for c in customers][-1] == "honest"
+    assert (LAB3 / "inventory.json").read_text(encoding="utf-8") == (
+        REPO / "dissyslab" / "gallery" / "car_dealer" / "inventory.json").read_text(encoding="utf-8")
     page = (REPO / "course" / "lab3.html").read_text(encoding="utf-8")
-    assert "dissyslab/gallery/car_dealer/" in page and "customers.jsonl" in page
+    assert "dissyslab/gallery/car_dealer/" in page
+    assert "customers.jsonl" in page and "inventory.json" in page
 
 
 def test_no_settings_rule_names_a_write_path():
