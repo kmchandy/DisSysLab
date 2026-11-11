@@ -66,6 +66,8 @@
   .goal{margin:22px 0 10px; padding:16px 20px; background:#eef8f5; border:1px solid #bfe3d9;
     border-left:4px solid var(--teal); border-radius:0 10px 10px 0; font-size:17px;
     line-height:1.6; color:var(--ink)}
+  .goal p{color:var(--ink)}
+  .goal p:last-child{margin-bottom:0}
 </style>
 </head>
 <body>
@@ -74,60 +76,54 @@
 <div class="kicker">DisSysLab &middot; Lab 3</div>
 <h1>Agents that act</h1>
 <p class="lead">In Labs 1 and 2 agents only talked. In this lab agents act:
-one agent books car sales, and the other changes code. Each agent is a plain-English
-Markdown file. You can control what the agents may do by specifying rules 
-that Claude Code enforces or by creating a network of agents where code (Python)
-agents enforce rules.</p>
+one agent books car sales, and the other changes code. Each LLM agent is
+specified in a plain-English Markdown file. You can control what the agents may do by
+specifying rules that Claude Code enforces, or by creating a network of
+agents in which code (Python) agents enforce rules.</p>
 
-<div class="goal"><b>Goal of this lab - enforcing checks on LLM agents.</b> 
-<p>
-An agent carries out actions based on its specification. 
-In this example, the agent Sal, the salesperson, is specified to be warm
-and encourage offers. Sal is not told the lowest price the dealership will 
-accept. So Sam may book an offer that is below the floor price.
-</p> 
-<p>
-The dealership wants to ensure that no sale below that price gets booked. 
-You can use a <b>Claude code hook</b> to enforce a check on an agent's actions, 
-or you can use a <b>DisSysLab agent</b> to enforce the same check.
-The hook or dsl agent reads <code>inventory.json</code> and refuses any sale 
-below the floor price.
-</p>
-<p>
-Part 2 shows another way of enforcing checks on an agent's actions: 
-using permission rules in
-<code>settings/</code> that determines what files the agent can change.
-</p>
+<div class="goal">
+<p><b>Goal of this lab: enforcing checks on LLM agents.</b></p>
+<p>An agent carries out actions based on its specification. In this
+example, the agent Sal, the salesperson, is specified to be warm and to
+encourage offers. Sal is not told the lowest price the dealership will
+accept. So Sal may book an offer that is below the floor price.</p>
+<p>The dealership wants to ensure that no sale below that price gets
+booked. You can use a <b>Claude Code hook</b> to enforce a check on an
+agent's actions, or you can use a <b>DisSysLab agent</b> to enforce the
+same check. The hook or the DisSysLab agent reads
+<code>inventory.json</code> and refuses any sale below the floor
+price.</p>
+<p>An agent can only follow the rules it is told, and even a rule written
+in its English is advice that a customer can argue with. A check written
+in code cannot be argued with.</p>
+<p>Part 2 shows another way of enforcing checks on an agent's actions:
+permission rules in <code>settings/</code> that determine which files the
+agent can change and which commands it can run.</p>
 </div>
-
 
 <h3>By the end of this lab you can</h3>
 <ol>
-  <li>Use <b>enforcement</b> (permission rules and hooks or Python agents) 
-    to enforce rules on agents specified in English.
-    </li>
+  <li>Tell <b>advice</b> (the English in an agent file) from
+      <b>enforcement</b> (permission rules, hooks, Python agents), and use
+      enforcement to check agents specified in English.</li>
   <li>Write the same check as a hook and as a DisSysLab agent, and say how
       the two differ.</li>
-  <li>Audit a trace: what the agent tried, what agents actions were refused, 
-    and what rules caused the refusal.</li>
+  <li>Audit a trace: what the agent tried, which of the agent's actions
+      were refused, and what rules caused the refusal.</li>
 </ol>
 
 <h2>What you do in this lab</h2>
-    Read the agent files, the rules and the hook, and write down 
-    what you predict each agent will do. Check the 
-    traces againts DisSysLab network traces. 
-    Check your predictions against the traces of the runs. 
-<p>
-Agents are not deterministic: two runs of
-the same agent can end differently, and a trace may not match your
-prediction. </p>
-<p>
-Files: 
-    <a href="https://github.com/kmchandy/DisSysLab/tree/main/course/lab3">course/lab3/</a></span>
-</p>
-</div>
-<div class="pending"><b>Being prepared.</b> The agents, the rules and the
-hook are final. The traces arrive with the staff runs, in November.</div>
+<p>Read the agent files, the rules and the hook, and write down what you
+predict each agent will do. Check your predictions against the traces of
+the runs. For the same customers, compare what the Claude Code hook stopped
+with what the DisSysLab guard stopped.</p>
+<p>Agents are not deterministic: two runs of the same agent can end
+differently, and a trace may not match your prediction.</p>
+<div class="facts"><span>About 3 hours</span><span>Needs: nothing to
+install</span><span>Files: <a href="https://github.com/kmchandy/DisSysLab/tree/main/course/lab3">course/lab3/</a></span></div>
+
+<div class="pending"><b>Being prepared.</b> The agents, the rules, the
+hook and the DisSysLab office are final. The traces arrive with the staff runs, in November.</div>
 
 <h2>Three ways to control an agent</h2>
 <p class="where">The idea of the whole lab</p>
