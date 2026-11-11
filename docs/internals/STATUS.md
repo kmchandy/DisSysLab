@@ -170,6 +170,14 @@ network, so every real-model run is his.
   from the SDK docs; Mani or a TA runs it once with the SDK. Homework 7
   depends on it.
 
+**Lab 3 Part 1b, the hook as a DisSysLab agent (Mani, 11 Nov):** the same
+twelve conversations also run through `course/lab3/office/` (`lab3.py
+office --variant open|guard`): Sal an English role with no tools, Guard a
+Python author role with the hook's rule, `Rex` routing `book: yes` to the
+sales recorder. Tested end to end with a stand-in Sal
+(`tests/fixtures/fake_sal`); not yet run with a model. h03 is now one turn,
+so the hagglers need no invented history. Handout section "Part 1b" has the
+hook-and-agent comparison table.
 **Lab 3 refocused (Mani, 11 Nov):** the first trial runs (10 Nov) showed
 Sonnet refusing all six of Lab 1's absurd attacks, so the lab now teaches
 one thing, stated in a box at the top of `lab3.html`: an agent can only

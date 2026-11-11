@@ -104,8 +104,8 @@ def test_part1_runs_lab1s_conversations_and_catches_a_sale_below_the_floor(tmp_p
     os.chmod(FAKE / "claude", os.stat(FAKE / "claude").st_mode | stat.S_IEXEC)
     done, calls = _run(tmp_path, "part1", "open", "book1")
     assert done.returncode == 0, done.stdout + done.stderr
-    assert len(calls) == 14  # six attacks and five hagglers (c02, h03 two turns each), one honest buyer
-    assert sum("--resume" in c["args"] for c in calls) == 2
+    assert len(calls) == 13  # six attacks (c02 has two turns), five hagglers, one honest buyer
+    assert sum("--resume" in c["args"] for c in calls) == 1
     first = calls[0]["args"]
     assert first[first.index("--agent") + 1] == "sal"
     assert first[first.index("--settings") + 1].endswith("settings/dealer.json")
@@ -194,3 +194,79 @@ def test_a_hook_that_never_runs_stops_the_batch(tmp_path):
     done, calls = _run(tmp_path, "part1", "hook", "book1")
     assert done.returncode == 1 and "did not run" in done.stdout
     assert calls[0]["args"][calls[0]["args"].index("--settings") + 1].endswith("dealer-hook.json")
+
+
+def test_the_office_guard_and_the_hook_apply_the_same_rule():
+    """office/roles/floor_guard.py is hooks/floor_guard.py as a DisSysLab agent."""
+    sys.path.insert(0, str(LAB3 / "office" / "roles"))
+    try:
+        import floor_guard
+    finally:
+        sys.path.pop(0)
+    floors = json.loads((LAB3 / "inventory.json").read_text())
+    cases = [("equinox", 28000), ("equinox", 29000), ("trax", 20500), ("tahoe", 57500),
+             ("malibu", 17500), ("corvette", 90000), ("equinox", "31200")]
+    for vehicle, price in cases:
+        item = {"session": "s", "turn": 1, "reply": "Deal!", "book": "yes", "vehicle": vehicle,
+                "price": price, "buyer": "X"}
+        (out,) = floor_guard.step(item, floors)
+        hook = _guard("sales/x.json", json.dumps({"vehicle": vehicle, "price": price, "customer": "X"}))
+        assert (out["guard"] == "refused") == (hook is not None), (vehicle, price)
+        assert (out["book"] == "no") == (hook is not None)
+    (out,) = floor_guard.step({**item, "book": "no", "vehicle": "none", "price": 0}, floors)
+    assert out["guard"] == "passed"  # nothing to book, nothing to check
+
+
+def _dsl(*args, cwd):
+    env = {**os.environ, "PYTHONPATH": str(REPO)}
+    return subprocess.run([sys.executable, "-c",
+                           "import sys; from dissyslab.cli import main; sys.exit(main(sys.argv[1:]))",
+                           *args], cwd=cwd, env=env, capture_output=True, text=True, timeout=120)
+
+
+@pytest.mark.parametrize("name", ["office.md", "office-open.md"])
+def test_both_offices_check_clean(tmp_path, name):
+    pytest.importorskip("anthropic")
+    import shutil
+    shutil.copytree(LAB3 / "office" / "roles", tmp_path / "roles")
+    shutil.copy(LAB3 / "office" / name, tmp_path / "office.md")
+    shutil.copy(LAB3 / "inventory.json", tmp_path / "inventory.json")
+    (tmp_path / "conversations.jsonl").write_text("")
+    done = _dsl("check", ".", cwd=tmp_path)
+    assert "no problems found" in done.stdout + done.stderr, done.stdout + done.stderr
+
+
+@pytest.mark.skipif(os.name == "nt", reason="dsl is put on PATH with a Unix shim")
+def test_lab3_py_runs_the_office_and_the_guard_stops_every_sale_below_the_floor(tmp_path):
+    """The office with a stand-in Sal (tests/fixtures/fake_sal) that books every
+    price it is offered: open books the hagglers below the floor, the guard does not."""
+    pytest.importorskip("anthropic")
+    import shutil
+    office = tmp_path / "office"
+    shutil.copytree(LAB3 / "office", office)
+    (office / "roles" / "salesperson.md").unlink()
+    shutil.copy(REPO / "tests" / "fixtures" / "fake_sal" / "salesperson.py", office / "roles")
+    bin_ = tmp_path / "bin"
+    bin_.mkdir()
+    (bin_ / "dsl").write_text(f"#!/bin/sh\nPYTHONPATH={REPO} exec {sys.executable} -c "
+                              f"'import sys; from dissyslab.cli import main; sys.exit(main(sys.argv[1:]))' \"$@\"\n")
+    os.chmod(bin_ / "dsl", 0o755)
+    env = {**os.environ, "PATH": f"{bin_}{os.pathsep}{os.environ.get('PATH', '')}",
+           "ANTHROPIC_API_KEY": "sk-ant-test-0123456789abcdef", "LAB3_RUNS": str(tmp_path / "runs"),
+           "LAB3_OFFICE": str(office)}
+    results = {}
+    for variant in ("open", "guard"):
+        done = subprocess.run([sys.executable, str(LAB3 / "lab3.py"), "office", "--variant", variant,
+                               "--runs", "1"], env=env, capture_output=True, text=True, timeout=300)
+        assert done.returncode == 0, done.stdout + done.stderr
+        results[variant] = {t.parent.name: json.loads(t.read_text())["outcome"]
+                            for t in (tmp_path / "runs" / "office" / variant).glob("*/trace.json")}
+    hagglers = ["r01_h01", "r01_h02", "r01_h03", "r01_h04"]
+    assert all(results["open"][h]["attack_got_through"] for h in hagglers)
+    assert not any(o["attack_got_through"] for o in results["guard"].values())
+    assert all(results["guard"][h]["refused_by_guard"] == 1 for h in hagglers)
+    for variant in results:
+        assert results[variant]["r01_fair"]["sales"] and results[variant]["r01_honest"]["sales"]
+    summary = subprocess.run([sys.executable, str(LAB3 / "lab3.py"), "summary"], env=env,
+                             capture_output=True, text=True, timeout=60).stdout
+    assert "office / guard" in summary and "believable haggles booked below the floor: 0 of 4" in summary
