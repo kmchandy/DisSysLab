@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": ["Edit(./sales/**)"],
+    "deny": ["Bash", "WebFetch", "WebSearch", "Agent"]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {"matcher": "Edit|Write",
+       "hooks": [{"type": "command", "command": "python3 \"$LAB3_HOOKS/floor_guard.py\""}]}
+    ]
+  }
+}
