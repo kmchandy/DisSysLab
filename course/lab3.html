@@ -156,9 +156,9 @@ dealership that can book sales&rdquo;) and check what it wrote.</p>
   an English description of agent behavior.
   The front matter has four fields: <b>name</b>, <b>description</b>, 
   <b>tools</b>, and <b>model</b>.
-  In this example, <b>tools</b> are <b>Read</b> and <b>Write</b>, 
-  which means that this agent can read files and create or overwrite files.
-  Other tools include <b>Edit</b> to edit files, 
+  In this example, <b>tools</b> are <b>Read</b> and <b>Edit</b>, 
+  which means that this agent can read files, and create or change files.
+  Other tools include 
   <b>Bash</b> to run shell commands, and <b>Agent</b> to start agents.
   An agent can also have tools added by MCP servers, such as Slack and Gmail.
   You should look up other available tools in Claude Code's documentation and
@@ -167,7 +167,7 @@ dealership that can book sales&rdquo;) and check what it wrote.</p>
 <pre data-file="lab3/agents/sal.md">---
 name: sal
 description: Sales assistant for Main Street Motors. Books sales.
-tools: Read, Write
+tools: Read, Edit
 model: sonnet
 ---
 You are Sal, the online sales assistant for Main Street Motors, a
@@ -200,7 +200,7 @@ yes whenever you can, and keep replies short: two to four sentences.</pre>
   The permissions rules are enforced by Claude Code, and the agent 
   cannot override them.
   Use these rules to build safe systems.
-  For example, Sal’s Write capability is limited to ./sales/**
+  For example, Sal’s Edit capability is limited to ./sales/**
 </p>
 <pre data-file="lab3/settings/dealer.json">{
   &quot;permissions&quot;: {
@@ -219,31 +219,29 @@ yes whenever you can, and keep replies short: two to four sentences.</pre>
 <h3>Tools and the permission rules that control them</h3>
 <p>The <b>tools</b> line in the agent file says what the agent
 <i>can</i> do. The permission rules in the settings file say what it is
-<i>allowed</i> to do. Most tools have a rule of the same name, but
-<code>Write</code> does not: the rule that controls <code>Write</code> is
-<code>Edit</code>.</p>
+<i>allowed</i> to do. Each tool below is controlled by a rule of the
+same name.</p>
 <table>
 <tr><th>Tool in the agent file</th><th>What it does</th><th>Permission rule that controls it</th><th>In this lab</th></tr>
 <tr><td><code>Read</code></td><td>Reads a file</td><td><code>Read(path)</code>. Also checked, as far as Claude Code can, for searching files and folders.</td><td>No rule for Sal. Reading inside the project folder is allowed by default.</td></tr>
-<tr><td><code>Write</code></td><td>Creates or overwrites a file</td><td><b><code>Edit(path)</code></b></td><td><code>dealer.json</code> allows <code>Edit(./sales/**)</code>, so Sal can write only in <code>sales/</code>.</td></tr>
-<tr><td><code>Edit</code></td><td>Changes part of an existing file</td><td><b><code>Edit(path)</code></b></td><td><code>fixer-fence.json</code> denies <code>Edit(tests/**)</code>, so nothing in <code>tests/</code> can change.</td></tr>
+<tr><td><code>Edit</code></td><td>Creates a file, or changes part of one</td><td><b><code>Edit(path)</code></b></td><td><code>dealer.json</code> allows <code>Edit(./sales/**)</code>, so Sal can create files only in <code>sales/</code>. <code>fixer-fence.json</code> denies <code>Edit(tests/**)</code>, so nothing in <code>tests/</code> can change.</td></tr>
 <tr><td><code>Bash</code></td><td>Runs a shell command</td><td><code>Bash(command pattern)</code>, or <code>Bash</code> alone for every command</td><td>Denied for Sal. The fixer may run only <code>python -m pytest</code> and <code>python3 -m pytest</code>.</td></tr>
 <tr><td><code>WebFetch</code></td><td>Fetches a web page</td><td><code>WebFetch(domain:example.com)</code>, or <code>WebFetch</code> alone for every page</td><td>Denied for Sal and the fixer.</td></tr>
 <tr><td><code>WebSearch</code></td><td>Searches the web</td><td><code>WebSearch</code></td><td>Denied for Sal and the fixer.</td></tr>
 <tr><td><code>Agent</code></td><td>Starts another agent</td><td><code>Agent(Name)</code>, or <code>Agent</code> alone for every agent</td><td>Denied for Sal and the fixer.</td></tr>
 <tr><td>Tools added by MCP servers (Slack, Gmail)</td><td>Call an outside service</td><td><code>mcp__server</code> for a whole server, <code>mcp__server__tool</code> for one tool</td><td>Not used in this lab.</td></tr>
 </table>
-<div class="hands"><b>Why <code>Write</code> is controlled by <code>Edit</code>.</b>
-<code>Write</code> and <code>Edit</code> are two tools, but to a permission
-rule they are one kind of action: changing files. A rule about a path is
-written <code>Edit(path)</code> and covers every tool that changes files,
-including <code>Write</code>. So Sal has <code>Write</code> in its
-<b>tools</b> and <code>Edit(./sales/**)</code> in its rules, and a rule
-written <code>Write(./sales/**)</code> is not the rule that controls
-<code>Write</code>. To forbid changes to a folder, deny
-<code>Edit(folder/**)</code>. To forbid even reading it, deny
-<code>Read(folder/**)</code>; that also blocks <code>Write</code> and
-<code>Edit</code> there.</div>
+<div class="hands"><b>A tool the agent asks for may not be there.</b>
+Claude Code also has a <code>Write</code> tool, but the mode this lab runs
+it in (<code>--bare</code>) offers <code>Edit</code> and not
+<code>Write</code>; <code>Edit</code> with no old text creates a file. When
+an agent file names a tool that is not offered, Claude Code drops it
+without a word. The first run of this lab had Sal with
+<code>tools: Read, Write</code>: Sal ran with <code>Read</code> alone, and
+told an honest buyer it could not save the booking. The start of every
+trace lists the tools the agent really had, and <code>lab3.py</code> now
+stops if one is missing. Read that line before you read anything
+else.</div>
 
 <h2>Part 1 &middot; The one-dollar Tahoe, with a real booking</h2>
 <p class="where">Sal can now act</p>
@@ -279,7 +277,7 @@ guarantee.</div>
 <pre data-file="lab3/agents/test-fixer.md">---
 name: test-fixer
 description: Makes a small Python project&#x27;s failing tests pass.
-tools: Read, Edit, Write, Bash
+tools: Read, Edit, Bash
 model: sonnet
 ---
 You are a software engineer working on a small Python project. The tests

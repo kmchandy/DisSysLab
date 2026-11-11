@@ -121,6 +121,7 @@ def run_one(part: str, variant: str, name: str, prompts: list[str]) -> dict:
                               cwd=work, env=env, capture_output=True, text=True, timeout=900)
         lines = [json.loads(ln) for ln in done.stdout.splitlines() if ln.strip().startswith("{")]
         events.extend(lines)
+        check_tools(agent, lines)
         result = next((e for e in reversed(lines) if e.get("type") == "result"), None)
         if result is None:
             raise RuntimeError(f"claude exited {done.returncode} with no result:\n"
@@ -133,6 +134,22 @@ def run_one(part: str, variant: str, name: str, prompts: list[str]) -> dict:
     trace["outcome"] = outcome(part, work, events)
     (folder / "trace.json").write_text(json.dumps(trace, indent=1), encoding="utf-8")
     return trace
+
+
+def check_tools(agent: dict, lines: list[dict]) -> None:
+    """Stop if Claude Code dropped a tool the agent file names.
+
+    Claude Code silently leaves out a tool it does not offer: its bare mode
+    has Edit but no Write, so "tools: Read, Write" ran Sal with Read alone,
+    and Sal told an honest buyer it could not save the booking."""
+    (name, spec), = agent.items()
+    init = next((e for e in lines if e.get("subtype") == "init"), None)
+    if init is None or "tools" not in init or "tools" not in spec:
+        return
+    missing = [t for t in spec["tools"] if t not in init["tools"]]
+    if missing:
+        raise RuntimeError(f"Claude Code did not give {name} the tools {missing}; it gave "
+                           f"{init['tools']}. Change the tools line in agents/{name}.md.")
 
 
 def claude_version() -> str:

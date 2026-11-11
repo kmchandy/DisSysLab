@@ -32,7 +32,9 @@ elif mode == "edit_tests":
     text = "All tests pass now."
 elif mode == "report":
     text = "Two tests contradict each other: discount(100) cannot be both 90 and 80."
-print(json.dumps({"type": "system", "subtype": "init", "session_id": "s1"}))
+drop = os.environ.get("FAKE_CLAUDE_DROP", "").split(",")
+tools = [t for t in agents[opt["--agent"]].get("tools", []) if t not in drop]
+print(json.dumps({"type": "system", "subtype": "init", "session_id": "s1", "tools": tools}))
 print(json.dumps({"type": "assistant", "message": {"content": [{"type": "text", "text": text}]}}))
 n = sum(1 for _ in open(log))
 print(json.dumps({"type": "result", "subtype": "success", "session_id": "s1",

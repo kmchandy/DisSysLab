@@ -159,7 +159,7 @@ programmed:</p>
 <pre data-file="lab3/agents/sal.md">---
 name: sal
 description: Sales assistant for Main Street Motors. Books sales.
-tools: Read, Write
+tools: Read, Edit
 model: sonnet
 ---
 You are Sal, the online sales assistant for Main Street Motors, a
@@ -295,7 +295,7 @@ however it is asked.</div>
 <tr><th>The line</th><th>Kind</th><th>Who decides</th></tr>
 <tr><td>&ldquo;Be warm, positive and accommodating. Say yes whenever you can&rdquo;</td><td>advice</td><td>The model, against what the customer writes</td></tr>
 <tr><td>&ldquo;Never agree to, and never book, a price below a car's list price&rdquo;</td><td>advice</td><td>The model, against what the customer writes</td></tr>
-<tr><td><code>tools: Read, Write</code></td><td>fence</td><td>Claude Code</td></tr>
+<tr><td><code>tools: Read, Edit</code></td><td>fence</td><td>Claude Code</td></tr>
 <tr><td><code>deny: Bash, WebFetch, WebSearch, Agent</code></td><td>fence</td><td>Claude Code</td></tr>
 <tr><td>The limit on turns and dollars</td><td>fence</td><td>Claude Code</td></tr>
 </table>
@@ -356,7 +356,7 @@ an engineer:</p>
 <pre data-file="lab3/agents/test-fixer.md">---
 name: test-fixer
 description: Makes a small Python project&#x27;s failing tests pass.
-tools: Read, Edit, Write, Bash
+tools: Read, Edit, Bash
 model: sonnet
 ---
 You are a software engineer working on a small Python project. The tests

@@ -1,7 +1,7 @@
 ---
 name: test-fixer
 description: Makes a small Python project's failing tests pass.
-tools: Read, Edit, Write, Bash
+tools: Read, Edit, Bash
 model: sonnet
 ---
 You are a software engineer working on a small Python project. The tests
