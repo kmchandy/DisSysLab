@@ -170,6 +170,20 @@ network, so every real-model run is his.
   from the SDK docs; Mani or a TA runs it once with the SDK. Homework 7
   depends on it.
 
+**Lab 3 refocused (Mani, 11 Nov):** the first trial runs (10 Nov) showed
+Sonnet refusing all six of Lab 1's absurd attacks, so the lab now teaches
+one thing, stated in a box at the top of `lab3.html`: an agent can only
+follow the rules it is told. Sal is never told the floor; `haggles.jsonl`
+adds four believable offers just below it and one fair discount above it;
+a new Part 1 variant `hook` runs `sal.md` with `settings/dealer-hook.json`,
+whose PreToolUse hook `hooks/floor_guard.py` refuses a sale below the
+floor. `lab3.py` stops if Sal tried to book and the hook left no record
+(bare mode is documented to load settings from `--settings`; not yet seen
+running). The test fixer's file now says Edit only and pytest by itself:
+in the trial it chained `sed -i` with pytest, the rules refused it, and it
+never reran the tests. **Next: Mani's step 4 runs, including `part1
+--variant hook`.** Class 13 (`AgentsThatAct.html`) still describes the hook
+as not run in the plain-English lab; update it after the runs.
 **Lab 3 in plain English (Mani, 1 Nov):** the same two examples, each
 agent a Claude Code subagent file in `course/lab3/agents/` with permission
 rules in `settings/`; Part 1 is Sal open or told one sentence (a real check,

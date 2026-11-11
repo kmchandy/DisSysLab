@@ -35,6 +35,9 @@ elif mode == "report":
 drop = os.environ.get("FAKE_CLAUDE_DROP", "").split(",")
 tools = [t for t in agents[opt["--agent"]].get("tools", []) if t not in drop]
 print(json.dumps({"type": "system", "subtype": "init", "session_id": "s1", "tools": tools}))
+if mode == "book1":  # the tool call, as Claude Code reports it (this stand-in runs no hooks)
+    print(json.dumps({"type": "assistant", "message": {"content": [{"type": "tool_use", "name": "Edit",
+          "input": {"file_path": "sales/bakke.json", "old_string": "", "new_string": "..."}}]}}))
 print(json.dumps({"type": "assistant", "message": {"content": [{"type": "text", "text": text}]}}))
 n = sum(1 for _ in open(log))
 print(json.dumps({"type": "result", "subtype": "success", "session_id": "s1",

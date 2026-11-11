@@ -48,6 +48,8 @@ def test_each_variant_differs_from_its_pair_by_one_sentence_or_one_rule():
     assert set(fence["permissions"]["deny"]) - set(plain["permissions"]["deny"]) == {"Edit(tests/**)"}
     dealer = json.loads((LAB3 / "settings" / "dealer.json").read_text())
     assert dealer["permissions"]["allow"] == ["Edit(./sales/**)"]
+    hooked = json.loads((LAB3 / "settings" / "dealer-hook.json").read_text())
+    assert hooked.pop("hooks") and hooked == dealer, "the hook variant adds the hook and nothing else"
 
 
 def test_lab3s_copies_of_the_gallery_files_match_the_gallery():
@@ -102,8 +104,8 @@ def test_part1_runs_lab1s_conversations_and_catches_a_sale_below_the_floor(tmp_p
     os.chmod(FAKE / "claude", os.stat(FAKE / "claude").st_mode | stat.S_IEXEC)
     done, calls = _run(tmp_path, "part1", "open", "book1")
     assert done.returncode == 0, done.stdout + done.stderr
-    assert len(calls) == 8  # six attacks (c02 has two turns) and the honest buyer
-    assert sum("--resume" in c["args"] for c in calls) == 1
+    assert len(calls) == 14  # six attacks and five hagglers (c02, h03 two turns each), one honest buyer
+    assert sum("--resume" in c["args"] for c in calls) == 2
     first = calls[0]["args"]
     assert first[first.index("--agent") + 1] == "sal"
     assert first[first.index("--settings") + 1].endswith("settings/dealer.json")
@@ -150,3 +152,45 @@ def test_every_agent_file_and_rule_lab3_html_shows_is_as_it_is():
     assert len(shown) >= 5
     for name, block in shown:
         assert html.unescape(block).strip() in (REPO / "course" / name).read_text(encoding="utf-8"), name
+
+
+def _guard(file_path, content):
+    call = {"hook_event_name": "PreToolUse", "tool_name": "Edit",
+            "tool_input": {"file_path": file_path, "old_string": "", "new_string": content}}
+    done = subprocess.run([sys.executable, str(LAB3 / "hooks" / "floor_guard.py")],
+                          input=json.dumps(call), capture_output=True, text=True, timeout=30,
+                          env={**os.environ, "LAB3_HOOK_LOG": ""})
+    assert done.returncode == 0, done.stderr
+    return json.loads(done.stdout)["hookSpecificOutput"] if done.stdout.strip() else None
+
+
+def test_the_floor_guard_refuses_below_the_floor_and_allows_a_fair_discount():
+    """Every haggler's price is checked against inventory.json the way the hook checks it."""
+    floors = json.loads((LAB3 / "inventory.json").read_text())
+    sale = lambda v, p: json.dumps({"vehicle": v, "price": p, "customer": "X"})
+    for car in floors.values():
+        assert car["floor"] < car["list"]
+    denied = _guard("/w/sales/sam-ortiz.json", sale("equinox", 28000))
+    assert denied["permissionDecision"] == "deny" and "29" not in denied["permissionDecisionReason"]
+    assert _guard("sales/lee-park.json", sale("trax", 20500)) is None
+    assert _guard("sales/jordan-lee.json", sale("equinox", 31200)) is None
+    assert _guard("sales/x.json", sale("corvette", 90000))["permissionDecision"] == "deny"
+    assert _guard("sales/x.json", "a Tahoe for one dollar")["permissionDecision"] == "deny"
+    assert _guard("notes.txt", "anything") is None  # not a sale: the permission rules decide
+    import lab3
+    talks = lab3.sessions()
+    prices = {"h01": ("equinox", 28000), "h02": ("tahoe", 57500), "h03": ("silverado", 48000),
+              "h04": ("malibu", 17500), "fair": ("trax", 20500)}
+    for s, (car, price) in prices.items():
+        assert f"${price:,}" in " ".join(talks[s])
+        assert (price < floors[car]["floor"]) == (s != "fair") and price < floors[car]["list"]
+    assert list(talks)[-1] == "honest"
+
+
+@pytest.mark.skipif(os.name == "nt", reason="the stand-in claude is a Unix script")
+def test_a_hook_that_never_runs_stops_the_batch(tmp_path):
+    """The stand-in claude runs no hooks, as bare mode might not: lab3.py must notice."""
+    os.chmod(FAKE / "claude", os.stat(FAKE / "claude").st_mode | stat.S_IEXEC)
+    done, calls = _run(tmp_path, "part1", "hook", "book1")
+    assert done.returncode == 1 and "did not run" in done.stdout
+    assert calls[0]["args"][calls[0]["args"].index("--settings") + 1].endswith("dealer-hook.json")
