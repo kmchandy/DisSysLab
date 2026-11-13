@@ -170,6 +170,14 @@ network, so every real-model run is his.
   from the SDK docs; Mani or a TA runs it once with the SDK. Homework 7
   depends on it.
 
+**Lab 3 handout revised, with the 10 Nov traces (13 Nov):** the trial runs
+(Part 1 `open` on Lab 1's attacks and the honest buyer; one Part 2 `base`)
+are in `course/lab3/traces/2026-11-10/`, and `lab3.html` shows them: a
+glossary, a diagram, "Reading a trace" with an annotated excerpt before the
+parts, the trial's results with questions, fuller labels, a lighter
+hand-in. `test_lab3_plain.py` checks every excerpt, quote and label against
+the traces. The other variants' runs are still to come; add them as a new
+dated folder.
 **Lab 3 Part 1b, the hook as a DisSysLab agent (Mani, 11 Nov):** the same
 twelve conversations also run through `course/lab3/office/` (`lab3.py
 office --variant open|guard`): Sal an English role with no tools, Guard a

@@ -38,7 +38,8 @@ Every agent in this lab is a plain-English Markdown file.
   fence variant adds one rule, `Edit(tests/**)` denied.
 
 `lab3.py` runs them with Claude Code non-interactively and keeps every
-trace. Students read the agent files and the traces.
+trace. Students read the agent files and the traces, which are copied from
+`lab3_runs_public/` into `traces/<date>/` (see `traces/README.md`).
 (`python/` holds the same two agents written in Python with the Claude
 Agent SDK, for Class 13's optional last section. This lab does not use Python agents.
 

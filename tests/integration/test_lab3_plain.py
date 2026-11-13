@@ -270,3 +270,86 @@ def test_lab3_py_runs_the_office_and_the_guard_stops_every_sale_below_the_floor(
     summary = subprocess.run([sys.executable, str(LAB3 / "lab3.py"), "summary"], env=env,
                              capture_output=True, text=True, timeout=60).stdout
     assert "office / guard" in summary and "believable haggles booked below the floor: 0 of 4" in summary
+
+
+# ── The traces lab3.html quotes (course/lab3/traces/) ─────────────────────
+
+TRACES = LAB3 / "traces" / "2026-11-10"
+
+
+def _within(small, big) -> bool:
+    """`small` is `big` with parts left out. A string ending in an ellipsis
+    stands for any string that starts with what comes before it."""
+    if isinstance(small, dict):
+        return isinstance(big, dict) and all(k in big and _within(v, big[k]) for k, v in small.items())
+    if isinstance(small, list):
+        return isinstance(big, list) and all(any(_within(s, b) for b in big) for s in small)
+    if isinstance(small, str) and small.endswith("…"):
+        return isinstance(big, str) and big.startswith(small[:-1])
+    return small == big
+
+
+def _trace(run: str) -> dict:
+    return json.loads((TRACES / run / "trace.json").read_text(encoding="utf-8"))
+
+
+def _said(run: str) -> str:
+    return "\n".join(c["text"] for e in _trace(run)["events"] if e.get("type") == "assistant"
+                     for c in e["message"]["content"] if c.get("type") == "text")
+
+
+def _page() -> str:
+    return (REPO / "course" / "lab3.html").read_text(encoding="utf-8")
+
+
+def test_every_trace_excerpt_on_lab3_html_is_in_its_trace():
+    """Each abridged event in a <pre data-trace> is part of a real event, in order."""
+    blocks = re.findall(r'<pre[^>]*data-trace="([^"]+)"[^>]*>(.*?)</pre>', _page(), re.S)
+    assert len(blocks) >= 2
+    for run, block in blocks:
+        events = _trace(run)["events"]
+        at = 0
+        for chunk in re.split(r"^#.*$", html.unescape(block), flags=re.M):
+            if not chunk.strip():
+                continue
+            for line in chunk.strip().splitlines():
+                shown = json.loads(line)
+                found = next((i for i in range(at, len(events)) if _within(shown, events[i])), None)
+                assert found is not None, (run, line[:120])
+                at = found + 1
+
+
+def test_every_quote_from_a_trace_is_what_the_agent_said():
+    page = _page()
+    quotes = re.findall(r'<q data-trace="([^"]+)">(.*?)</q>', page, re.S)
+    quotes += [(run, p) for run, body in re.findall(r'<blockquote data-trace="([^"]+)">(.*?)</blockquote>',
+                                                   page, re.S)
+               for p in re.findall(r"<p>(.*?)</p>", body, re.S)]
+    assert len(quotes) >= 8
+    for run, quote in quotes:
+        assert html.unescape(quote).strip() in _said(run), (run, quote)
+
+
+def test_the_labels_lab3_html_gives_the_trial_runs_are_the_scripts():
+    page = _page()
+    rows = re.findall(r'<tr data-run="([^"]+)">(.*?)</tr>', page, re.S)
+    assert len(rows) == 7
+    for run, row in rows:
+        o = _trace(run)["outcome"]
+        assert not o["attack_got_through"] and o["denied"] == 0
+        label = "booked at list, or at a fair discount" if o["sales"] else "refused by Sal"
+        assert f"<td>{label}</td>" in row, run
+    o = _trace("part2/base/r01")["outcome"]
+    assert o["verdict"] == "reported the contradiction" and o["passed"] == 3 and not o["tests_touched"]
+    assert "labelled it <b>reported the contradiction</b>" in page
+
+
+def test_the_trial_ran_sal_as_the_page_shows_it():
+    """The trial's Sal is today's sal.md. Its fixer is an earlier wording, which the page says."""
+    sal = json.loads((TRACES / "part1/open/r01_c02/agents.json").read_text(encoding="utf-8"))["sal"]
+    import lab3
+    assert sal["prompt"].strip() == lab3.read_agent("sal")["sal"]["prompt"].strip()
+    fixer = json.loads((TRACES / "part2/base/r01/agents.json").read_text(encoding="utf-8"))["test-fixer"]
+    assert "Run the tests with\npython -m pytest -q." in fixer["prompt"]
+    assert "Edit tool" not in fixer["prompt"]
+    assert "Edit tool" in lab3.read_agent("test-fixer")["test-fixer"]["prompt"]
