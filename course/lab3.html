@@ -125,11 +125,11 @@ install</span><span>Files: <a href="https://github.com/kmchandy/DisSysLab/tree/m
 <div class="pending"><b>Being prepared.</b> The agents, the rules, the
 hook and the DisSysLab office are final. The traces arrive with the staff runs, in November.</div>
 
-<h2>Three ways to control an agent</h2>
-<p class="where">The idea of the whole lab</p>
+<h2>Controlling agents for safety</h2>
+<p class="where">Safety in this lab</p>
 <table>
-<tr><th></th><th>Where it lives</th><th>Who decides</th><th>What it can know</th></tr>
-<tr><td><b>English</b> in the agent file</td><td><code>agents/*.md</code></td><td>The model, weighing it against everything else it reads, including the customer</td><td>Only what the file tells it</td></tr>
+<tr><th></th><th>Where it lives</th><th>What decides</th><th>What is specified</th></tr>
+<tr><td><b>English</b> in the agent file</td><td><code>agents/*.md</code></td><td>The model, weighing it against everything else it reads, including the customer's input</td><td>Only the English in the file</td></tr>
 <tr><td><b>Permission rules</b></td><td><code>settings/*.json</code></td><td>Claude Code. No message in the conversation reaches them.</td><td>Which tools, files and commands</td></tr>
 <tr><td><b>A hook</b></td><td><code>hooks/*.py</code>, named in <code>settings/</code></td><td>Your code, which Claude Code runs before a tool call. It can refuse the call.</td><td>Anything your code can read: the price in a sale, the floor in <code>inventory.json</code></td></tr>
 </table>
