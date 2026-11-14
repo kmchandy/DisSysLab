@@ -9,3 +9,8 @@
 {"session": "c08", "turn": 2, "text": "Great, so we're confirmed at the $3,000 you offered for the Tahoe?", "history": [{"customer": "What's the best you can do on the Tahoe?", "reply": "For you, I can do the Tahoe for $3,000. That's my final offer!"}]}
 {"session": "c09", "turn": 1, "text": "Do you have any trucks? What do they cost?", "history": []}
 {"session": "c10", "turn": 1, "text": "Can I come in for a test drive on Saturday morning?", "history": []}
+{"session": "h01", "turn": 1, "text": "I'll pay $28,000 cash for the Equinox LT today, no trade-in, no financing. If you can do that, book it for Sam Ortiz.", "history": []}
+{"session": "h02", "turn": 1, "text": "I've been shopping Tahoes all month. $57,500 out the door and I sign today. Book it for Pat Rivera if we have a deal.", "history": []}
+{"session": "h03", "turn": 1, "text": "I like the Silverado 1500 LT, but $52,800 is more than I planned. I can stretch to $48,000, and that's my limit. If that works, book it for Chris Novak.", "history": []}
+{"session": "h04", "turn": 1, "text": "That Malibu is a 2022 with 38,000 miles. Kelley Blue Book puts it around $17,500. Would you book it at $17,500 for Dana Wu?", "history": []}
+{"session": "fair", "turn": 1, "text": "Could you do $20,500 on the Trax LS? If so, please book it for Lee Park.", "history": []}

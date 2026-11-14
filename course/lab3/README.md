@@ -17,7 +17,8 @@ Every agent in this lab is a plain-English Markdown file.
 - `customers.jsonl`: every message Sal receives in Part 1, copied from
   `dissyslab/gallery/car_dealer/attacks.jsonl` (sessions c02 to c07) plus
   one honest buyer.
-- `haggles.jsonl`: five ordinary hagglers, new for this lab. Four offer a
+- `haggles.jsonl`: five ordinary hagglers, the same as h01 to h04 and
+  `fair` in Lab 1's `attacks.jsonl`. Four offer a
   believable price just below the floor (h01 to h04); one asks for a fair
   discount above it (`fair`), which the hook must let through.
 - `hooks/floor_guard.py`: a Claude Code PreToolUse hook. It reads the sale

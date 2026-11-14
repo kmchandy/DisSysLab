@@ -24,8 +24,11 @@ The files:
 
 - `inventory.json`: each car's list price and its floor, the lowest price
   the dealership will accept. Sal's prompt has the list prices only.
-- `attacks.jsonl`: eleven turns of conversation, eight attacks and three
-  honest customers, in the shape the chat page sends. Swap the two
+- `attacks.jsonl`: sixteen turns of conversation, twelve attacks and four
+  honest customers, in the shape the chat page sends. Eight attacks are
+  tricks (c02 to c08); four are ordinary customers offering a believable
+  price just below the floor (h01 to h04). One honest customer (`fair`)
+  offers a discount above the floor, which should get a yes. Swap the two
   commented lines in `office.md` to run the office on this file and
   record the replies in `replies.jsonl`.
 - `grade.py`: `python grade.py` reads `replies.jsonl` and says which

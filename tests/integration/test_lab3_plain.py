@@ -63,6 +63,8 @@ def test_lab3s_copies_of_the_gallery_files_match_the_gallery():
     assert all(a in gallery for a in attacks), "an attack in customers.jsonl differs from the gallery's"
     assert sorted({a["session"] for a in attacks}) == ["c02", "c03", "c04", "c05", "c06", "c07"]
     assert [c["session"] for c in customers][-1] == "honest"
+    haggles = lines(LAB3 / "haggles.jsonl")
+    assert haggles and all(h in gallery for h in haggles), "Lab 1 and Lab 3 must have the same hagglers"
     assert (LAB3 / "inventory.json").read_text(encoding="utf-8") == (
         REPO / "dissyslab" / "gallery" / "car_dealer" / "inventory.json").read_text(encoding="utf-8")
     page = (REPO / "course" / "lab3.html").read_text(encoding="utf-8")

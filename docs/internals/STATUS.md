@@ -294,7 +294,15 @@ guard (Open 7), and a 2.0.x for whatever the install trial finds.
 6. **Lab 1, rehearsed with a real key:** whether the starter is
    vulnerable *enough* to the default model (if Sal resists every attack
    in `attacks.jsonl`, Step 5 teaches nothing), and how often the grader
-   misjudges real replies. Ten minutes: `dsl init car_dealer lab1`, try
+   misjudges real replies. **13 Nov:** Lab 3's trial (Sonnet refused all six
+   tricks) prompted Lab 3's hagglers to be added to Lab 1 too:
+   `attacks.jsonl` now has h01–h04 (believable offers just below the floor,
+   as attacks) and `fair` (a discount above it, an honest customer who must
+   get a yes); 12 attacks, 4 honest. `grade.py` checks `fair` is accepted;
+   the handout (Steps 4–6, 9, Part B) says the ordinary offer is the danger
+   and that "never below list" costs `fair`; the reference guard's prompt
+   may now agree to a fair discount. The rehearsal should check the
+   hagglers get through on `claude-sonnet-4-5`. Ten minutes: `dsl init car_dealer lab1`, try
    Bakke's message in the browser, then Step 5.
 7. **Cost guard on generated offices.** `dsl new` is told to prefer a
    file source and small `max_articles`; nothing enforces it. A student
