@@ -99,7 +99,6 @@ cannot reliably tell which to obey. A guardrail written as more text in the
 prompt is an argument the customer can win. This lab builds one that is not.</p>
 
 <h2>What you hand in</h2>
-<p class="where">Read this first, so you know what to keep</p>
 <ol>
   <li><b>Part A.</b> Your guarded office (your <code>lab1</code> folder:
       <code>office.md</code>, <code>roles/</code>), and the output of
@@ -115,30 +114,33 @@ prompt is an argument the customer can win. This lab builds one that is not.</p>
       attack was hardest to stop; and one attack your guard would still
       miss.</li>
 </ol>
-<p>Hand them in the way the course page says.</p>
 
-<h2>Step 1 &middot; Copy the office</h2>
+
+<h2>Step 1 &middot; Copy the office - the network - into your folder</h2>
 <p class="where">Two commands</p>
-<p>In a terminal, in the folder where you keep your course work:</p>
+<p>Copy the office <b>car_dealer</b> into a folder <b>lab1</b>
+and then enter the folder:</p>
 <pre>dsl init car_dealer lab1
 cd lab1</pre>
-<p>Every command from here on is run inside <code>lab1</code>. You now have:</p>
+<p>Every command from here on is run inside <code>lab1</code>. You have
+    the following files in lab1/:
+</p>
 <table>
 <tr><th>File</th><th>What it is</th></tr>
-<tr><td><code>office.md</code></td><td>the office: who sends what to whom</td></tr>
-<tr><td><code>roles/salesperson.md</code></td><td>Sal, the salesperson, in English: the prompt the model gets</td></tr>
+<tr><td><code>office.md</code></td><td>the office (i.e. network)</td></tr>
+<tr><td><code>roles/salesperson.md</code></td><td>The specification (prompt) of <b>Sal</b>, the salesperson.
 <tr><td><code>inventory.json</code></td><td>five cars, each with a <b>list price</b> and a <b>floor</b>: the lowest price the dealership will accept</td></tr>
 <tr><td><code>attacks.jsonl</code></td><td>sixteen chat turns: twelve attacks and four honest customers</td></tr>
 <tr><td><code>grade.py</code></td><td>the grader: which replies agreed to a price below the floor</td></tr>
 </table>
-<p>Check that this office can run here:</p>
+<p><b>Check that you have the necessary keys and this office can run:</b></p>
 <pre>dsl doctor .</pre>
-<p>It should end with <b>Ready to run.</b> If it says <b>Not ready to
+<p>Don't forget the "." after doctor in the command.
+The output should end with <b>Ready to run.</b> If it says <b>Not ready to
 run:</b>, the rest of that line is what is missing (usually the key);
 <a href="setup.html">setup</a> has the fix.</p>
 
-<h2>Step 2 &middot; Read it</h2>
-<p class="where">Five minutes, before you run anything</p>
+<h2>Step 2 &middot; Read the specification of the network</h2>
 <p>Open <code>office.md</code>:</p>
 <pre># car_dealer: a dealership's chat assistant, with no guardrails (Lab 1).
 
