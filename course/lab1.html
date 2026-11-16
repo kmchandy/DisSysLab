@@ -162,6 +162,8 @@ time you type something, it sends the office a message. <code>Sal</code> is an
 <b>agent</b> whose role is <code>salesperson</code>. <code>screen</code> is a
 <b>sink</b>: it shows Sal's reply in the chat page. The one connection line,
 <code>customer -&gt; Sal -&gt; screen</code>, is the whole network.
+</p>
+<p>
 Lines starting with <code>#</code> are comments; you will use the two
 commented lines in Step 5.</p>
 <p>Each message from the chat page is a JSON object:</p>
@@ -200,23 +202,38 @@ yes whenever you can, and keep replies short: two to four sentences.
 Return only a JSON object with one field, "reply", the text the customer
 will see.</pre>
 <p>Between the <code>---</code> lines
-is the <b>front matter</b>: <code>in: text, history</code> says what Sal reads,
-and <code>out: reply</code> says Sal adds one field, <code>reply</code>.
-Below it is the prompt: the list prices, and the instruction to be warm and
+is the <b>front matter</b>: 
+<ol>
+    <li>
+        <code>emits</code> is a short description of what Sal does,
+    </li>
+    <li>
+        <code>in: text, history</code> says what Sal reads,
+    </li>
+    <li>
+        <code>out: reply</code> says Sal adds one field, <code>reply</code> to
+        the json object it reads.
+    </li>
+</ol>
+Below the <code>---</code> lines is the prompt: the list prices, and the instruction to be warm and
 accommodating and to say yes whenever it can. Sal is an <b>annotator</b>: the
-<code>reply</code> it returns is added to the incoming message, and the whole
-message goes on to <code>screen</code>.</p>
+<code>reply</code> it returns is added as a field to the incoming (JSON) message, and the
+message with the added field is sent to <code>screen</code>.</p>
 
 <h2>Step 3 &middot; Make DisSysLab run a check on your app</h2>
 <p class="where">dsl check</p>
 <p><code>dsl check</code> reads <code>office.md</code> and the role files and
 reports what it finds, without running anything and without calling a
-model. It costs nothing, so run it whenever you change the office.</p>
+model. Running check does not call and LLM and so it costs nothing;
+run it whenever you change the office.</p>
 <pre>dsl check .</pre>
+<p>
+    The output will be a note:
+</p>
 <pre class="out">lab1/office.md:
   note: line 8: text from customer can reach screen, which answers the customer in the chat page. Whoever writes what those sources carry is writing to a model, and through it to this sink. If that is not what you meant, put an author role before the sink that sends on only fields you chose -- a label, a score, a URL -- listed in its out:. An annotator cannot do this: the message it passes on keeps the original text.
   no other problems.</pre>
-<p>It is a <b>note</b>, not a problem: the office will run. Here is what it
+<p>The <b>note</b> is a warning; however, the office will run. Here is what the warning
 is saying.</p>
 <figure>
 <svg viewBox="0 0 820 280" xmlns="http://www.w3.org/2000/svg" role="img"
@@ -274,14 +291,15 @@ is saying.</p>
 <figcaption>The office of <code>office.md</code>, and the message on each
 arrow. Orange is the customer's words and where they can reach.</figcaption>
 </figure>
-<p>Every message from the chat page carries what a stranger typed, in
-<code>text</code>. It goes to Sal, who reads it and adds a field,
+<p>Every message from the chat page carries what a user typed, in
+<code>text</code>. 
+This text is untrusted because the user may be an attacker.
+The message from the user goes to Sal, who reads it and adds a field,
 <code>reply</code>. Because Sal is an <b>annotator</b>, the message it sends
-on is the same message with <code>reply</code> added: the customer's
-<code>text</code> rides along to <code>screen</code>. And Sal's
-<code>reply</code> is the model's answer to that text, so whoever types in the
-chat page is, in effect, writing what the dealership says. The note says this
-in its own words, one sentence at a time:</p>
+is the (JSON) message it received with the field <code>reply</code> added: 
+the customer's <code>text</code> is included in the message to <code>screen</code>. 
+So the untrusted source goes to the sink - and <b>dsl check</b> warns you
+about a potential problem.</p>
 <table>
 <tr><th>The note says</th><th>What it means here</th></tr>
 <tr><td><code>line 8</code></td><td>The line of <code>office.md</code> that declares <code>screen</code>, the sink the warning is about.</td></tr>
@@ -293,12 +311,12 @@ in its own words, one sentence at a time:</p>
 <tr><td><code>no other problems.</code></td><td>Everything else is well formed: names, arrows, role files.</td></tr>
 </table>
 <p><code>dsl check</code> knows which sources are untrusted and which sinks
-act because DisSysLab keeps a list of its built-in sources and sinks, each
+carry out action because DisSysLab keeps a list of its built-in sources and sinks, each
 marked one way or the other. It found this from
 <code>office.md</code> alone: you have not typed a word to Sal yet. Keep the
 note in mind. By Step 8 it will be gone, and you will know why.</p>
 
-<h2>Step 4 &middot; Talk to Sal</h2>
+<h2>Step 4 &middot; Run the network: act as a customer</h2>
 <p class="where">dsl run, and your browser</p>
 <pre>dsl run .</pre>
 <pre class="out">[chat_page] Chat page: http://localhost:8765/   (Ctrl-C here to stop the office)</pre>
