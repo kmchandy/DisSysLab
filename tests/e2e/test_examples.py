@@ -573,6 +573,8 @@ def test_lab1_handout_shows_the_real_starter_and_check_output():
     page = html.unescape(HANDOUT.read_text(encoding="utf-8"))
     starter = (EXAMPLES / "car_dealer" / "office.md").read_text(encoding="utf-8").rstrip("\n")
     assert f"<pre>{starter}</pre>" in page
+    sal = (EXAMPLES / "car_dealer" / "roles" / "salesperson.md").read_text(encoding="utf-8").rstrip("\n")
+    assert f"<pre>{sal}</pre>" in page, "Step 2 must show the starter's roles/salesperson.md as it is"
     (note,) = check_office(EXAMPLES / "car_dealer").notes
     assert f"note: {note}" in page
     for line in ('    customer: file_source(path="attacks.jsonl")',
