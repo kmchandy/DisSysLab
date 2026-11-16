@@ -35,8 +35,9 @@ functions for deterministic tasks. Pick the right engine per agent:
 
 - **Ollama** — free, local, private. Download a ~19 GB model
   (Qwen3) one time. Office runs take 15–60 min on a typical Mac.
-- **OpenRouter** — hosted Qwen-2.5-7B. Pennies per run, finishes in
-  1–5 min on any laptop. API key from
+- **OpenRouter** — hundreds of hosted models through one key; the
+  default is Llama 3.1 8B, and `OPENROUTER_MODEL` chooses any other.
+  Pennies per run, finishes in 1–5 min on any laptop. API key from
   [openrouter.ai/keys](https://openrouter.ai/keys).
 - **Claude** — Anthropic's hosted model. Highest quality, ~25–50¢
   per office run. API key from
@@ -46,7 +47,7 @@ functions for deterministic tasks. Pick the right engine per agent:
 # Example: OpenRouter, the fast-and-cheap path
 export DSL_BACKEND=openrouter
 export OPENROUTER_API_KEY=sk-or-v1-...
-export OPENROUTER_MODEL=qwen/qwen-2.5-7b-instruct
+export OPENROUTER_MODEL=meta-llama/llama-3.1-8b-instruct   # optional: the default
 
 dsl run situation_room
 ```

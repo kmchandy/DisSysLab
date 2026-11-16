@@ -257,6 +257,13 @@ after mid-November still leaves seven weeks before 4 January.
 once (Open 4), `tahoe_case.html` committed after Lab 1 is due, the cost
 guard (Open 7), and a 2.0.x for whatever the install trial finds.
 
+**OpenRouter default (16 Nov):** `qwen/qwen-2.5-7b-instruct` was withdrawn
+by OpenRouter; the default is now `meta-llama/llama-3.1-8b-instruct` (four
+providers; an example, not a recommendation), `OPENROUTER_MODEL` overrides
+it, and `dsl doctor .` asks OpenRouter's catalogue whether the model in use
+is still listed. `install.sh`, `README.pypi.md` and `LANGUAGE_MODELS.md`
+name the same default, and a test keeps them in step.
+
 ## Open, in order
 
 1. **Lab 1 needs a real-model rehearsal** (see 6 below). Confirm the

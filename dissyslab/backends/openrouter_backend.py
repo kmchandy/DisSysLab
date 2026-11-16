@@ -22,8 +22,8 @@ Two environment variables:
   Charged against OpenRouter credits unless BYOK is configured for
   the upstream provider.
 * ``OPENROUTER_MODEL`` — optional. Default model identifier. Format
-  matches OpenRouter's catalogue, e.g. ``"qwen/qwen-2.5-7b-instruct"``,
-  ``"meta-llama/llama-3.1-8b-instruct"``, ``"anthropic/claude-sonnet-4"``.
+  matches OpenRouter's catalogue, e.g. ``"meta-llama/llama-3.1-8b-instruct"``,
+  ``"google/gemma-3-4b-it"``, ``"anthropic/claude-haiku-5.5"``.
   When unset, falls back to ``DEFAULT_MODEL`` below.
 
 Per-call ``model`` kwarg overrides the env var.
@@ -34,11 +34,12 @@ Example
 ::
 
     export OPENROUTER_API_KEY=sk-or-v1-...
-    export OPENROUTER_MODEL=qwen/qwen-2.5-7b-instruct
+    export OPENROUTER_MODEL=google/gemma-3-4b-it
     export DSL_BACKEND=openrouter
 
-then any office or eval harness will route through Qwen via
-OpenRouter.
+then any office or eval harness will route through that model via
+OpenRouter. ``dsl doctor .`` in an office folder checks that OpenRouter
+still lists the model before you run.
 
 Design notes
 ============
@@ -66,28 +67,52 @@ from typing import Any, Dict, Optional
 import requests
 
 
-DEFAULT_MODEL = "qwen/qwen-2.5-7b-instruct"
+DEFAULT_MODEL = "meta-llama/llama-3.1-8b-instruct"
 """Default model when neither ``OPENROUTER_MODEL`` nor the per-call
-``model=`` kwarg is set.
+``model=`` kwarg is set. It is an example, not a recommendation: set
+``OPENROUTER_MODEL`` to choose any model OpenRouter lists.
 
-Why this one (as of 2026-05): Qwen2.5-7B-Instruct is the sweet spot
-on OpenRouter for the s→t→r workloads in this framework. Empirically,
-a single-article-per-source situation_room run finishes in well under
-a minute, vs. the 5–6 minutes that the larger Qwen3.5-35B-A3B takes
-for the same workload. Quality on entity extraction, sentiment, and
-topic tagging is more than good enough for the gallery offices.
+Why this one (November 2026): the previous default,
+``qwen/qwen-2.5-7b-instruct``, was withdrawn when its last provider
+stopped serving it, and the first anyone knew was a 404 in a lab run.
+What matters for a default is that it stays served. Llama 3.1 8B
+Instruct had four providers on OpenRouter (DeepInfra, Groq, Cloudflare,
+CoreWeave) more than two years after its release, so losing one does
+not withdraw it. It is small, fast, and costs about $0.02 / M input and
+$0.04 / M output tokens: a Lab 1 run is a small fraction of a cent. It
+is not free: an OpenRouter account needs some credit. A ``:free`` model
+costs nothing but has a small daily request limit.
 
-If you need higher reasoning quality (e.g. for the writer role in
-periodic_brief_pro or situation_room_pro), override per-role by
-setting ``Riley uses claude-sonnet-4-5`` in office.md, or globally
-by exporting ``OPENROUTER_MODEL=anthropic/claude-sonnet-4-5``.
+``dsl doctor .`` asks OpenRouter whether the model in use is still
+listed (``model_listed`` below), so a withdrawal shows up there, not in
+the middle of a run."""
 
-Pricing on OpenRouter: roughly $0.05 / M input tokens, $0.10 / M
-output tokens for Qwen2.5-7B. A typical Phase 1 run is well under
-a penny.
 
-Override per-experiment with ``OPENROUTER_MODEL`` env var or the
-``model=`` kwarg to ``complete()``."""
+MODELS_URL = "https://openrouter.ai/api/v1/models"
+
+
+def configured_model() -> tuple[str, str]:
+    """(the model an OpenRouterBackend will use with no per-call override,
+    where that choice came from: "OPENROUTER_MODEL" or "the default")."""
+    env_model = os.environ.get("OPENROUTER_MODEL")
+    if env_model:
+        return env_model, "OPENROUTER_MODEL"
+    return DEFAULT_MODEL, "the default"
+
+
+def model_listed(model_id: str, timeout: float = 10.0) -> Optional[bool]:
+    """Does OpenRouter list ``model_id`` today? None if it could not be asked.
+
+    One GET of the public catalogue: no key, no model call, no cost.
+    """
+    try:
+        response = requests.get(MODELS_URL, timeout=timeout)
+        if response.status_code != 200:
+            return None
+        ids = {m.get("id") for m in response.json().get("data", [])}
+    except (requests.RequestException, ValueError, AttributeError):
+        return None
+    return model_id in ids
 
 
 _ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
@@ -171,9 +196,8 @@ class OpenRouterBackend:
         # NOTE: max_tokens default is 2048. The previous default was
         # 8192, calibrated for *reasoning-enabled* SLMs (Qwen3.5-A3B,
         # DeepSeek-V3) that spend half their budget on internal
-        # chain-of-thought. The current default model
-        # (Qwen-2.5-7B-Instruct) does not reason and emits ~200–500
-        # tokens of JSON per role call; 8192 was wasted budget AND
+        # chain-of-thought. The default model (see DEFAULT_MODEL) does
+        # not reason and emits ~200–500 tokens of JSON per role call; 8192 was wasted budget AND
         # tripped provider-side validation on some OpenRouter
         # providers (AtlasCloud returned HTTP 400 with that ceiling).
         # 2048 stays inside every provider's cap with comfortable

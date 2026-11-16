@@ -1644,6 +1644,27 @@ def _doctor_office(office_dir: Path) -> bool:
     elif not llm:
         print("  [OK] no LLM agents: no key needed")
 
+    # OpenRouter withdraws models (qwen/qwen-2.5-7b-instruct, Nov 2026):
+    # ask whether the model in use is still listed, before a run finds out.
+    asks_openrouter = any(
+        str(d.args.get("ai", "")).lower().startswith("openrouter")
+        for d in (office.declarations if office is not None else []))
+    if llm and (_active.lower().startswith("openrouter") or asks_openrouter):
+        from dissyslab.backends.openrouter_backend import configured_model, model_listed
+        model, source = configured_model()
+        listed = model_listed(model)
+        if listed:
+            print(f"  [OK] OpenRouter serves {model} ({source}; "
+                  "set OPENROUTER_MODEL to choose another)")
+        elif listed is False:
+            print(f"  [FAIL] OpenRouter does not list {model} ({source})")
+            print("         choose a model at https://openrouter.ai/models, then")
+            print("         export OPENROUTER_MODEL=<model id>  (or put it in .env)")
+            reasons.append(f"OpenRouter does not serve {model}")
+        else:
+            print(f"  [--] could not reach OpenRouter to check it serves {model}; "
+                  "`dsl run` will say if it does not")
+
     if office is not None:
         for decl in office.declarations:
             path = decl.args.get("path") if decl.section == "sources" else None

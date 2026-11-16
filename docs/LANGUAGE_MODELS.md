@@ -30,10 +30,36 @@ dsl run .
 | `anthropic` (or `claude`) | Claude, by Anthropic | `ANTHROPIC_API_KEY` |
 | `openai` (or `gpt`) | GPT, by OpenAI | `OPENAI_API_KEY`; `OPENAI_MODEL` to pick one |
 | `gemini`, `gemma` | Google's models, via AI Studio | `GEMINI_API_KEY` (or `GOOGLE_API_KEY`); `GEMINI_MODEL` |
-| `openrouter` | many models, open and closed, via openrouter.ai | `OPENROUTER_API_KEY`; `OPENROUTER_MODEL` |
+| `openrouter` | many models, open and closed, via openrouter.ai | `OPENROUTER_API_KEY`; `OPENROUTER_MODEL` (default `meta-llama/llama-3.1-8b-instruct`) |
 | `ollama` (or `qwen`) | a model on your own computer, through Ollama | Ollama running; `OLLAMA_MODEL` (default `qwen3:30b`); `OLLAMA_HOST` if not local |
 
 `dsl doctor` shows which backend is active and whether its key is set.
+
+### Choosing an OpenRouter model
+
+The OpenRouter default, Llama 3.1 8B, is an example: small, fast and
+cheap, not accurate. To use any other model OpenRouter lists, set its id
+from [openrouter.ai/models](https://openrouter.ai/models), in the shell or
+in `.env`:
+
+```bash
+export OPENROUTER_MODEL=google/gemma-3-4b-it
+```
+
+A model whose id ends in `:free` costs nothing but allows only a few
+requests a day; the others need some credit on your OpenRouter account.
+
+OpenRouter withdraws models when no provider serves them any more. Before
+a run, `dsl doctor .` in the office's folder asks OpenRouter whether the
+model in use is still listed, and says which model that is and whether it
+is the default or your `OPENROUTER_MODEL`:
+
+```
+  [OK] OpenRouter serves meta-llama/llama-3.1-8b-instruct (the default; set OPENROUTER_MODEL to choose another)
+```
+
+If it says `[FAIL] OpenRouter does not list ...`, choose another model and
+set `OPENROUTER_MODEL`.
 
 Each name also comes in two other temperatures: `_creative` (1.0) and
 `_precise` (0.1), as in `anthropic_precise` or `qwen_creative`. The plain

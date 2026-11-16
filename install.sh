@@ -250,7 +250,7 @@ API_KEY=""
 # with dissyslab.backends.openrouter_backend.DEFAULT_MODEL and
 # dissyslab.backends.anthropic_backend.DEFAULT_MODEL so the rc-file
 # export agrees with the library's hardcoded fallback.
-OPENROUTER_DEFAULT_MODEL="qwen/qwen-2.5-7b-instruct"
+OPENROUTER_DEFAULT_MODEL="meta-llama/llama-3.1-8b-instruct"
 
 if [ -n "$BACKEND_FLAG" ]; then
     BACKEND="$BACKEND_FLAG"
