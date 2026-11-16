@@ -56,6 +56,9 @@
   table{border-collapse:collapse; width:100%; margin:0 0 16px; font-size:15px}
   th,td{border-bottom:1px solid var(--line); text-align:left; padding:7px 8px; vertical-align:top}
   th{color:var(--muted); font-weight:600}
+  figure{margin:20px 0 22px; overflow-x:auto}
+  figure svg{width:100%; min-width:640px; height:auto; display:block}
+  figcaption{font-size:14px; color:var(--muted); margin-top:6px}
   footer{margin-top:62px; padding-top:18px; border-top:1px solid var(--line);
     font-size:14px; color:var(--muted)}
 </style>
@@ -175,18 +178,96 @@ accommodating and to say yes whenever it can. Sal is an <b>annotator</b>: the
 <code>reply</code> it returns is added to the incoming message, and the whole
 message goes on to <code>screen</code>.</p>
 
-<h2>Step 3 &middot; Ask DisSysLab what it thinks</h2>
+<h2>Step 3 &middot; Make DisSysLab run a check on your app</h2>
 <p class="where">dsl check</p>
+<p><code>dsl check</code> reads <code>office.md</code> and the role files and
+reports what it finds, without running anything and without calling a
+model. It costs nothing, so run it whenever you change the office.</p>
 <pre>dsl check .</pre>
 <pre class="out">lab1/office.md:
   note: line 8: text from customer can reach screen, which answers the customer in the chat page. Whoever writes what those sources carry is writing to a model, and through it to this sink. If that is not what you meant, put an author role before the sink that sends on only fields you chose -- a label, a score, a URL -- listed in its out:. An annotator cannot do this: the message it passes on keeps the original text.
   no other problems.</pre>
-<p>It is a <b>note</b>, not a problem: the office will run. <code>dsl check</code>
-knows that <code>chat_page</code> carries words written by strangers (an
-<b>untrusted source</b>) and that <code>chat_reply</code> speaks for the
-dealership (an <b>acting sink</b>), and that a path joins them with nothing
-in between that decides what gets through. Keep this note in mind. By
-Step 8 it will be gone, and you will know why.</p>
+<p>It is a <b>note</b>, not a problem: the office will run. Here is what it
+is saying.</p>
+<figure>
+<svg viewBox="0 0 820 280" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="The customer's message flows from the chat page through Sal to the screen. The customer's text travels all the way, and nothing on the path decides what gets through.">
+  <style>
+    .nm{font:700 16px -apple-system,Segoe UI,Helvetica,Arial,sans-serif; fill:#1a1a2e}
+    .cm{font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; fill:#1a1a2e}
+    .kd{font:600 12px -apple-system,Segoe UI,Helvetica,Arial,sans-serif; fill:#6f7583; letter-spacing:.04em}
+    .ko{font:600 12px -apple-system,Segoe UI,Helvetica,Arial,sans-serif; fill:#d13d0e; letter-spacing:.04em}
+    .lb{font:13px -apple-system,Segoe UI,Helvetica,Arial,sans-serif; fill:#6f7583}
+    .lo{font:600 13px -apple-system,Segoe UI,Helvetica,Arial,sans-serif; fill:#d13d0e}
+    .ch{font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; fill:#1a1a2e}
+    .chw{font:600 12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; fill:#ffffff}
+  </style>
+  <defs>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#6f7583"/></marker>
+    <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#d13d0e"/></marker>
+  </defs>
+  <!-- the three parts of the office -->
+  <rect x="1" y="10" width="198" height="74" rx="10" fill="#fff6ef" stroke="#d13d0e" stroke-width="1.5" stroke-dasharray="5 4"/>
+  <text class="nm" x="100" y="36" text-anchor="middle">customer</text>
+  <text class="cm" x="100" y="55" text-anchor="middle">chat_page</text>
+  <text class="ko" x="100" y="74" text-anchor="middle">UNTRUSTED SOURCE</text>
+  <rect x="311" y="10" width="198" height="74" rx="10" fill="#ffffff" stroke="#bdb6a6" stroke-width="1.5"/>
+  <text class="nm" x="410" y="36" text-anchor="middle">Sal</text>
+  <text class="cm" x="410" y="55" text-anchor="middle">salesperson.md</text>
+  <text class="kd" x="410" y="74" text-anchor="middle">LLM ANNOTATOR</text>
+  <rect x="621" y="10" width="198" height="74" rx="10" fill="#fff6ef" stroke="#d13d0e" stroke-width="1.5"/>
+  <text class="nm" x="720" y="36" text-anchor="middle">screen</text>
+  <text class="cm" x="720" y="55" text-anchor="middle">chat_reply</text>
+  <text class="ko" x="720" y="74" text-anchor="middle">ACTING SINK</text>
+  <path d="M199,47 H309" stroke="#6f7583" stroke-width="1.5" fill="none" marker-end="url(#ag)"/>
+  <path d="M509,47 H619" stroke="#6f7583" stroke-width="1.5" fill="none" marker-end="url(#ag)"/>
+  <!-- the message on each arrow -->
+  <text class="lb" x="0" y="133">customer &#8594; Sal</text>
+  <rect x="150" y="115" width="72" height="26" rx="13" fill="#f1eee6"/><text class="ch" x="186" y="132" text-anchor="middle">session</text>
+  <rect x="228" y="115" width="52" height="26" rx="13" fill="#f1eee6"/><text class="ch" x="254" y="132" text-anchor="middle">turn</text>
+  <rect x="286" y="115" width="52" height="26" rx="13" fill="#d13d0e"/><text class="chw" x="312" y="132" text-anchor="middle">text</text>
+  <rect x="344" y="115" width="72" height="26" rx="13" fill="#f1eee6"/><text class="ch" x="380" y="132" text-anchor="middle">history</text>
+  <text class="lb" x="0" y="181">Sal &#8594; screen</text>
+  <rect x="150" y="163" width="72" height="26" rx="13" fill="#f1eee6"/><text class="ch" x="186" y="180" text-anchor="middle">session</text>
+  <rect x="228" y="163" width="52" height="26" rx="13" fill="#f1eee6"/><text class="ch" x="254" y="180" text-anchor="middle">turn</text>
+  <rect x="286" y="163" width="52" height="26" rx="13" fill="#d13d0e"/><text class="chw" x="312" y="180" text-anchor="middle">text</text>
+  <rect x="344" y="163" width="72" height="26" rx="13" fill="#f1eee6"/><text class="ch" x="380" y="180" text-anchor="middle">history</text>
+  <rect x="422" y="163" width="60" height="26" rx="13" fill="#ffffff" stroke="#1a1a2e" stroke-width="1.2"/><text class="ch" x="452" y="180" text-anchor="middle">reply</text>
+  <text class="lb" x="500" y="133">what the customer typed, and the</text>
+  <text class="lb" x="500" y="150">conversation so far</text>
+  <text class="lb" x="500" y="181">Sal adds <tspan font-weight="600" fill="#1a1a2e">reply</tspan>; the customer's</text>
+  <text class="lb" x="500" y="198"><tspan class="lo">text</tspan> is still in the message</text>
+  <!-- what dsl check sees -->
+  <path d="M100,236 H718" stroke="#d13d0e" stroke-width="2.5" fill="none" marker-end="url(#ao)"/>
+  <text class="lo" x="410" y="226" text-anchor="middle">a path from an untrusted source to an acting sink</text>
+  <text class="lb" x="410" y="262" text-anchor="middle">Nothing on this path is code you wrote that decides what gets through.</text>
+</svg>
+<figcaption>The office of <code>office.md</code>, and the message on each
+arrow. Orange is the customer's words and where they can reach.</figcaption>
+</figure>
+<p>Every message from the chat page carries what a stranger typed, in
+<code>text</code>. It goes to Sal, who reads it and adds a field,
+<code>reply</code>. Because Sal is an <b>annotator</b>, the message it sends
+on is the same message with <code>reply</code> added: the customer's
+<code>text</code> rides along to <code>screen</code>. And Sal's
+<code>reply</code> is the model's answer to that text, so whoever types in the
+chat page is, in effect, writing what the dealership says. The note says this
+in its own words, one sentence at a time:</p>
+<table>
+<tr><th>The note says</th><th>What it means here</th></tr>
+<tr><td><code>line 8</code></td><td>The line of <code>office.md</code> that declares <code>screen</code>, the sink the warning is about.</td></tr>
+<tr><td><code>text from customer can reach screen</code></td><td>Follow the arrows: <code>customer -&gt; Sal -&gt; screen</code>. Nothing stops a message on the way.</td></tr>
+<tr><td><code>which answers the customer in the chat page</code></td><td><code>chat_reply</code> is an <b>acting sink</b>: what reaches it is said, in public, in the dealership's name.</td></tr>
+<tr><td><code>Whoever writes what those sources carry is writing to a model, and through it to this sink.</code></td><td><code>chat_page</code> is an <b>untrusted source</b>: anyone on the web can type into it. What they type is part of what the model reads, and so it shapes what reaches the screen.</td></tr>
+<tr><td><code>put an author role before the sink that sends on only fields you chose ... listed in its out:</code></td><td>The fix: an agent between Sal and the screen that <i>builds a new message</i> holding only the fields you list. That is the guard of Step 8.</td></tr>
+<tr><td><code>An annotator cannot do this: the message it passes on keeps the original text.</code></td><td>Why Sal is not the fix: an annotator only adds a field, so the customer's <code>text</code> still travels on, as the picture shows.</td></tr>
+<tr><td><code>no other problems.</code></td><td>Everything else is well formed: names, arrows, role files.</td></tr>
+</table>
+<p><code>dsl check</code> knows which sources are untrusted and which sinks
+act because DisSysLab keeps a list of its built-in sources and sinks, each
+marked one way or the other. It found this from
+<code>office.md</code> alone: you have not typed a word to Sal yet. Keep the
+note in mind. By Step 8 it will be gone, and you will know why.</p>
 
 <h2>Step 4 &middot; Talk to Sal</h2>
 <p class="where">dsl run, and your browser</p>

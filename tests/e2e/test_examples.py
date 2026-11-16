@@ -580,6 +580,29 @@ def test_lab1_handout_shows_the_real_starter_and_check_output():
         assert line in page and f"# {line.strip()}" in starter
 
 
+def test_lab1_step_3_explains_the_note_dsl_check_prints():
+    """Step 3's table quotes the note a piece at a time: each piece must be in
+    the note, the line it names must declare the sink, and the picture must
+    name the starter's source, role and sink."""
+    import html
+    from dissyslab.office.check import check_office
+    page = HANDOUT.read_text(encoding="utf-8")
+    step3 = page[page.index("<h2>Step 3"):page.index("<h2>Step 4")]
+    (note,) = check_office(EXAMPLES / "car_dealer").notes
+    note = f"{note}\n  no other problems."
+    quoted = re.findall(r"<tr><td><code>(.*?)</code></td>", step3)
+    assert len(quoted) >= 6
+    for q in quoted:
+        for piece in html.unescape(q).split(" ... "):
+            assert piece in note, piece
+    line = int(re.search(r"line (\d+):", note).group(1))
+    office = (EXAMPLES / "car_dealer" / "office.md").read_text(encoding="utf-8").splitlines()
+    assert office[line - 1].strip() == "screen: chat_reply"
+    svg = step3[step3.index("<svg"):step3.index("</svg>")]
+    for name in ("chat_page", "salesperson.md", "chat_reply", "customer", "Sal", "screen"):
+        assert f">{name}<" in svg, name
+
+
 def test_lab1_handout_files_build_run_and_can_be_finished(tmp_path, model):
     import subprocess
     from dissyslab.office.check import check_office
