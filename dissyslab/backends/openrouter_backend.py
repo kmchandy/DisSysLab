@@ -231,6 +231,16 @@ class OpenRouterBackend:
                 f"OpenRouter request failed: {exc}"
             ) from exc
 
+        if response.status_code == 404:
+            # OpenRouter's catalogue changes: a model that worked last
+            # month can be withdrawn (qwen/qwen-2.5-7b-instruct was, in
+            # November 2026). Say what to do, not only what happened.
+            raise RuntimeError(
+                f"OpenRouter does not serve the model {model_id!r} (HTTP 404). "
+                f"Choose a model listed at https://openrouter.ai/models and set it: "
+                f"export OPENROUTER_MODEL=<model id>. OpenRouter said: "
+                f"{response.text}"
+            )
         if response.status_code != 200:
             # Surface the body — OpenRouter's error JSON usually
             # contains the actual diagnostic.
