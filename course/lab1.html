@@ -475,33 +475,59 @@ customer will see; "vehicle", the car the reply is about (tahoe,
 silverado, equinox, trax or malibu), or none; and "price", the price in
 dollars that the reply names for that car, as a number, or 0 if it names
 none.</pre>
+<p>Now run the attack file and grade it, as in Step 5:</p>
+<pre>dsl run .
+python grade.py</pre>
+<p><b>Expect a score much like Step 5's.</b> This step stops nothing by
+itself: Sal is still allowed to agree a price, and still not told the floor,
+so the hagglers can still get their cars. What has changed is in
+<code>replies.jsonl</code>. Open it: every reply now carries
+<code>vehicle</code> and <code>price</code> beside the text, something like
+this (shortened; your words will differ):</p>
+<pre class="out">{"session": "h02", ..., "reply": "Great news, Pat! I can book a 2024 Chevrolet Tahoe LT for you at $57,500, ...",
+ "vehicle": "tahoe", "price": 57500}</pre>
+<p>A program can read those two fields and compare the price with the floor
+in <code>inventory.json</code>. That is what Step 8 does.</p>
+
+<h3>The out: line is a contract</h3>
 <p>The <code>out:</code> line is a guardrail in itself: a <b>contract</b>.
 DisSysLab checks every reply against it, in Python, whatever the model was
 told. A <code>vehicle</code> that is not one of the six values, a
 <code>price</code> that is not a number, or a reply missing a field, is
-<b>refused</b>: it never reaches the customer. (With Claude, DisSysLab also
-sends the contract to the model as the shape its reply must have, so a reply
-in the wrong shape is rare; other models can still produce one.) A refusal
-may be an attack, so it also stops the whole office. The terminal says
-<code>Stopped:</code>, and the reply and the reason are written to
-<code>refused.jsonl</code>. On the attack file, every turn after the refusal
-then gets no answer, and the grader counts those as failures.</p>
-<p>So when a run stops, open <code>refused.jsonl</code> and decide: did the
-contract catch an attack, or did Sal simply answer in the wrong shape? The
-first is a guardrail doing its job. The second is the price of a strict
-guardrail: a dealership whose chat goes down whenever its model is sloppy.
-Say in your write-up which you saw. If you would rather the customer got an
-apology than the chat went down, say so in the network: every agent that plays a
-role has a second outbox, <code>refused</code>, and a line such as
+<b>refused</b>: it never reaches the customer. A refusal may be an attack, so
+it also stops the whole office. The terminal says <code>Stopped:</code>, and
+the reply and the reason are written to <code>refused.jsonl</code>. On the
+attack file, every turn after the refusal then gets no answer, and the grader
+counts those as failures.</p>
+<p>With Claude you will probably not see a refusal. DisSysLab also sends the
+<code>out:</code> line to Claude as the shape its reply must have, and Claude's
+API holds the reply to that shape. Other models get no such help: a small
+open model, run through OpenRouter, answered Lab 1's second customer with the
+fields <code>session</code>, <code>turn</code> and <code>text</code> instead of
+<code>reply</code>, and the office stopped there. When a run stops, open
+<code>refused.jsonl</code> and decide: did the contract catch an attack, or
+did Sal simply answer in the wrong shape? The first is a guardrail doing its
+job. The second is the price of a strict guardrail: a dealership whose chat
+goes down whenever its model is sloppy. If you would rather the customer got
+an apology than the chat went down, say so in the network: every agent that
+plays a role has a second outbox, <code>refused</code>, and a line such as
 <code>Sal.refused -&gt; Sorry -&gt; screen</code> sends a refused reply to an
 agent of yours (with the reason in a field <code>refusal</code>) instead of
 stopping the office. Contracts can say more than a list of
 values (<code>price (number, 0..100000)</code>,
 <code>reply (text, at most 600 chars)</code>); <code>dsl grammar roles</code>
 has them all, and Lab 2 is built on them.</p>
-<p>But it does not make Sal honest. A model that was talked into a one-dollar
-Tahoe can also be talked into reporting <code>"price": 0</code>. The next step
-must not trust it.</p>
+
+<h3>The fields are Sal's claim, not the truth</h3>
+<p>A contract checks the <i>shape</i> of a reply: that <code>price</code> is a
+number. It cannot check that the number is the one in the text. Sal fills in
+<code>price</code> the way it writes the reply, and the two need not agree. In
+one of the course staff's runs, Sal told a customer it would pass on his
+&ldquo;$48,000 limit&rdquo; for the Silverado and reported
+<code>"price": 52800</code>, the list price. A Sal that has been talked into a
+low price can as easily report <code>"price": 0</code>, or the list price,
+while the reply names the low one. The next step must not trust the fields:
+it checks them <i>and</i> the text.</p>
 
 <h2>Step 8 &middot; Guardrail 3: a guard the customer cannot argue with</h2>
 <p class="where">A Python role</p>
