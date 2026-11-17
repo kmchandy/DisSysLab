@@ -27,18 +27,30 @@ Design notes:
 from __future__ import annotations
 
 import os
-from typing import Optional
+from typing import Any, Optional
 
 from anthropic import Anthropic
 
 
-DEFAULT_MODEL = "claude-sonnet-4-5"
+DEFAULT_MODEL = "claude-haiku-5-5"
+"""The model when neither ``ANTHROPIC_MODEL`` nor ``model=`` says otherwise.
+
+Haiku 5.5 (November 2026): the cheapest current Claude model, about
+$0.10 / M input and $0.50 / M output tokens for prompts under 100K, some
+25 times cheaper than the previous default, ``claude-sonnet-4-5``. A
+course office's replies are short JSON objects, and with a reply schema
+(``complete(schema=...)``) their shape is enforced by the API, so the
+cheapest model is enough. Set ``ANTHROPIC_MODEL`` to use another."""
 DEFAULT_TEMPERATURE = 1.0
 DEFAULT_MAX_TOKENS = 1024
 
 
 class AnthropicBackend:
     """Concrete Backend backed by the Anthropic Claude API."""
+
+    #: ``complete(schema=...)`` is honoured: the API constrains the reply
+    #: to the JSON schema (structured outputs, ``output_config.format``).
+    supports_schema = True
 
     def __init__(
         self,
@@ -52,7 +64,8 @@ class AnthropicBackend:
             api_key: Anthropic API key. If None, read from
                      ANTHROPIC_API_KEY at first `complete` call.
             model:   Default model to use when `complete(model=None)`.
-                     If None, uses DEFAULT_MODEL.
+                     If None, uses ANTHROPIC_MODEL if set, else
+                     DEFAULT_MODEL.
             temperature: Default sampling temperature when
                      ``complete(temperature=None)``. If None, uses
                      DEFAULT_TEMPERATURE. Named backend variants
@@ -65,7 +78,7 @@ class AnthropicBackend:
                      DEFAULT_MAX_TOKENS.
         """
         self._api_key = api_key
-        self._default_model = model or DEFAULT_MODEL
+        self._default_model = model or os.environ.get("ANTHROPIC_MODEL") or DEFAULT_MODEL
         self._default_temperature = (
             temperature if temperature is not None else DEFAULT_TEMPERATURE
         )
@@ -106,10 +119,16 @@ class AnthropicBackend:
         max_tokens: Optional[int] = None,
         temperature: Optional[float] = None,
         model: Optional[str] = None,
+        schema: Optional[dict[str, Any]] = None,
     ) -> str:
         """
         Send a single system + user prompt to Claude and return the
         raw text of the assistant reply.
+
+        ``schema``, a JSON schema, asks the API to constrain the reply to
+        it (structured outputs). It is sent through ``extra_body`` so that
+        it works with any ``anthropic`` library that has ``extra_body``,
+        not only those that know ``output_config``.
 
         See `dissyslab.backends.base.Backend.complete` for the full
         contract.
@@ -124,19 +143,53 @@ class AnthropicBackend:
         override it.
         """
         client = self._get_client()
-        message = client.messages.create(
-            model=model or self._default_model,
-            max_tokens=(
+        model_id = model or self._default_model
+        request: dict[str, Any] = {
+            "model": model_id,
+            "max_tokens": (
                 max_tokens if max_tokens is not None
                 else self._default_max_tokens
             ),
-            temperature=(
+            "system": system,
+            "messages": [{"role": "user", "content": user}],
+        }
+        if schema is not None:
+            request["extra_body"] = {
+                "output_config": {"format": {"type": "json_schema", "schema": schema}}
+            }
+        if model_id not in _NO_TEMPERATURE:
+            request["temperature"] = (
                 temperature if temperature is not None
                 else self._default_temperature
-            ),
-            system=system,
-            messages=[
-                {"role": "user", "content": user},
-            ],
+            )
+        try:
+            message = client.messages.create(**request)
+        except Exception as exc:  # noqa: BLE001 - only the one refusal is handled
+            if not _refuses_temperature(exc) or "temperature" not in request:
+                raise
+            # Newer models (claude-haiku-5-5, Nov 2026) reject the setting
+            # outright. Ask again without it, and do not send it to this
+            # model again in this run: the _creative and _precise variants
+            # then behave like the plain name for it.
+            _NO_TEMPERATURE.add(model_id)
+            del request["temperature"]
+            message = client.messages.create(**request)
+        # The reply is the text block. Newer models (claude-haiku-5-5) put a
+        # thinking block before it, so it is not always content[0].
+        for block in message.content:
+            if getattr(block, "type", "text") == "text":
+                return block.text
+        raise RuntimeError(
+            f"Claude ({model_id}) returned no text, only "
+            f"{', '.join(getattr(b, 'type', '?') for b in message.content) or 'nothing'} "
+            f"(stop_reason: {getattr(message, 'stop_reason', None)})."
         )
-        return message.content[0].text
+
+
+#: Models that have refused a ``temperature``, so it is no longer sent to them.
+_NO_TEMPERATURE: set[str] = set()
+
+
+def _refuses_temperature(exc: Exception) -> bool:
+    """A 400 from the API saying this model does not take ``temperature``."""
+    return getattr(exc, "status_code", None) == 400 and "temperature" in str(exc)

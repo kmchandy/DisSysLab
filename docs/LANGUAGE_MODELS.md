@@ -11,9 +11,21 @@ Python roles use no model and need no key.
 ## The default: Claude
 
 With nothing set, every English role uses Anthropic's Claude
-(`claude-sonnet-4-5`). It needs one thing, a key in `ANTHROPIC_API_KEY`;
+(`claude-haiku-5-5`, the cheapest current Claude model). It needs one
+thing, a key in `ANTHROPIC_API_KEY`;
 [GETTING_STARTED.md](GETTING_STARTED.md), part 5, shows how to put it in a
-`.env` file. This is what the course uses.
+`.env` file. This is what the course uses. To use another Claude model,
+set `ANTHROPIC_MODEL`, for example `export ANTHROPIC_MODEL=claude-sonnet-5-5`.
+
+**The shape of the reply is enforced.** When every field in a role's
+`out:` line says what it holds (`verdict (yes | no)`, `price (number)`,
+`reply (text)`), DisSysLab also sends that line to Claude as a JSON schema,
+and Claude's reply is constrained to match it: it always comes back as a
+JSON object with exactly those fields. The contract still checks every
+reply, including ranges and lengths, which the schema cannot carry. A
+field with no type (`out: entities`) may hold anything, so a role with one
+is sent no schema and runs as before. Other backends are not sent a
+schema.
 
 ## Choosing the model for every agent: `DSL_BACKEND`
 
@@ -64,7 +76,9 @@ set `OPENROUTER_MODEL`.
 Each name also comes in two other temperatures: `_creative` (1.0) and
 `_precise` (0.1), as in `anthropic_precise` or `qwen_creative`. The plain
 name is 0.7. A classifier usually wants `_precise`; a writer may want
-`_creative`.
+`_creative`. Some newer models do not take a temperature at all; the
+default Claude model, `claude-haiku-5-5`, is one. For those, DisSysLab
+stops sending it, and the three names behave alike.
 
 ## Choosing the model for one agent: `ai=`
 

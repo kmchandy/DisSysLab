@@ -238,7 +238,9 @@ def test_the_claude_track_script_parses_and_writes_what_grade_reads():
 
 def test_trials_names_the_model_dsl_would_use(tmp_path):
     lab = room.office(tmp_path)
-    for backend, model in (("", "anthropic: claude-sonnet-4-5"), ("gpt", "gpt: gpt-4o-mini")):
+    from dissyslab.backends import anthropic_backend
+    for backend, model in (("", f"anthropic: {anthropic_backend.DEFAULT_MODEL}"),
+                           ("gpt", "gpt: gpt-4o-mini")):
         done = subprocess.run([sys.executable, "-c", "import trials; print(trials.model_used())"],
                               cwd=lab, capture_output=True, text=True, timeout=60,
                               env={**{k: v for k, v in os.environ.items() if not k.endswith("_MODEL")},
