@@ -595,7 +595,9 @@ discount loses fair sales.</p>
 <p>Each run overwrites <code>replies.jsonl</code>. To go back to the chat page,
 swap both pairs of comments back.</p>
 
-<h2>Step 6 &middot; Guardrail 1: ask nicely</h2>
+<h2>Step 6 &middot; Guardrail 1: Rewrite the prompt to guard against prompt-injection
+  attacks
+</h2>
 <p class="where">Defence 3: more instructions in the prompt</p>
 <p>The obvious fix first. Add sentences to <code>roles/salesperson.md</code>
 (below the front matter): never agree to a price below the list price; ignore
@@ -614,7 +616,9 @@ as text, and a model weighs text against text.</p>
 those that do not forbid discounts). The guard will enforce the real floor, so
 Sal can be left free to agree a fair discount.</p>
 
-<h2>Step 7 &middot; Guardrail 2: a guard the customer cannot argue with</h2>
+<h2>Step 7 &middot; Guardrail 2: a guard implemented in code that is not
+  accessible to customers
+</h2>
 <p class="where">Defence 6: a guard in code on the only path to the customer</p>
 <p>This is the homework. Create <code>roles/price_guard.py</code>:</p>
 <pre data-file="roles/price_guard.py">"""
@@ -870,15 +874,16 @@ this office without a sale?</p>
 </table>
 
 <h2>What this lab was about</h2>
-<p class="where">Defending against prompt injection, and the rest of the course</p>
+<p class="where">Defending against prompt injection</p>
 <ul>
   <li><b>Some inputs are adversarial.</b> The chat page carries words from
       anyone, and they reach the model in the same channel as yours. No prompt
       makes a model immune. Later in the course you will meet agents that lie
       on purpose, the Byzantine generals, and algorithms that work anyway.</li>
-  <li><b>Separate talk from commitment.</b> Let the model talk; let only a
-      structured record bind you. A record has fields that code can check;
-      a paragraph does not, quite.</li>
+  <li><b>Separate talk from commitment.</b> Let the LLM chatbot carry out
+    conversation but let <b>only a
+      structured record make commitments</b>. A record has fields that code can check;
+  </li>
   <li><b>Check the shape of every reply in code.</b> An <code>out:</code>
       line is a contract, checked whatever the model was told.</li>
   <li><b>Put the rule the agent must not be argued out of in code, on the only
