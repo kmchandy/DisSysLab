@@ -302,6 +302,70 @@ dollars, as a number, or 0 if there is no sale.</pre>
       <code>"sale": "no"</code>, <code>"vehicle": "none"</code>,
       <code>"price": 0</code>.</li>
 </ul>
+<figure>
+<svg viewBox="0 0 820 392" xmlns="http://www.w3.org/2000/svg" role="img"
+     aria-label="The message into Sal has session, turn, text and history; in: checks only that text and history are present. The message out of Sal is the same four fields passed on unchanged, plus four fields Sal adds: reply (text), sale (yes or no), vehicle (one of the five cars or none) and price (a number), each checked by out:. Any other field Sal returns is dropped.">
+  <style>
+    .nm{font:700 16px -apple-system,Segoe UI,Helvetica,Arial,sans-serif; fill:#1a1a2e}
+    .hd{font:700 14px -apple-system,Segoe UI,Helvetica,Arial,sans-serif; fill:#1a1a2e}
+    .cm{font:13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; fill:#1a1a2e}
+    .kd{font:600 12px -apple-system,Segoe UI,Helvetica,Arial,sans-serif; fill:#6f7583; letter-spacing:.04em}
+    .lb{font:13px -apple-system,Segoe UI,Helvetica,Arial,sans-serif; fill:#6f7583}
+    .ld{font:600 13px -apple-system,Segoe UI,Helvetica,Arial,sans-serif; fill:#1a1a2e}
+    .ch{font:12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; fill:#1a1a2e}
+    .chw{font:600 12px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; fill:#ffffff}
+  </style>
+  <defs>
+    <marker id="fm-ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0 L10,5 L0,10 z" fill="#6f7583"/></marker>
+  </defs>
+  <!-- headings -->
+  <text class="hd" x="0" y="24">message in</text>
+  <text class="hd" x="440" y="24">message out</text>
+  <!-- message in -->
+  <rect x="0" y="47" width="76" height="26" rx="13" fill="#f1eee6"/><text class="ch" x="38" y="64" text-anchor="middle">session</text>
+  <rect x="0" y="81" width="76" height="26" rx="13" fill="#f1eee6"/><text class="ch" x="38" y="98" text-anchor="middle">turn</text>
+  <rect x="0" y="115" width="76" height="26" rx="13" fill="#d13d0e"/><text class="chw" x="38" y="132" text-anchor="middle">text</text>
+  <rect x="0" y="149" width="76" height="26" rx="13" fill="#f1eee6"/><text class="ch" x="38" y="166" text-anchor="middle">history</text>
+  <text class="lb" x="86" y="64">not checked</text>
+  <text class="lb" x="86" y="98">not checked</text>
+  <text class="ld" x="86" y="132">&#10003; present</text>
+  <text class="ld" x="86" y="166">&#10003; present</text>
+  <text class="lb" x="0" y="204"><tspan class="cm">in: text, history</tspan> checks that</text>
+  <text class="lb" x="0" y="222">both are there, not what they hold</text>
+  <!-- Sal -->
+  <rect x="230" y="47" width="150" height="128" rx="10" fill="#ffffff" stroke="#bdb6a6" stroke-width="1.5"/>
+  <text class="nm" x="305" y="98" text-anchor="middle">Sal</text>
+  <text class="cm" x="305" y="117" text-anchor="middle">salesperson.md</text>
+  <text class="kd" x="305" y="136" text-anchor="middle">LLM ANNOTATOR</text>
+  <path d="M176,111 H228" stroke="#6f7583" stroke-width="1.5" fill="none" marker-end="url(#fm-ag)"/>
+  <path d="M380,111 H436" stroke="#6f7583" stroke-width="1.5" fill="none" marker-end="url(#fm-ag)"/>
+  <path d="M305,175 V264 H436" stroke="#6f7583" stroke-width="1.5" fill="none" marker-end="url(#fm-ag)"/>
+  <!-- message out: what came in, passed on -->
+  <rect x="440" y="47" width="76" height="26" rx="13" fill="#f1eee6"/><text class="ch" x="478" y="64" text-anchor="middle">session</text>
+  <rect x="440" y="81" width="76" height="26" rx="13" fill="#f1eee6"/><text class="ch" x="478" y="98" text-anchor="middle">turn</text>
+  <rect x="440" y="115" width="76" height="26" rx="13" fill="#d13d0e"/><text class="chw" x="478" y="132" text-anchor="middle">text</text>
+  <rect x="440" y="149" width="76" height="26" rx="13" fill="#f1eee6"/><text class="ch" x="478" y="166" text-anchor="middle">history</text>
+  <path d="M528,49 H534 V173 H528" stroke="#bdb6a6" stroke-width="1.5" fill="none"/>
+  <text class="lb" x="544" y="106">the message Sal got,</text>
+  <text class="lb" x="544" y="124">passed on unchanged</text>
+  <!-- message out: what Sal adds, checked by out: -->
+  <text class="ld" x="440" y="202">added by Sal; <tspan class="cm">out:</tspan> checks each one</text>
+  <rect x="440" y="213" width="76" height="26" rx="13" fill="#ffffff" stroke="#1a1a2e" stroke-width="1.2"/><text class="ch" x="478" y="230" text-anchor="middle">reply</text>
+  <rect x="440" y="247" width="76" height="26" rx="13" fill="#ffffff" stroke="#1a1a2e" stroke-width="1.2"/><text class="ch" x="478" y="264" text-anchor="middle">sale</text>
+  <rect x="440" y="281" width="76" height="26" rx="13" fill="#ffffff" stroke="#1a1a2e" stroke-width="1.2"/><text class="ch" x="478" y="298" text-anchor="middle">vehicle</text>
+  <rect x="440" y="332" width="76" height="26" rx="13" fill="#ffffff" stroke="#1a1a2e" stroke-width="1.2"/><text class="ch" x="478" y="349" text-anchor="middle">price</text>
+  <text class="ch" x="528" y="230">text</text>
+  <text class="ch" x="528" y="264">yes | no</text>
+  <text class="ch" x="528" y="285">tahoe | silverado |</text>
+  <text class="ch" x="528" y="300">equinox | trax |</text>
+  <text class="ch" x="528" y="315">malibu | none</text>
+  <text class="ch" x="528" y="349">a number</text>
+  <text class="lb" x="440" y="384">Any other field Sal returns is dropped.</text>
+</svg>
+<figcaption>The fields Sal reads and the fields it adds. Orange is the
+customer's words: they go in, and they come out again unchanged, because Sal
+is an annotator.</figcaption>
+</figure>
 <p>Below the <code>---</code> lines is the prompt: the list prices, the
 difference between talk and a sale, and the instruction to be warm and
 accommodating and to say yes whenever it can. Notice what Sal is not told:
