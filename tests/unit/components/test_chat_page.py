@@ -62,6 +62,31 @@ def test_the_page_round_trip_over_http():
     assert replies == [{"turn": 1, "reply": "Our prices are on the sticker."}]
 
 
+def test_replies_with_no_chat_page_running_say_why_once(capsys):
+    """Lab 1, 17 Nov 2026: the source swapped to the attack file, the sink
+    left on chat_reply, and the run printed "no turn 1 in session c01" for
+    every customer."""
+    sink = chat_page.ChatReply(port=_free_port())
+    for session in ("c01", "c02", "c03"):
+        sink.run({"session": session, "turn": 1, "reply": "hi"})
+    out = capsys.readouterr().out
+    assert out.count("[chat_reply]") == 1
+    assert "no chat page is running" in out and "jsonl_recorder" in out
+
+
+def test_dsl_check_finds_chat_reply_without_a_chat_page(tmp_path):
+    from dissyslab.office.check import check_office
+    (tmp_path / "attacks.jsonl").write_text('{"session": "c01", "turn": 1, "text": "hi"}\n')
+    office = ('sources:\n    customer: file_source(path="attacks.jsonl")\n\n'
+              'sinks:\n    screen: {sink}\n\nconnections:\n    customer -> screen\n')
+    (tmp_path / "office.md").write_text(office.format(sink="chat_reply"))
+    (problem,) = check_office(tmp_path).problems
+    assert problem.startswith("line 5: screen shows replies in the chat page, but no chat_page")
+    assert "swap both pairs of lines" in problem
+    (tmp_path / "office.md").write_text(office.format(sink='jsonl_recorder(path="replies.jsonl")'))
+    assert check_office(tmp_path).problems == []
+
+
 def test_a_port_in_use_says_what_to_do():
     import pytest
     with socket.socket() as taken:

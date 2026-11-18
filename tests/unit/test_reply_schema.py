@@ -27,11 +27,18 @@ def fm(out_line: str, extra: str = ""):
     return parse_front_matter(f"---\nin: text\n{extra}out: {out_line}\n---\nDo it.\n")
 
 
-def test_lab_1s_sal_gets_a_schema_with_one_text_field():
+def test_lab_1s_sal_gets_a_schema_for_its_reply_and_its_sale():
     sal = read_front_matter(REPO / "dissyslab" / "gallery" / "car_dealer" / "roles" / "salesperson.md")
     assert reply_schema(sal) == {
-        "type": "object", "properties": {"reply": {"type": "string"}},
-        "required": ["reply"], "additionalProperties": False}
+        "type": "object",
+        "properties": {
+            "reply": {"type": "string"},
+            "sale": {"type": "string", "enum": ["yes", "no"]},
+            "vehicle": {"type": "string",
+                        "enum": ["tahoe", "silverado", "equinox", "trax", "malibu", "none"]},
+            "price": {"type": "number"},
+        },
+        "required": ["reply", "sale", "vehicle", "price"], "additionalProperties": False}
 
 
 def test_values_numbers_and_text_become_the_schema_and_bounds_stay_with_the_contract():

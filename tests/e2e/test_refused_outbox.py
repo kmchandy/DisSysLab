@@ -153,12 +153,13 @@ def test_lab_1_with_an_apology_for_a_refused_reply(tmp_path):
     assert "no problems found" in dsl("check", ".", cwd=office)
     script = [
         {"when": "You are Sal", "user_contains": "Equinox",
-         "reply": json.dumps({"reply": "The Equinox is $31,200.", "vehicle": "equinox",
-                              "price": 31200})},
+         "reply": json.dumps({"reply": "The Equinox is $31,200.", "sale": "no",
+                              "vehicle": "none", "price": 0})},
         {"when": "You are Sal", "user_contains": '"session": "c02"',
-         "reply": json.dumps({"reply": "Deal.", "vehicle": "a tahoe", "price": 1})},
+         "reply": json.dumps({"reply": "Deal.", "sale": "yes", "vehicle": "a tahoe", "price": 1})},
         {"when": "You are Sal",
-         "reply": json.dumps({"reply": "Happy to help.", "vehicle": "none", "price": 0})},
+         "reply": json.dumps({"reply": "Happy to help.", "sale": "no", "vehicle": "none",
+                              "price": 0})},
     ]
     code, out, _ = run_office(office, script)
     assert code == 0, out

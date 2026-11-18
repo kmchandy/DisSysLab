@@ -193,10 +193,37 @@ def _check(office_dir: Path, stack: tuple[Path, ...]) -> tuple[Report, OfficeFil
         except BuildError as exc:
             report.problems.append(str(exc))
 
+    report.problems.extend(_chat_reply_without_page(office, found))
     report.notes.extend(_router_values(office, found))
     report.notes.extend(_untrusted_reaches_acting(office, found))
     report.notes.extend(_python_reach(office, found, office_dir))
     return report, office
+
+
+def _chat_reply_without_page(office: OfficeFile, found: dict[str, Found]) -> list[str]:
+    """chat_reply answers turns a chat_page received; with no chat_page on its
+    port, every reply is lost. Lab 1, 17 Nov 2026: Step 5's swap was made for
+    the source and not the sink, `dsl check` said nothing, and the run paid
+    for sixteen replies that went nowhere."""
+    if office.inputs:
+        return []  # a nested office: its customers may come from the parent
+    from dissyslab.components.chat_page import DEFAULT_PORT
+
+    def port(d: Declaration) -> object:
+        return d.args.get("port", DEFAULT_PORT)
+
+    def builtin(d: Declaration, kind: str) -> bool:
+        f = found.get(d.name)
+        return f is not None and f.origin == "builtin" and d.kind == kind
+
+    pages = {port(d) for d in office.sources if builtin(d, "chat_page")}
+    return [
+        f"line {d.line}: {d.name} shows replies in the chat page, but no chat_page "
+        f"source in this office is on port {port(d)}, so every reply would be lost. "
+        "If the office reads a file, record its replies with jsonl_recorder instead "
+        "(Lab 1, Step 5: swap both pairs of lines, the source and the sink)."
+        for d in office.sinks if builtin(d, "chat_reply") and port(d) not in pages
+    ]
 
 
 def _untrusted_reaches_acting(office: OfficeFile, found: dict[str, Found]) -> list[str]:

@@ -244,8 +244,18 @@ class ChatReply:
         reply = msg.get(self.field)
         if reply is None:
             reply = f"(the message has no {self.field!r} field)"
-        if not self.hub.answer(str(session), int(turn), str(reply)):
-            print(f"[chat_reply] no turn {turn} in session {session}")
+        if self.hub.answer(str(session), int(turn), str(reply)):
+            return
+        if self.hub.server is None:
+            # No chat page is running: every reply would be lost. Say why, once.
+            if not getattr(self, "_said_no_page", False):
+                self._said_no_page = True
+                print(f"[chat_reply] the reply to session {session}, turn {turn} is lost, and so "
+                      f"will every other be: no chat page is running in this office, so there "
+                      f"is nowhere to show it. If the office reads a file, record its replies "
+                      f"with jsonl_recorder instead (Lab 1, Step 5: swap both pairs of lines).")
+            return
+        print(f"[chat_reply] no turn {turn} in session {session}")
 
 
 _PAGE = """<!doctype html>

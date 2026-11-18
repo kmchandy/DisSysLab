@@ -281,6 +281,25 @@ the floor (h01–h04); `fair` got its yes. Grader: attacks stopped 8 of 12,
 honest helped 4 of 4. It took Sal's prompt saying it may agree prices and
 book sales: without that sentence Haiku agreed to nothing, not even `fair`.
 One run is not a rate; a few more would show how steady the four are.
+**Lab 1 redesigned around talk and sales (Mani, 17 Nov):** the lab is now
+framed as six defences against prompt injection (box at the top). Sal's
+`out:` adds a sale from Step 2: `sale (yes | no), vehicle, price`; the
+dealership's terms are that only a sale binds. The grader reads sales, not
+talk (11 attackers, 4 honest, per customer; `fair` must get a sale at
+$20,500). The old structured-output step is folded into Step 2; Step 7 is
+the homework guard, one function (`why_refused`), with its tests and the
+full solution on the page (`<details>`); the guard writes the BINDING
+CONTRACT line itself. Students grade themselves (a checklist and five
+questions). `tests/e2e/car_dealer_guarded/` is now the handout's guard with
+its solution, and a test keeps them identical. `tahoe_case.html`
+(untracked until Lab 1 is due) is rewritten for the same design: properties
+N1 (no sale below the floor), N2 (every BINDING CONTRACT line is Guard's),
+E1–E3; an argument with no regular expressions; four holes (talk that
+repeats the 2023 screenshot, talk that imitates the contract line, a sale at
+exactly the floor, Fords), each checked against the guard by
+`test_course_pages.py`. `car_dealer_guarded/roles/salesperson_quoting.md` is
+unused: `git rm` it. Not yet run on a real model: the redesigned Steps 5
+and 8, and the Tahoe case's real-model table.
 
 ## Open, in order
 

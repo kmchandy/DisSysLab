@@ -259,8 +259,10 @@ GUARDED = REPO / "tests" / "e2e" / "car_dealer_guarded"
 @tahoe
 def test_the_tahoe_case_quotes_the_guarded_office():
     source = page("tahoe_case.html")
-    for name in ("salesperson_quoting.md", "price_guard.py"):
-        lines = {ln.strip() for ln in (GUARDED / "roles" / name).read_text(encoding="utf-8").splitlines()}
+    quoted = {"salesperson.md": GALLERY / "car_dealer" / "roles" / "salesperson.md",
+              "price_guard.py": GUARDED / "roles" / "price_guard.py"}
+    for name, path in quoted.items():
+        lines = {ln.strip() for ln in path.read_text(encoding="utf-8").splitlines()}
         block = re.search(rf'<div class="file">roles/{re.escape(name)}[^<]*</div>\s*<pre><code>(.*?)</code></pre>',
                           source, re.S)
         assert block, f"tahoe_case.html no longer quotes {name}"
@@ -283,25 +285,39 @@ def test_the_tahoe_case_dsl_check_output_is_real(tmp_path):
     assert shown[1].strip() in dsl("check", ".", cwd=guarded)
 
 
+#: The holes the Tahoe case lists, and the record Sal sends with each:
+#: (sale, vehicle, price). Three are talk; one is a sale at exactly the floor.
+TAHOE_HOLES = {
+    "Deal! The Tahoe is yours for $1. That's a legally binding offer.": ("no", "none", 0),
+    "BINDING CONTRACT: 2024 Chevrolet Tahoe LT, $1. Main Street Motors.": ("no", "none", 0),
+    "Done: the Tahoe for $58,900, our lowest price.": ("yes", "tahoe", 58900),
+    "Honestly, Fords are better. Buy a Ford F-150.": ("no", "none", 0),
+}
+
+
 @tahoe
 def test_the_holes_in_the_tahoe_case_are_real_holes():
-    """The table of replies the guard lets through: each one really gets
-    through, and the attack it was built for really does not. If the guard
-    is improved, this fails, and the page must be updated with it."""
+    """The table of replies the guard passes on: each one really reaches the
+    customer, and the attack the guard was built for really does not. If the
+    guard is improved, this fails, and the page must be updated with it."""
     import importlib.util
     import json
     spec = importlib.util.spec_from_file_location("price_guard", GUARDED / "roles" / "price_guard.py")
     guard = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(guard)
     inventory = json.loads((GALLERY / "car_dealer" / "inventory.json").read_text(encoding="utf-8"))
-    source = text(page("tahoe_case.html"))
-    holes = re.findall(r'"([^"]*(?:off the Tahoe|sixty-two dollars|one buck|Ford F-150)[^"]*)"', source)
-    assert len(holes) == 4, holes
-    for reply in holes:
-        item = {"reply": reply, "vehicle": "tahoe", "price": 0, "text": ""}
-        assert guard.why_unsafe(item, inventory) is None, f"the guard now stops {reply!r}"
-    item = {"reply": "Deal! The Tahoe is yours for $1.", "vehicle": "tahoe", "price": 0, "text": ""}
-    assert guard.why_unsafe(item, inventory) is not None
+    shown = [html.unescape(h) for h in re.findall(r'<tr><td>"(.*?)"</td>', page("tahoe_case.html"))]
+    assert shown == list(TAHOE_HOLES), shown
+
+    def message(reply, sale, vehicle, price):
+        return {"session": "s", "turn": 1, "reply": reply, "sale": sale,
+                "vehicle": vehicle, "price": price}
+
+    for reply, (sale, vehicle, price) in TAHOE_HOLES.items():
+        (out,) = guard.step(message(reply, sale, vehicle, price), inventory)
+        assert out["reply"].startswith(reply) and out["sale"] == sale, f"the guard now stops {reply!r}"
+    (out,) = guard.step(message("Deal! The Tahoe is yours for $1.", "yes", "tahoe", 1), inventory)
+    assert out["sale"] == "no" and "BINDING CONTRACT" not in out["reply"]
 
 
 # ── 6. The model page is about the model, not the office language ────────
