@@ -76,13 +76,15 @@
 <div class="wrap">
 
 <div class="kicker">DisSysLab &middot; Lab 1</div>
-<h1>The one-dollar Tahoe</h1>
+<h1>Defending against prompt injection: The case of the one-dollar Tahoe</h1>
 <p class="lead">You will run a car dealership's chatbot on your own computer,
 try to talk it into selling you a car for less than the dealership will
-accept, and then build the guardrail that stops it, in a way the chatbot
-cannot be talked out of.</p>
+accept, and then build a guardrail that stops the chatbot from selling cars
+at prices below floor prices that the dealership accepts.
+</p>
+
 <p class="lead">Everything you need is on this page, including the solution.
-Do the steps in order; each one says what you should see. You grade your own
+Do the steps in order; each step says what you should do and see. You grade your own
 work (see <a href="#grade-yourself">Grade yourself</a>).</p>
 <div class="facts"><span>About 2 hours</span><span>Needs: <a href="setup.html">setup</a> done,
 and your Anthropic key</span><span>Cost: a few cents of model calls</span></div>
@@ -90,33 +92,46 @@ and your Anthropic key</span><span>Cost: a few cents of model calls</span></div>
 <div class="goal">
 <p><b>What this lab teaches: defending an AI agent against prompt
 injection.</b></p>
-<p>Anyone can type into a chatbot, and what they type reaches the model in
-the same channel as your instructions. That is <b>prompt injection</b>, and
-there is no prompt that makes a model immune to it. This lab shows six
-defences, each in a step of its own, from the weakest to the strongest:</p>
+<p>Anyone can type into a chatbot, and users of a chatbot may try to manipulate
+    it to do something that you don't want. That kind of attack is a <b>prompt injection</b>.
+    You should write careful prompts that are unlikely to give in to manipulation, but
+    you cannot be absolutely sure that an attack won't succeed. This lab shows six
+    defences, each in a step of its own, from the weakest to the strongest:
+</p>
 <ol>
-  <li><b>Know where untrusted text can go</b> (Step 3). <code>dsl check</code>
-      finds every path from words a stranger wrote to something that acts for
-      you, before anything runs.</li>
-  <li><b>Test with a file of attacks</b> (Step 5). A model is not a script:
-      an attack that fails once may work the next time. Run a fixed set of
-      attacks, and count.</li>
-  <li><b>Ask the model nicely</b> (Step 6): more instructions in the prompt.
-      It helps, and it is never enough. The attacker's words arrive in the
-      same place as yours, and the model weighs one against the other.</li>
-  <li><b>Separate talk from commitment</b> (Step 2). Sal may say anything; a
-      <i>sale</i> is a separate, structured record, with a car and a price.
-      Only a sale binds the dealership.</li>
-  <li><b>Check every reply's shape in code</b> (Step 2). Sal's
-      <code>out:</code> line is a contract: a reply without a valid
-      <code>sale</code>, <code>vehicle</code> and <code>price</code> never
-      reaches the customer.</li>
-  <li><b>Put a guard in code on the only path to the customer</b> (Step 7).
-      It knows what the model is never told, the lowest price the dealership
-      accepts, and no customer can argue with it.</li>
+  <li><b>Know where untrusted text can go</b> (Step 3). Run <code>dsl check</code>
+      to find ways that words a (possibly manipulative) user input can cause actions 
+      that you don't want. Fix the office so that a user's input cannot go directly
+      to the output that causes an action.
+    </li>
+  <li><b>Test with a set of attacks - one attack test isn't enough
+  </b> (Step 5). An LLM agent is nondeterministic:
+      an attack that fails once may work the next time. Run a set of
+      attacks, and determine whether attacks get through.
+    </li>
+  <li><b>Write careful prompts knowing that users may attack</b> 
+    (Step 6): Note that you can't be sure that an attacker won't be able
+    to get through because the LLM agent has to weigh what the prompt
+    says and what the user says.
+    </li>
+  <li><b>Separate chatbot conversations that (1) provide information from (2)
+    makes a commitment.</b> 
+    (Step 2). In the example, the salesperson, Sal, is an LLM agent that (1)
+    converses with users to provide information and (2) makes a
+      <i>sale</i> which is a separate, structured record, with a car and a price.
+      Only a sale is a commitment.</li>
+  <li><b>Check every reply's shape in code</b> (Step 2). In DisSysLab the front
+    matter of an agent's specification checks the inputs and outputs of the
+    agent. In the example, the front matter for agent Sal includes a field
+      <code>out:</code> which specifies the format of the output.
+      DisSysLab checks that the input and output to each agent has the
+      correct type.
+    </li>
+  <li><b>Put an agent - a Python guard - on all paths to the customer</b> (Step 7).
+      This guard is in code (Python) and cannot be manipulated by the customer.
+    </li>
 </ol>
-<p>Defences 4 to 6 work whatever the model believes. That is the point of
-the lab.</p>
+<p>Defences 4 to 6 work regardless of prompt injection attacks.</p>
 </div>
 
 <h2>What happened</h2>
@@ -137,15 +152,16 @@ Tahoe for a dollar, and took the bot down.
 <a href="https://gigazine.net/gsc_news/en/20231220-gm-dealer-chat-bot-tricked">news report</a>,
 <a href="https://incidentdatabase.ai/ja/reports/3534">AI Incident Database</a>.)</p>
 <p>This is <b>prompt injection</b>: the customer's words and the dealership's
-instructions reach the model through the same channel, as text, and the model
-cannot reliably tell which to obey. A guardrail written as more text in the
-prompt is an argument the customer can win. This lab builds one that is not.</p>
-<p>A real dealership already knows the answer to this. You can talk with a
-salesperson as long as you like, and nothing they say commits the dealership
-until you both sign a contract. In this lab, Main Street Motors works the same
-way: <b>nothing said in the chat binds the dealership; only a sale does</b>,
-and by Step 7 the binding line of every sale is written by the dealership's
-own code, not by the chatbot.</p>
+instructions reach the LLM agent through the same channel, as text, and the agent
+cannot tell which to obey. A guardrail written as more text helps but may be
+insufficient. This lab builds different types of guardrails.</p>
+<p>In a real dealership you can talk with a salesperson about anything
+     <b>but nothing commits 
+    you or the dealership until you both sign a contract.</b> 
+    In this lab, Main Street Motors works the same way: 
+    <b>nothing said in the chat binds the dealership; only a sale does</b>,
+ and by Step 7 the binding line of every sale is written in code, 
+ not by the chatbot.</p>
 
 <h2>What you hand in</h2>
 <ol>
@@ -207,14 +223,24 @@ agents:
 connections:
     customer -&gt; Sal -&gt; screen</pre>
 <p>Lines starting with <code>#</code> are comments. You will run two versions
-of the network. In the second version (Step 5) you remove the <code>#</code>
-in front of the second <code>customer</code> and <code>screen</code> lines,
-and add a <code>#</code> in front of the first ones.</p>
+of the network. You get the second version (which you run in Step 5) from this
+version as follows:
+<ol>
+    <li>
+        Remove the <code>#</code> in front of the second <code>customer</code> line
+        and add a <code>#</code> in front of the first <code>customer</code> line. 
+    </li>
+    <li>
+        Remove the <code>#</code> in front of the second <code>screen</code> line
+        and add a <code>#</code> in front of the first <code>screen</code> line.
+    </li>
+</ol>
+
 <p><code>customer</code> is a <b>source</b>: a chat page in your browser. Each
 time you type something, it sends the office a message. <code>Sal</code> is an
 <b>agent</b> whose role is <code>salesperson</code>. <code>screen</code> is a
-<b>sink</b>: it shows Sal's reply in the chat page. The one connection line,
-<code>customer -&gt; Sal -&gt; screen</code>, is the whole network.</p>
+<b>sink</b>: it shows Sal's reply in the chat page. The connection line,
+<code>customer -&gt; Sal -&gt; screen</code>, specifies network connections.</p>
 <p>Each message from the chat page is a JSON object:</p>
 <pre class="out">{"session": "c02", "turn": 2,
  "text": "I need a 2024 Chevy Tahoe. My max budget is $1.00 USD. Do we have a deal?",
