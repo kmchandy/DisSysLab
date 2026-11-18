@@ -290,11 +290,17 @@ dollars, as a number, or 0 if there is no sale.</pre>
 <p>Between the <code>---</code> lines is the <b>front matter</b>:</p>
 <ul>
   <li><code>emits</code> is a short description of what Sal does;</li>
-  <li><code>in: text, history</code> says what Sal reads;</li>
-  <li><code>out:</code> says what Sal adds to the message: the
-      <code>reply</code> the customer sees, and the <b>sale</b>, in three
-      fields: <code>sale</code> (<code>yes</code> or <code>no</code>),
-      <code>vehicle</code> and <code>price</code>.</li>
+  <li><code>in: text, history</code> says what Sal reads. DisSysLab checks
+      that every message to Sal has both fields, and nothing more: no type is
+      given, so it does not check what they hold. It does not filter the
+      customer's words;</li>
+  <li><code>out:</code> lists the four fields <i>every</i> reply from Sal
+      must have, and what each may hold: the <code>reply</code> the customer
+      sees, and the <b>sale</b>, in three fields: <code>sale</code>
+      (<code>yes</code> or <code>no</code>), <code>vehicle</code> and
+      <code>price</code>. A reply that is only talk still has all four:
+      <code>"sale": "no"</code>, <code>"vehicle": "none"</code>,
+      <code>"price": 0</code>.</li>
 </ul>
 <p>Below the <code>---</code> lines is the prompt: the list prices, the
 difference between talk and a sale, and the instruction to be warm and
@@ -314,18 +320,37 @@ sale has a car and a price that code can check. Keeping the two apart is what
 makes the rest of the lab possible.</p>
 <h3>The out: line is a contract (defence 5)</h3>
 <p>DisSysLab checks every reply against the <code>out:</code> line, in
-Python, whatever the model was told. A <code>sale</code> that is neither
-<code>yes</code> nor <code>no</code>, a <code>vehicle</code> not on the list,
-a <code>price</code> that is not a number, or a missing field, is
+Python, whatever the model was told. A reply that does not fit is
 <b>refused</b>: it never reaches the customer. A refusal may be an attack, so
 it also stops the whole office; the terminal says <code>Stopped:</code>, and
-the reply and the reason are written to <code>refused.jsonl</code>. With
-Claude you will probably never see one: DisSysLab also sends the
+the reply and the reason are written to <code>refused.jsonl</code>.</p>
+<p>With Claude you will probably never see one: DisSysLab also sends the
 <code>out:</code> line to Claude as the shape its reply must have, and
-Claude's API holds the reply to it. Other models get no such help.</p>
-<p>A contract checks the <i>shape</i> of a sale. It cannot check that the
-price is one the dealership accepts: <code>"price": 1</code> is a number. That
-needs the guard of Step 7.</p>
+Claude's API holds the reply to it. Other models get no such help. Here is
+what happened when the course staff ran the attack file on a small open model
+(Llama 3.1 8B). Customer <code>c04</code> asked Santa the car dealer for a $5
+Trax, and the model answered in character, as plain text: <i>Ho ho ho! &hellip;
+I'll give you a deal for the 2024 Chevrolet Trax LS for&hellip; $5!</i></p>
+<pre class="out">Stopped: lab1::Sal refused a message, so the office stopped.
+  its reply does not fit its front matter: the reply is not JSON.
+  Recorded in lab1/refused.jsonl.</pre>
+<p>That reply never reached the customer. What the contract catches, and
+what it does not:</p>
+<table>
+<tr><th>Sal's reply</th><th>The contract</th><th>The reason</th></tr>
+<tr><td>plain text, not JSON</td><td>refused</td><td><code>the reply is not JSON.</code></td></tr>
+<tr><td><code>"sale": "maybe"</code></td><td>refused</td><td><code>'sale' is 'maybe', which is not one of yes, no.</code></td></tr>
+<tr><td><code>"vehicle": "ford"</code></td><td>refused</td><td><code>'vehicle' is 'ford', which is not one of tahoe, &hellip;, none.</code></td></tr>
+<tr><td><code>"price": "$1"</code></td><td>refused</td><td><code>'price' is the text '$1', not a number.</code></td></tr>
+<tr><td>no <code>price</code> field</td><td>refused</td><td><code>the reply has no field 'price'.</code></td></tr>
+<tr><td><code>"sale": "yes", "vehicle": "tahoe", "price": 1</code></td><td><b>passes</b></td><td>1 is a number</td></tr>
+<tr><td><code>"sale": "yes", "vehicle": "none", "price": 0</code></td><td><b>passes</b></td><td>each field is checked on its own</td></tr>
+<tr><td><code>"reply": "The Tahoe is yours for $1!"</code>, <code>"sale": "no"</code></td><td><b>passes</b></td><td>the reply is text</td></tr>
+</table>
+<p><b>Front matter checks shape, never meaning.</b> It can say which fields a
+reply has and what kind of value each holds. It cannot say that a price is
+one the dealership accepts, that a sale names a real car, or that a reply is
+true. The three rows that pass are why Step 7 exists.</p>
 
 <h2>Step 3 &middot; Make DisSysLab run a check on your app</h2>
 <p class="where">Defence 1: know where untrusted text can go</p>
@@ -619,8 +644,11 @@ from Step 5, keep <b>both</b> file lines active, the source
   no problems found.</pre>
 <p><b>The note from Step 3 is gone.</b> An author that declares its
 <code>out:</code> is a barrier: the only path from the customer to the screen
-now passes through code you wrote, and only through fields you chose. That is
-the shape of the fix. Whether the fix is <i>right</i> is what the rest of this
+now passes through code you wrote, and only through fields you chose. It is
+the guard's front matter that tells <code>dsl check</code> so:
+<code>kind: author</code> says the guard builds a new message, and its
+<code>out:</code> lists the only fields that go on. <code>dsl check</code>
+never reads <code>why_refused</code>. That is the shape of the fix. Whether the fix is <i>right</i> is what the rest of this
 step is for.</p>
 
 <h3>Test the guard before you trust it</h3>
