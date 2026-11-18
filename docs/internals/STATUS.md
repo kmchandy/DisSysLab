@@ -297,9 +297,14 @@ N1 (no sale below the floor), N2 (every BINDING CONTRACT line is Guard's),
 E1–E3; an argument with no regular expressions; four holes (talk that
 repeats the 2023 screenshot, talk that imitates the contract line, a sale at
 exactly the floor, Fords), each checked against the guard by
-`test_course_pages.py`. `car_dealer_guarded/roles/salesperson_quoting.md` is
-unused: `git rm` it. Not yet run on a real model: the redesigned Steps 5
-and 8, and the Tahoe case's real-model table.
+`test_course_pages.py`. **18 Nov, rehearsed on `claude-haiku-5-5`:** as
+first written, Sal never recorded a sale (four runs): every offer below list
+was "passed to the sales team", so `fair` failed (11 of 11, 3 of 4, guard or
+no guard) and the hagglers taught nothing. Sal's prompt now says it may agree
+a discount itself and there is no sales team; then Step 5 gave 7 of 11, 4 of
+4 (the four hagglers sold below the floor) and Step 8 11 of 11, 4 of 4. One
+run each; Llama 3.1 8B broke the reply shape on c04. Not yet done: the Tahoe
+case's real-model table.
 
 ## Open, in order
 
