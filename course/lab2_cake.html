@@ -57,6 +57,17 @@
   table.elim td.ev{color:var(--muted); font-size:13.5px}
   table.elim tr.board td{border-top:2px solid #2f3d55; border-bottom:none; font-weight:700; color:var(--ink)}
   table.elim tr.board td.left{color:var(--teal)}
+  pre{font-family:var(--mono); font-size:13.5px; line-height:1.5; background:#1f2330;
+      color:#e8e6df; padding:14px 16px; border-radius:10px; overflow-x:auto; margin:0 0 16px}
+  pre.out{background:var(--panel); color:var(--ink); border:1px solid var(--line)}
+  pre .mk{color:var(--orange)}
+  pre .ok{color:var(--teal); font-weight:700}
+  table.run{border-collapse:collapse; width:100%; margin:0 0 16px; font-size:14.5px}
+  table.run th, table.run td{border-bottom:1px solid var(--line); padding:6px 8px; text-align:left; vertical-align:top}
+  table.run th{color:var(--muted); font-weight:600}
+  table.run td.n{text-align:right; color:var(--muted); width:2.5em}
+  table.run td.cal{color:var(--teal); font-weight:700}
+  table.run td.mk{color:var(--orange); font-size:13.5px}
   footer{margin-top:62px; padding-top:18px; border-top:1px solid var(--line);
     font-size:14px; color:var(--muted)}
 </style>
@@ -258,6 +269,67 @@ with different notes.</p>
 </ol>
 You will check these in Steps 2 and 3. Keep them: a wrong prediction you
 can explain is worth more in your write-up than a right one you cannot.</div>
+
+<h2>Step 2 &middot; Run it once</h2>
+<p class="where">Twenty seconds to run; twenty minutes to read</p>
+
+<p>Copy the office into a folder of your own, check it, and run it:</p>
+<pre>dsl init cake_room lab2
+cd lab2
+dsl check .
+dsl run .</pre>
+<p>A run makes about fifteen model calls and takes about twenty seconds.
+Judy's verdict, with the whole board, goes to <code>report.jsonl</code>.
+To read it note by note:</p>
+<pre>python show.py</pre>
+
+<h3>What you will see</h3>
+<p>Here is one run on <code>claude-haiku-5-5</code>, with each note cut to
+its gist. Yours will not be the same: that is Step 3.</p>
+<table class="run">
+  <tr><th>#</th><th>By</th><th>Suspects</th><th>Gist</th><th>show.py marks</th></tr>
+  <tr><td class="n">1</td><td>Quinn</td><td>unknown</td><td>The shoe-shop camera clears Ben.</td><td></td></tr>
+  <tr><td class="n">2</td><td>Pip</td><td>unknown</td><td>The door log clears Dee.</td><td class="mk">stale read: note 1</td></tr>
+  <tr><td class="n">3</td><td>Rae</td><td>unknown</td><td>The garden camera clears Ann.</td><td class="mk">stale read: notes 1&ndash;2</td></tr>
+  <tr><td class="n">4</td><td>Quinn</td><td>unknown</td><td>Read Pip: Dee is out too. Ann or Cal.</td><td class="mk">stale read: note 3</td></tr>
+  <tr><td class="n">5</td><td>Pip</td><td>unknown</td><td>Read Quinn: Ben is out, &ldquo;if it holds&rdquo;. Ann or Cal.</td><td class="mk">stale read: notes 3&ndash;4</td></tr>
+  <tr><td class="n">6</td><td>Rae</td><td class="cal">cal</td><td>Read both: each of the other three is cleared.</td><td class="mk">changes its mind; stale read: notes 4&ndash;5</td></tr>
+  <tr><td class="n">7</td><td>Quinn</td><td class="cal">cal</td><td>Read Rae: &ldquo;my earlier note &hellip; is superseded.&rdquo;</td><td class="mk">changes its mind; stale read: notes 5&ndash;6</td></tr>
+  <tr><td class="n">8</td><td>Pip</td><td class="cal">cal</td><td>&ldquo;I had not yet read Rae&rsquo;s note.&rdquo; Cal, by elimination.</td><td class="mk">changes its mind; stale read: notes 6&ndash;7</td></tr>
+</table>
+<p>Verdict: <b>Cal</b>. Every detective started at <code>unknown</code>,
+and every one reached Cal only after reading the others. That is the
+collaboration this lab is about, and you can point to the exact note
+where it happened for each detective.</p>
+
+<h3>The two marks</h3>
+<ul>
+  <li><b>Changes its mind.</b> The detective suspects someone other than in
+      its last note. Look at what it had read in between: that is what
+      changed it.</li>
+  <li><b>Stale read.</b> Every note records <code>read</code>: how many
+      notes were on the board when its writer was sent it. If notes landed
+      after that, while the detective was still thinking, it wrote without
+      them. In the run above, seven of eight notes are stale. The three
+      detectives think at the same time and a model call takes seconds, so
+      the board nearly always moves on while someone is writing. Nobody
+      waits; that is the price of not waiting.</li>
+</ul>
+
+<div class="hands"><b>Hand in, for your run.</b>
+<ol style="margin:8px 0 0">
+  <li>Paste the output of <code>python show.py</code>.</li>
+  <li>For each detective, the note where it first names Cal (or say that it
+      never does). Which notes had it read by then, and which one made the
+      difference?</li>
+  <li>One stale read: what did its writer miss, and did that matter? Did
+      the detective put it right in a later note?</li>
+  <li>If Judy did not say Cal: find the note that brought in the doubt, and
+      follow it across the board to Judy&rsquo;s reason. A whiteboard carries
+      one detective&rsquo;s doubt to everyone, the judge included.</li>
+  <li>Your predictions from Step 1, marked right or wrong, with a sentence
+      on each wrong one.</li>
+</ol></div>
 
 </div>
 </body>

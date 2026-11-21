@@ -128,3 +128,16 @@ def test_order_of_arrival_changes_what_is_read():
     """The point of the lab: the same detectives, different timing, different boards."""
     firsts = {run(once, seed)[1][0][0]["by"] for seed in range(50)}
     assert len(firsts) > 1
+
+
+def test_read_says_how_many_notes_the_writer_had_read():
+    """A note's "read" is the length of the board its writer was sent:
+    never more than the notes before it, and less when others landed
+    while it was thinking (a stale read, which the lab asks students to find)."""
+    stale = 0
+    for seed in range(200):
+        _, judged, _ = run(answers_news, seed)
+        for note in judged[0]:
+            assert 0 <= note["read"] <= note["n"] - 1, note
+            stale += note["read"] < note["n"] - 1
+    assert stale > 0

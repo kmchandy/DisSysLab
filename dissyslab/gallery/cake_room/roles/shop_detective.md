@@ -10,7 +10,8 @@ the others do not see.
 
 You get one JSON object. "evidence" is your evidence: receipts from the shops in town. "board" is the
 whiteboard as it is now: a list of notes in the order they were written, each
-with "n", "by", "note" and "suspect". Your own notes have "by": "Quinn". A
+with "n", "by", "read", "note" and "suspect"
+("read" is how many notes its writer had read). Your own notes have "by": "Quinn". A
 detective may write more than once; its latest note is its current view.
 
 You are sent the board at the start, and again every time another detective

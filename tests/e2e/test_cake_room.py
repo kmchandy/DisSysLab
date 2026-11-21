@@ -35,17 +35,17 @@ def detective(name: str, clears: str) -> list[dict]:
     """Writes once with what its own evidence shows; once all three notes are
     on the board, writes again naming Cal; then has nothing more to say."""
     return [
-        {"when": f"You are {name}", "user_contains": [f'"by": "{name}", "note": "Cal'],
+        {"when": f"You are {name}", "user_contains": [f"Cal, says {name}"],
          "reply": reply(False)},
         {"when": f"You are {name}", "user_contains": ['"by": "Pip"', '"by": "Quinn"', '"by": "Rae"'],
-         "reply": reply(True, "Cal: the others cleared the rest.", "cal")},
+         "reply": reply(True, f"Cal, says {name}: the others cleared the rest.", "cal")},
         {"when": f"You are {name}", "user_contains": [f'"by": "{name}"'], "reply": reply(False)},
         {"when": f"You are {name}", "reply": reply(True, f"{clears} is cleared.")},
     ]
 
 
 TEAM = detective("Pip", "Dee") + detective("Quinn", "Ben") + detective("Rae", "Ann") + [
-    {"when": "You are Judy", "user_contains": "Cal: the others",
+    {"when": "You are Judy", "user_contains": "the others cleared the rest",
      "reply": json.dumps({"culprit": "cal", "reason": "The board clears the other three."})},
     {"when": "You are Judy", "reply": json.dumps({"culprit": "unknown", "reason": "Not enough."})},
 ]

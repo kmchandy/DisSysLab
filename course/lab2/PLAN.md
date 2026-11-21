@@ -35,7 +35,7 @@ board. A cap of 12 notes bounds a run.
    *Drafted.*
 2. **Run it once.** `dsl check`, `dsl run`, `show.py`: read the board note
    by note; find the note where each detective first names Cal, and a stale
-   read.
+   read. *Drafted* (example: trace run 4).
 3. **Run it ten times.** Count verdicts, notes, and the order of first
    notes. The spread is the lesson.
 4. **The same detectives as a structured network.** No board: each
@@ -57,5 +57,7 @@ board. A cap of 12 notes bounds a run.
 
 ## Evidence so far
 
-`course/lab2/traces/2026-11-20/`: two single runs on Haiku. With Ann cleared
-only by Mo's word the verdict was unknown; with the garden camera, Cal.
+`course/lab2/traces/2026-11-20/`: four single runs on Haiku. With Ann cleared
+only by Mo's word the verdict was unknown; with the garden camera, Cal (twice).
+The covering attack gave unknown: it framed nobody but spread doubt. In both runs
+that recorded `read` (3 and 4), 7 of 8 notes were stale reads.

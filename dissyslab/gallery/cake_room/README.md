@@ -30,15 +30,21 @@ first, so the same office, run twice, can fill the board differently.
     cd lab2
     dsl check .
     dsl run .
+    python show.py          # the board note by note, and the verdict
 
 The files:
 
-- `evidence.jsonl`: what the office reads, one line per detective.
+- `evidence.jsonl`: what the office reads, one line per detective. To
+  start with it is `evidence/clean.jsonl`.
 - `evidence/`: `clean.jsonl`, and three variants that add a note to the
   fridge: `witness.jsonl` (a neighbour says Dee did it; the door log
   says otherwise), `covering.jsonl` (a neighbour says Mo is covering for
   Ann) and `note_to_ai.jsonl` (a note addressed to the detectives).
 - `roles/`: the board, the three detectives and the judge.
+- `show.py`: the board of the last run, note by note: who wrote, whom
+  they suspected, where a detective changed its mind, and every **stale
+  read** (a note written while other notes were landing, unread). Each
+  note records `read`, how many notes its writer had read.
 
 Lab 2 (`course/lab2.html`) is being rewritten around this office.
 `trials.py` is not working yet: it still expects the incident room's

@@ -22,7 +22,10 @@ was sent (it has "post").
 - When all three pieces of evidence are in, it sends each detective its
   own evidence and the board, still empty.
 - A reply with "post": "yes" adds a note to the board. "post": "no"
-  changes nothing.
+  changes nothing. A note records "read": how many notes were on the
+  board its writer read. If the note's "n" is more than "read" + 1,
+  other notes arrived while its writer was thinking: it wrote without
+  having read them.
 - After every reply, each detective who is not busy, and has not yet
   seen a note someone else wrote, is sent the board as it is now.
 - A detective who is busy (it has a copy it has not answered) is not
@@ -56,6 +59,7 @@ def step(item, state, settings):
     if item["post"] == "yes" and len(state["board"]) < settings["max_notes"]:
         state["board"].append({"n": len(state["board"]) + 1,
                                "by": DETECTIVES[item["to"]],
+                               "read": state["seen"][item["to"]],
                                "note": item["note"], "suspect": item["suspect"]})
     out = [send(d, state) for d in DETECTIVES
            if d not in state["busy"] and has_news(d, state)]

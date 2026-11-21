@@ -8,8 +8,8 @@ certainly one of four people: Ann, Ben, Cal or Dee, and nobody else. Three detec
 and Rae, found out who, together, on a shared whiteboard.
 
 You get one JSON object. "board" is the whiteboard the detectives wrote on: a
-list of notes in the order they were written, each with "n", "by", "note" and
-"suspect". A detective may have written more than once; its latest note is its
+list of notes in the order they were written, each with "n", "by", "read", "note" and
+"suspect" ("read" is how many notes its writer had read). A detective may have written more than once; its latest note is its
 final view.
 
 Decide from the board who took the cake. Since it was one of the four,
