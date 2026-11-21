@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 2 · The cake room: a shared whiteboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:48px 20px 90px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em;
+    text-transform:uppercase; color:var(--orange); margin-bottom:14px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(32px,5vw,46px);
+     line-height:1.05; letter-spacing:-.022em; margin:0 0 14px}
+  .lead{font-size:19px; line-height:1.55; color:var(--body); max-width:680px; margin:0 0 10px}
+  h2{font-family:var(--display); font-weight:600; font-size:27px;
+     margin:54px 0 2px; letter-spacing:-.01em}
+  .where{font:600 12px/1 var(--sans); letter-spacing:.12em;
+     text-transform:uppercase; color:var(--teal); margin:0 0 14px}
+  h3{font-size:16px; font-weight:700; margin:26px 0 8px; letter-spacing:.01em}
+  p{color:var(--body); margin:0 0 14px}
+  ul,ol{color:var(--body); margin:0 0 14px; padding-left:22px}
+  li{margin:0 0 7px}
+  b, li b{color:var(--ink)}
+  code{font-family:var(--mono); font-size:.88em; color:var(--ink);
+       background:#f1eee6; padding:1px 4px; border-radius:4px}
+  .facts{display:flex; gap:10px; flex-wrap:wrap; margin:18px 0 6px}
+  .facts span{background:var(--panel); border:1px solid var(--line); border-radius:999px;
+      padding:4px 12px; font-size:14px; color:var(--body)}
+  .hands{margin:18px 0; padding:13px 18px; background:var(--panel);
+    border:1px solid var(--line); border-left:3px solid var(--teal);
+    border-radius:0 10px 10px 0; font-size:15px; color:var(--body)}
+  figure.pic{margin:22px 0 18px; background:var(--panel); border:1px solid var(--line);
+    border-radius:14px; padding:16px 18px 12px}
+  figure.pic svg{width:100%; height:auto; display:block}
+  figure.pic figcaption{margin-top:8px; font-size:13.5px; color:var(--muted)}
+  .scroll{overflow-x:auto}
+  .scroll svg{min-width:560px}
+  table.elim{border-collapse:collapse; width:100%; margin:0 0 6px; font-size:15px}
+  table.elim th, table.elim td{border-bottom:1px solid var(--line); padding:7px 8px;
+    text-align:center; vertical-align:middle}
+  table.elim th:first-child, table.elim td:first-child{text-align:left}
+  table.elim th{color:var(--muted); font-weight:600}
+  table.elim td.out{color:var(--orange); font-weight:700}
+  table.elim td.ev{color:var(--muted); font-size:13.5px}
+  table.elim tr.board td{border-top:2px solid #2f3d55; border-bottom:none; font-weight:700; color:var(--ink)}
+  table.elim tr.board td.left{color:var(--teal)}
+  footer{margin-top:62px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:14px; color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="kicker">DisSysLab &middot; Lab 2</div>
+<h1>The cake room: a shared whiteboard</h1>
+<p class="lead">In Lab 1 every agent received only the messages its
+connections carried to it. This lab shows a different way for agents to
+work together: a <b>shared whiteboard</b>. Every agent reads everything
+every other agent wrote, and builds on it.</p>
+<p class="lead">That makes a team able to solve problems that no member
+could solve alone. It also makes the team harder to predict: what each
+agent writes depends on what the others wrote first.</p>
+<div class="facts"><span>About 2 hours</span><span>Needs: Lab 1 done,
+and your Anthropic key</span><span>Cost: a few hundred model calls; start small</span></div>
+
+<h2>Step 1 &middot; The case</h2>
+<p class="where">Read this first: the puzzle, and who knows what</p>
+
+<p>A cake vanished from the kitchen between 3 and 4 this afternoon. It was
+certainly one of four people: <b>Ann</b>, <b>Ben</b>, <b>Cal</b> or
+<b>Dee</b>, and nobody else.</p>
+
+<p>Three detectives investigate. Each is an LLM agent, and each holds
+<b>one</b> piece of evidence that no other detective sees:</p>
+<ul>
+  <li><b>Pip</b> has the kitchen door's key-card log. Dee's card was not
+      used all day, and the kitchen has no other door.</li>
+  <li><b>Quinn</b> has the receipts from the shops in town. Ben paid at the
+      shoe shop at 3:30, and the shop's camera shows him there from 2 until 5.</li>
+  <li><b>Rae</b> has the notes pinned to the fridge. One is a printout from
+      the garden camera: Ann is in every frame from 2 until 5, weeding.</li>
+</ul>
+<p>A fourth agent, <b>Judy</b> the judge, sees no evidence at all. She
+reads what the detectives wrote and gives the verdict.</p>
+
+<p>Look at what each detective can work out alone. Each piece of evidence
+clears exactly one person, and leaves three:</p>
+
+<table class="elim">
+  <tr><th></th><th>Ann</th><th>Ben</th><th>Cal</th><th>Dee</th></tr>
+  <tr><td><b>Pip</b> <span class="ev">(door log)</span></td>
+      <td></td><td></td><td></td><td class="out">cleared</td></tr>
+  <tr><td><b>Quinn</b> <span class="ev">(receipts)</span></td>
+      <td></td><td class="out">cleared</td><td></td><td></td></tr>
+  <tr><td><b>Rae</b> <span class="ev">(fridge notes)</span></td>
+      <td class="out">cleared</td><td></td><td></td><td></td></tr>
+  <tr class="board"><td>All three together</td>
+      <td>cleared</td><td>cleared</td><td class="left">Cal</td><td>cleared</td></tr>
+</table>
+<p>No piece of evidence mentions Cal. Nobody can name Cal from their own
+evidence; the answer appears only when all three pieces are put together.
+That is what the whiteboard is for.</p>
+
+<h3>How the whiteboard works</h3>
+<figure class="pic">
+  <div class="scroll">
+  <svg viewBox="0 0 800 330" role="img"
+       aria-label="Each detective gets one piece of evidence. Detectives write notes on the shared whiteboard and read all of it. After two rounds, the judge reads only the board and gives the verdict.">
+    <defs>
+      <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#6f7583"/>
+      </marker>
+      <marker id="ahT" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#00947d"/>
+      </marker>
+    </defs>
+    <style>
+      .t{font:14px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; fill:#1a1a2e}
+      .s{font:12px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; fill:#6f7583}
+      .h{font:600 11px -apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif; fill:#6f7583; letter-spacing:.1em}
+      .b{font-weight:700}
+    </style>
+
+    <!-- column headings -->
+    <text class="h" x="20"  y="18">EVIDENCE (PRIVATE)</text>
+    <text class="h" x="236" y="18">DETECTIVES</text>
+    <text class="h" x="452" y="18">THE WHITEBOARD (SHARED)</text>
+    <text class="h" x="672" y="18">JUDGE</text>
+
+    <!-- evidence -->
+    <g>
+      <rect x="20" y="40"  width="170" height="58" rx="8" fill="#fff" stroke="#ddd8cd"/>
+      <text class="t" x="34" y="64">Door key-card log</text>
+      <text class="s" x="34" y="84">Dee's card: unused</text>
+      <rect x="20" y="140" width="170" height="58" rx="8" fill="#fff" stroke="#ddd8cd"/>
+      <text class="t" x="34" y="164">Shop receipts</text>
+      <text class="s" x="34" y="184">Ben: shoe shop, 2–5</text>
+      <rect x="20" y="240" width="170" height="58" rx="8" fill="#fff" stroke="#ddd8cd"/>
+      <text class="t" x="34" y="264">Fridge notes</text>
+      <text class="s" x="34" y="284">Camera: Ann in garden, 2–5</text>
+    </g>
+
+    <!-- evidence -> detectives -->
+    <line x1="190" y1="69"  x2="232" y2="69"  stroke="#6f7583" stroke-width="1.5" marker-end="url(#ah)"/>
+    <line x1="190" y1="169" x2="232" y2="169" stroke="#6f7583" stroke-width="1.5" marker-end="url(#ah)"/>
+    <line x1="190" y1="269" x2="232" y2="269" stroke="#6f7583" stroke-width="1.5" marker-end="url(#ah)"/>
+
+    <!-- detectives -->
+    <g>
+      <rect x="236" y="44"  width="130" height="50" rx="10" fill="rgba(0,148,125,.08)" stroke="#00947d" stroke-width="2"/>
+      <text class="t b" x="301" y="74" text-anchor="middle">Pip</text>
+      <rect x="236" y="144" width="130" height="50" rx="10" fill="rgba(0,148,125,.08)" stroke="#00947d" stroke-width="2"/>
+      <text class="t b" x="301" y="174" text-anchor="middle">Quinn</text>
+      <rect x="236" y="244" width="130" height="50" rx="10" fill="rgba(0,148,125,.08)" stroke="#00947d" stroke-width="2"/>
+      <text class="t b" x="301" y="274" text-anchor="middle">Rae</text>
+    </g>
+
+    <!-- detectives <-> board: write (upper, teal), read (lower, grey) -->
+    <g>
+      <line x1="366" y1="62"  x2="448" y2="62"  stroke="#00947d" stroke-width="1.8" marker-end="url(#ahT)"/>
+      <line x1="448" y1="78"  x2="366" y2="78"  stroke="#6f7583" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ah)"/>
+      <line x1="366" y1="162" x2="448" y2="162" stroke="#00947d" stroke-width="1.8" marker-end="url(#ahT)"/>
+      <line x1="448" y1="178" x2="366" y2="178" stroke="#6f7583" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ah)"/>
+      <line x1="366" y1="262" x2="448" y2="262" stroke="#00947d" stroke-width="1.8" marker-end="url(#ahT)"/>
+      <line x1="448" y1="278" x2="366" y2="278" stroke="#6f7583" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ah)"/>
+    </g>
+
+    <!-- board: notes in the order they arrive -->
+    <g>
+      <rect x="452" y="34" width="180" height="270" rx="10" fill="#fff" stroke="#2f3d55" stroke-width="2"/>
+      <text class="s" x="466" y="56">notes, as they arrive:</text>
+      <rect x="466" y="66"  width="152" height="30" rx="5" fill="#fff9d6" stroke="#e6d98f"/>
+      <text class="s" x="476" y="86">1 · Rae: Ann cleared</text>
+      <rect x="466" y="102" width="152" height="30" rx="5" fill="#fff9d6" stroke="#e6d98f"/>
+      <text class="s" x="476" y="122">2 · Pip: Dee cleared</text>
+      <rect x="466" y="138" width="152" height="30" rx="5" fill="#fff9d6" stroke="#e6d98f"/>
+      <text class="s" x="476" y="158">3 · Quinn: Ben cleared</text>
+      <rect x="466" y="174" width="152" height="30" rx="5" fill="#fff9d6" stroke="#e6d98f"/>
+      <text class="s" x="476" y="194">4 · Pip: so it was Cal</text>
+      <rect x="466" y="210" width="152" height="30" rx="5" fill="none" stroke="#d8d3c8" stroke-dasharray="4 3"/>
+      <text class="s" x="476" y="230">…</text>
+      <text class="s" x="466" y="266">The order changes from</text>
+      <text class="s" x="466" y="283">run to run.</text>
+    </g>
+
+    <!-- board -> judge -> verdict -->
+    <line x1="632" y1="169" x2="668" y2="169" stroke="#6f7583" stroke-width="1.5" marker-end="url(#ah)"/>
+    <rect x="672" y="144" width="110" height="50" rx="10" fill="rgba(0,148,125,.08)" stroke="#00947d" stroke-width="2"/>
+    <text class="t b" x="727" y="174" text-anchor="middle">Judy</text>
+    <line x1="727" y1="194" x2="727" y2="236" stroke="#6f7583" stroke-width="1.5" marker-end="url(#ah)"/>
+    <rect x="672" y="240" width="110" height="44" rx="8" fill="#f3f1ec" stroke="#2f3d55" stroke-width="1.5"/>
+    <text class="t" x="727" y="267" text-anchor="middle">verdict</text>
+
+    <!-- key -->
+    <line x1="236" y1="320" x2="266" y2="320" stroke="#00947d" stroke-width="1.8" marker-end="url(#ahT)"/>
+    <text class="s" x="272" y="324">writes a note</text>
+    <line x1="376" y1="320" x2="406" y2="320" stroke="#6f7583" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ah)"/>
+    <text class="s" x="412" y="324">the board, sent whenever it changes</text>
+  </svg>
+  </div>
+  <figcaption>The evidence on the left is private: each detective sees only
+  its own. The board in the middle is shared: whenever it changes, it is
+  sent to the detectives. Judy sees only the board, and only at the end.
+  The notes shown are one possible run.</figcaption>
+</figure>
+
+<p>The whiteboard does nothing on its own. It changes only when a
+detective writes on it, and every change goes out to the detectives.
+There are no rounds, and nobody waits for anybody.</p>
+<ol>
+  <li><b>The start.</b> Each detective is sent its own evidence and the
+      board, still empty. It writes a note: what its evidence shows, and
+      whom it now suspects: Ann, Ben, Cal, Dee, or <code>unknown</code>.</li>
+  <li><b>Whenever the board changes.</b> A note goes on the board the
+      moment it arrives, and the new board is sent to every detective who
+      has not seen it. A detective that is still thinking gets the newest
+      board as soon as it finishes.</li>
+  <li><b>Nothing new.</b> A detective that reads the board and has nothing
+      to add says so, and writes nothing. That is how the talking stops.</li>
+  <li><b>The verdict.</b> When no detective is thinking and every one has
+      read every note the others wrote, nothing more will ever be written.
+      Only then does Judy get the board. She names the person who took the
+      cake, or says <code>unknown</code>.</li>
+</ol>
+
+<p>Notice what nobody does. No detective sends anything to another
+detective, and nobody decides who should read what. Everything written
+goes to everyone. In Lab 1 you drew every connection yourself and knew
+exactly what each agent would receive. Here you know only that each agent
+will receive <em>everything</em>, and you cannot know in advance what that
+will be: the three detectives think at the same time, and whichever
+finishes first writes first. The detective who writes second has read the
+first note; the one who wrote first has not. Run the same office twice,
+on the same evidence, and the board can fill up in a different order,
+with different notes.</p>
+
+<div class="hands"><b>Before you run anything, write down your predictions.</b>
+<ol style="margin:8px 0 0">
+  <li>In its first note, whom will each detective name? Does it matter
+      whether another note is already on the board when it writes?</li>
+  <li>Will all three detectives end up naming Cal? How many notes will the
+      board hold when the talking stops?</li>
+  <li>If you ran the office ten times, would the board fill up in the same
+      order? Would Judy give the same verdict every time?</li>
+</ol>
+You will check these in Steps 2 and 3. Keep them: a wrong prediction you
+can explain is worth more in your write-up than a right one you cannot.</div>
+
+</div>
+</body>
+</html>
