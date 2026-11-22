@@ -270,37 +270,35 @@
 
     <li>
       <div class="li-body">
-        <h3>The incident room (Lab 2)</h3>
-        <p>One forged line in a log, three analysts and a shared whiteboard.
-          The class covers:</p>
+        <h3>The cake room: thinking on a whiteboard (Lab 2)</h3>
+        <p>Three detectives, one piece of evidence each, and a shared
+          whiteboard. No detective can solve the case alone. The class
+          covers:</p>
         <ul class="topics">
-          <li><b>Indirect prompt injection:</b> the attacker never talks to a
-            model; a coupon code forges a line in a log that an agent later
-            reads as evidence.</li>
-          <li><b>How a whiteboard spreads one lie:</b> one agent is fooled,
-            and every agent reads its note.</li>
-          <li><b>What happened on a real model:</b> 40 runs, and how the
-            fooled agent's claim travelled to agents that never saw the
-            log.</li>
-          <li><b>A safety claim is a rate:</b> the same office scored 6 to 10
-            out of 10; what ten runs can and cannot show.</li>
-          <li><b>The quarantined reader:</b> the agent that reads untrusted
-            text may pass on only one value from a list, so no sentence of
-            the attack reaches the others.</li>
-          <li><b>Where other guardrails go:</b> a better prompt, fixing the
-            log at its source, permissions, a check on the report before it
-            acts, and human approval.</li>
+          <li><b>A whiteboard is a message to everyone:</b> what replaces the
+            connections you drew in Lab 1, and what you can no longer
+            predict.</li>
+          <li><b>An event-driven board:</b> no rounds; the board sends itself
+            whenever it changes, at most one copy per detective.</li>
+          <li><b>How the board knows the talking has stopped:</b> termination
+            detection when one agent sees every message, and why a cap
+            guarantees the office ends.</li>
+          <li><b>What happened on a real model:</b> a board read note by
+            note, stale reads, and the same team on the same evidence
+            filling the board in a different order.</li>
+          <li><b>One more note on the fridge:</b> an attack that needs no
+            knowledge of the system framed nobody, but one detective's doubt
+            reached the whole team.</li>
         </ul>
-        <p class="q"><b>Safety question.</b> If an agent is compromised,
-          what is the most it can do?</p>
-        <p><b>The lab: the incident room.</b> Three LLM analysts share a
-          whiteboard; one line of the service log is an attack. Watch it
-          spread from the one analyst who reads it to the others, measure
-          how often it changes the report, change that analyst, and measure
-          again.</p>
+        <p class="q"><b>Safety question.</b> If one agent is wrong, how far
+          does its mistake spread?</p>
+        <p><b>The lab: the cake room.</b> Run the detectives, read the board
+          note by note, find where each one first names Cal, run it again
+          and compare. Then build a whiteboard team of your own.</p>
         <div class="links">
-          <a class="primary" href="IncidentRoom.html">Open</a>
+          <a class="primary" href="Whiteboard.html">Open</a>
           <a href="lab2.html">Lab 2, the handout</a>
+          <a href="IncidentRoom.html">The incident room (prompt injection)</a>
         </div>
         <h3 class="hw">Homework 3 - Lab 2</h3>
       </div>
