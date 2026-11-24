@@ -22,7 +22,7 @@ REPO = Path(__file__).resolve().parents[2]
 COURSE = REPO / "course"
 GALLERY = REPO / "dissyslab" / "gallery"
 STUDENT_PAGES = ["index.html", "setup.html", "microcourse.html", "OfficeToolkit.html",
-                 "lab1.html", "lab2.html", "safety_case.html", "DistributedSystemModel.html",
+                 "lab1.html", "lab2.html", "lab2_cake.html", "safety_case.html", "DistributedSystemModel.html",
                  "IncidentRoom.html", "Whiteboard.html", "Homework2.html", "lab3.html",
                  "AgentsThatAct.html"]
 # The worked Tahoe case shows Lab 1's answer, so it is published (committed)
