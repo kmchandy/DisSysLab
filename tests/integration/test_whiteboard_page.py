@@ -92,7 +92,7 @@ def test_every_quotation_is_real():
     said += [flat(r["reason"]) for r in RUNS.values()]
     said += [flat(json.loads(ln)["text"].replace('"', ""))
              for ln in (CAKE / "evidence" / "covering.jsonl").read_text(encoding="utf-8").splitlines()]
-    quotes = [flat(q) for q in re.findall(r"<blockquote[^>]*>(.*?)</blockquote>", PAGE, re.S)]
+    quotes = [flat(q) for q in re.findall(r"<blockquote(?: class=\"ok\")?>(.*?)</blockquote>", PAGE, re.S)]
     assert len(quotes) >= 5
     for q in quotes:
         assert any(q in s for s in said), q
@@ -105,3 +105,32 @@ def test_the_cap_is_the_boards():
     cap = board.Board().settings["max_notes"]
     assert f"the board takes at most {cap} notes" in TEXT
     assert sorted(board.DETECTIVES.values()) == ["Pip", "Quinn", "Rae"]
+
+
+#: Quotations from published accounts (blockquote class="src"), each with
+#: the page it was copied from. A test cannot fetch them; it can make sure
+#: every quotation names its source and that the page links to it. Check
+#: the wording against the source by hand when adding one.
+OUTSIDE = {
+    "hyperfocused on finding a solution for ExploitGym":
+        "https://openai.com/index/hugging-face-model-evaluation-security-incident/",
+    "an attempt to cheat the evaluation":
+        "https://huggingface.co/blog/agent-intrusion-technical-timeline",
+}
+
+
+def test_every_outside_quotation_has_a_linked_source():
+    quotes = [flat(q) for q in re.findall(r'<blockquote class="src">(.*?)</blockquote>', PAGE, re.S)]
+    assert sorted(quotes) == sorted(OUTSIDE)
+    for url in OUTSIDE.values():
+        assert f'href="{url}"' in PAGE, url
+
+
+def test_every_incident_names_a_source():
+    section = PAGE[PAGE.index("Beyond the cake room"):PAGE.index("Questions for the class")]
+    for row in re.findall(r"<tr><td><b>(.*?)</tr>", section, re.S):
+        assert 'href="https://' in row, flat(row)[:40]
+    for item in re.findall(r"<li><b>(.*?)</li>", section.split("<h3>Poisoned parts</h3>")[1], re.S):
+        if "</ul>" in item:
+            break
+        assert 'href="https://' in item, flat(item)[:40]

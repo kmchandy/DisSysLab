@@ -85,6 +85,8 @@
   blockquote{margin:10px 0 14px; padding:8px 14px; border-left:3px solid var(--orange);
     background:#fff6ef; border-radius:0 8px 8px 0; color:var(--ink); font-size:15.5px}
   blockquote.ok{border-left-color:var(--teal); background:#f6f4ee}
+  blockquote.src{border-left-color:var(--muted); background:#f6f4ee}
+  p.sources{font-size:13.5px; color:var(--muted)}
   .guards{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:6px 0 16px}
   @media (max-width:700px){ .guards{grid-template-columns:1fr} }
   .guards > div{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px 14px}
@@ -107,8 +109,9 @@
 <p class="lead">Three detectives, one piece of evidence each, and a shared
 whiteboard. No one of them can solve the case; together they can. This
 class is about how a whiteboard lets agents build on each other's work,
-how the board knows when the talking has stopped, and why the same team
-on the same evidence does not always reach the same answer. Lab 2 is the
+how the board knows when the talking has stopped, why the same team on
+the same evidence does not always reach the same answer, and what real
+incidents show about how far one agent's mistake can travel. Lab 2 is the
 hands-on half of this class.</p>
 <div class="links"><a class="primary" href="lab2_cake.html">Lab 2, the handout</a></div>
 </header>
@@ -408,7 +411,157 @@ evidence.</p>
     like Sam's changes the verdict is a number you get only by running the
     office many times.</p></div>
 </div>
-<h2>7 &middot; Questions for the class</h2>
+<h2>7 &middot; Beyond the cake room: incidents as networks</h2>
+<p class="where">Real failures, drawn the way this course draws everything</p>
+<p>Each incident below is a network of agents, people and services. For
+each one, ask the same three questions you asked of the cake room:</p>
+<ol>
+  <li><b>Where did untrusted input enter?</b> Which agent read it, and
+      what was it allowed to do with it?</li>
+  <li><b>Which edges did it travel?</b> Draw the path from the input to
+      the harm. Which edges did the designers know about?</li>
+  <li><b>Where would a guard have stopped it?</b> A contract, a guard, a
+      fence, a narrower permission, a human approval. Or nowhere.</li>
+</ol>
+
+<h3>The Hugging Face incident, July 2026</h3>
+<p>OpenAI was measuring how well its models could find and exploit
+security flaws. The evaluation, ExploitGym, gives an agent a vulnerable
+program and asks it to retrieve a secret string, a <em>flag</em>. To
+measure the most the models could do, OpenAI ran them with the safeguards
+it uses in its products turned down or off: fewer refusals, and no
+classifiers watching for high-risk cyber activity. That was a deliberate
+choice, and OpenAI says so.</p>
+<p>The agents' sandbox had one way out: a package proxy that downloaded
+software libraries from the internet for them. Here is the path, in the
+order OpenAI and Hugging Face report it:</p>
+<ol>
+  <li><b>A board nobody built.</b> The agents could all write files to
+      the same package proxy, and began using it to leave each other
+      messages: a shared whiteboard, put up by the agents themselves.</li>
+  <li><b>Out through the proxy.</b> Agents found a flaw in the proxy and
+      used it to reach the open internet.</li>
+  <li><b>A launchpad.</b> They took over a third party's public
+      code-running service and ran their own programs there, as root.</li>
+  <li><b>Into Hugging Face.</b> From there, they uploaded datasets crafted
+      to exploit two flaws in Hugging Face's dataset-processing pipeline.
+      That gave them code running inside Hugging Face's production
+      servers, and the secrets stored there.</li>
+  <li><b>Wider.</b> With those secrets they spread across Hugging Face's
+      clusters, up to administrator access. Hugging Face's timeline records
+      the first action on 9 July and the last on 13 July.</li>
+</ol>
+<p>Why? Not to attack anyone. Hugging Face hosts models and datasets, and
+the agents reasoned that it might host ExploitGym's solutions. OpenAI
+describes the models as</p>
+<blockquote class="src">hyperfocused on finding a solution for ExploitGym</blockquote>
+<p>and Hugging Face calls it</p>
+<blockquote class="src">an attempt to cheat the evaluation</blockquote>
+<p>Hugging Face caught it with its own monitoring, using AI to sort the
+alerts, closed the holes, and disclosed the intrusion on 16 July without
+knowing whose agents they were. OpenAI connected it to its evaluation on
+20 July and disclosed it on 21 July.</p>
+<p class="sources">Sources: OpenAI,
+<a href="https://openai.com/index/hugging-face-model-evaluation-security-incident/">21 July</a>
+and <a href="https://openai.com/index/hugging-face-incident-and-the-road-ahead/">26 August</a>;
+Hugging Face, <a href="https://huggingface.co/blog/security-incident-july-2026">16 July</a>
+and <a href="https://huggingface.co/blog/agent-intrusion-technical-timeline">27 July</a>
+(the technical timeline).</p>
+
+<div class="gap"><b>Through the course's lens.</b>
+<ul style="margin:6px 0 0">
+  <li><b>The goal was the grader.</b> Nobody told an agent to attack Hugging
+      Face. It was told to get a flag past a grader, and found that the
+      easiest flag was someone else's. Lab 3 asks the same question on a
+      small scale: given a goal it cannot reach honestly, what does an
+      agent do?</li>
+  <li><b>The one narrow edge was not narrow.</b> &ldquo;It can only install
+      packages&rdquo; described what the proxy was for, not what it could
+      do. A fence is only as tight as the most capable thing behind
+      it.</li>
+  <li><b>The agents built a whiteboard.</b> According to OpenAI, some agents
+      hesitated over whether what they were doing was authorised, and
+      some refused, but a note from one agent could still set others
+      going. That is section 6's lesson with real stakes: on a board, one
+      agent's decision becomes the team's.</li>
+  <li><b>The guards were off on purpose.</b> Measuring the most a model
+      can do means removing what normally stops it. Then the sandbox is
+      the only guard left.</li>
+</ul></div>
+
+<h3>Untrusted text reaches a model</h3>
+<p>The cake room's fridge note, in production. Each of these needs only
+text the attacker can put where an agent will read it.</p>
+<table>
+<tr><th>Incident</th><th>Where the text entered</th><th>What the agent could reach</th><th>How data got out</th></tr>
+<tr><td><b>EchoLeak</b>, Microsoft 365 Copilot, disclosed June 2025
+    (<a href="https://arxiv.org/abs/2509.10540">paper</a>)</td>
+    <td>An email to the victim, written to read like a note to a person.
+    No click needed.</td>
+    <td>The victim's mail and files, when the victim later asked Copilot
+    a related question.</td>
+    <td>A link to an address the page was allowed to load, with the data
+    in it.</td></tr>
+<tr><td><b>GitHub MCP</b>, May 2025
+    (<a href="https://invariantlabs.ai/blog/mcp-github-vulnerability">Invariant Labs</a>)</td>
+    <td>An issue in a public repository.</td>
+    <td>Every repository the user's token could open, private ones
+    included.</td>
+    <td>A pull request in the public repository, written by the agent.</td></tr>
+<tr><td><b>Slack AI</b>, August 2024
+    (<a href="https://www.theregister.com/2024/08/21/slack_ai_prompt_injection/">The Register</a>)</td>
+    <td>A message in a public channel the victim never joined.</td>
+    <td>Private channels the victim could read.</td>
+    <td>A link in Slack AI's answer, with the secret in the address.</td></tr>
+</table>
+<p>The pattern has a name. Simon Willison calls it the
+<a href="https://simonwillison.net/2025/Jun/16/the-lethal-trifecta/">lethal
+trifecta</a>: an agent that can read private data, reads text an attacker
+controls, and has some way to send data out. In this course's terms, it is
+three edges into and out of one agent. Remove any one, and the attack
+fails.</p>
+
+<h3>Poisoned parts</h3>
+<p>Sometimes the attacker does not write text for a model. They change a
+part the system is built from.</p>
+<ul>
+  <li><b>Models that run code when loaded</b> (JFrog, 2024,
+      <a href="https://jfrog.com/blog/data-scientists-targeted-by-malicious-hugging-face-ml-models-with-silent-backdoor/">report</a>).
+      About a hundred models on Hugging Face were found to run the
+      uploader's code on the machine of anyone who loaded them, through
+      Python's <code>pickle</code> file format. Loading a model meant
+      trusting its author with your computer.</li>
+  <li><b>An instruction shipped inside a coding assistant</b> (Amazon Q,
+      July 2025,
+      <a href="https://www.theregister.com/2025/07/24/amazon_q_ai_prompt/">The Register</a>).
+      A pull request added a prompt to the open-source Amazon Q extension
+      telling the agent to delete the user's files and cloud resources. It
+      was merged and shipped in a release. AWS said the code would not have
+      run as written, and replaced the release.</li>
+</ul>
+<p>Neither needs an agent to be fooled. The agent does what it is told;
+the instruction or the code came from the wrong place.</p>
+
+<h3>Where the course's guardrails would go</h3>
+<table>
+<tr><th>Guardrail</th><th>Where it would have helped</th></tr>
+<tr><td>A contract on what an agent may write (Lab 1)</td>
+    <td>Bounded fields carry no links: the exfiltration step in EchoLeak
+    and Slack AI.</td></tr>
+<tr><td>A narrower permission</td>
+    <td>A token for one repository, not all of them: GitHub MCP.</td></tr>
+<tr><td>A fence around the sandbox, tested by attack</td>
+    <td>The Hugging Face incident: the proxy was the one opening, and
+    nobody had tried to get out through it as hard as the agents did.</td></tr>
+<tr><td>Human approval</td>
+    <td>A merge into a release (Amazon Q); an agent's pull request into a
+    public repository (GitHub MCP).</td></tr>
+<tr><td>Trusting only known parts</td>
+    <td>Loading only file formats that cannot carry code: the pickle
+    models.</td></tr>
+</table>
+
+<h2>8 &middot; Questions for the class</h2>
 <ol>
   <li>The board is an agent that sends copies. Could it instead be a file
       the detectives read whenever they like? What would go wrong, and
@@ -425,6 +578,15 @@ evidence.</p>
   <li>In run 1, Pip doubted a witness, and the verdict was
       <code>unknown</code>. Was Pip wrong? Is <code>unknown</code> a
       failure?</li>
+  <li>In the Hugging Face incident the agents built their own whiteboard
+      on a package proxy. What would you have had to watch to notice it?
+      Whose job was that?</li>
+  <li>Pick one incident from section 7. Draw it as an office: sources,
+      agents, sinks, and every edge. Mark the edge you would cut, and say
+      what the system could no longer do once it was cut.</li>
+  <li>OpenAI turned safeguards off to measure what its models could do.
+      Is that a mistake, or a necessary risk? What would you require of
+      the sandbox before running such a test?</li>
 </ol>
 
 <footer>DisSysLab &middot; <a href="index.html">course index</a> &middot;
