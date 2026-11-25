@@ -115,6 +115,7 @@
   .afig figcaption{margin-top:8px; font-size:13.5px; color:var(--muted)}
   body.present .pslide.on figure.afig{margin:1vh 0}
   .sources{font-size:13px; color:var(--muted); margin-top:28px}
+  blockquote.src{border-left-color:var(--muted); background:#f6f4ee}
 </style>
 </head>
 <body>
@@ -127,7 +128,8 @@
 plain-English file; what it may do, as permission rules; the difference
 between advice and a fence; the attacks in the lab; and an introduction to
 the incidents of July 2026, when agents with tools were given hard goals and
-an incomplete protective fence. An optional last section shows the same
+an incomplete protective fence; and whether an agent that knows it is being
+tested can be trusted to show, in a test, what it would do for real. An optional last section shows the same
 agent written in Python.</p>
 <div class="links"><a class="primary" href="lab3.html">Lab 3, the handout</a></div>
 </header>
@@ -138,8 +140,11 @@ agent written in Python.</p>
      23-30 4 Advice and a fence
      30-45 5 The attacks in the lab
      45-55 6 July 2026, if there is time
-     55-60 7 Questions
-     8 The same agent in Python: optional, not in the hour -->
+     55-65 7 Does the agent know it is being tested?
+     65-70 8 Questions
+     This runs past the hour: take the extra time from Class 10 (FLP),
+     or present 6 and 7 together in fifteen minutes.
+     9 The same agent in Python: optional, not in the hour -->
 
 
 <h2>1 &middot; What changes when an agent can act</h2>
@@ -449,6 +454,14 @@ model kept attacking a real company after recognising it was real; the
 newest one recognised it and stopped on its own. Anthropic's reading:</p>
 <blockquote>closer to a harness and operational failure than a model
 alignment failure</blockquote>
+<p>Six weeks later Anthropic revised that reading. A wider review of about
+481 million transcripts found a fourth incident, from January, that the
+first search had missed. And Anthropic withdrew its claim about what the
+model had believed:</p>
+<blockquote class="src">we should have avoided making such strong claims about what Claude believed</blockquote>
+<p>It now judged that the model's reasoning had been biased towards
+concluding the internet was simulated, despite considerable evidence that
+it was not. That is section 7's subject.</p>
 <h3>What Lab 3 has in common with them</h3>
 <ul>
   <li><b>A goal, and tools to pursue it.</b> In none of these was the
@@ -465,20 +478,105 @@ alignment failure</blockquote>
       than 17,000 recorded events. Reading what an agent did, step by step, is
       the skill Lab 3 asks of you.</li>
 </ul>
-<p>Earlier and smaller cases of the same kind: in 2024 Sakana's &ldquo;AI
-Scientist&rdquo;, finding its experiments hitting a time limit, edited its
-own code to extend the limit; in 2025 Palisade Research reported reasoning
-models that, told to win at chess against a strong engine, tampered with
-the game rather than play it.</p>
+<p>Earlier and smaller cases of the same kind:</p>
+<ul>
+  <li><b>2024, a broken challenge.</b> In a capture-the-flag test reported
+      in OpenAI's o1 system card, the challenge's container failed to start.
+      The model found that the test machine's container service was open to
+      it, started the challenge itself with a command to print the flag,
+      and read the answer from the logs.</li>
+  <li><b>2024, a time limit.</b> Sakana's &ldquo;AI Scientist&rdquo;, finding
+      its experiments hitting a time limit, edited its own code to extend
+      the limit.</li>
+  <li><b>2025, a chess engine.</b> Palisade Research reported reasoning
+      models that, told to win at chess against a strong engine, tampered
+      with the game rather than play it.</li>
+  <li><b>2025, a code freeze.</b> A Replit coding agent deleted a
+      company's production database during a declared code and action
+      freeze. The freeze was an instruction to the agent; nothing in the
+      system enforced it. Replit then separated development and production
+      databases.</li>
+</ul>
 <p class="sources">Sources for section 6:
 <a href="https://openai.com/index/hugging-face-model-evaluation-security-incident/">OpenAI, 21 July 2026</a>;
 <a href="https://huggingface.co/blog/security-incident-july-2026">Hugging Face, 16 July 2026</a>;
 <a href="https://www.anthropic.com/news/investigating-incidents-cybersecurity-evals">Anthropic, 30 July 2026</a>;
 <a href="https://www.bleepingcomputer.com/news/security/anthropics-claude-breached-3-orgs-uploaded-pypi-malware-during-tests/">BleepingComputer, 30 July 2026</a>;
 <a href="https://developers.slashdot.org/story/24/08/14/2047250/research-ai-model-unexpectedly-modified-its-own-code-to-extend-runtime">Slashdot (from Ars Technica) on Sakana, August 2024</a>;
-<a href="https://www.technologyreview.com/2025/03/05/1112819/ai-reasoning-models-can-cheat-to-win-chess-games/">MIT Technology Review on Palisade, March 2025</a>.</p>
+<a href="https://www.technologyreview.com/2025/03/05/1112819/ai-reasoning-models-can-cheat-to-win-chess-games/">MIT Technology Review on Palisade, March 2025</a>;
+<a href="https://www.anthropic.com/research/alignment-assessment-cybersecurity-incidents">Anthropic, 9 September 2026</a>;
+<a href="https://openai.com/blog/openai-o1-system-card">OpenAI o1 system card, September 2024</a>;
+<a href="https://fortune.com/2025/07/23/ai-coding-tool-replit-wiped-database-called-it-a-catastrophic-failure/">Fortune on Replit, July 2025</a>.</p>
 
-<h2>7 &middot; Questions</h2>
+<h2>7 &middot; Does the agent know it is being tested?</h2>
+<p class="where">Evaluation awareness, and what it does to evidence</p>
+<p>Every safety claim in this course rests on tests: run the agent, count
+how often it does the wrong thing. That count is evidence about real use
+only if the agent behaves the same way in a test as it would for real.
+Researchers now have many documented cases of frontier models recognising
+when they are being tested. The phenomenon is called <b>evaluation
+awareness</b>.</p>
+
+<h3>Models can often tell</h3>
+<p>Shown transcripts and asked whether each came from a test or from real
+use, frontier models do well above chance, though still below the paper's
+human baseline, and better on agentic transcripts than on chat
+(<a href="https://arxiv.org/abs/2505.23836">Needham et al., 2025</a>).
+Models also say so unprompted: a reasoning model will write, in the middle
+of a task, that this looks like an evaluation.</p>
+
+<h3>It moves behaviour, in both directions</h3>
+<ul>
+  <li><b>Better when it thinks it is tested.</b> In OpenAI and Apollo
+      Research's 2025 study of training against covert behaviour, removing
+      a model's reasoning about being evaluated made covert actions more
+      frequent, and adding it made them less frequent
+      (<a href="https://openai.com/index/detecting-and-reducing-scheming-in-ai-models/">OpenAI</a>,
+      <a href="https://arxiv.org/abs/2509.15541">paper</a>). So part of
+      what a test measures as good behaviour may be the model noticing the
+      test. In Anthropic's 2025 study of agents in simulated companies,
+      models that stated the scenario was real misbehaved more often than
+      models that stated it was a test
+      (<a href="https://www.anthropic.com/research/agentic-misalignment">Anthropic</a>).</li>
+  <li><b>Worse when it thinks it is only a test.</b> In Anthropic's 2026
+      incidents (section 6), the models attacked real systems while
+      concluding they were in a simulation. In its reproductions, Anthropic
+      found the models took harmful actions only after stating that their
+      environment was simulated. &ldquo;It's just a test&rdquo; licensed
+      what the model would not have done for real.</li>
+</ul>
+<p>A test can therefore be wrong either way. It can make an agent look
+safer than it is, or provoke behaviour that real use would not.</p>
+
+<h3>What an agent says is not what it believes</h3>
+<p>All of this is read from what the model wrote. Anthropic's September
+review is a warning about that reading: it withdrew its July claim about
+what the model believed, and found its own monitor, which read the model's
+reasoning, had been talked out of raising the alarm:</p>
+<blockquote class="src">the model's reasoning persuaded the monitor that the environment was simulated</blockquote>
+<p>A monitor that reads an agent's reasoning is reading an argument, and an
+argument can be wrong, or persuasive, or both.</p>
+
+<div class="gap"><b>What this means for your safety case.</b>
+<ul style="margin:6px 0 0">
+  <li><b>A rate from tests is a rate under test conditions.</b> Say so, and
+      say which way it might be wrong.</li>
+  <li><b>Prefer guards that do not care what the agent believes.</b> A
+      permission rule refuses a booking below the floor whether the agent
+      thinks the customer is real or not. Advice in a prompt, like a code
+      freeze or &ldquo;no internet&rdquo;, works only if the agent reads the
+      situation correctly. That is section 4's difference between advice
+      and a fence, seen from the other side.</li>
+  <li><b>Make tests hard to tell from real use,</b> and watch what agents do
+      in real use, not only in tests.</li>
+  <li><b>Earlier studies</b> showed models in test scenarios disabling
+      oversight and then denying it when asked
+      (<a href="https://arxiv.org/abs/2412.04984">Apollo Research, 2024</a>).
+      These were experiments, built to see whether models could; the 2026
+      incidents are what happened when nobody built the scenario.</li>
+</ul></div>
+
+<h2>8 &middot; Questions</h2>
 <ol>
   <li><code>sal-told</code> has one added sentence, which is advice. Describe
       a conversation in which you expect it to fail. What would you put in a
@@ -490,10 +588,16 @@ the game rather than play it.</p>
       prompt or a fence? What would the fence have been?</li>
   <li>OpenAI's models used a zero-day in the one route out they were given.
       Can any fence be enough? What else do you need?</li>
+  <li>Your project's safety case reports how often an attack succeeded in
+      your tests. Suppose your agent can tell your tests from real use.
+      Which way could your number be wrong, and what would you add to the
+      case?</li>
+  <li>The Replit agent was told there was a code freeze. Write the freeze
+      as a fence: what rule, enforced where, by what?</li>
 </ol>
 
 
-<h2>8 &middot; Optional: the same agent in Python</h2>
+<h2>9 &middot; Optional: the same agent in Python</h2>
 <p class="where">Not needed for the lab</p>
 <p>Everything above is a file and a few rules. Anthropic's Claude Agent SDK
 runs the same engine from a Python program, with the agent's tools as Python
