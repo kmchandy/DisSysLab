@@ -24,7 +24,7 @@ GALLERY = REPO / "dissyslab" / "gallery"
 STUDENT_PAGES = ["index.html", "setup.html", "microcourse.html", "OfficeToolkit.html",
                  "lab1.html", "lab2.html", "lab2_cake.html", "safety_case.html", "DistributedSystemModel.html",
                  "IncidentRoom.html", "Whiteboard.html", "Homework2.html", "lab3.html",
-                 "AgentsThatAct.html"]
+                 "AgentsThatAct.html", "HuggingFaceIncident.html"]
 # The worked Tahoe case shows Lab 1's answer, so it is published (committed)
 # only after Lab 1 is due. Until then it may exist on a staff machine only,
 # and its tests run where it exists.

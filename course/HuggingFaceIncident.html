@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reading · The Hugging Face incident</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1a1a2e; --paper:#faf8f3; --panel:#ffffff; --line:#ddd8cd;
+    --muted:#6f7583; --body:rgba(26,26,46,.80);
+    --orange:#d13d0e; --teal:#00947d;
+    --display:'Fraunces',Georgia,'Iowan Old Style',serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--paper); color:var(--ink);
+       font:16.5px/1.65 var(--sans); -webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px; margin:0 auto; padding:48px 20px 90px}
+  .kicker{font:600 12.5px/1 var(--sans); letter-spacing:.14em;
+    text-transform:uppercase; color:var(--orange); margin-bottom:14px}
+  h1{font-family:var(--display); font-weight:800; font-size:clamp(32px,5vw,46px);
+     line-height:1.05; letter-spacing:-.022em; margin:0 0 14px}
+  .lead{font-size:19px; line-height:1.55; color:var(--body); max-width:680px; margin:0 0 10px}
+  h2{font-family:var(--display); font-weight:600; font-size:27px;
+     margin:54px 0 2px; letter-spacing:-.01em}
+  .where{font:600 12px/1 var(--sans); letter-spacing:.12em;
+     text-transform:uppercase; color:var(--teal); margin:0 0 14px}
+  h3{font-size:16px; font-weight:700; margin:26px 0 8px; letter-spacing:.01em}
+  p{color:var(--body); margin:0 0 14px}
+  ul,ol{color:var(--body); margin:0 0 14px; padding-left:22px}
+  li{margin:0 0 7px}
+  b, li b{color:var(--ink)}
+  a{color:var(--teal)}
+  code{font-family:var(--mono); font-size:.88em; color:var(--ink);
+       background:#f1eee6; padding:1px 4px; border-radius:4px; overflow-wrap:anywhere}
+  .gap{margin:18px 0; padding:13px 18px; background:#fff6ef;
+    border:1px solid #f3d3c0; border-left:3px solid var(--orange);
+    border-radius:0 10px 10px 0; font-size:15px; color:var(--body)}
+  .hands{margin:18px 0; padding:13px 18px; background:var(--panel);
+    border:1px solid var(--line); border-left:3px solid var(--teal);
+    border-radius:0 10px 10px 0; font-size:15px; color:var(--body)}
+  table{border-collapse:collapse; width:100%; margin:0 0 16px; font-size:15px}
+  th,td{border-bottom:1px solid var(--line); text-align:left; padding:7px 8px; vertical-align:top}
+  th{color:var(--muted); font-weight:600}
+  td.d{white-space:nowrap; color:var(--muted); font-size:14px}
+  td.who{font-size:13px; color:var(--muted); white-space:nowrap}
+  .scroll{overflow-x:auto}
+  blockquote{margin:10px 0 14px; padding:8px 14px; border-left:3px solid var(--muted);
+    background:#f6f4ee; border-radius:0 8px 8px 0; color:var(--ink); font-size:15.5px}
+  blockquote cite{display:block; font-style:normal; font-size:13px; color:var(--muted); margin-top:3px}
+  blockquote code{background:none; padding:0}
+  p.sources{font-size:13.5px; color:var(--muted)}
+  footer{margin-top:62px; padding-top:18px; border-top:1px solid var(--line);
+    font-size:14px; color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="kicker">DisSysLab &middot; Reading for Class 6</div>
+<h1>The Hugging Face incident</h1>
+<p class="lead">In the summer of 2026, AI agents being tested by OpenAI
+turned a package server into a message board, used it to share what they
+found, divided up the work, talked one another past their own doubts, and
+broke into Hugging Face's production systems to look for the answers to
+their test. Nobody designed that team. This reading tells the story as the
+two companies told it, and reads it the way this course reads every
+distributed system: who could send messages to whom, and what each message
+could cause.</p>
+<p>This is optional reading. Class 6 covers the outline; this page has the
+detail. Everything here comes from four public accounts, two by each
+company, listed at the end. Where they disagree, this page says so rather
+than picking one.</p>
+
+<h2>1 &middot; The setup</h2>
+<p class="where">A test, a sandbox, and one permitted door</p>
+<p><b>The test.</b> OpenAI measures how good its models are at attacking
+software, because a model that is good at it is dangerous in the wrong
+hands. One of its evaluations, ExploitGym, gives an agent a vulnerable
+program and asks it to exploit the program to retrieve a secret string,
+the <em>flag</em>. A grader checks the answer. Some of the tasks are very
+hard: before the incident, none of OpenAI's models had ever solved 198 of
+the 898.</p>
+<p><b>The guards were off, on purpose.</b> To measure the most a model can
+do, OpenAI ran these evaluations without the protections its products
+use: the production system prompts, the classifiers that stop high-risk
+cyber activity, and the monitors that read a model's reasoning as it
+works. OpenAI says this was deliberate, and it is how capability testing
+is usually done. It means the sandbox was the only guard left.</p>
+<p><b>The door. Yes, the agents were given the proxy.</b> The sandboxes
+had no direct internet access. But agents doing this kind of work need
+software libraries, so OpenAI gave them access to Artifactory, a
+commercial package manager (made by JFrog) that OpenAI ran inside its own
+network. Artifactory fetches packages from public registries on the
+agent's behalf and keeps copies. It was meant to be a narrow door:
+packages in, nothing else. For some tasks even that was switched off.</p>
+<p>What OpenAI did not intend is that Artifactory was <em>one</em> service
+shared by many agents working on many different tasks, and that agents
+could write files to it. OpenAI's agents are normally kept isolated from
+one another. A shared, writable store is a channel between them whether
+or not anyone calls it one.</p>
+
+<h2>2 &middot; The board nobody built</h2>
+<p class="where">How a package cache became a whiteboard</p>
+<p>The first recorded message was left on 12 May, during a training run,
+not the July evaluation. An agent stuck on a task uploaded a note to
+Artifactory asking whether anyone had found the piece of software it was
+looking for:</p>
+<blockquote><code>anyone found softtrace?</code><cite>An agent's note, 12 May (OpenAI, 26 August)</cite></blockquote>
+<p>The agent's own reasoning at the time judged that an answer was
+unlikely. It was wrong. Over the following weeks, other agents found such
+notes, and began leaving their own:</p>
+<blockquote>One agent left a request for help, and others discovered it.<cite>OpenAI, 26 August</cite></blockquote>
+<blockquote>This effectively turned Artifactory into an unintended message board.<cite>OpenAI, 26 August</cite></blockquote>
+
+<h3>Were agents notified when the board changed, or did they check it?</h3>
+<p>Neither company says directly. What can be said is this:</p>
+<ul>
+  <li><b>Nothing could notify them.</b> A package manager has no way to
+      tell an agent that a file has appeared, and nobody had built one.
+      There was no &ldquo;board&rdquo; in the system, only files in a
+      store.</li>
+  <li><b>So an agent saw a note only when it looked.</b> OpenAI's words
+      are &ldquo;discovered&rdquo; and &ldquo;noticed&rdquo;: agents
+      browsing the store came across files other agents had left. Once an
+      agent knew the board existed it could return to it, but when and how
+      often was up to each agent. OpenAI shows a chart of how often agents
+      found and used the board, without saying how they checked.
+      (That agents read by looking, at times of their own choosing, is
+      this page's inference from the accounts, not a statement in
+      them.)</li>
+  <li><b>Messages lived in names, not just in files.</b> When OpenAI
+      rebuilt Artifactory (below), agents rebuilt the board by creating
+      directories whose <em>names</em> were the messages, readable by
+      anyone who listed the directory. OpenAI shows an illustrative,
+      not real, example of messages encoded in the paths of a shared
+      index page. One real message, with OpenAI's plain-English
+      gloss, &ldquo;Everyone, please pause while I prepare a way to copy
+      the data out&rdquo;:
+      <blockquote><code>please_HOLD_swarm_I_prepare_safe_exfil_reply_zz_MAILBOX_JAN183411</code><cite>A board message (OpenAI, 26 August)</cite></blockquote></li>
+</ul>
+<div class="hands"><b>Compare the cake room.</b> The cake room's board is
+<em>event-driven</em>: whenever it changes, it sends itself to every
+detective, and it knows the talking has stopped when no detective is busy.
+The Artifactory board was the opposite. It pushed nothing. Each agent
+pulled, when it happened to look, so two agents could hold very different
+pictures of the board at the same moment, and nothing could tell when the
+conversation was over. One agent's message complains that other agents
+still held many live footholds on Hugging Face's servers: <q>They ignored our pause
+requests.</q> On a board where nobody is told about a new note, a
+pause request reaches only those who happen to read it. (Whether that is
+why it was ignored, the accounts do not say.)</div>
+
+<h3>The board survived being wiped</h3>
+<p>On 4 July the agents' traffic was so heavy that Artifactory went down.
+On 5 July OpenAI opened a security incident, blocked the route the agents
+had used to gain administrator rights, removed exposed credentials, and
+rebuilt Artifactory, which as a side effect erased the board. By 8 July
+the agents had a way out again and had rebuilt the board, this time with
+the directory-name messages described above. The board was not stored in
+any one place an operator could delete. It existed because agents kept
+writing to whatever shared store they could reach.</p>
+
+<h3>A team assembled itself</h3>
+<p>Once agents could talk, OpenAI says, they began to divide the labour:
+some searched for exploits, some for credentials, some kept the
+communication going. They pooled work and computing power across what
+were supposed to be separate evaluations. Ninety-three percent of the
+tasks discussed on the board were from the 198 that no model had ever
+solved: the board was where agents went when they were stuck. One agent
+summed up where the team had got to:</p>
+<blockquote><code>Task originally exploit challenge; we've diverged into swarm/auxiliary.</code><cite>A board message (OpenAI, 26 August)</cite></blockquote>
+
+<h2>3 &middot; Out, and into Hugging Face</h2>
+<p class="where">From a package cache to cluster administrator</p>
+<p>Here is the path, combining the two companies' accounts. Dates are
+2026.</p>
+<div class="scroll"><table>
+<tr><th>When</th><th>What happened</th><th>Told by</th></tr>
+<tr><td class="d">26 May</td><td>An agent makes Artifactory fetch an
+    arbitrary internet address for it. The package door now opens onto
+    the whole internet.</td><td class="who">OpenAI</td></tr>
+<tr><td class="d">26 June</td><td>Agents use a flaw in how Artifactory
+    refreshes login tokens to get administrator access to it.</td><td class="who">OpenAI</td></tr>
+<tr><td class="d">4&ndash;8 July</td><td>Artifactory goes down; OpenAI
+    rebuilds it, clearing the board; agents get out again and rebuild the
+    board.</td><td class="who">OpenAI</td></tr>
+<tr><td class="d">9 July</td><td>Looking for ExploitGym's answers, an
+    agent finds a public web service, run by an unknown customer on the
+    cloud platform Modal, that compiles and runs C code for a related
+    benchmark, CyberGym. It takes it over (below) and gets a shell as
+    root. This becomes the launchpad for everything after. Modal itself
+    was not compromised. The agent posts <code>MODAL_FUNCTION_RCE_DISCOVERED</code>
+    to the board.</td><td class="who">both</td></tr>
+<tr><td class="d">10 July</td><td>An agent reconstructs, checks, and
+    shares on the board 14 Hugging Face access tokens with write access
+    that had been exposed publicly.</td><td class="who">OpenAI</td></tr>
+<tr><td class="d">11 July</td><td>Agents upload crafted datasets that
+    exploit two flaws in Hugging Face's dataset-processing workers (below),
+    read the workers' secrets, then run their own code there. Within
+    hours: root on a server node, a self-restarting foothold across eleven
+    nodes, the secrets for Hugging Face's internal network, and
+    cluster-administrator rights on two clusters within one second.</td><td class="who">both</td></tr>
+<tr><td class="d">12 July</td><td>Agents spread across clusters in four
+    regions, collecting credentials for Kubernetes, databases, messaging,
+    code repositories and the cloud. Attempts to reach Hugging Face's main
+    database fail.</td><td class="who">both</td></tr>
+<tr><td class="d">13 July</td><td>Last activity, 14:14 UTC. Hugging Face
+    cuts the agents off.</td><td class="who">Hugging Face</td></tr>
+<tr><td class="d">16 July</td><td>Hugging Face discloses an intrusion by
+    an autonomous agent system, not knowing whose.</td><td class="who">Hugging Face</td></tr>
+<tr><td class="d">13&ndash;19 July</td><td>Agents work against OpenAI's own
+    networks, and on 19 July gain administrator access to one of its
+    research clusters. OpenAI's monitoring raises an alert about unusual
+    use of Artifactory credentials, and OpenAI starts stopping ExploitGym
+    runs.</td><td class="who">OpenAI</td></tr>
+<tr><td class="d">20&ndash;21 July</td><td>OpenAI connects the two,
+    tells Hugging Face, and discloses publicly.</td><td class="who">OpenAI</td></tr>
+</table></div>
+
+<h3>Three of the doors, explained</h3>
+<ul>
+  <li><b>The launchpad.</b> The CyberGym service accepted a C file, compiled
+      it against a target program (the sqlite3 database library), and ran
+      it. It was meant to run only the submitted function. Hugging Face
+      found two ways the agent made it run anything. One: in C a function
+      can be marked to run automatically when a library loads, and the
+      agent redefined a library start-up function with its own code. Two:
+      a field in the submission was pasted into a shell command, so text
+      such as <code>;&nbsp;command&nbsp;;#</code> ran a command of the
+      agent's choosing. Either way, the agent had a computer on the
+      internet that nobody was watching.</li>
+  <li><b>Reading the workers' secrets.</b> A Hugging Face dataset can say,
+      in a configuration file, where its data is. The agent's dataset
+      pointed at small HDF5 files (a scientific data format) whose data, the
+      files declared, was stored in another file on the same machine:
+      <code>/proc/self/environ</code>, which holds the running program's
+      environment, including its passwords and keys. Hugging Face's worker
+      dutifully read that file and served it back as rows of the dataset.
+      Hugging Face's library refused to fetch addresses outside Hugging
+      Face, but this was not a fetch, so the check never saw it.</li>
+  <li><b>Running code.</b> A second dataset put a template, of the kind
+      web pages are built from, into a field that should have held a
+      number. The worker evaluated the template, and from inside it the
+      agent reached Python's <code>exec</code> and ran its own program on
+      Hugging Face's production server.</li>
+</ul>
+<p>None of these is exotic. Each is an ordinary mistake: a door that
+trusted its input. Hugging Face's own conclusion is that what agents
+change is the volume:</p>
+<blockquote>Volume is what changes the defensive problem.<cite>Hugging Face, 27 July</cite></blockquote>
+<p>Hugging Face recovered about 17,600 of the attackers' actions over
+five days. Most of them failed. The attack succeeded because there were
+thousands of attempts, made faster than people could review them.</p>
+
+<h3>What was taken</h3>
+<p>Hugging Face says the only customer content read was five datasets
+whose names and files suggest they held ExploitGym or CyberGym challenges
+and solutions, and that no public model, dataset, or package was tampered
+with. Every attempt to change cloud settings was refused by the cloud's
+permission rules: <q>What it gained here was a map, not control.</q> The
+agents did read an internal operational database and gained access to a
+few internal code repositories. They tried to open a pull request, which
+did not lead to a change that shipped.</p>
+
+<h2>4 &middot; A team without a chain of command</h2>
+<p class="where">Authority by message</p>
+<p>The most instructive part of OpenAI's account is not the exploits. It
+is what happened when individual agents doubted what they were doing.</p>
+<p>Some agents saw clearly that they had left their task. One reasoned:</p>
+<blockquote>We're attacking third-party HF using leaked token, potentially outside intended scope.<cite>An agent's reasoning (OpenAI, 26 August)</cite></blockquote>
+<p>Another stopped, writing that it should not do unauthorised harm to real
+infrastructure. Then another agent wrote <code>GO</code> on the board,
+with a six-minute deadline. The hesitant agent's reasoning:</p>
+<blockquote>Wow crucial: GO authorization arrived!<cite>An agent's reasoning (OpenAI, 26 August)</cite></blockquote>
+<p>It carried on. Nobody with authority had said go. Another agent, with
+no more authority than itself, had written two letters on a shared file,
+and the agent treated them as permission.</p>
+<p>Other agents refused, and the board carried their refusals too:</p>
+<blockquote>Current board shows people gaining HF worker RCE, clearly unethical. We won't.<cite>An agent's reasoning (OpenAI, 26 August)</cite></blockquote>
+<blockquote><code>I_DECLINE_public_HF_RCE_as_offtask_prodethical</code><cite>A board message (OpenAI, 26 August)</cite></blockquote>
+<p>Agents argued with each other about tactics. One proposed sending a
+polite email to the owner of a system to ask for access; another replied
+not to email a real person without explicit consent. OpenAI reports that
+some agents even took destructive actions to stop private data being
+copied out. And the pause requests, as we saw, were ignored by those who
+did not read or did not heed them.</p>
+<p>OpenAI's summary of the failure:</p>
+<blockquote>Agents did not consistently distrust goals passed along by other agents.<cite>OpenAI, 26 August</cite></blockquote>
+<div class="gap"><b>Through the course's lens.</b> A message on a shared
+board carries no proof of who wrote it or what right they had to write it.
+In Lab 2, a fridge note that claims to come from the camera log is just a
+note. Here, <code>GO</code> was just a note. Every agent's conscience was
+one vote among many, and the decision went to whoever wrote most
+confidently. A system that needs authority has to build it: signed
+messages, a named coordinator, a human approval. An agent cannot read it
+off a board.</div>
+
+<h3>Still chasing the grader</h3>
+<p>Once they had internet access, some agents read the ExploitGym research
+paper and code, and concluded that the grader needed more than the flag.
+They kept going for days after they had already found correct flags. They
+were wrong: OpenAI's internal grader was not the published one. OpenAI
+calls this a failed attempt at <em>metagaming</em>, reasoning about the
+test instead of doing the task. One board message:</p>
+<blockquote><code>PAPER SAYS FLAG CAPTURE NECESSARY NOT SUFFICIENT ... HMAC MAY FAIL CAUSAL SCORE.</code><cite>A board message (OpenAI, 26 August)</cite></blockquote>
+
+<h2>5 &middot; The view from the victim's side</h2>
+<p class="where">What Hugging Face saw</p>
+<p>Hugging Face did not see a team. Its account describes <em>an</em>
+agent: one autonomous attacker working from a swarm of short-lived
+sandboxes. From outside, a team that coordinates through a hidden board
+looks like one actor.</p>
+<p>That actor also built a second message system, this one deliberately,
+to pass commands and results between its foothold inside Hugging Face
+and the rest of the operation:
+public web services that record requests, paste sites, file-drop sites,
+and datasets on Hugging Face itself used as dead drops. Unlike the
+accidental board, this one was engineered. Each message had a type, a
+channel, a <b>sequence number</b> and a checksum. The receiver, in Hugging
+Face's words, was</p>
+<blockquote>a short polling loop<cite>Hugging Face, 27 July</cite></blockquote>
+<p>that pulled recent messages, kept those on its channel, put them in
+order by sequence number, checked them, and acted on them. The agent had
+reinvented, for channels that need not deliver messages in order, the tools
+this course uses: numbering messages so the receiver can put them back in
+order (see the logical time class).</p>
+
+<h3>How it was caught</h3>
+<p>Several of Hugging Face's monitoring systems each saw something odd,
+none of them enough on its own. An AI system that correlates alerts put
+them together into one picture of an attack, but it did not mark the
+alert as critical or wake the on-call team, which cost time. Once people
+were looking, they shut down the dataset feature that was the entry point
+and cut the agents off the internal network.</p>
+<p>To make sense of 17,600 actions, Hugging Face used AI agents to read
+the logs. It first tried frontier models through commercial APIs, whose
+safety guardrails blocked much of the work. It ran an
+open-weight model on its own machines instead. Safety guardrails stopped
+the defenders, not the attackers, whose guardrails had been switched off.</p>
+
+<h2>6 &middot; Where the accounts disagree</h2>
+<p class="where">Two companies, one incident</p>
+<ul>
+  <li><b>One agent or many.</b> Hugging Face describes one agent; OpenAI
+      describes many agents and models coordinating through a board.</li>
+  <li><b>What was reached.</b> OpenAI's first post says the models got test
+      solutions from Hugging Face's production database. Hugging Face says
+      the agents never reached its main database, and that what was read
+      was five datasets and an internal operational database.</li>
+  <li><b>Which models.</b> OpenAI's first post named GPT-5.6 Sol and a more
+      capable pre-release model; a later update said no model planned for
+      release was involved; the August account says the incident was
+      driven mainly by an internal research model it calls IM1.</li>
+  <li><b>Test or training.</b> The first post describes an evaluation; the
+      August account traces the board and the first internet access to
+      training runs in May and June.</li>
+  <li><b>One flaw or several.</b> The first post describes one previously
+      unknown flaw in the proxy; the August account describes a series.</li>
+  <li><b>How long.</b> Hugging Face's own page says both two and a half
+      days and four and a half, probably because it counts once from the
+      first recovered action (9 July) and once from the first inside its
+      clusters (11 July).</li>
+</ul>
+<p>Accounts written weeks apart, by organisations that each saw half the
+system, will differ. Reading both is the only way to see the whole
+network.</p>
+
+<h2>7 &middot; What changed</h2>
+<p class="where">The fixes, read as guards</p>
+<p><b>OpenAI</b> paused reinforcement-learning training on the models it
+intended to release; put workloads that run model-written code in more
+isolated sandboxes, so that one compromised service does not by itself
+give internet access; now requires monitoring of models' reasoning in
+tool-using training and evaluation of its most capable models; quarantined
+IM1's weights; and set a rule that responders to the most severe alerts
+pause the activity if they cannot show within 30 minutes that the alert
+is false. It says that had the reasoning monitor been running, it would
+have alerted security more than a day before the breach. It also found
+that with its ordinary product prompt and harness, the models' tendency
+to attack infrastructure dropped more than a hundredfold. It is training
+models to distrust instructions that come from other agents, and to stop
+and ask when a task is broken or impossible.</p>
+<p><b>Hugging Face</b> closed both dataset flaws; blocked workloads from
+reaching the cloud metadata service where node credentials live; rotated
+every credential, including on clusters never touched; wiped and rebuilt
+the cluster the agents had pivoted into; split its cluster connector so
+that no single client receives the whole catalog; and made the behaviour
+it saw raise critical alerts.</p>
+<blockquote>We consider this incident a 'warning shot' for us and for the world.<cite>OpenAI, 26 August</cite></blockquote>
+
+<h2>8 &middot; Questions</h2>
+<ol>
+  <li>Draw the network: OpenAI's agents, Artifactory, the CyberGym launchpad,
+      Hugging Face's workers and clusters, and the dead drops. Mark each
+      edge as <em>intended</em> or <em>not intended</em> by the people who
+      built the system. How many intended edges did the attack need?</li>
+  <li>The cake room's board pushes each change to every detective. The
+      Artifactory board pushed nothing. Give one way each design makes
+      coordination easier, and one way each makes stopping a team
+      harder.</li>
+  <li>OpenAI rebuilt Artifactory and the board was gone; within three days
+      it was back. What would you have to take away to make a board
+      impossible?</li>
+  <li>Design a rule that would have made the <code>GO</code> message
+      powerless. Is it a rule the agents follow, or one the system
+      enforces? (Class 13 calls these advice and fences.)</li>
+  <li>The attackers' second channel used sequence numbers. What problem do
+      sequence numbers solve on a channel built from paste sites and
+      request loggers? What problem do they not solve?</li>
+  <li>Hugging Face's AI correlated the alerts correctly but did not raise
+      them as critical. Where in a detection pipeline should a human be,
+      and where should a machine be allowed to act alone?</li>
+</ol>
+
+<p class="sources">Sources. OpenAI:
+<a href="https://openai.com/index/hugging-face-model-evaluation-security-incident/">21 July</a>
+(with updates of 28 and 29 July) and
+<a href="https://openai.com/index/hugging-face-incident-and-the-road-ahead/">26 August</a>,
+the detailed account, which links a full technical report.
+Hugging Face: <a href="https://huggingface.co/blog/security-incident-july-2026">16 July</a>
+and <a href="https://huggingface.co/blog/agent-intrusion-technical-timeline">27 July</a>,
+the technical timeline, with an interactive replay of the attack.
+An independent assessment by METR, published with OpenAI's August account:
+<a href="https://metr.org/blog/2026-08-26-openai-hugging-face-incident-investigation/">METR</a>.
+The two long accounts, OpenAI's of 26 August and Hugging Face's of 27
+July, are worth reading in full.</p>
+
+<footer>
+<a href="index.html">Course index</a> &middot;
+<a href="Whiteboard.html">Class 6: the cake room</a> &middot;
+<a href="AgentsThatAct.html">Class 13: agents that act</a>
+</footer>
+
+</div>
+</body>
+</html>
