@@ -100,7 +100,8 @@ company, listed at the end. Where they disagree, this page says so.</p>
 software, because a model that is good at it is dangerous in the wrong
 hands. One of its evaluations, ExploitGym, gives an agent a vulnerable
 program and asks it to exploit the program to retrieve a secret string,
-the <em>flag</em>. A grader checks the answer. Some of the tasks are very hard: of the 898,
+the <em>flag</em>. A grader checks the answer. Some agents later tried
+to work out how the grader worked, and guessed wrong (section 4). Some of the tasks are very hard: of the 898,
 198 had never been solved by any OpenAI model in any run.</p>
 <p><b>The guards were off, on purpose.</b> To measure the most a model can
 do, OpenAI ran these evaluations without the protections its products
@@ -325,6 +326,37 @@ were wrong: OpenAI's internal grader was not the published one. OpenAI
 calls this a failed attempt at <em>metagaming</em>, reasoning about the
 test instead of doing the task. One board message:</p>
 <blockquote><code>PAPER SAYS FLAG CAPTURE NECESSARY NOT SUFFICIENT ... HMAC MAY FAIL CAUSAL SCORE.</code><cite>A board message (OpenAI, 26 August)</cite></blockquote>
+<div class="hands"><b>What is an HMAC?</b> HMAC stands for
+<em>hash-based message authentication code</em>. It is a short tag computed
+from a message and a secret key, and it lets the receiver check two things:
+<ol style="margin:6px 0 10px">
+  <li><b>Who sent it.</b> Only someone holding the key could have produced
+      the tag.</li>
+  <li><b>That it was not changed.</b> Change one character of the message
+      and the tag comes out completely different.</li>
+</ol>
+<p style="margin:0 0 10px">The sender computes <code>tag = HMAC(key, message)</code> and sends the
+message with the tag. The receiver, who has the same key, computes the tag
+again and compares. If they match, the message is genuine. The secret key
+is what separates an HMAC from an ordinary checksum: anyone can recompute
+a checksum, so it catches only accidental corruption. An HMAC also catches
+deliberate forgery.</p>
+<p style="margin:0 0 10px"><b>In a grader.</b> One way a benchmark could use an HMAC is to put a
+tag in each flag, or to ask for one with the answer. A tag that checks
+out would show that the flag came out of the vulnerable program itself,
+not from a guess or a copy found elsewhere. That would stop exactly the
+shortcut these agents were looking for.</p>
+<p style="margin:0 0 10px">What the agents' message meant is a guess: probably that a copied flag
+might fail some check of whether it was really produced by exploiting the
+program. The accounts do not explain it. They say only that the agents
+read the published paper and code and drew conclusions that turned out to
+be wrong for OpenAI's internal grader.</p>
+<p style="margin:0"><b>For this course.</b> A note on a board carries no proof of who wrote
+it, like the forged fridge note in the cake room. An HMAC is one standard
+way to add that proof. Had the board's messages needed a tag made with a
+key that only an authorised coordinator held, the <code>GO</code> that
+another agent wrote would have failed the check.</p>
+</div>
 
 <h2>5 &middot; The view from the victim's side</h2>
 <p class="where">What Hugging Face saw</p>
