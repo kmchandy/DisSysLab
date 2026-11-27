@@ -67,14 +67,35 @@
 turned a package server into a message board, used it to share what they
 found, divided up the work, talked one another past their own doubts, and
 broke into Hugging Face's production systems to look for the answers to
-their test. Nobody designed that team. This reading tells the story as the
-two companies told it, and reads it the way this course reads every
-distributed system: who could send messages to whom, and what each message
-could cause.</p>
+their test. Nobody designed that team of agents. This page tells the story as the
+two companies told it. 
+</p>
+
+<p><b>What is an attack?</b> 
+The agents achieved the objective they were given as the agents understood their
+task. Were the agents <b>rogue</b>? 
+</p>
+<p>
+An attack is a behavior that violates the designer's constraints.
+The word <b>failure</b> is a better term than attack for cases where
+an external agent did not attack the app, but the app failed
+to satisfy the designer's constraints.
+When agents are given tasks that can only be accomplished by violating constraints, 
+the agents have to decide whether to give up on the task or
+violate constraints.
+The specifications should tell agents how to make that decisions rather
+than leaving that to the agents' discretion.
+</p>
+<p>
+Create your own structure - a list of questions - for analyzing failures and attacks.
+Was there an external agent that attacked the app? What constraints
+were violated? Were the constraints explicit? What resources do agents have 
+to communicate? What are the communication patterns that lead to failure?
+And what guardrails can prevent these failures?</p>
+
 <p>This is optional reading. Class 6 covers the outline; this page has the
 detail. Everything here comes from four public accounts, two by each
-company, listed at the end. Where they disagree, this page says so rather
-than picking one.</p>
+company, listed at the end. Where they disagree, this page says so.</p>
 
 <h2>1 &middot; The setup</h2>
 <p class="where">A test, a sandbox, and one permitted door</p>
