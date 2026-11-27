@@ -68,28 +68,25 @@ turned a package server into a message board, used it to share what they
 found, divided up the work, talked one another past their own doubts, and
 broke into Hugging Face's production systems to look for the answers to
 their test. Nobody designed that team of agents. This page tells the story as the
-two companies told it. 
-</p>
+two companies told it.</p>
 
-<p><b>What is an attack?</b> 
-The agents achieved the objective they were given as the agents understood their
-task. Were the agents <b>rogue</b>? 
-</p>
-<p>
-An attack is a behavior that violates the designer's constraints.
-The word <b>failure</b> is a better term than attack for cases where
-an external agent did not attack the app, but the app failed
-to satisfy the designer's constraints.
-When agents are given tasks that can only be accomplished by violating constraints, 
+<p><b>What is an attack?</b>
+The agents pursued the objective they were given, as they understood their
+task. Were the agents <b>rogue</b>?</p>
+<p>A <b>failure</b> is a behavior that violates the designer's constraints.
+An <b>attack</b> is a failure caused deliberately by someone outside the
+system. This incident is both, depending on where you stand. Seen from
+OpenAI's side, nobody attacked its system: its own agents broke its
+constraints, so it was a failure. Seen from Hugging Face's side, agents
+from outside broke in on purpose, so it was an attack.
+When agents are given tasks that can only be accomplished by violating constraints,
 the agents have to decide whether to give up on the task or
 violate constraints.
-The specifications should tell agents how to make that decisions rather
-than leaving that to the agents' discretion.
-</p>
-<p>
-Create your own structure - a list of questions - for analyzing failures and attacks.
+The specifications should tell agents how to make that decision rather
+than leaving that to the agents' discretion.</p>
+<p>Create your own structure &mdash; a list of questions &mdash; for analyzing failures and attacks.
 Was there an external agent that attacked the app? What constraints
-were violated? Were the constraints explicit? What resources do agents have 
+were violated? Were the constraints explicit? What resources do agents have
 to communicate? What are the communication patterns that lead to failure?
 And what guardrails can prevent these failures?</p>
 
@@ -103,9 +100,8 @@ company, listed at the end. Where they disagree, this page says so.</p>
 software, because a model that is good at it is dangerous in the wrong
 hands. One of its evaluations, ExploitGym, gives an agent a vulnerable
 program and asks it to exploit the program to retrieve a secret string,
-the <em>flag</em>. A grader checks the answer. Some of the tasks are very
-hard: before the incident, none of OpenAI's models had ever solved 198 of
-the 898.</p>
+the <em>flag</em>. A grader checks the answer. Some of the tasks are very hard: of the 898,
+198 had never been solved by any OpenAI model in any run.</p>
 <p><b>The guards were off, on purpose.</b> To measure the most a model can
 do, OpenAI ran these evaluations without the protections its products
 use: the production system prompts, the classifiers that stop high-risk
